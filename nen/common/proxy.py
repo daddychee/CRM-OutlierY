@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import re
 import unicodedata
+from urllib.parse import quote
 
 import httpx
 from fastapi import Request
@@ -48,8 +49,8 @@ def _lay_client() -> httpx.AsyncClient:
 _HEADER_CAM = {"host", "connection", "keep-alive", "transfer-encoding", "upgrade",
                "proxy-authorization", "proxy-authenticate", "te", "trailer",
                "content-length", "accept-encoding",
-               "x-remote-user", "x-remote-role", "x-remote-level", "x-role-code",
-               "x-forwarded-for"}
+               "x-remote-user", "x-remote-role", "x-remote-level", "x-remote-dept",
+               "x-role-code", "x-forwarded-for"}
 
 _LOAI_CHU = ("text/html", "text/css", "application/javascript", "text/javascript",
              "application/json", "text/plain")
@@ -87,7 +88,7 @@ def _viet_lai_header(ten: str, gia_tri: str, goc: str, tien_to_app: list[str]) -
 
 async def chuyen_tiep(request: Request, cong: int, goc: str, duong_dan: str,
                       ten_user: str, tien_to_app: list[str], vai: str = "",
-                      level: int | None = None) -> Response:
+                      level: int | None = None, bo_phan: str = "") -> Response:
     """Chuyển tiếp request sang app 127.0.0.1:<cong>, tiêm claims do GATEWAY quyết."""
     dich = f"http://127.0.0.1:{cong}/{duong_dan}"
     cam = set(_HEADER_CAM)
@@ -102,6 +103,10 @@ async def chuyen_tiep(request: Request, cong: int, goc: str, duong_dan: str,
         headers["X-Remote-Role"] = vai
     if level is not None:
         headers["X-Remote-Level"] = str(level)
+    if bo_phan:
+        # Bộ phận có dấu tiếng Việt, header chỉ nhận ASCII → URL-encode ở đây,
+        # app nhận unquote lại (RBAC bộ phận × level cần CHUỖI GỐC khớp payload).
+        headers["X-Remote-Dept"] = quote(bo_phan)
     than = await request.body()
 
     client = _lay_client()

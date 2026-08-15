@@ -377,4 +377,5 @@ async def proxy_app(request: Request, slug: str, duong_dan: str):
     return await chuyen_tiep(
         request, cong=muc["cong"], goc=f"/app/{slug}", duong_dan=duong_dan,
         ten_user=user["ten"], tien_to_app=muc.get("tien_to", []),
-        vai=iam.vai_cho_app(user, slug), level=user["level"])
+        vai=iam.vai_cho_app(user, slug), level=user["level"],
+        bo_phan=user.get("bo_phan", ""))
