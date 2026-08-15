@@ -29,6 +29,8 @@ from pathlib import Path
 
 import bcrypt
 
+from nen.common import sqlite_migrate
+
 ROOT = Path(__file__).resolve().parents[2]
 DUONG_MIGRATIONS = Path(__file__).parent / "migrations"
 DUONG_PHAN_QUYEN = ROOT / "nen" / "rules" / "phan_quyen.json"
@@ -58,24 +60,7 @@ def ket_noi(duong: Path | str | None = None) -> sqlite3.Connection:
 
 
 def _migrate(conn: sqlite3.Connection) -> None:
-    """Chạy migration theo bậc — DB tự biết phiên bản của nó (hiến pháp mục 2.1).
-
-    ponytail: migrate được gọi mỗi ket_noi() — khi không có gì mới chỉ tốn 1 query
-    SELECT; trần là vài trăm µs/request. Nâng cấp nếu cần: cache phiên bản theo
-    đường db trong process."""
-    conn.execute(
-        "CREATE TABLE IF NOT EXISTS schema_version (phien_ban INTEGER NOT NULL)")
-    dong = conn.execute("SELECT phien_ban FROM schema_version").fetchone()
-    if dong is None:
-        conn.execute("INSERT INTO schema_version VALUES (0)")
-    hien_tai = dong["phien_ban"] if dong else 0
-    for f in sorted(DUONG_MIGRATIONS.glob("*.sql")):
-        so = int(f.name.split("_")[0])
-        if so > hien_tai:
-            with conn:
-                conn.executescript(f.read_text(encoding="utf-8"))
-                conn.execute("UPDATE schema_version SET phien_ban=?", (so,))
-            hien_tai = so
+    sqlite_migrate.migrate(conn, DUONG_MIGRATIONS)
 
 
 def _gio() -> str:

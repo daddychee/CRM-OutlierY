@@ -21,6 +21,7 @@ from itsdangerous import BadSignature, URLSafeTimedSerializer
 from nen.common.hop_dong import doc_hop_dong, tim_app
 from nen.common.proxy import chuyen_tiep
 from nen.iam import iam
+from nen.ket_cau_hinh import ket
 
 ROOT = Path(__file__).resolve().parents[2]
 load_dotenv(ROOT / ".env")
@@ -284,6 +285,72 @@ async def qt_tao_nguoi(request: Request, ho_ten: str = Form(""),
         return _render_quan_tri(request, user, loi=str(e))
     finally:
         conn.close()
+
+
+# ---------- két cấu hình (P3) ----------
+
+@app.get("/api/cau-hinh/llm/{vai}")
+async def api_cau_hinh_llm(request: Request, vai: str):
+    """App phụ (bind loopback) đọc cấu hình LLM theo vai — key KHÔNG bao giờ nằm
+    trong file của app. CHỈ phục vụ loopback.
+
+    ponytail: trần bảo vệ = mọi tiến trình local đọc được (cùng trust model
+    X-Remote-User hiện tại); nâng cấp khi tách nhiều máy: token nội bộ."""
+    if request.client and request.client.host not in ("127.0.0.1", "::1"):
+        return JSONResponse({"loi": "chi loopback"}, status_code=403)
+    conn = ket.ket_noi()
+    try:
+        return ket.cau_hinh_llm(conn, vai)
+    finally:
+        conn.close()
+
+
+def _yeu_cau_owner_ket(request: Request) -> dict | Response:
+    user = _kiem(request)
+    if isinstance(user, RedirectResponse):
+        return user
+    if not iam.co_quyen(user, "ket_cau_hinh"):   # giỏ Owner tuyệt đối
+        return Response("Két cấu hình chỉ dành cho Owner.", status_code=403)
+    return user
+
+
+@app.get("/cai-dat", response_class=HTMLResponse)
+async def cai_dat(request: Request, bao: str = "", loi: str = ""):
+    user = _yeu_cau_owner_ket(request)
+    if isinstance(user, Response):
+        return user
+    conn = ket.ket_noi()
+    try:
+        ds = ket.liet_ke(conn)
+    finally:
+        conn.close()
+    return templates.TemplateResponse(
+        request, "caidat.html", {"user": user, "ds": ds, "bao": bao, "loi": loi})
+
+
+@app.post("/cai-dat/llm", response_class=HTMLResponse)
+async def cai_dat_llm(request: Request, vai: str = Form(...),
+                      provider: str = Form(""), model: str = Form(""),
+                      base_url: str = Form(""), api_key: str = Form("")):
+    user = _yeu_cau_owner_ket(request)
+    if isinstance(user, Response):
+        return user
+    vai = vai.strip().lower()
+    if not vai.isidentifier():
+        return RedirectResponse("/cai-dat?loi=T%C3%AAn+vai+kh%C3%B4ng+h%E1%BB%A3p+l%E1%BB%87",
+                                status_code=303)
+    conn = ket.ket_noi()
+    try:
+        for khoa, gt in (("provider", provider), ("model", model),
+                         ("base_url", base_url)):
+            if gt.strip():
+                ket.dat_cau_hinh(conn, f"llm.{vai}.{khoa}", gt.strip())
+        if api_key.strip():   # WRITE-ONLY: bỏ trống = giữ key cũ
+            ket.dat_bi_mat(conn, f"llm.{vai}.api_key", api_key.strip())
+    finally:
+        conn.close()
+    return RedirectResponse(f"/cai-dat?bao=%C4%90%C3%A3+l%C6%B0u+vai+{vai}",
+                            status_code=303)
 
 
 # ---------- proxy app ----------
