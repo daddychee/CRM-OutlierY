@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quản trị — OUTLIERY v2</title>
+<style>
+  :root{--nen:#F7F8FA;--the:#FFFFFF;--vien:#E6E6E6;--chu:#16181C;--phu:#6C6C72;
+        --accent:#2C6FC4;--ok:#1D7A46;--loi:#B4232A}
+  @media (prefers-color-scheme: dark){
+    :root{--nen:#090C12;--the:#121826;--vien:#232B3D;--chu:#E8EDF4;--phu:#8B96A8;--accent:#4C8FE0;
+          --ok:#5CC98B;--loi:#F08A8F}
+  }
+  *{box-sizing:border-box;margin:0}
+  body{font-family:Inter,system-ui,sans-serif;background:var(--nen);color:var(--chu)}
+  header{display:flex;justify-content:space-between;padding:14px 24px;
+         border-bottom:1px solid var(--vien);background:var(--the)}
+  a{color:var(--accent);text-decoration:none}
+  main{max-width:980px;margin:28px auto;padding:0 20px}
+  h2{font-size:15px;margin:26px 0 10px}
+  .bao{color:var(--ok);font-size:13px;margin:10px 0}
+  .loi{color:var(--loi);font-size:13px;margin:10px 0}
+  table{width:100%;border-collapse:collapse;background:var(--the);
+        border:1px solid var(--vien);border-radius:12px;overflow:hidden;font-size:13px}
+  th,td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--vien);vertical-align:middle}
+  th{color:var(--phu);font-size:12px}
+  input,select{padding:6px 8px;border:1px solid var(--vien);border-radius:7px;
+        background:var(--nen);color:var(--chu);font-size:13px}
+  button{padding:6px 12px;border:0;border-radius:7px;background:var(--accent);
+         color:#fff;font-size:13px;cursor:pointer}
+  form.dong{display:inline-flex;gap:6px;align-items:center;margin:0}
+  .chip{padding:1px 8px;border-radius:99px;font-size:11px;border:1px solid var(--vien)}
+  .khoi{background:var(--the);border:1px solid var(--vien);border-radius:12px;padding:14px 16px}
+  .nhat-ky{font-size:12px;color:var(--phu);line-height:1.8;max-height:260px;overflow:auto}
+</style>
+</head>
+<body>
+<header><b>Quản trị hệ</b>
+  <span>{{ user.ten }} {% if la_owner %}(Owner){% else %}(Admin ủy quyền){% endif %}
+  · <a href="/">← Trang chủ</a></span></header>
+<main>
+  {% if bao %}<p class="bao">✓ {{ bao }}</p>{% endif %}
+  {% if loi %}<p class="loi">✗ {{ loi }}</p>{% endif %}
+
+  <h2>Tài khoản</h2>
+  <table>
+    <tr><th>Tên</th><th>Bộ phận</th><th>Level</th><th>Nhãn</th><th>Thao tác</th></tr>
+    {% for tk in tai_khoan %}
+    <tr>
+      <td><b>{{ tk.ten }}</b></td>
+      <td>{{ tk.bo_phan }}</td>
+      <td>L{{ tk.level }}</td>
+      <td>
+        {% if tk.level >= 5 %}<span class="chip">Owner</span>{% endif %}
+        {% if tk.admin_uy_quyen %}<span class="chip">Admin ủy quyền</span>{% endif %}
+        {% if tk.khoa %}<span class="chip">🔒 khóa</span>{% endif %}
+        {% if tk.phai_doi_mk %}<span class="chip">chờ đổi MK</span>{% endif %}
+      </td>
+      <td>
+        <form class="dong" method="post" action="/quan-tri/sua">
+          <input type="hidden" name="ten" value="{{ tk.ten }}">
+          <select name="hanh_dong">
+            <option value="level">đổi level =</option>
+            <option value="bo_phan">đổi bộ phận =</option>
+            <option value="reset_mk">reset mật khẩu =</option>
+            <option value="khoa">khóa (1) / mở (0) =</option>
+            {% if la_owner %}
+            <option value="admin_uy_quyen">Admin ủy quyền (1/0) =</option>
+            <option value="xoa">XÓA (gõ ten để chắc) =</option>
+            {% endif %}
+          </select>
+          <input name="gia_tri" size="10" placeholder="giá trị">
+          <button>Làm</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+
+  <h2>Tạo tài khoản mới <span style="color:var(--phu);font-weight:400;font-size:12px">
+    (người mới bị ép đổi mật khẩu lần đăng nhập đầu)</span></h2>
+  <div class="khoi">
+    <form class="dong" method="post" action="/quan-tri/tao-tai-khoan">
+      <input name="ten" placeholder="tên đăng nhập (a-z0-9._-)" required>
+      <input name="mat_khau" placeholder="mật khẩu tạm" required>
+      <input name="bo_phan" placeholder="bộ phận" required>
+      <select name="level">
+        <option value="1">L1 Intern</option><option value="2" selected>L2 Nhân viên</option>
+        <option value="3">L3 Leader</option><option value="4">L4 Manager</option>
+        {% if la_owner %}<option value="5">L5 Owner</option>{% endif %}
+      </select>
+      <button>Tạo</button>
+    </form>
+  </div>
+
+  <h2>Hồ sơ nhân sự</h2>
+  <table>
+    <tr><th>Mã</th><th>Họ tên</th><th>Bộ phận</th><th>Vị trí</th><th>Trạng thái</th></tr>
+    {% for ns in nguoi %}
+    <tr><td>{{ ns.ma }}</td><td>{{ ns.ho_ten }}</td><td>{{ ns.bo_phan }}</td>
+        <td>{{ ns.vi_tri }}</td><td>{{ ns.trang_thai }}</td></tr>
+    {% endfor %}
+  </table>
+  <div class="khoi" style="margin-top:10px">
+    <form class="dong" method="post" action="/quan-tri/tao-nguoi">
+      <input name="ho_ten" placeholder="họ tên" required>
+      <input name="bo_phan" placeholder="bộ phận" required>
+      <input name="vi_tri" placeholder="vị trí (tùy chọn)">
+      <button>Tạo hồ sơ</button>
+    </form>
+  </div>
+
+  <h2>Nhật ký quyền (30 dòng gần nhất — mọi thay đổi đều có vết)</h2>
+  <div class="khoi nhat-ky">
+    {% for nk in nhat_ky %}
+    <div>{{ nk.luc }} · <b>{{ nk.ai }}</b> · {{ nk.hanh_dong }} · {{ nk.chi_tiet }}</div>
+    {% endfor %}
+  </div>
+</main>
+</body>
+</html>

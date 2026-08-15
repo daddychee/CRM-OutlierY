@@ -2,12 +2,8 @@
 """GATEWAY — cổng vào duy nhất của OUTLIERY Platform v2 (:9000, sau Caddy :9443).
 
 CHỈ làm việc của cổng: đăng nhập/session, menu app, proxy theo hợp đồng app, trang
-sức khỏe hệ. KHÔNG nghiệp vụ. Mỏng đến mức cả năm không phải đụng — nâng cấp app
-không bao giờ chết cổng (bài học agent-app cũ ôm cả cổng lẫn app).
-
-P1 dùng users.txt tạm (khuôn hệ cũ: ten:bcrypt:bo_phan:level, đọc SỐNG mỗi request).
-P2 (IAM) thay bằng iam.db + co_quyen() + vai theo bảng hanh_dong — các chỗ đánh dấu
-`TODO-P2` là mối nối chờ.
+sức khỏe, trang quản trị IAM. KHÔNG nghiệp vụ. Nguồn danh tính DUY NHẤT: iam.db
+(P2) — không còn users.txt.
 """
 from __future__ import annotations
 
@@ -15,7 +11,6 @@ import os
 import secrets
 from pathlib import Path
 
-import bcrypt
 import httpx
 from dotenv import load_dotenv
 from fastapi import FastAPI, Form, Request
@@ -25,6 +20,7 @@ from itsdangerous import BadSignature, URLSafeTimedSerializer
 
 from nen.common.hop_dong import doc_hop_dong, tim_app
 from nen.common.proxy import chuyen_tiep
+from nen.iam import iam
 
 ROOT = Path(__file__).resolve().parents[2]
 load_dotenv(ROOT / ".env")
@@ -40,41 +36,7 @@ templates = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
 _ky = URLSafeTimedSerializer(SESSION_SECRET, salt="phien-v2")
 
 
-# ---------- users tạm (TODO-P2: thay bằng iam.db) ----------
-
-def _duong_users() -> Path:
-    return Path(os.environ.get("NEN_USERS", ROOT / "data" / "nen" / "users.txt"))
-
-
-def doc_users() -> dict[str, dict]:
-    """Đọc SỐNG mỗi lần gọi (file nhỏ) — đổi user/khóa user ăn ngay không restart,
-    đúng hành vi hệ cũ đã kiểm chứng (YC6)."""
-    duong = _duong_users()
-    if not duong.exists():
-        return {}
-    ket_qua: dict[str, dict] = {}
-    for dong in duong.read_text(encoding="utf-8").splitlines():
-        dong = dong.strip()
-        if not dong or dong.startswith("#"):
-            continue
-        phan = dong.split(":")
-        if len(phan) < 4:
-            continue
-        ten, mk_hash, bo_phan, level = phan[0], phan[1], phan[2], phan[3]
-        try:
-            ket_qua[ten] = {"hash": mk_hash, "bo_phan": bo_phan, "level": int(level)}
-        except ValueError:
-            continue
-    return ket_qua
-
-
-def _vai_tam(level: int) -> str:
-    """TODO-P2: vai thật tính từ bảng hanh_dong per app (apps_registry hệ cũ).
-    P1 chỉ cần nhãn thô cho app-mau hiển thị."""
-    return {5: "owner", 4: "manager", 3: "leader"}.get(level, "viewer")
-
-
-# ---------- session ----------
+# ---------- session (nguồn user: iam.db, đọc SỐNG mỗi request) ----------
 
 def user_hien_tai(request: Request) -> dict | None:
     ma = request.cookies.get(COOKIE_TEN)
@@ -84,43 +46,66 @@ def user_hien_tai(request: Request) -> dict | None:
         ten = _ky.loads(ma, max_age=PHIEN_TTL)
     except BadSignature:
         return None
-    thong_tin = doc_users().get(ten)
-    if not thong_tin:
-        return None  # user bị xóa → phiên chết theo (đọc sống)
-    return {"ten": ten, **thong_tin}
+    conn = iam.ket_noi()
+    try:
+        tk = iam.lay_tai_khoan(conn, ten)
+        if not tk or tk["khoa"]:
+            return None  # user bị xóa/khóa → phiên chết theo (đọc sống)
+        claims = iam.claims_cua(tk)
+        claims["phai_doi_mk"] = bool(tk["phai_doi_mk"])
+        return claims
+    finally:
+        conn.close()
 
 
-def _ve_login(request: Request) -> RedirectResponse:
+def _ve_login() -> RedirectResponse:
     return RedirectResponse("/login", status_code=303)
 
 
-# ---------- routes ----------
+def _kiem(request: Request) -> dict | RedirectResponse:
+    """Đọc user; chưa đăng nhập → login; phải đổi mật khẩu → ép sang trang đổi."""
+    user = user_hien_tai(request)
+    if not user:
+        return _ve_login()
+    if user.get("phai_doi_mk") and request.url.path != "/doi-mat-khau":
+        return RedirectResponse("/doi-mat-khau", status_code=303)
+    return user
+
+
+# ---------- routes chung ----------
 
 @app.get("/health")
 async def health():
-    return {"trang_thai": "ok", "dich_vu": "gateway", "phien_ban": "2.0.0-p1"}
+    return {"trang_thai": "ok", "dich_vu": "gateway", "phien_ban": "2.0.0-p2"}
 
 
 @app.get("/login", response_class=HTMLResponse)
 async def login_form(request: Request):
     if user_hien_tai(request):
         return RedirectResponse("/", status_code=303)
-    che_do_mo = not doc_users()  # chưa có users.txt → hướng dẫn tạo, không khóa cửa chết
+    conn = iam.ket_noi()
+    try:
+        che_do_mo = iam.dem_tai_khoan(conn) == 0
+    finally:
+        conn.close()
     return templates.TemplateResponse(
         request, "login.html", {"loi": "", "che_do_mo": che_do_mo})
 
 
 @app.post("/login", response_class=HTMLResponse)
 async def login_gui(request: Request, ten: str = Form(""), mat_khau: str = Form("")):
-    thong_tin = doc_users().get(ten.strip())
-    if not thong_tin or not bcrypt.checkpw(
-            mat_khau.encode("utf-8"), thong_tin["hash"].encode("utf-8")):
+    conn = iam.ket_noi()
+    try:
+        claims = iam.xac_thuc(conn, ten, mat_khau)
+    finally:
+        conn.close()
+    if not claims:
         return templates.TemplateResponse(
             request, "login.html",
             {"loi": "Sai tên đăng nhập hoặc mật khẩu.", "che_do_mo": False},
             status_code=401)
     resp = RedirectResponse("/", status_code=303)
-    resp.set_cookie(COOKIE_TEN, _ky.dumps(ten.strip()), max_age=PHIEN_TTL,
+    resp.set_cookie(COOKIE_TEN, _ky.dumps(claims["ten"]), max_age=PHIEN_TTL,
                     httponly=True, samesite="lax")
     return resp
 
@@ -132,22 +117,58 @@ async def logout():
     return resp
 
 
-@app.get("/", response_class=HTMLResponse)
-async def trang_chu(request: Request):
+@app.get("/doi-mat-khau", response_class=HTMLResponse)
+async def doi_mk_form(request: Request):
     user = user_hien_tai(request)
     if not user:
-        return _ve_login(request)
-    # TODO-P2: lọc app theo quyền (co_quyen). P1: đăng nhập là thấy hết.
+        return _ve_login()
+    return templates.TemplateResponse(
+        request, "doimatkhau.html", {"user": user, "loi": "", "xong": False})
+
+
+@app.post("/doi-mat-khau", response_class=HTMLResponse)
+async def doi_mk_gui(request: Request, mk_moi: str = Form(""), mk_lai: str = Form("")):
+    user = user_hien_tai(request)
+    if not user:
+        return _ve_login()
+    if mk_moi != mk_lai:
+        return templates.TemplateResponse(
+            request, "doimatkhau.html",
+            {"user": user, "loi": "Hai lần gõ không khớp.", "xong": False})
+    conn = iam.ket_noi()
+    try:
+        iam.doi_mat_khau(conn, user, user["ten"], mk_moi, ep_doi_lan_sau=False)
+    except iam.LoiIam as e:
+        return templates.TemplateResponse(
+            request, "doimatkhau.html", {"user": user, "loi": str(e), "xong": False})
+    finally:
+        conn.close()
+    return RedirectResponse("/", status_code=303)
+
+
+@app.get("/", response_class=HTMLResponse)
+async def trang_chu(request: Request):
+    user = _kiem(request)
+    if isinstance(user, RedirectResponse):
+        return user
+    conn = iam.ket_noi()
+    try:
+        apps_thay = [a for a in doc_hop_dong()
+                     if iam.co_quyen(user, "vao", a["slug"], conn)]
+        duoc_quan_tri = iam.co_quyen(user, "quan_tai_khoan", conn=conn)
+    finally:
+        conn.close()
     return templates.TemplateResponse(
         request, "trangchu.html",
-        {"user": user, "vai": _vai_tam(user["level"]), "apps": doc_hop_dong()})
+        {"user": user, "vai": iam.vai_cho_app(user, "*"), "apps": apps_thay,
+         "duoc_quan_tri": duoc_quan_tri})
 
 
 @app.get("/suc-khoe", response_class=HTMLResponse)
 async def suc_khoe(request: Request):
-    user = user_hien_tai(request)
-    if not user:
-        return _ve_login(request)
+    user = _kiem(request)
+    if isinstance(user, RedirectResponse):
+        return user
     ket_qua = []
     async with httpx.AsyncClient(timeout=3.0) as client:
         for muc in doc_hop_dong():
@@ -162,20 +183,131 @@ async def suc_khoe(request: Request):
         request, "suckhoe.html", {"user": user, "ket_qua": ket_qua})
 
 
+# ---------- trang quản trị IAM (giỏ ủy quyền: Owner + Admin ủy quyền) ----------
+
+def _render_quan_tri(request: Request, user: dict, loi: str = "",
+                     bao: str = "") -> HTMLResponse:
+    conn = iam.ket_noi()
+    try:
+        return templates.TemplateResponse(
+            request, "quantri.html",
+            {"user": user, "loi": loi, "bao": bao,
+             "tai_khoan": iam.liet_ke_tai_khoan(conn),
+             "nguoi": iam.liet_ke_nguoi(conn),
+             "nhat_ky": iam.doc_nhat_ky(conn, 30),
+             "la_owner": user["level"] >= iam.OWNER_LEVEL})
+    finally:
+        conn.close()
+
+
+def _yeu_cau_quan_tri(request: Request) -> dict | Response:
+    user = _kiem(request)
+    if isinstance(user, RedirectResponse):
+        return user
+    conn = iam.ket_noi()
+    try:
+        if not iam.co_quyen(user, "quan_tai_khoan", conn=conn):
+            return Response("Bạn không có quyền vào trang quản trị.", status_code=403)
+    finally:
+        conn.close()
+    return user
+
+
+@app.get("/quan-tri", response_class=HTMLResponse)
+async def quan_tri(request: Request):
+    user = _yeu_cau_quan_tri(request)
+    if isinstance(user, Response):
+        return user
+    return _render_quan_tri(request, user)
+
+
+@app.post("/quan-tri/tao-tai-khoan", response_class=HTMLResponse)
+async def qt_tao_tk(request: Request, ten: str = Form(""), mat_khau: str = Form(""),
+                    bo_phan: str = Form(""), level: int = Form(1)):
+    user = _yeu_cau_quan_tri(request)
+    if isinstance(user, Response):
+        return user
+    conn = iam.ket_noi()
+    try:
+        iam.tao_tai_khoan(conn, user, ten, mat_khau, bo_phan, level)
+        return _render_quan_tri(request, user, bao=f"Đã tạo tài khoản {ten} "
+                                "(bị ép đổi mật khẩu lần đăng nhập đầu).")
+    except iam.LoiIam as e:
+        return _render_quan_tri(request, user, loi=str(e))
+    finally:
+        conn.close()
+
+
+@app.post("/quan-tri/sua", response_class=HTMLResponse)
+async def qt_sua(request: Request, ten: str = Form(...),
+                 hanh_dong: str = Form(...), gia_tri: str = Form("")):
+    user = _yeu_cau_quan_tri(request)
+    if isinstance(user, Response):
+        return user
+    conn = iam.ket_noi()
+    try:
+        if hanh_dong == "level":
+            iam.sua_tai_khoan(conn, user, ten, level=int(gia_tri))
+        elif hanh_dong == "bo_phan":
+            iam.sua_tai_khoan(conn, user, ten, bo_phan=gia_tri)
+        elif hanh_dong == "khoa":
+            iam.sua_tai_khoan(conn, user, ten, khoa=(gia_tri == "1"))
+        elif hanh_dong == "admin_uy_quyen":
+            iam.sua_tai_khoan(conn, user, ten, admin_uy_quyen=(gia_tri == "1"))
+        elif hanh_dong == "xoa":
+            if gia_tri != ten:   # xác nhận 2 lớp: client gõ lại tên, SERVER kiểm
+                return _render_quan_tri(request, user,
+                                        loi="Muốn xóa phải gõ lại đúng tên tài khoản.")
+            iam.xoa_tai_khoan(conn, user, ten)
+        elif hanh_dong == "reset_mk":
+            iam.doi_mat_khau(conn, user, ten, gia_tri, ep_doi_lan_sau=True)
+        else:
+            return _render_quan_tri(request, user, loi="Hành động lạ.")
+        return _render_quan_tri(request, user, bao=f"Đã {hanh_dong}: {ten}")
+    except iam.LoiIam as e:
+        return _render_quan_tri(request, user, loi=str(e))
+    finally:
+        conn.close()
+
+
+@app.post("/quan-tri/tao-nguoi", response_class=HTMLResponse)
+async def qt_tao_nguoi(request: Request, ho_ten: str = Form(""),
+                       bo_phan: str = Form(""), vi_tri: str = Form("")):
+    user = _yeu_cau_quan_tri(request)
+    if isinstance(user, Response):
+        return user
+    conn = iam.ket_noi()
+    try:
+        ns = iam.tao_nguoi(conn, user, ho_ten, bo_phan, vi_tri)
+        return _render_quan_tri(request, user, bao=f"Đã tạo hồ sơ {ns['ma']}.")
+    except iam.LoiIam as e:
+        return _render_quan_tri(request, user, loi=str(e))
+    finally:
+        conn.close()
+
+
+# ---------- proxy app ----------
+
 @app.api_route("/app/{slug}/{duong_dan:path}",
                methods=["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"])
 async def proxy_app(request: Request, slug: str, duong_dan: str):
     user = user_hien_tai(request)
     if not user:
-        # API trả 401 gọn; trình duyệt về trang login
         if "text/html" in (request.headers.get("accept") or ""):
-            return _ve_login(request)
+            return _ve_login()
         return JSONResponse({"loi": "chua dang nhap"}, status_code=401)
+    if user.get("phai_doi_mk"):
+        return RedirectResponse("/doi-mat-khau", status_code=303)
     muc = tim_app(slug)
     if not muc:
         return Response("Không có app này.", status_code=404)
-    # TODO-P2: kiểm quyền vào app (co_quyen) trước khi chuyển tiếp.
+    conn = iam.ket_noi()
+    try:
+        if not iam.co_quyen(user, "vao", slug, conn):
+            return Response("Bạn không có quyền vào công cụ này.", status_code=403)
+    finally:
+        conn.close()
     return await chuyen_tiep(
         request, cong=muc["cong"], goc=f"/app/{slug}", duong_dan=duong_dan,
         ten_user=user["ten"], tien_to_app=muc.get("tien_to", []),
-        vai=_vai_tam(user["level"]), level=user["level"])
+        vai=iam.vai_cho_app(user, slug), level=user["level"])

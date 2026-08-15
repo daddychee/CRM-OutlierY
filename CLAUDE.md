@@ -42,7 +42,22 @@
   apps.json` + app-mau :9190 (khuôn app chuẩn, hiện claims) + tao_user_test
   (owner/quanly/nhanvien, mk test123). Nghiệm thu: login → menu → proxy tiêm
   claims đúng, header giả 'hacker' bị vứt → sức khỏe 'đang chạy'.
-- KẾ TIẾP — P1 còn: Caddy TLS tự ký :9443 (cần tải caddy.exe — chưa có mạng lúc
-  làm thì ghi việc treo); tự-restart app chết (để giai đoạn swap, /suc-khoe mới
-  hiển thị). Rồi PHASE 2 IAM: iam.db + co_quyen() + vai Admin ủy quyền + trang
-  quản trị hợp nhất + migration users.txt/ho_so.json/phan_quyen.json.
+- 16/08/2026 — **PHASE 2 IAM + CADDY TLS XONG** (49 test pass; nghiệm thu HTTPS
+  thật): `nen/iam/` (iam.db SQLite WAL + migrations có phiên bản + schema_version;
+  2 giỏ quyền — Owner tuyệt đối không tick nào đè được / ủy quyền được; 3 luật sắt
+  Admin ủy quyền: không tự nâng, không đụng Owner, mọi thao tác có vết
+  nhat_ky_quyen; chống tự khóa; user đầu phải Owner) + `nen/rules/phan_quyen.json`
+  (luật ngoài code) + gateway nối iam.db (users.txt nghỉ hưu, ép đổi mật khẩu lần
+  đầu YC6) + trang /quan-tri hợp nhất (tài khoản + hồ sơ NS + nhật ký; xóa phải gõ
+  lại tên — server kiểm) + `nen/iam/nhap_users_txt.py` (migration hệ cũ, giữ
+  nguyên hash, idempotent) + Caddy :9443 tls internal. Nghiệm thu HTTPS: quanly
+  (Admin ủy quyền) vào quản trị 200 nhưng nút Owner-only ẩn + không vault;
+  nhanvien 403; claims viewer đúng; header giả vứt.
+  BẪY MỚI: (a) Caddyfile PHẢI khai tên/IP cụ thể — `https://:9443` trống hostname
+  là handshake fail với client không gửi SNI (curl exit 35); (b) PS 5.1 cần
+  `SecurityProtocol=Tls12` + Get-Content phải `-Encoding UTF8` khi kiểm chuỗi Việt.
+  User nhắc giữa phiên: áp nguyên tắc KARPATHY (tối giản/test-first/surgical) +
+  PONYTAIL (thang 7 bậc, diff ngắn nhất, đánh dấu `ponytail:` chỗ cắt góc) — đã
+  lưu memory vĩnh viễn, 2 file gốc trong hệ.
+- KẾ TIẾP — PHASE 3 Két cấu hình: config ≠ secret (2 ngăn), vai LLM → model,
+  API loopback cho app đọc, UI Owner /cai-dat, timeout/retry mặc định một chỗ.

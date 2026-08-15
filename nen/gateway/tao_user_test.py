@@ -1,37 +1,29 @@
 # -*- coding: utf-8 -*-
-"""Tạo users TEST cho giai đoạn dev (P1 — trước khi có IAM ở P2).
+"""Tạo users TEST vào iam.db (P2 — thay bản users.txt của P1).
 
 Chạy từ root:  python -m nen.gateway.tao_user_test
-Ghi data/nen/users.txt (nguyên tử) với 3 tài khoản, mật khẩu đều là: test123
-KHÔNG dùng cho bản thay thế thật — user thật migrate từ hệ cũ ở P2.
+3 tài khoản: owner / quanly / nhanvien — mật khẩu chung: test123
+(quanly được bật admin_uy_quyen để thử vai Admin ủy quyền.)
+KHÔNG dùng cho bản thay thế thật — user thật migrate từ hệ cũ.
 """
-import os
-import tempfile
-from pathlib import Path
-
-import bcrypt
-
-ROOT = Path(__file__).resolve().parents[2]
-DUONG = Path(os.environ.get("NEN_USERS", ROOT / "data" / "nen" / "users.txt"))
-
-USERS_TEST = [
-    ("owner", "Ban quản trị", 5),
-    ("quanly", "Kinh doanh", 4),
-    ("nhanvien", "Vận hành - Sản xuất", 2),
-]
+from nen.iam import iam
 
 
 def main() -> None:
-    DUONG.parent.mkdir(parents=True, exist_ok=True)
-    dong = ["# users TEST (P1) — tên:bcrypt:bộ_phận:level — mật khẩu chung: test123"]
-    for ten, bo_phan, level in USERS_TEST:
-        h = bcrypt.hashpw(b"test123", bcrypt.gensalt()).decode()
-        dong.append(f"{ten}:{h}:{bo_phan}:{level}")
-    fd, tmp = tempfile.mkstemp(dir=DUONG.parent, suffix=".tmp")
-    with os.fdopen(fd, "w", encoding="utf-8") as f:
-        f.write("\n".join(dong) + "\n")
-    os.replace(tmp, DUONG)  # ghi nguyên tử — bất biến kế thừa
-    print(f"Đã ghi {DUONG} — 3 user: owner / quanly / nhanvien (mật khẩu: test123)")
+    conn = iam.ket_noi()
+    if iam.dem_tai_khoan(conn) > 0:
+        print("iam.db đã có tài khoản — không ghi đè. Xóa data/nen/iam.db nếu muốn làm lại.")
+        return
+    owner = iam.tao_tai_khoan(conn, None, "owner", "test123", "Ban quản trị", 5,
+                              phai_doi_mk=False)
+    claims_owner = iam.claims_cua(owner)
+    iam.tao_tai_khoan(conn, claims_owner, "quanly", "test123", "Kinh doanh", 4,
+                      phai_doi_mk=False)
+    iam.sua_tai_khoan(conn, claims_owner, "quanly", admin_uy_quyen=True)
+    iam.tao_tai_khoan(conn, claims_owner, "nhanvien", "test123",
+                      "Vận hành - Sản xuất", 2, phai_doi_mk=False)
+    print("Đã tạo trong iam.db: owner(L5) / quanly(L4, Admin ủy quyền) / "
+          "nhanvien(L2) — mật khẩu: test123")
 
 
 if __name__ == "__main__":

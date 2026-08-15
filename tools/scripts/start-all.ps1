@@ -24,6 +24,10 @@ $dichVu = @(
     @{ Ten = 'gateway'; Cong = 9000; Exe = $py
        Args = '-m uvicorn nen.gateway.main:app --host 127.0.0.1 --port 9000'
        Wd = $root }
+    @{ Ten = 'caddy-tls'; Cong = 9443
+       Exe = (Join-Path $root 'tools\caddy\caddy.exe')
+       Args = 'run --config "' + (Join-Path $root 'tools\caddy\Caddyfile') + '"'
+       Wd = (Join-Path $root 'tools\caddy') }
 )
 
 foreach ($dv in $dichVu) {

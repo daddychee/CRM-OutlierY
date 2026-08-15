@@ -1,0 +1,16 @@
+# Caddy TLS cho platform v2 — GIAI ĐOẠN TEST: cert tự ký (tls internal).
+# Trình duyệt sẽ hỏi xác nhận 1 lần — chấp nhận được cho test.
+# KHI THAY THẾ THẬT: mua domain + đổi khối này sang tên miền thật (Let's Encrypt
+# DNS-01) theo docs/kien_truc_nen.md — không phải cài cert tay từng máy.
+{
+	local_certs
+}
+
+# Khai TÊN + IP cụ thể (không để trống hostname): client gọi bằng IP không gửi
+# SNI, Caddy cần site address có tên/IP để phát cert internal kèm SAN tương ứng —
+# để trống là handshake fail (dính thật 16/08, curl exit 35).
+# Khi nghiệm thu LAN: thêm https://<IP-LAN>:9443 vào danh sách này.
+https://localhost:9443, https://127.0.0.1:9443 {
+	tls internal
+	reverse_proxy 127.0.0.1:9000
+}

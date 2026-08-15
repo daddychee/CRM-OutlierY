@@ -1,0 +1,23 @@
+{
+  "_ghi_chu": "LUẬT QUYỀN NGOÀI CODE (P2). Hai giỏ quản trị: gio_owner_tuyet_doi = chỉ Owner thật (level 5) — KHÔNG ủy quyền được. gio_uy_quyen = Owner HOẶC tài khoản được bật admin_uy_quyen. Mục apps: điều kiện vào + ánh xạ level→vai gửi sang app (X-Remote-Role). Ô tick lẻ (quyen_override trong iam.db) THẮNG luật mặc định ở đây — trừ giỏ Owner tuyệt đối, không gì đè được.",
+  "gio_owner_tuyet_doi": [
+    "vault",
+    "ket_cau_hinh",
+    "bang_phan_quyen",
+    "xoa_cung_tai_lieu"
+  ],
+  "gio_uy_quyen": [
+    "quan_tai_khoan",
+    "duyet_ho_so",
+    "nap_tai_lieu",
+    "duyet_qa",
+    "giam_sat"
+  ],
+  "apps": {
+    "app-mau": {
+      "vao": { "min_level": 1 },
+      "vai": { "5": "owner", "4": "manager", "3": "leader", "mac_dinh": "viewer" }
+    }
+  },
+  "vai_mac_dinh": { "5": "owner", "4": "manager", "3": "leader", "mac_dinh": "viewer" }
+}
