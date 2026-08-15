@@ -28,3 +28,6 @@ tools/caddy/caddy.exe
 # Editor
 .vscode/
 .qdrant-initialized
+
+# Du lieu mau la bao cao THAT cua cong ty - o dia cho test, khong vao git
+apps/*/tests/du-lieu-mau/
