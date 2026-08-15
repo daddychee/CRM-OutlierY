@@ -1,5 +1,18 @@
 {
   "_ghi_chu": "HỢP ĐỒNG APP — mỗi app tự khai với tầng nền (khuôn manifest Odoo/Nextcloud). Thêm app = thêm mục ở đây + ghi cổng vào docs/PORTS.md TRƯỚC. Mục du_lieu: mọi store phải có danh phận (xem docs/SO_DIA_BA_DU_LIEU.md) — store không khai = không được backup.",
+  "du_lieu_nen": [
+    {"ten": "iam-db", "loai": "sqlite", "duong": "data/nen/iam.db",
+     "muc_quy": "vang", "backup": "sqlite-snapshot", "giu": "vinh-vien"},
+    {"ten": "ket-db", "loai": "sqlite", "duong": "data/nen/ket.db",
+     "muc_quy": "vang", "backup": "sqlite-snapshot", "giu": "vinh-vien"},
+    {"ten": "ket-khoa", "loai": "file-khoa", "duong": "data/nen/ket.key",
+     "muc_quy": "vang", "backup": "copy", "giu": "vinh-vien"},
+    {"ten": "logs", "loai": "kho-file", "duong": "data/logs",
+     "muc_quy": "bac", "backup": "copy", "giu": "60-ngay"},
+    {"ten": "qdrant", "loai": "qdrant", "duong": "data/qdrant/storage/snapshots",
+     "url": "http://127.0.0.1:6343", "muc_quy": "vang",
+     "backup": "api-snapshot", "giu": "7-ban"}
+  ],
   "apps": [
     {
       "slug": "app-mau",
