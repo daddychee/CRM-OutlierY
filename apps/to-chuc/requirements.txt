@@ -1,0 +1,12 @@
+# App to-chuc — phụ thuộc RIÊNG của app (Luật 2: app tự đủ).
+# Giai đoạn test dùng venv chung ở ROOT; khi tách venv riêng thì cài từ file này.
+fastapi
+uvicorn[standard]
+httpx
+jinja2
+python-multipart
+cryptography
+# bcrypt: KHÔNG phải của app này — là dep của nen/iam (app chỉ đọc IAM khoan dung,
+# thiếu nen vẫn tự đứng); ghi ở đây để venv riêng chạy được cả đường đọc IAM.
+bcrypt
+pytest

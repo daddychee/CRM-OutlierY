@@ -1,0 +1,680 @@
+{% extends "base.html" %}
+{% block title %}Kho tài liệu — OUTLIERY{% endblock %}
+{% block topbar_ten %}Kho tài liệu{% endblock %}
+
+{% block style_them %}
+  .kt-h{font-size:1.25rem;margin:0 0 .3rem;display:flex;align-items:center;gap:.5rem}
+  .kt-h svg.ic{width:20px;height:20px}
+  .kt-canhbao{display:flex;align-items:flex-start;gap:.5rem}
+  .kt-canhbao svg.ic{width:16px;height:16px;flex:0 0 auto;margin-top:.15rem}
+  .kt-tab{display:inline-flex;align-items:center;gap:6px}
+  .kt-tab svg.ic{width:15px;height:15px}
+  .kt-dau svg.ic{width:17px;height:17px;flex:0 0 auto}
+  .nut svg.ic{width:15px;height:15px}
+  .kt-note{margin:.5rem 0 1rem;padding:.55rem .8rem;border-radius:9px;background:var(--chip);border:1px solid var(--chip-line);font-size:.88rem;color:var(--muted)}
+  .kt-note b{color:var(--ink)}
+  .kt-wrap{overflow-x:auto}
+  table.kt{width:100%;border-collapse:collapse;margin-top:.6rem;font-size:.9rem;min-width:860px}
+  .kt th,.kt td{text-align:left;padding:.5rem .55rem;border-bottom:1px solid var(--line);vertical-align:top}
+  .kt th{color:var(--muted);font-size:.78rem;white-space:nowrap}
+  .kt tbody tr{cursor:pointer}
+  .kt tbody tr:hover{background:var(--chip)}
+  .kt .ma{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.82rem;color:var(--accent);white-space:nowrap}
+  .kt .tt{font-weight:600}
+  .kt td.num{text-align:center;white-space:nowrap}
+  .badge{display:inline-block;font-size:.78rem;padding:.05rem .5rem;border-radius:999px;white-space:nowrap}
+  .badge.con{background:var(--th-1c2a20);color:var(--th-93a89a)}
+  .badge.het{background:var(--th-33201b);color:var(--th-d97c6c)}
+  .badge.khac{background:var(--chip);color:var(--muted);border:1px solid var(--chip-line)}
+  tr.het td{opacity:.6}
+  tr.het td.tt{text-decoration:line-through}
+  tr.kt-qa td.tt{padding-left:1.7rem;font-weight:500}
+  .qa-nhan{display:inline-block;font-size:.72rem;color:var(--accent);background:var(--chip);
+    border:1px solid var(--chip-line);border-radius:999px;padding:.02rem .45rem;margin-right:.35rem;white-space:nowrap}
+  .kt-trong{margin-top:1.5rem;color:var(--muted)}
+  /* Tab công ty / nguồn ngoài + ô tìm kiếm (31/07/2026) */
+  .kt-thanh{display:flex;gap:.8rem;align-items:center;flex-wrap:wrap;margin-top:.8rem}
+  .kt-tabs{display:flex;gap:6px}
+  .kt-tab{padding:.45rem .9rem;border-radius:9px;font-size:.88rem;font-weight:600;cursor:pointer;
+    border:1px solid transparent;background:none;color:var(--muted);font-family:inherit}
+  .kt-tab.active{background:var(--th-182233);border-color:var(--chip-line);color:var(--ink)}
+  .kt-tab:not(.active):hover{background:var(--th-182233)}
+  .kt-tim{flex:1;min-width:220px;max-width:360px;display:flex;align-items:center;gap:8px;
+    padding:.45rem .7rem;border:1px solid var(--chip-line);border-radius:9px;background:var(--chip)}
+  .kt-tim input{border:0;outline:0;background:transparent;flex:1;font-size:.88rem;color:var(--ink);font-family:inherit}
+  .kt th.sapxep{cursor:pointer;user-select:none}
+  .kt th.sapxep:hover{color:var(--ink)}
+  .kt th.sx-tang::after{content:' ▲';font-size:.7rem}
+  .kt th.sx-giam::after{content:' ▼';font-size:.7rem}
+  .nguon-nhan{display:inline-block;font-size:.72rem;color:var(--accent);background:var(--chip);
+    border:1px solid var(--chip-line);border-radius:999px;padding:.02rem .45rem;margin-right:.35rem;white-space:nowrap}
+  /* Popup xem/sửa chi tiết */
+  .kt-modal{position:fixed;inset:0;z-index:100;background:rgba(30,26,22,.42);display:flex;align-items:center;justify-content:center;padding:20px}
+  .kt-hop{background:var(--th-182233);border-radius:16px;max-width:600px;width:100%;max-height:88vh;overflow-y:auto;box-shadow:0 18px 50px rgba(0,0,0,.28);padding:1rem 1.2rem 1.2rem}
+  .kt-dau{display:flex;align-items:center;gap:.6rem;border-bottom:1px solid var(--line);padding-bottom:.6rem;margin-bottom:.7rem}
+  .kt-dau .tieu{font-weight:700;font-size:1.02rem;flex:1;min-width:0}
+  .kt-x{border:0;background:none;font-size:1.1rem;cursor:pointer;color:var(--muted);padding:.2rem .45rem;border-radius:8px;line-height:1}
+  .kt-x:hover{background:var(--chip);color:var(--ink)}
+  dl.kt-dl{display:grid;grid-template-columns:150px 1fr;gap:.35rem .8rem;margin:0;font-size:.9rem}
+  dl.kt-dl dt{color:var(--muted);font-size:.82rem}
+  dl.kt-dl dd{margin:0;word-break:break-word}
+  .kt-chan{display:flex;gap:.5rem;justify-content:flex-end;margin-top:1rem;border-top:1px solid var(--line);padding-top:.7rem}
+  .nut{padding:.5rem 1rem;border:0;border-radius:9px;background:var(--accent);color:var(--th-182233);font-size:.92rem;font-weight:600;cursor:pointer;font-family:inherit}
+  .nut.phu{background:var(--chip);color:var(--ink);border:1px solid var(--chip-line)}
+  .kt-sua label{display:block;font-size:.82rem;color:var(--muted);margin:.6rem 0 0}
+  .kt-sua input,.kt-sua select{width:100%;font-size:.92rem;padding:.5rem .6rem;border:1px solid var(--line);border-radius:9px;font-family:inherit;color:var(--ink);margin-top:.2rem;box-sizing:border-box;background:var(--bg)}
+  .kt-ro{font-size:.9rem;margin:.2rem 0 .3rem}
+  .kt-ro b{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--accent)}
+  .kt-ro-note{font-size:.8rem;color:var(--muted);margin-top:.8rem;padding:.5rem .7rem;background:var(--chip);border-radius:9px}
+  .kt-canhbao{font-size:.85rem;margin:.3rem 0 .2rem;padding:.55rem .75rem;background:var(--th-33201b);color:var(--th-d97c6c);border:1px solid var(--th-5c3a30);border-radius:9px}
+  .kt-canhbao b{color:#3f6ea3}
+  .nut.nguy{background:var(--th-d97c6c)}
+  .nut:disabled{opacity:.5;cursor:not-allowed}
+  .kt-details{margin-top:1rem;border-top:1px dashed var(--line);padding-top:.6rem}
+  .kt-details summary{cursor:pointer;font-size:.86rem;color:var(--th-d97c6c);font-weight:600}
+  /* Tài liệu liên quan (07/08 — bản rẻ, vector similarity) */
+  .lq-ds{display:flex;flex-wrap:wrap;gap:.35rem}
+  .lq-chip{border:1px solid var(--chip-line);background:var(--chip);color:var(--accent);
+    border-radius:999px;padding:.15rem .65rem;font-size:.82rem;cursor:pointer;font-family:inherit}
+  .lq-chip:hover{background:var(--th-182233);border-color:var(--accent)}
+  /* Tag input từ khóa trong popup (06/08 — cùng khuôn trang Nhập tài liệu) */
+  #f-chips{display:flex;flex-wrap:wrap;gap:.35rem;margin-top:.3rem}
+  #f-chips .chip{background:var(--chip);border:1px solid var(--chip-line);color:var(--accent);border-radius:999px;padding:.15rem .3rem .15rem .6rem;font-size:.85rem;display:inline-flex;align-items:center;gap:.2rem}
+  #f-chips .chip button{width:auto;margin:0;padding:0 .3rem;background:none;border:0;color:var(--accent);font-size:1rem;cursor:pointer}
+  #f-tk-khung{position:relative}
+  #f-tk-goi-y{position:absolute;left:0;right:0;top:100%;background:var(--th-182233);border:1px solid var(--chip-line);border-radius:9px;box-shadow:0 4px 12px rgba(0,0,0,.12);display:none;z-index:120;max-height:180px;overflow-y:auto}
+  #f-tk-goi-y div{padding:.4rem .6rem;cursor:pointer;font-size:.88rem}
+  #f-tk-goi-y div:hover{background:var(--chip)}
+
+  /* Token 2 theme của trang (đổ chung vào <style> base) */
+  :root{--th-182233:#182233;--th-1c2a20:#1c2a20;--th-33201b:#33201b;--th-5c3a30:#5c3a30;--th-93a89a:#93a89a;--th-d97c6c:#d97c6c}
+  :root[data-theme="light"]{--th-182233:#f5f5f5;--th-1c2a20:#e7f2e9;--th-33201b:#fbeae6;--th-5c3a30:#e5b6aa;--th-93a89a:#4e5c52;--th-d97c6c:#b14a3c}
+{% endblock %}
+
+{% block noi_dung %}
+<h2 class="kt-h"><svg class="ic" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg> Kho tài liệu</h2>
+{% if canh_bao_kho %}
+<div class="kt-canhbao" style="margin:.6rem 0"><svg class="ic" viewBox="0 0 24 24"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> {{ canh_bao_kho }}</div>
+{% endif %}
+{% if is_owner %}
+<div class="kt-note">Chế độ Owner: đang xem <b>toàn bộ kho</b> — {{ tai_lieu|length }} tài liệu. Bấm một dòng để xem chi tiết / sửa thông tin hiển thị.</div>
+{% else %}
+<div class="kt-note">Chỉ hiển thị tài liệu bạn được phép truy cập — <b>{{ tai_lieu|length }}</b> tài liệu. Bấm một dòng để xem chi tiết (chỉ đọc).</div>
+{% endif %}
+
+{% if not tai_lieu %}
+<p class="kt-trong">Chưa có tài liệu nào trong phạm vi bạn được xem.</p>
+{% else %}
+<!-- Tab tầng nguồn + tìm kiếm (yêu cầu user 31/07/2026). Lọc/sắp xếp phía trình duyệt —
+     dữ liệu đã lọc RBAC ở server rồi nên đây thuần là việc HIỂN THỊ. -->
+<div class="kt-thanh">
+  <div class="kt-tabs">
+    <button type="button" class="kt-tab active" data-tang="cty"><svg class="ic" viewBox="0 0 24 24"><path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 21v-6h6v6"/></svg> Tài liệu công ty (<span id="dem-cty">0</span>)</button>
+    <button type="button" class="kt-tab" data-tang="ngoai"><svg class="ic" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><path d="M12 2a15 15 0 0 0 0 20M12 2a15 15 0 0 1 0 20M2 12h20"/></svg> Tham khảo nguồn ngoài (<span id="dem-ngoai">0</span>)</button>
+  </div>
+  <div class="kt-tim">
+    <svg class="ic" style="width:14px;height:14px" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+    <input id="kt-tim" placeholder="Tìm tiêu đề, mã, từ khóa, phụ trách…" autocomplete="off">
+  </div>
+</div>
+<div class="kt-wrap">
+<table class="kt">
+  <thead><tr>
+    <th class="sapxep" data-col="0" title="Bấm để sắp xếp">Tiêu đề</th>
+    <th class="sapxep" data-col="1" title="Bấm để sắp xếp">Mã tài liệu</th>
+    <th class="sapxep" data-col="2" title="Bấm để sắp xếp">Bộ phận</th>
+    <th class="sapxep" data-col="3" title="Bấm để sắp xếp">Loại tài liệu</th>
+    <th class="sapxep" data-col="4" title="Bấm để sắp xếp">Hiệu lực</th>
+    <th class="sapxep" data-col="5" title="Bấm để sắp xếp">Mức truy cập</th>
+    <th class="num sapxep" data-col="6" data-so="1" title="Bấm để sắp xếp">Level tối thiểu</th>
+    <th class="num sapxep" data-col="7" title="Bấm để sắp xếp">Phiên bản</th>
+    <th class="sapxep" data-col="8" title="Bấm để sắp xếp">Phụ trách</th>
+    <th class="sapxep" data-col="9" title="Bấm để sắp xếp">Ngày nhập</th>
+  </tr></thead>
+  <tbody>
+  {% for d in tai_lieu %}
+  {% set het = d['Hiệu lực'] == 'Hết hiệu lực' %}
+  {% set ngoai = d['Tầng nguồn'] in ['chuyen_gia', 'ngoai'] %}
+  <tr class="{% if het %}het{% endif %}{% if d.la_qa or d.la_pt %} kt-qa{% endif %}" data-i="{{ loop.index0 }}"
+      data-tang="{{ 'ngoai' if ngoai else 'cty' }}">
+    <td class="tt">{% if d.la_qa %}<span class="qa-nhan">↳ Q&A bổ sung</span>{% endif %}{% if d.la_pt %}<span class="qa-nhan">↳ Bài học kinh nghiệm</span>{% endif %}{% if ngoai and d['Tên nguồn'] and not d.la_pt %}<span class="nguon-nhan">{{ d['Tên nguồn'] }}</span>{% endif %}{{ d['Tiêu đề'] }}</td>
+    <td class="ma">{{ d['Mã tài liệu'] }}</td>
+    <td>{{ d['Bộ phận'] }}</td>
+    <td>{{ d['Loại tài liệu'] }}</td>
+    <td><span class="badge {% if het %}het{% elif d['Hiệu lực'] == 'Còn hiệu lực' %}con{% else %}khac{% endif %}">{{ d['Hiệu lực'] or '—' }}</span></td>
+    <td>{{ d['Mức truy cập'] }}</td>
+    <td class="num">{{ d['Level tối thiểu'] or '—' }}</td>
+    <td class="num">{{ d['Phiên bản'] or '—' }}</td>
+    <td>{{ d['Phụ trách'] or '—' }}</td>
+    <td>{{ d['Ngày nhập'] }}</td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+<p class="kt-trong" id="kt-trong-loc" style="display:none">Không có tài liệu nào khớp trong tab này.</p>
+
+<!-- POPUP xem chi tiết (chỉ đọc) + sửa metadata an toàn (chỉ Owner) -->
+<div id="kt-modal" class="kt-modal" style="display:none">
+  <div class="kt-hop" role="dialog" aria-modal="true" aria-labelledby="kt-tieu">
+    <div class="kt-dau">
+      <svg class="ic" viewBox="0 0 24 24"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
+      <span id="kt-tieu" class="tieu">Chi tiết tài liệu</span>
+      <button type="button" class="kt-x" id="kt-dong" aria-label="Đóng">✕</button>
+    </div>
+
+    <!-- CHẾ ĐỘ XEM (chỉ đọc, KHÔNG ô nhập) -->
+    <div id="kt-xem">
+      <dl class="kt-dl" id="kt-dl"></dl>
+      <div class="kt-chan">
+        <button type="button" class="nut phu" id="kt-nut-doc"><svg class="ic" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> Xem nội dung</button>
+        {% if is_owner %}<button type="button" class="nut phu" id="kt-nut-noidung"><svg class="ic" viewBox="0 0 24 24"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg> Cập nhật nội dung</button>
+        <button type="button" class="nut" id="kt-nut-sua"><svg class="ic" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Sửa thông tin</button>
+        <button type="button" class="nut phu" id="kt-nut-quyen"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Sửa quyền</button>
+        <button type="button" class="nut phu" id="kt-nut-xoa"><svg class="ic" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg> Xóa</button>{% endif %}
+        <button type="button" class="nut phu kt-close">Đóng</button>
+      </div>
+    </div>
+
+    <!-- CHẾ ĐỘ ĐỌC NỘI DUNG (06/08 — mọi người, RBAC ở server /kho-tai-lieu/xem) -->
+    <div id="kt-doc" style="display:none">
+      <div id="kt-doc-tb" class="kt-ro-note" style="display:none"></div>
+      <div id="kt-doc-noi" style="display:none;white-space:pre-wrap;font-size:.9rem;border:1px solid var(--line);border-radius:9px;padding:.8rem 1rem;max-height:55vh;overflow:auto;margin-top:.5rem;background:var(--bg)"></div>
+      <div class="kt-chan">
+        <a id="kt-doc-tai" class="nut phu" style="display:none;text-decoration:none"><svg class="ic" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg> Tải bản gốc</a>
+        <button type="button" class="nut phu" id="kt-doc-dan-chung"><svg class="ic" viewBox="0 0 24 24"><path d="M21.44 11.05 12.25 20.24a5.5 5.5 0 0 1-7.78-7.78l9.2-9.19a3.5 3.5 0 0 1 4.95 4.95L9.41 17.41a1.5 1.5 0 0 1-2.12-2.12l7.78-7.79"/></svg> Dẫn chứng</button>
+        <button type="button" class="nut phu" id="kt-doc-quaylai">← Quay lại</button>
+      </div>
+    </div>
+
+    {% if is_owner %}
+    <!-- CHẾ ĐỘ SỬA (chỉ Owner) — chỉ các trường AN TOÀN, mã bất biến hiện chỉ-đọc -->
+    <form id="kt-sua" class="kt-sua" method="post" action="/kho-tai-lieu/sua" style="display:none">
+      <div class="kt-ro">Mã tài liệu (bất biến, không đổi): <b id="kt-sua-ma-hien"></b></div>
+      <input type="hidden" name="doc_code" id="kt-sua-ma">
+      <label>Tiêu đề <input name="title" id="f-title" maxlength="300" required></label>
+      <label>Loại tài liệu <input name="doc_type" id="f-doc_type" maxlength="120"></label>
+      <label>Phiên bản <input name="version" id="f-version" maxlength="40"></label>
+      <label>Chủ đề/Từ khóa</label>
+      <!-- Tag input như trang Nhập tài liệu (Ý 2): mỗi từ khóa một chip, Enter thêm từ,
+           × gỡ từ; submit vẫn gửi chuỗi "a, b" qua input ẩn name=keywords — backend không đổi -->
+      <input type="hidden" name="keywords" id="f-keywords">
+      <div id="f-chips"></div>
+      <div id="f-tk-khung">
+        <input id="f-tk-nhap" placeholder="Bấm để thấy từ khóa có sẵn — gõ để lọc, Enter thêm từ mới"
+               autocomplete="off" maxlength="120">
+        <div id="f-tk-goi-y"></div>
+      </div>
+      <label>Phụ trách <input name="owner" id="f-owner" maxlength="120"></label>
+      <div class="kt-ro-note">Bộ phận, mức truy cập, level, hiệu lực và nội dung file — chưa sửa ở bước này (cần đồng bộ Qdrant, để bước sau).</div>
+      <div class="kt-chan">
+        <button type="submit" class="nut"><svg class="ic" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Lưu</button>
+        <button type="button" class="nut phu" id="kt-huy">Hủy</button>
+      </div>
+    </form>
+
+    <!-- CHẾ ĐỘ CẬP NHẬT NỘI DUNG (chỉ Owner) — nạp file mới, thay nội dung, giữ lịch sử bản cũ -->
+    <form id="kt-noidung" class="kt-sua" style="display:none" enctype="multipart/form-data">
+      <div class="kt-ro">Cập nhật nội dung: <b id="kt-nd-ma"></b></div>
+      <div class="kt-ro-note">Thao tác này <b>thay nội dung</b> tài liệu bằng file mới. File cũ được
+        <b>lưu vào kho lưu trữ (99_Luu-tru), KHÔNG bị xóa</b>. Nội dung mới sẽ được nạp lại vào hệ
+        thống tìm kiếm và <b>phiên bản sẽ tăng</b> (vd v1 → v2). Mã tài liệu giữ nguyên.</div>
+      <label>Chọn file mới <input type="file" id="kt-nd-file" accept=".pdf,.docx,.xlsx,.xls,.csv,.txt,.md" required></label>
+      <div id="kt-nd-tb" style="display:none;margin-top:.6rem;font-size:.9rem"></div>
+      <div class="kt-chan">
+        <button type="submit" class="nut" id="kt-nd-luu">Cập nhật nội dung</button>
+        <button type="button" class="nut phu" id="kt-nd-huy">Hủy</button>
+      </div>
+    </form>
+
+    <!-- CHẾ ĐỘ SỬA QUYỀN (NGUY HIỂM) — đổi ai được thấy tài liệu, đồng bộ payload Qdrant -->
+    <form id="kt-quyen" class="kt-sua" style="display:none">
+      <div class="kt-ro">Sửa QUYỀN tài liệu: <b id="kt-q-ma"></b></div>
+      <div class="kt-canhbao"><svg class="ic" viewBox="0 0 24 24"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Các trường này thay đổi <b>AI ĐƯỢC THẤY</b> tài liệu — sẽ được
+        <b>đồng bộ vào hệ thống tìm kiếm (Qdrant)</b>, có kiểm chứng sau đồng bộ. Khác với "Sửa thông
+        tin" (chỉ đổi hiển thị). Nội dung file KHÔNG đụng.</div>
+      <label>Bộ phận <select id="q-department">{% for v in departments %}<option>{{ v }}</option>{% endfor %}</select></label>
+      <label>Mức truy cập <select id="q-access_level">{% for v in access_levels %}<option>{{ v }}</option>{% endfor %}</select></label>
+      <label>Hiệu lực <select id="q-effective_status">{% for v in effective_statuses %}<option>{{ v }}</option>{% endfor %}</select></label>
+      <label>Level tối thiểu <select id="q-min_level">{% for lv, ten in min_levels %}<option value="{{ lv }}">{{ lv }} — {{ ten }}</option>{% endfor %}</select></label>
+      <div id="kt-q-tb" style="display:none;margin-top:.6rem;font-size:.9rem"></div>
+      <div class="kt-chan">
+        <button type="submit" class="nut nguy" id="kt-q-luu">Lưu &amp; đồng bộ tìm kiếm</button>
+        <button type="button" class="nut phu" id="kt-q-huy">Hủy</button>
+      </div>
+    </form>
+
+    <!-- CHẾ ĐỘ XÓA — ưu tiên GỠ MỀM; xóa cứng là đường riêng, xác nhận 2 lớp -->
+    <div id="kt-xoa" class="kt-sua" style="display:none">
+      <div class="kt-ro">Xóa tài liệu: <b id="kt-xoa-ma"></b></div>
+      <div class="kt-ro-note"><b>Gỡ mềm (khuyên dùng)</b>: đổi hiệu lực → "Hết hiệu lực". Hỏi-đáp
+        NGỪNG dùng tài liệu này, nhưng <b>dữ liệu vẫn còn</b> và khôi phục được (đổi lại hiệu lực). An toàn.</div>
+      <div class="kt-chan" style="justify-content:flex-start">
+        <button type="button" class="nut" id="kt-gomem">Gỡ mềm (an toàn)</button>
+        <button type="button" class="nut phu" id="kt-xoa-huy">Hủy</button>
+      </div>
+      <div id="kt-gomem-tb" style="display:none;margin-top:.4rem;font-size:.9rem"></div>
+
+      <details class="kt-details">
+        <summary><svg class="ic" viewBox="0 0 24 24" style="width:14px;height:14px;vertical-align:-2px"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Xóa cứng (vĩnh viễn, KHÔNG hoàn tác)</summary>
+        <div class="kt-canhbao">Xóa cứng gỡ tài liệu khỏi <b>kho + hệ thống tìm kiếm</b>. <b>KHÔNG hoàn
+          tác.</b> File được chuyển vào 99_Luu-tru để còn đường cứu, nhưng biến mất khỏi kho tra cứu.</div>
+        <label>Gõ lại ĐÚNG mã tài liệu để xác nhận
+          <input id="kt-xoa-nhap" placeholder="Nhập mã tài liệu" autocomplete="off"></label>
+        <label style="display:flex;gap:.5rem;align-items:center;margin-top:.5rem;color:var(--ink);font-size:.86rem">
+          <input type="checkbox" id="kt-xoa-tich" style="width:auto"> Tôi hiểu thao tác này KHÔNG hoàn tác.</label>
+        <div id="kt-xoa-tb" style="display:none;margin-top:.6rem;font-size:.9rem"></div>
+        <div class="kt-chan" style="justify-content:flex-start">
+          <button type="button" class="nut nguy" id="kt-xoacung" disabled>Xóa vĩnh viễn</button>
+        </div>
+      </details>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block script %}
+<script>
+const KT_DOCS = {{ tai_lieu|tojson }};   // đã lọc RBAC ở server — chỉ chứa tài liệu được phép
+const KT_XEM = [
+  ['Mã tài liệu','Mã tài liệu'], ['Tiêu đề','Tiêu đề'], ['Bộ phận','Bộ phận'],
+  ['Loại tài liệu','Loại tài liệu'], ['Hiệu lực','Hiệu lực'], ['Phiên bản','Phiên bản'],
+  ['Mức truy cập','Mức truy cập'], ['Level tối thiểu','Level tối thiểu'],
+  ['Chủ đề/Từ khóa','Chủ đề/Từ khóa'], ['Phụ trách','Phụ trách'],
+  ['Tầng nguồn','Tầng nguồn'], ['Tên nguồn','Tên nguồn'],
+  ['Tên file','Tên file mới'], ['Ngăn','Ngăn'], ['Ngày nhập','Ngày nhập'],
+];
+// nhãn tiếng Việt cho giá trị tầng nguồn trong popup (giá trị lưu là mã máy)
+const TANG_NHAN = { noi_bo: 'Nội bộ công ty', chuyen_gia: 'Chuyên gia', ngoai: 'Nguồn ngoài' };
+const KT_BY_MA = {};   // mã → index trong KT_DOCS, để bấm chip "liên quan" nhảy sang tài liệu đó
+KT_DOCS.forEach((d, i) => { KT_BY_MA[d['Mã tài liệu']] = i; });
+const modal = document.getElementById('kt-modal');
+const elXem = document.getElementById('kt-xem');
+const elSua = document.getElementById('kt-sua');     // null nếu không phải Owner
+const elND = document.getElementById('kt-noidung');  // form cập nhật nội dung (Owner)
+const elQ = document.getElementById('kt-quyen');      // form sửa quyền nguy hiểm (Owner)
+const elXoa = document.getElementById('kt-xoa');      // khu xóa: gỡ mềm / xóa cứng (Owner)
+const dl = document.getElementById('kt-dl');
+
+function moPopup(d) {
+  // luôn mở ở CHẾ ĐỘ XEM (tách bạch xem/sửa — không gõ nhầm khi chỉ định xem)
+  dl.textContent = '';
+  for (const [nhan, key] of KT_XEM) {
+    const dt = document.createElement('dt'); dt.textContent = nhan;
+    const dd = document.createElement('dd');
+    let v = d[key] || '—';
+    if (key === 'Tầng nguồn') v = TANG_NHAN[d[key]] || TANG_NHAN.noi_bo;  // rỗng = nội bộ (mặc định)
+    dd.textContent = v;
+    dl.append(dt, dd);
+  }
+  // TÀI LIỆU LIÊN QUAN (07/08, bản rẻ — vector similarity, server đã lọc RBAC): không có
+  // gì thì KHÔNG hiện dòng (không bịa quan hệ rỗng). Bấm chip → nhảy sang popup tài liệu đó.
+  if ((d.lien_quan || []).length) {
+    const dt = document.createElement('dt'); dt.textContent = 'Tài liệu liên quan';
+    const dd = document.createElement('dd');
+    const box = document.createElement('div'); box.className = 'lq-ds';
+    d.lien_quan.forEach(lq => {
+      const c = document.createElement('button');
+      c.type = 'button'; c.className = 'lq-chip'; c.textContent = lq.tieu_de;
+      c.title = lq.ma;
+      c.addEventListener('click', () => {
+        const idx = KT_BY_MA[lq.ma];
+        if (idx !== undefined) moPopup(KT_DOCS[idx]);
+      });
+      box.appendChild(c);
+    });
+    dd.appendChild(box);
+    dl.append(dt, dd);
+  }
+  document.getElementById('kt-tieu').textContent = d['Tiêu đề'] || d['Mã tài liệu'] || 'Tài liệu';
+  elXem.style.display = 'block';
+  if (elSua) {   // nạp sẵn giá trị cũ vào form sửa (Owner)
+    elSua.style.display = 'none';
+    document.getElementById('kt-sua-ma').value = d['Mã tài liệu'] || '';
+    document.getElementById('kt-sua-ma-hien').textContent = d['Mã tài liệu'] || '';
+    document.getElementById('f-title').value = d['Tiêu đề'] || '';
+    document.getElementById('f-doc_type').value = d['Loại tài liệu'] || '';
+    document.getElementById('f-version').value = d['Phiên bản'] || '';
+    document.getElementById('f-keywords').value = d['Chủ đề/Từ khóa'] || '';
+    document.getElementById('f-owner').value = d['Phụ trách'] || '';
+  }
+  if (elND) {    // reset form cập nhật nội dung (Owner)
+    elND.style.display = 'none';
+    _ndMa = d['Mã tài liệu'] || '';
+    document.getElementById('kt-nd-ma').textContent = _ndMa;
+    document.getElementById('kt-nd-file').value = '';
+    document.getElementById('kt-nd-tb').style.display = 'none';
+  }
+  if (elQ) {     // nạp sẵn giá trị quyền hiện tại vào dropdown (Owner)
+    elQ.style.display = 'none';
+    _qMa = d['Mã tài liệu'] || '';
+    document.getElementById('kt-q-ma').textContent = _qMa;
+    document.getElementById('q-department').value = d['Bộ phận'] || '';
+    document.getElementById('q-access_level').value = d['Mức truy cập'] || '';
+    document.getElementById('q-effective_status').value = d['Hiệu lực'] || '';
+    document.getElementById('q-min_level').value = (d['Level tối thiểu'] || '').toString();
+    document.getElementById('kt-q-tb').style.display = 'none';
+  }
+  if (elXoa) {   // reset khu xóa (Owner)
+    elXoa.style.display = 'none';
+    _xoaMa = d['Mã tài liệu'] || '';
+    document.getElementById('kt-xoa-ma').textContent = _xoaMa;
+    document.getElementById('kt-xoa-nhap').value = '';
+    document.getElementById('kt-xoa-tich').checked = false;
+    document.getElementById('kt-xoacung').disabled = true;
+    document.getElementById('kt-xoa-tb').style.display = 'none';
+    document.getElementById('kt-gomem-tb').style.display = 'none';
+    const dt = elXoa.querySelector('details'); if (dt) dt.open = false;
+  }
+  _maDangMo = d['Mã tài liệu'] || '';
+  elDoc.style.display = 'none';   // khu đọc nội dung reset mỗi lần mở
+  modal.style.display = 'flex';
+}
+let _ndMa = '', _qMa = '', _xoaMa = '', _maDangMo = '';
+const elDoc = document.getElementById('kt-doc');
+function dongPopup() { modal.style.display = 'none'; }
+
+// 📖 XEM NỘI DUNG trực tiếp (06/08): mọi người bấm được — server kiểm RBAC, từ chối 404
+// lặng lẽ. File chữ (.md/.txt/.csv/.html) hiện thẳng trong hộp; file .docx/.pdf/.xlsx
+// không đọc thẳng được → chỉ sang nút tải bản gốc (route /tai-ban-goc RBAC sẵn).
+async function docNoiDungTaiLieu(phan) {
+  const tb = document.getElementById('kt-doc-tb');
+  const noi = document.getElementById('kt-doc-noi');
+  const tai = document.getElementById('kt-doc-tai');
+  elXem.style.display = 'none'; elDoc.style.display = 'block';
+  noi.style.display = 'none'; tai.style.display = 'none';
+  tb.style.display = 'block'; tb.textContent = 'Đang đọc nội dung…';
+  try {
+    const res = await fetch('/kho-tai-lieu/xem/' + encodeURIComponent(_maDangMo) +
+                            (phan ? '?phan=' + phan : ''));
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || 'Không đọc được tài liệu');
+    if (data.noi_dung === null) {   // file nhị phân — không hiện thẳng được
+      tb.textContent = 'File dạng ' + (data.duoi || '') + ' không xem thẳng trong hộp được — tải bản gốc để mở.';
+      tai.href = '/tai-ban-goc/' + encodeURIComponent(_maDangMo);
+      tai.style.display = 'inline-block';
+    } else {
+      tb.style.display = 'none';
+      noi.textContent = data.noi_dung;
+      noi.style.display = 'block';
+    }
+  } catch (err) {
+    tb.textContent = err.message;
+  }
+}
+document.getElementById('kt-nut-doc').addEventListener('click', () => docNoiDungTaiLieu(''));
+// Phụ lục dẫn chứng đính kèm (kiến trúc 1-tài-liệu 06/08) — không có → báo nhẹ, không vỡ
+document.getElementById('kt-doc-dan-chung').addEventListener('click', () => docNoiDungTaiLieu('bang-chung'));
+document.getElementById('kt-doc-quaylai').addEventListener('click', () => {
+  elDoc.style.display = 'none'; elXem.style.display = 'block';
+});
+
+document.querySelectorAll('.kt tbody tr').forEach(tr => {
+  tr.addEventListener('click', () => { const d = KT_DOCS[+tr.dataset.i]; if (d) moPopup(d); });
+});
+document.getElementById('kt-dong').addEventListener('click', dongPopup);
+document.querySelectorAll('.kt-close').forEach(b => b.addEventListener('click', dongPopup));
+
+// SỬA BUG 06/08 "popup tự thoát khi chưa cho phép": (a) bôi đen chữ trong ô nhập rồi nhả
+// chuột NGOÀI hộp → trình duyệt phát click trên NỀN (tổ tiên chung) → từng đóng oan mất chữ.
+// Chỉ đóng khi mousedown BẮT ĐẦU trên nền. (b) Đang ở chế độ sửa/xóa (form mở) → nền + Esc
+// KHÔNG đóng nữa — phải bấm ✕ hoặc Hủy có chủ đích.
+function dangSuaDoDang() {
+  return [elSua, elND, elQ, elXoa].some(x => x && x.style.display === 'block');
+}
+let nhanXuongTrenNen = false;
+modal.addEventListener('mousedown', e => { nhanXuongTrenNen = (e.target === modal); });
+modal.addEventListener('click', e => {
+  if (e.target === modal && nhanXuongTrenNen && !dangSuaDoDang()) dongPopup();
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && modal.style.display === 'flex' && !dangSuaDoDang()) dongPopup();
+});
+
+if (elSua) {   // Owner: chuyển xem → sửa và ngược lại (tách bạch rõ)
+  document.getElementById('kt-nut-sua').addEventListener('click', () => {
+    elXem.style.display = 'none'; elSua.style.display = 'block';
+    napChipsTuHidden();                              // dựng chip từ giá trị tài liệu đang mở
+    if (!tuKhoaDaCo.length) napTuKhoa();
+  });
+  document.getElementById('kt-huy').addEventListener('click', () => {
+    elSua.style.display = 'none'; elXem.style.display = 'block';
+  });
+
+  // TAG INPUT TỪ KHÓA (06/08, cùng khuôn trang Nhập tài liệu — Ý 2): mỗi từ khóa MỘT CHIP,
+  // Enter đóng từ đang gõ thành chip, × gỡ; dropdown gợi ý từ khóa ĐÃ CÓ trong kho (lọc
+  // không dấu, ẩn từ đã chọn). Submit gửi chuỗi "a, b" qua input ẩn — backend không đổi.
+  const oKw = document.getElementById('f-keywords');
+  const oChips = document.getElementById('f-chips');
+  const oTkNhap = document.getElementById('f-tk-nhap');
+  const oTkGoiY = document.getElementById('f-tk-goi-y');
+  let tuKhoaDaCo = [];
+  let chips = [];
+  function napTuKhoa() {
+    fetch('/tu-khoa-goi-y').then(r => r.ok ? r.json() : [])
+      .then(d => { tuKhoaDaCo = Array.isArray(d) ? d : []; }).catch(() => {});
+  }
+  function veChips() {
+    oKw.value = chips.join(', ');                    // format backend nhận y như ô text cũ
+    oChips.textContent = '';
+    chips.forEach((tk, i) => {
+      const c = document.createElement('span');
+      c.className = 'chip';
+      c.textContent = tk;
+      const x = document.createElement('button');
+      x.type = 'button';
+      x.textContent = '×';
+      x.addEventListener('click', () => { chips.splice(i, 1); veChips(); veTkGoiY(); });
+      c.appendChild(x);
+      oChips.appendChild(c);
+    });
+  }
+  function napChipsTuHidden() {
+    chips = (oKw.value || '').split(/[;,]/).map(t => t.trim()).filter(Boolean);
+    oTkNhap.value = '';
+    veChips();
+  }
+  function themChip(tk) {
+    tk = tk.trim();
+    if (tk && !chips.some(c => c.toLowerCase() === tk.toLowerCase())) { chips.push(tk); veChips(); }
+    oTkNhap.value = '';
+    veTkGoiY();
+  }
+  function veTkGoiY() {
+    const go = boDau(oTkNhap.value.trim());
+    // Ô trống cũng gợi ý: top từ hay dùng (danh sách đã xếp theo tần suất — bài học 31/07)
+    const khop = tuKhoaDaCo.filter(tk =>
+      (!go || boDau(tk).includes(go)) && !chips.some(c => c.toLowerCase() === tk.toLowerCase()));
+    oTkGoiY.textContent = '';
+    khop.slice(0, 8).forEach(tk => {
+      const d = document.createElement('div');
+      d.textContent = tk;
+      // mousedown (trước blur) để click chọn không bị mất dropdown
+      d.addEventListener('mousedown', e => { e.preventDefault(); themChip(tk); });
+      oTkGoiY.appendChild(d);
+    });
+    oTkGoiY.style.display = khop.length ? 'block' : 'none';
+  }
+  oTkNhap.addEventListener('input', veTkGoiY);
+  oTkNhap.addEventListener('focus', () => { if (!tuKhoaDaCo.length) napTuKhoa(); veTkGoiY(); });
+  oTkNhap.addEventListener('blur', () => { oTkGoiY.style.display = 'none'; });
+  oTkNhap.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {             // Enter = đóng từ thành chip — KHÔNG submit form
+      e.preventDefault();
+      themChip(oTkNhap.value);
+    }
+  });
+  // Từ đang gõ dở mà bấm Lưu luôn → vẫn tính (người dùng hay quên Enter từ cuối)
+  elSua.addEventListener('submit', () => { if (oTkNhap.value.trim()) themChip(oTkNhap.value); });
+}
+
+if (elND) {    // Owner: chuyển xem → cập nhật nội dung và ngược lại
+  document.getElementById('kt-nut-noidung').addEventListener('click', () => {
+    elXem.style.display = 'none'; elND.style.display = 'block';
+  });
+  document.getElementById('kt-nd-huy').addEventListener('click', () => {
+    elND.style.display = 'none'; elXem.style.display = 'block';
+  });
+  const tb = document.getElementById('kt-nd-tb');
+  const nutND = document.getElementById('kt-nd-luu');
+  elND.addEventListener('submit', async e => {
+    e.preventDefault();
+    const f = document.getElementById('kt-nd-file').files[0];
+    if (!f) return;
+    nutND.disabled = true; nutND.textContent = 'Đang cập nhật…';
+    tb.style.display = 'block'; tb.style.color = 'var(--muted)';
+    tb.textContent = 'Đang lưu bản cũ, nạp nội dung mới vào tìm kiếm…';
+    try {
+      const fd = new FormData(); fd.append('file', f); fd.append('doc_code', _ndMa);
+      const res = await fetch('/kho-tai-lieu/cap-nhat-noi-dung', { method: 'POST', body: fd });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || 'Lỗi không xác định');
+      tb.style.color = 'var(--th-a9d4b0)';
+      tb.textContent = data.message + ' Đang tải lại…';
+      setTimeout(() => location.reload(), 1400);   // trang phản ánh phiên bản mới
+    } catch (err) {
+      tb.style.color = 'var(--th-d97c6c)';
+      tb.textContent = err.message;
+      nutND.disabled = false; nutND.textContent = 'Cập nhật nội dung';
+    }
+  });
+}
+
+if (elQ) {     // Owner: sửa quyền nguy hiểm — đồng bộ Qdrant, có kiểm chứng
+  document.getElementById('kt-nut-quyen').addEventListener('click', () => {
+    elXem.style.display = 'none'; elQ.style.display = 'block';
+  });
+  document.getElementById('kt-q-huy').addEventListener('click', () => {
+    elQ.style.display = 'none'; elXem.style.display = 'block';
+  });
+  const tbQ = document.getElementById('kt-q-tb');
+  const nutQ = document.getElementById('kt-q-luu');
+  elQ.addEventListener('submit', async e => {
+    e.preventDefault();
+    nutQ.disabled = true; nutQ.textContent = 'Đang đồng bộ…';
+    tbQ.style.display = 'block'; tbQ.style.color = 'var(--muted)';
+    tbQ.textContent = 'Cập nhật payload Qdrant + kiểm chứng…';
+    try {
+      const fd = new FormData();
+      fd.append('doc_code', _qMa);
+      fd.append('department', document.getElementById('q-department').value);
+      fd.append('access_level', document.getElementById('q-access_level').value);
+      fd.append('effective_status', document.getElementById('q-effective_status').value);
+      fd.append('min_level', document.getElementById('q-min_level').value);
+      const res = await fetch('/kho-tai-lieu/sua-quyen', { method: 'POST', body: fd });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || 'Lỗi không xác định');
+      tbQ.style.color = '#a9d4b0';
+      tbQ.textContent = data.message + ' Đang tải lại…';
+      setTimeout(() => location.reload(), 1400);
+    } catch (err) {
+      tbQ.style.color = '#d97c6c';
+      tbQ.textContent = err.message;
+      nutQ.disabled = false; nutQ.textContent = 'Lưu & đồng bộ tìm kiếm';
+    }
+  });
+}
+
+// gửi POST fetch dùng chung cho gỡ mềm / xóa cứng — thành công thì tải lại phản ánh trạng thái mới
+async function _guiXoa(url, fd, tb, nut, nhan) {
+  nut.disabled = true; nut.textContent = 'Đang xử lý…';
+  tb.style.display = 'block'; tb.style.color = 'var(--muted)'; tb.textContent = 'Đang thực hiện…';
+  try {
+    const res = await fetch(url, { method: 'POST', body: fd });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || 'Lỗi không xác định');
+    tb.style.color = 'var(--th-a9d4b0)'; tb.textContent = data.message + ' Đang tải lại…';
+    setTimeout(() => location.reload(), 1600);
+  } catch (err) {
+    tb.style.color = 'var(--th-d97c6c)'; tb.textContent = err.message;
+    nut.disabled = false; nut.textContent = nhan;
+  }
+}
+
+if (elXoa) {   // Owner: xóa — ưu tiên gỡ mềm; xóa cứng xác nhận 2 lớp
+  document.getElementById('kt-nut-xoa').addEventListener('click', () => {
+    elXem.style.display = 'none'; elXoa.style.display = 'block';
+  });
+  document.getElementById('kt-xoa-huy').addEventListener('click', () => {
+    elXoa.style.display = 'none'; elXem.style.display = 'block';
+  });
+  // GỠ MỀM (an toàn)
+  const nutGM = document.getElementById('kt-gomem');
+  nutGM.addEventListener('click', () => {
+    const fd = new FormData(); fd.append('doc_code', _xoaMa);
+    _guiXoa('/kho-tai-lieu/go-mem', fd, document.getElementById('kt-gomem-tb'), nutGM, 'Gỡ mềm (an toàn)');
+  });
+  // XÓA CỨNG — LỚP 1: gõ đúng mã + LỚP 2: tích ô cảnh báo mới bật nút (server còn kiểm lại mã)
+  const oNhap = document.getElementById('kt-xoa-nhap');
+  const oTich = document.getElementById('kt-xoa-tich');
+  const nutXC = document.getElementById('kt-xoacung');
+  const capNhat = () => { nutXC.disabled = !(oNhap.value.trim() === _xoaMa && oTich.checked); };
+  oNhap.addEventListener('input', capNhat);
+  oTich.addEventListener('change', capNhat);
+  nutXC.addEventListener('click', () => {
+    if (nutXC.disabled) return;
+    const fd = new FormData(); fd.append('doc_code', _xoaMa); fd.append('xac_nhan_ma', oNhap.value.trim());
+    _guiXoa('/kho-tai-lieu/xoa-cung', fd, document.getElementById('kt-xoa-tb'), nutXC, 'Xóa vĩnh viễn');
+  });
+}
+
+// ==== Tab công ty / nguồn ngoài + tìm kiếm + sắp xếp (31/07/2026) ====
+// Đơn vị thao tác là NHÓM (tài liệu gốc + các dòng Q&A ngay dưới) — lọc hay sắp xếp
+// đều giữ Q&A dính theo gốc, không bao giờ tách rời.
+const boDau = s => (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '')
+  .replace(/đ/g, 'd').replace(/Đ/g, 'd').toLowerCase();
+const ktBody = document.querySelector('.kt tbody');
+const ktNhom = [];
+ktBody.querySelectorAll('tr').forEach(tr => {
+  if (tr.classList.contains('kt-qa') && ktNhom.length) ktNhom[ktNhom.length - 1].con.push(tr);
+  else ktNhom.push({ dau: tr, con: [] });
+});
+let tangHien = 'cty';
+const oKtTim = document.getElementById('kt-tim');
+
+document.getElementById('dem-cty').textContent = ktNhom.filter(g => g.dau.dataset.tang === 'cty').length;
+document.getElementById('dem-ngoai').textContent = ktNhom.filter(g => g.dau.dataset.tang === 'ngoai').length;
+
+function apLoc() {
+  const q = boDau(oKtTim.value.trim());
+  let thay = 0;
+  ktNhom.forEach(g => {
+    const khop = g.dau.dataset.tang === tangHien &&
+      (!q || boDau(g.dau.textContent).includes(q) || g.con.some(c => boDau(c.textContent).includes(q)));
+    const hien = khop ? '' : 'none';
+    g.dau.style.display = hien;
+    g.con.forEach(c => { c.style.display = hien; });
+    if (khop) thay++;
+  });
+  document.getElementById('kt-trong-loc').style.display = thay ? 'none' : 'block';
+}
+document.querySelectorAll('.kt-tab').forEach(t => t.addEventListener('click', () => {
+  document.querySelectorAll('.kt-tab').forEach(x => x.classList.remove('active'));
+  t.classList.add('active');
+  tangHien = t.dataset.tang;
+  apLoc();
+}));
+oKtTim.addEventListener('input', apLoc);
+
+// Sắp xếp: bấm tiêu đề cột — lần 1 tăng, lần 2 giảm. Cột có data-so so theo SỐ.
+document.querySelectorAll('.kt th.sapxep').forEach(th => th.addEventListener('click', () => {
+  const giam = th.classList.contains('sx-tang');   // đang tăng → chuyển giảm
+  document.querySelectorAll('.kt th.sapxep').forEach(x => x.classList.remove('sx-tang', 'sx-giam'));
+  th.classList.add(giam ? 'sx-giam' : 'sx-tang');
+  const col = +th.dataset.col, laSo = !!th.dataset.so;
+  const giaTri = g => {
+    const t = (g.dau.cells[col]?.textContent || '').trim();
+    return laSo ? (parseFloat(t) || 0) : boDau(t);
+  };
+  ktNhom.sort((a, b) => {
+    const x = giaTri(a), y = giaTri(b);
+    const so = laSo ? x - y : String(x).localeCompare(String(y), 'vi');
+    return giam ? -so : so;
+  });
+  ktNhom.forEach(g => { ktBody.appendChild(g.dau); g.con.forEach(c => ktBody.appendChild(c)); });
+}));
+apLoc();   // trạng thái đầu: tab Tài liệu công ty
+</script>
+{% endblock %}

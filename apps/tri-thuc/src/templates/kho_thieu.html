@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% block title %}Kho cần bổ sung — OUTLIERY{% endblock %}
+{% block topbar_ten %}Kho cần bổ sung{% endblock %}
+
+{% block style_them %}
+  .kt-h{font-size:1.25rem;margin:0 0 .3rem;display:flex;align-items:center;gap:.5rem}
+  .kt-h svg.ic{width:20px;height:20px}
+  h2.kt{display:flex;align-items:center;gap:.5rem}
+  h2.kt svg.ic{width:18px;height:18px}
+  .tot{display:flex;align-items:center;gap:.5rem}
+  .bo-sung,.qa-btn,.xoa-nhom{display:inline-flex;align-items:center;gap:4px}
+  .bo-sung svg.ic,.qa-btn svg.ic,.xoa-nhom svg.ic,.nut svg.ic{width:13px;height:13px}
+  td .cau-flag{width:14px;height:14px;vertical-align:-2px;color:var(--th-c05a44)}
+  p.mo-ta{color:var(--muted);font-size:.9rem}
+  table{width:100%;border-collapse:collapse;margin-top:1rem}
+  th,td{text-align:left;padding:.55rem .6rem;border-bottom:1px solid var(--line);font-size:.92rem;vertical-align:top}
+  th{color:var(--muted);font-size:.82rem}
+  .so-lan{font-weight:700;color:var(--th-c05a44);text-align:center}
+  .ctx{font-size:.82rem;color:var(--muted)}
+  .tg{font-size:.78rem;color:var(--th-455878);white-space:nowrap}
+  .tot{margin-top:2rem;padding:.8rem;border-radius:10px;background:var(--th-1c2a20);color:var(--th-a9d4b0);border:1px solid var(--th-3a5a40)}
+  .gom{display:flex;gap:.5rem;margin-top:.8rem}
+  .gom input{flex:1;padding:.55rem;border:1px solid var(--chip-line);border-radius:9px;font-size:.95rem}
+  .nhom{border:1px solid var(--chip-line);border-radius:10px;padding:.7rem .9rem;margin-top:.6rem;background:var(--th-182233)}
+  .nhom ul{margin:.4rem 0 0;padding-left:1.2rem;font-size:.9rem;color:var(--th-c2cbd9)}
+  .nhom.xong{background:var(--th-1c2a20);border-color:var(--th-3a5a40)}
+  .bo-sung{display:inline-block;margin-top:.4rem;font-size:.85rem;padding:.25rem .7rem;background:var(--chip);border:1px solid var(--chip-line);border-radius:999px;color:var(--accent)}
+  .bo-sung:hover{border-color:var(--accent)}
+  .xoa-nhom{font-size:.8rem;padding:.2rem .6rem;border:1px solid var(--chip-line);border-radius:999px;background:none;color:var(--muted);cursor:pointer}
+  .xoa-nhom:hover{border-color:var(--th-c05a44);color:var(--th-c05a44)}
+  .xoa-cau{font-size:.78rem;padding:.15rem .55rem;border:1px solid var(--chip-line);border-radius:999px;background:none;color:var(--muted);cursor:pointer;font-family:inherit}
+  .xoa-cau:hover,.xoa-cau.chac{border-color:var(--th-c05a44);color:var(--th-c05a44)}
+  h2.kt{font-size:1.1rem;margin-top:2rem}
+
+  /* Token 2 theme của trang (đổ chung vào <style> base) */
+  :root{--th-182233:#182233;--th-1c2a20:#1c2a20;--th-3a5a40:#3a5a40;--th-455878:#455878;--th-a9d4b0:#a9d4b0;--th-c05a44:#c05a44;--th-c2cbd9:#c2cbd9}
+  :root[data-theme="light"]{--th-182233:#f5f5f5;--th-1c2a20:#e7f2e9;--th-3a5a40:#a9cdb0;--th-455878:#c2c2c2;--th-a9d4b0:#24663a;--th-c05a44:#a83f2e;--th-c2cbd9:#3a3f47}
+{% endblock %}
+
+{% block noi_dung %}
+<h2 class="kt-h"><svg class="ic" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h4"/></svg> Câu kho chưa trả lời được</h2>
+<p class="mo-ta">Gồm câu agent trả "tài liệu chưa nêu" vì kho thiếu THẬT (đã loại câu bị chặn
+quyền) + câu người dùng đánh giá không hữu ích + câu cắm cờ "Chưa có lời giải". Câu có cờ là do
+NGƯỜI DÙNG xác nhận kho thiếu — chắc chắn nhất, xếp trên cùng; sau đó theo số lần bị hỏi.</p>
+
+{% if not cac_nhom %}
+<div class="tot"><svg class="ic" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> Chưa có câu nào kho chưa trả lời được. Kho đang đáp ứng tốt.</div>
+{% else %}
+<!-- YC7: chọn câu bằng checkbox → đặt tên chủ đề → Gom nhóm -->
+<form method="post" action="/kho-thieu/gom">
+<table>
+  <tr><th></th><th>Câu hỏi</th><th>Số lần</th><th>Bộ phận hay hỏi</th><th>Context mẫu (mạch hỏi)</th><th>Gần nhất</th></tr>
+  {% for n in cac_nhom %}
+  <tr>
+    <td><input type="checkbox" name="cau" value="{{ n.cau_hoi }}"></td>
+    <td><b>{{ n.cau_hoi }}</b>{% if n.co_tay %} <svg class="ic cau-flag" viewBox="0 0 24 24" title="Người dùng xác nhận chưa có lời giải"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>{% endif %}
+      <br><a class="bo-sung" href="/?goi_y_tieu_de={{ n.cau_hoi|urlencode }}"><svg class="ic" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> Bổ sung tài liệu</a>
+      {% if is_owner %}<button type="button" class="qa-btn" data-cau-hoi="{{ n.cau_hoi }}"><svg class="ic" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> Bổ sung Q&A</button> {% endif %}<button type="button" class="xoa-cau" data-cau-hoi="{{ n.cau_hoi }}" title="Xóa câu không phù hợp khỏi bảng (câu tán gẫu, gõ nhầm…)">Xóa câu</button></td>
+    <td class="so-lan">{{ n.so_lan }}</td>
+    <td>{{ n.bo_phan }}</td>
+    <td class="ctx">{% for c in n.contexts %}↩ {{ c }}<br>{% endfor %}{% if not n.contexts %}—{% endif %}</td>
+    <td class="tg">{{ n.gan_nhat }}</td>
+  </tr>
+  {% endfor %}
+</table>
+<div class="gom">
+  <input name="ten_chu_de" placeholder="Tên chủ đề cho các câu đã chọn (vd: Lịch nghỉ phép)" required>
+  <button type="submit" class="nut"><svg class="ic" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg> Gom nhóm</button>
+</div>
+</form>
+{% endif %}
+
+{% if cac_nhom_chu_de %}
+<h2 class="kt"><svg class="ic" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg> Nhóm chủ đề đang chờ bổ sung</h2>
+{% for nh in cac_nhom_chu_de if not nh.da_giai_quyet %}
+<div class="nhom">
+  <b>{{ nh.ten_chu_de }}</b> <span class="tg">({{ nh.thoi_gian }})</span>
+  <ul>{% for c in nh.cac_cau %}<li>{{ c.cau }}</li>{% endfor %}</ul>
+  <!-- YC7: nối trang nhập kèm gợi ý tiêu đề/từ khóa từ chủ đề — điền sẵn, sửa được -->
+  <a class="bo-sung" href="/?goi_y_tieu_de={{ nh.ten_chu_de|urlencode }}&goi_y_tu_khoa={{ nh.ten_chu_de|urlencode }}"><svg class="ic" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> Bổ sung tài liệu</a>
+  <form method="post" action="/kho-thieu/xoa-nhom" style="display:inline">
+    <input type="hidden" name="nhom_id" value="{{ nh.id }}"><input type="hidden" name="ve" value="kho-thieu">
+    <button type="submit" class="xoa-nhom"><svg class="ic" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg> Xóa nhóm</button>
+  </form>
+</div>
+{% else %}
+<p class="mo-ta">(Chưa có nhóm nào đang chờ)</p>
+{% endfor %}
+
+{% set da_xong = cac_nhom_chu_de | selectattr('da_giai_quyet') | list %}
+{% if da_xong %}
+<h2 class="kt"><svg class="ic" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> Nhóm đã giải quyết</h2>
+{% for nh in da_xong %}
+<div class="nhom xong">
+  <b>{{ nh.ten_chu_de }}</b> <span class="tg">({{ nh.thoi_gian }})</span> — kho đã có tài liệu trả lời
+  <ul>{% for c in nh.cac_cau %}<li>{{ c.cau }}</li>{% endfor %}</ul>
+</div>
+{% endfor %}
+{% endif %}
+{% endif %}
+{% if is_owner %}{% include "_qa_bo_sung.html" %}{% endif %}
+{% endblock %}
+
+{% block script %}
+<script>
+// Xóa câu không phù hợp (31/07/2026): xác nhận 2 BƯỚC ngay trên nút (không hộp thoại
+// trình duyệt) — bấm 1: nút đổi "Bấm lại để xóa"; bấm 2 trong 4s: POST rồi gỡ dòng.
+document.querySelectorAll('.xoa-cau').forEach(nut => {
+  let hen = null;
+  nut.addEventListener('click', async () => {
+    if (!nut.classList.contains('chac')) {
+      nut.classList.add('chac');
+      nut.textContent = 'Bấm lại để xóa';
+      hen = setTimeout(() => { nut.classList.remove('chac'); nut.textContent = 'Xóa câu'; }, 4000);
+      return;
+    }
+    clearTimeout(hen);
+    nut.disabled = true; nut.textContent = 'Đang xóa…';
+    try {
+      const fd = new FormData(); fd.append('cau_hoi', nut.dataset.cauHoi);
+      const res = await fetch('/kho-thieu/xoa-cau', { method: 'POST', body: fd });
+      if (!res.ok) throw new Error();
+      nut.closest('tr').remove();
+    } catch (e) {
+      nut.disabled = false; nut.classList.remove('chac'); nut.textContent = 'Xóa câu';
+    }
+  });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,28 @@
+# §12.4(b) — gộp từ đồng nghĩa/cùng chủ đề cho khối từ khóa Winning Format (B1, hỏi–đáp không
+# đụng file này). Từ CÓ trong bảng được đếm GỘP theo "nhom_nghia"; từ KHÔNG khai vẫn đếm riêng
+# như cũ — không bắt buộc phải khai đủ, thêm dần khi rảnh.
+#
+# GIỚI HẠN (đọc trước khi thêm dòng): bảng này GỘP TOÀN CỤC, không phân biệt loại kênh/ngách.
+# Một từ hợp nghĩa ở kênh này có thể lệch nghĩa ở kênh khác — vd "cheap" hợp kênh làm đẹp
+# ("thẩm mỹ giá rẻ") nhưng vô nghĩa/gây nhiễu nếu áp cho kênh tài chính ("cổ phiếu giá rẻ").
+# Không có cơ chế nào tự kiểm việc này — tự cân nhắc theo đúng ngách của kênh đang chẩn đoán.
+#
+# tu = một từ tiếng Anh/Việt CHỮ THƯỜNG (đúng dạng sau khi _tach_tu tách — bỏ dấu câu, đã lower).
+# nhom_nghia = tên nhóm hiển thị (tiếng Việt, có dấu/khoảng trắng đều được) — mọi "tu" cùng
+# nhom_nghia được CỘNG DỒN số đếm và hiển thị DƯỚI TÊN NHÓM thay vì từng từ riêng lẻ.
+#
+# 5 dòng đầu lấy từ chính bản đối chiếu ngoài (kênh Outland, xem §12 mở đầu file này): hai cụm
+# "secrets/bizarre/godless" (khác chữ, cùng ý "tò mò trước điều bị giấu/niềm tin sai lệch") và
+# "beautiful"+"cheap" (cùng ý "thẩm mỹ giá rẻ") — đã đối chiếu và hiệu quả chênh lệch rõ giữa
+# hai cụm. Riêng "1970s"/"70s" không phải đồng nghĩa mà CÙNG MỘT mốc thời gian viết hai kiểu —
+# gộp an toàn tuyệt đối, không phải suy diễn ngữ nghĩa.
+tu,nhom_nghia
+secrets,tò mò / niềm tin sai lệch
+secret,tò mò / niềm tin sai lệch
+bizarre,tò mò / niềm tin sai lệch
+godless,tò mò / niềm tin sai lệch
+vault,tò mò / niềm tin sai lệch
+beautiful,thẩm mỹ giá rẻ
+cheap,thẩm mỹ giá rẻ
+1970s,thập niên 70
+70s,thập niên 70

@@ -12,14 +12,20 @@ from pathlib import Path
 DUONG_MAC_DINH = Path(__file__).resolve().parents[1] / "rules" / "apps.json"
 
 _BAT_BUOC = ("slug", "ten", "cong", "health")
+_cache: dict = {}   # (path, mtime) -> kết quả — đổi file là ăn ngay, không mở file mỗi request
 
 
 def doc_hop_dong(duong: Path | str | None = None) -> list[dict]:
-    """Đọc danh sách app. App thiếu trường bắt buộc → bỏ qua kèm lý do in kèm
-    (không chết cả gateway vì một mục hỏng)."""
+    """Đọc danh sách app. App thiếu trường bắt buộc → bỏ qua (không chết gateway).
+    Cache theo mtime — hành vi 'đọc sống' giữ nguyên, hết mở file mỗi request
+    (load test 16/08: đọc file trên event loop × trăm request = loop nghẹt)."""
     duong = Path(duong) if duong else DUONG_MAC_DINH
     if not duong.exists():
         return []
+    mtime = duong.stat().st_mtime
+    khoa = (str(duong), mtime)
+    if khoa in _cache:
+        return _cache[khoa]
     du_lieu = json.loads(duong.read_text(encoding="utf-8-sig"))
     ket_qua = []
     for muc in du_lieu.get("apps", []):
@@ -27,6 +33,8 @@ def doc_hop_dong(duong: Path | str | None = None) -> list[dict]:
             muc.setdefault("tien_to", [])
             muc.setdefault("du_lieu", [])
             ket_qua.append(muc)
+    _cache.clear()          # giữ đúng 1 phiên bản — file đổi là mtime đổi
+    _cache[khoa] = ket_qua
     return ket_qua
 
 

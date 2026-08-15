@@ -1,0 +1,277 @@
+{% extends "base.html" %}
+{% block title %}Vault — OUTLIERY{% endblock %}
+{% block topbar_ten %}<svg class="ic" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Vault{% endblock %}
+
+{% block style_them %}
+  .v-h{font-size:1.25rem;margin:0 0 .3rem;display:flex;align-items:center;gap:.5rem}
+  .v-h svg.ic{width:20px;height:20px}
+  h3.v-muc-tieu{font-size:1rem;margin:1.8rem 0 .2rem;display:flex;align-items:center;gap:.45rem}
+  h3.v-muc-tieu svg.ic{width:16px;height:16px;color:var(--muted)}
+  .v-note{margin:.5rem 0 1rem;padding:.55rem .8rem;border-radius:9px;background:var(--chip);border:1px solid var(--chip-line);font-size:.88rem;color:var(--muted)}
+  .v-canhbao{margin:.5rem 0;padding:.6rem .8rem;border-radius:9px;background:var(--th-33201b);color:var(--th-d97c6c);border:1px solid var(--th-5c3a30);font-size:.88rem}
+  .v-ok{margin:.5rem 0;padding:.6rem .8rem;border-radius:9px;background:var(--th-1c2a20);color:var(--th-93a89a);border:1px solid var(--th-3a5a40);font-size:.88rem}
+  .v-form{max-width:430px}
+  .v-form label{display:block;margin-top:.85rem;font-weight:600;font-size:.9rem}
+  .v-form input,.v-form select,.v-form textarea{width:100%;padding:.55rem;margin-top:.25rem;border:1px solid var(--chip-line);
+    border-radius:9px;font-size:.95rem;font-family:inherit;background:var(--th-121826);color:var(--ink)}
+  .v-keys{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:1.02rem;line-height:1.9;
+    background:var(--th-121826);border:1px dashed var(--accent);border-radius:12px;padding:1rem 1.2rem;margin:.8rem 0}
+  table.v{width:100%;border-collapse:collapse;margin-top:.6rem;font-size:.9rem}
+  .v th,.v td{text-align:left;padding:.5rem .55rem;border-bottom:1px solid var(--line);vertical-align:top}
+  .v th{color:var(--muted);font-size:.78rem;white-space:nowrap}
+  .nhom-tag{display:inline-block;font-size:.75rem;padding:.05rem .5rem;border-radius:999px;background:var(--chip);border:1px solid var(--chip-line);color:var(--accent);white-space:nowrap}
+  .v-nut{font-size:.8rem;padding:.2rem .6rem;border:1px solid var(--chip-line);border-radius:999px;background:none;color:var(--muted);cursor:pointer;font-family:inherit;
+    display:inline-flex;align-items:center;gap:.3rem}
+  .v-nut svg.ic{width:13px;height:13px}
+  .v-nut:hover{border-color:var(--accent);color:var(--accent)}
+  .v-nut.nguy:hover,.v-nut.chac{border-color:var(--th-d97c6c);color:var(--th-d97c6c)}
+  .mk-lo{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--th-121826);padding:.1rem .4rem;border-radius:6px}
+  .v-hang-dau{display:flex;align-items:center;gap:.8rem;flex-wrap:wrap;margin:.4rem 0 .8rem}
+  .v-dong-ho{font-size:.82rem;color:var(--muted)}
+  .v-loc{display:flex;gap:6px;flex-wrap:wrap;margin:.6rem 0 .2rem}
+  .v-loc button{font-size:.82rem;padding:.3rem .7rem;border-radius:999px;border:1px solid transparent;background:none;color:var(--muted);cursor:pointer;font-family:inherit}
+  .v-loc button.active{background:var(--th-182233);border-color:var(--chip-line);color:var(--ink)}
+  .v-loc button:not(.active):hover{background:var(--th-182233)}
+  .sk-tag{display:inline-flex;align-items:center;gap:.3rem;font-size:.8rem;padding:.15rem .55rem;border-radius:999px;border:1px solid var(--chip-line)}
+  .sk-tag.con{color:var(--th-93a89a);background:var(--th-1c2a20);border-color:var(--th-3a5a40)}
+  .sk-tag.het{color:var(--muted);background:var(--chip);text-decoration:line-through}
+  tr.canh td{color:var(--th-d97c6c)}
+  .v-2cot{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;align-items:start}
+  @media (max-width:900px){.v-2cot{grid-template-columns:1fr}}
+
+  :root{--th-121826:#121826;--th-182233:#182233;--th-1c2a20:#1c2a20;--th-33201b:#33201b;--th-3a5a40:#3a5a40;--th-5c3a30:#5c3a30;--th-93a89a:#93a89a;--th-d97c6c:#d97c6c}
+  :root[data-theme="light"]{--th-121826:#ffffff;--th-182233:#f5f5f5;--th-1c2a20:#e7f2e9;--th-33201b:#fbeae6;--th-3a5a40:#a9cdb0;--th-5c3a30:#e5b6aa;--th-93a89a:#4e5c52;--th-d97c6c:#b14a3c}
+{% endblock %}
+
+{# ── icon line-SVG dùng lại nhiều lần (đồng bộ bộ svg.ic của cả hệ — yêu cầu user 31/07) ── #}
+{% set IC_KHOA = '<svg class="ic" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>' %}
+{% set IC_MO = '<svg class="ic" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>' %}
+{% set IC_MAT = '<svg class="ic" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>' %}
+{% set IC_MAT_CHE = '<svg class="ic" viewBox="0 0 24 24"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-10-7-10-7a13.16 13.16 0 0 1 3.06-4.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M1 1l22 22"/></svg>' %}
+{% set IC_BUT = '<svg class="ic" viewBox="0 0 24 24"><path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5z"/></svg>' %}
+{% set IC_XOA = '<svg class="ic" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>' %}
+{% set IC_THEM = '<svg class="ic" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>' %}
+{% set IC_KEY = '<svg class="ic" viewBox="0 0 24 24"><circle cx="7.5" cy="15.5" r="5.5"/><path d="M21 2l-9.6 9.6M15.5 7.5l3 3L22 7l-3-3"/></svg>' %}
+{% set IC_SO = '<svg class="ic" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h4"/></svg>' %}
+{% set IC_IN = '<svg class="ic" viewBox="0 0 24 24"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>' %}
+
+{% block noi_dung %}
+<h2 class="v-h">{{ IC_KHOA|safe }} Vault tài khoản số</h2>
+
+{% if canh_bao_http %}
+<div class="v-canhbao">⚠ Bạn đang mở vault qua <b>HTTP trong mạng LAN</b> — mật khẩu đi trên dây
+dạng thường. Khuyến nghị: chỉ thao tác vault ngay trên máy chủ (localhost) cho tới khi hệ bật HTTPS.</div>
+{% endif %}
+
+{# ───────────────────────── CHƯA TẠO ───────────────────────── #}
+{% if trang_thai == 'chua_tao' %}
+<div class="v-note">Vault chưa được khởi tạo. Đặt <b>mật khẩu chủ</b> (≥12 ký tự — KHÁC mật khẩu
+đăng nhập) rồi bấm Tạo. Hệ thống sẽ cấp <b>10 safekey hiện đúng MỘT lần</b> — in/chép vào két:
+chúng vừa cứu vault khi quên mật khẩu chủ, vừa đặt lại được mật khẩu đăng nhập Owner.
+<b>Mất mật khẩu chủ VÀ hết safekey = mất trắng, không ai cứu được.</b></div>
+{% if loi %}<div class="v-canhbao">{{ loi }}</div>{% endif %}
+<form class="v-form" method="post" action="/vault/tao">
+  <label>Mật khẩu chủ (≥12 ký tự)</label>
+  <input name="master" type="password" required minlength="12" autocomplete="new-password" autofocus>
+  <label>Nhập lại mật khẩu chủ</label>
+  <input name="master2" type="password" required minlength="12" autocomplete="new-password">
+  <button type="submit" class="nut" style="margin-top:1.1rem">{{ IC_KHOA|safe }} Tạo vault + cấp 10 safekey</button>
+</form>
+
+{# ───────────────────────── VỪA TẠO — HIỆN SAFEKEY MỘT LẦN ───────────────────────── #}
+{% elif trang_thai == 'vua_tao' %}
+<div class="v-ok">Vault đã tạo. Dưới đây là <b>10 safekey — lần DUY NHẤT chúng hiện ra</b>.
+In hoặc chép tay vào giấy, cất két. Mỗi key dùng đúng 1 lần (cứu vault HOẶC đặt lại mật khẩu
+đăng nhập Owner). Hệ thống chỉ giữ bản băm — không ai xem lại được sau khi rời trang này.</div>
+<div class="v-keys" id="v-keys">
+  {% for k in safekeys %}{{ loop.index }}. {{ k }}<br>{% endfor %}
+</div>
+<button type="button" class="nut phu" onclick="window.print()">{{ IC_IN|safe }} In trang này</button>
+<a class="nut" href="/vault" style="margin-left:.5rem">Tôi đã cất vào két — vào vault →</a>
+
+{# ───────────────────────── ĐANG KHÓA ───────────────────────── #}
+{% elif trang_thai == 'khoa' %}
+<div class="v-note">Vault đang <b>khóa</b>. Nhập mật khẩu chủ để mở — tự khóa lại sau
+{{ tu_khoa_phut }} phút không dùng. Safekey còn lại trong két: <b>{{ so_safekey }}</b>/10.</div>
+{% if loi %}<div class="v-canhbao">{{ loi }}</div>{% endif %}
+<form class="v-form" method="post" action="/vault/mo">
+  <label>Mật khẩu chủ</label>
+  <input name="master" type="password" required autocomplete="off" autofocus>
+  <button type="submit" class="nut" style="margin-top:1.1rem">{{ IC_MO|safe }} Mở vault</button>
+</form>
+<details style="margin-top:1.4rem">
+  <summary style="cursor:pointer;color:var(--muted);font-size:.9rem">Quên mật khẩu chủ? Dùng safekey từ két</summary>
+  <form class="v-form" method="post" action="/vault/khoi-phuc-master">
+    <label>Safekey</label>
+    <input name="safekey" required placeholder="XXXXX-XXXXX-XXXXX-XXXXX" autocomplete="off">
+    <label>Mật khẩu chủ MỚI (≥12 ký tự)</label>
+    <input name="master_moi" type="password" required minlength="12" autocomplete="new-password">
+    <label>Nhập lại</label>
+    <input name="master_moi2" type="password" required minlength="12" autocomplete="new-password">
+    <button type="submit" class="nut" style="margin-top:1.1rem">{{ IC_KEY|safe }} Đặt mật khẩu chủ mới</button>
+  </form>
+</details>
+
+{# ───────────────────────── ĐANG MỞ ───────────────────────── #}
+{% else %}
+<div class="v-hang-dau">
+  <span class="v-ok" style="margin:0;padding:.35rem .7rem;display:inline-flex;align-items:center;gap:.4rem">{{ IC_MO|safe }} Đang mở</span>
+  <span class="v-dong-ho">tự khóa sau {{ tu_khoa_phut }} phút không dùng</span>
+  <form method="post" action="/vault/khoa" style="margin-left:auto">
+    <button type="submit" class="v-nut">{{ IC_KHOA|safe }} Khóa ngay</button>
+  </form>
+</div>
+
+{# ── BẢNG 1: mục trong vault, lọc theo nhóm ── #}
+<h3 class="v-muc-tieu">{{ IC_KHOA|safe }} Tài khoản trong vault ({{ muc|length }})</h3>
+{% if not muc %}
+<p style="color:var(--muted)">Chưa có mục nào — thêm tài khoản đầu tiên bên dưới.</p>
+{% else %}
+<div class="v-loc" id="v-loc">
+  <button type="button" class="active" data-nhom="">Tất cả ({{ muc|length }})</button>
+  {% for gia_tri, nhan in ten_nhom.items() %}
+  {% set so = muc | selectattr("nhom", "equalto", gia_tri) | list | length %}
+  {% if so %}<button type="button" data-nhom="{{ gia_tri }}">{{ nhan }} ({{ so }})</button>{% endif %}
+  {% endfor %}
+</div>
+<table class="v" id="v-bang-muc">
+  <tr><th>Nhóm</th><th>Tên mục</th><th>Tài khoản</th><th>Mật khẩu</th><th>Ghi chú</th><th>Sửa lúc</th><th></th></tr>
+  {% for m in muc %}
+  <tr data-id="{{ m.id }}" data-nhom="{{ m.nhom }}">
+    <td><span class="nhom-tag">{{ ten_nhom.get(m.nhom, m.nhom) }}</span></td>
+    <td><b>{{ m.ten }}</b></td>
+    <td>{{ m.tai_khoan or '—' }}</td>
+    <td style="white-space:nowrap"><span class="mk-o">••••••</span>
+      <button type="button" class="v-nut xem-mk" data-id="{{ m.id }}">{{ IC_MAT|safe }} Xem</button></td>
+    <td style="max-width:200px">{{ m.ghi_chu or '—' }}</td>
+    <td style="color:var(--muted);font-size:.82rem;white-space:nowrap">{{ (m.sua_luc or '')[:16].replace('T', ' ') }}</td>
+    <td style="white-space:nowrap">
+      <button type="button" class="v-nut sua-muc" data-muc='{{ {"id": m.id, "nhom": m.nhom, "ten": m.ten, "tai_khoan": m.tai_khoan, "ghi_chu": m.ghi_chu} | tojson }}'>{{ IC_BUT|safe }} Sửa</button>
+      <button type="button" class="v-nut nguy xoa-muc" data-id="{{ m.id }}">{{ IC_XOA|safe }} Xóa</button>
+    </td>
+  </tr>
+  {% endfor %}
+</table>
+{% endif %}
+
+<h3 class="v-muc-tieu" id="v-form-tieu">{{ IC_THEM|safe }} <span id="v-form-chu">Thêm mục mới</span></h3>
+<form class="v-form" method="post" action="/vault/muc" id="v-form-muc">
+  <input type="hidden" name="id" id="f-id" value="">
+  <label>Nhóm</label>
+  <select name="nhom" id="f-nhom">
+    {% for gia_tri, nhan in ten_nhom.items() %}<option value="{{ gia_tri }}">{{ nhan }}</option>{% endfor %}
+  </select>
+  <label>Tên mục (vd: Kênh History A — tài khoản Google chính)</label>
+  <input name="ten" id="f-ten" required maxlength="200">
+  <label>Tài khoản / email / IP</label>
+  <input name="tai_khoan" id="f-tai-khoan" maxlength="300" autocomplete="off">
+  <label>Mật khẩu / khóa bí mật <span style="font-weight:400;color:var(--muted)">(khi sửa: bỏ trống = giữ nguyên)</span></label>
+  <input name="mat_khau" id="f-mat-khau" type="password" maxlength="500" autocomplete="new-password">
+  <label>Ghi chú (mã dự phòng, số điện thoại khôi phục…)</label>
+  <textarea name="ghi_chu" id="f-ghi-chu" rows="2" maxlength="1000"></textarea>
+  <div style="display:flex;gap:.5rem;margin-top:1.1rem">
+    <button type="submit" class="nut" id="f-luu">Lưu mục</button>
+    <button type="button" class="nut phu" id="f-huy" style="display:none">Hủy sửa</button>
+  </div>
+</form>
+
+{# ── BẢNG 2 + 3: safekey trong két · sổ kiểm toán — xem trực tiếp (yêu cầu user 31/07) ── #}
+<div class="v-2cot">
+  <div>
+    <h3 class="v-muc-tieu">{{ IC_KEY|safe }} Safekey trong két ({{ so_safekey }}/10 còn dùng được)</h3>
+    <table class="v">
+      <tr><th>Mã</th><th>Trạng thái</th></tr>
+      {% for sk in safekey_bang %}
+      <tr><td style="font-family:ui-monospace,monospace">{{ sk.id }}</td>
+        <td>{% if sk.da_dung %}<span class="sk-tag het">đã dùng — vô hiệu</span>
+            {% else %}<span class="sk-tag con">còn trong két</span>{% endif %}</td></tr>
+      {% endfor %}
+    </table>
+    <p style="font-size:.8rem;color:var(--muted);margin-top:.4rem">Bản rõ chỉ nằm trên giấy trong két —
+    hệ thống giữ bản băm, không xem lại được. Key nào "đã dùng" thì gạch bỏ trên giấy.</p>
+  </div>
+  <div>
+    <h3 class="v-muc-tieu">{{ IC_SO|safe }} Sổ kiểm toán ({{ audit|length }} dòng gần nhất)</h3>
+    <table class="v">
+      <tr><th>Lúc</th><th>Ai</th><th>Hành động</th><th>Mục</th></tr>
+      {% for d in audit %}
+      <tr{% if d.canh %} class="canh"{% endif %}><td style="white-space:nowrap">{{ d.luc[:16].replace('T', ' ') }}</td>
+        <td>{{ d.ai }}</td><td>{{ d.hanh_dong }}</td><td>{{ d.muc }}</td></tr>
+      {% endfor %}
+    </table>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block script %}
+{% if trang_thai == 'mo' %}
+<script>
+// Lọc bảng mục theo nhóm (chỉ ẨN/HIỆN dòng — dữ liệu đã ở trang)
+document.querySelectorAll('#v-loc button').forEach(nut => nut.addEventListener('click', () => {
+  document.querySelectorAll('#v-loc button').forEach(x => x.classList.remove('active'));
+  nut.classList.add('active');
+  const nhom = nut.dataset.nhom;
+  document.querySelectorAll('#v-bang-muc tr[data-id]').forEach(tr => {
+    tr.style.display = (!nhom || tr.dataset.nhom === nhom) ? '' : 'none';
+  });
+}));
+
+// Xem mật khẩu 1 mục — mỗi lần xem là 1 dòng audit phía server
+const IC_MAT = '{{ IC_MAT|safe }}', IC_MAT_CHE = '{{ IC_MAT_CHE|safe }}';
+document.querySelectorAll('.xem-mk').forEach(nut => nut.addEventListener('click', async () => {
+  const o = nut.parentElement.querySelector('.mk-o');
+  if (nut.dataset.dangLo) {           // đang lộ → che lại
+    o.textContent = '••••••'; o.className = 'mk-o';
+    nut.innerHTML = IC_MAT + ' Xem'; delete nut.dataset.dangLo;
+    return;
+  }
+  const fd = new FormData(); fd.append('id', nut.dataset.id);
+  const res = await fetch('/vault/xem', { method: 'POST', body: fd });
+  if (!res.ok) { location.reload(); return; }   // vault tự khóa giữa chừng → về form mở
+  const d = await res.json();
+  o.textContent = d.mat_khau || '(trống)'; o.className = 'mk-o mk-lo';
+  nut.innerHTML = IC_MAT_CHE + ' Che'; nut.dataset.dangLo = '1';
+}));
+
+// Sửa: đổ dữ liệu mục vào form dưới (mật khẩu bỏ trống = giữ nguyên)
+document.querySelectorAll('.sua-muc').forEach(nut => nut.addEventListener('click', () => {
+  const m = JSON.parse(nut.dataset.muc);
+  document.getElementById('f-id').value = m.id;
+  document.getElementById('f-nhom').value = m.nhom;
+  document.getElementById('f-ten').value = m.ten;
+  document.getElementById('f-tai-khoan').value = m.tai_khoan || '';
+  document.getElementById('f-mat-khau').value = '';
+  document.getElementById('f-ghi-chu').value = m.ghi_chu || '';
+  document.getElementById('v-form-chu').textContent = 'Sửa mục: ' + m.ten;
+  document.getElementById('f-luu').textContent = 'Lưu thay đổi';
+  document.getElementById('f-huy').style.display = 'inline-flex';
+  document.getElementById('v-form-muc').scrollIntoView({ behavior: 'smooth' });
+}));
+document.getElementById('f-huy')?.addEventListener('click', () => {
+  document.getElementById('v-form-muc').reset();
+  document.getElementById('f-id').value = '';
+  document.getElementById('v-form-chu').textContent = 'Thêm mục mới';
+  document.getElementById('f-luu').textContent = 'Lưu mục';
+  document.getElementById('f-huy').style.display = 'none';
+});
+
+// Xóa mục: xác nhận 2 bước trên nút (cùng khuôn nút xóa câu kho-thiếu)
+document.querySelectorAll('.xoa-muc').forEach(nut => {
+  const goc = nut.innerHTML;
+  let hen = null;
+  nut.addEventListener('click', async () => {
+    if (!nut.classList.contains('chac')) {
+      nut.classList.add('chac'); nut.textContent = 'Bấm lại để xóa';
+      hen = setTimeout(() => { nut.classList.remove('chac'); nut.innerHTML = goc; }, 4000);
+      return;
+    }
+    clearTimeout(hen);
+    const fd = new FormData(); fd.append('id', nut.dataset.id);
+    const res = await fetch('/vault/xoa-muc', { method: 'POST', body: fd });
+    if (res.ok) nut.closest('tr').remove(); else location.reload();
+  });
+});
+</script>
+{% endif %}
+{% endblock %}

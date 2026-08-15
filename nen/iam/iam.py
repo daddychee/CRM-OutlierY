@@ -67,8 +67,18 @@ def _gio() -> str:
     return datetime.now().isoformat(timespec="seconds")
 
 
+_luat_cache: dict = {}
+
+
 def _luat() -> dict:
-    return json.loads(DUONG_PHAN_QUYEN.read_text(encoding="utf-8-sig"))
+    """Cache theo mtime — đổi phan_quyen.json vẫn ăn ngay, hết mở file mỗi lần
+    co_quyen (load test 16/08: blocking I/O trên event loop làm loop nghẹt)."""
+    mtime = DUONG_PHAN_QUYEN.stat().st_mtime
+    if _luat_cache.get("mtime") != mtime:
+        _luat_cache["mtime"] = mtime
+        _luat_cache["luat"] = json.loads(
+            DUONG_PHAN_QUYEN.read_text(encoding="utf-8-sig"))
+    return _luat_cache["luat"]
 
 
 # ---------- nhật ký ----------

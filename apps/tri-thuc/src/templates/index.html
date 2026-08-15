@@ -1,0 +1,256 @@
+{% extends "base.html" %}
+{% block title %}Nhập tài liệu — OUTLIERY{% endblock %}
+{% block topbar_ten %}Nhập tài liệu{% endblock %}
+
+{% block style_them %}
+  #drop{border:2px dashed var(--chip-line);border-radius:10px;padding:2.2rem 1rem;text-align:center;color:var(--muted);cursor:pointer;background:var(--th-182233)}
+  #drop.keo{border-color:var(--accent);background:var(--th-111e33)}
+  #ten-file{margin:.5rem 0 1rem;font-weight:600;color:var(--th-8fbe9a);min-height:1.2em}
+  label{display:block;margin-top:.85rem;font-weight:600;font-size:.9rem}
+  .form-nhap input,.form-nhap select{width:100%;padding:.55rem;margin-top:.25rem;border:1px solid var(--chip-line);border-radius:9px;font-size:1rem;box-sizing:border-box;background:var(--th-182233);color:var(--ink);font-family:inherit}
+  .bat-buoc::after{content:" *";color:var(--th-c05a44)}
+  #luu{margin-top:1.3rem;width:100%;padding:.75rem;font-size:1rem;border:0;border-radius:10px;background:var(--accent);color:var(--th-182233);cursor:pointer;font-weight:550}
+  #luu:disabled{background:var(--th-3a4c6b);cursor:not-allowed}
+  #ket-qua{margin-top:1rem;padding:.8rem;border-radius:10px;display:none;white-space:pre-line}
+  #ket-qua.ok{display:block;background:var(--th-1c2a20);color:var(--th-a9d4b0);border:1px solid var(--th-3a5a40)}
+  #ket-qua.loi{display:block;background:var(--th-33201b);color:var(--th-d97c6c);border:1px solid var(--th-5c3a30)}
+  #canh-bao{margin-top:.5rem;padding:.8rem;border-radius:10px;display:none;background:var(--th-2b2517);color:var(--th-e0c070);border:1px solid var(--th-3a3220)}
+  #chips{display:flex;flex-wrap:wrap;gap:.35rem;margin-top:.25rem}
+  .chip{background:var(--chip);border:1px solid var(--chip-line);color:var(--accent);border-radius:999px;padding:.15rem .3rem .15rem .6rem;font-size:.85rem;display:inline-flex;align-items:center;gap:.2rem}
+  .chip button{width:auto;margin:0;padding:0 .3rem;background:none;border:0;color:var(--accent);font-size:1rem;cursor:pointer}
+  #tk-khung{position:relative}
+  #tk-goi-y{position:absolute;left:0;right:0;top:100%;background:var(--th-182233);border:1px solid var(--chip-line);border-radius:9px;box-shadow:0 4px 12px rgba(0,0,0,.08);display:none;z-index:5;max-height:180px;overflow-y:auto}
+  #tk-goi-y div{padding:.4rem .6rem;cursor:pointer}
+  #tk-goi-y div:hover{background:var(--chip)}
+  .ix-h{font-size:1.25rem;margin:0 0 .8rem;display:flex;align-items:center;gap:.5rem}
+  .ix-h svg.ic{width:20px;height:20px}
+
+  /* Token 2 theme của trang (đổ chung vào <style> base) */
+  :root{--th-111e33:#111e33;--th-182233:#182233;--th-1c2a20:#1c2a20;--th-2b2517:#2b2517;--th-33201b:#33201b;--th-3a3220:#3a3220;--th-3a4c6b:#3a4c6b;--th-3a5a40:#3a5a40;--th-5c3a30:#5c3a30;--th-8fbe9a:#8fbe9a;--th-a9d4b0:#a9d4b0;--th-c05a44:#c05a44;--th-d97c6c:#d97c6c;--th-e0c070:#e0c070}
+  :root[data-theme="light"]{--th-111e33:#eef4fc;--th-182233:#f5f5f5;--th-1c2a20:#e7f2e9;--th-2b2517:#faf1dc;--th-33201b:#fbeae6;--th-3a3220:#e8d9a9;--th-3a4c6b:#cfcfcf;--th-3a5a40:#a9cdb0;--th-5c3a30:#e5b6aa;--th-8fbe9a:#2e6b44;--th-a9d4b0:#24663a;--th-c05a44:#a83f2e;--th-d97c6c:#b14a3c;--th-e0c070:#8a6d1c}
+{% endblock %}
+
+{% block noi_dung %}
+<h2 class="ix-h"><svg class="ic" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> Nhập tài liệu vào kho tri thức</h2>
+
+<form id="form" class="form-nhap">
+  <div id="drop">Kéo-thả file vào đây, hoặc bấm để chọn file</div>
+  <input type="file" name="file" id="file" hidden>
+  <div id="ten-file"></div>
+
+  <label class="bat-buoc">Tiêu đề</label>
+  <input name="title" required placeholder="Tên rõ nghĩa — Agent hiển thị khi trích nguồn"
+         value="{{ goi_y_tieu_de or '' }}">
+
+  <label>Chủ đề / Từ khóa</label>
+  <!-- Ý 2: chip + autocomplete từ từ khóa ĐÃ DÙNG (metadata nhất quán). Submit vẫn
+       gửi chuỗi "a, b" qua input ẩn name=keywords — backend không đổi -->
+  <input type="hidden" name="keywords" id="keywords" value="{{ goi_y_tu_khoa or '' }}">
+  <div id="chips"></div>
+  <div id="tk-khung">
+    <input id="tk-nhap" placeholder="Bấm để thấy từ khóa có sẵn — gõ để lọc, Enter thêm từ mới" autocomplete="off">
+    <div id="tk-goi-y"></div>
+  </div>
+
+  <label>Phụ trách</label>
+  <input name="owner" placeholder="Ai chịu trách nhiệm nội dung">
+
+  <label>Phiên bản</label>
+  <input name="version" value="v1">
+
+  <label class="bat-buoc">Bộ phận</label>
+  <select name="department" required>
+    <option value="">— Chọn bộ phận —</option>
+    {% for v in departments %}<option>{{ v }}</option>{% endfor %}
+  </select>
+
+  <label class="bat-buoc">Loại tài liệu</label>
+  <select name="doc_type" required>
+    <option value="">— Chọn loại tài liệu —</option>
+    {% for v in doc_types %}<option>{{ v }}</option>{% endfor %}
+  </select>
+
+  <label class="bat-buoc">Hiệu lực</label>
+  <select name="effective_status" required>
+    <option value="">— Chọn hiệu lực —</option>
+    {% for v in effective_statuses %}<option>{{ v }}</option>{% endfor %}
+  </select>
+
+  <label class="bat-buoc">Mức truy cập</label>
+  <select name="access_level" required>
+    <option value="">— Chọn mức truy cập —</option>
+    {% for v in access_levels %}<option>{{ v }}</option>{% endfor %}
+  </select>
+
+  <label class="bat-buoc">Level tối thiểu để xem</label>
+  <select name="min_level" required>
+    <option value="">— Chọn level tối thiểu —</option>
+    {% for so, chu in min_levels %}<option value="{{ so }}">{{ so }} — {{ chu }}</option>{% endfor %}
+  </select>
+
+  <label class="bat-buoc">Tầng nguồn</label>
+  <select name="tang_nguon" id="tang_nguon" required>
+    {% for v, ten in tang_nguon_options %}<option value="{{ v }}">{{ ten }}</option>{% endfor %}
+  </select>
+  <div id="nguon-ten-wrap" style="display:none">
+    <label class="bat-buoc">Tên nguồn</label>
+    <input name="nguon_ten" id="nguon_ten" placeholder="Tên chuyên gia / tên nguồn ngoài" maxlength="120">
+  </div>
+
+  <button id="luu" type="submit" disabled>Lưu tài liệu</button>
+</form>
+<div id="ket-qua"></div>
+<div id="canh-bao"></div>
+{% endblock %}
+
+{% block script %}
+<script>
+const drop = document.getElementById('drop');
+const fileInput = document.getElementById('file');
+const tenFile = document.getElementById('ten-file');
+const form = document.getElementById('form');
+const nutLuu = document.getElementById('luu');
+const ketQua = document.getElementById('ket-qua');
+const canhBao = document.getElementById('canh-bao');
+
+// Nút Lưu chỉ bật khi ĐÃ có file + ĐỦ 4 dropdown
+function kiemTra() {
+  const duSelect = [...form.querySelectorAll('select')].every(s => s.value);
+  nutLuu.disabled = !(fileInput.files.length && duSelect);
+}
+
+function capNhatTenFile() {
+  tenFile.textContent = fileInput.files.length ? fileInput.files[0].name : '';
+  kiemTra();
+}
+
+drop.addEventListener('click', () => fileInput.click());
+drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('keo'); });
+drop.addEventListener('dragleave', () => drop.classList.remove('keo'));
+drop.addEventListener('drop', e => {
+  e.preventDefault();
+  drop.classList.remove('keo');
+  if (e.dataTransfer.files.length) { fileInput.files = e.dataTransfer.files; capNhatTenFile(); }
+});
+fileInput.addEventListener('change', capNhatTenFile);
+form.addEventListener('change', kiemTra);
+
+// Supervisor: ô Tên nguồn chỉ hiện + bắt buộc khi tầng ≠ công ty (noi_bo). Công ty = Official.
+const oTang = document.getElementById('tang_nguon');
+const wrapNguon = document.getElementById('nguon-ten-wrap');
+const oNguonTen = document.getElementById('nguon_ten');
+function capNhatNguon() {
+  const canTen = oTang.value !== 'noi_bo';
+  wrapNguon.style.display = canTen ? 'block' : 'none';
+  oNguonTen.required = canTen;
+  if (!canTen) oNguonTen.value = '';
+}
+oTang.addEventListener('change', capNhatNguon);
+capNhatNguon();
+
+// ==== Ý 2: từ khóa nhất quán — chip + gợi ý từ các tài liệu đã nhập ====
+const oKeywords = document.getElementById('keywords');
+const oChips = document.getElementById('chips');
+const oTkNhap = document.getElementById('tk-nhap');
+const oGoiY = document.getElementById('tk-goi-y');
+let tuKhoaDaCo = [];   // nạp 1 lần lúc mở trang — kho nhỏ, lọc phía trình duyệt
+let chips = [];
+// Nạp danh sách từ khóa; nạp lại khi focus nếu lần đầu chưa về/lỗi (Qdrant chậm lúc mở
+// trang từng làm gợi ý "lúc có lúc không" — sửa 31/07/2026)
+function napTuKhoa() {
+  fetch('/tu-khoa-goi-y').then(r => r.ok ? r.json() : []).then(d => { tuKhoaDaCo = d; }).catch(() => {});
+}
+napTuKhoa();
+// So KHÔNG DẤU: "quy trinh" phải khớp "quy trình" — gõ thiếu dấu từng làm gợi ý không hiện
+const boDauTk = s => (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '')
+  .replace(/đ/g, 'd').replace(/Đ/g, 'd').toLowerCase();
+
+function veChips() {
+  oKeywords.value = chips.join(', ');   // format gửi lên /upload y như ô text cũ
+  oChips.textContent = '';
+  chips.forEach((tk, i) => {
+    const c = document.createElement('span');
+    c.className = 'chip';
+    c.textContent = tk;
+    const x = document.createElement('button');
+    x.type = 'button';
+    x.textContent = '×';
+    x.addEventListener('click', () => { chips.splice(i, 1); veChips(); });
+    c.appendChild(x);
+    oChips.appendChild(c);
+  });
+}
+
+function themChip(tk) {
+  tk = tk.trim();
+  if (tk && !chips.some(c => c.toLowerCase() === tk.toLowerCase())) { chips.push(tk); veChips(); }
+  oTkNhap.value = '';
+  veGoiY();
+}
+
+function veGoiY() {
+  const go = boDauTk(oTkNhap.value.trim());
+  // Ô TRỐNG cũng gợi ý: hiện top từ khóa hay dùng nhất (danh sách đã xếp theo tần suất)
+  // — trước đây trống là im lặng nên user tưởng tính năng lúc chạy lúc không.
+  const khop = tuKhoaDaCo.filter(tk =>
+    (!go || boDauTk(tk).includes(go)) && !chips.some(c => c.toLowerCase() === tk.toLowerCase()));
+  oGoiY.textContent = '';
+  khop.slice(0, 8).forEach(tk => {
+    const d = document.createElement('div');
+    d.textContent = tk;
+    // mousedown (trước blur) để click chọn không bị mất dropdown
+    d.addEventListener('mousedown', e => { e.preventDefault(); themChip(tk); });
+    oGoiY.appendChild(d);
+  });
+  oGoiY.style.display = khop.length ? 'block' : 'none';
+}
+
+// YC7: từ khóa gợi ý sẵn qua query param (nút "Bổ sung tài liệu" từ nhóm kho-thiếu)
+if (oKeywords.value.trim()) {
+  chips = oKeywords.value.split(',').map(t => t.trim()).filter(Boolean);
+  veChips();
+}
+
+oTkNhap.addEventListener('input', veGoiY);
+oTkNhap.addEventListener('focus', () => { if (!tuKhoaDaCo.length) napTuKhoa(); veGoiY(); });
+oTkNhap.addEventListener('blur', () => { oGoiY.style.display = 'none'; });
+oTkNhap.addEventListener('keydown', e => {
+  if (e.key === 'Enter') {              // Enter = thêm từ (mới hoặc gõ tay) — không submit form
+    e.preventDefault();
+    themChip(oTkNhap.value);
+  }
+});
+
+form.addEventListener('submit', async e => {
+  e.preventDefault();
+  nutLuu.disabled = true;
+  nutLuu.textContent = 'Đang lưu…';
+  ketQua.className = '';
+  canhBao.style.display = 'none';
+  try {
+    const res = await fetch('/upload', { method: 'POST', body: new FormData(form) });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || 'Lỗi không xác định');
+    ketQua.className = 'ok';
+    ketQua.textContent = data.message +
+      '\nTên file mới: ' + data.new_filename +
+      '\nĐã chép vào ngăn: ' + data.folder +
+      '\ndocument_id: ' + data.document_id;
+    if (data.warning) {
+      canhBao.textContent = data.warning;
+      canhBao.style.display = 'block';
+    }
+    form.reset();
+    chips = [];        // xóa chip từ khóa của tài liệu vừa lưu
+    veChips();
+    capNhatTenFile();
+  } catch (err) {
+    ketQua.className = 'loi';
+    ketQua.textContent = 'Lưu thất bại: ' + err.message;
+  } finally {
+    nutLuu.textContent = 'Lưu tài liệu';
+    kiemTra();
+  }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,23 @@
+# App tri-thuc — phụ thuộc RIÊNG của app (Luật 2: app tự đủ).
+# Giai đoạn test dùng venv chung ở ROOT; khi tách venv riêng thì cài từ file này.
+
+# --- lõi web + test (bắt buộc, cả khi chạy mock) ---
+fastapi
+uvicorn[standard]
+jinja2
+python-multipart
+httpx
+python-dotenv
+pypdf
+qdrant-client
+requests
+youtube-transcript-api
+pytest
+
+# --- chạy THẬT mới cần (mock không đụng tới; import lazy trong module) ---
+# fastembed          # embedding local — qdrant-client[fastembed] kéo cả cụm (nặng ~GB)
+# python-docx        # đọc .docx khi nạp tài liệu thật
+# openpyxl           # đọc .xlsx khi nạp tài liệu thật
+# anthropic          # provider anthropic (WRITER_PROVIDER=anthropic)
+# openai             # provider openai_compatible (GLM/ChatGPT/DeepSeek/Grok)
+# weasyprint         # bản đẹp PDF (cần GTK trên Windows — hệ cũ ghi nhận fail baseline)

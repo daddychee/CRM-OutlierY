@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kiểm streaming — AI Agent nội bộ</title>
+<link rel="stylesheet" href="/static/fonts/fonts.css">
+<script>(function(){var d=document.documentElement,t=null;try{t=new URLSearchParams(location.search).get("theme")||localStorage.getItem("outliery_theme")}catch(e){}if(t!=="light"&&t!=="dark"){t=(window.matchMedia&&matchMedia("(prefers-color-scheme: light)").matches)?"light":"dark"}d.setAttribute("data-theme",t)})()</script>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='5' fill='%23121826'/%3E%3Crect x='3.5' y='13' width='3' height='7' rx='1' fill='%23E8EDF4'/%3E%3Crect x='8.5' y='11' width='3' height='9' rx='1' fill='%23E8EDF4'/%3E%3Crect x='13.5' y='9' width='3' height='11' rx='1' fill='%23E8EDF4'/%3E%3Crect x='18.5' y='3' width='3' height='17' rx='1' fill='%234C8FE0'/%3E%3C/svg%3E">
+<style>
+  body { font-family:'Inter',system-ui,sans-serif; max-width: 560px; margin: 3rem auto; padding: 0 1rem; color: var(--th-eef2f8); background: var(--th-141c2b); }
+  h1 { font-size: 1.2rem; }
+  p { color: var(--th-9aa5b5); font-size: .92rem; }
+  button { padding: .6rem 1.2rem; border: 0; border-radius: 10px; background: var(--th-eef2f8); color: var(--th-182233); font-size: .95rem; cursor: pointer; }
+  pre { background: var(--th-182233); border: 1px solid var(--th-1d2840); border-radius: 10px; padding: .8rem 1rem; min-height: 8em; font-size: .9rem; }
+  .ket-qua { padding: .7rem .9rem; border-radius: 10px; font-weight: 600; display: none; }
+  .ok { display: block; background: var(--th-20301f); color: var(--th-a9d4b0); }
+  .dem { display: block; background: var(--th-33201b); color: var(--th-d97c6c); }
+  a { color: var(--th-d9a34a); font-size: .9rem; }
+
+  /* Token 2 theme (spec OUTLIERY 30/07) — TỐI là mặc định, SÁNG đè qua data-theme */
+  :root{--th-141c2b:#141c2b;--th-182233:#182233;--th-1d2840:#1d2840;--th-20301f:#20301f;--th-33201b:#33201b;--th-9aa5b5:#9aa5b5;--th-a9d4b0:#a9d4b0;--th-d97c6c:#d97c6c;--th-d9a34a:#d9a34a;--th-eef2f8:#eef2f8}
+  :root[data-theme="light"]{--th-141c2b:#f5f5f5;--th-182233:#f5f5f5;--th-1d2840:#efefef;--th-20301f:#e2efe4;--th-33201b:#fbeae6;--th-9aa5b5:#5c6169;--th-a9d4b0:#24663a;--th-d97c6c:#b14a3c;--th-d9a34a:#96701d;--th-eef2f8:#101216}
+  html[data-theme="light"]{color-scheme:light}
+  html{color-scheme:dark}
+</style>
+</head>
+<body>
+<h1>🩺 Kiểm streaming của trình duyệt này</h1>
+<p>Server sẽ phát 5 con số, mỗi giây 1 số. Nếu số nhảy <b>từng giây</b> → stream sống.
+Nếu cả 5 số hiện <b>cùng lúc sau ~5 giây</b> → trình duyệt/extension này đang ĐỆM
+response (thủ phạm làm chat không chảy chữ). Mở trang này ở từng trình duyệt để so.</p>
+<button id="chay">▶️ Chạy kiểm tra (5 giây)</button>
+<pre id="log">(bấm nút để chạy)</pre>
+<div id="ket-qua" class="ket-qua"></div>
+<a href="/hoi-dap">← Về hỏi–đáp</a>
+
+<script>
+document.getElementById('chay').addEventListener('click', async () => {
+  const log = document.getElementById('log');
+  const kq = document.getElementById('ket-qua');
+  kq.className = 'ket-qua';
+  log.textContent = 'Đang chạy…\n';
+  const moc = [];
+  const t0 = performance.now();
+  try {
+    const res = await fetch('/kiem-stream/data');
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      const chu = decoder.decode(value, { stream: true });
+      for (const dong of chu.split('\n')) {
+        if (dong.startsWith('data: ')) {
+          const t = (performance.now() - t0) / 1000;
+          moc.push(t);
+          log.textContent += `nhận số ${dong.slice(6)} ở giây ${t.toFixed(2)}\n`;
+        }
+      }
+    }
+    // Phán quyết: có ÍT NHẤT một khoảng cách ~1s giữa các số = chảy dần thật
+    let chay_dan = false;
+    for (let i = 1; i < moc.length; i++) if (moc[i] - moc[i - 1] > 0.5) chay_dan = true;
+    if (chay_dan) {
+      kq.textContent = '✅ STREAM SỐNG — trình duyệt này nhận chảy dần bình thường.';
+      kq.className = 'ket-qua ok';
+    } else {
+      kq.textContent = '❌ BỊ ĐỆM — mọi thứ tới cùng lúc. Trình duyệt/extension này đang gom response: thử cửa sổ ẩn danh (tắt extension) hoặc trình duyệt khác.';
+      kq.className = 'ket-qua dem';
+    }
+  } catch (err) {
+    log.textContent += 'Lỗi: ' + err.message;
+  }
+});
+</script>
+</body>
+</html>

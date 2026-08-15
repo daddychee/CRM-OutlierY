@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """GATEWAY — cổng vào duy nhất của OUTLIERY Platform v2 (:9000, sau Caddy :9443).
 
 CHỈ làm việc của cổng: đăng nhập/session, menu app, proxy theo hợp đồng app, trang
@@ -81,7 +81,7 @@ async def health():
 
 
 @app.get("/login", response_class=HTMLResponse)
-async def login_form(request: Request):
+def login_form(request: Request):
     if user_hien_tai(request):
         return RedirectResponse("/", status_code=303)
     conn = iam.ket_noi()
@@ -94,7 +94,11 @@ async def login_form(request: Request):
 
 
 @app.post("/login", response_class=HTMLResponse)
-async def login_gui(request: Request, ten: str = Form(""), mat_khau: str = Form("")):
+def login_gui(request: Request, ten: str = Form(""), mat_khau: str = Form("")):
+    """SYNC có chủ đích: bcrypt là CPU-bound — để async là block event loop, 50
+    người login đồng thời làm cả cổng đứng (đo thật load test 16/08: trung vị
+    44.6s/phiên → sửa xong đo lại phải <2s). FastAPI tự chạy route sync trong
+    threadpool."""
     conn = iam.ket_noi()
     try:
         claims = iam.xac_thuc(conn, ten, mat_khau)
@@ -112,14 +116,14 @@ async def login_gui(request: Request, ten: str = Form(""), mat_khau: str = Form(
 
 
 @app.get("/logout")
-async def logout():
+def logout():
     resp = RedirectResponse("/login", status_code=303)
     resp.delete_cookie(COOKIE_TEN)
     return resp
 
 
 @app.get("/doi-mat-khau", response_class=HTMLResponse)
-async def doi_mk_form(request: Request):
+def doi_mk_form(request: Request):
     user = user_hien_tai(request)
     if not user:
         return _ve_login()
@@ -128,7 +132,7 @@ async def doi_mk_form(request: Request):
 
 
 @app.post("/doi-mat-khau", response_class=HTMLResponse)
-async def doi_mk_gui(request: Request, mk_moi: str = Form(""), mk_lai: str = Form("")):
+def doi_mk_gui(request: Request, mk_moi: str = Form(""), mk_lai: str = Form("")):
     user = user_hien_tai(request)
     if not user:
         return _ve_login()
@@ -148,7 +152,7 @@ async def doi_mk_gui(request: Request, mk_moi: str = Form(""), mk_lai: str = For
 
 
 @app.get("/", response_class=HTMLResponse)
-async def trang_chu(request: Request):
+def trang_chu(request: Request):
     user = _kiem(request)
     if isinstance(user, RedirectResponse):
         return user
@@ -167,19 +171,22 @@ async def trang_chu(request: Request):
 
 @app.get("/suc-khoe", response_class=HTMLResponse)
 async def suc_khoe(request: Request):
-    user = _kiem(request)
+    from starlette.concurrency import run_in_threadpool
+    user = await run_in_threadpool(_kiem, request)   # sqlite không chạy trên loop
     if isinstance(user, RedirectResponse):
         return user
-    ket_qua = []
+    import asyncio
+
+    async def _kiem_mot_app(client, muc):   # tên KHÁC _kiem module-level (đã dính UnboundLocal)
+        try:
+            r = await client.get(f"http://127.0.0.1:{muc['cong']}{muc['health']}")
+            return {"app": muc, "song": r.status_code == 200}
+        except httpx.HTTPError:
+            return {"app": muc, "song": False}
+
     async with httpx.AsyncClient(timeout=3.0) as client:
-        for muc in doc_hop_dong():
-            url = f"http://127.0.0.1:{muc['cong']}{muc['health']}"
-            try:
-                r = await client.get(url)
-                song = r.status_code == 200
-            except httpx.HTTPError:
-                song = False
-            ket_qua.append({"app": muc, "song": song})
+        ket_qua = list(await asyncio.gather(
+            *(_kiem_mot_app(client, m) for m in doc_hop_dong())))
     return templates.TemplateResponse(
         request, "suckhoe.html", {"user": user, "ket_qua": ket_qua})
 
@@ -215,7 +222,7 @@ def _yeu_cau_quan_tri(request: Request) -> dict | Response:
 
 
 @app.get("/quan-tri", response_class=HTMLResponse)
-async def quan_tri(request: Request):
+def quan_tri(request: Request):
     user = _yeu_cau_quan_tri(request)
     if isinstance(user, Response):
         return user
@@ -223,7 +230,7 @@ async def quan_tri(request: Request):
 
 
 @app.post("/quan-tri/tao-tai-khoan", response_class=HTMLResponse)
-async def qt_tao_tk(request: Request, ten: str = Form(""), mat_khau: str = Form(""),
+def qt_tao_tk(request: Request, ten: str = Form(""), mat_khau: str = Form(""),
                     bo_phan: str = Form(""), level: int = Form(1)):
     user = _yeu_cau_quan_tri(request)
     if isinstance(user, Response):
@@ -240,7 +247,7 @@ async def qt_tao_tk(request: Request, ten: str = Form(""), mat_khau: str = Form(
 
 
 @app.post("/quan-tri/sua", response_class=HTMLResponse)
-async def qt_sua(request: Request, ten: str = Form(...),
+def qt_sua(request: Request, ten: str = Form(...),
                  hanh_dong: str = Form(...), gia_tri: str = Form("")):
     user = _yeu_cau_quan_tri(request)
     if isinstance(user, Response):
@@ -272,7 +279,7 @@ async def qt_sua(request: Request, ten: str = Form(...),
 
 
 @app.post("/quan-tri/tao-nguoi", response_class=HTMLResponse)
-async def qt_tao_nguoi(request: Request, ho_ten: str = Form(""),
+def qt_tao_nguoi(request: Request, ho_ten: str = Form(""),
                        bo_phan: str = Form(""), vi_tri: str = Form("")):
     user = _yeu_cau_quan_tri(request)
     if isinstance(user, Response):
@@ -290,7 +297,7 @@ async def qt_tao_nguoi(request: Request, ho_ten: str = Form(""),
 # ---------- két cấu hình (P3) ----------
 
 @app.get("/api/cau-hinh/llm/{vai}")
-async def api_cau_hinh_llm(request: Request, vai: str):
+def api_cau_hinh_llm(request: Request, vai: str):
     """App phụ (bind loopback) đọc cấu hình LLM theo vai — key KHÔNG bao giờ nằm
     trong file của app. CHỈ phục vụ loopback.
 
@@ -315,7 +322,7 @@ def _yeu_cau_owner_ket(request: Request) -> dict | Response:
 
 
 @app.get("/cai-dat", response_class=HTMLResponse)
-async def cai_dat(request: Request, bao: str = "", loi: str = ""):
+def cai_dat(request: Request, bao: str = "", loi: str = ""):
     user = _yeu_cau_owner_ket(request)
     if isinstance(user, Response):
         return user
@@ -329,7 +336,7 @@ async def cai_dat(request: Request, bao: str = "", loi: str = ""):
 
 
 @app.post("/cai-dat/llm", response_class=HTMLResponse)
-async def cai_dat_llm(request: Request, vai: str = Form(...),
+def cai_dat_llm(request: Request, vai: str = Form(...),
                       provider: str = Form(""), model: str = Form(""),
                       base_url: str = Form(""), api_key: str = Form("")):
     user = _yeu_cau_owner_ket(request)
@@ -356,9 +363,11 @@ async def cai_dat_llm(request: Request, vai: str = Form(...),
 # ---------- cầu nối: hỏi số liệu (P6) ----------
 
 @app.post("/api/cau-noi/hoi-so-lieu")
-async def api_hoi_so_lieu(request: Request, cau_hoi: str = Form(...)):
+def api_hoi_so_lieu(request: Request, cau_hoi: str = Form(...)):
     """Router hỏi số liệu — danh bạ khớp kênh → connector đọc app sở hữu dữ liệu
-    dưới danh nghĩa NGƯỜI HỎI. Nút 📊 của hỏi–đáp gọi vào đây."""
+    dưới danh nghĩa NGƯỜI HỎI. Nút 📊 của hỏi–đáp gọi vào đây.
+    SYNC có chủ đích: connector dùng httpx sync — để async là block event loop
+    (đo thật load test 16/08, cùng họ bug bcrypt-login)."""
     user = user_hien_tai(request)
     if not user:
         return JSONResponse({"loi": "chua dang nhap"}, status_code=401)
@@ -375,22 +384,31 @@ async def api_hoi_so_lieu(request: Request, cau_hoi: str = Form(...)):
 @app.api_route("/app/{slug}/{duong_dan:path}",
                methods=["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"])
 async def proxy_app(request: Request, slug: str, duong_dan: str):
-    user = user_hien_tai(request)
+    from starlette.concurrency import run_in_threadpool
+
+    def _auth_va_quyen():
+        """Gom mọi việc chạm sqlite/file vào MỘT lần xuống threadpool — proxy là
+        route nóng nhất, tuyệt đối không block loop (đo thật load test 16/08)."""
+        u = user_hien_tai(request)
+        if not u:
+            return None, None, False
+        conn2 = iam.ket_noi()
+        try:
+            return u, tim_app(slug), iam.co_quyen(u, "vao", slug, conn2)
+        finally:
+            conn2.close()
+
+    user, muc, duoc_vao = await run_in_threadpool(_auth_va_quyen)
     if not user:
         if "text/html" in (request.headers.get("accept") or ""):
             return _ve_login()
         return JSONResponse({"loi": "chua dang nhap"}, status_code=401)
     if user.get("phai_doi_mk"):
         return RedirectResponse("/doi-mat-khau", status_code=303)
-    muc = tim_app(slug)
     if not muc:
         return Response("Không có app này.", status_code=404)
-    conn = iam.ket_noi()
-    try:
-        if not iam.co_quyen(user, "vao", slug, conn):
-            return Response("Bạn không có quyền vào công cụ này.", status_code=403)
-    finally:
-        conn.close()
+    if not duoc_vao:
+        return Response("Bạn không có quyền vào công cụ này.", status_code=403)
     return await chuyen_tiep(
         request, cong=muc["cong"], goc=f"/app/{slug}", duong_dan=duong_dan,
         ten_user=user["ten"], tien_to_app=muc.get("tien_to", []),

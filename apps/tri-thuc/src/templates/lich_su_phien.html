@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}{{ ten_phien }} — OUTLIERY{% endblock %}
+{% block topbar_ten %}Lịch sử — chi tiết{% endblock %}
+
+{% block style_them %}
+  .lp-h{font-size:1.2rem;margin:0 0 .3rem}
+  .giam-sat{margin:.5rem 0 1rem;padding:.55rem .8rem;border-radius:9px;background:var(--th-2b2517);color:var(--th-e0c070);border:1px solid var(--th-3a3220);font-size:.88rem}
+  .luot{border:1px solid var(--chip-line);border-radius:12px;padding:.8rem 1rem;margin-top:1rem;background:var(--th-182233)}
+  .tg{font-size:.78rem;color:var(--th-455878)}
+  .hoi{margin-top:.4rem;font-weight:600}
+  .dap{margin-top:.5rem;white-space:pre-line}
+  .nguon{font-size:.85rem;color:var(--muted);margin-top:.5rem;border-top:1px solid var(--line);padding-top:.4rem}
+  .trong{margin-top:2rem;color:var(--muted)}
+
+  /* Token 2 theme của trang (đổ chung vào <style> base) */
+  :root{--th-182233:#182233;--th-2b2517:#2b2517;--th-3a3220:#3a3220;--th-455878:#455878;--th-e0c070:#e0c070}
+  :root[data-theme="light"]{--th-182233:#f5f5f5;--th-2b2517:#faf1dc;--th-3a3220:#e8d9a9;--th-455878:#c2c2c2;--th-e0c070:#8a6d1c}
+{% endblock %}
+
+{% block noi_dung %}
+<h2 class="lp-h">💬 {{ ten_phien }}{% if not cua_minh %} — của <b>{{ chu_nhan }}</b>{% endif %}</h2>
+<a href="{{ '/lich-su' if cua_minh else '/lich-su/' + chu_nhan }}">← Về danh sách cuộc trò chuyện</a>
+{% if cua_minh and phien_id %} · <a href="/hoi-dap?phien={{ phien_id | urlencode }}">💬 Tiếp tục cuộc này →</a>{% endif %}
+
+{% if not cua_minh %}<div class="giam-sat">👁️ Chế độ giám sát (Owner): đang xem nguyên bản của {{ chu_nhan }}.</div>{% endif %}
+
+{% if not cac_luot %}
+<p class="trong">Không có lượt nào xem được trong phiên này.</p>
+{% endif %}
+
+{% for l in cac_luot %}
+<div class="luot">
+  <div class="tg">{{ l.thoi_gian }}</div>
+  <div class="hoi">❓ {{ l.hoi }}</div>
+  <div class="dap">{{ l.dap }}</div>
+  {% if l.doc_codes %}<div class="nguon">📚 Nguồn: {{ l.doc_codes | join(' · ') }}</div>{% endif %}
+</div>
+{% endfor %}
+{% endblock %}

@@ -1,0 +1,231 @@
+{% extends "base.html" %}
+{# V2 (to-chuc): template GIỮ NGUYÊN hệ cũ. Các nhánh `dong_bo_bat`/`tt_nas` (khung
+   "Tài khoản của bạn", nút Cài đặt tự động, link /doi-mat-khau, /dang-xuat) hiện là
+   NHÁNH CHỜ — route luôn truyền dong_bo_bat=False, tt_nas='tat' vì mạch nas_sync
+   (đồng bộ tài khoản Windows theo mật khẩu OUTLIERY) thuộc gateway/IAM, chưa mang
+   sang. Khi gateway có nas_sync thì nối lại context, template sẵn sàng. #}
+{% block title %}NAS công ty — OUTLIERY{% endblock %}
+
+{% block style_them %}
+  /* style_them nằm TRONG thẻ style chung của base — CSS TRẦN, tuyệt đối không
+     viết thẻ style ở đây (bug 04/08: thẻ đóng cắt cụt khối token theme của base,
+     CSS xổ ra thành chữ trên trang) */
+  .nas-wrap{max-width:860px;margin:2.2rem auto;padding:0 1rem}
+  .nas-h{display:flex;align-items:center;gap:.55rem;font-size:1.2rem;margin:0 0 .3rem}
+  .nas-sub{color:var(--muted);font-size:.9rem;margin:0 0 1.3rem}
+  .nas-nut{padding:.5rem .95rem;border:1px solid var(--line);border-radius:9px;background:transparent;
+    color:inherit;cursor:pointer;font:inherit;white-space:nowrap;text-decoration:none;display:inline-block}
+  .nas-nut:hover{border-color:var(--accent);color:var(--accent)}
+  .nas-note{color:var(--muted);font-size:.85rem;line-height:1.55;margin-top:1.1rem}
+  .nas-buoc{margin:.9rem 0 0;padding-left:1.2rem;line-height:1.75}
+  .nas-buoc li{margin-bottom:.25rem}
+  .nas-web{display:inline-block;margin:.2rem 0 1rem}
+  .nas-tk{background:var(--raised,transparent);border:1px solid var(--line);border-radius:12px;
+    padding:.9rem 1.1rem;margin:0 0 1.3rem;line-height:1.7;font-size:.92rem}
+  .nas-tk code{font-family:var(--mono,monospace)}
+  .nas-tt{font-size:.85rem;margin-top:.35rem}
+
+  /* ===== Lưới thẻ ổ đĩa kiểu This PC ===== */
+  .o-luoi{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:1rem;margin:0 0 .4rem}
+  .o-card{background:var(--raised,transparent);border:1px solid var(--line);border-radius:14px;
+    padding:1.1rem 1.2rem;transition:border-color .12s}
+  .o-card:hover{border-color:var(--accent)}
+  .o-top{display:flex;gap:.85rem;align-items:center;margin-bottom:.55rem}
+  .o-icon{width:44px;height:44px;flex:none;color:var(--accent)}
+  .o-icon svg{width:100%;height:100%}
+  .o-ten{font-weight:600;font-size:1.05rem}
+  .o-duong{font-family:var(--mono,monospace);font-size:.8rem;color:var(--muted);word-break:break-all}
+  .o-quyen{display:inline-block;font-size:.74rem;border:1px solid var(--line);border-radius:99px;
+    padding:.14rem .6rem;color:var(--muted);margin-bottom:.6rem}
+  .o-bar{height:7px;border-radius:99px;background:var(--line);overflow:hidden;margin:.15rem 0 .3rem}
+  .o-fill{height:100%;border-radius:99px;background:var(--accent)}
+  .o-dl{font-size:.8rem;color:var(--muted);margin-bottom:.65rem}
+  .o-act{display:flex;gap:.5rem;flex-wrap:wrap}
+{% endblock %}
+
+{% block noi_dung %}
+{# ── icon line-SVG dùng lại nhiều lần (đồng bộ bộ svg.ic của cả hệ, cùng khuôn vault.html —
+   user chốt 06/08: NAS phải dùng icon tối giản thay emoji màu ⚙📋🍎🌐🗒) ── #}
+{% set IC_GEAR = '<svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>' %}
+{% set IC_COPY = '<svg class="ic" viewBox="0 0 24 24"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg>' %}
+{% set IC_MAC = '<svg class="ic" viewBox="0 0 24 24"><path d="M15.3 3c.1 1.4-.5 2.7-1.3 3.6-.9 1-2.3 1.8-3.6 1.7-.1-1.4.5-2.7 1.3-3.6C12.6 3.7 14 3 15.3 3z"/><path d="M19.6 8.7c-1.7-2-4.6-2.1-6-1-1.4-1.1-3.9-1-5.5.5C5.5 10.7 5.6 15 8 18.3c1.1 1.5 2.2 2.9 3.9 2.9 1.6 0 2.2-1 4-1s2.4 1 4 1c1.7 0 2.7-1.4 3.7-2.9 1.3-1.9 1.9-4.2 1.9-4.3-3.5-1.4-3.4-5.9.1-7.3z"/></svg>' %}
+{% set IC_WEB = '<svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>' %}
+{% set IC_LOG = '<svg class="ic" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h6"/></svg>' %}
+{% set IC_CHO = '<svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>' %}
+<div class="nas-wrap">
+  <h2 class="nas-h"><svg class="ic" style="width:22px;height:22px" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="6" rx="1"/><rect x="3" y="13" width="18" height="6" rx="1"/><circle cx="7" cy="8" r=".9"/><circle cx="7" cy="16" r=".9"/></svg>
+    Ổ lưu trữ NAS công ty</h2>
+  <p class="nas-sub">Các ổ bạn được truy cập. Lần đầu dùng trên máy này: bấm
+    {{ IC_GEAR|safe }} <b>Cài đặt</b> ở Ổ CỦA TEAM BẠN — tải file, bấm đúp chạy một lần là ổ hiện
+    trong This PC, từ đó click đúp như ổ D/E, không cần vào trang này nữa.
+    Cần thêm ổ khác thì bấm Cài đặt ở ổ đó (không hỏi lại mật khẩu).</p>
+
+  {# ===== Tài khoản: NAS dùng CHÍNH tài khoản OUTLIERY (04/08/2026) ===== #}
+  {% if dong_bo_bat and tt_nas != 'tat' %}
+  <div class="nas-tk">
+    {% if chua_ok and tt_nas != 'ok' %}
+    <div class="nas-tt" style="margin:0 0 .5rem"><b>⚠ Chưa tải được file Cài đặt</b> —
+      tài khoản NAS của bạn chưa sẵn sàng. Làm đúng bước bên dưới trước rồi quay lại.</div>
+    {% endif %}
+    <b>Tài khoản của bạn</b> (khi Windows hỏi lúc mở ổ):
+    Tên <code>{{ nas_ip }}\{{ user.ten }}</code> — phải gõ đủ cụm <code>{{ nas_ip }}\</code>
+    đứng trước, thiếu là báo sai mật khẩu. Mật khẩu: <b>chính là mật khẩu đăng nhập
+    OUTLIERY</b> của bạn. Nhập xong tích <b>Remember my credentials</b>.
+    <div class="nas-tt">{{ IC_MAC|safe }} Trên <b>Mac</b>: gõ tên <b>KHÔNG có tiền tố</b> —
+      chỉ <code>{{ user.ten }}</code> (không phải <code>{{ nas_ip }}\{{ user.ten }}</code>
+      như Windows). Cùng mật khẩu OUTLIERY; bấm nút <b>Kết nối trên Mac</b> ở mỗi ổ bên
+      dưới để Finder tự hỏi.</div>
+    {% if tt_nas == 'ok' %}
+    <div class="nas-tt">✓ Tài khoản NAS đã sẵn sàng.</div>
+    {% elif tt_nas == 'mk_yeu' %}
+    <div class="nas-tt">⚠ Mật khẩu hiện tại chưa đạt chuẩn Windows nên NAS chưa nhận.
+      <a href="/doi-mat-khau">Đổi mật khẩu</a> mới: từ 8 ký tự, đủ chữ HOA + chữ thường +
+      số và <b>KHÔNG chứa tên đăng nhập của bạn</b> (ví dụ dạng <code>Abc12345</code>)
+      rồi quay lại đây.</div>
+    {% elif tt_nas == 'loi' %}
+    <div class="nas-tt">⚠ Lần đồng bộ gần nhất gặp lỗi — đăng xuất rồi đăng nhập lại;
+      vẫn thấy dòng này thì báo quản trị.</div>
+    {% else %}
+    <div class="nas-tt">{{ IC_CHO|safe }} Tài khoản NAS chưa kích hoạt — <a href="/dang-xuat">đăng xuất</a>
+      rồi đăng nhập lại một lần là xong (hệ chỉ mở khóa được lúc bạn đăng nhập).</div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {# ===== Lưới ổ đĩa ===== #}
+  <div class="o-luoi">
+    {% for o in o_dia %}
+    <div class="o-card">
+      <div class="o-top">
+        <span class="o-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2.5" y="7.5" width="19" height="9" rx="1.6"/><circle cx="17.8" cy="12" r="1.15"/><path d="M5.5 12h6.5"/></svg></span>
+        <div>
+          <div class="o-ten">{{ o.ten }}{% if o.chu %} <span style="color:var(--muted);font-weight:400">({{ o.chu }}:)</span>{% endif %}</div>
+          <div class="o-duong">{{ o.duong }}</div>
+        </div>
+      </div>
+      <span class="o-quyen">{% if user.level >= 3 %}Toàn quyền — đọc, ghi, sửa, xóa{% else %}Xem + thêm file mới — không sửa/xóa được{% endif %}</span>
+      {% if o.dl %}
+      <div class="o-bar"><div class="o-fill" style="width:{{ o.dl.phan_tram }}%"></div></div>
+      <div class="o-dl">Còn trống {{ o.dl.trong_gb }} GB / {{ o.dl.tong_gb }} GB</div>
+      {% endif %}
+      <div class="o-act">
+        {% if dong_bo_bat and tt_nas == 'ok' %}
+        <a class="nas-nut" href="/nas/cai-dat/{{ o.idx }}" title="Tải file, bấm đúp, nhập mật khẩu OUTLIERY một lần — ổ {{ o.ten }} hiện trong This PC thành ổ {{ o.chu }}:">{{ IC_GEAR|safe }} Cài đặt — hiện ổ trong This PC</a>
+        {% elif dong_bo_bat and tt_nas != 'tat' %}
+        <span class="nas-nut" style="opacity:.5;cursor:not-allowed" title="Tài khoản NAS chưa sẵn sàng — làm bước trong khung Tài khoản phía trên trước">{{ IC_GEAR|safe }} Cài đặt (chờ tài khoản sẵn sàng)</span>
+        {% else %}
+        <button type="button" class="nas-nut nas-copy" data-duong="{{ o.duong }}">{{ IC_COPY|safe }} <span class="nas-copy-tx">Copy đường dẫn</span></button>
+        {% endif %}
+        {% if o.smb %}
+        <a class="nas-nut" href="{{ o.smb }}" title="Mở Finder trên Mac và kết nối tới ổ {{ o.ten }} ({{ o.smb }})">{{ IC_MAC|safe }} Kết nối trên Mac</a>
+        <button type="button" class="nas-nut nas-copy" data-duong="{{ o.smb }}">{{ IC_COPY|safe }} <span class="nas-copy-tx">Copy địa chỉ Mac</span></button>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  {% if nas_web %}
+  <a class="nas-web" href="{{ nas_web }}" target="_blank" rel="noopener">{{ IC_WEB|safe }} Mở giao diện web của NAS →</a>
+  {% endif %}
+
+  {# ===== Nhật ký xóa/đổi tên — CHỈ Manager+ (level >= 4) ===== #}
+  {% if nhat_ky is not none %}
+  <div class="nas-tk" style="margin-top:1.1rem">
+    <b>{{ IC_LOG|safe }} Nhật ký xóa / đổi tên (14 ngày, Manager trở lên mới thấy)</b>
+    {% if nhat_ky %}
+    <div style="max-height:300px;overflow:auto;margin-top:.5rem">
+      <table style="width:100%;border-collapse:collapse;font-size:.84rem">
+        <tr style="color:var(--muted);text-align:left">
+          <th style="padding:.25rem .5rem">Lúc</th>
+          <th style="padding:.25rem .5rem">Ai</th>
+          <th style="padding:.25rem .5rem">File</th></tr>
+        {% for d in nhat_ky %}
+        <tr style="border-top:1px solid var(--line)">
+          <td style="padding:.3rem .5rem;white-space:nowrap">{{ d.luc }}</td>
+          <td style="padding:.3rem .5rem">{{ d.tai_khoan }}</td>
+          <td style="padding:.3rem .5rem;font-family:var(--mono,monospace);word-break:break-all" title="{{ d.duong }}">{{ d.duong.split('\\')[-1] }}</td></tr>
+        {% endfor %}
+      </table>
+    </div>
+    {% else %}
+    <div class="nas-tt">Chưa ghi nhận sự kiện xóa/đổi tên nào. Nhật ký chỉ ghi TỪ LÚC BẬT
+      theo dõi (script dựng nền bước 3b) — không truy ngược được chuyện cũ; máy còn dùng
+      tài khoản chung sẽ hiện tên <code>nhanvien</code>.</div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <div class="nas-note">
+    {% if dong_bo_bat and tt_nas != 'tat' %}
+    File Cài đặt tự gỡ tài khoản chung <code>nhanvien</code> cũ trên máy (nếu có) trước
+    khi gắn ổ. Vừa đổi mật khẩu OUTLIERY thì mật khẩu NAS đổi theo — ổ đang gắn sẽ báo
+    sai mật khẩu: chạy lại file {{ IC_GEAR|safe }} Cài đặt của ổ là xong (nó tự dọn tài khoản lưu cũ).
+    {% else %}
+    <b>Cách mở nhanh:</b>
+    <ol class="nas-buoc">
+      <li>Bấm {{ IC_COPY|safe }} <b>Copy đường dẫn</b> ở ổ muốn mở.</li>
+      <li>Nhấn <b>Windows + R</b>, dán (Ctrl+V), Enter — cửa sổ thư mục NAS mở ra.</li>
+    </ol>
+    <b>Gắn thành ổ đĩa cố định (làm một lần, sau hiện trong This PC như ổ D/E):</b>
+    <ol class="nas-buoc">
+      <li>Mở <b>File Explorer</b> → chuột phải <b>This PC</b> → <b>Map network drive…</b></li>
+      <li>Chọn chữ ổ (vd <b>Z:</b>), dán đường dẫn vào ô Folder, tích <b>Reconnect at sign-in</b> → Finish.</li>
+      <li>Máy hỏi tài khoản → nhập tài khoản NAS được cấp (quên thì hỏi quản trị).</li>
+    </ol>
+    {% endif %}
+    {% if nas_ip %}
+    <b>{{ IC_MAC|safe }} Trên máy Mac:</b>
+    <ol class="nas-buoc">
+      <li>Bấm {{ IC_MAC|safe }} <b>Kết nối trên Mac</b> ở ổ muốn mở — Finder tự bật hộp <i>Connect to
+        Server</i> sẵn địa chỉ. (Trình duyệt hỏi mở ứng dụng khác thì bấm <b>Allow/Cho
+        phép</b> — đó là Finder.)</li>
+      <li>Không tự mở được thì: mở <b>Finder</b> → nhấn <b>⌘K</b> (Command+K) → bấm
+        {{ IC_COPY|safe }} <b>Copy địa chỉ Mac</b> ở ổ đó rồi dán (⌘V) vào ô địa chỉ → <b>Connect</b>.</li>
+      <li>Chọn <b>Registered User</b>, nhập tài khoản như hướng dẫn ở khung phía trên
+        (Mac KHÔNG cần tiền tố IP), tích <b>Remember this password in my keychain</b>.</li>
+      <li>Muốn có sẵn như ổ cứng gắn ngoài: kéo icon ổ vừa mở trong cửa sổ Finder vào
+        mục <b>Favorites</b> bên trái.</li>
+    </ol>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block script %}
+<script>
+// Copy đường dẫn: máy LAN vào qua http://IP:8000 KHÔNG phải secure context —
+// navigator.clipboard có thể không tồn tại (bài học sự cố chat 01/08/2026) →
+// đường lui: textarea tạm + select + execCommand.
+(function () {
+  function copyLui(chu) {
+    var t = document.createElement('textarea');
+    t.value = chu; t.style.position = 'fixed'; t.style.opacity = '0';
+    document.body.appendChild(t); t.select(); t.setSelectionRange(0, 99999);
+    var xong = false;
+    try { xong = document.execCommand('copy'); } catch (e) {}
+    document.body.removeChild(t);
+    return xong;
+  }
+  // Nút giữ icon SVG cố định (IC_COPY) + span .nas-copy-tx đổi chữ — đụng textContent của cả
+  // nút sẽ xoá luôn icon (textContent thay mọi node con bằng text thuần), nên chỉ đổi span.
+  var nuts = document.querySelectorAll('.nas-copy');
+  Array.prototype.forEach.call(nuts, function (nut) {
+    var tx = nut.querySelector('.nas-copy-tx');
+    var cu = tx ? tx.textContent : '';
+    nut.addEventListener('click', function () {
+      var chu = nut.getAttribute('data-duong') || '';
+      var xong = copyLui(chu);
+      if (!xong && window.navigator && navigator.clipboard) {
+        navigator.clipboard.writeText(chu).catch(function () {});
+        xong = true;
+      }
+      if (tx) {
+        tx.textContent = xong ? 'Đã copy ✓' : cu;
+        setTimeout(function () { tx.textContent = cu; }, 1800);
+      }
+    });
+  });
+})();
+</script>
+{% endblock %}

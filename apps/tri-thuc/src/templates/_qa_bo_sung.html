@@ -1,0 +1,180 @@
+{# Modal Q&A bổ sung — DÙNG CHUNG cho giam_sat.html + kho_thieu.html (chỉ include khi is_owner).
+   Luồng: nút "Bổ sung Q&A" (data-cau-hoi) → ung-vien-qa (top-3) → chọn → soan-nhap-qa (sửa nháp) →
+   duyet-qa (ghi kho). KHÔNG localStorage, KHÔNG alert/confirm. them_cap_qa lo ghi ở server. #}
+<style>
+  .qa-btn{display:inline-block;font-size:.82rem;padding:.25rem .7rem;margin-left:.35rem;
+    background:var(--th-182233);border:1px solid var(--chip-line);border-radius:999px;color:var(--accent);
+    cursor:pointer;font-family:inherit;white-space:nowrap}
+  .qa-btn:hover{border-color:var(--accent)}
+  #qa-overlay{position:fixed;inset:0;z-index:120;background:rgba(30,26,22,.42);
+    display:none;align-items:center;justify-content:center;padding:20px}
+  #qa-overlay.mo{display:flex}
+  .qa-box{background:var(--th-182233);border-radius:16px;max-width:640px;width:100%;max-height:88vh;
+    overflow-y:auto;box-shadow:0 18px 50px rgba(0,0,0,.28);padding:1rem 1.2rem 1.2rem}
+  .qa-dau{display:flex;align-items:center;gap:.6rem;border-bottom:1px solid var(--line);
+    padding-bottom:.6rem;margin-bottom:.5rem}
+  .qa-dau b{flex:1;min-width:0;font-size:1.02rem}
+  .qa-x{border:0;background:none;font-size:1.1rem;cursor:pointer;color:var(--muted);
+    padding:.2rem .45rem;border-radius:8px;line-height:1}
+  .qa-x:hover{background:var(--chip);color:var(--ink)}
+  .qa-cau{font-size:.92rem;color:var(--ink);background:var(--chip);border:1px solid var(--chip-line);
+    border-radius:9px;padding:.5rem .7rem;margin:.2rem 0 .7rem}
+  .qa-huong{font-size:.86rem;color:var(--muted);margin:.4rem 0 .3rem}
+  .qa-ung-vien{border:1px solid var(--chip-line);border-radius:11px;padding:.6rem .75rem;margin:.45rem 0}
+  .qa-uv-ten{font-weight:600;font-size:.92rem}
+  .qa-uv-trich{font-size:.84rem;color:var(--muted);margin:.3rem 0 .5rem;
+    display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+  .qa-dich{font-size:.9rem;margin:.3rem 0 .4rem}
+  .qa-nhap{width:100%;min-height:190px;font-size:.92rem;padding:.6rem .7rem;border:1px solid var(--line);
+    border-radius:10px;font-family:inherit;color:var(--ink);background:var(--bg);box-sizing:border-box;resize:vertical}
+  .qa-hang{display:flex;gap:.5rem;justify-content:flex-end;margin-top:.7rem}
+  .qa-cho{color:var(--muted);font-size:.9rem;padding:.5rem 0}
+  .qa-loi{font-size:.86rem;margin:.4rem 0;padding:.5rem .7rem;background:var(--th-33201b);color:var(--th-d97c6c);
+    border:1px solid var(--th-5c3a30);border-radius:9px}
+  .qa-ok{font-size:.92rem;margin:.4rem 0 .7rem;padding:.55rem .75rem;background:var(--th-1c2a20);color:var(--th-a9d4b0);
+    border:1px solid var(--th-3a5a40);border-radius:9px}
+
+  /* Token 2 theme (spec OUTLIERY 30/07) — TỐI là mặc định, SÁNG đè qua data-theme */
+  :root{--th-182233:#182233;--th-1c2a20:#1c2a20;--th-33201b:#33201b;--th-3a5a40:#3a5a40;--th-5c3a30:#5c3a30;--th-a9d4b0:#a9d4b0;--th-d97c6c:#d97c6c}
+  :root[data-theme="light"]{--th-182233:#f5f5f5;--th-1c2a20:#e7f2e9;--th-33201b:#fbeae6;--th-3a5a40:#a9cdb0;--th-5c3a30:#e5b6aa;--th-a9d4b0:#24663a;--th-d97c6c:#b14a3c}
+</style>
+
+<div id="qa-overlay" role="dialog" aria-modal="true" aria-labelledby="qa-tieu">
+  <div class="qa-box">
+    <div class="qa-dau">
+      <svg class="ic" viewBox="0 0 24 24" style="width:17px;height:17px;flex:0 0 auto"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      <b id="qa-tieu">Bổ sung Q&amp;A vào kho</b>
+      <button type="button" class="qa-x" id="qa-dong" aria-label="Đóng">✕</button>
+    </div>
+    <div class="qa-cau">Câu hỏi: <span id="qa-cau-hoi"></span></div>
+    <div id="qa-than"></div>
+  </div>
+</div>
+
+<script>
+(function () {
+  const overlay = document.getElementById('qa-overlay');
+  if (!overlay) return;
+  const than = document.getElementById('qa-than');
+  const oCauHoi = document.getElementById('qa-cau-hoi');
+  let cauHoi = '';
+
+  const dong = () => { overlay.classList.remove('mo'); than.innerHTML = ''; };
+  document.getElementById('qa-dong').addEventListener('click', dong);
+  overlay.addEventListener('click', e => { if (e.target === overlay) dong(); });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && overlay.classList.contains('mo')) dong();
+  });
+
+  const el = (tag, cls, txt) => {
+    const e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (txt != null) e.textContent = txt;
+    return e;
+  };
+  async function postForm(url, data) {
+    const r = await fetch(url, { method: 'POST', body: new URLSearchParams(data) });
+    let j = null; try { j = await r.json(); } catch (_) {}
+    return { ok: r.ok, j };
+  }
+  const loiCua = res => (res.j && (res.j.detail || res.j.message)) || 'Có lỗi, thử lại.';
+
+  // BƯỚC A — tìm ứng viên
+  async function timUngVien() {
+    than.innerHTML = ''; than.appendChild(el('p', 'qa-cho', 'Đang tìm tài liệu liên quan…'));
+    let res;
+    try { res = await postForm('/kho-thieu/ung-vien-qa', { cau_hoi: cauHoi }); }
+    catch (_) { than.innerHTML = ''; than.appendChild(el('p', 'qa-loi', 'Có lỗi mạng, thử lại.')); return; }
+    than.innerHTML = '';
+    if (!res.ok) { than.appendChild(el('p', 'qa-loi', loiCua(res))); return; }
+    const d = res.j;
+    if (!d.co_tai_lieu) {
+      than.appendChild(el('p', 'qa-loi', d.message || 'Kho chưa có tài liệu đủ liên quan.'));
+      const a = el('a', 'nut phu', 'Nạp tài liệu mới cho chủ đề này');
+      a.href = '/?goi_y_tieu_de=' + encodeURIComponent(cauHoi);
+      than.appendChild(a);
+      return;
+    }
+    than.appendChild(el('p', 'qa-huong', 'Chọn tài liệu để bổ sung câu trả lời vào (Owner tự chọn):'));
+    d.ung_vien.forEach(u => {
+      const card = el('div', 'qa-ung-vien');
+      card.appendChild(el('div', 'qa-uv-ten', u.tieu_de_goc + '  ·  ' + u.doc_code_goc + '  ·  điểm ' + u.diem));
+      card.appendChild(el('div', 'qa-uv-trich', u.doan_trich || ''));
+      const b = el('button', 'nut', 'Chọn tài liệu này');
+      b.type = 'button';
+      b.addEventListener('click', () => soanNhap(u.doc_code_goc, u.tieu_de_goc));
+      card.appendChild(b);
+      than.appendChild(card);
+    });
+  }
+
+  // BƯỚC B — soạn nháp trên tài liệu đã chọn
+  async function soanNhap(docCode, tenTL) {
+    than.innerHTML = ''; than.appendChild(el('p', 'qa-cho', 'Đang soạn nháp câu trả lời…'));
+    let res;
+    try { res = await postForm('/kho-thieu/soan-nhap-qa', { cau_hoi: cauHoi, doc_code_goc: docCode }); }
+    catch (_) { than.innerHTML = ''; than.appendChild(el('p', 'qa-loi', 'Có lỗi mạng, thử lại.')); return; }
+    than.innerHTML = '';
+    if (!res.ok || !res.j || !res.j.ok) {
+      than.appendChild(el('p', 'qa-loi', loiCua(res)));
+      const back = el('button', 'nut phu', '← Chọn tài liệu khác');
+      back.type = 'button'; back.addEventListener('click', timUngVien);
+      than.appendChild(back);
+      return;
+    }
+    const d = res.j;
+    const dich = el('p', 'qa-dich');
+    dich.innerHTML = 'Tài liệu đích: <b></b>';
+    dich.querySelector('b').textContent = (d.tieu_de_goc || tenTL) + ' (' + d.doc_code_goc + ')';
+    than.appendChild(dich);
+    if (d.khong_du_co_so) {
+      than.appendChild(el('p', 'qa-loi',
+        'AI thấy tài liệu này chưa đủ cơ sở — hãy tự viết câu trả lời đúng, hoặc chọn tài liệu khác.'));
+    }
+    const ta = el('textarea', 'qa-nhap'); ta.value = d.nhap || '';
+    than.appendChild(ta);
+    const hang = el('div', 'qa-hang');
+    const back = el('button', 'nut phu', '← Chọn tài liệu khác');
+    back.type = 'button'; back.addEventListener('click', timUngVien);
+    const duyet = el('button', 'nut', 'Duyệt & ghi vào kho');
+    duyet.type = 'button';
+    duyet.addEventListener('click', () => ghiDuyet(d.doc_code_goc, ta, duyet));
+    hang.append(back, duyet);
+    than.appendChild(hang);
+  }
+
+  // BƯỚC C — duyệt & ghi kho
+  async function ghiDuyet(docCode, ta, btn) {
+    than.querySelectorAll('.qa-loi').forEach(e => e.remove());
+    const traLoi = ta.value.trim();
+    if (!traLoi) { ta.after(el('p', 'qa-loi', 'Câu trả lời trống — hãy viết nội dung trước khi duyệt.')); return; }
+    btn.disabled = true; const nhan = btn.textContent; btn.textContent = 'Đang ghi…';
+    let res;
+    try {
+      res = await postForm('/kho-thieu/duyet-qa',
+        { cau_hoi: cauHoi, doc_code_goc: docCode, cau_tra_loi: traLoi });
+    } catch (_) {
+      btn.disabled = false; btn.textContent = nhan;
+      ta.after(el('p', 'qa-loi', 'Có lỗi mạng, thử lại (nháp của bạn vẫn còn).')); return;
+    }
+    if (!res.ok || !res.j || !res.j.ok) {
+      btn.disabled = false; btn.textContent = nhan;
+      ta.after(el('p', 'qa-loi', loiCua(res)));   // giữ nguyên nháp để Owner sửa lại
+      return;
+    }
+    than.innerHTML = '';
+    than.appendChild(el('p', 'qa-ok', res.j.message || 'Đã bổ sung Q&A vào kho.'));
+    const xong = el('button', 'nut', 'Xong (tải lại trang)');
+    xong.type = 'button';
+    xong.addEventListener('click', () => location.reload());  // câu tự rơi khỏi bảng ở lần load sau
+    than.appendChild(xong);
+  }
+
+  document.querySelectorAll('.qa-btn').forEach(b => b.addEventListener('click', () => {
+    cauHoi = b.dataset.cauHoi || '';
+    oCauHoi.textContent = cauHoi;
+    overlay.classList.add('mo');
+    timUngVien();
+  }));
+})();
+</script>

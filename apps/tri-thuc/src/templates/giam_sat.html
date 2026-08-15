@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Giám sát — OUTLIERY{% endblock %}
+{% block topbar_ten %}Giám sát tri thức{% endblock %}
+
+{% block style_them %}
+  .gs-h{font-size:1.25rem;margin:0 0 .3rem}
+  h2.gs{font-size:1.1rem;margin-top:1.6rem}
+  p.mo-ta{color:var(--muted);font-size:.9rem}
+  details{border:1px solid var(--chip-line);border-radius:10px;margin-top:.5rem;padding:.35rem .8rem;background:var(--th-182233)}
+  summary{cursor:pointer;font-weight:600;padding:.25rem 0}
+  details details{border:0;border-left:2px solid var(--line);border-radius:0;margin:.2rem 0 .2rem .6rem;padding:0 0 0 .8rem;background:none}
+  details details summary{font-weight:500;font-size:.92rem}
+  .meta{font-weight:400;font-size:.82rem;color:var(--muted)}
+  ul.cau{margin:.3rem 0 .5rem;padding-left:1.3rem;font-size:.9rem;color:var(--th-c2cbd9)}
+  .canh{color:var(--th-e0a03a)}
+  .trong{color:var(--muted);font-size:.9rem;margin:.5rem 0}
+
+  /* Token 2 theme của trang (đổ chung vào <style> base) */
+  :root{--th-182233:#182233;--th-1c2a20:#1c2a20;--th-3a5a40:#3a5a40;--th-c05a44:#c05a44;--th-c2cbd9:#c2cbd9;--th-e0a03a:#e0a03a}
+  :root[data-theme="light"]{--th-182233:#f5f5f5;--th-1c2a20:#e7f2e9;--th-3a5a40:#a9cdb0;--th-c05a44:#a83f2e;--th-c2cbd9:#3a3f47;--th-e0a03a:#9a6e15}
+{% endblock %}
+
+{% block noi_dung %}
+<h2 class="gs-h">🌳 Giám sát tri thức</h2>
+<p class="mo-ta">{% if la_owner %}Owner — thấy toàn bộ nhân sự.{% else %}Manager — thấy nhân sự
+bộ phận <b>{{ user.bo_phan }}</b>.{% endif %} Cây chỉ hiện câu hỏi + trạng thái, KHÔNG hiện nội
+dung trả lời; chi tiết bấm sang trang lịch sử (theo luật giám sát hiện có).</p>
+
+<h2 class="gs">👥 Theo nhân sự</h2>
+{% if not cay %}<p class="trong">(Chưa có nhân sự nào trong phạm vi xem)</p>{% endif %}
+{% for ns in cay %}
+<details>
+  <summary>{{ ns.ten }} <span class="meta">({{ ns.bo_phan }} · {{ ns.level_chu }} ·
+    {{ ns.cac_phien | length }} phiên)</span>
+    {% if la_owner and ns.cac_phien %}<a href="/lich-su/{{ ns.ten }}">xem chi tiết →</a>{% endif %}
+  </summary>
+  {% if not ns.cac_phien %}<p class="trong">(Chưa có cuộc trò chuyện nào)</p>{% endif %}
+  {% for p in ns.cac_phien %}
+  <details>
+    <summary>{% if p.chua_dap %}<span class="canh">⚠️</span>{% else %}✅{% endif %}
+      {{ p.ten }} <span class="meta">({{ p.cau_hoi | length }} câu)</span></summary>
+    <ul class="cau">{% for c in p.cau_hoi %}<li>{{ c }}</li>{% endfor %}</ul>
+  </details>
+  {% endfor %}
+</details>
+{% endfor %}
+
+<!-- Thu gọn 31/07/2026 (user chốt phương án A): trang này CHỈ giám sát NHÂN SỰ.
+     Toàn bộ xử lý lỗ hổng kho (bảng chờ, gom nhóm, Q&A, xóa câu, bổ sung tài liệu)
+     sống MỘT nơi duy nhất ở /kho-thieu — hết cảnh một chức năng hai chỗ, sửa đôi. -->
+<h2 class="gs">🕳️ Lỗ hổng kho</h2>
+{% if not cac_nhom and not cac_nhom_chu_de %}
+<p class="trong">✅ Chưa có câu nào kho chưa trả lời được.</p>
+{% else %}
+{% set nhom_cho = cac_nhom_chu_de | rejectattr("da_giai_quyet") | list %}
+<p class="mo-ta">Đang chờ xử lý: <b>{{ cac_nhom | length }}</b> câu kho chưa trả lời được{%
+  if nhom_cho %} · <b>{{ nhom_cho | length }}</b> nhóm chủ đề chờ bổ sung{% endif %} —
+  <a href="/kho-thieu">mở Kho cần bổ sung →</a></p>
+{% endif %}
+{% endblock %}

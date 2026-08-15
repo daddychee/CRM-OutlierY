@@ -1,0 +1,797 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hỏi–đáp — OUTLIERY</title>
+<link rel="stylesheet" href="/static/fonts/fonts.css">
+<script>(function(){var d=document.documentElement,t=null;try{t=new URLSearchParams(location.search).get("theme")||localStorage.getItem("outliery_theme")}catch(e){}if(t!=="light"&&t!=="dark"){t=(window.matchMedia&&matchMedia("(prefers-color-scheme: light)").matches)?"light":"dark"}d.setAttribute("data-theme",t)})()</script>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='5' fill='%23121826'/%3E%3Crect x='3.5' y='13' width='3' height='7' rx='1' fill='%23E8EDF4'/%3E%3Crect x='8.5' y='11' width='3' height='9' rx='1' fill='%23E8EDF4'/%3E%3Crect x='13.5' y='9' width='3' height='11' rx='1' fill='%23E8EDF4'/%3E%3Crect x='18.5' y='3' width='3' height='17' rx='1' fill='%234C8FE0'/%3E%3C/svg%3E">
+<style>
+  /* ============ OUTLIERY — khung nền tảng Mức 1 (mockup v3, icon Lucide) ============
+     CHỈ TRÌNH BÀY: khối <script> logic chat được bơm nguyên byte từ bản trước.
+     Token theo design-system/ai-agent-noi-bo + mockup_hoi_dap.html. */
+  :root{
+    --bg:var(--th-090c12); --sidebar:var(--th-121826); --line:var(--th-243149); --ink:var(--th-e8edf4); --muted:var(--th-8b96a8);
+    --accent:var(--th-4c8fe0); --hoi-bg:var(--th-1d2840); --dap-bg:var(--th-182233); --dap-line:var(--th-1d2840);
+    --chip:var(--th-121826); --chip-line:var(--th-243149);
+  }
+  *{box-sizing:border-box}
+  html{color-scheme:dark}
+  html,body{height:100%;margin:0}
+  body{font-family:'Inter',system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--ink);
+    background:var(--bg);display:flex;height:100dvh;overflow:hidden;font-size:15px;line-height:1.55}
+
+  /* icon Lucide dùng chung: nét mảnh, 1 màu theo chữ */
+  svg.ic{width:17px;height:17px;stroke:currentColor;stroke-width:1.8;fill:none;
+    stroke-linecap:round;stroke-linejoin:round;flex:0 0 auto}
+
+  /* ============ SIDEBAR ============ */
+  .sidebar{width:264px;flex:0 0 264px;background:var(--sidebar);border-right:1px solid var(--line);
+    display:flex;flex-direction:column;height:100%}
+  .brand{padding:16px 16px 10px;font-size:17px;font-weight:700;letter-spacing:-.035em;font-family:'Space Grotesk',sans-serif;
+    color:var(--th-e8edf4);display:flex;align-items:center;gap:8px}
+  .tabs{display:flex;padding:2px 10px 4px;gap:6px}
+  .tab{flex:1;text-align:center;padding:8px 6px;border-radius:9px;font-size:13.5px;font-weight:600;
+    color:var(--th-9aa5b5);cursor:pointer;border:1px solid transparent;background:none;font-family:inherit;
+    display:flex;align-items:center;justify-content:center;gap:6px}
+  .tab.active{background:var(--th-182233);border-color:var(--chip-line);color:var(--ink)}
+  .tab:not(.active):hover{background:var(--th-182233)}
+  .pane{flex:1;overflow-y:auto;padding:8px 8px 10px;display:none}
+  .pane.show{display:flex;flex-direction:column}
+  .nav-item{display:flex;align-items:center;gap:11px;padding:9px 12px;border-radius:9px;
+    font-size:14px;color:var(--th-c2cbd9);cursor:pointer;margin:1px 0;text-decoration:none;
+    background:none;border:0;font-family:inherit;text-align:left;width:100%}
+  .nav-item:hover{background:var(--th-182233)}
+  .nav-item.new{border:1px solid var(--chip-line);background:var(--th-182233);font-weight:600;margin-bottom:6px;color:var(--accent)}
+  .nav-item.soon{opacity:.45;cursor:default;pointer-events:none}
+  .nav-item .soon-tag{margin-left:auto;font-size:10.5px;background:var(--th-1d2840);color:var(--th-7b8698);
+    border-radius:999px;padding:1px 7px;font-weight:600}
+  .nav-item .new-tag{margin-left:auto;font-size:12px;opacity:.7}
+  .sb-sep{border-top:1px solid var(--line);margin:10px 6px 4px}
+  .sb-label{padding:10px 14px 5px;font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+  .sb-search{margin:2px 8px 8px;display:flex;align-items:center;gap:8px;padding:8px 11px;
+    border:1px solid var(--chip-line);border-radius:9px;background:var(--th-182233);color:var(--muted);font-size:13px}
+  .sb-search input{border:0;outline:0;background:transparent;flex:1;font-size:13px;color:var(--ink)}
+  .rec-item{padding:8px 12px;border-radius:8px;cursor:pointer;font-size:13.5px;color:var(--th-c2cbd9);
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:10px;
+    text-decoration:none}
+  .rec-item:hover{background:var(--th-182233)}
+  .rec-item.active{background:var(--th-223050);font-weight:600;color:var(--ink)}
+  .rec-item svg.ic{width:15px;height:15px;opacity:.55}
+  .rec-item .badge-moi{margin-left:auto;font-size:10.5px;background:var(--th-16263f);color:var(--accent);
+    border-radius:999px;padding:1px 7px;flex:0 0 auto;font-weight:600}
+  .tb-trong{font-size:13px;color:var(--muted);padding:6px 12px}
+
+  /* ============ MAIN ============ */
+  .main{flex:1;display:flex;flex-direction:column;height:100%;min-width:0}
+  .topbar{height:52px;flex:0 0 52px;border-bottom:1px solid var(--line);
+    display:flex;align-items:center;padding:0 22px;background:var(--bg)}
+  .topbar h1{font-size:15px;margin:0;font-weight:600;display:flex;align-items:center;gap:8px;color:var(--th-c2cbd9)}
+  .topbar .spacer{flex:1}
+  #nut-thanh-ben{display:none;margin-right:10px;padding:5px 10px;font-size:15px;background:var(--th-182233);
+    color:var(--ink);border:1px solid var(--chip-line);border-radius:8px;cursor:pointer}
+  .userinfo{font-size:13px;color:var(--th-9aa5b5);display:flex;align-items:center;gap:10px}
+  .userinfo .who{color:var(--ink);font-weight:600}
+  .userinfo a{color:var(--th-d97c6c);text-decoration:none;font-size:12.5px}
+
+  #chat-wrap{flex:1;overflow-y:auto;padding:26px 20px}
+  #chat{max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+  .hoi{align-self:flex-end;background:var(--hoi-bg);padding:11px 15px;border-radius:16px 16px 4px 16px;max-width:80%;white-space:pre-line}
+  .dap{align-self:flex-start;background:var(--dap-bg);border:1px solid var(--dap-line);padding:13px 16px;
+    border-radius:16px 16px 16px 4px;max-width:90%;white-space:pre-line;box-shadow:0 1px 2px rgba(0,0,0,.03)}
+  /* markdown → HTML (dinhDangMarkdown trong <script>): reset margin mặc định của trình
+     duyệt cho gọn trong bong bóng chat, giữ đậm/gạch đầu dòng thật thay vì ký tự #/** thô */
+  .dap h1,.dap h2,.dap h3,.dap h4,.dap h5,.dap h6{font-size:15px;font-weight:700;margin:10px 0 4px;line-height:1.4}
+  .dap h1:first-child,.dap h2:first-child,.dap h3:first-child,.dap h4:first-child,
+  .dap h5:first-child,.dap h6:first-child{margin-top:0}
+  .dap ul,.dap ol{margin:4px 0 8px 20px;padding:0}
+  .dap li{margin:3px 0}
+  .dap strong{font-weight:700}
+
+  /* khu tài liệu (YC3) — THẺ lớn kiểu mockup: icon file + tên + loại + nút Tải xuống */
+  .taitlieu{margin-top:12px;border-top:1px solid var(--dap-line);padding-top:11px}
+  .taitlieu .nhan{font-size:12.5px;color:var(--muted);margin-bottom:8px;display:flex;align-items:center;gap:6px}
+  .doc-card{display:flex;align-items:center;gap:13px;border:1px solid var(--chip-line);
+    border-radius:12px;padding:11px 13px;background:var(--th-182233);margin-bottom:8px}
+  .doc-card .fico{width:36px;height:36px;flex:0 0 auto;border-radius:9px;background:var(--th-141c2b);
+    display:flex;align-items:center;justify-content:center;color:var(--th-9aa5b5)}
+  .doc-card .meta{flex:1;min-width:0}
+  .doc-card .meta .t{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .doc-card .meta .s{font-size:12px;color:var(--muted)}
+  .doc-card .dl{flex:0 0 auto;display:inline-flex;align-items:center;gap:6px;font-size:13px;
+    text-decoration:none;color:var(--th-8fbe9a);border:1px solid var(--th-33503a);background:var(--th-1c2a20);
+    border-radius:9px;padding:7px 12px;font-weight:600}
+  .doc-card .dl:hover{background:var(--th-1c2a20)}
+
+  .badge{display:inline-flex;align-items:center;gap:5px;font-size:12px;background:var(--th-1c2a20);color:var(--th-8fbe9a);
+    border-radius:999px;padding:3px 10px;margin-top:10px}
+  .review{font-size:13px;background:var(--th-2b2517);color:var(--th-e0c070);border:1px solid var(--th-3a3220);
+    border-radius:10px;padding:9px 12px;margin-top:10px;white-space:pre-line}
+  .phan-hoi{margin-top:10px;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+  .phan-hoi button{display:inline-flex;align-items:center;gap:5px;padding:4px 11px;font-size:12.5px;
+    background:var(--th-182233);color:var(--th-9aa5b5);border:1px solid var(--chip-line);border-radius:999px;cursor:pointer;font-family:inherit}
+  .phan-hoi button:hover:not(:disabled){color:var(--ink);border-color:var(--th-31425e)}
+  .phan-hoi button:disabled{cursor:default;opacity:.55}
+  .phan-hoi button.chon-tot{background:var(--th-1c2a20);border-color:var(--th-4a6b50);color:var(--th-8fbe9a);opacity:1}
+  .phan-hoi button.chon-te{background:var(--th-33201b);border-color:var(--th-5c3a30);color:var(--th-d97c6c);opacity:1}
+  .phan-hoi button.chon-co-tay{background:var(--th-202b38);border-color:var(--th-5a7690);color:var(--th-93b0cc);opacity:1}
+  .phan-hoi .cam-on{font-size:12px;color:var(--muted)}
+  .goi-y{margin-top:11px;border-top:1px dashed var(--dap-line);padding-top:9px;display:flex;flex-wrap:wrap;gap:7px}
+  .goi-y-nhan{font-size:12.5px;color:var(--muted);width:100%}
+  .goi-y button{padding:6px 12px;font-size:13px;background:var(--chip);color:var(--th-c2cbd9);
+    border:1px solid var(--chip-line);border-radius:999px;cursor:pointer;text-align:left;font-family:inherit}
+  .goi-y button:hover{border-color:var(--accent)}
+
+  /* chờ token đầu (YC2): spinner thuần CSS (::before) + số giây tabular */
+  .dang-cho{color:var(--muted);font-variant-numeric:tabular-nums;display:inline-flex;align-items:center}
+  .dang-cho::before{content:'';width:13px;height:13px;flex:0 0 auto;margin-right:8px;
+    border:2px solid var(--chip-line);border-top-color:var(--accent);border-radius:50%;
+    animation:spin 1s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  /* ô soạn */
+  .composer{padding:12px 20px 18px;background:linear-gradient(transparent,var(--bg) 22%)}
+  .composer form{max-width:760px;margin:0 auto;background:var(--th-182233);border:1px solid var(--chip-line);
+    border-radius:16px;padding:8px 8px 8px 16px;display:flex;align-items:flex-end;gap:10px;
+    box-shadow:0 2px 10px rgba(0,0,0,.04)}
+  .composer form:focus-within{border-color:var(--th-31425e)}
+  .composer textarea{flex:1;border:0;outline:0;resize:none;font-size:15px;font-family:inherit;
+    line-height:1.5;max-height:180px;padding:7px 0;color:var(--ink);background:transparent;overflow-y:auto}
+  .composer textarea::placeholder{color:var(--muted)}
+  .composer .send{flex:0 0 auto;width:44px;height:44px;border:0;border-radius:11px;background:var(--accent);
+    color:var(--th-182233);cursor:pointer;display:flex;align-items:center;justify-content:center}
+  .composer .send:hover:not(:disabled){background:var(--th-6ba4e8)}
+  .composer .send:disabled{background:var(--th-3a4c6b);cursor:default}
+  .composer .send svg{stroke:var(--th-182233)}
+  .composer .da-chieu{flex:0 0 auto;height:44px;padding:0 12px;border:1px solid var(--chip-line);
+    border-radius:11px;background:var(--th-182233);color:var(--accent);cursor:pointer;font-size:13.5px;
+    font-family:inherit;font-weight:600;display:flex;align-items:center;gap:5px;white-space:nowrap}
+  .composer .da-chieu:hover:not(:disabled){border-color:var(--accent);background:var(--th-111e33)}
+  .composer .da-chieu:disabled{opacity:.5;cursor:default}
+  .hint{max-width:760px;margin:7px auto 0;font-size:12px;color:var(--muted);text-align:center}
+
+  /* a11y + responsive */
+  :is(a,button,textarea,input):focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  @media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+  @media (max-width:760px){
+    .sidebar{display:none}
+    .sidebar.tb-mo{display:flex;position:fixed;z-index:50;left:0;top:0;box-shadow:4px 0 24px rgba(0,0,0,.18)}
+    #nut-thanh-ben{display:inline-block}
+    #chat,.composer form,.hint{max-width:100%}
+  }
+
+  /* Token 2 theme (spec OUTLIERY 30/07) — TỐI là mặc định, SÁNG đè qua data-theme */
+  :root{--th-090c12:#090c12;--th-111e33:#111e33;--th-121826:#121826;--th-141c2b:#141c2b;--th-16263f:#16263f;--th-182233:#182233;--th-1c2a20:#1c2a20;--th-1d2840:#1d2840;--th-202b38:#202b38;--th-223050:#223050;--th-243149:#243149;--th-2b2517:#2b2517;--th-31425e:#31425e;--th-33201b:#33201b;--th-33503a:#33503a;--th-3a3220:#3a3220;--th-3a4c6b:#3a4c6b;--th-4a6b50:#4a6b50;--th-4c8fe0:#4c8fe0;--th-5a7690:#5a7690;--th-5c3a30:#5c3a30;--th-6ba4e8:#6ba4e8;--th-7b8698:#7b8698;--th-8b96a8:#8b96a8;--th-8fbe9a:#8fbe9a;--th-93b0cc:#93b0cc;--th-9aa5b5:#9aa5b5;--th-bar1:#e8edf4;--th-bar2:#e8edf4;--th-bar3:#e8edf4;--th-bar4:#e8edf4;--th-bar5:#4c8fe0;--th-c2cbd9:#c2cbd9;--th-d97c6c:#d97c6c;--th-e0c070:#e0c070;--th-e8edf4:#e8edf4}
+  :root[data-theme="light"]{--th-090c12:#ffffff;--th-111e33:#eef4fc;--th-121826:#ffffff;--th-141c2b:#f5f5f5;--th-16263f:#e8f0fb;--th-182233:#f5f5f5;--th-1c2a20:#e7f2e9;--th-1d2840:#efefef;--th-202b38:#f0f0f0;--th-223050:#e8f0fb;--th-243149:#e6e6e6;--th-2b2517:#faf1dc;--th-31425e:#d9d9d9;--th-33201b:#fbeae6;--th-33503a:#b6d4bd;--th-3a3220:#e8d9a9;--th-3a4c6b:#cfcfcf;--th-4a6b50:#97c2a1;--th-4c8fe0:#2c6fc4;--th-5a7690:#4a637d;--th-5c3a30:#e5b6aa;--th-6ba4e8:#2c6fc4;--th-7b8698:#767b83;--th-8b96a8:#6c6c72;--th-8fbe9a:#2e6b44;--th-93b0cc:#3f5e80;--th-9aa5b5:#5c6169;--th-bar1:#cbdcf2;--th-bar2:#a3c1e9;--th-bar3:#7ba6df;--th-bar4:#2c6fc4;--th-bar5:#1b5fb2;--th-c2cbd9:#3a3f47;--th-d97c6c:#b14a3c;--th-e0c070:#8a6d1c;--th-e8edf4:#16181c}
+  html[data-theme="light"]{color-scheme:light}
+  /* Icon tải (ICON_DL) nằm trong script chat đóng băng byte — đè màu qua CSS thay vì sửa script */
+  html[data-theme="light"] svg.ic[style*="#8fbe9a"]{stroke:#2e6b44 !important}
+
+  .nut-theme{background:none;border:1px solid var(--line);border-radius:9px;color:var(--muted);padding:5px 9px;cursor:pointer;display:inline-flex;align-items:center}
+  .nut-theme:hover{color:var(--ink)}
+  .nut-theme svg.ic{width:15px;height:15px}
+  .nut-theme .ic-moon{display:none}
+  html[data-theme="light"] .nut-theme .ic-sun{display:none}
+  html[data-theme="light"] .nut-theme .ic-moon{display:block}
+</style>
+</head>
+<body>
+  <!-- ================= SIDEBAR (Ý1 — khung nền tảng Mức 1) ================= -->
+  <aside class="sidebar" id="thanh-ben">
+    <div class="brand">
+      <svg style="width:20px;height:20px;flex:0 0 auto" viewBox="0 0 24 24" aria-hidden="true"><rect x="0.5" y="15" width="3" height="6" rx="1" style="fill:var(--th-bar1)" opacity=".9"/><rect x="5.5" y="13" width="3" height="8" rx="1" style="fill:var(--th-bar2)" opacity=".9"/><rect x="10.5" y="11" width="3" height="10" rx="1" style="fill:var(--th-bar3)" opacity=".9"/><rect x="15.5" y="8" width="3" height="13" rx="1" style="fill:var(--th-bar4)" opacity=".9"/><rect x="20.5" y="1" width="3" height="20" rx="1" style="fill:var(--th-bar5)"/></svg>
+      OUTLIERY
+    </div>
+
+    <div class="tabs">
+      <button type="button" class="tab active" data-pane="home">
+        <svg class="ic" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg> Home</button>
+      {% if can_upload or sb_ns %}
+      <button type="button" class="tab" data-pane="mon">
+        <svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="2"/><path d="M4.9 19.1a10 10 0 0 1 0-14.2M7.8 16.2a6 6 0 0 1 0-8.4M19.1 4.9a10 10 0 0 1 0 14.2M16.2 7.8a6 6 0 0 1 0 8.4"/></svg> Monitoring</button>
+      {% endif %}
+    </div>
+
+    <!-- PANE HOME -->
+    <div class="pane show" id="pane-home">
+      <button type="button" id="moi" class="nav-item new">
+        <svg class="ic" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> New</button>
+      {# Nấc 1: app phụ — cùng nguồn sb_apps + _icon_app.html như base.html (trang chat
+         vẫn standalone theo quyết định "đang chạy tốt không sờ", nên phải chép khối này).
+         Data Analytics nằm đầu nhóm Công cụ như base.html (quyết định 30/07). #}
+      {# Thứ tự 31/07: app trước → Data Analytics → Niche cuối (khớp base.html) #}
+      <div class="sb-label">Công cụ</div>
+      {% for a in sb_apps if a.slug != 'niche' %}
+      <a class="nav-item" href="/app/{{ a.slug }}">{% include "_icon_app.html" %} {{ a.ten }}</a>
+      {% endfor %}
+      {% if sb_da %}
+      <a class="nav-item" href="/chan-doan">
+        <svg class="ic" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15l3-4 3 3 4-6"/></svg> Data Analytics</a>
+      {% endif %}
+      {% for a in sb_apps if a.slug == 'niche' %}
+      <a class="nav-item" href="/app/{{ a.slug }}">{% include "_icon_app.html" %} {{ a.ten }}</a>
+      {% endfor %}
+      {% if sb_nas %}
+      <a class="nav-item" href="/nas">
+        <svg class="ic" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="6" rx="1"/><rect x="3" y="13" width="18" height="6" rx="1"/><circle cx="7" cy="8" r=".9"/><circle cx="7" cy="16" r=".9"/></svg> NAS công ty</a>
+      {% endif %}
+
+      <div class="sb-sep"></div>
+      <div class="sb-search">
+        <svg class="ic" style="width:15px;height:15px" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+        <input placeholder="Tìm trong lịch sử của bạn…" disabled title="Sắp có (Ý2)"></div>
+      <div class="sb-label">Gần đây</div>
+      {% for p in cac_phien_sidebar %}
+      <a class="rec-item{% if p.id == phien_dang_mo %} active{% endif %}" href="/hoi-dap?phien={{ p.id }}"
+         title="{{ p.thoi_gian }} · {{ p.so_luot }} lượt">
+        <svg class="ic" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        <span style="overflow:hidden;text-overflow:ellipsis">{{ p.ten }}</span>
+        {% if p.highlight %}<span class="badge-moi" title="Đã có tài liệu mới trả lời được câu bạn từng hỏi">mới</span>{% endif %}
+      </a>
+      {% else %}
+      <div class="tb-trong">Chưa có cuộc nào — hỏi câu đầu tiên đi!</div>
+      {% endfor %}
+      <a class="rec-item" href="/lich-su" style="color:var(--muted)">
+        <svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+        Xem tất cả lịch sử →</a>
+    </div>
+
+    <!-- PANE MONITORING (chỉ render với Manager+) -->
+    {% if can_upload or sb_ns %}
+    <div class="pane" id="pane-mon">
+      {% if can_upload %}
+      <div class="sb-label">Quản trị (Manager+)</div>
+      <a class="nav-item" href="/">
+        <svg class="ic" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg> Datafeed</a>
+      <a class="nav-item" href="/kho-thieu">
+        <svg class="ic" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h4"/></svg> Kho cần bổ sung</a>
+      {% if not lite %}
+      <a class="nav-item" href="/nguon-ngoai">
+        <svg class="ic" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><path d="M12 2a15 15 0 0 0 0 20M12 2a15 15 0 0 1 0 20M2 12h20"/></svg> Nguồn ngoài</a>
+      {% endif %}
+      {% endif %}
+      {% if sb_ns %}
+      <div class="sb-label">Nhân sự</div>
+      <a class="nav-item" href="/nhan-su">
+        <svg class="ic" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg> Nhân sự</a>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    {# MANAGEMENT — MỘT DÒNG ghim đáy, bấm mở POPUP NỔI bo tròn kiểu menu Claude
+       (chốt 31/07/2026), CHỈ Owner, khớp base.html #}
+    {% if is_owner %}
+    <div class="sb-mgmt" id="sb-mgmt" style="flex:0 0 auto;border-top:1px solid var(--line);padding:6px 8px 8px;position:relative">
+      <div id="sb-mgmt-muc" style="display:none;position:absolute;bottom:calc(100% + 8px);left:10px;right:10px;background:var(--th-182233);border:1px solid var(--chip-line);border-radius:14px;padding:6px;z-index:60;box-shadow:0 14px 38px rgba(0,0,0,.3)">
+      <a class="nav-item" href="/giam-sat">
+        <svg class="ic" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg> Hoạt động team</a>
+      {# Trang User gộp luôn duyệt hồ sơ nhân sự (31/07/2026) — badge = số chờ #}
+      <a class="nav-item" href="/quan-ly-user">
+        <svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg> User
+        {% if sb_cho_duyet %}<span style="margin-left:auto;font-size:10.5px;background:var(--th-16263f);color:var(--accent);border-radius:999px;padding:1px 7px" title="{{ sb_cho_duyet }} hồ sơ nhân sự chờ duyệt">{{ sb_cho_duyet }}</span>{% endif %}</a>
+      {% if not lite %}
+      <a class="nav-item" href="/vault">
+        <svg class="ic" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Vault</a>
+      {% endif %}
+      <a class="nav-item" href="/phan-quyen">
+        <svg class="ic" viewBox="0 0 24 24"><path d="M9 11l3 3 8-8"/><path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/></svg> Phân quyền</a>
+      <a class="nav-item" href="/cai-dat">
+        <svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.01a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.01a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.01a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> Setting</a>
+      </div>
+      <button type="button" class="nav-item" id="sb-mgmt-nut" aria-expanded="false">
+        <svg class="ic" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg> Management
+        <svg class="ic" id="sb-mgmt-mui" style="width:14px;height:14px;margin-left:auto;transition:transform .15s" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></button>
+    </div>
+    {% endif %}
+  </aside>
+
+  <!-- ================= MAIN ================= -->
+  <div class="main">
+    <div class="topbar">
+      <button type="button" id="nut-thanh-ben" title="Danh sách cuộc trò chuyện">☰</button>
+      <h1><svg style="width:17px;height:17px;flex:0 0 auto" viewBox="0 0 24 24" aria-hidden="true"><rect x="0.5" y="15" width="3" height="6" rx="1" style="fill:var(--th-bar1)" opacity=".9"/><rect x="5.5" y="13" width="3" height="8" rx="1" style="fill:var(--th-bar2)" opacity=".9"/><rect x="10.5" y="11" width="3" height="10" rx="1" style="fill:var(--th-bar3)" opacity=".9"/><rect x="15.5" y="8" width="3" height="13" rx="1" style="fill:var(--th-bar4)" opacity=".9"/><rect x="20.5" y="1" width="3" height="20" rx="1" style="fill:var(--th-bar5)"/></svg> OUTLIERY</h1>
+      <span class="spacer"></span>
+      <button type="button" id="nut-theme" class="nut-theme" title="Đổi giao diện sáng/tối"><svg class="ic ic-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg><svg class="ic ic-moon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></button> 
+      {% if user.bo_phan %}
+      <div class="userinfo">
+        <span class="who">{{ user.ten }}</span><span>· {{ user.bo_phan }} · {{ level_chu }}</span>
+        <a href="/doi-mat-khau" style="color:var(--th-9aa5b5)" title="Đổi mật khẩu đăng nhập của chính bạn (cần mật khẩu hiện tại)">Đổi mật khẩu</a>
+        <a href="/dang-xuat">Đăng xuất</a>
+      </div>
+      {% endif %}
+    </div>
+
+    <div id="chat-wrap">
+      <div id="chat"></div>
+    </div>
+
+    <div class="composer">
+      <form id="form">
+        <textarea name="question" id="cau-hoi" rows="1" placeholder="Đặt câu hỏi về tài liệu công ty…" required autocomplete="off"></textarea>
+        <button class="da-chieu" id="nut-tai-lieu" type="button"
+          title="Xin tài liệu gốc mà cuộc trò chuyện này đã dùng — chat mặc định không chìa file để bạn tập trung hỏi–đáp"><svg class="ic" style="width:14px;height:14px;vertical-align:-2px" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg> Tài liệu</button>
+        <button class="send" id="gui" type="submit" aria-label="Gửi câu hỏi">
+          <svg class="ic" viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button>
+      </form>
+      <div class="hint">Enter để gửi · Shift+Enter xuống dòng · Tài liệu = xin file gốc cuộc này</div>
+    </div>
+  </div>
+
+<script>
+// Sidebar OUTLIERY (script RIÊNG — không đụng khối logic chat bên dưới):
+// chuyển tab (Home / quản trị) + nút ☰ màn hẹp
+(function () {
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.pane').forEach(p => p.classList.remove('show'));
+      const pane = document.getElementById('pane-' + tab.dataset.pane);
+      if (pane) pane.classList.add('show');
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+    });
+  });
+  document.getElementById('nut-thanh-ben').addEventListener('click', () => {
+    document.getElementById('thanh-ben').classList.toggle('tb-mo');
+  });
+  // Shift+click một mục sidebar = mở CỬA SỔ MỚI (xem 2 công cụ song song — yêu cầu
+  // user 31/07/2026). Cùng handler với base.html; chỉ bắt thẻ <a>, nút New/tab không dính.
+  const sb = document.querySelector('.sidebar');
+  if (sb) sb.addEventListener('click', e => {
+    const a = e.target.closest('a[href]');
+    if (!a || !e.shiftKey) return;
+    e.preventDefault(); e.stopPropagation();
+    window.open(a.href, '_blank', 'noopener,width=1280,height=860');
+  });
+  // Management đáy sidebar (Owner): POPUP nổi kiểu menu Claude — bấm mở/đóng,
+  // bấm ra ngoài hoặc Esc là đóng (khớp base.html)
+  const mgmtNut = document.getElementById('sb-mgmt-nut');
+  if (mgmtNut) {
+    const khoi = document.getElementById('sb-mgmt');
+    const muc = document.getElementById('sb-mgmt-muc');
+    const dat = mo => {
+      muc.style.display = mo ? 'block' : 'none';
+      document.getElementById('sb-mgmt-mui').style.transform = mo ? 'rotate(-90deg)' : '';
+      mgmtNut.setAttribute('aria-expanded', mo);
+    };
+    mgmtNut.addEventListener('click', () => dat(muc.style.display === 'none'));
+    document.addEventListener('click', e => {
+      if (muc.style.display !== 'none' && !khoi.contains(e.target)) dat(false);
+    });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') dat(false); });
+  }
+})();
+</script>
+<script>
+// OUTLIERY: icon Lucide inline cho thẻ tài liệu (dùng trong nhánh 'sources')
+const ICON_LINK = '<svg class="ic" style="width:14px;height:14px" viewBox="0 0 24 24"><path d="M21.4 11.05 12.25 20.2a5 5 0 0 1-7.07-7.07l9.19-9.19a3 3 0 0 1 4.24 4.24l-8.49 8.49a1 1 0 0 1-1.41-1.41l7.78-7.78"/></svg>';
+const ICON_FILE = '<svg class="ic" style="width:19px;height:19px" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>';
+const ICON_DL = '<svg class="ic" style="width:15px;height:15px;stroke:#8fbe9a" viewBox="0 0 24 24"><path d="M12 3v12M7 11l5 4 5-4"/><path d="M5 21h14"/></svg>';
+
+const chat = document.getElementById('chat');
+const form = document.getElementById('form');
+const oCauHoi = document.getElementById('cau-hoi');
+const nutGui = document.getElementById('gui');
+let lichSu = [];  // [{hoi, dap}] — ngữ cảnh gửi kèm mỗi lượt để Agent hiểu "thế còn X?"
+// 01/08/2026: tài liệu các lượt TÍCH LŨY NGẦM theo phiên (doc_code → info, đã lọc
+// quyền server) — chỉ hiện khi user bấm nút 📄 yêu cầu, chat không tự chìa file nữa
+const taiLieuPhien = new Map();
+// crypto.randomUUID CHỈ có trên secure context (HTTPS/localhost) — máy LAN vào
+// http://IP:8000 KHÔNG có → thiếu fallback là TypeError giết cả khối script này
+// (nút Gửi thành submit thô GET ?question=..., chat tê liệt — sự cố 01/08/2026).
+const taoPhienId = () => (window.crypto && crypto.randomUUID)
+  ? crypto.randomUUID()
+  : 'p' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
+let phienId = taoPhienId();  // YC4: mã PHIÊN trò chuyện — lịch sử gom theo phiên
+
+// Ý3: mở lại CUỘC CŨ để hỏi tiếp — server nạp {phien_id, luot} (đã lọc quyền D2).
+// Giữ nguyên phienId cũ → lượt mới GẮN VÀO ĐÚNG cuộc đó; lichSu nạp lại để agent
+// nhớ ngữ cảnh (chỉ để hiểu câu hỏi — lượt nào cũng vẫn search tài liệu thật).
+const NAP = {{ nap | tojson }};
+if (NAP && NAP.phien_id) {
+  phienId = NAP.phien_id;
+  lichSu = NAP.luot.slice();
+  NAP.luot.forEach(l => { themBong('hoi', l.hoi); themBong('dap', l.dap, true); });
+}
+
+document.getElementById('moi').addEventListener('click', () => {
+  lichSu = [];
+  taiLieuPhien.clear();           // cuộc mới = kho tài liệu phiên làm lại từ đầu
+  phienId = taoPhienId();         // YC4: "Cuộc trò chuyện mới" = MỞ PHIÊN MỚI THẬT
+  chat.textContent = '';
+  oCauHoi.focus();
+});
+
+// 01/08/2026 (user chốt phương án "khi user YÊU CẦU mới đưa tài liệu"): nút 📄
+// chính là lời yêu cầu — lúc này mới chìa TOÀN BỘ tài liệu các lượt của cuộc
+// trò chuyện (đã lọc quyền server từ sự kiện sources). Không có gì → nói thẳng.
+document.getElementById('nut-tai-lieu').addEventListener('click', () => {
+  const ds = [...taiLieuPhien.values()];
+  if (!ds.length) {
+    themBong('dap', 'Cuộc trò chuyện này chưa dùng tài liệu nào — hỏi vài câu trước đã, hoặc vào trang Kho tài liệu để duyệt kho.');
+    return;
+  }
+  const bong = themBong('dap', '');
+  const khu = document.createElement('div');
+  khu.className = 'taitlieu';
+  khu.innerHTML = '<div class="nhan">' + ICON_LINK + 'Tài liệu cuộc trò chuyện này đã dùng:</div>';
+  ds.forEach(s => {
+    const card = document.createElement('div');
+    card.className = 'doc-card';
+    const fico = document.createElement('div');
+    fico.className = 'fico'; fico.innerHTML = ICON_FILE;
+    const meta = document.createElement('div');
+    meta.className = 'meta';
+    const t = document.createElement('div'); t.className = 't';
+    t.textContent = s.title || s.doc_code;               // textContent → chống XSS
+    const sub = document.createElement('div'); sub.className = 's';
+    sub.textContent = s.co_ban_dep ? 'Bản đẹp · PDF' : 'Bản gốc';
+    meta.append(t, sub);
+    const a = document.createElement('a');
+    a.className = 'dl';
+    a.href = (s.co_ban_dep ? '/tai-ban-dep/' : '/tai-ban-goc/')
+             + encodeURIComponent(s.doc_code);           // route/quyền y hệt trước
+    a.target = '_blank';
+    a.innerHTML = ICON_DL + 'Tải xuống';
+    card.append(fico, meta, a);
+    khu.appendChild(card);
+  });
+  bong.appendChild(khu);
+  bong.scrollIntoView({ behavior: 'smooth', block: 'end' });
+});
+
+// YC1: auto-grow — cao theo nội dung (scrollHeight), CSS max-height chặn trần ~8 dòng
+function coGianO() {
+  oCauHoi.style.height = 'auto';
+  oCauHoi.style.height = oCauHoi.scrollHeight + 'px';
+}
+oCauHoi.addEventListener('input', coGianO);
+oCauHoi.addEventListener('keydown', e => {
+  // BỘ GÕ TIẾNG VIỆT (Telex/IME): Enter lúc chữ cuối còn đang ghép phát 2 keydown
+  // (1 của IME isComposing/keyCode 229 + 1 Enter thật) → từng GỬI ĐÔI 1 câu hỏi.
+  // Chỉ nhận Enter thật — sự kiện của IME là để chốt chữ, không phải lệnh gửi.
+  if (e.isComposing || e.keyCode === 229) return;
+  if (e.key === 'Enter' && !e.shiftKey) {   // Enter = GỬI, Shift+Enter = xuống dòng
+    e.preventDefault();
+    // Đang chờ trả lời (nút Gửi khóa) → không gửi chồng — requestSubmit vốn
+    // bỏ qua trạng thái disabled của nút, phải tự chặn
+    if (!nutGui.disabled) form.requestSubmit();
+  }
+});
+
+// Markdown ĐƠN GIẢN → HTML: ESCAPE HTML TRƯỚC rồi mới tự sinh thẻ (#, **, -, số.) — thẻ luôn
+// do CHÍNH hàm này viết ra chứ không phải chép thẳng chữ gốc, nên gán innerHTML vẫn đúng quy
+// ước chống XSS của trang này (chỉ innerHTML chữ đã escape/do ta dựng, không innerHTML thẳng
+// text lạ). Chạy lại trên TOÀN BỘ text mỗi token — chấp nhận được vì câu trả lời ngắn/vừa.
+function dinhDangMarkdown(text) {
+  const escHtml = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const inline = s => escHtml(s)
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/(^|[^*\w])\*([^*\n]+)\*(?!\*)/g, '$1<em>$2</em>');
+  let html = '';
+  let dsMo = null;             // <ul>/<ol> đang mở, nếu có
+  let khoiVuaXong = false;     // dòng trước là thẻ khối (h*/list) — né <br> trống dư ngay sau nó
+  const dongDs = () => { if (dsMo) { html += '</' + dsMo + '>'; dsMo = null; khoiVuaXong = true; } };
+  for (const dongTho of text.split('\n')) {
+    const dong = dongTho.trim();
+    let m;
+    if ((m = dong.match(/^(#{1,4})\s+(.+)$/))) {
+      dongDs();
+      const c = m[1].length + 2;                // # → h3 ... #### → h6
+      html += `<h${c}>${inline(m[2])}</h${c}>`;
+      khoiVuaXong = true;
+    } else if ((m = dong.match(/^[-*]\s+(.+)$/))) {
+      if (dsMo !== 'ul') { dongDs(); html += '<ul>'; dsMo = 'ul'; }
+      html += `<li>${inline(m[1])}</li>`;
+      khoiVuaXong = false;
+    } else if ((m = dong.match(/^\d+[.)]\s+(.+)$/))) {
+      if (dsMo !== 'ol') { dongDs(); html += '<ol>'; dsMo = 'ol'; }
+      html += `<li>${inline(m[1])}</li>`;
+      khoiVuaXong = false;
+    } else if (dong === '') {
+      dongDs();
+      if (!khoiVuaXong) html += '<br>';          // ngay sau khối thì bỏ, tránh khoảng trắng đúp
+      khoiVuaXong = false;
+    } else {
+      dongDs();
+      html += inline(dong) + '<br>';
+      khoiVuaXong = false;
+    }
+  }
+  dongDs();
+  return html;
+}
+
+// Nút 👍/👎 dưới câu trả lời — phản hồi là PHỤ: POST lỗi thì lặng lẽ bỏ qua,
+// không bao giờ làm hỏng trải nghiệm hỏi-đáp
+function themPhanHoi(bong, cauHoi, noiDungTho, nguonText, biChanQuyen) {
+  const khung = document.createElement('div');
+  khung.className = 'phan-hoi';
+  const nutTot = document.createElement('button');
+  nutTot.type = 'button';
+  nutTot.textContent = '👍 Tốt';
+  const nutTe = document.createElement('button');
+  nutTe.type = 'button';
+  nutTe.textContent = '👎 Tệ';
+
+  const gui = (rating, nutChon, lop) => {
+    nutTot.disabled = nutTe.disabled = true;   // khóa cả hai — không cho bấm lại (tránh trùng)
+    nutChon.classList.add(lop);
+    const camOn = document.createElement('span');
+    camOn.className = 'cam-on';
+    camOn.textContent = 'Đã ghi nhận, cảm ơn';
+    khung.appendChild(camOn);
+    const fd = new FormData();
+    fd.append('question', cauHoi);
+    fd.append('answer', noiDungTho);
+    fd.append('rating', rating);
+    fd.append('sources', nguonText);
+    fd.append('bi_chan_quyen', biChanQuyen ? 'true' : 'false');  // cờ ngầm — user không thấy gì
+    fetch('/phan-hoi', { method: 'POST', body: fd }).catch(() => {});
+  };
+  nutTot.addEventListener('click', () => gui('tot', nutTot, 'chon-tot'));
+  nutTe.addEventListener('click', () => gui('te', nutTe, 'chon-te'));
+
+  // CỜ TAY "chưa có lời giải" (khác 👎 = "trả lời dở"): người dùng XÁC NHẬN kho
+  // thiếu thông tin này — nguồn chắc chắn nhất của bảng /kho-thieu. Lặng lẽ khi lỗi.
+  const nutCoTay = document.createElement('button');
+  nutCoTay.type = 'button';
+  nutCoTay.textContent = '🔎 Chưa có lời giải';
+  // Mạch hỏi lúc bấm: lichSu đã chứa lượt hiện tại → context = tối đa 3 câu TRƯỚC đó
+  const ctx = lichSu.slice(0, -1).slice(-3).reverse().map(l => l.hoi).join(' ← ');
+  nutCoTay.addEventListener('click', () => {
+    nutCoTay.disabled = true;
+    nutCoTay.classList.add('chon-co-tay');
+    const baoNhan = document.createElement('span');
+    baoNhan.className = 'cam-on';
+    baoNhan.textContent = 'Đã ghi nhận — sẽ báo quản lý bổ sung tài liệu';
+    khung.appendChild(baoNhan);
+    const fd = new FormData();
+    fd.append('question', cauHoi);
+    fd.append('answer', noiDungTho);
+    fd.append('sources', nguonText);
+    fd.append('context', ctx);
+    fetch('/co-tay', { method: 'POST', body: fd }).catch(() => {});
+  });
+  khung.append(nutTot, nutTe, nutCoTay);
+  bong.appendChild(khung);
+}
+
+function themBong(lop, text, dinhDang) {
+  const d = document.createElement('div');
+  d.className = lop;
+  if (dinhDang) d.innerHTML = dinhDangMarkdown(text);   // câu trả lời cũ — hiện lại có format
+  else d.textContent = text;
+  chat.appendChild(d);
+  d.scrollIntoView({ behavior: 'smooth' });
+  return d;
+}
+
+// 08/08: box gợi ý "🧭 góc nhìn khác" — bấm MỚI gọi (không pin ở ô nhập, không tự động).
+// Nhận nguyên văn câu trả lời công ty (raw đã chảy xong) để backend đối chiếu mà KHÔNG lặp
+// lại nó trong câu trả lời mới. Đắp thêm MỘT bong bóng riêng, không đụng bong bóng gốc.
+async function xemGocNhinKhac(cauHoi, cauTraLoiCongTy, nut, lichSuLucBam) {
+  nut.disabled = true;
+  const chuGocNut = nut.textContent;
+  nut.textContent = 'Đang tìm góc nhìn khác…';
+  const bong = themBong('dap', '');
+  const nhanKhoi = document.createElement('div');
+  nhanKhoi.className = 'goi-y-nhan';
+  nhanKhoi.textContent = '🧭 Góc nhìn khác:';
+  bong.appendChild(nhanKhoi);
+  const chu = document.createElement('span');
+  chu.className = 'dang-cho';
+  chu.textContent = 'Đang soạn';
+  bong.appendChild(chu);
+  let raw2 = '', coChu2 = false;
+  try {
+    const fd = new FormData();
+    fd.append('question', cauHoi);
+    fd.append('cau_tra_loi_cong_ty', cauTraLoiCongTy);
+    fd.append('history', JSON.stringify(lichSuLucBam || []));
+    const res = await fetch('/hoi-dap/stream-goc-nhin-ngoai', { method: 'POST', body: fd });
+    if (!res.ok) {
+      const loi = await res.json().catch(() => ({}));
+      throw new Error(loi.detail || 'Lỗi không xác định');
+    }
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buf = '';
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += decoder.decode(value, { stream: true });
+      let viTri;
+      while ((viTri = buf.indexOf('\n\n')) !== -1) {
+        const gois = buf.slice(0, viTri).split('\n');
+        buf = buf.slice(viTri + 2);
+        let loai = 'message', data = '';
+        for (const dong of gois) {
+          if (dong.startsWith('event: ')) loai = dong.slice(7);
+          else if (dong.startsWith('data: ')) data += dong.slice(6);
+        }
+        if (!data) continue;
+        const payload = JSON.parse(data);
+        if (loai === 'token') {
+          if (!coChu2) { chu.classList.remove('dang-cho'); chu.textContent = ''; coChu2 = true; }
+          raw2 += payload;
+          chu.innerHTML = dinhDangMarkdown(raw2);
+          bong.scrollIntoView({ behavior: 'smooth', block: 'end' });
+        } else if (loai === 'review') {
+          const rv = document.createElement('div');
+          rv.className = 'review';
+          rv.textContent = '⚠️ ' + payload;
+          bong.appendChild(rv);
+        }
+      }
+    }
+    nut.textContent = '✓ Đã xem góc nhìn khác';
+  } catch (err) {
+    chu.classList.remove('dang-cho');
+    chu.textContent = '❌ Lỗi: ' + err.message;
+    nut.disabled = false;
+    nut.textContent = chuGocNut;
+  }
+}
+
+form.addEventListener('submit', async e => {
+  e.preventDefault();
+  const cauHoi = oCauHoi.value.trim();
+  if (!cauHoi) return;
+
+  themBong('hoi', cauHoi);
+  oCauHoi.value = '';
+  coGianO();                 // YC1: gửi xong ô về lại 1 dòng
+  nutGui.disabled = true;
+
+  // Bong bóng trả lời: span chữ riêng để append token, nguồn/badge là các div riêng
+  const bong = themBong('dap', '');
+  const chu = document.createElement('span');
+  chu.className = 'dang-cho';                  // chấm lửng nhấp nháy (CSS)
+  bong.appendChild(chu);
+  let coChu = false;      // đã nhận mẩu chữ đầu tiên chưa
+  let raw = '';           // markdown THÔ ghép từ token — dùng cho lịch sử/phản hồi, KHÔNG hiện thẳng
+  let nguonText = '';     // text nguồn đã trích — gửi kèm phản hồi 👍/👎
+  let biChanQuyen = false;  // RULE 2: cờ ngầm từ sự kiện done — không hiện gì cho user
+
+  // YC2: đồng hồ đếm giây lúc chờ — DỪNG khi token đầu về (thấy chữ chảy là đủ biết
+  // đang chạy). pha đổi chữ theo tiến trình, số giây nối đuôi.
+  let pha = 'Đang tìm tài liệu';   // spinner CSS .dang-cho::before
+  let giay = 0;
+  const veCho = () => { chu.textContent = pha + ' ' + giay + 's'; };
+  veCho();
+  const demGiay = setInterval(() => { giay += 1; veCho(); }, 1000);
+
+  try {
+    const fd = new FormData();
+    fd.append('question', cauHoi);
+    fd.append('history', JSON.stringify(lichSu));  // các lượt TRƯỚC lượt này — giữ trí nhớ
+    fd.append('phien_id', phienId);                // YC4: lượt này thuộc phiên nào
+    const res = await fetch('/hoi-dap/stream', { method: 'POST', body: fd });
+    if (!res.ok) {
+      const loi = await res.json().catch(() => ({}));
+      throw new Error(loi.detail || 'Lỗi không xác định');
+    }
+
+    // Đọc luồng SSE: sources → token* → (review?) → done
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buf = '';
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += decoder.decode(value, { stream: true });
+
+      let viTri;
+      while ((viTri = buf.indexOf('\n\n')) !== -1) {  // mỗi sự kiện SSE kết thúc bằng dòng trống
+        const gois = buf.slice(0, viTri).split('\n');
+        buf = buf.slice(viTri + 2);
+        let loai = 'message', data = '';
+        for (const dong of gois) {
+          if (dong.startsWith('event: ')) loai = dong.slice(7);
+          else if (dong.startsWith('data: ')) data += dong.slice(6);
+        }
+        if (!data) continue;
+        const payload = JSON.parse(data);
+
+        if (loai === 'token') {
+          if (!coChu) {                                        // token đầu: tắt hiệu ứng chờ
+            clearInterval(demGiay);                            // YC2: chữ chảy rồi — thôi đếm
+            chu.classList.remove('dang-cho');
+            chu.textContent = '';
+            coChu = true;
+          }
+          raw += payload;                                      // chữ chảy dần
+          chu.innerHTML = dinhDangMarkdown(raw);                // render lại markdown → HTML an toàn
+          bong.scrollIntoView({ behavior: 'smooth', block: 'end' });
+        } else if (loai === 'sources' && payload.length) {
+          pha = 'Đang soạn câu trả lời';                       // pha 2: đã có tài liệu
+          veCho();
+          // YC3: doc_code vẫn chạy NGẦM (gửi kèm 👍/👎, lịch sử/quyền không đổi) —
+          // nhưng KHÔNG hiện dòng "📚 Nguồn: mã..." nữa (rối/xấu khi kho lớn).
+          nguonText = payload.map(s => `${s.doc_code} — ${s.title}`).join(' · ');
+          // 01/08/2026 (user chốt): chat KHÔNG tự chìa tài liệu nữa — agent để HỌC,
+          // không phải máy truy xuất file; kho lớn thì danh sách top-k thành rác.
+          // Chỉ TÍCH LŨY ngầm theo phiên; bấm nút "📄 Tài liệu" mới hiện (chính là
+          // "user yêu cầu"). payload đã lọc quyền server-side nên tích lũy an toàn.
+          payload.forEach(s => taiLieuPhien.set(s.doc_code, s));
+        } else if (loai === 'review') {
+          const rv = document.createElement('div');
+          rv.className = 'review';
+          rv.textContent = '⚠️ ' + payload;
+          bong.appendChild(rv);
+        } else if (loai === 'goi_y' && payload.length) {
+          // Ý 3: gợi ý câu hỏi tiếp theo — bấm là hỏi luôn, như tự gõ
+          const khu = document.createElement('div');
+          khu.className = 'goi-y';
+          const nhan = document.createElement('div');
+          nhan.className = 'goi-y-nhan';
+          nhan.textContent = '💡 Có thể bạn muốn hỏi:';
+          khu.appendChild(nhan);
+          payload.forEach(cauGoiY => {
+            const nut = document.createElement('button');
+            nut.type = 'button';
+            nut.textContent = cauGoiY;
+            nut.addEventListener('click', () => {
+              oCauHoi.value = cauGoiY;
+              form.requestSubmit();
+            });
+            khu.appendChild(nut);
+          });
+          bong.appendChild(khu);
+        } else if (loai === 'nguon_khac' && payload.length) {
+          // 08/08: box gợi ý xem góc nhìn khác — bấm mới gọi, không tự động
+          const khu2 = document.createElement('div');
+          khu2.className = 'goi-y';
+          const nut2 = document.createElement('button');
+          nut2.type = 'button';
+          nut2.textContent = '🧭 Xem góc nhìn khác từ: ' + payload.join(', ');
+          nut2.addEventListener('click', () => xemGocNhinKhac(cauHoi, raw, nut2, lichSu.slice()));
+          khu2.appendChild(nut2);
+          bong.appendChild(khu2);
+        } else if (loai === 'done') {
+          biChanQuyen = !!payload.bi_chan_quyen;  // ghi ngầm, gửi kèm khi bấm 👍/👎
+          if (payload.critic_count > 0) {
+            const badge = document.createElement('span');
+            badge.className = 'badge';
+            badge.textContent = '🛡️ Đã qua phản biện bởi ' + payload.critic_count + ' model';
+            bong.appendChild(badge);
+          }
+        }
+      }
+    }
+    lichSu.push({ hoi: cauHoi, dap: raw });  // lưu lượt này (markdown thô) vào trí nhớ hội thoại
+    if (coChu) themPhanHoi(bong, cauHoi, raw, nguonText, biChanQuyen); // 👍/👎 khi có chữ thật
+  } catch (err) {
+    clearInterval(demGiay);                    // YC2: dọn đồng hồ ở nhánh lỗi
+    chu.classList.remove('dang-cho');
+    chu.textContent = '❌ Lỗi: ' + err.message;
+  } finally {
+    clearInterval(demGiay);                    // YC2: lưới cuối — không rò rỉ interval
+    nutGui.disabled = false;
+    oCauHoi.focus();
+  }
+});
+</script>
+
+<script>
+// Nút gạt sáng/tối — ghi localStorage outliery_theme (dùng chung cả hệ qua cổng 8000)
+(function(){var b=document.getElementById("nut-theme");if(!b)return;var d=document.documentElement;
+// icon đổi bằng CSS theo data-theme (ic-sun/ic-moon), không cần JS vẽ lại
+b.addEventListener("click",function(){var t=d.getAttribute("data-theme")==="light"?"dark":"light";
+d.setAttribute("data-theme",t);try{localStorage.setItem("outliery_theme",t)}catch(e){}});})()
+</script>
+{% if not lite %}
+<script>
+// CHẤM CÔNG (01/08/2026): nhịp tim 5 phút khi tab đang hiển thị + beacon lúc đóng
+// app — khớp base.html; khối RIÊNG, không đụng khối logic chat đóng băng ở trên.
+// AGENT_LITE: bỏ hẳn khối — bản đóng gói không chấm công, đỡ 404 mỗi 5 phút.
+(function(){
+  function nhip(){if(document.visibilityState==="visible"){fetch("/api/nhip",{method:"POST"}).catch(function(){})}}
+  setInterval(nhip,5*60*1000);
+  window.addEventListener("pagehide",function(){try{navigator.sendBeacon("/api/nhip-thoat")}catch(e){}});
+})()
+</script>
+{% endif %}
+</body>
+</html>
