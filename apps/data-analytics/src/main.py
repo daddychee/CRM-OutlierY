@@ -440,6 +440,7 @@ def bao_cao_ls_json(user: dict = Depends(yeu_cau_data_analytics)):
         kenh = r.get("kenh") or {}
         ra.append({"id": r.get("id"), "thoi_gian": r.get("thoi_gian"),
                    "ten": r.get("ten_bao_cao") or r.get("ten_file_goc"),
+                   "ten_kenh": r.get("ten_kenh", ""),   # P6: connector khớp kênh theo trường này
                    "tang_vo": kenh.get("tang_vo"),
                    "so_video": kenh.get("so_video"),
                    "nguoi_chay": r.get("nguoi_chay", "")})

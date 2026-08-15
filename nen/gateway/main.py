@@ -353,6 +353,23 @@ async def cai_dat_llm(request: Request, vai: str = Form(...),
                             status_code=303)
 
 
+# ---------- cầu nối: hỏi số liệu (P6) ----------
+
+@app.post("/api/cau-noi/hoi-so-lieu")
+async def api_hoi_so_lieu(request: Request, cau_hoi: str = Form(...)):
+    """Router hỏi số liệu — danh bạ khớp kênh → connector đọc app sở hữu dữ liệu
+    dưới danh nghĩa NGƯỜI HỎI. Nút 📊 của hỏi–đáp gọi vào đây."""
+    user = user_hien_tai(request)
+    if not user:
+        return JSONResponse({"loi": "chua dang nhap"}, status_code=401)
+    from nen.common import cau_noi
+    conn = iam.ket_noi()
+    try:
+        return cau_noi.hoi_so_lieu(cau_hoi, user, conn)
+    finally:
+        conn.close()
+
+
 # ---------- proxy app ----------
 
 @app.api_route("/app/{slug}/{duong_dan:path}",
