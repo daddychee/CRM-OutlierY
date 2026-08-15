@@ -42,9 +42,21 @@
 | SpeakY | audio out | 🔄 | — |
 | Niche Research | projects\<ngách>\ (signals, snapshots, report) | 🥇 | giữ nguyên |
 
+## Store bản v2 (bản máy đọc: apps.json — đây là bản người đọc)
+
+| Chủ | Store | Đường | Mức quý | Backup |
+|---|---|---|---|---|
+| nen | iam.db / ket.db / ket.key / logs / qdrant | data\nen, data\logs, data\qdrant | 🥇 | snapshot/copy/api |
+| tri-thuc | kho-tai-lieu (file gốc 8 ngăn + catalog + sổ vận hành) | data\tri-thuc\kho\kho-tai-lieu | 🥇 | copy |
+| tri-thuc | lịch sử hội thoại per-user | data\tri-thuc\db\lich-su | 🥇 | copy |
+| data-analytics | bao-cao-lich-su / bao-cao-goc | data\data-analytics\{db,kho} | 🥇 | copy |
+| to-chuc | chấm công | data\to-chuc\db\cham-cong | 🥇 | copy |
+| to-chuc | vault (CHỈ bản mã) | data\vault | 🥇 | copy |
+
 ## Trạng thái bản v2 (cập nhật khi mỗi phase xong)
 
 - P0 (16/08/2026): `data\` mới chỉ có `qdrant\` (trống). Dữ liệu test sẽ là BẢN SAO
   từ `D:\OUTLIERY-backup` — chỉ đọc backup, không đụng dữ liệu sống hệ cũ.
+- P5 (16/08/2026): kho tài liệu TEST = bản sao 52 file từ backup, nạp Qdrant :6343.
 - Ổ đĩa: bản test nằm cùng ổ D với OUTLIERY-backup — CHẤP NHẬN cho test; khi thay
   thế thật phải chốt lại: dữ liệu sống và backup KHÔNG chung ổ.

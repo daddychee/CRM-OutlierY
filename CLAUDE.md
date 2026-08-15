@@ -81,5 +81,22 @@
   ⚠️ Ghi chú lịch sử git: `bc97b8e` lỡ lẫn khung DỞ của apps/tri-thuc +
   apps/to-chuc (2 agent làm song song, git add -A quét phải — bài học: add theo
   path khi có việc song song). Bản hoàn chỉnh 2 app đó nằm ở commit sau.
-- KẾ TIẾP: P5.2 tri-thuc + P5.3 to-chuc/vault (agent đang làm) → test-all toàn
-  hệ → nghiệm thu sống tri-thuc (kho test từ backup + Qdrant 6343) → báo cáo Owner.
+- 16/08/2026 — **P5.2 TRI-THUC + P5.3 TO-CHUC/VAULT XONG (2 agent song song, kiểm
+  lại + nghiệm thu sống): TOÀN HỆ 471 TEST PASS / 4 SKIP / 0 FAIL.**
+  · tri-thuc :9101 (306 test): 48 route RAG đầy đủ — hỏi–đáp stream/đa chiều/góc
+    nhìn ngoài, kho tài liệu 7 route, kho-thiếu 7, nguồn ngoài 13, lịch sử 5,
+    giám sát; hoi_dap.html script byte-identical; claims thay auth.
+  · to-chuc :9103 (31 test): KPI (trang /kpi mới Manager+) + chấm công + NAS +
+    VAULT (chỉ Owner). kpi.py bỏ import chéo → đọc file + ca nguồn-chết→None.
+  · NGHIỆM THU SỐNG RAG THẬT: kho test = bản sao backup 18 tài liệu → Qdrant
+    :6343 = 157 point 0 lỗi (nap_kho_test.py); Owner hỏi AdSense → trích ĐÚNG
+    KD-2026-1814CB + 71369B (y hệt nghiệm thu kinh điển hệ cũ); nhân viên VH-L2
+    cùng câu → 0 nguồn CHẶN LẶNG LẼ; hỏi ngâm kênh QUA GATEWAY trọn chuỗi proxy
+    claims → trích đúng 71369B. Writer đang mock (chưa nhập key vào két — Owner
+    nhập ở /cai-dat khi test thật).
+  · Việc treo P5 (đã ghi trong báo cáo agent + CLAUDE.md từng app): dọn sidebar
+    link hệ cũ trong base.html các app; gate tick-lẻ về co_quyen(); điểm hứng
+    chấm công toàn hệ ở gateway; /khoi-phuc safekey vào IAM; nas_sync vào gateway;
+    connector API thay đọc-file-chéo của kpi.
+  BẪY MỚI PHIÊN NÀY: Out-File PS 5.1 ghi BOM làm FastAPI 422 input-null (dùng
+  [IO.File]::WriteAllText không BOM); route /hoi nhận FORM không phải JSON.
