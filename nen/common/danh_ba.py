@@ -11,11 +11,19 @@ KHÔNG app nào tự đoán tên thực thể.
 from __future__ import annotations
 
 import csv
+import os
 import re
 import unicodedata
 from pathlib import Path
 
 DUONG_MAC_DINH = Path(__file__).resolve().parents[1] / "rules" / "danh_muc.csv"
+
+
+def _duong_hieu_luc(duong: Path | str | None) -> Path:
+    """Ưu tiên tham số → env DANH_MUC_CSV (test/cách ly) → file luật thật."""
+    if duong:
+        return Path(duong)
+    return Path(os.environ.get("DANH_MUC_CSV") or DUONG_MAC_DINH)
 
 # Cột khóa ứng dụng hợp lệ (thêm app mới = thêm cột CSV + thêm tên vào đây)
 CAC_COT_KHOA = (
@@ -45,7 +53,7 @@ def chuan_hoa_ten(ten: str) -> str:
 
 def doc_danh_muc(duong: Path | str | None = None) -> list[dict]:
     """Đọc toàn bộ danh mục. utf-8-sig để chịu được file Excel lưu kèm BOM."""
-    duong = Path(duong) if duong else DUONG_MAC_DINH
+    duong = _duong_hieu_luc(duong)
     if not duong.exists():
         return []
     ket_qua: list[dict] = []

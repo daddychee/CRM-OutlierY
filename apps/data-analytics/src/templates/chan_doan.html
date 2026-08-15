@@ -1,0 +1,293 @@
+{% extends "base.html" %}
+{% block title %}Data Analytics — OUTLIERY{% endblock %}
+{% block topbar_ten %}Data Analytics{% endblock %}
+
+{% block style_them %}
+  .cd-h{font-size:1.25rem;margin:0 0 .3rem}
+  .cd-ls{display:inline-flex;align-items:center;gap:7px;font-size:.9rem;color:var(--muted);
+    text-decoration:none;border:1px solid var(--line);border-radius:9px;padding:.45rem .8rem;margin-top:.6rem}
+  .cd-ls:hover{color:var(--ink)}
+  .cd-ls svg.ic{width:15px;height:15px}
+  .cd-ls-mui{font-size:.75rem;opacity:.7;transition:transform .15s}
+  .cd-ls.mo .cd-ls-mui{transform:rotate(180deg)}
+  .ls-panel{margin-top:.5rem;border:1px solid var(--line);border-radius:12px;padding:.3rem .4rem;max-width:720px}
+  .ls-dong{display:flex;align-items:center;gap:.8rem;padding:.5rem .6rem;border-radius:8px;
+    text-decoration:none;color:var(--ink);font-size:.9rem}
+  .ls-dong:hover{background:var(--th-182233)}
+  .ls-dong .tg{color:var(--muted);font-size:.8rem;flex:0 0 auto;font-variant-numeric:tabular-nums}
+  .ls-dong .ten{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .ls-dong .tang{flex:0 0 auto;font-size:.75rem;border-radius:999px;padding:.1rem .55rem}
+  .ls-dong .tang.vo{background:var(--th-33201b);color:var(--th-d97c6c)}
+  .ls-dong .tang.ok{background:var(--th-1c2a20);color:var(--th-a9d4b0)}
+  .ls-trong,.ls-cho{padding:.6rem .7rem;color:var(--muted);font-size:.88rem}
+  .ls-them{display:block;padding:.5rem .7rem;font-size:.83rem;color:var(--muted);text-decoration:none;border-top:1px solid var(--line)}
+  .ls-them:hover{color:var(--ink)}
+  :root{--th-33201b:#33201b;--th-d97c6c:#d97c6c;--th-1c2a20:#1c2a20;--th-a9d4b0:#a9d4b0}
+  :root[data-theme="light"]{--th-33201b:#fbeae6;--th-d97c6c:#b14a3c;--th-1c2a20:#e7f2e9;--th-a9d4b0:#24663a}
+  .cd-form{display:flex;gap:.6rem;margin:1rem 0;align-items:flex-end;flex-wrap:wrap}
+  .cd-form input[type=file]{flex:1;min-width:180px;font-size:.92rem}
+  .cd-form button{padding:.6rem 1.2rem;border:0;border-radius:10px;background:var(--accent);color:var(--th-182233);font-size:1rem;cursor:pointer;font-family:inherit}
+  .cd-form button:disabled{background:var(--th-3a4c6b)}
+  .o-ngay-wrap{display:flex;flex-direction:column;gap:.2rem;font-size:.78rem;color:var(--muted)}
+  .o-ngay-wrap input,.o-ngay-wrap select{font-size:.9rem;padding:.45rem .5rem;border:1px solid var(--line);border-radius:8px;font-family:inherit;color:var(--ink);background:var(--bg)}
+  .ghi-chu{font-size:.85rem;color:var(--muted)}
+  .dpt{margin:1rem 0;padding:.9rem 1rem;border:1px solid var(--chip-line);border-radius:12px;background:var(--chip)}
+  .dpt-nhan{font-size:.92rem;color:var(--ink);margin-bottom:.45rem}
+  .dpt-thanh{height:8px;background:#0000001a;border-radius:999px;overflow:hidden}
+  .dpt-bar{height:100%;width:0;background:var(--accent);border-radius:999px;transition:width .18s ease}
+  .dpt-ghi{font-size:.8rem;color:var(--muted);margin-top:.5rem}
+
+  /* Token 2 theme của trang (đổ chung vào <style> base) */
+  :root{--th-182233:#182233;--th-3a4c6b:#3a4c6b}
+  :root[data-theme="light"]{--th-182233:#f5f5f5;--th-3a4c6b:#cfcfcf}
+{% endblock %}
+
+{% block noi_dung %}
+<h2 class="cd-h">📊 Data Analytics</h2>
+
+<form id="form" class="cd-form">
+  <input type="file" id="file" accept=".csv,.xlsx,.xls" required>
+  <label class="o-ngay-wrap" for="o-kenh">Tên kênh
+    <input type="text" id="o-kenh" list="dl-kenh" placeholder="vd: Outland" maxlength="120" required>
+    <datalist id="dl-kenh"></datalist>
+  </label>
+  <label class="o-ngay-wrap" for="o-ten">Tên báo cáo (tùy chọn)
+    <input type="text" id="o-ten" placeholder="vd: Tháng 7" maxlength="120">
+  </label>
+  <label class="o-ngay-wrap" for="o-loai">Loại kênh (tùy chọn)
+    <select id="o-loai">
+      <option value="">— Không xác định —</option>
+      <option value="tre_em">Trẻ em</option>
+      <option value="documentary">Documentary</option>
+      <option value="narrator">Người kể chuyện</option>
+      <option value="compilation">Tổng hợp</option>
+      <option value="tutorial">Hướng dẫn</option>
+      <option value="giai_tri">Giải trí chung</option>
+    </select>
+  </label>
+  <label class="o-ngay-wrap" for="o-ngay">Ngày chạy report
+    <input type="date" id="o-ngay">
+  </label>
+  <label class="o-ngay-wrap" for="o-ky-dau">Kỳ báo cáo — từ ngày (chỉ cần nếu file không có Chart data)
+    <input type="date" id="o-ky-dau">
+  </label>
+  <label class="o-ngay-wrap" for="o-ky-cuoi">đến ngày
+    <input type="date" id="o-ky-cuoi">
+  </label>
+  <button id="nut" type="submit">Chẩn đoán</button>
+</form>
+<p class="ghi-chu">Nạp report YouTube Studio (.csv/.xlsx) — bản xuất theo video. App tự đọc
+cột tiếng Anh + quy đổi %. Dòng <b>Total</b> = tổng kênh. Sửa/thêm luật trong
+<b>rules/diagnosis_rules.csv</b> — không cần sửa code.<br>
+<b>Tên kênh</b> gõ NHẤT QUÁN giữa các lần nạp (gõ vài chữ để xem gợi ý) — dùng để nối các báo
+cáo cùng kênh qua thời gian, phục vụ so sánh tăng trưởng giữa các kỳ sau này.<br>
+<b>Ngày chạy report</b> để trống cũng được; nhập vào thì có thêm phân tích theo tuổi video (mới/đang chạy/đuôi dài).<br>
+<b>Kỳ báo cáo</b>: file .xlsx có sheet Chart data thì app TỰ NHẬN khoảng ngày, khỏi nhập; file
+.csv "Table data" rời không có Chart data thì nhập tay cả hai ô mới so sánh tăng trưởng được.</p>
+
+<a class="cd-ls" id="nut-ls" href="/bao-cao-lich-su" title="Xem lại các báo cáo đã chẩn đoán">
+  <svg class="ic" viewBox="0 0 24 24"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l4 2"/></svg>
+  Lịch sử báo cáo <span class="cd-ls-mui" id="ls-mui">▾</span></a>
+<div id="ls-panel" class="ls-panel" hidden></div>
+
+<div id="dang-phan-tich" class="dpt" style="display:none">
+  <div class="dpt-nhan">🧠 Đang phân tích… <span id="dpt-pct">0%</span></div>
+  <div class="dpt-thanh"><div id="dpt-bar" class="dpt-bar"></div></div>
+  <div class="dpt-ghi">Có thể đóng tab hoặc chuyển mục — phân tích vẫn chạy nền và tự lưu vào
+    <a href="/bao-cao-lich-su">lịch sử báo cáo</a>.</div>
+</div>
+<div id="canh-bao-ngay"></div>
+<div id="kq-kenh"></div>
+
+{% include "_bang_phan_quyet.html" %}
+{% endblock %}
+
+{% block script %}
+<script>
+const form = document.getElementById('form');
+const oFile = document.getElementById('file');
+const oKenh = document.getElementById('o-kenh');
+const oTen = document.getElementById('o-ten');
+const oLoai = document.getElementById('o-loai');
+const oNgay = document.getElementById('o-ngay');
+const oKyDau = document.getElementById('o-ky-dau');
+const oKyCuoi = document.getElementById('o-ky-cuoi');
+const nut = document.getElementById('nut');
+const canhBaoNgay = document.getElementById('canh-bao-ngay');
+const kqKenh = document.getElementById('kq-kenh');
+
+const dpt = document.getElementById('dang-phan-tich');
+let _pollTimer = null, _dptTimer = null;
+
+// Gợi ý tên kênh đã dùng (Issue 2 §1) — gõ vài chữ để lọc, không bắt buộc chọn đúng gợi ý.
+fetch('/chan-doan/kenh-goi-y').then(r => r.ok ? r.json() : []).then(ds => {
+  const dl = document.getElementById('dl-kenh');
+  for (const ten of (ds || [])) {
+    const o = document.createElement('option'); o.value = ten; dl.appendChild(o);
+  }
+}).catch(() => {});
+
+// Render kết quả report YouTube (dùng cho cả nhánh nền lẫn nhánh trả thẳng).
+function veKetQuaYouTube(data, fileHienTai) {
+  // Bối cảnh cho bấm video: gửi file trực tiếp + bao_cao_id để lần sau đọc cache.
+  window.VIDEO_CTX = { file: fileHienTai, bao_cao_id: data.bao_cao_id, nguoi: '' };
+  if (data.canh_bao_ngay) {   // ngày nhập lệch với Chart/Totals → cảnh báo vàng
+    const cb = document.createElement('div');
+    cb.className = 'canh-bao';
+    cb.textContent = '⚠️ ' + data.canh_bao_ngay;
+    canhBaoNgay.appendChild(cb);
+  }
+  renderKetQua(kqKenh, data.kenh, '📈 Chẩn đoán CẢ KÊNH (tổng so với mặt bằng video)');
+  veWinningFormatTongHop(kqKenh, data.bao_cao_kenh);   // Winning Format B1/B2 lồng vào tổng hợp
+  if (data.bao_cao_id) {   // Tầng 1: đã lưu vào lịch sử báo cáo
+    const luu = document.createElement('div');
+    luu.style.cssText = 'margin-top:.6rem;font-size:.85rem;color:var(--muted)';
+    luu.innerHTML = '✅ Đã lưu vào <a href="/bao-cao-lich-su/' + data.bao_cao_id + '">lịch sử báo cáo</a>.';
+    kqKenh.appendChild(luu);
+  }
+  veLoaiKenh(data.profile_loai_kenh);
+  veCanhBaoAnhXa(data.canh_bao_anh_xa);
+  veBaoCaoKenh(data.bao_cao_kenh);
+  veTongQuan(data.tong_quan_danh_muc);
+  veBangVideo(data.videos);
+}
+
+// % TƯỢNG TRƯNG (không phải tiến độ thật): trấn an trong lúc chờ; xong thì nhảy 100.
+function _datPctNen(p) { const v = Math.round(p); document.getElementById('dpt-bar').style.width = v + '%'; document.getElementById('dpt-pct').textContent = v + '%'; }
+function _tienDoGiaNen() {
+  dpt.style.display = 'block'; let p = 0; _datPctNen(0);
+  _dptTimer = setInterval(() => { p += Math.max(0.4, (92 - p) * 0.05); if (p >= 92) { p = 92; clearInterval(_dptTimer); } _datPctNen(p); }, 220);
+}
+function _dungTienDoNen() { clearInterval(_dptTimer); clearInterval(_pollTimer); }
+
+// Poll trạng thái tác vụ nền: đóng tab vẫn chạy tiếp server-side + tự lưu lịch sử.
+function chayNen(taskId, fileHienTai) {
+  _tienDoGiaNen();
+  let xong = false;   // chốt: 2 poll chồng cùng thấy 'xong' KHÔNG render đôi
+  _pollTimer = setInterval(async () => {
+    let tt;
+    try { const r = await fetch('/chan-doan/trang-thai/' + taskId); if (!r.ok) return; tt = await r.json(); }
+    catch (e) { return; }   // mạng chập chờn → thử lại lượt sau
+    if (xong || tt.trang_thai === 'dang_chay') return;
+    xong = true;
+    _dungTienDoNen(); _datPctNen(100); dpt.style.display = 'none';
+    if (tt.trang_thai === 'xong' && tt.ket_qua) {
+      veKetQuaYouTube(tt.ket_qua, fileHienTai);
+    } else {
+      const e = document.createElement('div');
+      e.className = 'tom-tat vo';
+      e.textContent = '❌ ' + (tt.loi || 'Phân tích nền gặp lỗi.');
+      kqKenh.appendChild(e);
+    }
+  }, 1200);
+}
+
+form.addEventListener('submit', async e => {
+  e.preventDefault();
+  _dungTienDoNen();          // huỷ poll cũ nếu bấm lại khi đang chạy
+  nut.disabled = true;
+  nut.textContent = 'Đang chẩn đoán…';
+  canhBaoNgay.textContent = '';
+  kqKenh.textContent = '';
+  dpt.style.display = 'none';
+  document.getElementById('loai-kenh-banner').style.display = 'none';
+  document.getElementById('canh-bao-anh-xa').style.display = 'none';
+  document.getElementById('bao-cao-kenh').style.display = 'none';
+  document.getElementById('tong-quan').style.display = 'none';
+  document.getElementById('khu-video').style.display = 'none';
+  const fileHienTai = oFile.files[0];
+
+  try {
+    const fd = new FormData();
+    fd.append('file', fileHienTai);
+    fd.append('ngay_chay', oNgay.value || '');   // rỗng → chuỗi rỗng
+    fd.append('ten_bao_cao', oTen.value || '');  // nhãn tùy chọn; rỗng → dùng tên file
+    fd.append('loai_kenh', oLoai.value || '');   // loại kênh tùy chọn; rỗng → không giả định
+    fd.append('ten_kenh', oKenh.value || '');    // bắt buộc — nối báo cáo cùng kênh qua thời gian
+    fd.append('ky_bat_dau', oKyDau.value || '');   // tùy chọn — chỉ dùng khi file KHÔNG có Chart data
+    fd.append('ky_ket_thuc', oKyCuoi.value || '');
+    const res = await fetch('/chan-doan', { method: 'POST', body: fd });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || 'Lỗi không xác định');
+
+    if (data.loai === 'nen') {
+      chayNen(data.task_id, fileHienTai);          // report YouTube → chạy nền + poll
+    } else if (data.loai === 'youtube') {
+      veKetQuaYouTube(data, fileHienTai);          // phòng khi backend trả thẳng
+    } else {
+      renderKetQua(kqKenh, data);                  // dữ liệu cũ (không phải report YouTube)
+    }
+  } catch (err) {
+    const e = document.createElement('div');
+    e.className = 'tom-tat vo';
+    e.textContent = '❌ ' + err.message;
+    kqKenh.appendChild(e);
+  } finally {
+    nut.disabled = false;
+    nut.textContent = 'Chẩn đoán';
+  }
+});
+</script>
+<script>
+// Panel Lịch sử báo cáo xổ tại chỗ (yêu cầu user 31/07) — bấm nút là mở danh sách
+// ngay dưới thay vì chuyển trang; href gốc giữ làm fallback khi JS tắt.
+// Nạp LƯỜI: chỉ fetch /api/bao-cao-lich-su lần đầu mở; bấm 1 dòng mới sang trang chi tiết.
+(function () {
+  const nutLs = document.getElementById('nut-ls');
+  const panel = document.getElementById('ls-panel');
+  if (!nutLs || !panel) return;
+  let daNap = false;
+
+  function dong(r) {
+    const a = document.createElement('a');
+    a.className = 'ls-dong';
+    // lịch sử DÙNG CHUNG (01/08/2026): kèm ?nguoi= để route tra nhanh đúng chủ báo cáo
+    a.href = '/bao-cao-lich-su/' + encodeURIComponent(r.id)
+           + (r.nguoi_chay ? '?nguoi=' + encodeURIComponent(r.nguoi_chay) : '');
+    const tg = document.createElement('span'); tg.className = 'tg';
+    tg.textContent = (r.thoi_gian || '').replace('T', ' ').slice(0, 16);  // ISO → "2026-07-21 11:22"
+    const ten = document.createElement('span'); ten.className = 'ten';
+    ten.textContent = (r.ten || '(không tên)') + (r.nguoi_chay ? ' · ' + r.nguoi_chay : '');
+    const tang = document.createElement('span');
+    tang.className = 'tang ' + (r.tang_vo ? 'vo' : 'ok');
+    tang.textContent = r.tang_vo || 'không vỡ';
+    a.append(tg, ten, tang);
+    return a;
+  }
+
+  async function nap() {
+    panel.innerHTML = '<div class="ls-cho">Đang tải…</div>';
+    try {
+      const res = await fetch('/api/bao-cao-lich-su');
+      if (!res.ok) throw new Error(res.status);
+      const data = await res.json();
+      panel.innerHTML = '';
+      if (!data.bao_cao.length) {
+        const t = document.createElement('div');
+        t.className = 'ls-trong';
+        t.textContent = 'Chưa có báo cáo nào — nạp report ở trên rồi bấm Chẩn đoán.';
+        panel.appendChild(t);
+      } else {
+        data.bao_cao.forEach(r => panel.appendChild(dong(r)));
+      }
+      const them = document.createElement('a');
+      them.className = 'ls-them'; them.href = '/bao-cao-lich-su';
+      them.textContent = 'Mở trang lịch sử đầy đủ →';
+      panel.appendChild(them);
+      daNap = true;
+    } catch (e) {
+      panel.innerHTML = '<div class="ls-trong">Không tải được danh sách — thử lại hoặc mở trang đầy đủ.</div>';
+      daNap = false;  // lần mở sau thử fetch lại
+    }
+  }
+
+  nutLs.addEventListener('click', (ev) => {
+    ev.preventDefault();
+    const mo = panel.hidden;
+    panel.hidden = !mo;
+    nutLs.classList.toggle('mo', mo);
+    if (mo && !daNap) nap();
+  });
+})();
+</script>
+{% endblock %}

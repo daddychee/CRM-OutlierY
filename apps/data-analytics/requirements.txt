@@ -1,0 +1,10 @@
+# App data-analytics — phụ thuộc RIÊNG của app (Luật 2: app tự đủ).
+# Giai đoạn test dùng venv chung ở ROOT; khi tách venv riêng thì cài từ file này.
+fastapi
+uvicorn[standard]
+httpx
+jinja2
+python-multipart
+pandas
+openpyxl
+pytest

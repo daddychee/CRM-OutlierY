@@ -1,0 +1,12 @@
+loai_kenh,ten_hien_thi,chi_so,kieu,he_so,do_tin_cay,nguon
+tre_em,Trẻ em,retention,noi_nguong,1.4,cao,"Trẻ nhỏ tua và xem lại nhiều lần nên retention thô thấp hơn mặt bằng — đồng thuận rộng trong cộng đồng nhà sáng tạo trẻ em; nới ngưỡng báo động retention, KHÔNG bỏ qua sụt sâu."
+tre_em,Trẻ em,rpm,ky_vong_thap,,cao,"YouTube tắt quảng cáo cá nhân hóa với nội dung 'made for kids' (COPPA/FTC) → RPM thấp là QUY LUẬT của loại kênh, không phải video rẻ tiền."
+tre_em,Trẻ em,do_dai,ky_vong_ngan,,uoc_luong,"Trẻ nhỏ chú ý ngắn nên video ngắn thường hợp hơn — ước lượng cộng đồng, cần kiểm bằng số của chính kênh."
+documentary,Documentary,retention,ky_vong_cao,,cao,"Khán giả documentary xem chủ động; retention thấp là BÁO ĐỘNG THẬT — KHÔNG nới ngưỡng, chỉ nhắc đọc số nghiêm khắc hơn."
+documentary,Documentary,do_dai,ky_vong_dai,,uoc_luong,"Documentary thường hợp video dài — ước lượng cộng đồng, cần kiểm bằng số của kênh."
+narrator,Người kể chuyện,retention,ky_vong_cao,,cao,"Nội dung kể chuyện giữ chân bằng mạch truyện; retention thấp là báo động thật — KHÔNG nới ngưỡng."
+narrator,Người kể chuyện,rpm,ky_vong_cao,,uoc_luong,"Khán giả narration thường lớn tuổi hơn nên RPM có xu hướng cao — ước lượng, cần kiểm."
+compilation,Tổng hợp,retention,noi_nguong,1.2,uoc_luong,"Video tổng hợp người xem hay nhảy đoạn nên retention thô thấp hơn — ước lượng cộng đồng, cần kiểm; nới nhẹ ngưỡng báo động."
+tutorial,Hướng dẫn,retention,noi_nguong,1.2,uoc_luong,"Người xem hướng dẫn hay tua tới đúng bước cần nên retention thô thấp không hẳn xấu — ước lượng cộng đồng, cần kiểm; nới nhẹ ngưỡng."
+tutorial,Hướng dẫn,do_dai,ky_vong_dai,,uoc_luong,"Hướng dẫn đầy đủ thường dài — ước lượng cộng đồng."
+giai_tri,Giải trí chung,chung,ghi_chu,,cao,"Giải trí chung không có đặc thù đọc số riêng — dùng baseline tự kênh thuần, không điều chỉnh ngưỡng."

@@ -1,0 +1,640 @@
+{# ── Template con DÙNG CHUNG: khối tổng quan danh mục + bảng phán quyết 4 trục + nút
+   Analyze/Xem báo cáo mỗi video + MODAL báo cáo video. chan_doan.html và
+   bao_cao_lich_su.html cùng include → 1 nguồn ánh xạ nhãn/màu + 1 modal, không drift.
+   JS thuần (không tự chạy) — mỗi trang tự nạp dữ liệu rồi gọi veTongQuan/veBangVideo/
+   renderKetQua và set window.VIDEO_CTX. ── #}
+<style>
+  .cd-sec{font-size:1.05rem;margin:1.6rem 0 .4rem}
+  .cd-sec .phu{font-size:.85rem;color:var(--muted);font-weight:400}
+  .canh-bao{margin-top:1rem;padding:.8rem;border-radius:10px;background:var(--th-2b2517);color:var(--th-e0c070);border:1px solid var(--th-3a3220)}
+  .kq-tieu-de{font-weight:600;margin-bottom:.5rem}
+  .tom-tat{margin-top:.6rem;padding:.8rem;border-radius:10px;font-weight:600}
+  .tom-tat.vo{background:var(--th-33201b);color:var(--th-d97c6c);border:1px solid var(--th-5c3a30)}
+  .tom-tat.ok{background:var(--th-1c2a20);color:var(--th-a9d4b0);border:1px solid var(--th-3a5a40)}
+  /* trung lập — KHÁC 'ok' (không phải "khỏe", chỉ là chưa đủ view để kết luận, van chống bịa) */
+  .tom-tat.chuadu{background:var(--th-141c2b);color:var(--th-7b8698);border:1px solid var(--chip-line)}
+  .luat{border:1px solid var(--chip-line);border-radius:10px;padding:.8rem;margin-top:.8rem;background:var(--th-182233)}
+  .luat .ma{font-weight:700;color:var(--accent)}
+  .luat .tin-cay{font-size:.8rem;background:var(--chip);border-radius:999px;padding:.1rem .5rem;margin-left:.5rem}
+  .luat .nguon-tk{font-size:.8rem;color:var(--muted);margin-top:.3rem}
+  .dien-giai{margin-top:1rem;padding:.8rem;border-radius:10px;background:var(--th-182233);border:1px solid var(--chip-line);white-space:pre-line}
+  /* markdown → HTML (dinhDangMarkdown, /static/markdown.js): giữ đậm/tiêu đề/gạch đầu dòng thật
+     thay vì ký tự #/** thô — cùng khuôn .dap của hoi_dap.html */
+  .dien-giai h1,.dien-giai h2,.dien-giai h3,.dien-giai h4,.dien-giai h5,.dien-giai h6,
+  .bck-dg h1,.bck-dg h2,.bck-dg h3,.bck-dg h4,.bck-dg h5,.bck-dg h6{font-size:.95rem;font-weight:700;margin:.6rem 0 .25rem;line-height:1.4}
+  .dien-giai h1:first-child,.dien-giai h2:first-child,.dien-giai h3:first-child,.dien-giai h4:first-child,
+  .dien-giai h5:first-child,.dien-giai h6:first-child,
+  .bck-dg h1:first-child,.bck-dg h2:first-child,.bck-dg h3:first-child,.bck-dg h4:first-child,
+  .bck-dg h5:first-child,.bck-dg h6:first-child{margin-top:0}
+  .dien-giai ul,.dien-giai ol,.bck-dg ul,.bck-dg ol{margin:.25rem 0 .5rem 1.25rem;padding:0}
+  .dien-giai li,.bck-dg li{margin:.2rem 0}
+  .dien-giai strong,.bck-dg strong{font-weight:700}
+  .nguon{font-size:.85rem;color:var(--muted);margin-top:.5rem;border-top:1px solid var(--line);padding-top:.4rem}
+  .badge{display:inline-block;font-size:.78rem;background:var(--th-1c2a20);color:var(--th-8fbe9a);border-radius:999px;padding:.15rem .6rem;margin-top:.5rem}
+  .dang{color:var(--muted);margin-top:.8rem}
+  /* tổng quan danh mục — ô số liệu */
+  .o-so-hang{display:flex;flex-wrap:wrap;gap:.6rem;margin-top:.5rem}
+  .o-so{flex:1;min-width:130px;background:var(--th-182233);border:1px solid var(--chip-line);border-radius:12px;padding:.7rem .8rem}
+  .o-so .nhan{font-size:.78rem;color:var(--muted)}
+  .o-so .gia-tri{font-size:1.25rem;font-weight:700;margin-top:.2rem}
+  .tien-note{margin:.6rem 0 .2rem;padding:.6rem .8rem;border-radius:10px;background:var(--th-202b38);color:var(--th-93b0cc);border:1px solid var(--th-1d2733);font-size:.86rem}
+  .canh-bao-anh-xa{margin:.8rem 0;padding:.7rem .9rem;border-radius:10px;background:var(--th-2b2517);color:var(--th-e0c070);border:1px solid var(--th-3a3220);font-size:.88rem}
+  .loai-kenh-banner{margin:.8rem 0;padding:.7rem .9rem;border-radius:10px;background:var(--chip);border:1px solid var(--chip-line);font-size:.88rem}
+  .loai-kenh-banner b{color:var(--accent)}
+  .loai-kenh-banner ul{margin:.4rem 0 0;padding-left:1.1rem}
+  .loai-kenh-banner li{margin:.15rem 0;color:var(--muted)}
+  .lk-tin{font-size:.78rem;padding:.02rem .4rem;border-radius:999px;margin-left:.3rem;border:1px solid var(--chip-line)}
+  .lk-tin.uoc_luong{background:var(--th-2b2517);color:var(--th-e0c070);border-color:var(--th-3a3220)}
+  /* báo cáo kênh 9 mục cố định */
+  .bck-ds{display:flex;flex-direction:column;gap:.35rem;margin-top:.5rem}
+  .bck-muc{border:1px solid var(--chip-line);border-radius:10px;padding:.5rem .7rem;background:var(--th-182233)}
+  .bck-muc.bck-thieu,.bck-muc.bck-chuadu{background:var(--chip)}
+  .bck-head{display:flex;align-items:baseline;gap:.5rem;flex-wrap:wrap}
+  .bck-ma{font-weight:700;color:var(--accent);font-size:.82rem;min-width:1.7rem}
+  .bck-ten{font-weight:600;font-size:.9rem}
+  .bck-tt{margin-left:auto;font-size:.76rem;white-space:nowrap;padding:.05rem .5rem;border-radius:999px;background:var(--chip);color:var(--muted)}
+  .bck-ok .bck-tt{background:var(--th-20301f);color:var(--th-8fbe9a)}
+  .bck-nd{font-size:.88rem;margin-top:.35rem}
+  .bck-nd .can-cu{color:var(--muted);font-size:.82rem}
+  .bck-dg{font-size:.86rem;margin-top:.45rem;padding:.5rem .6rem;border-radius:8px;background:var(--th-282235);color:var(--th-b3a3d9);border-left:3px solid var(--th-6d5f96)}
+  .bck-dg-badge{font-size:.74rem;color:var(--muted)}
+  .bck-lam-moi{margin-left:.6rem;font-size:.76rem;font-weight:600;padding:.2rem .6rem;border:1px solid var(--chip-line);border-radius:999px;background:var(--th-182233);color:var(--muted);cursor:pointer;font-family:inherit}
+  .bck-lam-moi:hover{border-color:var(--th-31425e);background:var(--th-141c2b)}
+  .bck-lam-moi:disabled{opacity:.6;cursor:default}
+  .bck-ghi{font-size:.82rem;color:var(--muted);margin-top:.25rem}
+  .bck-phu{font-size:.82rem;margin-top:.35rem;padding-left:.6rem;border-left:2px solid var(--chip-line)}
+  .bck-phu-ten{font-weight:600}
+  .bck-phu.bck-thieu,.bck-phu.bck-chuadu{color:var(--muted)}
+  .bck-phu.bck-ok .bck-phu-ten{color:var(--th-8fbe9a)}
+  .bck-matran{display:grid;grid-template-columns:1fr 1fr;gap:.35rem;margin-top:.45rem}
+  .mt-o{border:1px solid var(--chip-line);border-radius:8px;padding:.4rem .55rem;font-size:.78rem;background:var(--th-182233);color:var(--muted)}
+  .mt-o .mt-so{font-weight:700;font-size:1.05rem;color:var(--ink);margin-right:.3rem}
+  .mt-o.mt-dong{outline:2px solid var(--accent);background:var(--th-111e33)}
+  .bck-matran-chuadu{font-size:.78rem;color:var(--muted);margin-top:.3rem}
+  /* bảng phán quyết 4 trục */
+  .bang-wrap{overflow-x:auto}
+  table.bang-vid{width:100%;border-collapse:collapse;margin-top:.5rem;font-size:.9rem}
+  .bang-vid th,.bang-vid td{text-align:left;padding:.45rem .55rem;border-bottom:1px solid var(--line);vertical-align:middle}
+  .bang-vid th{color:var(--muted);font-size:.8rem}
+  .bang-vid td.num,.bang-vid th.num{text-align:right;white-space:nowrap}
+  .bang-vid th.tr-h,.bang-vid td.tr-o{text-align:center}
+  .bang-vid tbody tr:hover{background:var(--chip)}
+  .bang-vid tbody tr.active{background:var(--th-111e33)}
+  .tr-badge{display:inline-block;min-width:1.4rem;padding:.1rem .4rem;border-radius:8px;font-weight:700}
+  .tr-dat{background:var(--th-1c2a20);color:var(--th-8fbe9a)}
+  .tr-canh{background:var(--th-2b2517);color:var(--th-d9b95c)}
+  .tr-hong{background:var(--th-33201b);color:var(--th-d97c6c)}
+  .tr-chua{background:var(--th-141c2b);color:var(--th-7b8698)}
+  .pq{display:inline-block;font-size:.82rem;font-weight:600;padding:.15rem .55rem;border-radius:999px;white-space:nowrap}
+  .pq-tot{background:var(--th-20301f);color:var(--th-8fbe9a)}
+  .pq-trungtinh{background:var(--chip);color:var(--muted)}
+  .pq-sua{background:var(--th-2b2517);color:var(--th-d9b95c)}
+  .pq-canhbao{background:var(--th-16263f);color:var(--th-d9a34a)}
+  .pq-xau{background:#33241f;color:#3f6ea3}
+  .pq-xam{background:var(--th-141c2b);color:var(--th-7b8698)}
+  .nut-act{padding:.3rem .7rem;border:0;border-radius:8px;background:var(--accent);color:var(--th-182233);font-size:.82rem;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap}
+  .nut-act:hover{background:var(--th-6ba4e8)}
+  .nut-act.nut-xem{background:var(--th-1c2a20);color:var(--th-8fbe9a);border:1px solid var(--th-33503a)}
+  /* Badge trạng thái mang icon (vd 💰 → $) thay vì textContent — SVG cần nhỏ lại cho vừa pill */
+  .tr-badge-ic svg.ic{width:12px;height:12px;vertical-align:-1px}
+  /* Nút xuất báo cáo tổng (in trình duyệt → Save as PDF, không phụ thuộc WeasyPrint) */
+  .nut-xuat{display:inline-flex;align-items:center;gap:.4rem;padding:.4rem .8rem;border:1px solid var(--chip-line);border-radius:8px;background:var(--th-182233);color:var(--ink);font-size:.85rem;font-weight:600;cursor:pointer;font-family:inherit;margin:1rem 0 .2rem}
+  .nut-xuat:hover{border-color:var(--th-31425e);background:var(--th-141c2b)}
+  /* Chỉ hiện khi in: ẩn khung/nút thao tác, giữ nội dung báo cáo trên nền trắng dễ đọc trên giấy */
+  @media print{
+    .sidebar,.topbar,.nut-xuat,.bck-lam-moi,.thao-tac,.modal-phu{display:none!important}
+    .noi-dung-wrap,.noi-dung,.main{margin:0!important;padding:0!important;width:100%!important}
+    body,.noi-dung,.bck-muc,.luat,.o-so,.dien-giai,.bck-dg,table.bang-vid,.loai-kenh-banner,.canh-bao-anh-xa,.tien-note{
+      background:#fff!important;color:#111!important}
+    .bang-vid th,.bang-vid td{border-color:#ccc!important}
+    .tr-badge,.pq,.badge,.lk-tin{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    .bck-muc,.luat,.o-so,.bang-vid tr{break-inside:avoid}
+  }
+  /* MODAL báo cáo video */
+  .modal-phu{position:fixed;inset:0;z-index:100;background:rgba(30,26,22,.42);display:flex;align-items:center;justify-content:center;padding:20px}
+  .modal-hop{background:var(--th-182233);border-radius:16px;max-width:640px;width:100%;max-height:86vh;overflow-y:auto;box-shadow:0 18px 50px rgba(0,0,0,.28);padding:1rem 1.2rem 1.2rem}
+  .modal-dau{display:flex;align-items:center;gap:.6rem;border-bottom:1px solid var(--line);padding-bottom:.6rem;margin-bottom:.6rem}
+  .modal-tieu-de{font-weight:700;font-size:1.02rem;flex:1;min-width:0}
+  .modal-x{border:0;background:none;font-size:1.1rem;cursor:pointer;color:var(--muted);padding:.2rem .45rem;border-radius:8px;line-height:1}
+  .modal-x:hover{background:var(--chip);color:var(--ink)}
+  .modal-dang{margin:.4rem 0 .8rem}
+  .tien-do-nhan{font-size:.9rem;color:var(--muted);margin-bottom:.35rem}
+  .tien-do{height:8px;background:var(--chip);border-radius:999px;overflow:hidden}
+  .tien-do-bar{height:100%;width:0;background:var(--accent);border-radius:999px;transition:width .18s ease}
+  .modal-chan{display:flex;gap:.5rem;justify-content:flex-end;margin-top:1rem;border-top:1px solid var(--line);padding-top:.7rem}
+
+  /* Token 2 theme (spec OUTLIERY 30/07) — TỐI là mặc định, SÁNG đè qua data-theme */
+  :root{--th-111e33:#111e33;--th-141c2b:#141c2b;--th-16263f:#16263f;--th-182233:#182233;--th-1c2a20:#1c2a20;--th-1d2733:#1d2733;--th-202b38:#202b38;--th-20301f:#20301f;--th-282235:#282235;--th-2b2517:#2b2517;--th-31425e:#31425e;--th-33201b:#33201b;--th-33503a:#33503a;--th-3a3220:#3a3220;--th-3a5a40:#3a5a40;--th-5c3a30:#5c3a30;--th-6ba4e8:#6ba4e8;--th-6d5f96:#6d5f96;--th-7b8698:#7b8698;--th-8fbe9a:#8fbe9a;--th-93b0cc:#93b0cc;--th-a9d4b0:#a9d4b0;--th-b3a3d9:#b3a3d9;--th-d97c6c:#d97c6c;--th-d9a34a:#d9a34a;--th-d9b95c:#d9b95c;--th-e0c070:#e0c070}
+  :root[data-theme="light"]{--th-111e33:#eef4fc;--th-141c2b:#f5f5f5;--th-16263f:#e8f0fb;--th-182233:#f5f5f5;--th-1c2a20:#e7f2e9;--th-1d2733:#f2f2f2;--th-202b38:#f0f0f0;--th-20301f:#e2efe4;--th-282235:#f0ebfa;--th-2b2517:#faf1dc;--th-31425e:#d9d9d9;--th-33201b:#fbeae6;--th-33503a:#b6d4bd;--th-3a3220:#e8d9a9;--th-3a5a40:#a9cdb0;--th-5c3a30:#e5b6aa;--th-6ba4e8:#2c6fc4;--th-6d5f96:#c4b8e2;--th-7b8698:#767b83;--th-8fbe9a:#2e6b44;--th-93b0cc:#3f5e80;--th-a9d4b0:#24663a;--th-b3a3d9:#5c4a99;--th-d97c6c:#b14a3c;--th-d9a34a:#96701d;--th-d9b95c:#8a6d1c;--th-e0c070:#8a6d1c}
+</style>
+
+<div id="loai-kenh-banner" class="loai-kenh-banner" style="display:none"></div>
+<div id="canh-bao-anh-xa" class="canh-bao-anh-xa" style="display:none"></div>
+
+<button type="button" class="nut-xuat" onclick="window.print()" title="Mở hộp thoại in của trình duyệt — chọn 'Lưu dưới dạng PDF' để xuất file">
+  <svg class="ic" viewBox="0 0 24 24"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+  Xuất báo cáo tổng
+</button>
+
+<div id="bao-cao-kenh" style="display:none">
+  <h3 class="cd-sec"><svg class="ic" viewBox="0 0 24 24"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M9 4H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-3"/><path d="M9 12h6M9 16h6"/></svg> Báo cáo kênh — 9 phương pháp phân tích<button type="button" id="bck-lam-moi"
+    class="bck-lam-moi" style="display:none" title="Chạy lại diễn giải LLM (dùng sau khi nâng luật)">↻ Làm mới diễn giải</button></h3>
+  <div id="bao-cao-kenh-ds" class="bck-ds"></div>
+</div>
+
+<div id="tong-quan" style="display:none">
+  <h3 class="cd-sec"><svg class="ic" viewBox="0 0 24 24"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2z"/></svg> Tổng quan danh mục kênh</h3>
+  <div class="o-so-hang" id="o-so-hang"></div>
+</div>
+
+<div id="khu-video" style="display:none">
+  <h3 class="cd-sec"><svg class="ic" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="18" rx="2"/><path d="M7 3v18M17 3v18M2 8h5M2 16h5M17 8h5M17 16h5"/></svg> Bảng phán quyết theo video <span class="phu" id="so-video"></span></h3>
+  <div id="tien-note" class="tien-note" style="display:none"><svg class="ic" viewBox="0 0 24 24"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg> Kênh chưa bật kiếm tiền — report
+    không có cột doanh thu/RPM, nên trục Tiền tạm chưa xét (tập trung lượt xem &amp; giữ chân trước).
+    Đây là trạng thái đúng của kênh, không phải thiếu số liệu.</div>
+  <div class="bang-wrap">
+    <table class="bang-vid">
+      <thead><tr>
+        <th>Tiêu đề</th><th class="num">Views</th>
+        <th class="tr-h">Nội dung</th><th class="tr-h">Tiền</th>
+        <th class="tr-h">Danh mục</th><th class="tr-h">Công thức</th>
+        <th>Phán quyết</th><th class="thao-tac">Thao tác</th>
+      </tr></thead>
+      <tbody id="tbody-video"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- MODAL báo cáo video (phần tử HTML tự làm — KHÔNG dùng alert/confirm trình duyệt) -->
+<div id="modal-video" class="modal-phu" style="display:none">
+  <div class="modal-hop" role="dialog" aria-modal="true" aria-labelledby="modal-tieu-de">
+    <div class="modal-dau">
+      <span id="modal-tieu-de" class="modal-tieu-de">Phân tích video</span>
+      <button type="button" id="modal-dong" class="modal-x" aria-label="Đóng">✕</button>
+    </div>
+    <div id="modal-dang" class="modal-dang" style="display:none">
+      <div class="tien-do-nhan">Analyzing… <span id="modal-pct">0%</span></div>
+      <div class="tien-do"><div id="modal-thanh" class="tien-do-bar"></div></div>
+    </div>
+    <div id="modal-noi-dung"></div>
+    <div class="modal-chan">
+      <button type="button" id="modal-lam-moi" class="nut phu">↻ Phân tích lại</button>
+      <button type="button" id="modal-dong-2" class="nut phu">Đóng</button>
+    </div>
+  </div>
+</div>
+
+<script src="/static/markdown.js"></script>
+<script>
+// Bối cảnh gọi /chan-doan/video: trang chẩn đoán set {file}, trang lịch sử set {bao_cao_id,nguoi}.
+window.VIDEO_CTX = window.VIDEO_CTX || { file: null, bao_cao_id: null, nguoi: '' };
+
+// Icon minimalist (lucide-style, khớp .ic toàn hệ) — hằng số TRUSTED do chính code khai, KHÔNG
+// bao giờ nhận chuỗi từ data/LLM nên an toàn khi parse qua innerHTML ở _icEl(). Phần TEXT động
+// (nguyên nhân, cách sửa, message…) LUÔN ghép bằng createTextNode/append(chuỗi) — KHÔNG BAO GIỜ
+// nối trực tiếp vào innerHTML — chống XSS từ nội dung do LLM/người dùng sinh ra.
+const IC = {
+  canhBao: '<svg class="ic" viewBox="0 0 24 24"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>',
+  vo:      '<svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>',
+  ok:      '<svg class="ic" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="M22 4 12 14.01l-3-3"/></svg>',
+  timKiem: '<svg class="ic" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>',
+  luc:     '<svg class="ic" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>',
+  sach:    '<svg class="ic" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>',
+  khien:   '<svg class="ic" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>',
+  mucTieu: '<svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>',
+  sao:     '<svg class="ic" viewBox="0 0 24 24"><path d="M12 3l1.9 5.8L20 11l-6.1 2.2L12 19l-1.9-5.8L4 11l6.1-2.2z"/></svg>',
+  dola:    '<svg class="ic" viewBox="0 0 24 24"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>',
+  film:    '<svg class="ic" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="18" rx="2"/><path d="M7 3v18M17 3v18M2 8h5M2 16h5M17 8h5M17 16h5"/></svg>',
+  hoi:     '<svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>',
+};
+function _icEl(key) { const d = document.createElement('div'); d.innerHTML = IC[key]; return d.firstElementChild; }
+
+// Mã phán quyết → [nhãn tiếng Việt, class màu theo nhóm ý nghĩa]
+const NHAN_PQ = {
+  nhan_ban:          ['Nhân bản',         'pq-tot'],
+  giu:               ['Giữ',              'pq-trungtinh'],
+  sua_bao_bi:        ['Sửa bao bì',       'pq-sua'],
+  sua_noi_dung:      ['Sửa nội dung',     'pq-sua'],
+  doi_ngach_vi_tien: ['Đổi ngách vì tiền','pq-canhbao'],
+  bo:                ['Bỏ',               'pq-xau'],
+  chua_du_du_lieu:   ['Chưa đủ dữ liệu',  'pq-xam'],
+};
+const MAU_TRANG = { '✓': 'tr-dat', '⚠': 'tr-canh', '✗': 'tr-hong', '?': 'tr-chua' };
+
+const _tong = document.getElementById('tong-quan');
+const _oSoHang = document.getElementById('o-so-hang');
+const _khuVideo = document.getElementById('khu-video');
+const _tienNote = document.getElementById('tien-note');
+const _soVideo = document.getElementById('so-video');
+const _tbodyVideo = document.getElementById('tbody-video');
+const _modal = document.getElementById('modal-video');
+const _modalTieuDe = document.getElementById('modal-tieu-de');
+const _modalDang = document.getElementById('modal-dang');
+const _modalPct = document.getElementById('modal-pct');
+const _modalThanh = document.getElementById('modal-thanh');
+const _modalNoiDung = document.getElementById('modal-noi-dung');
+
+// Trạng thái 1 trục có thể là chuỗi ("✓") hoặc dict {trang_thai:"✓"} — đọc cả hai.
+function layTrang(o) {
+  if (o == null) return null;
+  if (typeof o === 'string') return o;
+  return o.trang_thai || null;
+}
+
+// Render 1 kết quả chẩn đoán (dùng chung KÊNH + VIDEO + dữ liệu cũ) vào 1 element.
+function renderKetQua(el, data, tieuDe) {
+  el.textContent = '';
+  if (tieuDe) {
+    const h = document.createElement('div'); h.className = 'kq-tieu-de'; h.textContent = tieuDe;
+    el.appendChild(h);
+  }
+  if (data.canh_bao_baseline) {
+    const cb = document.createElement('div'); cb.className = 'canh-bao';
+    cb.append(_icEl('canhBao'), document.createTextNode(' ' + data.canh_bao_baseline));
+    el.appendChild(cb);
+  }
+  const tt = document.createElement('div');
+  // du_du_lieu===false: KHÁC 'khỏe' (ok) — chỉ là chưa đủ view để kết luận (van chống bịa),
+  // phải hiện trung lập, không phải xanh 'ổn' hay đỏ 'vỡ'.
+  const chuaDuLieu = data.du_du_lieu === false;
+  const trangThaiTt = chuaDuLieu ? 'chuadu' : (data.matched.length ? 'vo' : 'ok');
+  tt.className = 'tom-tat ' + trangThaiTt;
+  tt.append(_icEl(chuaDuLieu ? 'hoi' : (data.matched.length ? 'vo' : 'ok')),
+           document.createTextNode(' ' + data.message));
+  el.appendChild(tt);
+
+  for (const r of data.matched) {
+    const d = document.createElement('div'); d.className = 'luat';
+    const dong1 = document.createElement('div');
+    const ma = document.createElement('span'); ma.className = 'ma';
+    ma.textContent = `[${r.ma_luat}] tầng ${r.tang_pheu}`;
+    const tc = document.createElement('span'); tc.className = 'tin-cay';
+    tc.textContent = 'độ tin cậy: ' + r.do_tin_cay;
+    dong1.append(ma, tc);
+    const nn = document.createElement('div');
+    nn.append(_icEl('timKiem'), document.createTextNode(' Nguyên nhân: ' + r.nguyen_nhan));
+    const cs = document.createElement('div');
+    cs.append(_icEl('luc'), document.createTextNode(' Cách sửa: ' + r.cach_sua));
+    const ntk = document.createElement('div'); ntk.className = 'nguon-tk';
+    ntk.textContent = 'Nguồn: ' + r.nguon_tham_khao;
+    d.append(dong1, nn, cs, ntk); el.appendChild(d);
+  }
+
+  if (data.dien_giai && data.dien_giai.answer) {
+    const dg = document.createElement('div'); dg.className = 'dien-giai';
+    dg.innerHTML = dinhDangMarkdown(data.dien_giai.answer);
+    if (data.dien_giai.sources && data.dien_giai.sources.length) {
+      const ng = document.createElement('div'); ng.className = 'nguon';
+      const dsNguon = data.dien_giai.sources.map(s => `${s.doc_code} — ${s.title}`).join(' · ');
+      ng.append(_icEl('sach'), document.createTextNode(' Playbook/tài liệu: ' + dsNguon));
+      dg.appendChild(ng);
+    }
+    const badge = document.createElement('span'); badge.className = 'badge';
+    badge.append(_icEl('khien'), document.createTextNode(' Đã qua phản biện bởi ' + data.dien_giai.critic_count + ' model'
+      + (data.dien_giai.rewritten ? ' — đã viết lại theo góp ý' : '')));
+    dg.appendChild(badge); el.appendChild(dg);
+  } else if (data.dien_giai_loi) {
+    // LLM chết (hết credit…) — engine vẫn chấm đủ, chỉ thiếu phần diễn giải AI (15/08/2026)
+    const cb = document.createElement('div'); cb.className = 'canh-bao';
+    cb.append(_icEl('canhBao'), document.createTextNode(' Thiếu phần diễn giải AI: ' + data.dien_giai_loi));
+    el.appendChild(cb);
+  }
+}
+
+// Khối tổng quan danh mục — thiếu trường nào bỏ ô đó, không lỗi.
+function veTongQuan(tq) {
+  _oSoHang.textContent = '';
+  if (!tq) { _tong.style.display = 'none'; return; }
+  const pct = x => (x != null) ? (x * 100).toFixed(1) + '%' : null;
+  _themO('Top 1 chiếm view', pct(tq.tap_trung_top1));
+  _themO('Top 3 chiếm view', pct(tq.tap_trung_top3));
+  _themO('Người xem mới (TB)', pct(tq.new_ratio_tb));
+  _themO('Người xem quay lại (TB)', pct(tq.returning_ratio_tb));
+  _themO('Nhóm độ dài thắng', tq.nhom_do_dai_thang);
+  _tong.style.display = _oSoHang.children.length ? 'block' : 'none';
+}
+function _themO(nhan, giaTri) {
+  if (giaTri == null || giaTri === '') return;
+  const o = document.createElement('div'); o.className = 'o-so';
+  const n = document.createElement('div'); n.className = 'nhan'; n.textContent = nhan;
+  const g = document.createElement('div'); g.className = 'gia-tri'; g.textContent = giaTri;
+  o.append(n, g); _oSoHang.appendChild(o);
+}
+
+// Minh bạch LOẠI KÊNH: báo rõ đang đọc số theo giả định loại kênh nào + mọi điều chỉnh đã áp
+// (kèm nguồn + độ tin cậy). Không có loại kênh → ẩn (chạy baseline tự kênh thuần).
+function veLoaiKenh(profile) {
+  const el = document.getElementById('loai-kenh-banner');
+  if (!el) return;
+  el.textContent = '';
+  if (!profile || !profile.ten_hien_thi) { el.style.display = 'none'; return; }
+  const dau = document.createElement('div');
+  dau.append(_icEl('mucTieu'), ' Đang chẩn đoán theo loại kênh: ');
+  const b = document.createElement('b'); b.textContent = profile.ten_hien_thi; dau.append(b);
+  dau.append('. Baseline vẫn là mặt bằng của chính kênh; loại kênh chỉ điều chỉnh cách đọc số:');
+  el.append(dau);
+  const ul = document.createElement('ul');
+  (profile.dieu_chinh || []).forEach(d => {
+    const li = document.createElement('li');
+    li.textContent = d.chi_so + ': ' + d.nguon + ' ';
+    const tin = document.createElement('span');
+    tin.className = 'lk-tin' + (d.do_tin_cay === 'uoc_luong' ? ' uoc_luong' : '');
+    tin.textContent = d.do_tin_cay === 'uoc_luong' ? 'ước lượng — cần kiểm' : 'có căn cứ';
+    li.append(tin);
+    ul.append(li);
+  });
+  if (ul.children.length) el.append(ul);
+  el.style.display = 'block';
+}
+
+// Lưới an toàn (A): banner khi report có cột chỉ số quan trọng chưa ánh xạ được (đa ngôn ngữ).
+function veCanhBaoAnhXa(ds) {
+  const el = document.getElementById('canh-bao-anh-xa');
+  if (!el) return;
+  if (!ds || !ds.length) { el.style.display = 'none'; el.textContent = ''; return; }
+  el.textContent = '';
+  el.append(_icEl('canhBao'), ' Report có cột NGHI là chỉ số quan trọng nhưng CHƯA ánh xạ được — kết quả '
+    + 'có thể thiếu/sai ở: ' + ds.join('; ')
+    + '. Hãy bổ sung dòng ánh xạ trong rules/column_mapping.csv.');
+  el.style.display = 'block';
+}
+
+// Báo cáo kênh 9 mục cố định — 3 trạng thái → [nhãn tiếng Việt, class]. Chỉ 'có kết quả' mở
+// rộng (nội dung + số video căn cứ); 'chưa có số liệu' và 'chưa đủ' thu gọn 1 dòng ghi chú.
+const _NHAN_TT9 = {
+  co_ket_qua:           ['✓ Có kết quả',                   'bck-ok'],
+  chua_co_so_lieu:      ['— Chưa có số liệu',              'bck-thieu'],
+  chua_du_de_phan_tich: ['… Số liệu chưa đủ để phân tích', 'bck-chuadu'],
+};
+// Dựng 1 mục khung 9 mục thành node (dùng chung cho danh sách đầy đủ veBaoCaoKenh() VÀ khối
+// Winning Format rút gọn trong báo cáo tổng hợp veWinningFormatTongHop() — MỘT nguồn render,
+// không lệch nhau khi mục đổi cấu trúc).
+function _veMotMuc9(m) {
+    const [nhan, cls] = _NHAN_TT9[m.trang_thai] || ['?', 'bck-thieu'];
+    const row = document.createElement('div'); row.className = 'bck-muc ' + cls;
+    const head = document.createElement('div'); head.className = 'bck-head';
+    const ma = document.createElement('span'); ma.className = 'bck-ma'; ma.textContent = m.ma;
+    const ten = document.createElement('span'); ten.className = 'bck-ten'; ten.textContent = m.ten;
+    const tt = document.createElement('span'); tt.className = 'bck-tt'; tt.textContent = nhan;
+    head.append(ma, ten, tt); row.appendChild(head);
+    if (m.trang_thai === 'co_ket_qua') {                 // MỞ RỘNG: nội dung + số video căn cứ
+      const nd = document.createElement('div'); nd.className = 'bck-nd';
+      nd.textContent = m.noi_dung || '';
+      if (m.so_video != null) {
+        const cc = document.createElement('span'); cc.className = 'can-cu';
+        cc.textContent = `  (căn cứ ${m.so_video} video)`;
+        nd.appendChild(cc);
+      }
+      row.appendChild(nd);
+    } else if (m.ghi_chu) {                              // THU GỌN: 1 dòng ghi chú lý do
+      const g = document.createElement('div'); g.className = 'bck-ghi';
+      g.textContent = m.ghi_chu + (m.so_video != null ? ` (hiện có ${m.so_video} video)` : '');
+      row.appendChild(g);
+    }
+    // Chiều phụ (Winning Format của B2: khung giờ + từ khóa) — mỗi chiều tự khai trạng thái riêng
+    for (const cp of (m.chieu_phu || [])) {
+      const cls = (_NHAN_TT9[cp.trang_thai] || ['', 'bck-thieu'])[1];
+      const sub = document.createElement('div'); sub.className = 'bck-phu ' + cls;
+      const ten = document.createElement('span'); ten.className = 'bck-phu-ten'; ten.textContent = cp.ten + ': ';
+      const val = document.createElement('span');
+      if (cp.trang_thai === 'co_ket_qua') {
+        val.textContent = (cp.noi_dung || '') + (cp.so_video != null ? ` (căn cứ ${cp.so_video} video)` : '');
+      } else {
+        val.textContent = cp.ghi_chu || (_NHAN_TT9[cp.trang_thai] || ['—'])[0];
+      }
+      sub.append(ten, val); row.appendChild(sub);
+    }
+    // Ma trận CTR×Retention (B3): lưới 2×2 số video mỗi ô, tô đậm ô ĐÔNG NHẤT (bệnh phổ biến)
+    if (m.ma_tran) {
+      const mt = m.ma_tran;
+      const o = [
+        ['Khỏe (CTR↑ Ret↑)', mt.khoe, 'khoe'],
+        ['Giật tít (CTR↑ Ret↓)', mt.giat_tit, 'giat_tit'],
+        ['Bao bì yếu (CTR↓ Ret↑)', mt.bao_bi_yeu, 'bao_bi_yeu'],
+        ['Yếu toàn diện (CTR↓ Ret↓)', mt.yeu_toan_dien, 'yeu_toan_dien'],
+      ];
+      let dong = null, maxn = -1;
+      for (const [, n, key] of o) { if (n > maxn) { maxn = n; dong = key; } }
+      const grid = document.createElement('div'); grid.className = 'bck-matran';
+      for (const [ten2, n, key] of o) {
+        const cell = document.createElement('div'); cell.className = 'mt-o' + (key === dong ? ' mt-dong' : '');
+        const so = document.createElement('span'); so.className = 'mt-so'; so.textContent = n;
+        cell.append(so, document.createTextNode(ten2));
+        grid.appendChild(cell);
+      }
+      row.appendChild(grid);
+      if (mt.chua_du) {
+        const cd = document.createElement('div'); cd.className = 'bck-matran-chuadu';
+        cd.textContent = `${mt.chua_du} video chưa đủ mẫu — không xếp vào ô nào (van chống bịa)`;
+        row.appendChild(cd);
+      }
+    }
+    // Tầng 2 — diễn giải LLM (chỉ mục có kết quả mới có; mục chưa đủ giữ câu trạng thái, KHÔNG diễn giải)
+    if (m.dien_giai && m.dien_giai.answer) {
+      const dg = document.createElement('div'); dg.className = 'bck-dg';
+      dg.innerHTML = IC.sao + ' ' + dinhDangMarkdown(m.dien_giai.answer);
+      if (m.dien_giai.critic_count) {
+        const b = document.createElement('span'); b.className = 'bck-dg-badge';
+        b.append(_icEl('khien'), document.createTextNode('  ' + m.dien_giai.critic_count + ' critic'
+          + (m.dien_giai.rewritten ? ' · đã viết lại' : '')));
+        dg.appendChild(b);
+      }
+      row.appendChild(dg);
+    }
+    return row;
+}
+
+function veBaoCaoKenh(ds) {
+  const wrap = document.getElementById('bao-cao-kenh');
+  const cont = document.getElementById('bao-cao-kenh-ds');
+  cont.textContent = '';
+  if (!ds || !ds.length) { wrap.style.display = 'none'; return; }
+  for (const m of ds) {
+    cont.appendChild(_veMotMuc9(m));
+  }
+  window._BCK = ds;   // giữ để nút Làm mới cập nhật diễn giải tại chỗ
+  const _btnLm = document.getElementById('bck-lam-moi');
+  if (_btnLm) _btnLm.style.display = (window.VIDEO_CTX && window.VIDEO_CTX.bao_cao_id) ? '' : 'none';
+  wrap.style.display = 'block';
+}
+
+// Winning Format (B1 độ dài + B2 thứ/khung giờ/từ khóa) rút vào báo cáo TỔNG HỢP (Chẩn đoán CẢ
+// KÊNH) — user chốt 16/08: chỉ giữ Winning Format từ ý SWOT, đặt ngay trong tổng hợp thay vì
+// chỉ nằm ở khối "9 phương pháp phân tích" bên dưới. Tái dùng NGUYÊN _veMotMuc9 (không tính lại
+// gì — B1/B2 đã có sẵn trong bao_cao_kenh của cùng lượt chẩn đoán), append vào CUỐI el (el đã
+// được renderKetQua() dựng xong phần luật/diễn giải trước đó).
+function veWinningFormatTongHop(el, ds) {
+  if (!el || !ds || !ds.length) return;
+  const muc = ds.filter(m => m.ma === 'B1' || m.ma === 'B2');
+  if (!muc.length) return;
+  const tieu = document.createElement('div');
+  tieu.className = 'cd-sec';
+  tieu.append(_icEl('sao'), document.createTextNode(' Công thức đang thắng (Winning Format)'));
+  el.appendChild(tieu);
+  for (const m of muc) el.appendChild(_veMotMuc9(m));
+}
+
+async function lamMoiDienGiai() {
+  const ctx = window.VIDEO_CTX;
+  if (!ctx || !ctx.bao_cao_id) return;
+  const btn = document.getElementById('bck-lam-moi');
+  btn.disabled = true; const cu = btn.textContent; btn.textContent = '↻ Đang làm mới…';
+  try {
+    const fd = new FormData();
+    fd.append('bao_cao_id', ctx.bao_cao_id);
+    if (ctx.nguoi) fd.append('nguoi', ctx.nguoi);
+    const res = await fetch('/chan-doan/muc-lam-moi', { method: 'POST', body: fd });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || 'Lỗi');
+    if (window._BCK && data.dien_giai_9muc) {
+      for (const m of window._BCK) if (data.dien_giai_9muc[m.ma]) m.dien_giai = data.dien_giai_9muc[m.ma];
+      veBaoCaoKenh(window._BCK);   // vẽ lại với diễn giải mới
+    }
+  } catch (e) { /* giữ nguyên diễn giải cũ */ } finally {
+    const b2 = document.getElementById('bck-lam-moi'); if (b2) { b2.disabled = false; b2.textContent = cu; }
+  }
+}
+(function () { const b = document.getElementById('bck-lam-moi'); if (b) b.addEventListener('click', lamMoiDienGiai); })();
+
+// Một ô trạng thái trục: ký hiệu + màu; ký hiệu tự do (vd 💰 kênh chưa monetize) → xám; thiếu
+// → gạch ngang (không vỡ trang). tooltip: chú thích khi hover (vd lý do trục Tiền).
+function _themOTrang(tr, ky, tooltip) {
+  const td = document.createElement('td'); td.className = 'tr-o';
+  const s = document.createElement('span');
+  // ky luôn là hằng số nội bộ ('✓'/'⚠'/'✗'/'?'/'💰') — KHÔNG bao giờ chuỗi tự do từ data/LLM,
+  // nên nhánh '💰' dùng innerHTML với IC.dola (trusted) an toàn, không phải chống-XSS ngoại lệ.
+  if (ky && MAU_TRANG[ky]) { s.className = 'tr-badge ' + MAU_TRANG[ky]; s.textContent = ky; }
+  else if (ky === '💰') { s.className = 'tr-badge tr-chua tr-badge-ic'; s.innerHTML = IC.dola; }
+  else if (ky) { s.className = 'tr-badge tr-chua'; s.textContent = ky; }
+  else { s.className = 'tr-badge tr-chua'; s.textContent = '—'; }
+  if (tooltip) s.title = tooltip;
+  td.appendChild(s); tr.appendChild(td);
+}
+
+// Nhãn trục Tiền, đọc từ 2 shape payload (POST /chan-doan: v.tien_nhan; lịch sử: v.truc.tien).
+function _tienNhan(v) {
+  return v.tien_nhan || (v.truc && v.truc.tien && v.truc.tien.so_lieu && v.truc.tien.so_lieu.nhan) || null;
+}
+
+function veBangVideo(videos) {
+  const ds = (videos || []).slice().sort((a, b) => (b.views || 0) - (a.views || 0));
+  _soVideo.textContent = `(${ds.length} video — Analyze để phân tích từng tập)`;
+  _tbodyVideo.textContent = '';
+  for (const v of ds) {
+    const chiMuc = v.chi_muc;
+    const tieuDe = v.tieu_de || v.video_title || ('Video #' + chiMuc);   // phòng thủ 2 shape
+    const tr = document.createElement('tr');
+    tr._chiMuc = chiMuc; tr._tieuDe = tieuDe; tr._daCoBaoCao = !!v.da_co_bao_cao;
+    const t = document.createElement('td'); t.textContent = tieuDe;
+    const vw = document.createElement('td'); vw.className = 'num';
+    vw.textContent = v.views != null ? Math.round(v.views).toLocaleString('vi') : '—';
+    tr.append(t, vw);
+    const td = v.the_diem || {};
+    _themOTrang(tr, layTrang(td.noi_dung));
+    // Trục Tiền: kênh CHƯA MONETIZE hiện 💰 + tooltip (khác '?' thiếu dữ liệu tạm thời)
+    if (_tienNhan(v) === 'chua_monetize') {
+      _themOTrang(tr, '💰', 'Kênh chưa bật kiếm tiền — chưa xét doanh thu (tập trung view & giữ chân)');
+    } else {
+      const tienLyDo = v.tien_ly_do || (v.truc && v.truc.tien && v.truc.tien.ly_do) || null;
+      _themOTrang(tr, layTrang(td.tien), tienLyDo);
+    }
+    _themOTrang(tr, layTrang(td.danh_muc));
+    _themOTrang(tr, layTrang(td.cong_thuc));
+    const pqCell = document.createElement('td');
+    const info = NHAN_PQ[v.phan_quyet] || [v.phan_quyet || '—', 'pq-xam'];
+    const pqSpan = document.createElement('span'); pqSpan.className = 'pq ' + info[1];
+    pqSpan.textContent = info[0];
+    if (v.giai_thich) pqSpan.title = v.giai_thich;
+    pqCell.appendChild(pqSpan); tr.appendChild(pqCell);
+    // Nút thao tác: Analyze (chưa có báo cáo) / Xem báo cáo (đã cache)
+    const actCell = document.createElement('td'); actCell.className = 'thao-tac';
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'nut-act' + (tr._daCoBaoCao ? ' nut-xem' : '');
+    btn.textContent = tr._daCoBaoCao ? 'Xem báo cáo' : 'Analyze';
+    btn.addEventListener('click', ev => { ev.stopPropagation(); moBaoCaoVideo(chiMuc, tr, false); });
+    tr._btn = btn; actCell.appendChild(btn); tr.appendChild(actCell);
+    // CHỈ nút Analyze/Xem báo cáo mới sinh/mở báo cáo — KHÔNG gắn click cả dòng (tránh bấm/
+    // double-click nhầm tự gọi API oan cho tập chưa cache).
+    _tbodyVideo.appendChild(tr);
+  }
+  // Banner cấp kênh: MỌI video đều chưa monetize = kênh chưa bật kiếm tiền (không phải thiếu dữ liệu)
+  const chuaMonetize = ds.length > 0 && ds.every(v => _tienNhan(v) === 'chua_monetize');
+  _tienNote.style.display = chuaMonetize ? 'block' : 'none';
+  _khuVideo.style.display = 'block';
+}
+
+// ── MODAL báo cáo video ──
+let _mvChiMuc = null, _mvTr = null, _mvTimer = null, _mvVuaPhanTich = false;
+
+// PHẦN TRĂM TƯỢNG TRƯNG: 1 lần gọi API không có tiến độ thật → chạy giả 0→~90 để trấn an
+// người dùng, khi có kết quả thì nhảy 100. (Không phản ánh tiến độ thật.)
+function _chayTienDoGia() {
+  clearInterval(_mvTimer);
+  _modalDang.style.display = 'block';
+  let p = 0; _datPct(0);
+  _mvTimer = setInterval(() => {
+    p += Math.max(0.6, (90 - p) * 0.07);   // tiệm cận ~90, chậm dần
+    if (p >= 90) { p = 90; clearInterval(_mvTimer); }
+    _datPct(p);
+  }, 170);
+}
+function _ketThucTienDo() {
+  clearInterval(_mvTimer); _datPct(100);
+  setTimeout(() => { _modalDang.style.display = 'none'; }, 250);
+}
+function _datPct(p) { const v = Math.round(p); _modalThanh.style.width = v + '%'; _modalPct.textContent = v + '%'; }
+
+function _moModal() { _modal.style.display = 'flex'; }
+function _dongModal() {
+  clearInterval(_mvTimer);
+  _modal.style.display = 'none';
+  // Vừa phân tích LẦN ĐẦU thành công → dòng đó giờ đã có báo cáo → đổi nút ngay (không reload)
+  if (_mvVuaPhanTich && _mvTr && _mvTr._btn) {
+    _mvTr._daCoBaoCao = true;
+    _mvTr._btn.textContent = 'Xem báo cáo';
+    _mvTr._btn.classList.add('nut-xem');
+  }
+  _mvVuaPhanTich = false;
+}
+
+async function moBaoCaoVideo(chiMuc, tr, lamMoi) {
+  const ctx = window.VIDEO_CTX;
+  if (!ctx.file && !ctx.bao_cao_id) return;   // phòng thủ: thiếu cả file lẫn bao_cao_id
+  _mvChiMuc = chiMuc; _mvTr = tr;
+  document.querySelectorAll('.bang-vid tbody tr.active').forEach(x => x.classList.remove('active'));
+  if (tr) tr.classList.add('active');
+  _modalTieuDe.textContent = '';
+  _modalTieuDe.append(_icEl('film'), document.createTextNode(' ' + ((tr && tr._tieuDe) || ('Video #' + chiMuc))));
+  _modalNoiDung.textContent = '';
+  _moModal();
+  const daCache = tr ? tr._daCoBaoCao : false;
+  const hienTienDo = lamMoi || !daCache;   // chỉ chạy % khi THỰC SỰ gọi LLM (chưa cache/làm mới)
+  if (hienTienDo) _chayTienDoGia(); else _modalDang.style.display = 'none';
+  try {
+    const fd = new FormData();
+    fd.append('chi_muc', chiMuc);
+    if (ctx.file) fd.append('file', ctx.file);
+    if (ctx.bao_cao_id) fd.append('bao_cao_id', ctx.bao_cao_id);   // thiếu → vẫn chạy, không cache
+    if (ctx.nguoi) fd.append('nguoi', ctx.nguoi);
+    if (lamMoi) fd.append('lam_moi', '1');
+    const res = await fetch('/chan-doan/video', { method: 'POST', body: fd });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || 'Lỗi không xác định');
+    _ketThucTienDo();
+    renderKetQua(_modalNoiDung, data, null);
+    if (!daCache || lamMoi) _mvVuaPhanTich = true;   // lần đầu có báo cáo → đổi nút khi đóng
+  } catch (err) {
+    _ketThucTienDo();
+    const e = document.createElement('div'); e.className = 'tom-tat vo';
+    e.textContent = '❌ ' + err.message; _modalNoiDung.appendChild(e);
+  }
+}
+
+document.getElementById('modal-dong').addEventListener('click', _dongModal);
+document.getElementById('modal-dong-2').addEventListener('click', _dongModal);
+document.getElementById('modal-lam-moi').addEventListener('click',
+  () => moBaoCaoVideo(_mvChiMuc, _mvTr, true));   // Phân tích lại: ép LLM mới, ghi đè cache
+_modal.addEventListener('click', e => { if (e.target === _modal) _dongModal(); });   // bấm nền mờ → đóng
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && _modal.style.display !== 'none') _dongModal(); });
+</script>

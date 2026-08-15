@@ -24,6 +24,9 @@ $dichVu = @(
     @{ Ten = 'gateway'; Cong = 9000; Exe = $py
        Args = '-m uvicorn nen.gateway.main:app --host 127.0.0.1 --port 9000'
        Wd = $root }
+    @{ Ten = 'data-analytics'; Cong = 9102; Exe = $py
+       Args = '-m uvicorn src.main:app --app-dir "apps/data-analytics" --host 127.0.0.1 --port 9102'
+       Wd = $root }
     @{ Ten = 'caddy-tls'; Cong = 9443
        Exe = (Join-Path $root 'tools\caddy\caddy.exe')
        Args = 'run --config "' + (Join-Path $root 'tools\caddy\Caddyfile') + '"'

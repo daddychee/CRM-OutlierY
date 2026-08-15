@@ -1,0 +1,206 @@
+{% extends "base.html" %}
+{% block title %}Lịch sử báo cáo — OUTLIERY{% endblock %}
+{% block topbar_ten %}Lịch sử báo cáo{% endblock %}
+
+{% block style_them %}
+  .bl-h{font-size:1.25rem;margin:0 0 .3rem}
+  .giam-sat{margin:.5rem 0 1rem;padding:.55rem .8rem;border-radius:9px;background:var(--th-2b2517);color:var(--th-e0c070);border:1px solid var(--th-3a3220);font-size:.88rem}
+  table.bl{width:100%;border-collapse:collapse;margin-top:.8rem;font-size:.92rem}
+  .bl th,.bl td{text-align:left;padding:.5rem .55rem;border-bottom:1px solid var(--line);vertical-align:middle}
+  .bl th{color:var(--muted);font-size:.8rem}
+  .bl td.num{text-align:right;white-space:nowrap}
+  .bl tbody tr{cursor:pointer}
+  .bl tbody tr:hover{background:var(--chip)}
+  .tang{font-size:.82rem;padding:.1rem .5rem;border-radius:999px;white-space:nowrap}
+  .tang.vo{background:var(--th-33201b);color:var(--th-d97c6c)}
+  .tang.ok{background:var(--th-1c2a20);color:var(--th-93a89a)}
+  .trong{margin-top:2rem;color:var(--muted)}
+  .chi-tiet{border:1px solid var(--chip-line);border-radius:12px;padding:1rem 1.1rem;background:var(--th-182233)}
+  .chi-tiet .tom-tat{margin-top:.6rem;padding:.8rem;border-radius:10px;font-weight:600}
+  .tom-tat.vo{background:var(--th-33201b);color:var(--th-d97c6c);border:1px solid var(--th-5c3a30)}
+  .tom-tat.ok{background:var(--th-1c2a20);color:var(--th-a9d4b0);border:1px solid var(--th-3a5a40)}
+  .so-lieu{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:.7rem}
+  .so-lieu .o{background:var(--chip);border:1px solid var(--chip-line);border-radius:9px;padding:.4rem .7rem;font-size:.88rem}
+  .so-lieu .o b{display:block;font-size:.75rem;color:var(--muted);font-weight:600}
+  .ma-luat{display:inline-block;font-size:.8rem;background:var(--chip);border:1px solid var(--chip-line);border-radius:999px;padding:.1rem .55rem;margin:.2rem .3rem 0 0;color:var(--accent)}
+
+  /* Issue 2 §4: so sánh 2 kỳ */
+  .ghi-chu-ss{font-size:.85rem;color:var(--muted);margin:.8rem 0 0}
+  .nut-so-sanh{margin:.6rem 0;padding:.5rem 1rem;border:0;border-radius:10px;background:var(--accent);color:var(--th-182233);font-size:.92rem;font-weight:600;cursor:pointer;font-family:inherit}
+  .ss-hop{border:1px solid var(--chip-line);border-radius:12px;padding:1rem 1.1rem;background:var(--th-182233);margin:.6rem 0}
+  .ss-ky{font-size:.86rem;color:var(--muted);margin-bottom:.6rem}
+  table.ss-bang{width:100%;border-collapse:collapse;font-size:.9rem}
+  .ss-bang th,.ss-bang td{text-align:right;padding:.4rem .5rem;border-bottom:1px solid var(--line)}
+  .ss-bang th:first-child,.ss-bang td:first-child{text-align:left}
+  .ss-bang th{color:var(--muted);font-size:.78rem;font-weight:600}
+  .ss-delta.duong{color:var(--th-a9d4b0)}
+  .ss-delta.am{color:var(--th-d97c6c)}
+
+  /* Token 2 theme của trang (đổ chung vào <style> base) */
+  :root{--th-182233:#182233;--th-1c2a20:#1c2a20;--th-2b2517:#2b2517;--th-33201b:#33201b;--th-3a3220:#3a3220;--th-3a5a40:#3a5a40;--th-5c3a30:#5c3a30;--th-93a89a:#93a89a;--th-a9d4b0:#a9d4b0;--th-d97c6c:#d97c6c;--th-e0c070:#e0c070}
+  :root[data-theme="light"]{--th-182233:#f5f5f5;--th-1c2a20:#e7f2e9;--th-2b2517:#faf1dc;--th-33201b:#fbeae6;--th-3a3220:#e8d9a9;--th-3a5a40:#a9cdb0;--th-5c3a30:#e5b6aa;--th-93a89a:#4e5c52;--th-a9d4b0:#24663a;--th-d97c6c:#b14a3c;--th-e0c070:#8a6d1c}
+{% endblock %}
+
+{% block noi_dung %}
+{% if mot %}
+  <!-- Xem lại 1 báo cáo cũ -->
+  <a href="/bao-cao-lich-su{% if not cua_minh %}?nguoi={{ chu_nhan|urlencode }}{% endif %}">← Về danh sách báo cáo</a>
+  <h2 class="bl-h" style="margin-top:.5rem">📈 Báo cáo — {{ mot.ten_bao_cao or mot.ten_file_goc }}</h2>
+  <p class="giam-sat" style="background:none;border:0;color:var(--muted);padding:0;margin:.2rem 0 1rem">
+    Chạy lúc {{ mot.thoi_gian }} · bởi {{ mot.nguoi_chay }} · file: {{ mot.ten_file_goc }}
+    · <a href="/bao-cao-goc/{{ mot.id }}{% if not cua_minh %}?nguoi={{ chu_nhan|urlencode }}{% endif %}">⬇️ Tải file gốc</a></p>
+
+  {% if kenh %}
+    <!-- Dựng lại đầy đủ từ file gốc: khối kênh (diễn giải LLM đọc cache) + tổng quan + bảng phán quyết -->
+    <div id="kq-kenh"></div>
+    {% include "_bang_phan_quyet.html" %}
+  {% else %}
+    <!-- File gốc không dựng lại được → tóm tắt kênh đã lưu (không gọi API) -->
+    {% if loi_dung_lai %}<div class="giam-sat">ℹ️ {{ loi_dung_lai }} Hiện tóm tắt kênh đã lưu.</div>{% endif %}
+    <div class="chi-tiet">
+      <div class="kq-tieu-de" style="font-weight:600">Chẩn đoán cả kênh (đã lưu)</div>
+      {% set k = mot.kenh %}
+      <div class="tom-tat {% if k.luat_khop %}vo{% else %}ok{% endif %}">
+        {% if k.luat_khop %}🔴 Tầng phễu vỡ đầu tiên: {{ k.tang_vo }}{% else %}✅ Không phát hiện bất thường{% endif %}
+      </div>
+      <div class="so-lieu">
+        {% if k.so_video is not none %}<div class="o"><b>Số video</b>{{ k.so_video }}</div>{% endif %}
+        {% for ten, gt in k.metrics_chinh.items() %}
+        <div class="o"><b>{{ ten }}</b>{{ "%.4f"|format(gt) if gt is number else gt }}</div>
+        {% endfor %}
+      </div>
+      {% if k.luat_khop %}<div style="margin-top:.7rem">Luật khớp:
+        {% for ma in k.luat_khop %}<span class="ma-luat">{{ ma }}</span>{% endfor %}</div>{% endif %}
+    </div>
+  {% endif %}
+
+{% else %}
+  <!-- Danh sách báo cáo -->
+  {# 01/08/2026: lịch sử DÙNG CHUNG — mặc định hiện của MỌI người (cột Người chạy);
+     ?nguoi=X lọc theo một người, mở cho mọi ai qua gate Data Analytics #}
+  <h2 class="bl-h">📊 Lịch sử báo cáo chẩn đoán{% if not cua_minh %} — của <b>{{ chu_nhan }}</b>{% endif %}</h2>
+  {% if not cua_minh %}<div class="giam-sat">👁️ Đang lọc theo báo cáo của {{ chu_nhan }} — <a href="/bao-cao-lich-su">xem tất cả</a>.</div>{% endif %}
+
+  {% if not cac_bao_cao %}
+  <p class="trong">Chưa có báo cáo nào. Vào <a href="/chan-doan">Data Analytics</a> để chạy báo cáo đầu tiên.</p>
+  {% else %}
+  <p class="ghi-chu-ss">Tick 2 báo cáo CÙNG KÊNH để so sánh tăng trưởng giữa hai kỳ.</p>
+  <div id="so-sanh-toolbar" style="display:none">
+    <button type="button" id="btn-so-sanh" class="nut-so-sanh">So sánh 2 kỳ đã chọn</button>
+  </div>
+  <div id="so-sanh-ket-qua"></div>
+  <table class="bl">
+    <thead><tr><th></th><th>Thời gian</th><th>Kênh</th><th>Tên báo cáo</th><th>Người chạy</th><th>File</th><th>Tầng vỡ</th><th class="num">Số video</th><th class="num">Luật khớp</th></tr></thead>
+    <tbody>
+    {% for r in cac_bao_cao %}
+    <tr onclick="location.href='/bao-cao-lich-su/{{ r.id }}?nguoi={{ r.nguoi_chay|urlencode }}'">
+      <td onclick="event.stopPropagation()"><input type="checkbox" class="ck-so-sanh" value="{{ r.id }}"></td>
+      <td>{{ r.thoi_gian }}</td>
+      <td>{{ r.ten_kenh or '—' }}</td>
+      <td>{{ r.ten_bao_cao or r.ten_file_goc }}</td>
+      <td>{{ r.nguoi_chay }}</td>
+      <td>{{ r.ten_file_goc }}</td>
+      <td><span class="tang {% if r.kenh.luat_khop %}vo{% else %}ok{% endif %}">{{ r.kenh.tang_vo or 'không vỡ' }}</span></td>
+      <td class="num">{{ r.kenh.so_video if r.kenh.so_video is not none else '—' }}</td>
+      <td class="num">{{ r.kenh.luat_khop|length }}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+{% endif %}
+{% endblock %}
+
+{% block script %}
+{% if mot and kenh %}
+<script>
+  // Bối cảnh bấm video từ trang lịch sử: KHÔNG có file trong trình duyệt → gửi bao_cao_id,
+  // route tự đọc file gốc theo RBAC + trả cache diễn giải (không gọi lại LLM).
+  window.VIDEO_CTX = { file: null, bao_cao_id: {{ mot.id|tojson }},
+                       nguoi: {{ (chu_nhan if not cua_minh else '')|tojson }} };
+  // Khối chẩn đoán cả kênh — diễn giải LLM lấy từ CACHE (đã nhúng sẵn, không gọi API).
+  renderKetQua(document.getElementById('kq-kenh'),
+               {{ kenh|tojson }}, '📈 Chẩn đoán CẢ KÊNH (tổng so với mặt bằng video)');
+  {% if toan_bo %}
+  veWinningFormatTongHop(document.getElementById('kq-kenh'), {{ toan_bo.bao_cao_kenh|tojson }});
+  veLoaiKenh({{ toan_bo.profile_loai_kenh|tojson }});   // minh bạch loại kênh đã chẩn (từ file gốc)
+  veCanhBaoAnhXa({{ toan_bo.canh_bao_anh_xa|tojson }});
+  veBaoCaoKenh({{ toan_bo.bao_cao_kenh|tojson }});
+  veTongQuan({{ toan_bo.tong_quan_danh_muc|tojson }});
+  veBangVideo({{ toan_bo.videos|tojson }});
+  {% endif %}
+</script>
+{% elif not mot and cac_bao_cao %}
+<script>
+// Issue 2 §4: tick đúng 2 báo cáo → hiện nút so sánh → gọi /chan-doan/so-sanh → hiện delta.
+const _ckSoSanh = document.querySelectorAll('.ck-so-sanh');
+const _toolbarSs = document.getElementById('so-sanh-toolbar');
+const _btnSs = document.getElementById('btn-so-sanh');
+const _ketQuaSs = document.getElementById('so-sanh-ket-qua');
+
+function _capNhatToolbarSs() {
+  const daChon = [..._ckSoSanh].filter(c => c.checked);
+  _toolbarSs.style.display = daChon.length === 2 ? 'block' : 'none';
+  if (daChon.length !== 2) _ketQuaSs.textContent = '';
+}
+_ckSoSanh.forEach(c => c.addEventListener('change', _capNhatToolbarSs));
+
+function _hangSs(nhan, cu, moi, delta, pct) {
+  const dau = delta > 0 ? '+' : '';
+  const lopDelta = delta > 0 ? 'duong' : (delta < 0 ? 'am' : '');
+  const trPct = (pct != null) ? `${dau}${pct}%` : '—';
+  return `<tr><td>${nhan}</td><td>${cu}</td><td>${moi}</td>` +
+         `<td class="ss-delta ${lopDelta}">${dau}${delta}</td><td class="ss-delta ${lopDelta}">${trPct}</td></tr>`;
+}
+
+async function _chayoSoSanh() {
+  const daChon = [..._ckSoSanh].filter(c => c.checked).map(c => c.value);
+  if (daChon.length !== 2) return;
+  _btnSs.disabled = true; _btnSs.textContent = 'Đang so sánh…';
+  try {
+    const fd = new FormData();
+    fd.append('id_a', daChon[0]); fd.append('id_b', daChon[1]);
+    const r = await fetch('/chan-doan/so-sanh', { method: 'POST', body: fd });
+    const data = await r.json();
+    _ketQuaSs.textContent = '';
+    if (!r.ok || data.loi) {
+      const d = document.createElement('div');
+      d.className = 'tom-tat vo';
+      d.textContent = data.loi || data.detail || 'Không so sánh được.';
+      _ketQuaSs.appendChild(d);
+      return;
+    }
+    const NHAN = { views: 'Lượt xem', ctr: 'CTR', retention: 'Retention',
+                  watchtime: 'Watchtime', revenue: 'Doanh thu' };
+    // data.chi_so.*.{cu,moi,delta,pct} LUÔN số (qua _sach()/float() ở backend) — an toàn nối
+    // trực tiếp vào innerHTML của bảng. ten_kenh/ky_*.tu/den LÀ CHUỖI NGƯỜI DÙNG NHẬP (tên kênh
+    // gõ tay, ngày kỳ có thể nhập tay khi thiếu Chart data) — KHÔNG BAO GIỜ nối thẳng vào
+    // innerHTML, luôn qua textContent/createTextNode (chống XSS).
+    let hang = '';
+    for (const [k, v] of Object.entries(data.chi_so)) {
+      hang += _hangSs(NHAN[k] || k, v.cu, v.moi, v.delta, v.pct);
+    }
+    const hop = document.createElement('div');
+    hop.className = 'ss-hop';
+    const dongKy = document.createElement('div');
+    dongKy.className = 'ss-ky';
+    const b = document.createElement('b'); b.textContent = data.ten_kenh;
+    dongKy.append('Kênh ', b, document.createTextNode(
+      ` — kỳ cũ ${data.ky_cu.tu} → ${data.ky_cu.den}, kỳ mới ${data.ky_moi.tu} → ${data.ky_moi.den}`));
+    const bang = document.createElement('div');
+    bang.innerHTML = `<table class="ss-bang"><thead><tr><th>Chỉ số</th><th>Kỳ cũ</th>` +
+      `<th>Kỳ mới</th><th>Thay đổi</th><th>%</th></tr></thead><tbody>${hang}</tbody></table>`;
+    hop.append(dongKy, bang);
+    _ketQuaSs.appendChild(hop);
+  } catch (e) {
+    _ketQuaSs.textContent = '';
+    const d = document.createElement('div'); d.className = 'tom-tat vo';
+    d.textContent = 'Lỗi mạng — thử lại.'; _ketQuaSs.appendChild(d);
+  } finally {
+    _btnSs.disabled = false; _btnSs.textContent = 'So sánh 2 kỳ đã chọn';
+  }
+}
+_btnSs.addEventListener('click', _chayoSoSanh);
+</script>
+{% endif %}
+{% endblock %}

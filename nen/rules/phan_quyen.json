@@ -17,6 +17,10 @@
     "app-mau": {
       "vao": { "min_level": 1 },
       "vai": { "5": "owner", "4": "manager", "3": "leader", "mac_dinh": "viewer" }
+    },
+    "data-analytics": {
+      "vao": { "min_level": 2, "bo_phan": ["Kinh doanh"] },
+      "vai": { "5": "owner", "4": "manager", "3": "leader", "mac_dinh": "viewer" }
     }
   },
   "vai_mac_dinh": { "5": "owner", "4": "manager", "3": "leader", "mac_dinh": "viewer" }

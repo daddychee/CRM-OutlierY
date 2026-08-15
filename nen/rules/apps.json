@@ -15,6 +15,22 @@
   ],
   "apps": [
     {
+      "slug": "data-analytics",
+      "ten": "Data Analytics",
+      "mo_ta": "Chẩn đoán số liệu kênh YouTube — engine 4 trục, 7 phán quyết, báo cáo 9 mục, lịch sử dùng chung.",
+      "cong": 9102,
+      "tien_to": ["/chan-doan", "/bao-cao-lich-su", "/bao-cao-goc", "/api/bao-cao-lich-su"],
+      "health": "/health",
+      "phien_ban": "2.0.0",
+      "chay": {"kieu": "uvicorn", "app_dir": "apps/data-analytics", "module": "src.main:app"},
+      "du_lieu": [
+        {"ten": "bao-cao-lich-su", "loai": "json", "duong": "data/data-analytics/db/bao-cao-lich-su",
+         "muc_quy": "vang", "backup": "copy", "giu": "vinh-vien"},
+        {"ten": "bao-cao-goc", "loai": "kho-file", "duong": "data/data-analytics/kho/bao-cao-goc",
+         "muc_quy": "vang", "backup": "copy", "giu": "vinh-vien"}
+      ]
+    },
+    {
       "slug": "app-mau",
       "ten": "App mẫu",
       "mo_ta": "App 50 dòng chứng minh hợp đồng app: nhận claims, /health, proxy.",
