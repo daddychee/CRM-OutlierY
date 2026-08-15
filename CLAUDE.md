@@ -32,5 +32,17 @@
   danh_ba.py`, 13 test pass) + venv + Qdrant test :6343 đã chạy thử readyz-200 song
   song kho thật :6333 + scripts start/stop kiểm chứng. Bài học: package tầng nền
   đặt tên `nen` — `platform` trùng module chuẩn Python (bắt trước khi nổ).
-- KẾ TIẾP — PHASE 1 Gateway :9000: đăng nhập/session, proxy theo hợp đồng app,
-  claims, app-mau :9190, /suc-khoe + tự restart, Caddy TLS tự ký :9443.
+- 16/08/2026 — **PHASE 1 LÕI XONG** (27 test pass, nghiệm thu HTTP thật 6/6):
+  gateway :9000 (login/session cookie ký, users.txt tạm đọc SỐNG — TODO-P2 thay
+  iam.db; menu từ hợp đồng app; /suc-khoe gọi health từng app) + `nen/common/
+  proxy.py` (chuyển thể app_proxy.py hệ cũ, GIỮ đủ 7 bẫy đã vá: vứt header danh
+  tính giả, cắt ETag/conditional khi viết lại đường, X-Forwarded-Host/Proto,
+  Location chống đúp tiền tố, tên ASCII, client dùng chung, SSE chảy thẳng; vá
+  MỚI: client khóa theo event loop — TestClient đa loop làm lộ) + `nen/rules/
+  apps.json` + app-mau :9190 (khuôn app chuẩn, hiện claims) + tao_user_test
+  (owner/quanly/nhanvien, mk test123). Nghiệm thu: login → menu → proxy tiêm
+  claims đúng, header giả 'hacker' bị vứt → sức khỏe 'đang chạy'.
+- KẾ TIẾP — P1 còn: Caddy TLS tự ký :9443 (cần tải caddy.exe — chưa có mạng lúc
+  làm thì ghi việc treo); tự-restart app chết (để giai đoạn swap, /suc-khoe mới
+  hiển thị). Rồi PHASE 2 IAM: iam.db + co_quyen() + vai Admin ủy quyền + trang
+  quản trị hợp nhất + migration users.txt/ho_so.json/phan_quyen.json.

@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OUTLIERY v2</title>
+<style>
+  :root{--nen:#F7F8FA;--the:#FFFFFF;--vien:#E6E6E6;--chu:#16181C;--phu:#6C6C72;--accent:#2C6FC4}
+  @media (prefers-color-scheme: dark){
+    :root{--nen:#090C12;--the:#121826;--vien:#232B3D;--chu:#E8EDF4;--phu:#8B96A8;--accent:#4C8FE0}
+  }
+  *{box-sizing:border-box;margin:0}
+  body{font-family:Inter,system-ui,sans-serif;background:var(--nen);color:var(--chu)}
+  header{display:flex;justify-content:space-between;align-items:center;
+         padding:14px 24px;border-bottom:1px solid var(--vien);background:var(--the)}
+  .logo{font-weight:700}.logo b{color:var(--accent)}
+  .nguoi{font-size:13px;color:var(--phu)}
+  .nguoi a{color:var(--accent);text-decoration:none;margin-left:10px}
+  main{max-width:860px;margin:32px auto;padding:0 20px}
+  h2{font-size:15px;color:var(--phu);font-weight:600;margin-bottom:14px}
+  .luoi{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px}
+  .app{display:block;background:var(--the);border:1px solid var(--vien);border-radius:12px;
+       padding:18px;text-decoration:none;color:var(--chu)}
+  .app:hover{border-color:var(--accent)}
+  .app .ten{font-weight:600;margin-bottom:4px}
+  .app .mo{font-size:13px;color:var(--phu);line-height:1.45}
+  .app .cong{font-size:11px;color:var(--phu);margin-top:10px}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">OUTLIERY <b>v2</b></div>
+  <div class="nguoi">{{ user.ten }} · {{ user.bo_phan }} · L{{ user.level }} ({{ vai }})
+    <a href="/suc-khoe">Sức khỏe hệ</a><a href="/logout">Đăng xuất</a></div>
+</header>
+<main>
+  <h2>Công cụ</h2>
+  <div class="luoi">
+    {% for a in apps %}
+    <a class="app" href="/app/{{ a.slug }}/">
+      <div class="ten">{{ a.ten }}</div>
+      <div class="mo">{{ a.mo_ta or "" }}</div>
+      <div class="cong">v{{ a.phien_ban }} · :{{ a.cong }}</div>
+    </a>
+    {% endfor %}
+  </div>
+</main>
+</body>
+</html>

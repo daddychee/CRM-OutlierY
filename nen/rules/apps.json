@@ -1,0 +1,16 @@
+{
+  "_ghi_chu": "HỢP ĐỒNG APP — mỗi app tự khai với tầng nền (khuôn manifest Odoo/Nextcloud). Thêm app = thêm mục ở đây + ghi cổng vào docs/PORTS.md TRƯỚC. Mục du_lieu: mọi store phải có danh phận (xem docs/SO_DIA_BA_DU_LIEU.md) — store không khai = không được backup.",
+  "apps": [
+    {
+      "slug": "app-mau",
+      "ten": "App mẫu",
+      "mo_ta": "App 50 dòng chứng minh hợp đồng app: nhận claims, /health, proxy.",
+      "cong": 9190,
+      "tien_to": [],
+      "health": "/health",
+      "phien_ban": "0.1.0",
+      "chay": {"kieu": "uvicorn", "app_dir": "apps/app-mau/src", "module": "main:app"},
+      "du_lieu": []
+    }
+  ]
+}

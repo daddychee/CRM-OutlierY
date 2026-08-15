@@ -12,12 +12,18 @@ function Test-Cong($port) {
     } catch { return $false }
 }
 
+$py = Join-Path $root '.venv\Scripts\python.exe'
 $dichVu = @(
     @{ Ten = 'qdrant-test'; Cong = 6343
        Exe = (Join-Path $root 'tools\qdrant\qdrant.exe')
        Args = '--config-path "' + (Join-Path $root 'tools\qdrant\config.yaml') + '"'
        Wd = (Join-Path $root 'tools\qdrant') }
-    # Phase 1 them: gateway :9000, app-mau :9190 ...
+    @{ Ten = 'app-mau'; Cong = 9190; Exe = $py
+       Args = '-m uvicorn main:app --app-dir "apps/app-mau/src" --host 127.0.0.1 --port 9190'
+       Wd = $root }
+    @{ Ten = 'gateway'; Cong = 9000; Exe = $py
+       Args = '-m uvicorn nen.gateway.main:app --host 127.0.0.1 --port 9000'
+       Wd = $root }
 )
 
 foreach ($dv in $dichVu) {
