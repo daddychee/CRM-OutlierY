@@ -1,0 +1,30 @@
+# Bi mat & moi truong — khong bao gio vao git
+.env
+.env.*
+!.env.example
+*API*.txt
+*api key*
+users.txt
+
+# DU LIEU VAN HANH — tai san, backup lo (khong phai git)
+data/
+logs/
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Rac AppleDouble/macOS (bai hoc 31/07 git add -A quet ca tram file ._*)
+._*
+.DS_Store
+
+# Binary cong cu — chep bang script, khong vao git
+tools/qdrant/qdrant.exe
+tools/caddy/caddy.exe
+*.snapshot
+
+# Editor
+.vscode/
+.qdrant-initialized

@@ -1,0 +1,11 @@
+# Qdrant TEST cho platform v2 — TÁCH HẲN Qdrant thật (:6333/:6334, C:\OutlierY).
+# grpc_port PHẢI khai tường minh: bỏ trống là rơi về 6334 mặc định → đụng hệ thật.
+log_level: INFO
+telemetry_disabled: true
+service:
+  host: 127.0.0.1
+  http_port: 6343
+  grpc_port: 6344
+storage:
+  storage_path: "D:/AI AGENT OUTLIERY/data/qdrant/storage"
+  snapshots_path: "D:/AI AGENT OUTLIERY/data/qdrant/storage/snapshots"

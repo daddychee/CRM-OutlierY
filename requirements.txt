@@ -1,0 +1,9 @@
+# Nen tang (P0-P2). Goi nang cua RAG (qdrant-client, fastembed...) cai o P5 khi di tru.
+fastapi
+uvicorn[standard]
+httpx
+jinja2
+python-multipart
+itsdangerous
+bcrypt
+pytest
