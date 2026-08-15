@@ -11,19 +11,18 @@ from fastapi.testclient import TestClient
 from src.main import app
 from src.lich_su import doc_lich_su, luu_luot
 
-USERS = "sep:mk:Kinh doanh:5\nnv:mk:Kinh doanh:2\nnv2:mk:IT:2\n"
+# V2: claims từ gateway thay users.txt — bảng bộ phận×level giữ nguyên ý cũ.
+from claims_v2 import client_claims, client_khach
+
+HO_SO = {"sep": ("Kinh doanh", 5), "nv": ("Kinh doanh", 2), "nv2": ("IT", 2)}
 
 
-def _users_file(tmp_path, monkeypatch, noi_dung=USERS):
-    f = tmp_path / "users.txt"
-    f.write_text(noi_dung, encoding="utf-8")
-    monkeypatch.setenv("USERS_FILE", str(f))
+def _users_file(tmp_path, monkeypatch, noi_dung=None):
+    """V2: không còn USERS_FILE — giữ chữ ký để call-site cũ nguyên vẹn (no-op)."""
 
 
 def _dang_nhap(ten, mk="mk"):
-    c = TestClient(app)
-    c.post("/dang-nhap", data={"ten": ten, "mat_khau": mk})
-    return c
+    return client_claims(app, ten, *HO_SO[ten])
 
 
 def _thu_muc():
@@ -78,8 +77,8 @@ def test_route_stream_luu_ca_cau_tra_loi_ghep(tmp_path, monkeypatch):
     assert cac_luot[0]["doc_codes"]
 
 
-def test_khach_che_do_mo_khong_luu():
-    c = TestClient(app)  # không users.txt → khách
+def test_khach_thieu_bo_phan_khong_luu():
+    c = client_khach(app)  # V2: claims thiếu bộ phận ≈ khách hệ cũ
     c.post("/hoi", data={"question": "x"})
     c.post("/hoi-dap/stream", data={"question": "x", "history": "[]"})
     assert not _thu_muc().exists() or not list(_thu_muc().glob("*"))  # không file rác

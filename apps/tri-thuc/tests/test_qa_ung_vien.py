@@ -87,12 +87,12 @@ def test_routes_qa_chi_owner(tmp_path, monkeypatch):
 
     from src.main import app
 
-    f = tmp_path / "users.txt"
-    f.write_text("chu:mk:Kinh doanh:5\nnv:mk:Kinh doanh:2\n", encoding="utf-8")
-    monkeypatch.setenv("USERS_FILE", str(f))
+    from claims_v2 import client_claims  # V2: claims thay users.txt + đăng nhập
+
+    HO_SO = {"chu": ("Kinh doanh", 5), "nv": ("Kinh doanh", 2)}
 
     def login(ten):
-        c = TestClient(app); c.post("/dang-nhap", data={"ten": ten, "mat_khau": "mk"}); return c
+        return client_claims(app, ten, *HO_SO[ten])
 
     owner = login("chu")
     r1 = owner.post("/kho-thieu/ung-vien-qa", data={"cau_hoi": "quy trình đăng video"})

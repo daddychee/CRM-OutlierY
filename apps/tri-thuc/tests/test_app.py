@@ -7,8 +7,10 @@ os.environ["MOCK_MODE"] = "true"  # ép mock TRƯỚC khi import app
 from fastapi.testclient import TestClient
 
 from src.main import app
+from claims_v2 import client_claims
 
-tc = TestClient(app)
+# V2: '/' + /upload cần claims Manager+ (hệ cũ chạy chế độ mở khi chưa có users.txt)
+tc = client_claims(app, "sep", "Kinh doanh", 5)
 
 
 def _form_hop_le():

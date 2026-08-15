@@ -84,12 +84,10 @@ def test_khong_du_nguong_xoa_khoi_file_khong_de_lai_rac(tmp_path):
 # ─────────────── tích hợp: /upload tính + lưu, /kho-tai-lieu hiển thị có lọc RBAC ───────────────
 
 def _login(tmp_path, monkeypatch, dong):
-    f = tmp_path / "users.txt"
-    f.write_text(dong, encoding="utf-8")
-    monkeypatch.setenv("USERS_FILE", str(f))
-    c = TestClient(app)
-    c.post("/dang-nhap", data={"ten": dong.split(":")[0], "mat_khau": "mk"})
-    return c
+    # V2: claims thay users.txt — 'dong' giữ khuôn cũ ten:mk:bo_phan:level, parse ra claims
+    from claims_v2 import client_claims
+    ten, _, bo_phan, level = dong.strip().splitlines()[0].split(":")
+    return client_claims(app, ten, bo_phan, int(level))
 
 
 def test_upload_tinh_lien_quan_va_ghi_file(tmp_path, monkeypatch):
@@ -113,9 +111,7 @@ def test_kho_tai_lieu_hien_lien_quan_loc_theo_rbac(tmp_path, monkeypatch):
     tài liệu vượt quyền qua đường 'liên quan' dù quan hệ được TÍNH không lọc quyền."""
     import csv
 
-    f = tmp_path / "users.txt"
-    f.write_text("sep:mk:Kinh doanh:5\nnv:mk:Kinh doanh:2\n", encoding="utf-8")
-    monkeypatch.setenv("USERS_FILE", str(f))
+    # V2: không còn USERS_FILE — _login parse 'dong' ra claims
     kho = Path(os.environ["KHO_TAI_LIEU"])
     kho.mkdir(parents=True, exist_ok=True)
     with (kho / "_catalog.csv").open("w", newline="", encoding="utf-8-sig") as fh:

@@ -140,15 +140,10 @@ def test_critic_dung_prompt_goc_nhin_ngoai():
 # ─────────────── ROUTE — wiring + RBAC ───────────────
 
 def test_route_goc_nhin_ngoai_dang_nhap_tra_sse(tmp_path, monkeypatch):
-    from fastapi.testclient import TestClient
-
     from src.main import app
+    from claims_v2 import client_claims  # V2: claims thay users.txt + đăng nhập
 
-    f = tmp_path / "users.txt"
-    f.write_text("nv:mk:Kinh doanh:2\n", encoding="utf-8")
-    monkeypatch.setenv("USERS_FILE", str(f))
-    c = TestClient(app)
-    c.post("/dang-nhap", data={"ten": "nv", "mat_khau": "mk"})
+    c = client_claims(app, "nv", "Kinh doanh", 2)
     r = c.post("/hoi-dap/stream-goc-nhin-ngoai",
               data={"question": "quy trình đăng video", "cau_tra_loi_cong_ty": "Công ty đã nói X."})
     assert r.status_code == 200
@@ -162,10 +157,7 @@ def test_route_chua_dang_nhap_bi_chan(tmp_path, monkeypatch):
 
     from src.main import app
 
-    f = tmp_path / "users.txt"
-    f.write_text("nv:mk:Kinh doanh:2\n", encoding="utf-8")
-    monkeypatch.setenv("USERS_FILE", str(f))
-    c = TestClient(app)
+    c = TestClient(app)  # V2: KHÔNG claims → 401 (gateway chưa tiêm danh tính)
     r = c.post("/hoi-dap/stream-goc-nhin-ngoai",
               data={"question": "x", "cau_tra_loi_cong_ty": "y"})
     assert r.status_code == 401

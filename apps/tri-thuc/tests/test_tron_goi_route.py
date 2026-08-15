@@ -37,12 +37,10 @@ def _writer_3_vai(system, prompt):
 
 
 def _login(tmp_path, monkeypatch, dong):
-    f = tmp_path / "users.txt"
-    f.write_text(dong, encoding="utf-8")
-    monkeypatch.setenv("USERS_FILE", str(f))
-    c = TestClient(app)
-    c.post("/dang-nhap", data={"ten": dong.split(":")[0], "mat_khau": "mk"})
-    return c
+    # V2: claims thay users.txt — 'dong' giữ khuôn cũ ten:mk:bo_phan:level, parse ra claims
+    from claims_v2 import client_claims
+    ten, _, bo_phan, level = dong.strip().splitlines()[0].split(":")
+    return client_claims(app, ten, bo_phan, int(level))
 
 
 def _mock_llm(monkeypatch):
@@ -85,7 +83,7 @@ def test_tron_goi_nen_tra_du_nhap_va_ghi_nhap_ra_dia(tmp_path, monkeypatch):
 
 def test_so_doan_mac_dinh_tang_va_co_tran(tmp_path, monkeypatch):
     """08/08: so_doan mặc định 12→20 (đủ bằng chứng cho bài giảng 8-15 khối); trần 20→30."""
-    import src.app as app_mod
+    import src.main as app_mod
 
     _mock_llm(monkeypatch)
     goi = {}

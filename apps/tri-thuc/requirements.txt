@@ -12,12 +12,13 @@ pypdf
 qdrant-client
 requests
 youtube-transcript-api
+python-docx        # đọc .docx khi nạp; test_remake_dep dựng fixture docx
+openai             # provider openai_compatible (GLM/ChatGPT/DeepSeek/Grok); test ghim timeout/retry
+openpyxl           # đọc .xlsx khi nạp tài liệu
 pytest
 
 # --- chạy THẬT mới cần (mock không đụng tới; import lazy trong module) ---
-# fastembed          # embedding local — qdrant-client[fastembed] kéo cả cụm (nặng ~GB)
-# python-docx        # đọc .docx khi nạp tài liệu thật
-# openpyxl           # đọc .xlsx khi nạp tài liệu thật
+# fastembed          # embedding local — nặng; test tương ứng tự skip khi thiếu
 # anthropic          # provider anthropic (WRITER_PROVIDER=anthropic)
-# openai             # provider openai_compatible (GLM/ChatGPT/DeepSeek/Grok)
-# weasyprint         # bản đẹp PDF (cần GTK trên Windows — hệ cũ ghi nhận fail baseline)
+# weasyprint         # bản đẹp PDF (cần GTK trên Windows — hệ cũ ghi nhận fail baseline;
+#                    # 3 test bản đẹp tự skip khi thiếu)

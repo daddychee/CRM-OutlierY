@@ -16,6 +16,21 @@ from src.main import CATALOG_HEADER, app, ghi_catalog
 from src.remake_dep import (GHI_CHU, dung_trang_html, lam_sach_html, tao_ban_dep)
 
 
+def _co_weasyprint():
+    try:
+        import weasyprint  # noqa: F401
+        return True
+    except Exception:
+        return False
+
+
+# Baseline hệ cũ trên Windows: WeasyPrint cần GTK (libgobject-2.0-0) — thiếu là không
+# render PDF được. Bản đẹp là TÍNH NĂNG PHỤ (lỗi chỉ mất PDF, không chặn nạp liệu).
+CAN_WEASYPRINT = pytest.mark.skipif(
+    not _co_weasyprint(),
+    reason="Thiếu WeasyPrint/GTK trên Windows — baseline hệ cũ; bản đẹp là tính năng phụ")
+
+
 @pytest.fixture(autouse=True)
 def bat_remake(monkeypatch):
     """conftest tắt REMAKE_DEP cho test cũ — file này bật lại."""
@@ -41,6 +56,7 @@ def _docx_mau(tmp_path, ten="tai-lieu.docx"):
     return f
 
 
+@CAN_WEASYPRINT
 def test_mock_writer_van_ra_file_pdf(tmp_path):
     """Đường vui đủ chuỗi: đọc docx → writer → critic ĐẠT → WeasyPrint ra PDF thật."""
     w = ProviderGia("<h2>Quy tắc</h2><p><mark>Mỗi IP một tài khoản.</mark></p>"
@@ -53,6 +69,7 @@ def test_mock_writer_van_ra_file_pdf(tmp_path):
     assert (w.so_lan, c.so_lan) == (1, 1)              # ĐẠT → không sửa lại
 
 
+@CAN_WEASYPRINT
 def test_critic_bao_loi_writer_sua_lai_mot_vong(tmp_path):
     w = ProviderGia("<p>bản trình bày</p>")
     c = ProviderGia("LỖI\nThiếu ý Quy tắc 2.")
@@ -109,7 +126,8 @@ def _docx_bytes():
 
 
 def _upload(ten_file, noi_dung):
-    return TestClient(app).post("/upload", data={
+    from claims_v2 import client_claims  # V2: /upload cần claims Manager+
+    return client_claims(app, "sep", "Kinh doanh", 5).post("/upload", data={
         "title": "Tài liệu thử", "keywords": "", "owner": "", "version": "v1",
         "department": "Kinh doanh", "doc_type": "Quy trình",
         "effective_status": "Còn hiệu lực", "access_level": "Công khai nội bộ",
@@ -121,6 +139,7 @@ def _catalog():
     return list(csv.reader(f.open(encoding="utf-8-sig")))
 
 
+@CAN_WEASYPRINT
 def test_upload_docx_sinh_pdf_va_ghi_cot_ban_dep():
     r = _upload("quy-trinh.docx", _docx_bytes())  # mock writer/critic + weasyprint thật
     assert r.status_code == 200
@@ -139,16 +158,18 @@ def test_upload_tat_cong_tac_cot_ban_dep_rong(monkeypatch):
 
 # ---- bước 4: GET /tai-ban-dep/{doc_code} — RBAC tái dùng _duoc_xem, 404 lặng lẽ ----
 
+# V2: claims từ gateway thay users.txt — bảng bộ phận×level giữ nguyên ý cũ.
+from claims_v2 import client_claims
+
+HO_SO = {"ql": ("Kinh doanh", 4), "nv": ("Kinh doanh", 2)}
+
+
 def _users_file(tmp_path, monkeypatch):
-    f = tmp_path / "users.txt"
-    f.write_text("ql:mk:Kinh doanh:4\nnv:mk:Kinh doanh:2\n", encoding="utf-8")
-    monkeypatch.setenv("USERS_FILE", str(f))
+    """V2: không còn USERS_FILE — giữ chữ ký để call-site cũ nguyên vẹn (no-op)."""
 
 
 def _dang_nhap(ten):
-    c = TestClient(app)
-    c.post("/dang-nhap", data={"ten": ten, "mat_khau": "mk"})
-    return c
+    return client_claims(app, ten, *HO_SO[ten])
 
 
 def _chuan_bi_ban_dep(doc_code="KD-2026-0099", ngan="05_Kinh-doanh"):
@@ -184,8 +205,9 @@ def test_chua_co_ban_dep_404(tmp_path, monkeypatch):
 
 
 def test_che_do_mo_khong_loc(monkeypatch):
-    _chuan_bi_ban_dep()                                     # không users.txt → khách
-    assert TestClient(app).get("/tai-ban-dep/KD-2026-0099").status_code == 200
+    from claims_v2 import client_khach
+    _chuan_bi_ban_dep()   # V2: claims thiếu bộ phận ≈ khách hệ cũ — không lọc quyền
+    assert client_khach(app).get("/tai-ban-dep/KD-2026-0099").status_code == 200
 
 
 def test_nang_cap_catalog_cu_15_cot():

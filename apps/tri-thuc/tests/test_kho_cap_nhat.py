@@ -17,9 +17,7 @@ from src.main import CATALOG_HEADER, app, client, doc_catalog
 
 def _setup(tmp_path, monkeypatch):
     client._mock_chunks.clear()                       # reset store chunk mock của client toàn cục
-    f = tmp_path / "users.txt"
-    f.write_text("sep:mk:Kinh doanh:5\nnv:mk:Kinh doanh:2\n", encoding="utf-8")
-    monkeypatch.setenv("USERS_FILE", str(f))
+    # V2: không còn USERS_FILE — claims thay đăng nhập (giữ chữ ký call-site)
     kho = Path(os.environ["KHO_TAI_LIEU"])
     ngan = kho / "05_Kinh-doanh"; ngan.mkdir(parents=True, exist_ok=True)
     old = ngan / "2026-07-01_Kinh-doanh_Tai-lieu_v1.txt"
@@ -32,10 +30,13 @@ def _setup(tmp_path, monkeypatch):
     return kho, ngan, old
 
 
+from claims_v2 import client_claims
+
+HO_SO = {"sep": ("Kinh doanh", 5), "nv": ("Kinh doanh", 2)}
+
+
 def _login(ten):
-    c = TestClient(app)
-    c.post("/dang-nhap", data={"ten": ten, "mat_khau": "mk"})
-    return c
+    return client_claims(app, ten, *HO_SO[ten])
 
 
 def _dong(code):

@@ -103,11 +103,10 @@ def test_hoi_stream_critics_rong_bo_qua_phan_bien():
 
 
 def test_route_stream_sse():
-    from fastapi.testclient import TestClient
-
     from src.main import app
+    from claims_v2 import client_khach
 
-    tc = TestClient(app)
+    tc = client_khach(app)  # V2: claims thiếu bộ phận ≈ chế độ mở hệ cũ
     r = tc.post("/hoi-dap/stream",
                 data={"question": "quy trình đăng video", "history": "[]"})
     assert r.status_code == 200
@@ -123,11 +122,10 @@ def test_route_stream_sse():
 
 def test_trang_kiem_stream_va_data():
     """Công cụ tự chẩn đoán streaming (điều tra 20/07) — trang mở được, data phát đủ 5 số."""
-    from fastapi.testclient import TestClient
-
     from src.main import app
+    from claims_v2 import client_khach
 
-    c = TestClient(app)  # chế độ mở (conftest) — khách vào được
+    c = client_khach(app)  # V2: claims thiếu bộ phận ≈ khách hệ cũ
     assert c.get("/kiem-stream").status_code == 200
     r = c.get("/kiem-stream/data")
     assert r.status_code == 200

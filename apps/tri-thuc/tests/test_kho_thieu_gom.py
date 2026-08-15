@@ -47,12 +47,10 @@ def test_xoa_nhom_loai_dung_id_giu_nhom_khac():
 # ─────────────── PHẦN B — route xóa nhóm (Manager+, redirect whitelist) ───────────────
 
 def _login(tmp_path, monkeypatch, dong):
-    f = tmp_path / "users.txt"
-    f.write_text(dong, encoding="utf-8")
-    monkeypatch.setenv("USERS_FILE", str(f))
-    c = TestClient(app)
-    c.post("/dang-nhap", data={"ten": dong.split(":")[0], "mat_khau": "mk"})
-    return c
+    # V2: claims thay users.txt — 'dong' giữ khuôn cũ ten:mk:bo_phan:level, parse ra claims
+    from claims_v2 import client_claims
+    ten, _, bo_phan, level = dong.strip().splitlines()[0].split(":")
+    return client_claims(app, ten, bo_phan, int(level))
 
 
 def test_route_xoa_nhom_303_va_ve_whitelist(tmp_path, monkeypatch):

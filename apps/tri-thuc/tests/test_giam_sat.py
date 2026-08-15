@@ -11,23 +11,20 @@ from src.main import app
 from src.kho_thieu import ghi_cau_kho_thieu
 from src.lich_su import luu_luot
 
-USERS = ("sep:mk:Kinh doanh:5\n"
-         "ql_kd:mk:Kinh doanh:4\n"
-         "nv_kd:mk:Kinh doanh:2\n"
-         "ql_vh:mk:Vận hành - Sản xuất:4\n"
-         "nv_vh:mk:Vận hành - Sản xuất:2\n")
+# V2: claims từ gateway thay users.txt — bảng bộ phận×level giữ nguyên ý cũ.
+from claims_v2 import client_claims
+
+HO_SO = {"sep": ("Kinh doanh", 5), "ql_kd": ("Kinh doanh", 4),
+         "nv_kd": ("Kinh doanh", 2), "ql_vh": ("Vận hành - Sản xuất", 4),
+         "nv_vh": ("Vận hành - Sản xuất", 2)}
 
 
 def _users(tmp_path, monkeypatch):
-    f = tmp_path / "users.txt"
-    f.write_text(USERS, encoding="utf-8")
-    monkeypatch.setenv("USERS_FILE", str(f))
+    """V2: không còn USERS_FILE — giữ chữ ký để call-site cũ nguyên vẹn (no-op)."""
 
 
 def _login(ten):
-    c = TestClient(app)
-    c.post("/dang-nhap", data={"ten": ten, "mat_khau": "mk"})
-    return c
+    return client_claims(app, ten, *HO_SO[ten])
 
 
 def _gieo():
@@ -36,6 +33,9 @@ def _gieo():
     luu_luot("nv_kd", "đăng video?", "Đăng khung 19h [KD-2026-0042].",
              ["KD-2026-0042"], "T2", phien_id="ph-ok")           # ✅ đã đáp
     luu_luot("nv_vh", "câu bên VH?", "đáp VH", [], "T3", phien_id="ph-vh")
+    # V2: cây giám sát dựng từ NGƯỜI CÓ LỊCH SỬ (app hết sổ user riêng) — gieo thêm
+    # 1 lượt cho ql_vh để giữ nguyên ý test "Owner thấy tất cả mọi bộ phận".
+    luu_luot("ql_vh", "câu của quản lý VH?", "đáp", [], "T4", phien_id="ph-qlvh")
     ghi_cau_kho_thieu("câu kho thiếu KD?", "Kinh doanh", [], "T1")  # nhánh lỗ hổng kho
 
 

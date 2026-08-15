@@ -219,11 +219,10 @@ def test_danh_sach_critics_tu_env(monkeypatch):
 
 
 def test_route_hoi_dap_va_hoi():
-    from fastapi.testclient import TestClient
-
     from src.main import app
+    from claims_v2 import client_khach
 
-    tc = TestClient(app)
+    tc = client_khach(app)  # V2: claims thiếu bộ phận ≈ chế độ mở hệ cũ
     assert tc.get("/hoi-dap").status_code == 200
 
     r = tc.post("/hoi", data={"question": "quy trình đăng video"})

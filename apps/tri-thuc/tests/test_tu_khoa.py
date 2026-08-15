@@ -11,19 +11,18 @@ from fastapi.testclient import TestClient
 from src.main import app
 from src.tu_khoa import TU_KHOA_MAU, lay_tu_khoa_da_co
 
-USERS = "ql:mk:Kinh doanh:4\nnv:mk:Kinh doanh:2\n"
+# V2: claims từ gateway thay users.txt — bảng bộ phận×level giữ nguyên ý cũ.
+from claims_v2 import client_claims
+
+HO_SO = {"ql": ("Kinh doanh", 4), "nv": ("Kinh doanh", 2)}
 
 
 def _users_file(tmp_path, monkeypatch):
-    f = tmp_path / "users.txt"
-    f.write_text(USERS, encoding="utf-8")
-    monkeypatch.setenv("USERS_FILE", str(f))
+    """V2: không còn USERS_FILE — giữ chữ ký để call-site cũ nguyên vẹn (no-op)."""
 
 
 def _dang_nhap(ten):
-    c = TestClient(app)
-    c.post("/dang-nhap", data={"ten": ten, "mat_khau": "mk"})
-    return c
+    return client_claims(app, ten, *HO_SO[ten])
 
 
 def test_lay_tu_khoa_gom_tach_dedup_xep_tan_suat():
@@ -57,7 +56,7 @@ def test_endpoint_goi_y_chi_manager(tmp_path, monkeypatch):
 
 def test_upload_van_nhan_keywords_chuoi():
     """Backward-compat: tag input chỉ là UI — /upload vẫn nhận chuỗi 'a, b' như cũ."""
-    r = TestClient(app).post("/upload", data={
+    r = client_claims(app, "ql", *HO_SO["ql"]).post("/upload", data={
         "title": "t", "keywords": "đăng video, SEO", "owner": "", "version": "v1",
         "department": "Kinh doanh", "doc_type": "Quy trình",
         "effective_status": "Còn hiệu lực", "access_level": "Công khai nội bộ",

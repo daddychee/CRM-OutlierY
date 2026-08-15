@@ -18,6 +18,11 @@
       "vao": { "min_level": 1 },
       "vai": { "5": "owner", "4": "manager", "3": "leader", "mac_dinh": "viewer" }
     },
+    "tri-thuc": {
+      "vao": { "min_level": 1 },
+      "vai": { "5": "owner", "4": "manager", "3": "leader", "mac_dinh": "viewer" },
+      "_ghi_chu": "Gate tinh trong app theo level claims: /upload + /tu-khoa-goi-y + /kho-thieu* + /nguon* Manager+ (>=4); /giam-sat + sửa/xóa kho + duyệt Q&A CHỈ Owner. Khi bật tick lẻ IAM: chuyển các gate này về co_quyen() tầng nền (ghi chú của agent di trú)."
+    },
     "data-analytics": {
       "vao": { "min_level": 2, "bo_phan": ["Kinh doanh"] },
       "vai": { "5": "owner", "4": "manager", "3": "leader", "mac_dinh": "viewer" }

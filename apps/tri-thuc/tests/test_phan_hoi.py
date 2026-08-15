@@ -14,8 +14,10 @@ from pathlib import Path
 from fastapi.testclient import TestClient
 
 from src.main import PHAN_HOI_HEADER, app
+from claims_v2 import client_claims
 
-tc = TestClient(app)
+# V2: /phan-hoi cần claims (mọi user đăng nhập); hệ cũ chạy chế độ mở
+tc = client_claims(app, "nv", "Kinh doanh", 2)
 
 
 def _so():

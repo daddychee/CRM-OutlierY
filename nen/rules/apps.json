@@ -15,6 +15,27 @@
   ],
   "apps": [
     {
+      "slug": "tri-thuc",
+      "ten": "Tri thức",
+      "mo_ta": "Hỏi–đáp RAG trích nguồn + nhập/quản kho tài liệu (Qdrant) + kho-thiếu/Q&A bổ sung + nguồn ngoài YouTube (bài học có neo) + lịch sử hội thoại + giám sát.",
+      "cong": 9101,
+      "tien_to": ["/hoi-dap", "/hoi", "/upload", "/kho-tai-lieu", "/kho-thieu",
+                   "/nguon", "/nguon-ngoai", "/lich-su", "/giam-sat",
+                   "/tai-ban-dep", "/tai-ban-goc", "/tu-khoa-goi-y",
+                   "/co-tay", "/phan-hoi", "/kiem-stream", "/static"],
+      "health": "/health",
+      "phien_ban": "2.0.0",
+      "chay": {"kieu": "uvicorn", "app_dir": "apps/tri-thuc", "module": "src.main:app"},
+      "du_lieu": [
+        {"ten": "kho-tai-lieu", "loai": "kho-file", "duong": "data/tri-thuc/kho/kho-tai-lieu",
+         "muc_quy": "vang", "backup": "copy", "giu": "vinh-vien",
+         "ghi_chu": "File gốc 8 ngăn + _catalog.csv + sổ vận hành + youtube_cookies.txt (NHẠY — write-only như key)"},
+        {"ten": "lich-su-hoi-thoai", "loai": "json", "duong": "data/tri-thuc/db/lich-su",
+         "muc_quy": "vang", "backup": "copy", "giu": "vinh-vien",
+         "ghi_chu": "Mỗi user 1 file JSON ghi nguyên tử — nội dung hỏi-đáp, không đưa ra ngoài"}
+      ]
+    },
+    {
       "slug": "data-analytics",
       "ten": "Data Analytics",
       "mo_ta": "Chẩn đoán số liệu kênh YouTube — engine 4 trục, 7 phán quyết, báo cáo 9 mục, lịch sử dùng chung.",

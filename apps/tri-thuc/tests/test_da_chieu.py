@@ -171,15 +171,10 @@ def test_critic_dung_prompt_sai_khoi_va_phat_review():
 # ─────────────── ROUTE — wiring + RBAC + mặc định an toàn ───────────────
 
 def test_route_da_chieu_dang_nhap_tra_sse(tmp_path, monkeypatch):
-    from fastapi.testclient import TestClient
-
     from src.main import app
+    from claims_v2 import client_claims  # V2: claims thay users.txt + đăng nhập
 
-    f = tmp_path / "users.txt"
-    f.write_text("nv:mk:Kinh doanh:2\n", encoding="utf-8")
-    monkeypatch.setenv("USERS_FILE", str(f))
-    c = TestClient(app)
-    c.post("/dang-nhap", data={"ten": "nv", "mat_khau": "mk"})
+    c = client_claims(app, "nv", "Kinh doanh", 2)
     r = c.post("/hoi-dap/stream-da-chieu", data={"question": "quy trình đăng video"})
     assert r.status_code == 200
     assert "text/event-stream" in r.headers["content-type"]

@@ -20,9 +20,7 @@ _QUYEN_MOI = {"doc_code": "KD-DOC", "department": "Hành chính Nhân sự", "ac
 
 def _setup(tmp_path, monkeypatch):
     client._mock_chunks.clear(); client._mock_payload.clear()
-    f = tmp_path / "users.txt"
-    f.write_text("sep:mk:Kinh doanh:5\nnv:mk:Kinh doanh:2\n", encoding="utf-8")
-    monkeypatch.setenv("USERS_FILE", str(f))
+    pass  # V2: không còn USERS_FILE — claims thay đăng nhập (giữ chữ ký call-site)
     kho = Path(os.environ["KHO_TAI_LIEU"]); kho.mkdir(parents=True, exist_ok=True)
     with (kho / "_catalog.csv").open("w", newline="", encoding="utf-8-sig") as fh:
         w = csv.writer(fh); w.writerow(CATALOG_HEADER)
@@ -35,8 +33,13 @@ def _setup(tmp_path, monkeypatch):
     return kho
 
 
+from claims_v2 import client_claims
+
+HO_SO = {"sep": ("Kinh doanh", 5), "nv": ("Kinh doanh", 2)}
+
+
 def _login(ten):
-    c = TestClient(app); c.post("/dang-nhap", data={"ten": ten, "mat_khau": "mk"}); return c
+    return client_claims(app, ten, *HO_SO[ten])
 
 
 def _dong(code):

@@ -68,16 +68,18 @@ from fastapi.testclient import TestClient
 from src.main import app, ghi_catalog
 
 
+# V2: claims từ gateway thay users.txt — bảng bộ phận×level giữ nguyên ý cũ.
+from claims_v2 import client_claims
+
+HO_SO = {"ql": ("Kinh doanh", 4), "nv": ("Kinh doanh", 2)}
+
+
 def _users_file(tmp_path, monkeypatch):
-    f = tmp_path / "users.txt"
-    f.write_text("ql:mk:Kinh doanh:4\nnv:mk:Kinh doanh:2\n", encoding="utf-8")
-    monkeypatch.setenv("USERS_FILE", str(f))
+    """V2: không còn USERS_FILE — giữ chữ ký để call-site cũ nguyên vẹn (no-op)."""
 
 
 def _dang_nhap(ten):
-    c = TestClient(app)
-    c.post("/dang-nhap", data={"ten": ten, "mat_khau": "mk"})
-    return c
+    return client_claims(app, ten, *HO_SO[ten])
 
 
 def _chuan_bi_ban_goc(doc_code="KD-2026-0099", ngan="05_Kinh-doanh"):

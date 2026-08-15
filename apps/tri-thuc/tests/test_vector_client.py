@@ -14,7 +14,8 @@ def client():
 
 def test_upload_tra_ve_document_id(client, tmp_path):
     f = tmp_path / "KD-2026-0099_Test.docx"
-    f.write_text("nội dung thử")
+    # utf-8 tường minh — baseline hệ cũ: thiếu encoding làm cp1252 chết dấu tiếng Việt
+    f.write_text("nội dung thử", encoding="utf-8")
     doc_id = client.upload_document(str(f), {"department": "Kinh doanh",
                                              "effective_status": "Còn hiệu lực"})
     assert isinstance(doc_id, str) and doc_id.startswith("doc-mock-")
@@ -115,6 +116,17 @@ class _QdrantSong:
         return _A()
 
 
+def _co_fastembed():
+    try:
+        import fastembed  # noqa: F401
+        return True
+    except Exception:
+        return False
+
+
+@pytest.mark.skipif(not _co_fastembed(),
+                    reason="Thiếu fastembed — gói nặng chỉ cần khi chạy thật (embedding "
+                           "local); venv test v2 không cài, test này chạy ở máy chạy thật")
 def test_qdrant_chet_khong_giet_app_va_tu_noi_lai(monkeypatch):
     """Sự cố 14:57 01/08 (Docker Desktop sập): Qdrant chết lúc khởi động từng giết
     CẢ app thành crash loop ~20 phút — cổng 8000 gánh login + proxy 6 app + chấm

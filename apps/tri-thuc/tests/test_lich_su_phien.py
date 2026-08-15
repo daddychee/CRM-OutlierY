@@ -80,22 +80,16 @@ def test_phien_id_ban_duoc_lam_sach():
 
 
 def test_route_stream_gan_dung_phien(tmp_path, monkeypatch):
-    from fastapi.testclient import TestClient
-
     import src.main as app_module
     from src.main import app
-
-    f = tmp_path / "users.txt"
-    f.write_text("nv:mk:Kinh doanh:2\n", encoding="utf-8")
-    monkeypatch.setenv("USERS_FILE", str(f))
+    from claims_v2 import client_claims  # V2: claims thay users.txt + đăng nhập
 
     def stream_gia(*a, **k):
         yield {"type": "token", "data": "đáp"}
         yield {"type": "done", "data": {"critic_count": 0, "bi_chan_quyen": False}}
 
     monkeypatch.setattr(app_module.qa, "hoi_stream", stream_gia)
-    c = TestClient(app)
-    c.post("/dang-nhap", data={"ten": "nv", "mat_khau": "mk"})
+    c = client_claims(app, "nv", "Kinh doanh", 2)
     c.post("/hoi-dap/stream", data={"question": "câu 1?", "history": "[]",
                                     "phien_id": "phien-a"})
     c.post("/hoi-dap/stream", data={"question": "câu 2?", "history": "[]",
@@ -106,24 +100,20 @@ def test_route_stream_gan_dung_phien(tmp_path, monkeypatch):
 
 # ---- (c) trang 2 tầng + đổi tên phiên + D2 giữ nguyên từng lượt ----
 
-from fastapi.testclient import TestClient
-
 from src.main import app
 from src.lich_su import doi_ten_phien
+from claims_v2 import client_claims, client_khach
 
-USERS2 = "sep:mk:Kinh doanh:5\nnv:mk:Kinh doanh:2\n"
+# V2: claims từ gateway thay users.txt — bảng bộ phận×level giữ nguyên ý cũ.
+HO_SO2 = {"sep": ("Kinh doanh", 5), "nv": ("Kinh doanh", 2)}
 
 
 def _users2(tmp_path, monkeypatch):
-    f = tmp_path / "users.txt"
-    f.write_text(USERS2, encoding="utf-8")
-    monkeypatch.setenv("USERS_FILE", str(f))
+    """V2: không còn USERS_FILE — giữ chữ ký để call-site cũ nguyên vẹn (no-op)."""
 
 
 def _login(ten):
-    c = TestClient(app)
-    c.post("/dang-nhap", data={"ten": ten, "mat_khau": "mk"})
-    return c
+    return client_claims(app, ten, *HO_SO2[ten])
 
 
 def test_tang_1_list_phien_va_tang_2_chi_tiet(tmp_path, monkeypatch):
@@ -292,11 +282,9 @@ def test_sidebar_hien_cuoc_va_danh_dau_active(tmp_path, monkeypatch):
 
 
 def test_sidebar_khach_rong_khong_vo():
-    from fastapi.testclient import TestClient
-
     from src.main import app
 
-    trang = TestClient(app).get("/hoi-dap").text           # chế độ mở — khách
+    trang = client_khach(app).get("/hoi-dap").text  # V2: claims thiếu bộ phận ≈ khách
     assert 'id="thanh-ben"' in trang and "Chưa có cuộc nào" in trang
 
 

@@ -31,11 +31,13 @@ CAC_DONG = [
 ]
 
 
+# V2: claims từ gateway thay users.txt — bảng bộ phận×level giữ nguyên ý cũ.
+from claims_v2 import client_claims
+
+HO_SO = {"sep": ("Kinh doanh", 5), "nv": ("Kinh doanh", 2), "itnv": ("IT", 2)}
+
+
 def _setup(tmp_path, monkeypatch):
-    # users.txt: Owner + nhân viên KD lv2 + nhân viên IT lv2
-    f = tmp_path / "users.txt"
-    f.write_text("sep:mk:Kinh doanh:5\nnv:mk:Kinh doanh:2\nitnv:mk:IT:2\n", encoding="utf-8")
-    monkeypatch.setenv("USERS_FILE", str(f))
     # _catalog.csv trong KHO_TAI_LIEU (conftest đã trỏ tmp) — ghi utf-8-sig như app đọc
     kho = Path(os.environ["KHO_TAI_LIEU"]); kho.mkdir(parents=True, exist_ok=True)
     with (kho / "_catalog.csv").open("w", newline="", encoding="utf-8-sig") as fh:
@@ -43,9 +45,7 @@ def _setup(tmp_path, monkeypatch):
 
 
 def _login(ten):
-    c = TestClient(app)
-    c.post("/dang-nhap", data={"ten": ten, "mat_khau": "mk"})
-    return c
+    return client_claims(app, ten, *HO_SO[ten])
 
 
 def test_owner_thay_toan_bo_catalog(tmp_path, monkeypatch):
