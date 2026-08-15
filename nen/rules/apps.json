@@ -31,6 +31,23 @@
       ]
     },
     {
+      "slug": "to-chuc",
+      "ten": "Tổ chức",
+      "mo_ta": "KPI tự động 4 nguồn chỉ-đọc + chấm công hiện diện + trang NAS + Vault tài khoản số (chỉ Owner).",
+      "cong": 9103,
+      "tien_to": ["/kpi", "/nas", "/api/nhip", "/api/nhip-thoat", "/vault"],
+      "health": "/health",
+      "phien_ban": "2.0.0",
+      "chay": {"kieu": "uvicorn", "app_dir": "apps/to-chuc", "module": "src.main:app"},
+      "du_lieu": [
+        {"ten": "cham-cong", "loai": "json", "duong": "data/to-chuc/db/cham-cong",
+         "muc_quy": "vang", "backup": "copy", "giu": "vinh-vien"},
+        {"ten": "vault", "loai": "kho-file", "duong": "data/vault",
+         "muc_quy": "vang", "backup": "copy", "giu": "vinh-vien",
+         "ghi_chu": "CHỈ BẢN MÃ vault.enc + hash safekey + audit.csv — backup nhận bản mã, đúng lệ hệ cũ"}
+      ]
+    },
+    {
       "slug": "app-mau",
       "ten": "App mẫu",
       "mo_ta": "App 50 dòng chứng minh hợp đồng app: nhận claims, /health, proxy.",

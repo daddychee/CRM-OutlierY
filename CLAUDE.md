@@ -59,5 +59,27 @@
   User nhắc giữa phiên: áp nguyên tắc KARPATHY (tối giản/test-first/surgical) +
   PONYTAIL (thang 7 bậc, diff ngắn nhất, đánh dấu `ponytail:` chỗ cắt góc) — đã
   lưu memory vĩnh viễn, 2 file gốc trong hệ.
-- KẾ TIẾP — PHASE 3 Két cấu hình: config ≠ secret (2 ngăn), vai LLM → model,
-  API loopback cho app đọc, UI Owner /cai-dat, timeout/retry mặc định một chỗ.
+- 16/08/2026 — **P3 KÉT + P4 CHUẨN DỮ LIỆU + P5.1 DATA-ANALYTICS + P6 CẦU NỐI +
+  P7.1 SCALE — XONG, mỗi phase một commit xanh:**
+  · P3 (`1d4aefa`): két 2 ngăn config/secret (Fernet), vai LLM, API loopback
+    /api/cau-hinh/llm/<vai>, /cai-dat chỉ Owner (Admin ủy quyền 403 có test).
+  · P4 (`772799a`): log JSON-lines năm/tháng; backup theo manifest (sqlite
+    VACUUM INTO / kho-file copy / qdrant API-snapshot); DIỄN TẬP RESTORE tự động
+    trong test; du_lieu_nen khai trong apps.json.
+  · P5.1 (`7c6a515`): app data-analytics di trú TRỌN — 64 test + E2E thật qua
+    gateway (report 80 video → tác vụ nền → lịch sử; quyền KD-L2/L4 đúng).
+    Khuôn di trú chuẩn cho các app sau: claims 4 header (Dept URL-encode),
+    env setdefault trước import, dien_giai tách khỏi RAG có ponytail note.
+  · P6 (`c7febf4`): cầu nối — connector bao_cao_kenh + router luật qua danh bạ +
+    /api/cau-noi/hoi-so-lieu. Nghiệm thu sống: hỏi kênh outland ra đúng báo cáo
+    kèm nguồn + tuổi dữ liệu; kênh lạ từ chối thẳng kèm gợi ý.
+  · P7 (`bc97b8e` + trước đó): runbook 3 quyển + KE_HOACH_THAY_THE (rollback 5
+    phút) + load test ĐO TỪNG TẦNG: 4 bệnh block-event-loop đã trả (login bcrypt
+    sync-def, connector sync-def, cache luật theo mtime, proxy auth threadpool)
+    + chính bài đo sai (50 client 1 loop Windows). KẾT QUẢ: 50 phiên đồng thời
+    0 lỗi, trung vị 2.14s/phiên 6 request.
+  ⚠️ Ghi chú lịch sử git: `bc97b8e` lỡ lẫn khung DỞ của apps/tri-thuc +
+  apps/to-chuc (2 agent làm song song, git add -A quét phải — bài học: add theo
+  path khi có việc song song). Bản hoàn chỉnh 2 app đó nằm ở commit sau.
+- KẾ TIẾP: P5.2 tri-thuc + P5.3 to-chuc/vault (agent đang làm) → test-all toàn
+  hệ → nghiệm thu sống tri-thuc (kho test từ backup + Qdrant 6343) → báo cáo Owner.

@@ -21,6 +21,11 @@
     "data-analytics": {
       "vao": { "min_level": 2, "bo_phan": ["Kinh doanh"] },
       "vai": { "5": "owner", "4": "manager", "3": "leader", "mac_dinh": "viewer" }
+    },
+    "to-chuc": {
+      "vao": { "min_level": 1 },
+      "vai": { "5": "owner", "4": "manager", "3": "leader", "mac_dinh": "viewer" },
+      "_ghi_chu": "Gate tinh nằm TRONG app: /kpi Manager+ (level>=4), /vault* CHỈ Owner (khớp giỏ owner tuyệt đối), /nas + /api/nhip* mọi người."
     }
   },
   "vai_mac_dinh": { "5": "owner", "4": "manager", "3": "leader", "mac_dinh": "viewer" }

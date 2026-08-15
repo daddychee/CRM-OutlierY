@@ -147,6 +147,16 @@ def test_tong_hop_kd_nguon_chet_hien_none():
 # ─────────────────────────── route /kpi (V2 — thay trang /nhan-su cũ) ───────────────────────────
 # App nhận CLAIMS từ gateway; gate trong app: Manager+ (level >= 4).
 
+def test_lay_user_unquote_dept():
+    """Gateway quote() bộ phận tiếng Việt vào header (HTTP header chỉ ASCII) —
+    app PHẢI unquote lại để RBAC so đúng CHUỖI GỐC."""
+    from src.main import lay_user
+    u = lay_user(x_remote_user="nv", x_remote_level="3", x_remote_role="leader",
+                 x_remote_dept="V%E1%BA%ADn%20h%C3%A0nh%20-%20S%E1%BA%A3n%20xu%E1%BA%A5t")
+    assert u == {"ten": "nv", "level": 3, "vai": "leader",
+                 "bo_phan": "Vận hành - Sản xuất"}
+
+
 def _login(ten, level):
     return TestClient(app, headers={"X-Remote-User": ten,
                                     "X-Remote-Level": str(level),
