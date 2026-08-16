@@ -103,3 +103,43 @@ Sức khỏe hệ → /nen (tổng quan đế nuốt trang suc-khoe cũ).
   BỎ HẲN tầng viết-lại-đường-dẫn trong proxy; nếu công ty có domain thật thì
   thay outliery.lan bằng domain thật + Let's Encrypt (hết cảnh báo trình duyệt).
 - Chưa chuyển máy nhân viên nào sang miền test — hệ thật C:\OutlierY không đụng.
+
+## 8. UI TIẾNG ANH + USER MENU KIỂU CLAUDE (chốt Owner 16/08/2026 — đợt 2)
+
+Thay thế bảng nhãn mục 2 (cấu trúc sidebar giữ, NHÃN đổi tiếng Anh; ROUTE giữ
+nguyên — chỉ đổi chữ hiển thị, không đổi đường dẫn):
+
+| Cũ (V1) | Mới (EN) | Ghi chú |
+|---|---|---|
+| tab Home | Home | |
+| nút New | New chat | |
+| nhãn Công cụ | Tools | NAS RỜI khỏi đây → vào user menu |
+| tab Monitoring | **Data Center** | Owner chốt tên |
+| Datafeed | Datafeed | |
+| Kho tài liệu | Document Library | |
+| Kho cần bổ sung | Knowledge Gaps | |
+| Nguồn ngoài | External Sources | |
+| Nhân sự (mục sidebar) | BỎ — People nằm trong General | HR L3+ thấy General |
+| Gần đây / Xem tất cả lịch sử | Recents / View all history | |
+| popup Management | **USER MENU kiểu Claude**: chip đáy sidebar hiện "Display name — Rank" (mọi người) | |
+| — trong menu (mọi người) | Profile · Theme (Light/Dark) · NAS (ẩn khi chưa cấu hình) · Log out | |
+| — thêm cho Owner | Tracking (= Hoạt động team cũ) · General (= khu nền 8 trang) · Vault | |
+| — thêm cho HR L3+ | General (mở vào CHỈ thấy People — 7 trang kia vẫn chặn server-side) | chốt Owner |
+| Hoạt động team | Tracking | giữ nguyên chức năng |
+| Khu nền: Tổng quan đế / Tài khoản / Nhân sự / Phân quyền / Cấu hình LLM / Dữ liệu & backup / Nhật ký / Ứng dụng | **General**: Overview / Accounts / People / Permissions / AI Models / Data & Backup / Audit Log / Applications | |
+| Đăng nhập / Đăng xuất / Đổi mật khẩu | Sign in / Log out / Change password (nằm trong Profile) | |
+| Cấp bậc L1..L5 | Intern / Staff / Leader / Manager / Owner | |
+| Nút chung | Send · Save · Create · Delete · Apply · Download · Approve | |
+
+**Profile** (trang mới, mọi người): tự sửa Display name + thông tin cá nhân +
+Change password (**bắt gõ mật khẩu hiện tại** — vá thiếu sót v2); Bộ phận + Level
+CHỈ ĐỌC (Owner quản — nhân viên tự sửa là tự thăng quyền). Chip đáy sidebar hiện
+Display name, chưa điền fallback tên đăng nhập.
+
+**Phạm vi dịch đợt này (chốt Owner)**: toàn bộ VỎ điều hướng (sidebar, tab, menu,
+nút, khu nền, login). Chuỗi tiếng Việt NẰM TRONG 5 khối script chat đóng băng
+(nút Cuộc trò chuyện mới, thông báo chờ…) để ĐỢT RIÊNG — phá đóng băng có chủ
+đích + nghiệm thu chat kỹ. Nội dung agent trả lời + tài liệu vẫn tiếng Việt.
+
+**Theme**: mục trong user menu, dùng ĐÚNG cơ chế chung `outliery_theme` +
+data-theme; nhân dịp này các trang khu nền bỏ media query về đúng cơ chế chung.
