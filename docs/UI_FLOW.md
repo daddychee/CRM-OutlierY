@@ -114,11 +114,11 @@ nguyên — chỉ đổi chữ hiển thị, không đổi đường dẫn):
 | tab Home | Home | |
 | nút New | New chat | |
 | nhãn Công cụ | Tools | NAS RỜI khỏi đây → vào user menu |
-| tab Monitoring | **Data Center** | Owner chốt tên |
-| Datafeed | Datafeed | |
-| Kho tài liệu | Document Library | |
-| Kho cần bổ sung | Knowledge Gaps | |
-| Nguồn ngoài | External Sources | |
+| tab Monitoring | **Database** | Owner chốt 16/08 (đổi từ đề xuất Data Center) |
+| Datafeed | **Input** | |
+| Kho tài liệu | **Library** | |
+| Kho cần bổ sung | **Gap** | |
+| Nguồn ngoài | GỘP vào **Input** — 2 tab con Upload / External source, route + logic giữ nguyên | chốt Owner |
 | Nhân sự (mục sidebar) | BỎ — People nằm trong General | HR L3+ thấy General |
 | Gần đây / Xem tất cả lịch sử | Recents / View all history | |
 | popup Management | **USER MENU kiểu Claude**: chip đáy sidebar hiện "Display name — Rank" (mọi người) | |
