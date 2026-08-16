@@ -60,6 +60,10 @@
 - Fixture dùng app-mau ĐANG CHẠY SẴN :9190 — sửa code app-mau phải restart tiến
   trình sống rồi mới tin kết quả test.
 - Comment Jinja/CSS không được chứa cú pháp `{%...%}` — Jinja đọc thành lệnh thật.
+- **Sửa module CHUNG (`nen/common/*`) phải restart MỌI app import nó** — sửa
+  sidebar.py chỉ restart gateway+to-chuc là ai-agent/DA vẫn render cờ cũ, menu
+  "biến mất" dù route sống (dính thật 16/08 — Owner không thấy HR/Finance).
+  Template Jinja tự nạp lại theo đĩa; CODE Python thì không.
 - **"Zoom nhẹ" khi chuyển trang = FONT SWAP, không phải scrollbar**: /static thiếu
   `Cache-Control` → trình duyệt revalidate font mỗi điều hướng → vẽ Segoe UI rồi
   swap sang Inter (`font-display:swap`) → chữ đổi metrics. Đã vá bằng `StaticCache`
