@@ -27,4 +27,4 @@ def _cach_ly_du_lieu(tmp_path, monkeypatch):
     monkeypatch.setenv("BAO_CAO_GOC_DIR", str(tmp_path / "bao-cao-goc"))
     # danh bạ trỏ file không tồn tại → gợi ý kênh chỉ còn nguồn lịch sử (test cũ giữ nghĩa);
     # test danh bạ+gộp có file CSV tmp riêng
-    monkeypatch.setenv("DANH_MUC_CSV", str(tmp_path / "danh-muc-khong-co.csv"))
+    monkeypatch.setenv("DANH_BA_DB", str(tmp_path / "danh-ba-khong-co.db"))

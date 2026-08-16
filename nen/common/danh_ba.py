@@ -1,38 +1,60 @@
 # -*- coding: utf-8 -*-
-"""Danh bạ thực thể chung (kênh / ngách) — mảnh ④ tầng nền.
+"""Danh bạ thực thể chung (thị trường → ngách → kênh) — mảnh ④ tầng nền, bản DB.
 
-Nguồn sự thật: platform/rules/danh_muc.csv (luật ngoài code — Owner sửa bằng Excel).
-Mỗi dòng = một thực thể với tên chuẩn + bí danh + khóa định danh ở từng app
-(seo_profile, plannery_project, radary_niche, niche_project, mau_ten_bao_cao).
+Đ1 khối đế (DE.md, Owner chốt 16/08/2026): nguồn sự thật là SQLite
+data/nen/danh_ba.db (CRUD qua UI /general, có vết) thay CSV seed. API ĐỌC giữ
+nguyên chữ ký thời CSV (doc_danh_muc / tra_thuc_the / khoa_ung_dung / liet_ke)
+— cầu nối P6 và dropdown app không đổi; tham số `duong` giờ trỏ file DB.
 
-Mọi mảnh khác (dropdown báo cáo, connector, router hỏi số liệu) tra qua module này —
-KHÔNG app nào tự đoán tên thực thể.
+Mọi mảnh khác tra qua module này — KHÔNG app nào tự đoán tên thực thể.
+Hàm GHI chỉ gateway gọi (audit ghi ở tầng route bằng iam.ghi_nhat_ky).
 """
 from __future__ import annotations
 
 import csv
+import io
 import os
 import re
+import sqlite3
 import unicodedata
+from datetime import datetime
 from pathlib import Path
 
-DUONG_MAC_DINH = Path(__file__).resolve().parents[1] / "rules" / "danh_muc.csv"
+from nen.common.sqlite_migrate import migrate
+
+ROOT = Path(__file__).resolve().parents[2]
+DUONG_MAC_DINH = ROOT / "data" / "nen" / "danh_ba.db"
+MIGRATIONS = Path(__file__).resolve().parent / "danh_ba_migrations"
+
+TRANG_THAI_KENH = ("uom_mam", "sandbox", "hoat_dong", "monetized", "ngu_dong", "khai_tu")
+TRANG_THAI_NGACH = ("khai_thac", "thu", "nghi")
+
+# Tương thích cột khóa thời CSV → app_slug (caller cũ truyền cột cũ vẫn chạy).
+_COT_CU_SANG_SLUG = {
+    "seo_profile": "seo-optimize",
+    "plannery_project": "plannery",
+    "radary_niche": "radary",
+    "niche_project": "niche-research",
+    "mau_ten_bao_cao": "bao-cao",
+}
 
 
 def _duong_hieu_luc(duong: Path | str | None) -> Path:
-    """Ưu tiên tham số → env DANH_MUC_CSV (test/cách ly) → file luật thật."""
+    """Ưu tiên tham số → env DANH_BA_DB (test/cách ly) → DB thật."""
     if duong:
         return Path(duong)
-    return Path(os.environ.get("DANH_MUC_CSV") or DUONG_MAC_DINH)
+    return Path(os.environ.get("DANH_BA_DB") or DUONG_MAC_DINH)
 
-# Cột khóa ứng dụng hợp lệ (thêm app mới = thêm cột CSV + thêm tên vào đây)
-CAC_COT_KHOA = (
-    "seo_profile",
-    "plannery_project",
-    "radary_niche",
-    "niche_project",
-    "mau_ten_bao_cao",
-)
+
+def ket_noi(duong: Path | str | None = None) -> sqlite3.Connection:
+    p = _duong_hieu_luc(duong)
+    p.parent.mkdir(parents=True, exist_ok=True)
+    conn = sqlite3.connect(p)
+    conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA journal_mode=WAL")
+    conn.execute("PRAGMA foreign_keys=ON")
+    migrate(conn, MIGRATIONS)
+    return conn
 
 
 def chuan_hoa_ten(ten: str) -> str:
@@ -51,18 +73,69 @@ def chuan_hoa_ten(ten: str) -> str:
     return s
 
 
-def doc_danh_muc(duong: Path | str | None = None) -> list[dict]:
-    """Đọc toàn bộ danh mục. utf-8-sig để chịu được file Excel lưu kèm BOM."""
-    duong = _duong_hieu_luc(duong)
-    if not duong.exists():
+def _luc() -> str:
+    return datetime.now().isoformat(timespec="seconds")
+
+
+# ---------- ĐỌC (chữ ký giữ nguyên thời CSV; cache theo mtime DB) ----------
+
+_cache: dict = {}
+
+
+def _dau_phien_ban(p: Path) -> tuple:
+    """Dấu đổi-dữ-liệu chịu được WAL: commit ghi vào file -wal, mtime db chính
+    KHÔNG đổi → phải gộp cả mtime+size của -wal (bẫy bắt được bằng test Đ1)."""
+    dau = [p.stat().st_mtime_ns, p.stat().st_size]
+    wal = Path(str(p) + "-wal")
+    if wal.exists():
+        dau += [wal.stat().st_mtime_ns, wal.stat().st_size]
+    return tuple(dau)
+
+
+def _nap(duong: Path | str | None) -> list[dict]:
+    p = _duong_hieu_luc(duong)
+    if not p.exists():
         return []
-    ket_qua: list[dict] = []
-    with open(duong, "r", encoding="utf-8-sig", newline="") as f:
-        for dong in csv.DictReader(f):
-            if not dong.get("ma") or not (dong.get("ten_chuan") or "").strip():
-                continue  # bỏ dòng trống/hỏng, không chết cả danh mục
-            ket_qua.append({k: (v or "").strip() for k, v in dong.items() if k})
-    return ket_qua
+    mtime = _dau_phien_ban(p)
+    khoa = str(p)
+    if _cache.get(khoa, (None, None))[0] == mtime:
+        return _cache[khoa][1]
+    conn = ket_noi(p)
+    try:
+        ket_qua: list[dict] = []
+        alias: dict[str, list[str]] = {}
+        for r in conn.execute("SELECT bi_danh, thuc_the_ma FROM bi_danh"):
+            alias.setdefault(r["thuc_the_ma"], []).append(r["bi_danh"])
+        lk: dict[str, dict[str, str]] = {}
+        for r in conn.execute("SELECT thuc_the_ma, app_slug, khoa FROM lien_ket_app"):
+            lk.setdefault(r["thuc_the_ma"], {})[r["app_slug"]] = r["khoa"]
+        for r in conn.execute("SELECT * FROM ngach ORDER BY tao_luc, ma"):
+            t = dict(r)
+            t["loai"] = "ngach"
+            t["bi_danh"] = ";".join(alias.get(t["ma"], []))
+            t["lien_ket"] = lk.get(t["ma"], {})
+            ket_qua.append(t)
+        for r in conn.execute("SELECT * FROM kenh ORDER BY tao_luc, ma"):
+            t = dict(r)
+            t["loai"] = "kenh"
+            t["bi_danh"] = ";".join(alias.get(t["ma"], []))
+            t["lien_ket"] = lk.get(t["ma"], {})
+            ket_qua.append(t)
+        for r in conn.execute("SELECT * FROM thi_truong ORDER BY tao_luc, ma"):
+            t = dict(r)
+            t["loai"] = "thi_truong"
+            t["ten_chuan"] = t.pop("ten")
+            t["bi_danh"] = ""
+            t["lien_ket"] = {}
+            ket_qua.append(t)
+        _cache[khoa] = (mtime, ket_qua)
+        return ket_qua
+    finally:
+        conn.close()
+
+
+def doc_danh_muc(duong: Path | str | None = None) -> list[dict]:
+    return _nap(duong)
 
 
 def _cac_ten_khop(thuc_the: dict) -> list[str]:
@@ -74,10 +147,8 @@ def _cac_ten_khop(thuc_the: dict) -> list[str]:
 def tra_thuc_the(
     ten: str, loai: str | None = None, duong: Path | str | None = None
 ) -> dict | None:
-    """Tra thực thể theo tên chuẩn HOẶC bí danh (đã chuẩn hóa cả hai phía).
-
-    Không khớp → None (người gọi phải hỏi lại người dùng, KHÔNG đoán).
-    """
+    """Tra theo tên chuẩn HOẶC bí danh (chuẩn hóa 2 phía). Không khớp → None
+    (người gọi phải hỏi lại người dùng, KHÔNG đoán)."""
     can = chuan_hoa_ten(ten)
     if not can:
         return None
@@ -90,15 +161,166 @@ def tra_thuc_the(
 
 
 def khoa_ung_dung(thuc_the: dict | None, cot: str) -> str | None:
-    """Lấy khóa định danh của thực thể ở một app. Trống/chưa điền → None
-    (app đó chưa nối được thực thể này — nói thẳng, không đoán)."""
-    if not thuc_the or cot not in CAC_COT_KHOA:
+    """Khóa định danh của thực thể ở một app (nhận app_slug hoặc tên cột CSV cũ).
+    Chưa nối → None (nói thẳng, không đoán)."""
+    if not thuc_the:
         return None
-    gia_tri = (thuc_the.get(cot) or "").strip()
+    slug = _COT_CU_SANG_SLUG.get(cot, cot)
+    gia_tri = (thuc_the.get("lien_ket") or {}).get(slug, "").strip()
     return gia_tri or None
 
 
 def liet_ke(loai: str | None = None, duong: Path | str | None = None) -> list[dict]:
-    """Danh sách thực thể (cho dropdown UI). Giữ nguyên thứ tự file."""
     ds = doc_danh_muc(duong)
     return [t for t in ds if t.get("loai") == loai] if loai else ds
+
+
+# ---------- GHI (chỉ gateway gọi; route lo gate + audit) ----------
+
+_BANG = {"kenh": "K", "ngach": "N", "thi_truong": "TT"}
+
+
+def sinh_ma(conn: sqlite3.Connection, loai: str, ten: str) -> str:
+    """Mã máy cấp từ tên: K-OUTLAND-FRANCE… — BẤT BIẾN sau khi lưu, đọc được
+    bằng mắt; trùng thì nối -2/-3 (khuôn chống ghi đè kho tài liệu hệ cũ)."""
+    goc = re.sub(r"[^A-Z0-9]+", "-", chuan_hoa_ten(ten).upper()).strip("-")[:16] or "X"
+    bang = "thi_truong" if loai == "thi_truong" else loai
+    ma = f"{_BANG[loai]}-{goc}"
+    ung = ma
+    i = 2
+    while conn.execute(f"SELECT 1 FROM {bang} WHERE ma=?", (ung,)).fetchone():
+        ung = f"{ma}-{i}"
+        i += 1
+    return ung
+
+
+def _kiem_bi_danh_ranh(conn: sqlite3.Connection, ten: str, ma_bo_qua: str = "") -> None:
+    """Tên/bí danh mới không được đụng tên chuẩn hay alias của thực thể khác."""
+    can = chuan_hoa_ten(ten)
+    r = conn.execute("SELECT thuc_the_ma FROM bi_danh WHERE bi_danh=?", (can,)).fetchone()
+    if r and r["thuc_the_ma"] != ma_bo_qua:
+        raise ValueError(f"'{ten}' đã là bí danh của {r['thuc_the_ma']}")
+
+
+def them_thi_truong(conn, ten: str, ngon_ngu: str = "", ghi_chu: str = "") -> str:
+    ma = sinh_ma(conn, "thi_truong", ten)
+    with conn:
+        conn.execute("INSERT INTO thi_truong VALUES (?,?,?,?,?)",
+                     (ma, ten.strip(), ngon_ngu.strip(), ghi_chu.strip(), _luc()))
+    return ma
+
+
+def them_ngach(conn, ten_chuan: str, trang_thai: str = "thu", ghi_chu: str = "") -> str:
+    if trang_thai not in TRANG_THAI_NGACH:
+        raise ValueError("trạng thái ngách không hợp lệ")
+    _kiem_bi_danh_ranh(conn, ten_chuan)
+    ma = sinh_ma(conn, "ngach", ten_chuan)
+    with conn:
+        conn.execute("INSERT INTO ngach VALUES (?,?,?,?,?)",
+                     (ma, ten_chuan.strip(), trang_thai, ghi_chu.strip(), _luc()))
+    return ma
+
+
+def them_kenh(conn, ten_chuan: str, ngach_ma: str, thi_truong_ma: str = "",
+              channel_id: str = "", loai_kenh: str = "", trang_thai: str = "uom_mam",
+              kenh_goc_ma: str = "", phu_trach: str = "", bo_phan_chu_quan: str = "",
+              ghi_chu: str = "", nguoi_tao: str = "") -> str:
+    """Niche có TRƯỚC kênh — ngach_ma bắt buộc tồn tại (FK chặn từ cửa)."""
+    if trang_thai not in TRANG_THAI_KENH:
+        raise ValueError("trạng thái kênh không hợp lệ")
+    _kiem_bi_danh_ranh(conn, ten_chuan)
+    ma = sinh_ma(conn, "kenh", ten_chuan)
+    with conn:
+        conn.execute(
+            "INSERT INTO kenh VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            (ma, ten_chuan.strip(), channel_id.strip() or None, ngach_ma,
+             thi_truong_ma or None, loai_kenh.strip(), trang_thai,
+             kenh_goc_ma or None, phu_trach.strip(), bo_phan_chu_quan.strip(),
+             ghi_chu.strip(), _luc(), nguoi_tao))
+    return ma
+
+
+_SUA_DUOC = {"kenh": {"ten_chuan", "channel_id", "ngach_ma", "thi_truong_ma",
+                      "loai_kenh", "kenh_goc_ma", "phu_trach", "bo_phan_chu_quan",
+                      "ghi_chu"},
+             "ngach": {"ten_chuan", "trang_thai", "ghi_chu"},
+             "thi_truong": {"ten", "ngon_ngu", "ghi_chu"}}
+
+
+def sua_thuc_the(conn, loai: str, ma_thuc_the: str, **truong) -> None:
+    """Sửa trường vận hành. MÃ KHÔNG BAO GIỜ đổi qua đường này (bất biến —
+    'ma' lọt vào **truong cũng bị whitelist _SUA_DUOC lọc bỏ)."""
+    hop_le = _SUA_DUOC[loai]
+    xau = {k: v for k, v in truong.items() if k in hop_le}
+    if not xau:
+        return
+    if "ten_chuan" in xau:
+        _kiem_bi_danh_ranh(conn, xau["ten_chuan"], ma_bo_qua=ma_thuc_the)
+    if "channel_id" in xau and not (xau["channel_id"] or "").strip():
+        xau["channel_id"] = None
+    bang = "thi_truong" if loai == "thi_truong" else loai
+    dat = ", ".join(f"{k}=?" for k in xau)
+    with conn:
+        cur = conn.execute(f"UPDATE {bang} SET {dat} WHERE ma=?",
+                           (*xau.values(), ma_thuc_the))
+        if cur.rowcount == 0:
+            raise ValueError(f"không có {loai} mã {ma_thuc_the}")
+
+
+def doi_trang_thai_kenh(conn, ma: str, trang_thai: str) -> None:
+    if trang_thai not in TRANG_THAI_KENH:
+        raise ValueError("trạng thái kênh không hợp lệ")
+    with conn:
+        cur = conn.execute("UPDATE kenh SET trang_thai=? WHERE ma=?", (trang_thai, ma))
+        if cur.rowcount == 0:
+            raise ValueError(f"không có kênh mã {ma}")
+
+
+def them_bi_danh(conn, thuc_the_ma: str, bi_danh: str) -> None:
+    can = chuan_hoa_ten(bi_danh)
+    if not can:
+        raise ValueError("bí danh rỗng")
+    r = conn.execute("SELECT thuc_the_ma FROM bi_danh WHERE bi_danh=?", (can,)).fetchone()
+    if r:
+        raise ValueError(f"'{bi_danh}' đã là bí danh của {r['thuc_the_ma']}")
+    with conn:
+        conn.execute("INSERT INTO bi_danh VALUES (?,?,?)", (can, thuc_the_ma, _luc()))
+
+
+def xoa_bi_danh(conn, bi_danh: str) -> None:
+    with conn:
+        conn.execute("DELETE FROM bi_danh WHERE bi_danh=?", (chuan_hoa_ten(bi_danh),))
+
+
+def dat_lien_ket(conn, thuc_the_ma: str, app_slug: str, khoa: str) -> None:
+    """Khóa của thực thể ở một app — rỗng = gỡ liên kết."""
+    with conn:
+        if (khoa or "").strip():
+            conn.execute(
+                "INSERT INTO lien_ket_app VALUES (?,?,?,?) "
+                "ON CONFLICT(thuc_the_ma, app_slug) DO UPDATE SET khoa=excluded.khoa",
+                (thuc_the_ma, app_slug, khoa.strip(), _luc()))
+        else:
+            conn.execute("DELETE FROM lien_ket_app WHERE thuc_the_ma=? AND app_slug=?",
+                         (thuc_the_ma, app_slug))
+
+
+def khai_tu_kenh(conn, ma: str) -> None:
+    """Gỡ mềm — dòng còn nguyên, trạng thái khai_tu (chỉ Owner, route kiểm)."""
+    doi_trang_thai_kenh(conn, ma, "khai_tu")
+
+
+# ---------- CỬA EXCEL (bất biến hiến pháp: text-thuần, Excel là cửa xuất/nhập) ----------
+
+_COT_CSV = ("loai", "ma", "ten_chuan", "bi_danh", "ngach_ma", "thi_truong_ma",
+            "channel_id", "loai_kenh", "trang_thai", "kenh_goc_ma", "phu_trach",
+            "bo_phan_chu_quan", "ngon_ngu", "ghi_chu", "tao_luc")
+
+
+def xuat_csv(duong: Path | str | None = None) -> str:
+    ra = io.StringIO()
+    w = csv.DictWriter(ra, fieldnames=_COT_CSV, extrasaction="ignore")
+    w.writeheader()
+    for t in doc_danh_muc(duong):
+        w.writerow({k: ("" if t.get(k) is None else t.get(k, "")) for k in _COT_CSV})
+    return ra.getvalue()

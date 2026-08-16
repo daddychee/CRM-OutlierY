@@ -14,13 +14,15 @@ _gensalt_goc = bcrypt.gensalt
 def he(tmp_path, monkeypatch):
     monkeypatch.setenv("IAM_DB", str(tmp_path / "iam.db"))
     monkeypatch.setattr(bcrypt, "gensalt", lambda rounds=12: _gensalt_goc(4))
-    f = tmp_path / "danh_muc.csv"
-    f.write_text(
-        "loai,ma,ten_chuan,bi_danh,seo_profile,plannery_project,"
-        "radary_niche,niche_project,mau_ten_bao_cao,ghi_chu\n"
-        "kenh,K-OUTLAND,Outland,outland;outland kr,,,,,outland*,\n"
-        "kenh,K-SPACE,Space,space,,,,,space*,\n", encoding="utf-8")
-    monkeypatch.setenv("DANH_MUC_CSV", str(f))
+    # Đ1 khối đế: danh bạ chuyển CSV → SQLite, seed test qua chính API ghi
+    monkeypatch.setenv("DANH_BA_DB", str(tmp_path / "danh_ba.db"))
+    from nen.common import danh_ba
+    db = danh_ba.ket_noi()
+    ng = danh_ba.them_ngach(db, "Life In")
+    ma = danh_ba.them_kenh(db, "Outland", ng)          # sinh mã K-OUTLAND
+    danh_ba.them_bi_danh(db, ma, "outland kr")
+    danh_ba.them_kenh(db, "Space", ng)
+    db.close()
     conn = iam.ket_noi()
     yield conn
     conn.close()

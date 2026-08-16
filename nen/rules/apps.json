@@ -1,83 +1,198 @@
 {
-  "_ghi_chu": "HỢP ĐỒNG APP — mỗi app tự khai với tầng nền (khuôn manifest Odoo/Nextcloud). Thêm app = thêm mục ở đây + ghi cổng vào docs/PORTS.md TRƯỚC. Mục du_lieu: mọi store phải có danh phận (xem docs/SO_DIA_BA_DU_LIEU.md) — store không khai = không được backup.",
-  "du_lieu_nen": [
-    {"ten": "iam-db", "loai": "sqlite", "duong": "data/nen/iam.db",
-     "muc_quy": "vang", "backup": "sqlite-snapshot", "giu": "vinh-vien"},
-    {"ten": "ket-db", "loai": "sqlite", "duong": "data/nen/ket.db",
-     "muc_quy": "vang", "backup": "sqlite-snapshot", "giu": "vinh-vien"},
-    {"ten": "ket-khoa", "loai": "file-khoa", "duong": "data/nen/ket.key",
-     "muc_quy": "vang", "backup": "copy", "giu": "vinh-vien"},
-    {"ten": "logs", "loai": "kho-file", "duong": "data/logs",
-     "muc_quy": "bac", "backup": "copy", "giu": "60-ngay"},
-    {"ten": "qdrant", "loai": "qdrant", "duong": "data/qdrant/storage/snapshots",
-     "url": "http://127.0.0.1:6343", "muc_quy": "vang",
-     "backup": "api-snapshot", "giu": "7-ban"}
-  ],
-  "apps": [
+ "_ghi_chu": "HỢP ĐỒNG APP — mỗi app tự khai với tầng nền (khuôn manifest Odoo/Nextcloud). Thêm app = thêm mục ở đây + ghi cổng vào docs/PORTS.md TRƯỚC. Mục du_lieu: mọi store phải có danh phận (xem docs/SO_DIA_BA_DU_LIEU.md) — store không khai = không được backup.",
+ "du_lieu_nen": [
+  {
+   "ten": "iam-db",
+   "loai": "sqlite",
+   "duong": "data/nen/iam.db",
+   "muc_quy": "vang",
+   "backup": "sqlite-snapshot",
+   "giu": "vinh-vien"
+  },
+  {
+   "ten": "danh-ba-db",
+   "loai": "sqlite",
+   "duong": "data/nen/danh_ba.db",
+   "muc_quy": "vang",
+   "backup": "sqlite-snapshot",
+   "giu": "vinh-vien"
+  },
+  {
+   "ten": "ket-db",
+   "loai": "sqlite",
+   "duong": "data/nen/ket.db",
+   "muc_quy": "vang",
+   "backup": "sqlite-snapshot",
+   "giu": "vinh-vien"
+  },
+  {
+   "ten": "ket-khoa",
+   "loai": "file-khoa",
+   "duong": "data/nen/ket.key",
+   "muc_quy": "vang",
+   "backup": "copy",
+   "giu": "vinh-vien"
+  },
+  {
+   "ten": "logs",
+   "loai": "kho-file",
+   "duong": "data/logs",
+   "muc_quy": "bac",
+   "backup": "copy",
+   "giu": "60-ngay"
+  },
+  {
+   "ten": "qdrant",
+   "loai": "qdrant",
+   "duong": "data/qdrant/storage/snapshots",
+   "url": "http://127.0.0.1:6343",
+   "muc_quy": "vang",
+   "backup": "api-snapshot",
+   "giu": "7-ban"
+  }
+ ],
+ "apps": [
+  {
+   "slug": "ai-agent",
+   "ten": "AI Agent",
+   "mo_ta": "Hỏi–đáp RAG trích nguồn + nhập/quản kho tài liệu (Qdrant) + kho-thiếu/Q&A bổ sung + nguồn ngoài YouTube (bài học có neo) + lịch sử hội thoại + giám sát.",
+   "cong": 9101,
+   "tien_to": [
+    "/hoi-dap",
+    "/hoi",
+    "/upload",
+    "/kho-tai-lieu",
+    "/kho-thieu",
+    "/nguon",
+    "/nguon-ngoai",
+    "/lich-su",
+    "/giam-sat",
+    "/tai-ban-dep",
+    "/tai-ban-goc",
+    "/tu-khoa-goi-y",
+    "/co-tay",
+    "/phan-hoi",
+    "/kiem-stream",
+    "/static"
+   ],
+   "health": "/health",
+   "phien_ban": "2.0.0",
+   "chay": {
+    "kieu": "uvicorn",
+    "app_dir": "apps/ai-agent",
+    "module": "src.main:app"
+   },
+   "du_lieu": [
     {
-      "slug": "ai-agent",
-      "ten": "AI Agent",
-      "mo_ta": "Hỏi–đáp RAG trích nguồn + nhập/quản kho tài liệu (Qdrant) + kho-thiếu/Q&A bổ sung + nguồn ngoài YouTube (bài học có neo) + lịch sử hội thoại + giám sát.",
-      "cong": 9101,
-      "tien_to": ["/hoi-dap", "/hoi", "/upload", "/kho-tai-lieu", "/kho-thieu",
-                   "/nguon", "/nguon-ngoai", "/lich-su", "/giam-sat",
-                   "/tai-ban-dep", "/tai-ban-goc", "/tu-khoa-goi-y",
-                   "/co-tay", "/phan-hoi", "/kiem-stream", "/static"],
-      "health": "/health",
-      "phien_ban": "2.0.0",
-      "chay": {"kieu": "uvicorn", "app_dir": "apps/ai-agent", "module": "src.main:app"},
-      "du_lieu": [
-        {"ten": "kho-tai-lieu", "loai": "kho-file", "duong": "data/ai-agent/kho/kho-tai-lieu",
-         "muc_quy": "vang", "backup": "copy", "giu": "vinh-vien",
-         "ghi_chu": "File gốc 8 ngăn + _catalog.csv + sổ vận hành + youtube_cookies.txt (NHẠY — write-only như key)"},
-        {"ten": "lich-su-hoi-thoai", "loai": "json", "duong": "data/ai-agent/db/lich-su",
-         "muc_quy": "vang", "backup": "copy", "giu": "vinh-vien",
-         "ghi_chu": "Mỗi user 1 file JSON ghi nguyên tử — nội dung hỏi-đáp, không đưa ra ngoài"}
-      ]
+     "ten": "kho-tai-lieu",
+     "loai": "kho-file",
+     "duong": "data/ai-agent/kho/kho-tai-lieu",
+     "muc_quy": "vang",
+     "backup": "copy",
+     "giu": "vinh-vien",
+     "ghi_chu": "File gốc 8 ngăn + _catalog.csv + sổ vận hành + youtube_cookies.txt (NHẠY — write-only như key)"
     },
     {
-      "slug": "data-analytics",
-      "ten": "Data Analytics",
-      "mo_ta": "Chẩn đoán số liệu kênh YouTube — engine 4 trục, 7 phán quyết, báo cáo 9 mục, lịch sử dùng chung.",
-      "cong": 9102,
-      "tien_to": ["/chan-doan", "/bao-cao-lich-su", "/bao-cao-goc", "/api/bao-cao-lich-su"],
-      "health": "/health",
-      "phien_ban": "2.0.0",
-      "chay": {"kieu": "uvicorn", "app_dir": "apps/data-analytics", "module": "src.main:app"},
-      "du_lieu": [
-        {"ten": "bao-cao-lich-su", "loai": "json", "duong": "data/data-analytics/db/bao-cao-lich-su",
-         "muc_quy": "vang", "backup": "copy", "giu": "vinh-vien"},
-        {"ten": "bao-cao-goc", "loai": "kho-file", "duong": "data/data-analytics/kho/bao-cao-goc",
-         "muc_quy": "vang", "backup": "copy", "giu": "vinh-vien"}
-      ]
-    },
-    {
-      "slug": "to-chuc",
-      "ten": "Organization",
-      "mo_ta": "KPI tự động 4 nguồn chỉ-đọc + chấm công hiện diện + trang NAS + Vault tài khoản số (chỉ Owner).",
-      "cong": 9103,
-      "tien_to": ["/kpi", "/nas", "/api/nhip", "/api/nhip-thoat", "/vault"],
-      "health": "/health",
-      "phien_ban": "2.0.0",
-      "chay": {"kieu": "uvicorn", "app_dir": "apps/to-chuc", "module": "src.main:app"},
-      "du_lieu": [
-        {"ten": "cham-cong", "loai": "json", "duong": "data/to-chuc/db/cham-cong",
-         "muc_quy": "vang", "backup": "copy", "giu": "vinh-vien"},
-        {"ten": "vault", "loai": "kho-file", "duong": "data/vault",
-         "muc_quy": "vang", "backup": "copy", "giu": "vinh-vien",
-         "ghi_chu": "CHỈ BẢN MÃ vault.enc + hash safekey + audit.csv — backup nhận bản mã, đúng lệ hệ cũ"}
-      ]
-    },
-    {
-      "slug": "app-mau",
-      "ten": "Sample App",
-      "mo_ta": "App 50 dòng chứng minh hợp đồng app: nhận claims, /health, proxy.",
-      "cong": 9190,
-      "tien_to": [],
-      "health": "/health",
-      "phien_ban": "0.1.0",
-      "chay": {"kieu": "uvicorn", "app_dir": "apps/app-mau/src", "module": "main:app"},
-      "du_lieu": []
+     "ten": "lich-su-hoi-thoai",
+     "loai": "json",
+     "duong": "data/ai-agent/db/lich-su",
+     "muc_quy": "vang",
+     "backup": "copy",
+     "giu": "vinh-vien",
+     "ghi_chu": "Mỗi user 1 file JSON ghi nguyên tử — nội dung hỏi-đáp, không đưa ra ngoài"
     }
-  ]
+   ]
+  },
+  {
+   "slug": "data-analytics",
+   "ten": "Data Analytics",
+   "mo_ta": "Chẩn đoán số liệu kênh YouTube — engine 4 trục, 7 phán quyết, báo cáo 9 mục, lịch sử dùng chung.",
+   "cong": 9102,
+   "tien_to": [
+    "/chan-doan",
+    "/bao-cao-lich-su",
+    "/bao-cao-goc",
+    "/api/bao-cao-lich-su"
+   ],
+   "health": "/health",
+   "phien_ban": "2.0.0",
+   "chay": {
+    "kieu": "uvicorn",
+    "app_dir": "apps/data-analytics",
+    "module": "src.main:app"
+   },
+   "du_lieu": [
+    {
+     "ten": "bao-cao-lich-su",
+     "loai": "json",
+     "duong": "data/data-analytics/db/bao-cao-lich-su",
+     "muc_quy": "vang",
+     "backup": "copy",
+     "giu": "vinh-vien"
+    },
+    {
+     "ten": "bao-cao-goc",
+     "loai": "kho-file",
+     "duong": "data/data-analytics/kho/bao-cao-goc",
+     "muc_quy": "vang",
+     "backup": "copy",
+     "giu": "vinh-vien"
+    }
+   ]
+  },
+  {
+   "slug": "to-chuc",
+   "ten": "Organization",
+   "mo_ta": "KPI tự động 4 nguồn chỉ-đọc + chấm công hiện diện + trang NAS + Vault tài khoản số (chỉ Owner).",
+   "cong": 9103,
+   "tien_to": [
+    "/kpi",
+    "/nas",
+    "/api/nhip",
+    "/api/nhip-thoat",
+    "/vault"
+   ],
+   "health": "/health",
+   "phien_ban": "2.0.0",
+   "chay": {
+    "kieu": "uvicorn",
+    "app_dir": "apps/to-chuc",
+    "module": "src.main:app"
+   },
+   "du_lieu": [
+    {
+     "ten": "cham-cong",
+     "loai": "json",
+     "duong": "data/to-chuc/db/cham-cong",
+     "muc_quy": "vang",
+     "backup": "copy",
+     "giu": "vinh-vien"
+    },
+    {
+     "ten": "vault",
+     "loai": "kho-file",
+     "duong": "data/vault",
+     "muc_quy": "vang",
+     "backup": "copy",
+     "giu": "vinh-vien",
+     "ghi_chu": "CHỈ BẢN MÃ vault.enc + hash safekey + audit.csv — backup nhận bản mã, đúng lệ hệ cũ"
+    }
+   ]
+  },
+  {
+   "slug": "app-mau",
+   "ten": "Sample App",
+   "mo_ta": "App 50 dòng chứng minh hợp đồng app: nhận claims, /health, proxy.",
+   "cong": 9190,
+   "tien_to": [],
+   "health": "/health",
+   "phien_ban": "0.1.0",
+   "chay": {
+    "kieu": "uvicorn",
+    "app_dir": "apps/app-mau/src",
+    "module": "main:app"
+   },
+   "du_lieu": []
+  }
+ ]
 }
