@@ -57,3 +57,49 @@ tien_to của tri-thuc không viết lại hộ.
 - Tên thư mục kỹ thuật (`tri-thuc`, `to-chuc`, `app-mau`) — KHÔNG được xuất hiện
   trên màn hình người dùng; nhãn hiển thị lấy theo bảng mục 2.
 - `app-mau` — khuôn cho dev, không bao giờ hiện trên UI.
+
+## 5. KHU QUẢN TRỊ NỀN (chốt Owner 16/08/2026 — khối đế có giao diện riêng)
+
+Nguyên tắc: **mỗi trang MỘT việc, mỗi việc MỘT đường dẫn** — chấm dứt kiểu
+/quan-tri gánh 4 chức năng. Trang /quan-tri, /cai-dat, /suc-khoe cũ NGHỈ HƯU
+(redirect sang đường mới, giữ 1 nhịp chuyển tiếp rồi xóa).
+
+| Trang | Đường | Việc | Ai vào |
+|---|---|---|---|
+| Tổng quan đế | /nen | dịch vụ sống/chết + đế đã nạp gì: tài khoản theo bộ phận×level, key LLM có/chưa, số thực thể danh bạ, backup gần nhất | Owner |
+| Tài khoản | /nen/tai-khoan | thêm/xóa/sửa tài khoản IAM | Owner (+giỏ ủy quyền quan_tai_khoan) |
+| Nhân sự | /nen/nhan-su | hồ sơ + duyệt hồ sơ | **Owner + Hành chính Nhân sự L3+** (đúng V1) (+giỏ duyet_ho_so) |
+| Phân quyền | /nen/phan-quyen | bảng TICK app × tính năng, ô tick lẻ đè mặc định + bật/tắt Admin ủy quyền | chỉ Owner (giỏ owner tuyệt đối) |
+| Cấu hình LLM | /nen/cau-hinh | két: provider/model/key theo vai | chỉ Owner |
+| Dữ liệu & backup | /nen/du-lieu | sổ địa bạ sống từ apps.json + tuổi backup + backup tay | Owner |
+| Nhật ký | /nen/nhat-ky | vết quyền + đăng nhập | Owner |
+| Ứng dụng | /nen/ung-dung | hợp đồng app: cổng, health, phiên bản, tiền tố | Owner |
+
+Sidebar KHÔNG đổi hình dạng — chỉ đổi đích: Nhân sự → /nen/nhan-su · User →
+/nen/tai-khoan · Phân quyền → /nen/phan-quyen · Setting → /nen/cau-hinh ·
+Sức khỏe hệ → /nen (tổng quan đế nuốt trang suc-khoe cũ).
+
+## 6. PHÂN QUYỀN — luật đối chiếu V1 (chốt 16/08/2026)
+
+- Nhân sự: Owner + HR (Hành chính Nhân sự) L3+ — V2 từng khóa mất HR, là LỖI.
+- User / Phân quyền / Setting / Giám sát / Vault: chỉ Owner.
+- Datafeed / Kho tài liệu / Kho cần bổ sung / Nguồn ngoài: Manager+ (L4).
+- Data Analytics: Kinh doanh L2+ hoặc L4+ mọi bộ phận.
+- **Giỏ ỦY QUYỀN giữ nhưng mặc định TẮT** (Owner chốt): không bật cho ai thì
+  hành vi = V1 đúng 100%; bật từng người ở trang Phân quyền, mọi thao tác có
+  vết nhat_ky_quyen. Giỏ Owner tuyệt đối (vault, két, bảng phân quyền, xóa cứng
+  tài liệu) KHÔNG ủy quyền được — không tick nào đè.
+
+## 7. MIỀN (chốt Owner 16/08/2026 — 2 giai đoạn)
+
+- **Giai đoạn test (làm ngay):** 2 miền qua Caddy — `outliery.test` (cổng chính:
+  đăng nhập + chat + app, đường /app/... như nay) và `quantri.outliery.test`
+  (khu nền mục 5; cùng handler với /nen — vào bằng IP vẫn chạy). Máy test thêm
+  2 dòng hosts. Cookie đăng nhập đặt Domain miền cha → một đăng nhập chạy mọi
+  miền con. HTTPS Caddy tls internal.
+- **Giai đoạn thay thế:** bật vai trò DNS Server của Windows Server, zone
+  `outliery.lan` wildcard trỏ IP máy chủ, DHCP phát DNS — máy nhân viên không
+  cài gì. Lộ trình sau đó: mỗi app một miền con (chat./data./nas./quantri.) để
+  BỎ HẲN tầng viết-lại-đường-dẫn trong proxy; nếu công ty có domain thật thì
+  thay outliery.lan bằng domain thật + Let's Encrypt (hết cảnh báo trình duyệt).
+- Chưa chuyển máy nhân viên nào sang miền test — hệ thật C:\OutlierY không đụng.
