@@ -1,5 +1,5 @@
 {
-  "_ghi_chu": "LUẬT QUYỀN NGOÀI CODE (P2). Hai giỏ quản trị: gio_owner_tuyet_doi = chỉ Owner thật (level 5) — KHÔNG ủy quyền được. gio_uy_quyen = Owner HOẶC tài khoản được bật admin_uy_quyen. Mục apps: điều kiện vào + ánh xạ level→vai gửi sang app (X-Remote-Role). Ô tick lẻ (quyen_override trong iam.db) THẮNG luật mặc định ở đây — trừ giỏ Owner tuyệt đối, không gì đè được.",
+  "_ghi_chu": "LUẬT QUYỀN NGOÀI CODE (Permissions v2 — DE.md mục 14, mockup P1-P5). Hai giỏ quản trị: gio_owner_tuyet_doi = chỉ Owner thật (level 5) — KHÔNG ủy quyền được. gio_uy_quyen = khu chức năng: Owner HOẶC tài khoản bật admin_uy_quyen (+ luật bộ phận riêng ở gateway). Mỗi app khai HÀNH ĐỘNG THẬT dạng {ma: {nhan, mo_ta, min_level, bo_phan?}} — nhan/mo_ta là metadata UI, co_quyen chỉ đọc min_level/bo_phan; 'vao' là hành động vào app. Ô tick lẻ (quyen_override, PHẢI có lý do) THẮNG cấp truy cập THẮNG luật mặc định — trừ giỏ Owner tuyệt đối. Vai X-Remote-Role dịch từ hành động dừng-tại-hit-đầu (quan_tri→admin · xoa/toan_quyen→vai_xoa · sua/tao/them→leader · còn lại viewer); app chưa khai hành động → level 5 admin / 4 manager / 3 leader / viewer. DANH PHÁP: 'owner' không còn là tên vai app.",
   "gio_owner_tuyet_doi": [
     "vault",
     "ket_cau_hinh",
@@ -9,31 +9,61 @@
   "gio_uy_quyen": [
     "quan_tai_khoan",
     "duyet_ho_so",
-    "nap_tai_lieu",
-    "duyet_qa",
-    "giam_sat",
     "nhan_su",
     "ke_toan"
   ],
   "apps": {
     "app-mau": {
-      "vao": { "min_level": 1 },
-      "vai": { "5": "owner", "4": "manager", "3": "leader", "mac_dinh": "viewer" }
+      "vao": { "min_level": 1 }
     },
     "ai-agent": {
       "vao": { "min_level": 1 },
-      "vai": { "5": "owner", "4": "manager", "3": "leader", "mac_dinh": "viewer" },
-      "_ghi_chu": "Gate tinh trong app theo level claims: /upload + /tu-khoa-goi-y + /kho-thieu* + /nguon* Manager+ (>=4); /giam-sat + sửa/xóa kho + duyệt Q&A CHỈ Owner. Khi bật tick lẻ IAM: chuyển các gate này về co_quyen() tầng nền (ghi chú của agent di trú)."
+      "nap_tai_lieu": {
+        "nhan": "Nạp tài liệu",
+        "mo_ta": "Upload kho tri thức + từ khóa gợi ý",
+        "min_level": 4
+      },
+      "nguon_ngoai": {
+        "nhan": "Nguồn ngoài",
+        "mo_ta": "Nạp video/transcript → bài học kinh nghiệm",
+        "min_level": 4
+      },
+      "giam_sat": {
+        "nhan": "Giám sát",
+        "mo_ta": "Cây giám sát tri thức + lịch sử mọi người",
+        "min_level": 5
+      },
+      "duyet_qa": {
+        "nhan": "Duyệt Q&A",
+        "mo_ta": "Duyệt Q&A bổ sung vào kho",
+        "min_level": 5
+      },
+      "quan_tri": {
+        "nhan": "Quản trị",
+        "mo_ta": "Sửa/xóa tài liệu kho + cấu hình app",
+        "min_level": 5
+      }
     },
     "data-analytics": {
       "vao": { "min_level": 2, "bo_phan": ["Kinh doanh"] },
-      "vai": { "5": "owner", "4": "manager", "3": "leader", "mac_dinh": "viewer" }
+      "quan_tri": {
+        "nhan": "Quản trị",
+        "mo_ta": "Xóa báo cáo + sửa luật chẩn đoán",
+        "min_level": 5
+      }
     },
     "to-chuc": {
       "vao": { "min_level": 1 },
-      "vai": { "5": "owner", "4": "manager", "3": "leader", "mac_dinh": "viewer" },
-      "_ghi_chu": "Gate tinh nằm TRONG app: /kpi Manager+ (level>=4), /vault* CHỈ Owner (khớp giỏ owner tuyệt đối), /nas + /api/nhip* mọi người."
+      "kpi": {
+        "nhan": "KPI Review",
+        "mo_ta": "Bảng KPI + chốt công kỳ",
+        "min_level": 4
+      },
+      "quan_tri": {
+        "nhan": "Quản trị",
+        "mo_ta": "Cấu hình app tổ chức",
+        "min_level": 5
+      }
     }
-  },
-  "vai_mac_dinh": { "5": "owner", "4": "manager", "3": "leader", "mac_dinh": "viewer" }
+  }
 }

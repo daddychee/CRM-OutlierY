@@ -158,10 +158,13 @@ def test_lay_user_unquote_dept():
 
 
 def _login(ten, level):
+    # X-Remote-Actions mô phỏng gateway (Permissions v2): luật thường quy phát
+    # cờ 'kpi' cho Manager+ — gate /kpi giờ đọc cờ, không so level trong app.
     return TestClient(app, headers={"X-Remote-User": ten,
                                     "X-Remote-Level": str(level),
                                     "X-Remote-Role": "manager",
-                                    "X-Remote-Dept": "Kinh%20doanh"})
+                                    "X-Remote-Dept": "Kinh%20doanh",
+                                    "X-Remote-Actions": "kpi" if level >= 4 else ""})
 
 
 def _iam_seed():

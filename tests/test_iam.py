@@ -91,7 +91,7 @@ def test_tick_le_thang_luat_mac_dinh(conn):
     iam.tao_tai_khoan(conn, ow, "nv", "123456", "Kinh doanh", 2)
     nv = iam.claims_cua(iam.lay_tai_khoan(conn, "nv"))
     assert not iam.co_quyen(nv, "nap_tai_lieu", conn=conn)          # mặc định: không
-    iam.gan_override(conn, ow, "nv", "*", "nap_tai_lieu", True)     # tick cho
+    iam.gan_override(conn, ow, "nv", "*", "nap_tai_lieu", True, "ly do test")
     assert iam.co_quyen(nv, "nap_tai_lieu", conn=conn)
     iam.gan_override(conn, ow, "nv", "*", "nap_tai_lieu", None)     # gỡ tick
     assert not iam.co_quyen(nv, "nap_tai_lieu", conn=conn)
@@ -103,7 +103,7 @@ def test_vao_app_theo_min_level(conn):
     nv = iam.claims_cua(iam.lay_tai_khoan(conn, "nv"))
     assert iam.co_quyen(nv, "vao", "app-mau", conn)   # min_level 1
     assert iam.vai_cho_app(nv, "app-mau") == "viewer"
-    assert iam.vai_cho_app(ow, "app-mau") == "owner"
+    assert iam.vai_cho_app(ow, "app-mau") == "admin"   # danh pháp mới — hết vai "owner"
 
 
 # ---------- ba luật sắt ----------
@@ -270,3 +270,77 @@ def test_nhap_users_txt_giu_hash_va_level(conn, tmp_path):
     assert iam.lay_tai_khoan(conn, "nv-cu")["phai_doi_mk"] == 1
     n2, b2 = nhap(str(f))                                     # idempotent
     assert (n2, b2) == (0, 2)
+
+
+# ---------- Permissions v2 (DE.md mục 14 — acting, hành động app, vai admin) ----------
+
+def _nv(conn, ow, ten="nv", bo_phan="Kinh doanh", level=2):
+    iam.tao_tai_khoan(conn, ow, ten, "123456", bo_phan, level)
+    return iam.claims_cua(iam.lay_tai_khoan(conn, ten))
+
+
+def test_hoi_quy_khong_le_khong_acting_y_nguyen(conn):
+    """HỒI QUY QUAN TRỌNG NHẤT (luật ghim V2): sổ override RỖNG + không acting →
+    co_quyen/vai trên ma trận level×bộ phận×app phải Y HỆT luật thường quy."""
+    ow = _owner(conn)
+    ca = [("Kinh doanh", 2), ("Kinh doanh", 4), ("Hành chính Nhân sự", 3),
+          ("Vận hành - Sản xuất", 1), ("", 2)]      # ca cuối: user "trắng" (luật #4)
+    for i, (bp, lv) in enumerate(ca):
+        u = _nv(conn, ow, f"u{i}", bp, lv)
+        u = iam.hieu_luc(u, conn)                    # không acting → giữ nguyên
+        assert u["level"] == lv and "level_that" not in u
+        # vào app theo min_level + bộ phận (L4+ bỏ rào) — y luật cũ
+        assert iam.co_quyen(u, "vao", "ai-agent", conn) is True
+        assert iam.co_quyen(u, "vao", "data-analytics", conn) == \
+            (lv >= 4 or (bp == "Kinh doanh" and lv >= 2))
+        # hành động app: mặc định theo min_level trong luật
+        assert iam.co_quyen(u, "nap_tai_lieu", "ai-agent", conn) == (lv >= 4)
+        assert iam.co_quyen(u, "giam_sat", "ai-agent", conn) is False
+        assert iam.co_quyen(u, "kpi", "to-chuc", conn) == (lv >= 4)
+    # Owner: đủ mọi hành động + vai admin
+    assert iam.cac_hanh_dong(ow, "ai-agent", conn) == \
+        ["nap_tai_lieu", "nguon_ngoai", "giam_sat", "duyet_qa", "quan_tri"]
+    assert iam.vai_cho_app(ow, "ai-agent", conn) == "admin"
+
+
+def test_vai_dich_tu_hanh_dong_va_tick_quan_tri(conn):
+    """Vai dừng-tại-hit-đầu: tick quan_tri cho L4 → admin ĐÚNG app đó, app khác
+    không; header không còn vai 'owner'."""
+    ow = _owner(conn)
+    ql = _nv(conn, ow, "ql", "Kinh doanh", 4)
+    assert iam.vai_cho_app(ql, "ai-agent", conn) == "viewer"    # không nấc nào khớp
+    assert iam.vai_cho_app(ql, "app-mau", conn) == "manager"    # fallback level
+    iam.gan_override(conn, ow, "ql", "ai-agent", "quan_tri", True, "thay Owner quản kho")
+    assert iam.vai_cho_app(ql, "ai-agent", conn) == "admin"     # tick → admin app đó
+    assert iam.vai_cho_app(ql, "to-chuc", conn) == "viewer"     # app khác không lây
+    assert "quan_tri" in iam.cac_hanh_dong(ql, "ai-agent", conn)
+    for slug in ("ai-agent", "to-chuc", "data-analytics", "app-mau"):
+        assert iam.vai_cho_app(ow, slug, conn) != "owner"       # danh pháp mới
+        assert iam.vai_cho_app(ql, slug, conn) != "owner"
+
+
+def test_acting_doi_mac_dinh_override_van_thang(conn):
+    ow = _owner(conn)
+    nv = _nv(conn, ow, "nv", "Kinh doanh", 2)
+    iam.dat_cap_truy_cap(conn, ow, "nv", 4, "thay quyền tạm")
+    hl = iam.hieu_luc(nv, conn)
+    assert hl["level"] == 4 and hl["level_that"] == 2           # acting nâng mặc định
+    assert iam.co_quyen(hl, "nap_tai_lieu", "ai-agent", conn)   # L4 hiệu lực → có
+    iam.gan_override(conn, ow, "nv", "ai-agent", "nap_tai_lieu", False, "đang bàn giao")
+    assert not iam.co_quyen(hl, "nap_tai_lieu", "ai-agent", conn)  # OVERRIDE > acting
+    iam.dat_cap_truy_cap(conn, ow, "nv", None)                  # gỡ acting
+    assert iam.hieu_luc(nv, conn)["level"] == 2
+
+
+def test_acting_khong_ap_len_owner_va_ly_do_bat_buoc(conn):
+    ow = _owner(conn)
+    iam.tao_tai_khoan(conn, ow, "sep2", "123456", "Ban quản trị", 5)
+    nv = _nv(conn, ow, "nv", "Kinh doanh", 2)
+    with pytest.raises(iam.LoiIam):
+        iam.dat_cap_truy_cap(conn, ow, "sep2", 2)               # L5 không hạ được
+    assert iam.hieu_luc(ow, conn)["level"] == 5                 # Owner miễn nhiễm
+    with pytest.raises(iam.LoiIam):
+        iam.gan_override(conn, ow, "nv", "ai-agent", "nap_tai_lieu", True, "")
+    with pytest.raises(iam.LoiIam):
+        iam.gan_override(conn, ow, "nv", "ai-agent", "nap_tai_lieu", False, "   ")
+    iam.gan_override(conn, ow, "nv", "ai-agent", "nap_tai_lieu", None)  # gỡ: không cần

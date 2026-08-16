@@ -122,3 +122,18 @@ def test_menu_gon_giu_lich_su_bo_kho_thieu(tmp_path, monkeypatch):
     assert c_nv.get("/giam-sat").status_code == 403     # giám sát: chặn
     # route /kho-thieu GIỮ NGUYÊN cho bookmark/link cũ — chỉ bỏ khỏi menu
     assert _login("ql_kd").get("/kho-thieu").status_code == 200
+
+
+def test_gate_giam_sat_theo_co_gateway(tmp_path, monkeypatch):
+    """Permissions v2: /giam-sat gate bằng CỜ 'giam_sat' trong X-Remote-Actions —
+    app CHỈ TIN CỜ gateway: tick lẻ cho L2 vẫn vào được; Owner mà gateway không
+    phát cờ (header thiếu) → fail-closed 403."""
+    _users(tmp_path, monkeypatch)
+    _gieo()
+    # L2 được tick lẻ giam_sat (gateway phát cờ) → vào được dù level thấp
+    r = client_claims(app, "nv_kd", "Kinh doanh", 2,
+                      hanh_dong="giam_sat").get("/giam-sat")
+    assert r.status_code == 200
+    # Owner nhưng KHÔNG có cờ (thiếu header/bị chặn) → 403, app không tự tính
+    r = client_claims(app, "sep", "Kinh doanh", 5, hanh_dong="").get("/giam-sat")
+    assert r.status_code == 403

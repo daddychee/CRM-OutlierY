@@ -214,8 +214,8 @@ def test_nhan_su_nhan_vien_thuong_403(client):
 
 
 def test_phan_quyen_tick_de_luat_mac_dinh(client, iam_db):
-    """Trang Phân quyền: tick CHO PHÉP đè luật mặc định, gỡ tick là về mặc định
-    — kiểm bằng chính co_quyen (một cửa kiểm quyền cả hệ)."""
+    """Trang Phân quyền: tick CHO PHÉP đè luật mặc định (PHẢI có lý do — P5),
+    gỡ tick là về mặc định — kiểm bằng chính co_quyen (một cửa kiểm quyền cả hệ)."""
     _login(client)
     conn = iam.ket_noi()
     nv = iam.claims_cua(iam.lay_tai_khoan(conn, "nhanvien"))
@@ -224,13 +224,65 @@ def test_phan_quyen_tick_de_luat_mac_dinh(client, iam_db):
     r = client.post("/general/permissions/grant", data={
         "ten": "nhanvien", "app_slug": "data-analytics",
         "hanh_dong": "vao", "gia_tri": "chan"})
+    assert "LÝ DO" in r.text                                    # thiếu lý do → chặn
+    r = client.post("/general/permissions/grant", data={
+        "ten": "nhanvien", "app_slug": "data-analytics",
+        "hanh_dong": "vao", "gia_tri": "chan", "ly_do": "tạm khóa bàn giao"})
     assert "Set data-analytics/vao" in r.text
     assert not iam.co_quyen(nv, "vao", "data-analytics", conn)  # tick CHẶN thắng mặc định
+    trang = client.get("/general/permissions").text             # P5: sổ toàn hệ có lý do
+    assert "tạm khóa bàn giao" in trang
     client.post("/general/permissions/grant", data={
         "ten": "nhanvien", "app_slug": "data-analytics",
         "hanh_dong": "vao", "gia_tri": "ke_thua"})
     assert iam.co_quyen(nv, "vao", "data-analytics", conn)      # gỡ tick về mặc định
     conn.close()
+
+
+def test_phan_quyen_acting_va_trang_p2_p4(client, iam_db):
+    """P3 acting qua trang: L2 → L4 đổi mặc định ngay (X-Remote-Level hiệu lực);
+    Owner không hạ được; trang render P2/P4 cho người được chọn."""
+    _login(client)
+    r = client.post("/general/permissions/acting", data={
+        "ten": "nhanvien", "cap": "4", "ly_do": "thay quyền kỳ nghỉ"})
+    assert "Acting level for nhanvien = 4" in r.text
+    conn = iam.ket_noi()
+    nv = iam.hieu_luc(iam.claims_cua(iam.lay_tai_khoan(conn, "nhanvien")), conn)
+    assert nv["level"] == 4 and nv["level_that"] == 2
+    conn.close()
+    trang = client.get("/general/permissions?ten=nhanvien").text
+    assert "acting: L2 → L4" in trang                           # badge P3
+    assert "Nạp tài liệu" in trang and "KPI Review" in trang    # P4 hành động thật
+    r = client.post("/general/permissions/acting", data={       # Owner không hạ được
+        "ten": "owner-test", "cap": "2"})
+    assert "chính mình" in r.text or "Owner" in r.text
+    client.post("/general/permissions/acting", data={"ten": "nhanvien", "cap": ""})
+    conn = iam.ket_noi()
+    assert iam.hieu_luc(iam.claims_cua(
+        iam.lay_tai_khoan(conn, "nhanvien")), conn)["level"] == 2
+    conn.close()
+
+
+def test_proxy_tiem_x_remote_actions(client, iam_db, monkeypatch):
+    """Gateway tính hành động được phép của app đang vào và tiêm X-Remote-Actions
+    (app CHỈ TIN CỜ). Bắt tại chỗ nối chuyen_tiep — không cần app sống."""
+    import nen.gateway.main as gw
+    bat: dict = {}
+
+    async def _gia(request, **kw):
+        bat.update(kw)
+        from fastapi.responses import Response as R
+        return R("ok")
+
+    monkeypatch.setattr(gw, "chuyen_tiep", _gia)
+    _login(client)
+    client.get("/app/ai-agent/hoi-dap")
+    assert bat["hanh_dong"] == ["nap_tai_lieu", "nguon_ngoai", "giam_sat",
+                                "duyet_qa", "quan_tri"]         # Owner đủ 5
+    assert bat["vai"] == "admin"
+    _login(client, "nhanvien", "mk-nv-6")
+    client.get("/app/ai-agent/hoi-dap")
+    assert bat["hanh_dong"] == [] and bat["vai"] == "viewer"    # KD L2: rỗng, fail-closed
 
 
 def test_phan_quyen_khong_tick_duoc_gio_owner(client):
@@ -276,7 +328,9 @@ def test_proxy_tiem_claims_va_vut_header_gia(client, app_mau_server):
     assert r.status_code == 200
     assert "owner-test" in r.text        # claims thật từ session gateway
     assert "hacker" not in r.text        # header giả không lọt qua
-    assert "owner" in r.text             # vai theo phan_quyen.json
+    # Danh pháp Permissions v2: vai cao nhất là ADMIN — header không còn phát
+    # vai "owner" (chữ đó chỉ còn nghĩa Owner hệ OUTLIERY).
+    assert "Vai: <b>admin</b>" in r.text
 
 
 def test_proxy_phat_x_remote_apps(client, app_mau_server):
@@ -368,8 +422,8 @@ def test_proxy_phat_co_hr_finance(client, app_mau_server, iam_db):
     assert ",hr" not in t and "finance" not in t
 
     conn = iam.ket_noi()                                 # tick lẻ thắng mặc định
-    iam.gan_override(conn, ow, "nhanvien", "*", "ke_toan", True)   # CHO kiêm nhiệm
-    iam.gan_override(conn, ow, "hr2", "*", "nhan_su", False)       # CHẶN đè luật HR
+    iam.gan_override(conn, ow, "nhanvien", "*", "ke_toan", True, "kiêm nhiệm Kế toán")
+    iam.gan_override(conn, ow, "hr2", "*", "nhan_su", False, "chặn thử đè luật HR")
     conn.close()
     _login(client, "nhanvien", "mk-nv-6")
     assert "finance" in client.get("/app/app-mau/").text

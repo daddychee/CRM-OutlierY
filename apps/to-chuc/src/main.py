@@ -111,9 +111,12 @@ def lay_user(x_remote_user: str = Header(""), x_remote_level: str = Header("0"),
             "bo_phan": unquote(x_remote_dept or "")}
 
 
-def yeu_cau_manager(user: dict = Depends(lay_user)) -> dict:
-    """Trang KPI: Manager+ (level >= 4) — giữ ý gate trang Nhân sự hệ cũ."""
-    if user["level"] < 4:
+def yeu_cau_manager(user: dict = Depends(lay_user),
+                    x_remote_actions: str = Header("")) -> dict:
+    """Trang KPI: hành động 'kpi' trong X-Remote-Actions (Permissions v2 — mặc
+    định Manager+ theo luật tầng nền, tick lẻ/acting chảy sang ngay lượt sau).
+    App CHỈ TIN CỜ gateway phát; thiếu header → fail-closed."""
+    if "kpi" not in _cac_khu(x_remote_actions):
         raise HTTPException(403, "Trang KPI dành cho Quản lý trở lên (level 4+).")
     return user
 

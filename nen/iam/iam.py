@@ -411,8 +411,11 @@ def liet_ke_nguoi(conn: sqlite3.Connection) -> list[dict]:
 # ---------- quyền ----------
 
 def gan_override(conn: sqlite3.Connection, ai_lam: dict, ten_dich: str,
-                 app_slug: str, hanh_dong: str, cho_phep: bool | None) -> None:
-    """Tick ô quyền lẻ. cho_phep=None là gỡ tick. Tick giỏ Owner tuyệt đối → chặn."""
+                 app_slug: str, hanh_dong: str, cho_phep: bool | None,
+                 ly_do: str = "") -> None:
+    """Tick ô quyền lẻ. cho_phep=None là gỡ tick (không cần lý do). Đặt cho/chặn
+    BẮT BUỘC lý do (mockup P5 — mọi ngoại lệ tra được vì sao). Tick giỏ Owner
+    tuyệt đối → chặn."""
     luat = _luat()
     if hanh_dong in luat.get("gio_owner_tuyet_doi", []):
         raise LoiIam("Quyền này thuộc giỏ Owner tuyệt đối — không tick được.")
@@ -421,16 +424,67 @@ def gan_override(conn: sqlite3.Connection, ai_lam: dict, ten_dich: str,
     _kiem_khong_tu_sua(ai_lam, ten_dich)
     tk = lay_tai_khoan(conn, ten_dich)
     _kiem_khong_dung_owner(ai_lam, tk)
+    if cho_phep is not None and not ly_do.strip():
+        raise LoiIam("Ngoại lệ phải có LÝ DO (để sổ P5 tra được vì sao).")
     with conn:
         conn.execute(
             "DELETE FROM quyen_override WHERE ten_tai_khoan=? AND app_slug=? AND hanh_dong=?",
             (ten_dich, app_slug, hanh_dong))
         if cho_phep is not None:
             conn.execute(
-                "INSERT INTO quyen_override (ten_tai_khoan, app_slug, hanh_dong, cho_phep) "
-                "VALUES (?,?,?,?)", (ten_dich, app_slug, hanh_dong, int(cho_phep)))
+                "INSERT INTO quyen_override (ten_tai_khoan, app_slug, hanh_dong, "
+                "cho_phep, ly_do, ai_gan, luc) VALUES (?,?,?,?,?,?,?)",
+                (ten_dich, app_slug, hanh_dong, int(cho_phep), ly_do.strip(),
+                 ai_lam["ten"], _gio()))
     ghi_nhat_ky(conn, ai_lam["ten"], "gan_override",
-                f"{ten_dich} {app_slug}/{hanh_dong} = {cho_phep}")
+                f"{ten_dich} {app_slug}/{hanh_dong} = {cho_phep}"
+                + (f" ({ly_do.strip()})" if ly_do.strip() else ""))
+
+
+# ---------- CẤP TRUY CẬP (acting — mockup P3, DE.md mục 14) ----------
+
+def dat_cap_truy_cap(conn: sqlite3.Connection, ai_lam: dict, ten_dich: str,
+                     cap: int | None, ly_do: str = "") -> None:
+    """Truy cập như cấp 1-4 — chức danh thật KHÔNG đổi; cap=None là gỡ (về chức
+    danh thật). KHÔNG áp lên Owner thật (level 5) — chống tự khóa; chỉ Owner đặt."""
+    if ai_lam["level"] < OWNER_LEVEL:
+        raise LoiIam("Chỉ Owner được đặt cấp truy cập.")
+    _kiem_khong_tu_sua(ai_lam, ten_dich)
+    tk = lay_tai_khoan(conn, ten_dich)
+    if not tk:
+        raise LoiIam("Không có tài khoản này.")
+    _kiem_khong_dung_owner(ai_lam, tk)
+    if tk["level"] >= OWNER_LEVEL:
+        raise LoiIam("Owner thật không bao giờ bị đổi cấp truy cập.")
+    with conn:
+        conn.execute("DELETE FROM cap_truy_cap WHERE ten=?", (ten_dich,))
+        if cap is not None:
+            if not (1 <= int(cap) <= 4):
+                raise LoiIam("Cấp truy cập phải trong thang 1–4.")
+            conn.execute(
+                "INSERT INTO cap_truy_cap (ten, cap, ly_do, ai_gan, luc) "
+                "VALUES (?,?,?,?,?)",
+                (ten_dich, int(cap), ly_do.strip(), ai_lam["ten"], _gio()))
+    ghi_nhat_ky(conn, ai_lam["ten"], "dat_cap_truy_cap",
+                f"{ten_dich} cap={cap}" + (f" ({ly_do.strip()})" if ly_do.strip() else ""))
+
+
+def doc_cap_truy_cap(conn: sqlite3.Connection, ten: str) -> dict | None:
+    r = conn.execute("SELECT * FROM cap_truy_cap WHERE ten=?", (ten,)).fetchone()
+    return dict(r) if r else None
+
+
+def hieu_luc(claims: dict, conn: sqlite3.Connection) -> dict:
+    """Claims với LEVEL HIỆU LỰC: có cấp truy cập → level = cap (giữ level_that
+    để UI minh bạch). Owner thật KHÔNG bao giờ bị đổi. Áp MỘT chỗ ở gateway lúc
+    dựng claims — mọi kiểm quyền sau đó tự ăn (ưu tiên: override > acting > luật)."""
+    if claims["level"] >= OWNER_LEVEL:
+        return claims
+    r = conn.execute("SELECT cap FROM cap_truy_cap WHERE ten=?",
+                     (claims["ten"],)).fetchone()
+    if not r:
+        return claims
+    return {**claims, "level_that": claims["level"], "level": int(r["cap"])}
 
 
 def co_quyen(claims: dict, hanh_dong: str, app_slug: str = "*",
@@ -463,9 +517,45 @@ def co_quyen(claims: dict, hanh_dong: str, app_slug: str = "*",
     return True
 
 
-def vai_cho_app(claims: dict, app_slug: str) -> str:
-    """Vai gửi sang app (X-Remote-Role) — đọc bảng vai per app, thiếu thì bảng chung."""
-    luat = _luat()
-    bang = (luat.get("apps", {}).get(app_slug, {}) or {}).get("vai") \
-        or luat.get("vai_mac_dinh", {})
-    return bang.get(str(claims["level"]), bang.get("mac_dinh", "viewer"))
+def hanh_dong_cua_app(app_slug: str) -> dict:
+    """Các HÀNH ĐỘNG THẬT app khai trong luật (Permissions v2): mục dict có 'nhan'
+    — 'vao'/'vai_xoa'/'_ghi_chu' không phải hành động. nhan/mo_ta là metadata UI,
+    co_quyen chỉ đọc min_level/bo_phan."""
+    app_luat = _luat().get("apps", {}).get(app_slug, {}) or {}
+    return {ma: dk for ma, dk in app_luat.items()
+            if isinstance(dk, dict) and "nhan" in dk}
+
+
+def cac_hanh_dong(claims: dict, app_slug: str,
+                  conn: sqlite3.Connection | None = None) -> list[str]:
+    """Danh sách hành động user ĐƯỢC PHÉP với một app — gateway tiêm
+    X-Remote-Actions mỗi request; app CHỈ TIN CỜ, không tự tính (luật ghim #2)."""
+    return [ma for ma in hanh_dong_cua_app(app_slug)
+            if co_quyen(claims, ma, app_slug, conn)]
+
+
+VAI_THEO_LEVEL = {5: "admin", 4: "manager", 3: "leader"}
+
+
+def vai_cho_app(claims: dict, app_slug: str,
+                conn: sqlite3.Connection | None = None) -> str:
+    """Vai gửi sang app (X-Remote-Role) — dịch từ HÀNH ĐỘNG, dừng-tại-hit-đầu
+    (khuôn vai_trong_app V2, DE.md mục 14): quan_tri → admin; xoa/toan_quyen →
+    vai_xoa của app (mặc định admin); sua/tao/them → leader; còn lại viewer.
+    App chưa khai hành động → fallback level (5 admin / 4 manager / 3 leader /
+    viewer). DANH PHÁP CHUẨN HÓA: 'owner' hết là tên vai app — chữ đó chỉ còn
+    MỘT nghĩa là Owner của OUTLIERY (V2 lệch radary/seo gọi owner)."""
+    app_luat = _luat().get("apps", {}).get(app_slug, {}) or {}
+    hd = hanh_dong_cua_app(app_slug)
+    if not hd:
+        return VAI_THEO_LEVEL.get(claims["level"], "viewer")
+    if co_quyen(claims, "quan_tri", app_slug, conn):
+        return "admin"
+    for ma in hd:
+        if ("xoa" in ma or "toan_quyen" in ma) and co_quyen(claims, ma, app_slug, conn):
+            return app_luat.get("vai_xoa", "admin")
+    for ma in hd:
+        if any(t in ma for t in ("sua", "tao", "them")) \
+                and co_quyen(claims, ma, app_slug, conn):
+            return "leader"
+    return "viewer"

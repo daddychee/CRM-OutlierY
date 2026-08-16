@@ -137,10 +137,18 @@ def lay_user(x_remote_user: str = Header(""), x_remote_level: str = Header("0"),
             "bo_phan": unquote(x_remote_dept) if x_remote_dept else ""}
 
 
-def yeu_cau_upload(user: dict = Depends(lay_user)) -> dict:
-    """RULE 1 hệ cũ: Manager+ (level >= 4) mới được nạp tài liệu. Lệ riêng tick từng
-    người thuộc IAM tầng nền (v2) — app chỉ giữ luật thường quy."""
-    if user["level"] < 4:
+def _hanh_dong_gateway(x_remote_actions: str) -> set[str]:
+    """Cờ hành động GATEWAY phát (X-Remote-Actions — Permissions v2, DE.md mục 14):
+    app CHỈ TIN CỜ, không tự tính lại quyền (luật ghim #2); thiếu header → rỗng
+    → fail-closed."""
+    return {s.strip() for s in (x_remote_actions or "").split(",") if s.strip()}
+
+
+def yeu_cau_upload(user: dict = Depends(lay_user),
+                   x_remote_actions: str = Header("")) -> dict:
+    """RULE 1 hệ cũ (Manager+ nạp tài liệu) giờ là hành động 'nap_tai_lieu' trong
+    luật tầng nền — tick lẻ/acting ở trang Permissions CHẢY sang ngay lượt sau."""
+    if "nap_tai_lieu" not in _hanh_dong_gateway(x_remote_actions):
         raise HTTPException(403, "Bạn chưa được cấp quyền thêm tài liệu vào kho.")
     return user
 
@@ -152,15 +160,34 @@ def yeu_cau_quan_ly(user: dict = Depends(lay_user)) -> dict:
     return user
 
 
-def yeu_cau_nguon_ngoai(user: dict = Depends(lay_user)) -> dict:
-    """Nguồn ngoài (nạp YouTube/cookies) — Manager+ như hệ cũ."""
-    if user["level"] < 4:
+def yeu_cau_nguon_ngoai(user: dict = Depends(lay_user),
+                        x_remote_actions: str = Header("")) -> dict:
+    """Nguồn ngoài — hành động 'nguon_ngoai' (cờ gateway, khuôn yeu_cau_upload)."""
+    if "nguon_ngoai" not in _hanh_dong_gateway(x_remote_actions):
         raise HTTPException(403, "Bạn chưa được cấp quyền dùng Nguồn ngoài.")
     return user
 
 
+def yeu_cau_giam_sat(user: dict = Depends(lay_user),
+                     x_remote_actions: str = Header("")) -> dict:
+    """Giám sát (cây tri thức + lịch sử mọi người) — hành động 'giam_sat'
+    (mặc định chỉ Owner, tick lẻ được ở Permissions)."""
+    if "giam_sat" not in _hanh_dong_gateway(x_remote_actions):
+        raise HTTPException(403, "Bạn chưa được cấp quyền xem trang giám sát.")
+    return user
+
+
+def yeu_cau_duyet_qa(user: dict = Depends(lay_user),
+                     x_remote_actions: str = Header("")) -> dict:
+    """Duyệt Q&A bổ sung — hành động 'duyet_qa' (mặc định chỉ Owner)."""
+    if "duyet_qa" not in _hanh_dong_gateway(x_remote_actions):
+        raise HTTPException(403, "Bạn chưa được cấp quyền duyệt Q&A.")
+    return user
+
+
 def yeu_cau_owner(user: dict = Depends(lay_user)) -> dict:
-    """Chỉ Owner (level 5) — sửa/xóa tài liệu, duyệt Q&A, giám sát."""
+    """Chỉ Owner (level 5) — sửa/xóa tài liệu kho + cấu hình (nấc quan_tri;
+    chuyển sang cờ hành động thuộc đợt sau — giữ level để diff gọn)."""
     if user["level"] != 5:
         raise HTTPException(403, "Chỉ Owner được thao tác này.")
     return user
@@ -392,7 +419,7 @@ def hoi_dap(request: Request, user: dict = Depends(lay_user), phien: str = ""):
 # ================= Ý 1 ĐỢT 3 — bảng "câu kho chưa trả lời được" + giám sát =================
 
 @app.get("/giam-sat", response_class=HTMLResponse)
-def giam_sat(request: Request, user: dict = Depends(yeu_cau_owner)):
+def giam_sat(request: Request, user: dict = Depends(yeu_cau_giam_sat)):
     """YC5: cây giám sát tri thức — CHỈ OWNER (luật 31/07/2026 hệ cũ).
     V2: app không còn sổ user riêng (users.txt nghỉ hưu) → cây nhân sự dựng từ
     NGƯỜI CÓ LỊCH SỬ HỘI THOẠI (quét LICH_SU_DIR — cùng khuôn doc_bao_cao_moi_nguoi
@@ -453,14 +480,14 @@ def kho_thieu_xoa_cau(cau_hoi: str = Form(...), user: dict = Depends(yeu_cau_qua
 # ===== Q&A BỔ SUNG — cơ chế 2 bước (chỉ Owner bổ sung tri thức) =====
 
 @app.post("/kho-thieu/ung-vien-qa")
-def kho_thieu_ung_vien_qa(cau_hoi: str = Form(...), user: dict = Depends(yeu_cau_owner)):
+def kho_thieu_ung_vien_qa(cau_hoi: str = Form(...), user: dict = Depends(yeu_cau_duyet_qa)):
     """BƯỚC 1: Owner nhập câu hỏi → top tài liệu ứng viên để chọn đích bổ sung Q&A."""
     return qa.ung_vien_qa(cau_hoi, user=user)
 
 
 @app.post("/kho-thieu/soan-nhap-qa")
 def kho_thieu_soan_nhap_qa(cau_hoi: str = Form(...), doc_code_goc: str = Form(...),
-                           user: dict = Depends(yeu_cau_owner)):
+                           user: dict = Depends(yeu_cau_duyet_qa)):
     """BƯỚC 2: soạn NHÁP trên tài liệu Owner đã chọn (van 'KHÔNG ĐỦ CƠ SỞ'). CHỈ soạn
     nháp — KHÔNG ghi kho/Qdrant."""
     return qa.soan_nhap_qa(cau_hoi, doc_code_goc, user=user)
@@ -468,7 +495,7 @@ def kho_thieu_soan_nhap_qa(cau_hoi: str = Form(...), doc_code_goc: str = Form(..
 
 @app.post("/kho-thieu/duyet-qa")
 def kho_thieu_duyet_qa(cau_hoi: str = Form(...), doc_code_goc: str = Form(...),
-                       cau_tra_loi: str = Form(...), user: dict = Depends(yeu_cau_owner)):
+                       cau_tra_loi: str = Form(...), user: dict = Depends(yeu_cau_duyet_qa)):
     """BƯỚC 3 (DUYỆT): Owner duyệt nháp ĐÃ SỬA → ghi vào kho dạng Q&A. them_cap_qa lo
     TOÀN BỘ tạo/nối file + nạp Qdrant + kế thừa quyền gốc."""
     noi_dung = cau_tra_loi.strip()

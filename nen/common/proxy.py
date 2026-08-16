@@ -50,7 +50,8 @@ _HEADER_CAM = {"host", "connection", "keep-alive", "transfer-encoding", "upgrade
                "proxy-authorization", "proxy-authenticate", "te", "trailer",
                "content-length", "accept-encoding",
                "x-remote-user", "x-remote-role", "x-remote-level", "x-remote-dept",
-               "x-remote-apps", "x-remote-name", "x-role-code", "x-forwarded-for"}
+               "x-remote-apps", "x-remote-name", "x-remote-actions", "x-role-code",
+               "x-forwarded-for"}
 
 _LOAI_CHU = ("text/html", "text/css", "application/javascript", "text/javascript",
              "application/json", "text/plain")
@@ -103,7 +104,8 @@ async def chuyen_tiep(request: Request, cong: int, goc: str, duong_dan: str,
                       ten_user: str, tien_to_app: list[str], vai: str = "",
                       level: int | None = None, bo_phan: str = "",
                       apps_duoc_vao: list[str] | None = None,
-                      ten_hien_thi: str = "", bo_qua: tuple[str, ...] = ()) -> Response:
+                      ten_hien_thi: str = "", bo_qua: tuple[str, ...] = (),
+                      hanh_dong: list[str] | None = None) -> Response:
     """Chuyển tiếp request sang app 127.0.0.1:<cong>, tiêm claims do GATEWAY quyết."""
     dich = f"http://127.0.0.1:{cong}/{duong_dan}"
     cam = set(_HEADER_CAM)
@@ -129,6 +131,10 @@ async def chuyen_tiep(request: Request, cong: int, goc: str, duong_dan: str,
         # UI_FLOW.md mục 2: sidebar app nào hiện là GATEWAY quyết (một nguồn sự
         # thật quyền) — app chỉ đọc danh sách slug ASCII này, không tự đoán.
         headers["X-Remote-Apps"] = ",".join(apps_duoc_vao)
+    if hanh_dong is not None:
+        # Permissions v2 (DE.md mục 14): hành động user ĐƯỢC PHÉP với app đang
+        # vào — app gate bằng cờ này, không tự tính; thiếu header → fail-closed.
+        headers["X-Remote-Actions"] = ",".join(hanh_dong)
     than = await request.body()
 
     client = _lay_client()

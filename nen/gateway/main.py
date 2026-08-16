@@ -80,7 +80,9 @@ def user_hien_tai(request: Request) -> dict | None:
         tk = iam.lay_tai_khoan(conn, ten)
         if not tk or tk["khoa"]:
             return None  # user bị xóa/khóa → phiên chết theo (đọc sống)
-        claims = iam.claims_cua(tk)
+        # CẤP TRUY CẬP (acting — Permissions v2) áp MỘT chỗ ngay lúc dựng claims:
+        # mọi kiểm quyền phía sau (gate nền + proxy app) tự ăn level hiệu lực.
+        claims = iam.hieu_luc(iam.claims_cua(tk), conn)
         claims["phai_doi_mk"] = bool(tk["phai_doi_mk"])
         return claims
     finally:
@@ -266,13 +268,14 @@ async def trang_chu(request: Request):
 # ---------- KHU QUẢN TRỊ NỀN (UI_FLOW.md mục 5 — mỗi trang MỘT việc) ----------
 
 _TEN_LEVEL = {1: "Intern", 2: "Staff", 3: "Leader", 4: "Manager", 5: "Owner"}
-_NHAN_GIO = {"quan_tai_khoan": "Quản tài khoản", "duyet_ho_so": "Duyệt hồ sơ nhân sự",
-             "nap_tai_lieu": "Nạp tài liệu", "duyet_qa": "Duyệt Q&A bổ sung",
-             "giam_sat": "Giám sát hoạt động",
-             "nhan_su": "HR Hub (khu nhân sự)", "ke_toan": "Finance Hub (khu thu chi)"}
-# Giỏ CHỨC NĂNG (DE.md mục 10): mặc định KHÁC giỏ ủy quyền thường — cột mô tả
-# trên trang Permissions phải nói đúng luật thật (tính ở _gio_chuc_nang dưới).
-_MAC_DINH_GIO = {"nhan_su": "Owner / HR L3+ / Admin ủy quyền",
+# Giỏ ủy quyền = KHU CHỨC NĂNG (Permissions v2: nap_tai_lieu/duyet_qa/giam_sat đã
+# về app ai-agent thành hành động thật). Mô tả mặc định phải nói đúng luật thật
+# (nhan_su/ke_toan tính ở _gio_chuc_nang).
+_NHAN_GIO = {"quan_tai_khoan": "Accounts admin", "duyet_ho_so": "Approve HR profiles",
+             "nhan_su": "HR Hub", "ke_toan": "Finance Hub"}
+_MAC_DINH_GIO = {"quan_tai_khoan": "Owner / Delegated admin",
+                 "duyet_ho_so": "Owner / Delegated admin",
+                 "nhan_su": "Owner / HR L3+ / Delegated admin",
                  "ke_toan": "Owner / Kế toán L2+"}
 
 KE_TOAN_BO_PHAN = "Kế toán"
@@ -760,48 +763,112 @@ def nen_ns_tai_lieu_xem(request: Request, ma: str, ten: str):
     return FileResponse(duong)
 
 
-# --- Phân quyền tick (chỉ Owner — giỏ tuyệt đối bang_phan_quyen) ---
+# --- Phân quyền v2 (chỉ Owner — giỏ tuyệt đối bang_phan_quyen; mockup P1-P5) ---
 
-def _luat_pq() -> dict:
-    import json
-    return json.loads((ROOT / "nen" / "rules" / "phan_quyen.json")
-                      .read_text(encoding="utf-8-sig"))
+def _mo_ta_dieu_kien(dk: dict | None) -> str:
+    """Mô tả luật mặc định một hành động cho UI — fail-closed = chỉ Owner."""
+    if not dk:
+        return "Owner only (L5)"
+    if dk.get("min_level", 1) >= 5:
+        return "Owner only (L5)"
+    mota = f"L{dk.get('min_level', 1)}+"
+    if dk.get("bo_phan"):
+        mota += " · " + "/".join(dk["bo_phan"]) + " (L4+ any dept)"
+    return mota
 
 
 def _render_phan_quyen(request: Request, user: dict, ten: str = "",
                        loi: str = "", bao: str = "") -> HTMLResponse:
+    luat = iam._luat()
     conn = iam.ket_noi()
     try:
         tai_khoan = iam.liet_ke_tai_khoan(conn)
-        overrides = {}
+        nguoi = {n["ma"]: n for n in iam.liet_ke_nguoi(conn)}
         chon = next((t for t in tai_khoan if t["ten"] == ten), None)
+        acting = None
+        apps_p2: list[dict] = []
+        khoi_p4: list[dict] = []
+        overrides: dict = {}
         if chon:
+            claims_that = iam.claims_cua(chon)
+            acting = iam.doc_cap_truy_cap(conn, ten)
+            claims_hl = iam.hieu_luc(claims_that, conn)
             for r in conn.execute(
                     "SELECT * FROM quyen_override WHERE ten_tai_khoan=?", (ten,)):
-                overrides[(r["app_slug"], r["hanh_dong"])] = bool(r["cho_phep"])
+                overrides[(r["app_slug"], r["hanh_dong"])] = dict(r)
+            # P2 — MẶC ĐỊNH CHỈ ĐỌC per app (trên claims HIỆU LỰC)
+            for a in doc_hop_dong():
+                if a["slug"] == "app-mau":
+                    continue
+                vao = iam.co_quyen(claims_hl, "vao", a["slug"], conn)
+                apps_p2.append({
+                    "ten": a["ten"], "vao": vao,
+                    "vai": iam.vai_cho_app(claims_hl, a["slug"], conn) if vao else "—",
+                    "vi_sao": _mo_ta_dieu_kien(
+                        (luat.get("apps", {}).get(a["slug"], {}) or {}).get("vao"))})
+            co_hub = _gio_chuc_nang(claims_hl, conn)
+            apps_p2.append({"ten": "HR Hub", "vao": "hr" in co_hub, "vai": "—",
+                            "vi_sao": _MAC_DINH_GIO["nhan_su"]})
+            apps_p2.append({"ten": "Finance Hub", "vao": "finance" in co_hub,
+                            "vai": "—", "vi_sao": _MAC_DINH_GIO["ke_toan"]})
+            # P4 — mỗi app một khối hành động thật (+ khối giỏ khu chức năng '*')
+            for a in doc_hop_dong():
+                cac_hd = iam.hanh_dong_cua_app(a["slug"])
+                if not cac_hd:
+                    continue
+                hang = []
+                for ma, dk in cac_hd.items():
+                    ov = overrides.get((a["slug"], ma))
+                    mac_dinh_that = iam.co_quyen(claims_that, ma, a["slug"], None)
+                    hl = iam.co_quyen(claims_hl, ma, a["slug"], conn)
+                    nguon = "override" if ov else \
+                        ("acting" if acting and hl != mac_dinh_that else "default")
+                    hang.append({"ma": ma, "nhan": dk.get("nhan", ma),
+                                 "mo_ta": dk.get("mo_ta", ""),
+                                 "mac_dinh": _mo_ta_dieu_kien(dk),
+                                 "hieu_luc": hl, "nguon": nguon,
+                                 "dat": "cho" if ov and ov["cho_phep"]
+                                        else "chan" if ov else "ke_thua",
+                                 "ly_do": ov["ly_do"] if ov else ""})
+                khoi_p4.append({"slug": a["slug"], "ten": a["ten"], "hang": hang,
+                                "so_le": sum(1 for h in hang if h["nguon"] == "override")})
+            hang_gio = []
+            for hd in luat.get("gio_uy_quyen", []):
+                ov = overrides.get(("*", hd))
+                if hd == "nhan_su":
+                    hl = "hr" in co_hub
+                elif hd == "ke_toan":
+                    hl = "finance" in co_hub
+                else:
+                    hl = iam.co_quyen(claims_hl, hd, conn=conn)
+                hang_gio.append({"ma": hd, "nhan": _NHAN_GIO.get(hd, hd), "mo_ta": "",
+                                 "mac_dinh": _MAC_DINH_GIO.get(hd, "Owner / Delegated admin"),
+                                 "hieu_luc": hl,
+                                 "nguon": "override" if ov else "default",
+                                 "dat": "cho" if ov and ov["cho_phep"]
+                                        else "chan" if ov else "ke_thua",
+                                 "ly_do": ov["ly_do"] if ov else ""})
+            khoi_p4.append({"slug": "*", "ten": "Function hubs & baskets",
+                            "hang": hang_gio,
+                            "so_le": sum(1 for h in hang_gio if h["nguon"] == "override")})
+        # P5 — sổ ngoại lệ TOÀN HỆ
+        p5 = [dict(r) for r in conn.execute(
+            "SELECT * FROM quyen_override ORDER BY ten_tai_khoan, app_slug, hanh_dong")]
     finally:
         conn.close()
-    luat = _luat_pq()
-    hang = []
-    for a in doc_hop_dong():
-        if a["slug"] == "app-mau":
-            continue
-        dk = (luat.get("apps", {}).get(a["slug"], {}) or {}).get("vao", {})
-        mota = f"L{dk.get('min_level', 1)}+"
-        if dk.get("bo_phan"):
-            mota += " bộ phận " + "/".join(dk["bo_phan"]) + " (L4+ mọi bộ phận)"
-        hang.append({"app_slug": a["slug"], "hanh_dong": "vao",
-                     "nhan": f"Vào {a['ten']}", "mac_dinh": mota})
-    for hd in luat.get("gio_uy_quyen", []):
-        hang.append({"app_slug": "*", "hanh_dong": hd,
-                     "nhan": _NHAN_GIO.get(hd, hd),
-                     "mac_dinh": _MAC_DINH_GIO.get(hd, "Owner / Admin ủy quyền")})
+    ten_app = {a["slug"]: a["ten"] for a in doc_hop_dong()} | {"*": "Platform"}
+    nhan_hd = {(a["slug"], ma): dk.get("nhan", ma) for a in doc_hop_dong()
+               for ma, dk in iam.hanh_dong_cua_app(a["slug"]).items()}
+    nhan_hd |= {("*", hd): _NHAN_GIO.get(hd, hd) for hd in luat.get("gio_uy_quyen", [])}
+    ho_ten_cua = {t["ten"]: (nguoi.get(t.get("nguoi_ma") or "", {}) or {}).get("ho_ten", "")
+                  for t in tai_khoan}
     return templates.TemplateResponse(
         request, "nen_phan_quyen.html",
         {"user": user, "trang": "phan-quyen", "loi": loi, "bao": bao,
-         "tai_khoan": tai_khoan, "ten_chon": ten if chon else "",
-         "hang": hang, "overrides": overrides,
-         "gio_tuyet_doi": luat.get("gio_owner_tuyet_doi", [])})
+         "tai_khoan": tai_khoan, "ho_ten_cua": ho_ten_cua,
+         "ten_chon": ten if chon else "", "chon": chon, "acting": acting,
+         "apps_p2": apps_p2, "khoi_p4": khoi_p4, "p5": p5,
+         "ten_app": ten_app, "nhan_hd": nhan_hd, "ten_level": _TEN_LEVEL})
 
 
 @app.get("/general/permissions", response_class=HTMLResponse)
@@ -814,17 +881,78 @@ def nen_phan_quyen(request: Request, ten: str = "", bao: str = "", loi: str = ""
 
 @app.post("/general/permissions/grant", response_class=HTMLResponse)
 def nen_pq_gan(request: Request, ten: str = Form(...), app_slug: str = Form(...),
-               hanh_dong: str = Form(...), gia_tri: str = Form(...)):
+               hanh_dong: str = Form(...), gia_tri: str = Form(...),
+               ly_do: str = Form("")):
     user = _gate_nen(request, quyen="bang_phan_quyen")
     if isinstance(user, Response):
         return user
     cho_phep = {"ke_thua": None, "cho": True, "chan": False}.get(gia_tri, None)
     conn = iam.ket_noi()
     try:
-        iam.gan_override(conn, user, ten, app_slug, hanh_dong, cho_phep)
+        iam.gan_override(conn, user, ten, app_slug, hanh_dong, cho_phep, ly_do)
         return _render_phan_quyen(request, user, ten=ten,
                                   bao=f"Set {app_slug}/{hanh_dong} = {gia_tri}")
     except iam.LoiIam as e:
+        return _render_phan_quyen(request, user, ten=ten, loi=str(e))
+    finally:
+        conn.close()
+
+
+@app.post("/general/permissions/save")
+async def nen_pq_luu(request: Request):
+    """Lưu MỘT LƯỢT các ô P4 của một người: chỉ áp Ô KHÁC hiện trạng (tick về
+    kế thừa = gỡ lệ); đặt cho/chặn bắt buộc lý do (iam.gan_override chặn)."""
+    from starlette.concurrency import run_in_threadpool
+    form = await request.form()
+
+    def _lam():
+        user = _gate_nen(request, quyen="bang_phan_quyen")
+        if isinstance(user, Response):
+            return user
+        ten = form.get("ten", "")
+        conn = iam.ket_noi()
+        try:
+            hien = {(r["app_slug"], r["hanh_dong"]): bool(r["cho_phep"])
+                    for r in conn.execute(
+                        "SELECT * FROM quyen_override WHERE ten_tai_khoan=?", (ten,))}
+            so_doi = 0
+            for khoa in form.keys():
+                if not khoa.startswith("dat__"):
+                    continue
+                _, app_slug, ma = khoa.split("__", 2)
+                muon = {"ke_thua": None, "cho": True,
+                        "chan": False}.get(form.get(khoa), None)
+                co = (app_slug, ma) in hien
+                if (muon is None and not co) or (co and hien[(app_slug, ma)] == muon):
+                    continue                     # ô không đổi — bỏ qua
+                iam.gan_override(conn, user, ten, app_slug, ma, muon,
+                                 form.get(f"lydo__{app_slug}__{ma}", ""))
+                so_doi += 1
+        except iam.LoiIam as e:
+            return RedirectResponse(
+                f"/general/permissions?ten={ten}&loi=" + quote(str(e)), status_code=303)
+        finally:
+            conn.close()
+        return RedirectResponse(
+            f"/general/permissions?ten={ten}&bao=" + quote(f"Saved {so_doi} change(s)."),
+            status_code=303)
+
+    return await run_in_threadpool(_lam)
+
+
+@app.post("/general/permissions/acting")
+def nen_pq_acting(request: Request, ten: str = Form(...), cap: str = Form(""),
+                  ly_do: str = Form("")):
+    """P3 — cấp truy cập 1-4 (rỗng = về chức danh thật). Owner thật không hạ được."""
+    user = _gate_nen(request, quyen="bang_phan_quyen")
+    if isinstance(user, Response):
+        return user
+    conn = iam.ket_noi()
+    try:
+        iam.dat_cap_truy_cap(conn, user, ten, int(cap) if cap.strip() else None, ly_do)
+        return _render_phan_quyen(request, user, ten=ten,
+                                  bao=f"Acting level for {ten} = {cap or 'real level'}")
+    except (iam.LoiIam, ValueError) as e:
         return _render_phan_quyen(request, user, ten=ten, loi=str(e))
     finally:
         conn.close()
@@ -1583,7 +1711,7 @@ async def proxy_app(request: Request, slug: str, duong_dan: str):
         route nóng nhất, tuyệt đối không block loop (đo thật load test 16/08)."""
         u = user_hien_tai(request)
         if not u:
-            return None, None, False, []
+            return None, None, False, [], "", []
         conn2 = iam.ket_noi()
         try:
             # Danh sách slug user được vào → claims X-Remote-Apps cho sidebar
@@ -1607,11 +1735,17 @@ async def proxy_app(request: Request, slug: str, duong_dan: str):
                 duoc += _gio_chuc_nang(u, conn2)
                 if quan_tk:
                     duoc.append("accounts")
-            return u, tim_app(slug), slug in duoc, duoc
+            # Permissions v2: vai dịch từ hành động + danh sách hành động được
+            # phép của app đang vào (X-Remote-Actions) — tính TRONG threadpool
+            # vì cần conn (ô tick lẻ thắng mặc định).
+            vai = iam.vai_cho_app(u, slug, conn2)
+            hanh_dong = iam.cac_hanh_dong(u, slug, conn2)
+            return u, tim_app(slug), slug in duoc, duoc, vai, hanh_dong
         finally:
             conn2.close()
 
-    user, muc, duoc_vao, apps_duoc_vao = await run_in_threadpool(_auth_va_quyen)
+    user, muc, duoc_vao, apps_duoc_vao, vai, hanh_dong = \
+        await run_in_threadpool(_auth_va_quyen)
     if not user:
         if "text/html" in (request.headers.get("accept") or ""):
             return _ve_login()
@@ -1625,9 +1759,10 @@ async def proxy_app(request: Request, slug: str, duong_dan: str):
     return await chuyen_tiep(
         request, cong=muc["cong"], goc=f"/app/{slug}", duong_dan=duong_dan,
         ten_user=user["ten"], tien_to_app=muc.get("tien_to", []),
-        vai=iam.vai_cho_app(user, slug), level=user["level"],
+        vai=vai, level=user["level"],
         bo_phan=user.get("bo_phan", ""), apps_duoc_vao=apps_duoc_vao,
-        ten_hien_thi=user.get("ten_hien_thi", ""), bo_qua=_ALIAS_BO_QUA)
+        ten_hien_thi=user.get("ten_hien_thi", ""), bo_qua=_ALIAS_BO_QUA,
+        hanh_dong=hanh_dong)
 
 
 def _lam_alias(slug: str, dd: str):
