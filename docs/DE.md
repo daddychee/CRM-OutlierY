@@ -197,8 +197,15 @@ nó là VỎ điều hướng đặt trong app to-chuc, mở bằng **GIỎ CH�
   KÊNH từ danh bạ (tùy chọn) → **báo cáo LÃI/LỖ THEO KÊNH** (điểm ăn tiền: nối
   trục thực thể mục 3 — chi phí proxy/tài khoản/voice và doanh thu AdSense quy
   về từng K-xxx) · tổng hợp tháng · lương (đợt sau — nối chấm công + xếp loại KPI).
-  Mặc định: chỉ Owner; gán cho kế toán viên qua tick (bộ phận/vị trí Kế toán
-  chưa có trong danh mục — Owner quyết thêm vị trí thuộc HCNS hay bộ phận mới).
+  Mặc định theo bộ phận Kế toán (xem chốt dưới) + Owner.
+
+**CHỐT Owner 16/08 — Kế toán là BỘ PHẬN RIÊNG, hiện HCNS KIÊM NHIỆM:** thêm
+"Kế toán" vào danh mục bộ phận (danh mục 4→5, các bộ phận cũ không đổi); giỏ
+`ke_toan` mặc định cho bộ phận Kế toán (đề xuất từ L2 — Owner chỉnh trên UI);
+giai đoạn kiêm nhiệm: người HCNS nhận giỏ qua TICK ở trang Permissions, badge
+"kiêm nhiệm" hiện ở mọi nơi liên quan (People, HR Hub, Finance). Khi tuyển kế
+toán chuyên trách: tạo hồ sơ bộ phận Kế toán → giỏ tự có, gỡ tick người kiêm
+nhiệm — không sửa luật. UI duyệt: `docs/mockup-de/permissions.html` (ô P2, P5).
 
 **Chống chồng chéo (áp luật mục 2):** hồ sơ người = dữ liệu ĐẾ (IAM); chấm công/
 KPI/đánh giá/thu chi = dữ liệu NGHIỆP VỤ ở to-chuc, tham chiếu mã NS-xxx + K-xxx;
