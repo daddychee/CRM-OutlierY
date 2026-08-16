@@ -327,3 +327,23 @@ sqlite-snapshot như iam.db.
   pass; nghiệm thu sống: Owner 200 đủ tab, L2 không giỏ 403. Việc treo hub:
   Approvals + H1b hồ sơ chi tiết (đợi mục 12.1), export CSV, lọc ledger sâu,
   lương (nối chốt công + xếp loại).
+- 16/08/2026 — **HR HUB MỘT CỬA XONG** (`43974f3`, Owner hỏi "Tại sao ko đưa
+  Account và People vào luôn HR?"): gộp People + Accounts vào /hr. People nâng
+  chỉ-xem → CRUD (`iam.sua_nguoi` trả nợ "hồ sơ chỉ tạo được": None = giữ
+  nguyên trường, trạng thái ∈ cho_duyet/hoat_dong/nghi, KHÔNG có xóa hồ sơ —
+  nghỉ việc = gỡ mềm 'nghi', mã NS bất biến, ghi nhật ký). Tab Accounts CHỈ
+  render khi gateway phát cờ `accounts` (giỏ quan_tai_khoan — gõ ?tab=accounts
+  tay vẫn bị ép về People, 0 chuỗi route lộ ra). KIẾN TRÚC: form hub POST
+  thẳng route `/general/people|accounts/*` sẵn có kèm field ẩn `ve=hr`
+  (whitelist) → 303 về /hr?bao/loi — quyền kiểm MỘT chỗ ở gateway, to-chuc
+  không ghi IAM (Luật 4). GET /general/people|accounts nghỉ hưu thành redirect
+  (khuôn /quan-tri), nav General gọn 2 mục. 4 suite root 98(+6) / to-chuc
+  57(+4) / ai-agent 307+3skip / DA 64; nghiệm thu sống sau restart ĐỦ BỘ (bẫy
+  nen/common): Owner đủ tab + form ve=hr, HR-không-accounts ẩn sạch tab, L2
+  403. GIỚI HẠN ĐÃ BIẾT: người được tick `quan_tai_khoan` mà KHÔNG phải
+  HR/Kế toán/Owner sẽ có cờ accounts nhưng thiếu cờ hr → không vào được hub
+  (persona chưa tồn tại — mặc định giỏ chỉ Owner; khi ủy quyền thật thì cấp
+  kèm giỏ nhan_su hoặc nới yeu_cau_hr nhận cờ accounts, quyết lúc đó).
+  Trường bỏ trống trong form sửa = giữ nguyên (không xóa giá trị về rỗng —
+  chấp nhận, form điền sẵn giá trị cũ). Link /general/people trong sidebar
+  `sb_ns` của 3 app + hoi_dap.html ĐỂ NGUYÊN — sống qua redirect.
