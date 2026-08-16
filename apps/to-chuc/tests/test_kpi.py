@@ -209,3 +209,23 @@ def test_route_kpi_iam_chet_khong_bia_danh_sach(monkeypatch):
                                        "danh sách người cho bảng KPI."))
     b = _login("sep", 5).get("/kpi").text
     assert "Không đọc được sổ IAM" in b
+
+
+def test_ds_nguoi_iam_phat_planner_id_dan_xuat():
+    """Đ2 khối đế: planner_id dẫn xuất ns_<mã NS> — nhánh nối-theo-ID của kpi
+    sống lại (trước luôn None vì _ds_nguoi_iam không cấp trường này)."""
+    from nen.iam import iam
+    from src.main import _ds_nguoi_iam
+    conn = iam.ket_noi()
+    ho_so = iam.tao_nguoi(conn, None, "Người Test KPI", "Vận hành - Sản xuất")
+    ma = ho_so["ma"] if isinstance(ho_so, dict) else ho_so
+    iam.tao_tai_khoan(conn, None if iam.dem_tai_khoan(conn) == 0 else
+                      iam.claims_cua(iam.liet_ke_tai_khoan(conn)[0]),
+                      "kpi-test-nv", "mk-test-6",
+                      "Vận hành - Sản xuất", 5, phai_doi_mk=False)
+    with conn:
+        conn.execute("UPDATE tai_khoan SET nguoi_ma=? WHERE ten='kpi-test-nv'", (ma,))
+    conn.close()
+    ds, _ = _ds_nguoi_iam()
+    nguoi = {n["ten"]: n for n in (ds or [])}
+    assert nguoi["kpi-test-nv"]["planner_id"] == "ns_" + ma.replace("-", "").lower()

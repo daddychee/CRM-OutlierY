@@ -122,8 +122,8 @@ def _ds_nguoi_iam() -> tuple[list[dict] | None, str]:
     """Danh sách người cho bảng KPI, đọc CHỈ-ĐỌC sổ IAM chung (tài khoản + họ tên
     hồ sơ nối qua nguoi_ma). App vẫn tự đứng: thiếu nen/iam hay DB lỗi → (None, lý
     do) — UI nói thẳng, không dựng bảng rỗng giả vờ 'không có ai'.
-    LƯU Ý trung thực: IAM v2 CHƯA có trường khau/planner_id của hồ sơ hệ cũ →
-    người VH chỉ nối PlannerY được qua HỌ TÊN trùng tên trong plan.json."""
+    Đ2 khối đế: planner_id DẪN XUẤT từ mã hồ sơ (NS-005 → ns_ns005 — đúng khuôn
+    plannery_sync hệ cũ) → nối PlannerY theo ID, hết so họ tên không phân hoa thường."""
     try:
         from nen.iam import iam
         conn = iam.ket_noi()
@@ -131,9 +131,12 @@ def _ds_nguoi_iam() -> tuple[list[dict] | None, str]:
             nguoi = {n["ma"]: n for n in iam.liet_ke_nguoi(conn)}
             ds = []
             for tk in iam.liet_ke_tai_khoan(conn):
-                ho_so = nguoi.get(tk.get("nguoi_ma") or "") or {}
+                ma_ns = tk.get("nguoi_ma") or ""
+                ho_so = nguoi.get(ma_ns) or {}
                 ds.append({"ten": tk["ten"], "bo_phan": tk.get("bo_phan") or "",
-                           "ho_ten": ho_so.get("ho_ten", "")})
+                           "ho_ten": ho_so.get("ho_ten", ""),
+                           "planner_id": ("ns_" + ma_ns.replace("-", "").lower())
+                                         if ma_ns else ""})
             return ds, ""
         finally:
             conn.close()

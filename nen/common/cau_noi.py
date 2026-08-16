@@ -18,9 +18,16 @@ from __future__ import annotations
 import httpx
 
 from nen.common import danh_ba
+from nen.common.hop_dong import tim_app
 from nen.iam import iam
 
-CONG_DATA_ANALYTICS = 9102
+CONG_DATA_ANALYTICS = 9102   # fallback khi hợp đồng thiếu app (test cách ly)
+
+
+def _cong_da() -> int:
+    """Đ2: cổng đọc từ HỢP ĐỒNG APP — hết hardcode 2 chỗ (nợ đo 16/08)."""
+    muc = tim_app("data-analytics")
+    return muc["cong"] if muc else CONG_DATA_ANALYTICS
 
 
 def _goi_api_app(cong: int, duong: str, user: dict) -> httpx.Response:
@@ -47,7 +54,7 @@ def bao_cao_kenh(kenh: dict, user: dict, conn=None) -> dict:
                 "noi_thang": "Bạn cần quyền Data Analytics (Kinh doanh L2+ hoặc "
                              "Manager+) để hỏi số liệu kênh."}
     try:
-        r = _goi_api_app(CONG_DATA_ANALYTICS, "/api/bao-cao-lich-su", user)
+        r = _goi_api_app(_cong_da(), "/api/bao-cao-lich-su", user)
         r.raise_for_status()
     except httpx.HTTPError as e:
         return {"loai": "nguon_chet",
@@ -79,12 +86,21 @@ def hoi_so_lieu(cau_hoi: str, user: dict, conn=None) -> dict:
     """ROUTER hỏi số liệu v1 — luật: tìm tên kênh trong câu hỏi qua DANH BẠ
     (tên chuẩn + bí danh, chuẩn hóa 2 phía). Không khớp → hỏi lại kèm gợi ý,
     TUYỆT ĐỐI không đoán."""
-    can = danh_ba.chuan_hoa_ten(cau_hoi)
-    kenh_khop = [t for t in danh_ba.liet_ke("kenh")
-                 if any(ten and ten in can
-                        for ten in ([danh_ba.chuan_hoa_ten(t["ten_chuan"])]
-                                    + [danh_ba.chuan_hoa_ten(b)
-                                       for b in (t.get("bi_danh") or "").split(";") if b]))]
+    can = " " + danh_ba.chuan_hoa_ten(cau_hoi) + " "
+    # Đ2: khớp theo RANH GIỚI TỪ (không substring trần — kênh tên ngắn hết khớp
+    # nhầm giữa từ khác). Kênh có tên khớp là CỤM CON của tên khớp kênh khác bị
+    # loại ("Life" nhường "Life In"); hai kênh khác hẳn tên (Outland vs Space)
+    # vẫn ra nhieu_kenh hỏi lại — không đoán.
+    khop: list[tuple[str, dict]] = []
+    for t in danh_ba.liet_ke("kenh"):
+        cac_ten = ([danh_ba.chuan_hoa_ten(t["ten_chuan"])]
+                   + [danh_ba.chuan_hoa_ten(b)
+                      for b in (t.get("bi_danh") or "").split(";") if b])
+        trung = [ten for ten in cac_ten if ten and f" {ten} " in can]
+        if trung:
+            khop.append((max(trung, key=len), t))
+    kenh_khop = [t for ten, t in khop
+                 if not any(k != ten and f" {ten} " in f" {k} " for k, _ in khop)]
     if not kenh_khop:
         return {"loai": "khong_khop",
                 "noi_thang": "Không nhận ra kênh nào trong câu hỏi.",

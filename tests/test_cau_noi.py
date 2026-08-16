@@ -94,3 +94,21 @@ def test_co_bao_cao_kem_nguon_va_tuoi(he, monkeypatch):
     assert kq["so_bao_cao"] == 2
     assert kq["tuoi_du_lieu"].startswith("2026-08-12")   # tuổi dữ liệu bắt buộc
     assert "thanh" in kq["nguon"]
+
+
+def test_router_ranh_gioi_tu_va_uu_tien_ten_dai_nhat(he, monkeypatch):
+    # Đ2: "Life" và "Life In" cùng tồn tại — tên DÀI NHẤT thắng, hết nhieu_kenh oan
+    from nen.common import danh_ba
+    db = danh_ba.ket_noi()
+    ng = danh_ba.them_ngach(db, "Test")
+    danh_ba.them_kenh(db, "Life", ng)
+    danh_ba.them_kenh(db, "Life In", ng)
+    db.close()
+    goi = {}
+    monkeypatch.setattr(cau_noi, "bao_cao_kenh",
+                        lambda kenh, user, conn=None: goi.update(ma=kenh["ma"]) or {"loai": "x"})
+    cau_noi.hoi_so_lieu("kênh life in dạo này thế nào", KD_L2, he)
+    assert goi["ma"] == "K-LIFE-IN"
+    # ranh giới từ: "lifetime" KHÔNG khớp kênh "Life" (hết substring trần)
+    kq = cau_noi.hoi_so_lieu("lifetime value là gì", KD_L2, he)
+    assert kq["loai"] == "khong_khop"
