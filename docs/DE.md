@@ -347,3 +347,29 @@ sqlite-snapshot như iam.db.
   Trường bỏ trống trong form sửa = giữ nguyên (không xóa giá trị về rỗng —
   chấp nhận, form điền sẵn giá trị cũ). Link /general/people trong sidebar
   `sb_ns` của 3 app + hoi_dap.html ĐỂ NGUYÊN — sống qua redirect.
+- 16/08/2026 — **HỒ SƠ NHÂN SỰ ĐẦY ĐỦ + TÀI LIỆU GỐC XONG** (`7db4e53`, Owner
+  phê đúng: People chỉ 3 trường trần, không kế thừa V2 — mục 12.1 đáng lẽ phải
+  đi CÙNG hub, lỗi xếp nhịp lần 2). Migration `003` (002 đã bị chiếm) thêm 5
+  cột `nguoi`: ngay_sinh/cccd/dia_chi/ngay_vao/cap_bac (DEFAULT '' — hồ sơ cũ
+  hiện '—', đã kiểm DB thật tự áp). `nen/rules/chuc_danh.csv` KẾ THỪA V2
+  (7 vị trí; Kế toán/Thủ quỹ mang `Hành chính Nhân sự;Kế toán` cover kiêm
+  nhiệm lẫn chuyên trách). IAM: `DEPARTMENTS` 5 (MỘT nguồn danh mục, lần đầu
+  có hằng) + `CAP_BAC` slug intern/staff/leader/manager + kiểm CẶP bộ
+  phận×vị trí Ở SERVER trên giá trị SAU GỘP (bài học 01/08 hệ cũ) +
+  grandfather bản ghi cũ; nhật ký sua_nguoi chỉ ghi TÊN CỘT (CCCD/địa chỉ
+  không lọt audit log). CCCD NHẠY CẢM: to-chuc pop ngay cửa đọc, chỉ giữ
+  `cccd_che` (8 số + ****) — xem đủ qua `GET /general/people/cccd/{ma}`, MỖI
+  lượt một dòng vết `xem_cccd` (khuôn vault). Tài liệu gốc (CCCD 2 mặt/SYLL/
+  khác): upload whitelist pdf-jpg-jpeg-png trần 10MB, slug chống traversal,
+  chống ghi đè hậu tố -2 ("thay" = nộp bản mới, bản cũ giữ), ghi nguyên tử,
+  vết nộp + vết xem MỖI lượt; kho `data/nen/ho-so-tai-lieu/<mã>/` khai
+  du_lieu_nen (VÀNG vĩnh viễn — backup đêm tự gom). UI People theo mockup
+  H1b: double-click dòng mở chi tiết (JS thuần — an toàn LAN HTTP), Vị trí
+  lọc theo Bộ phận, ô CCCD trống + placeholder bản che (rỗng = giữ nguyên →
+  không thể lỡ ghi bản che vào DB), bảng có ngày nhập, không ghi chú màn
+  hình. 4 suite 101(+3)/58(+1)/307+3skip/64; nghiệm thu sống: van CẶP trả
+  đúng thông điệp, traversal 404, migration áp DB thật. GHI CHÚ: người nộp
+  tài liệu tra ở Audit Log (chưa có cột riêng); không xóa được CCCD về rỗng
+  qua form (chấp nhận). KẾ TIẾP mạch nhân sự (nợ V2 còn lại): luồng PHÊ
+  DUYỆT (H2 — HR tạo trạng thái chờ → Owner duyệt + cấp tài khoản ngay màn
+  duyệt, từ chối kèm lý do) + vòng đời hồ sơ↔tài khoản khi xóa/đổi.
