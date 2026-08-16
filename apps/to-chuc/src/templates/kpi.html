@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}KPI — OUTLIERY{% endblock %}
-{% block topbar_ten %}<svg class="ic" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15l3-4 3 3 4-6"/></svg> KPI &amp; chấm công{% endblock %}
+{% block topbar_ten %}<svg class="ic" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15l3-4 3 3 4-6"/></svg> KPI &amp; attendance{% endblock %}
 
 {% block style_them %}
   /* style_them nằm TRONG thẻ style chung của base — CSS TRẦN, không viết thẻ style */
@@ -30,42 +30,42 @@
    tuyệt đối không hiện 0 giả vờ là "không làm gì". #}
 <h3 class="kpi-tieu">
   <svg class="ic" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15l3-4 3 3 4-6"/></svg>
-  KPI kỳ {{ kpi.tu }} → {{ kpi.den }}
+  KPI period {{ kpi.tu }} → {{ kpi.den }}
   <span style="margin-left:auto;display:flex;gap:6px">
-    <a class="ky-nut{% if kpi.ky == 'tuan' %} active{% endif %}" href="/kpi?ky=tuan&ngay_cc={{ ngay_cc }}">Tuần này</a>
-    <a class="ky-nut{% if kpi.ky == 'thang' %} active{% endif %}" href="/kpi?ky=thang&ngay_cc={{ ngay_cc }}">Tháng này</a>
+    <a class="ky-nut{% if kpi.ky == 'tuan' %} active{% endif %}" href="/kpi?ky=tuan&ngay_cc={{ ngay_cc }}">This week</a>
+    <a class="ky-nut{% if kpi.ky == 'thang' %} active{% endif %}" href="/kpi?ky=thang&ngay_cc={{ ngay_cc }}">This month</a>
   </span></h3>
-<div class="kpi-note">Số đo TỰ ĐỘNG từ dữ liệu các app đang sinh hằng ngày (chỉ-đọc, không nhập tay).
-  Ô <b>—</b> nghĩa là <b>nguồn chết / chưa nối được</b> — hệ nói thẳng thay vì hiện 0 giả (van chống bịa số liệu).</div>
+<div class="kpi-note">Metrics are AUTOMATIC, read from data the apps generate daily (read-only, no manual entry).
+  A <b>—</b> cell means <b>source dead / not connected</b> — the system says so instead of showing a fake 0 (anti-fabrication guard).</div>
 
 {% if iam_loi %}<div class="kpi-canh">⚠ {{ iam_loi }}</div>{% endif %}
 {% if kpi.thieu.plannery or kpi.thieu.content or kpi.thieu.speaky or kpi.thieu.bao_cao %}
-<div class="kpi-canh">Nguồn chưa đọc được kỳ này:
-  {% if kpi.thieu.plannery %}<b>PlannerY</b> (plan.json — cột Video đến hạn/Nghỉ){% endif %}
-  {% if kpi.thieu.content %} · <b>Content</b> (history.jsonl — cột Script xong){% endif %}
-  {% if kpi.thieu.speaky %} · <b>SpeakY</b> (jobs_log.csv — cột Voice){% endif %}
-  {% if kpi.thieu.bao_cao %} · <b>Data Analytics</b> (bao-cao-lich-su — bảng Kinh doanh){% endif %}
-  — đặt env nguồn (chỉ-đọc) trong cấu hình app để nối.</div>
+<div class="kpi-canh">Sources unavailable this period:
+  {% if kpi.thieu.plannery %}<b>PlannerY</b> (plan.json — Videos due/Leave columns){% endif %}
+  {% if kpi.thieu.content %} · <b>Content</b> (history.jsonl — Scripts done column){% endif %}
+  {% if kpi.thieu.speaky %} · <b>SpeakY</b> (jobs_log.csv — Voice column){% endif %}
+  {% if kpi.thieu.bao_cao %} · <b>Data Analytics</b> (bao-cao-lich-su — Business table){% endif %}
+  — set the read-only source env vars in the app config to connect.</div>
 {% endif %}
 
 {% if kpi.vh %}
 <div class="bang-cuon">
 <table class="kpi">
   <tr><th colspan="2">Vận hành - Sản xuất</th>
-    <th class="so" title="Script viết xong — log Content Ultimate">Script xong</th>
-    <th class="so" title="Voice tạo xong — log SpeakY (bật 31/07/2026, đếm từ đó)">Voice</th>
-    <th class="so" title="Video đến hạn theo lịch PlannerY (kênh được phân, đúng vai)">Video đến hạn</th>
-    <th class="so" title="Script xong / video đến hạn">Tiến độ</th>
-    <th class="so" title="Ngày nghỉ khai trong PlannerY">Nghỉ</th></tr>
+    <th class="so" title="Scripts completed — Content Ultimate log">Scripts done</th>
+    <th class="so" title="Voices generated — SpeakY log (enabled 31/07/2026, counted from then)">Voice</th>
+    <th class="so" title="Videos due per PlannerY schedule (assigned channels, correct role)">Videos due</th>
+    <th class="so" title="Scripts done / videos due">Progress</th>
+    <th class="so" title="Leave days declared in PlannerY">Leave</th></tr>
   {% for r in kpi.vh %}
   <tr>
     <td class="tk">{{ r.ten or '—' }}</td><td>{{ r.ho_ten or '—' }}</td>
-    <td class="so">{% if r.script_xong is none %}<span class="thieu" title="Không đọc được log Content Ultimate">—</span>{% else %}{{ r.script_xong }}{% endif %}</td>
-    <td class="so">{% if r.so_voice is none %}<span class="thieu" title="Không đọc được log job SpeakY">—</span>{% else %}{{ r.so_voice }}{% endif %}</td>
-    <td class="so">{% if r.video_den_han is none %}<span class="thieu" title="Không đọc được plan.json của PlannerY">—</span>
-      {% elif r.chua_noi_planner %}<span class="thieu" title="Chưa nối được người này với lịch PlannerY — sổ IAM v2 chưa mang trường khâu/planner_id của hồ sơ hệ cũ, hiện chỉ nối qua HỌ TÊN trùng tên trong plan.json">chưa nối lịch</span>
+    <td class="so">{% if r.script_xong is none %}<span class="thieu" title="Could not read Content Ultimate log">—</span>{% else %}{{ r.script_xong }}{% endif %}</td>
+    <td class="so">{% if r.so_voice is none %}<span class="thieu" title="Could not read SpeakY job log">—</span>{% else %}{{ r.so_voice }}{% endif %}</td>
+    <td class="so">{% if r.video_den_han is none %}<span class="thieu" title="Could not read PlannerY plan.json">—</span>
+      {% elif r.chua_noi_planner %}<span class="thieu" title="This person is not linked to the PlannerY schedule yet — IAM v2 registry lacks the old system's stage/planner_id fields; currently linked only by matching FULL NAME in plan.json">not linked</span>
       {% else %}{{ r.video_den_han }}{% endif %}</td>
-    <td class="so">{% if r.tien_do is none %}<span class="thieu" title="Cần cả lịch PlannerY lẫn log Content mới tính được">—</span>{% else %}<b>{{ r.tien_do }}%</b>{% endif %}</td>
+    <td class="so">{% if r.tien_do is none %}<span class="thieu" title="Needs both the PlannerY schedule and the Content log to compute">—</span>{% else %}<b>{{ r.tien_do }}%</b>{% endif %}</td>
     <td class="so">{% if r.ngay_nghi is none %}<span class="thieu">—</span>{% else %}{{ r.ngay_nghi }}{% endif %}</td>
   </tr>
   {% endfor %}
@@ -77,49 +77,49 @@
 <div class="bang-cuon">
 <table class="kpi">
   <tr><th colspan="2">Kinh doanh</th>
-    <th class="so" title="Số báo cáo Data Analytics đã chạy trong kỳ">Báo cáo đã chạy</th>
-    <th class="so" title="Tổng số video trong các báo cáo đã phân tích">Video đã phân tích</th></tr>
+    <th class="so" title="Data Analytics reports run this period">Reports run</th>
+    <th class="so" title="Total videos across analyzed reports">Videos analyzed</th></tr>
   {% for r in kpi.kd %}
   <tr><td class="tk">{{ r.ten or '—' }}</td><td>{{ r.ho_ten or '—' }}</td>
-    <td class="so">{% if r.so_bao_cao is none %}<span class="thieu" title="Không đọc được lịch sử báo cáo Data Analytics (BAO_CAO_DIR)">—</span>{% else %}{{ r.so_bao_cao }}{% endif %}</td>
-    <td class="so">{% if r.tong_video is none %}<span class="thieu" title="Không đọc được lịch sử báo cáo Data Analytics (BAO_CAO_DIR)">—</span>{% else %}{{ r.tong_video }}{% endif %}</td></tr>
+    <td class="so">{% if r.so_bao_cao is none %}<span class="thieu" title="Could not read Data Analytics report history (BAO_CAO_DIR)">—</span>{% else %}{{ r.so_bao_cao }}{% endif %}</td>
+    <td class="so">{% if r.tong_video is none %}<span class="thieu" title="Could not read Data Analytics report history (BAO_CAO_DIR)">—</span>{% else %}{{ r.tong_video }}{% endif %}</td></tr>
   {% endfor %}
 </table>
 </div>
 {% endif %}
 
 {% if not kpi.vh and not kpi.kd %}
-<div class="kpi-canh">Chưa có người nào thuộc bộ phận có nguồn KPI
-  (Vận hành - Sản xuất / Kinh doanh){% if not iam_loi %} trong sổ IAM{% endif %}.</div>
+<div class="kpi-canh">No one belongs to a department with KPI sources
+  (Vận hành - Sản xuất / Kinh doanh){% if not iam_loi %} in the IAM registry{% endif %}.</div>
 {% endif %}
 
 {# ═══ CHẤM CÔNG (01/08/2026): giờ vào = tín hiệu đầu ngày, giờ ra = tín hiệu cuối
    (request thật / nhịp tim 5' khi tab mở / beacon đóng app) ═══ #}
 <h3 class="kpi-tieu">
   <svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-  Chấm công ngày
+  Daily attendance
   <form method="get" action="/kpi" style="display:inline-flex;gap:.4rem;align-items:center">
     <input type="hidden" name="ky" value="{{ kpi.ky }}">
     <input type="date" name="ngay_cc" value="{{ ngay_cc }}"
            style="font:inherit;background:transparent;color:inherit;border:1px solid var(--line);border-radius:7px;padding:2px 8px">
-    <button type="submit" class="nut phu" style="padding:.3rem .8rem;font-size:.82rem">Xem</button>
+    <button type="submit" class="nut phu" style="padding:.3rem .8rem;font-size:.82rem">View</button>
   </form>
 </h3>
-<div class="kpi-note">Giờ VÀO = lần đầu dùng app trong ngày; giờ RA = tín hiệu cuối — đóng
-  app/tắt máy là chốt, ngồi đọc không bấm gì vẫn tính nhờ nhịp tim 5 phút. Đây là
-  <b>hiện diện trên hệ công cụ</b>, không phải máy chấm vân tay — làm việc ngoài hệ
-  (họp, quay ngoài) không được đếm.</div>
+<div class="kpi-note">Clock-IN = first app use of the day; clock-OUT = last signal — closing the
+  app/shutting down finalizes it; idle reading still counts thanks to the 5-minute heartbeat. This is
+  <b>presence on the tool system</b>, not a fingerprint time clock — work outside the system
+  (meetings, outside filming) is not counted.</div>
 <div class="bang-cuon">
 <table class="kpi">
-  <tr><th>Họ tên</th><th>Tài khoản</th><th class="so">Giờ vào</th><th class="so">Giờ ra</th>
-    <th>Nguồn giờ ra</th><th class="so">Tổng</th></tr>
+  <tr><th>Full name</th><th>Account</th><th class="so">Clock in</th><th class="so">Clock out</th>
+    <th>Clock-out source</th><th class="so">Total</th></tr>
   {% for r in cham_cong %}
   <tr><td>{{ r.ho_ten or '—' }}</td><td class="tk">{{ r.ten }}</td>
     <td class="so">{{ r.vao or '—' }}</td><td class="so">{{ r.ra or '—' }}</td>
-    <td>{{ r.nguon_ra if r.vao else 'Không có mặt trên hệ' }}</td>
+    <td>{{ r.nguon_ra if r.vao else 'Not present on the system' }}</td>
     <td class="so">{{ r.tong or '—' }}</td></tr>
   {% else %}
-  <tr><td colspan="6">Chưa có tín hiệu hiện diện nào trong ngày này.</td></tr>
+  <tr><td colspan="6">No presence signals for this day.</td></tr>
   {% endfor %}
 </table>
 </div>

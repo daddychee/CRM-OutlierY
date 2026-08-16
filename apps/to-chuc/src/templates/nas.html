@@ -4,7 +4,7 @@
    NHÁNH CHỜ — route luôn truyền dong_bo_bat=False, tt_nas='tat' vì mạch nas_sync
    (đồng bộ tài khoản Windows theo mật khẩu OUTLIERY) thuộc gateway/IAM, chưa mang
    sang. Khi gateway có nas_sync thì nối lại context, template sẵn sàng. #}
-{% block title %}NAS công ty — OUTLIERY{% endblock %}
+{% block title %}Company NAS — OUTLIERY{% endblock %}
 
 {% block style_them %}
   /* style_them nằm TRONG thẻ style chung của base — CSS TRẦN, tuyệt đối không
@@ -54,40 +54,40 @@
 {% set IC_CHO = '<svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>' %}
 <div class="nas-wrap">
   <h2 class="nas-h"><svg class="ic" style="width:22px;height:22px" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="6" rx="1"/><rect x="3" y="13" width="18" height="6" rx="1"/><circle cx="7" cy="8" r=".9"/><circle cx="7" cy="16" r=".9"/></svg>
-    Ổ lưu trữ NAS công ty</h2>
-  <p class="nas-sub">Các ổ bạn được truy cập. Lần đầu dùng trên máy này: bấm
-    {{ IC_GEAR|safe }} <b>Cài đặt</b> ở Ổ CỦA TEAM BẠN — tải file, bấm đúp chạy một lần là ổ hiện
-    trong This PC, từ đó click đúp như ổ D/E, không cần vào trang này nữa.
-    Cần thêm ổ khác thì bấm Cài đặt ở ổ đó (không hỏi lại mật khẩu).</p>
+    Company NAS storage</h2>
+  <p class="nas-sub">Drives you can access. First time on this machine: click
+    {{ IC_GEAR|safe }} <b>Set up</b> on YOUR TEAM'S drive — download the file, double-click it once and the
+    drive appears in This PC; from then on just double-click it like drive D/E, no need to revisit this page.
+    Need another drive? Click Set up on that one (no password re-prompt).</p>
 
   {# ===== Tài khoản: NAS dùng CHÍNH tài khoản OUTLIERY (04/08/2026) ===== #}
   {% if dong_bo_bat and tt_nas != 'tat' %}
   <div class="nas-tk">
     {% if chua_ok and tt_nas != 'ok' %}
-    <div class="nas-tt" style="margin:0 0 .5rem"><b>⚠ Chưa tải được file Cài đặt</b> —
-      tài khoản NAS của bạn chưa sẵn sàng. Làm đúng bước bên dưới trước rồi quay lại.</div>
+    <div class="nas-tt" style="margin:0 0 .5rem"><b>⚠ Could not download the Set up file</b> —
+      your NAS account is not ready yet. Complete the step below first, then come back.</div>
     {% endif %}
-    <b>Tài khoản của bạn</b> (khi Windows hỏi lúc mở ổ):
-    Tên <code>{{ nas_ip }}\{{ user.ten }}</code> — phải gõ đủ cụm <code>{{ nas_ip }}\</code>
-    đứng trước, thiếu là báo sai mật khẩu. Mật khẩu: <b>chính là mật khẩu đăng nhập
-    OUTLIERY</b> của bạn. Nhập xong tích <b>Remember my credentials</b>.
-    <div class="nas-tt">{{ IC_MAC|safe }} Trên <b>Mac</b>: gõ tên <b>KHÔNG có tiền tố</b> —
-      chỉ <code>{{ user.ten }}</code> (không phải <code>{{ nas_ip }}\{{ user.ten }}</code>
-      như Windows). Cùng mật khẩu OUTLIERY; bấm nút <b>Kết nối trên Mac</b> ở mỗi ổ bên
-      dưới để Finder tự hỏi.</div>
+    <b>Your account</b> (when Windows asks while opening a drive):
+    Name <code>{{ nas_ip }}\{{ user.ten }}</code> — you must type the full <code>{{ nas_ip }}\</code>
+    prefix; without it you get a wrong-password error. Password: <b>your OUTLIERY login
+    password</b>. After entering, tick <b>Remember my credentials</b>.
+    <div class="nas-tt">{{ IC_MAC|safe }} On <b>Mac</b>: type the name <b>WITHOUT the prefix</b> —
+      just <code>{{ user.ten }}</code> (not <code>{{ nas_ip }}\{{ user.ten }}</code>
+      like on Windows). Same OUTLIERY password; click <b>Connect on Mac</b> on each drive
+      below and Finder will prompt you.</div>
     {% if tt_nas == 'ok' %}
-    <div class="nas-tt">✓ Tài khoản NAS đã sẵn sàng.</div>
+    <div class="nas-tt">✓ NAS account is ready.</div>
     {% elif tt_nas == 'mk_yeu' %}
-    <div class="nas-tt">⚠ Mật khẩu hiện tại chưa đạt chuẩn Windows nên NAS chưa nhận.
-      <a href="/doi-mat-khau">Đổi mật khẩu</a> mới: từ 8 ký tự, đủ chữ HOA + chữ thường +
-      số và <b>KHÔNG chứa tên đăng nhập của bạn</b> (ví dụ dạng <code>Abc12345</code>)
-      rồi quay lại đây.</div>
+    <div class="nas-tt">⚠ Your current password does not meet Windows standards, so NAS rejects it.
+      <a href="/doi-mat-khau">Change your password</a>: at least 8 characters with UPPERCASE + lowercase +
+      digits and <b>NOT containing your username</b> (e.g. <code>Abc12345</code>),
+      then come back here.</div>
     {% elif tt_nas == 'loi' %}
-    <div class="nas-tt">⚠ Lần đồng bộ gần nhất gặp lỗi — đăng xuất rồi đăng nhập lại;
-      vẫn thấy dòng này thì báo quản trị.</div>
+    <div class="nas-tt">⚠ The last sync failed — log out and log back in;
+      if this line persists, contact the administrator.</div>
     {% else %}
-    <div class="nas-tt">{{ IC_CHO|safe }} Tài khoản NAS chưa kích hoạt — <a href="/dang-xuat">đăng xuất</a>
-      rồi đăng nhập lại một lần là xong (hệ chỉ mở khóa được lúc bạn đăng nhập).</div>
+    <div class="nas-tt">{{ IC_CHO|safe }} NAS account not activated yet — <a href="/dang-xuat">log out</a>
+      and log back in once and it's done (the system can only unlock it while you log in).</div>
     {% endif %}
   </div>
   {% endif %}
@@ -103,22 +103,22 @@
           <div class="o-duong">{{ o.duong }}</div>
         </div>
       </div>
-      <span class="o-quyen">{% if user.level >= 3 %}Toàn quyền — đọc, ghi, sửa, xóa{% else %}Xem + thêm file mới — không sửa/xóa được{% endif %}</span>
+      <span class="o-quyen">{% if user.level >= 3 %}Full access — read, write, edit, delete{% else %}View + add new files — no edit/delete{% endif %}</span>
       {% if o.dl %}
       <div class="o-bar"><div class="o-fill" style="width:{{ o.dl.phan_tram }}%"></div></div>
-      <div class="o-dl">Còn trống {{ o.dl.trong_gb }} GB / {{ o.dl.tong_gb }} GB</div>
+      <div class="o-dl">{{ o.dl.trong_gb }} GB free of {{ o.dl.tong_gb }} GB</div>
       {% endif %}
       <div class="o-act">
         {% if dong_bo_bat and tt_nas == 'ok' %}
-        <a class="nas-nut" href="/nas/cai-dat/{{ o.idx }}" title="Tải file, bấm đúp, nhập mật khẩu OUTLIERY một lần — ổ {{ o.ten }} hiện trong This PC thành ổ {{ o.chu }}:">{{ IC_GEAR|safe }} Cài đặt — hiện ổ trong This PC</a>
+        <a class="nas-nut" href="/nas/cai-dat/{{ o.idx }}" title="Download the file, double-click, enter your OUTLIERY password once — drive {{ o.ten }} appears in This PC as {{ o.chu }}:">{{ IC_GEAR|safe }} Set up — show drive in This PC</a>
         {% elif dong_bo_bat and tt_nas != 'tat' %}
-        <span class="nas-nut" style="opacity:.5;cursor:not-allowed" title="Tài khoản NAS chưa sẵn sàng — làm bước trong khung Tài khoản phía trên trước">{{ IC_GEAR|safe }} Cài đặt (chờ tài khoản sẵn sàng)</span>
+        <span class="nas-nut" style="opacity:.5;cursor:not-allowed" title="NAS account not ready — complete the step in the Account box above first">{{ IC_GEAR|safe }} Set up (waiting for account)</span>
         {% else %}
-        <button type="button" class="nas-nut nas-copy" data-duong="{{ o.duong }}">{{ IC_COPY|safe }} <span class="nas-copy-tx">Copy đường dẫn</span></button>
+        <button type="button" class="nas-nut nas-copy" data-duong="{{ o.duong }}">{{ IC_COPY|safe }} <span class="nas-copy-tx">Copy path</span></button>
         {% endif %}
         {% if o.smb %}
-        <a class="nas-nut" href="{{ o.smb }}" title="Mở Finder trên Mac và kết nối tới ổ {{ o.ten }} ({{ o.smb }})">{{ IC_MAC|safe }} Kết nối trên Mac</a>
-        <button type="button" class="nas-nut nas-copy" data-duong="{{ o.smb }}">{{ IC_COPY|safe }} <span class="nas-copy-tx">Copy địa chỉ Mac</span></button>
+        <a class="nas-nut" href="{{ o.smb }}" title="Open Finder on Mac and connect to drive {{ o.ten }} ({{ o.smb }})">{{ IC_MAC|safe }} Connect on Mac</a>
+        <button type="button" class="nas-nut nas-copy" data-duong="{{ o.smb }}">{{ IC_COPY|safe }} <span class="nas-copy-tx">Copy Mac address</span></button>
         {% endif %}
       </div>
     </div>
@@ -126,19 +126,19 @@
   </div>
 
   {% if nas_web %}
-  <a class="nas-web" href="{{ nas_web }}" target="_blank" rel="noopener">{{ IC_WEB|safe }} Mở giao diện web của NAS →</a>
+  <a class="nas-web" href="{{ nas_web }}" target="_blank" rel="noopener">{{ IC_WEB|safe }} Open the NAS web UI →</a>
   {% endif %}
 
   {# ===== Nhật ký xóa/đổi tên — CHỈ Manager+ (level >= 4) ===== #}
   {% if nhat_ky is not none %}
   <div class="nas-tk" style="margin-top:1.1rem">
-    <b>{{ IC_LOG|safe }} Nhật ký xóa / đổi tên (14 ngày, Manager trở lên mới thấy)</b>
+    <b>{{ IC_LOG|safe }} Delete / rename log (14 days, Manager and up only)</b>
     {% if nhat_ky %}
     <div style="max-height:300px;overflow:auto;margin-top:.5rem">
       <table style="width:100%;border-collapse:collapse;font-size:.84rem">
         <tr style="color:var(--muted);text-align:left">
-          <th style="padding:.25rem .5rem">Lúc</th>
-          <th style="padding:.25rem .5rem">Ai</th>
+          <th style="padding:.25rem .5rem">Time</th>
+          <th style="padding:.25rem .5rem">Who</th>
           <th style="padding:.25rem .5rem">File</th></tr>
         {% for d in nhat_ky %}
         <tr style="border-top:1px solid var(--line)">
@@ -149,43 +149,44 @@
       </table>
     </div>
     {% else %}
-    <div class="nas-tt">Chưa ghi nhận sự kiện xóa/đổi tên nào. Nhật ký chỉ ghi TỪ LÚC BẬT
-      theo dõi (script dựng nền bước 3b) — không truy ngược được chuyện cũ; máy còn dùng
-      tài khoản chung sẽ hiện tên <code>nhanvien</code>.</div>
+    <div class="nas-tt">No delete/rename events recorded yet. The log only records FROM WHEN
+      tracking was ENABLED (setup script step 3b) — it cannot look back; machines still using
+      the shared account will show as <code>nhanvien</code>.</div>
     {% endif %}
   </div>
   {% endif %}
 
   <div class="nas-note">
     {% if dong_bo_bat and tt_nas != 'tat' %}
-    File Cài đặt tự gỡ tài khoản chung <code>nhanvien</code> cũ trên máy (nếu có) trước
-    khi gắn ổ. Vừa đổi mật khẩu OUTLIERY thì mật khẩu NAS đổi theo — ổ đang gắn sẽ báo
-    sai mật khẩu: chạy lại file {{ IC_GEAR|safe }} Cài đặt của ổ là xong (nó tự dọn tài khoản lưu cũ).
+    The Set up file removes the old shared <code>nhanvien</code> account on the machine (if any)
+    before mounting the drive. If you just changed your OUTLIERY password, the NAS password changes
+    too — mounted drives will report a wrong password: re-run that drive's {{ IC_GEAR|safe }} Set up
+    file and you're done (it cleans up the old saved credentials).
     {% else %}
-    <b>Cách mở nhanh:</b>
+    <b>Quick open:</b>
     <ol class="nas-buoc">
-      <li>Bấm {{ IC_COPY|safe }} <b>Copy đường dẫn</b> ở ổ muốn mở.</li>
-      <li>Nhấn <b>Windows + R</b>, dán (Ctrl+V), Enter — cửa sổ thư mục NAS mở ra.</li>
+      <li>Click {{ IC_COPY|safe }} <b>Copy path</b> on the drive you want to open.</li>
+      <li>Press <b>Windows + R</b>, paste (Ctrl+V), Enter — the NAS folder window opens.</li>
     </ol>
-    <b>Gắn thành ổ đĩa cố định (làm một lần, sau hiện trong This PC như ổ D/E):</b>
+    <b>Mount as a permanent drive (do once; it then shows in This PC like drive D/E):</b>
     <ol class="nas-buoc">
-      <li>Mở <b>File Explorer</b> → chuột phải <b>This PC</b> → <b>Map network drive…</b></li>
-      <li>Chọn chữ ổ (vd <b>Z:</b>), dán đường dẫn vào ô Folder, tích <b>Reconnect at sign-in</b> → Finish.</li>
-      <li>Máy hỏi tài khoản → nhập tài khoản NAS được cấp (quên thì hỏi quản trị).</li>
+      <li>Open <b>File Explorer</b> → right-click <b>This PC</b> → <b>Map network drive…</b></li>
+      <li>Pick a drive letter (e.g. <b>Z:</b>), paste the path into the Folder box, tick <b>Reconnect at sign-in</b> → Finish.</li>
+      <li>When asked for an account → enter the NAS account you were given (ask the admin if you forgot).</li>
     </ol>
     {% endif %}
     {% if nas_ip %}
-    <b>{{ IC_MAC|safe }} Trên máy Mac:</b>
+    <b>{{ IC_MAC|safe }} On a Mac:</b>
     <ol class="nas-buoc">
-      <li>Bấm {{ IC_MAC|safe }} <b>Kết nối trên Mac</b> ở ổ muốn mở — Finder tự bật hộp <i>Connect to
-        Server</i> sẵn địa chỉ. (Trình duyệt hỏi mở ứng dụng khác thì bấm <b>Allow/Cho
-        phép</b> — đó là Finder.)</li>
-      <li>Không tự mở được thì: mở <b>Finder</b> → nhấn <b>⌘K</b> (Command+K) → bấm
-        {{ IC_COPY|safe }} <b>Copy địa chỉ Mac</b> ở ổ đó rồi dán (⌘V) vào ô địa chỉ → <b>Connect</b>.</li>
-      <li>Chọn <b>Registered User</b>, nhập tài khoản như hướng dẫn ở khung phía trên
-        (Mac KHÔNG cần tiền tố IP), tích <b>Remember this password in my keychain</b>.</li>
-      <li>Muốn có sẵn như ổ cứng gắn ngoài: kéo icon ổ vừa mở trong cửa sổ Finder vào
-        mục <b>Favorites</b> bên trái.</li>
+      <li>Click {{ IC_MAC|safe }} <b>Connect on Mac</b> on the drive you want — Finder opens the
+        <i>Connect to Server</i> box with the address pre-filled. (If the browser asks to open
+        another app, click <b>Allow</b> — that is Finder.)</li>
+      <li>If it does not open automatically: open <b>Finder</b> → press <b>⌘K</b> (Command+K) → click
+        {{ IC_COPY|safe }} <b>Copy Mac address</b> on that drive, paste (⌘V) into the address box → <b>Connect</b>.</li>
+      <li>Choose <b>Registered User</b>, enter the account as instructed in the box above
+        (Mac does NOT need the IP prefix), tick <b>Remember this password in my keychain</b>.</li>
+      <li>To keep it handy like an external drive: drag the mounted drive's icon from the Finder
+        window into <b>Favorites</b> on the left.</li>
     </ol>
     {% endif %}
   </div>
@@ -221,7 +222,7 @@
         xong = true;
       }
       if (tx) {
-        tx.textContent = xong ? 'Đã copy ✓' : cu;
+        tx.textContent = xong ? 'Copied ✓' : cu;
         setTimeout(function () { tx.textContent = cu; }, 1800);
       }
     });

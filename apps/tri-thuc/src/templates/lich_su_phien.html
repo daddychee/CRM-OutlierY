@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}{{ ten_phien }} — OUTLIERY{% endblock %}
-{% block topbar_ten %}Lịch sử — chi tiết{% endblock %}
+{% block topbar_ten %}History — detail{% endblock %}
 
 {% block style_them %}
   .lp-h{font-size:1.2rem;margin:0 0 .3rem}
@@ -18,14 +18,14 @@
 {% endblock %}
 
 {% block noi_dung %}
-<h2 class="lp-h">💬 {{ ten_phien }}{% if not cua_minh %} — của <b>{{ chu_nhan }}</b>{% endif %}</h2>
-<a href="{{ '/lich-su' if cua_minh else '/lich-su/' + chu_nhan }}">← Về danh sách cuộc trò chuyện</a>
-{% if cua_minh and phien_id %} · <a href="/hoi-dap?phien={{ phien_id | urlencode }}">💬 Tiếp tục cuộc này →</a>{% endif %}
+<h2 class="lp-h">💬 {{ ten_phien }}{% if not cua_minh %} — of <b>{{ chu_nhan }}</b>{% endif %}</h2>
+<a href="{{ '/lich-su' if cua_minh else '/lich-su/' + chu_nhan }}">← Back to conversations</a>
+{% if cua_minh and phien_id %} · <a href="/hoi-dap?phien={{ phien_id | urlencode }}">💬 Continue this chat →</a>{% endif %}
 
-{% if not cua_minh %}<div class="giam-sat">👁️ Chế độ giám sát (Owner): đang xem nguyên bản của {{ chu_nhan }}.</div>{% endif %}
+{% if not cua_minh %}<div class="giam-sat">👁️ Supervision mode (Owner): viewing {{ chu_nhan }}'s original.</div>{% endif %}
 
 {% if not cac_luot %}
-<p class="trong">Không có lượt nào xem được trong phiên này.</p>
+<p class="trong">No viewable turns in this session.</p>
 {% endif %}
 
 {% for l in cac_luot %}
@@ -33,7 +33,7 @@
   <div class="tg">{{ l.thoi_gian }}</div>
   <div class="hoi">❓ {{ l.hoi }}</div>
   <div class="dap">{{ l.dap }}</div>
-  {% if l.doc_codes %}<div class="nguon">📚 Nguồn: {{ l.doc_codes | join(' · ') }}</div>{% endif %}
+  {% if l.doc_codes %}<div class="nguon">📚 Sources: {{ l.doc_codes | join(' · ') }}</div>{% endif %}
 </div>
 {% endfor %}
 {% endblock %}

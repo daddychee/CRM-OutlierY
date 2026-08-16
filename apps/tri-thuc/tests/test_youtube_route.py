@@ -119,9 +119,9 @@ def test_owner_luu_va_go_cookies(tmp_path, monkeypatch):
     assert r.status_code == 200 and r.json()["so_dong"] == 1
     assert "abc" not in r.text                                    # write-only: không trả lại nội dung
     r2 = c.get("/nguon-ngoai")
-    assert "1 dòng youtube.com" in r2.text and "abc" not in r2.text  # trang chỉ hiện TRẠNG THÁI
+    assert "1 youtube.com lines" in r2.text and "abc" not in r2.text  # trang chỉ hiện TRẠNG THÁI
     assert c.post("/nguon/cookies/xoa").status_code == 200
-    assert "chưa có" in c.get("/nguon-ngoai").text
+    assert "none — using anonymous requests" in c.get("/nguon-ngoai").text
 
 
 def test_luu_cookies_nham_file_422(tmp_path, monkeypatch):

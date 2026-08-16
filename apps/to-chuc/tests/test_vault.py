@@ -106,7 +106,7 @@ def test_chi_owner_vao_vault():
     assert _login("nv", 2).get("/vault").status_code == 403
     assert _login("ql", 4).get("/vault").status_code == 403    # Manager cũng KHÔNG — Owner tuyệt đối
     r = _login("sep", 5).get("/vault")
-    assert r.status_code == 200 and "Vault chưa được khởi tạo" in r.text
+    assert r.status_code == 200 and "Vault not initialized" in r.text
     # thiếu claims gateway → 401
     assert TestClient(app).get("/vault").status_code == 401
 

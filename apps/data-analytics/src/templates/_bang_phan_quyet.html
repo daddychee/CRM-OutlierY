@@ -131,34 +131,34 @@
 <div id="loai-kenh-banner" class="loai-kenh-banner" style="display:none"></div>
 <div id="canh-bao-anh-xa" class="canh-bao-anh-xa" style="display:none"></div>
 
-<button type="button" class="nut-xuat" onclick="window.print()" title="Mở hộp thoại in của trình duyệt — chọn 'Lưu dưới dạng PDF' để xuất file">
+<button type="button" class="nut-xuat" onclick="window.print()" title="Opens the browser print dialog — choose 'Save as PDF' to export">
   <svg class="ic" viewBox="0 0 24 24"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-  Xuất báo cáo tổng
+  Export full report
 </button>
 
 <div id="bao-cao-kenh" style="display:none">
-  <h3 class="cd-sec"><svg class="ic" viewBox="0 0 24 24"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M9 4H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-3"/><path d="M9 12h6M9 16h6"/></svg> Báo cáo kênh — 9 phương pháp phân tích<button type="button" id="bck-lam-moi"
-    class="bck-lam-moi" style="display:none" title="Chạy lại diễn giải LLM (dùng sau khi nâng luật)">↻ Làm mới diễn giải</button></h3>
+  <h3 class="cd-sec"><svg class="ic" viewBox="0 0 24 24"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M9 4H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-3"/><path d="M9 12h6M9 16h6"/></svg> Channel report — 9 analysis methods<button type="button" id="bck-lam-moi"
+    class="bck-lam-moi" style="display:none" title="Re-run LLM interpretation (use after updating rules)">↻ Refresh interpretation</button></h3>
   <div id="bao-cao-kenh-ds" class="bck-ds"></div>
 </div>
 
 <div id="tong-quan" style="display:none">
-  <h3 class="cd-sec"><svg class="ic" viewBox="0 0 24 24"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2z"/></svg> Tổng quan danh mục kênh</h3>
+  <h3 class="cd-sec"><svg class="ic" viewBox="0 0 24 24"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2z"/></svg> Channel catalog overview</h3>
   <div class="o-so-hang" id="o-so-hang"></div>
 </div>
 
 <div id="khu-video" style="display:none">
-  <h3 class="cd-sec"><svg class="ic" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="18" rx="2"/><path d="M7 3v18M17 3v18M2 8h5M2 16h5M17 8h5M17 16h5"/></svg> Bảng phán quyết theo video <span class="phu" id="so-video"></span></h3>
-  <div id="tien-note" class="tien-note" style="display:none"><svg class="ic" viewBox="0 0 24 24"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg> Kênh chưa bật kiếm tiền — report
-    không có cột doanh thu/RPM, nên trục Tiền tạm chưa xét (tập trung lượt xem &amp; giữ chân trước).
-    Đây là trạng thái đúng của kênh, không phải thiếu số liệu.</div>
+  <h3 class="cd-sec"><svg class="ic" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="18" rx="2"/><path d="M7 3v18M17 3v18M2 8h5M2 16h5M17 8h5M17 16h5"/></svg> Per-video verdict table <span class="phu" id="so-video"></span></h3>
+  <div id="tien-note" class="tien-note" style="display:none"><svg class="ic" viewBox="0 0 24 24"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg> Channel not monetized yet — the report
+    has no revenue/RPM columns, so the Revenue axis is skipped for now (focus on views &amp; retention first).
+    This is the channel's true state, not missing data.</div>
   <div class="bang-wrap">
     <table class="bang-vid">
       <thead><tr>
-        <th>Tiêu đề</th><th class="num">Views</th>
-        <th class="tr-h">Nội dung</th><th class="tr-h">Tiền</th>
-        <th class="tr-h">Danh mục</th><th class="tr-h">Công thức</th>
-        <th>Phán quyết</th><th class="thao-tac">Thao tác</th>
+        <th>Title</th><th class="num">Views</th>
+        <th class="tr-h">Content</th><th class="tr-h">Revenue</th>
+        <th class="tr-h">Category</th><th class="tr-h">Format</th>
+        <th>Verdict</th><th class="thao-tac">Actions</th>
       </tr></thead>
       <tbody id="tbody-video"></tbody>
     </table>
@@ -169,8 +169,8 @@
 <div id="modal-video" class="modal-phu" style="display:none">
   <div class="modal-hop" role="dialog" aria-modal="true" aria-labelledby="modal-tieu-de">
     <div class="modal-dau">
-      <span id="modal-tieu-de" class="modal-tieu-de">Phân tích video</span>
-      <button type="button" id="modal-dong" class="modal-x" aria-label="Đóng">✕</button>
+      <span id="modal-tieu-de" class="modal-tieu-de">Video analysis</span>
+      <button type="button" id="modal-dong" class="modal-x" aria-label="Close">✕</button>
     </div>
     <div id="modal-dang" class="modal-dang" style="display:none">
       <div class="tien-do-nhan">Analyzing… <span id="modal-pct">0%</span></div>
@@ -178,8 +178,8 @@
     </div>
     <div id="modal-noi-dung"></div>
     <div class="modal-chan">
-      <button type="button" id="modal-lam-moi" class="nut phu">↻ Phân tích lại</button>
-      <button type="button" id="modal-dong-2" class="nut phu">Đóng</button>
+      <button type="button" id="modal-lam-moi" class="nut phu">↻ Re-analyze</button>
+      <button type="button" id="modal-dong-2" class="nut phu">Close</button>
     </div>
   </div>
 </div>
@@ -209,15 +209,15 @@ const IC = {
 };
 function _icEl(key) { const d = document.createElement('div'); d.innerHTML = IC[key]; return d.firstElementChild; }
 
-// Mã phán quyết → [nhãn tiếng Việt, class màu theo nhóm ý nghĩa]
+// Mã phán quyết → [nhãn hiển thị, class màu theo nhóm ý nghĩa] — KHÓA máy giữ nguyên
 const NHAN_PQ = {
-  nhan_ban:          ['Nhân bản',         'pq-tot'],
-  giu:               ['Giữ',              'pq-trungtinh'],
-  sua_bao_bi:        ['Sửa bao bì',       'pq-sua'],
-  sua_noi_dung:      ['Sửa nội dung',     'pq-sua'],
-  doi_ngach_vi_tien: ['Đổi ngách vì tiền','pq-canhbao'],
-  bo:                ['Bỏ',               'pq-xau'],
-  chua_du_du_lieu:   ['Chưa đủ dữ liệu',  'pq-xam'],
+  nhan_ban:          ['Replicate',              'pq-tot'],
+  giu:               ['Keep',                   'pq-trungtinh'],
+  sua_bao_bi:        ['Fix packaging',          'pq-sua'],
+  sua_noi_dung:      ['Fix content',            'pq-sua'],
+  doi_ngach_vi_tien: ['Change niche (low RPM)', 'pq-canhbao'],
+  bo:                ['Drop',                   'pq-xau'],
+  chua_du_du_lieu:   ['Not enough data',        'pq-xam'],
 };
 const MAU_TRANG = { '✓': 'tr-dat', '⚠': 'tr-canh', '✗': 'tr-hong', '?': 'tr-chua' };
 
@@ -267,16 +267,16 @@ function renderKetQua(el, data, tieuDe) {
     const d = document.createElement('div'); d.className = 'luat';
     const dong1 = document.createElement('div');
     const ma = document.createElement('span'); ma.className = 'ma';
-    ma.textContent = `[${r.ma_luat}] tầng ${r.tang_pheu}`;
+    ma.textContent = `[${r.ma_luat}] tier ${r.tang_pheu}`;
     const tc = document.createElement('span'); tc.className = 'tin-cay';
-    tc.textContent = 'độ tin cậy: ' + r.do_tin_cay;
+    tc.textContent = 'confidence: ' + r.do_tin_cay;
     dong1.append(ma, tc);
     const nn = document.createElement('div');
-    nn.append(_icEl('timKiem'), document.createTextNode(' Nguyên nhân: ' + r.nguyen_nhan));
+    nn.append(_icEl('timKiem'), document.createTextNode(' Cause: ' + r.nguyen_nhan));
     const cs = document.createElement('div');
-    cs.append(_icEl('luc'), document.createTextNode(' Cách sửa: ' + r.cach_sua));
+    cs.append(_icEl('luc'), document.createTextNode(' Fix: ' + r.cach_sua));
     const ntk = document.createElement('div'); ntk.className = 'nguon-tk';
-    ntk.textContent = 'Nguồn: ' + r.nguon_tham_khao;
+    ntk.textContent = 'Source: ' + r.nguon_tham_khao;
     d.append(dong1, nn, cs, ntk); el.appendChild(d);
   }
 
@@ -286,17 +286,17 @@ function renderKetQua(el, data, tieuDe) {
     if (data.dien_giai.sources && data.dien_giai.sources.length) {
       const ng = document.createElement('div'); ng.className = 'nguon';
       const dsNguon = data.dien_giai.sources.map(s => `${s.doc_code} — ${s.title}`).join(' · ');
-      ng.append(_icEl('sach'), document.createTextNode(' Playbook/tài liệu: ' + dsNguon));
+      ng.append(_icEl('sach'), document.createTextNode(' Playbook/documents: ' + dsNguon));
       dg.appendChild(ng);
     }
     const badge = document.createElement('span'); badge.className = 'badge';
-    badge.append(_icEl('khien'), document.createTextNode(' Đã qua phản biện bởi ' + data.dien_giai.critic_count + ' model'
-      + (data.dien_giai.rewritten ? ' — đã viết lại theo góp ý' : '')));
+    badge.append(_icEl('khien'), document.createTextNode(' Reviewed by ' + data.dien_giai.critic_count + ' critic model(s)'
+      + (data.dien_giai.rewritten ? ' — rewritten per feedback' : '')));
     dg.appendChild(badge); el.appendChild(dg);
   } else if (data.dien_giai_loi) {
     // LLM chết (hết credit…) — engine vẫn chấm đủ, chỉ thiếu phần diễn giải AI (15/08/2026)
     const cb = document.createElement('div'); cb.className = 'canh-bao';
-    cb.append(_icEl('canhBao'), document.createTextNode(' Thiếu phần diễn giải AI: ' + data.dien_giai_loi));
+    cb.append(_icEl('canhBao'), document.createTextNode(' AI interpretation missing: ' + data.dien_giai_loi));
     el.appendChild(cb);
   }
 }
@@ -306,11 +306,11 @@ function veTongQuan(tq) {
   _oSoHang.textContent = '';
   if (!tq) { _tong.style.display = 'none'; return; }
   const pct = x => (x != null) ? (x * 100).toFixed(1) + '%' : null;
-  _themO('Top 1 chiếm view', pct(tq.tap_trung_top1));
-  _themO('Top 3 chiếm view', pct(tq.tap_trung_top3));
-  _themO('Người xem mới (TB)', pct(tq.new_ratio_tb));
-  _themO('Người xem quay lại (TB)', pct(tq.returning_ratio_tb));
-  _themO('Nhóm độ dài thắng', tq.nhom_do_dai_thang);
+  _themO('Top 1 view share', pct(tq.tap_trung_top1));
+  _themO('Top 3 view share', pct(tq.tap_trung_top3));
+  _themO('New viewers (avg)', pct(tq.new_ratio_tb));
+  _themO('Returning viewers (avg)', pct(tq.returning_ratio_tb));
+  _themO('Winning length group', tq.nhom_do_dai_thang);
   _tong.style.display = _oSoHang.children.length ? 'block' : 'none';
 }
 function _themO(nhan, giaTri) {
@@ -329,9 +329,9 @@ function veLoaiKenh(profile) {
   el.textContent = '';
   if (!profile || !profile.ten_hien_thi) { el.style.display = 'none'; return; }
   const dau = document.createElement('div');
-  dau.append(_icEl('mucTieu'), ' Đang chẩn đoán theo loại kênh: ');
+  dau.append(_icEl('mucTieu'), ' Diagnosing as channel type: ');
   const b = document.createElement('b'); b.textContent = profile.ten_hien_thi; dau.append(b);
-  dau.append('. Baseline vẫn là mặt bằng của chính kênh; loại kênh chỉ điều chỉnh cách đọc số:');
+  dau.append('. Baseline is still the channel\'s own average; channel type only adjusts how numbers are read:');
   el.append(dau);
   const ul = document.createElement('ul');
   (profile.dieu_chinh || []).forEach(d => {
@@ -339,7 +339,7 @@ function veLoaiKenh(profile) {
     li.textContent = d.chi_so + ': ' + d.nguon + ' ';
     const tin = document.createElement('span');
     tin.className = 'lk-tin' + (d.do_tin_cay === 'uoc_luong' ? ' uoc_luong' : '');
-    tin.textContent = d.do_tin_cay === 'uoc_luong' ? 'ước lượng — cần kiểm' : 'có căn cứ';
+    tin.textContent = d.do_tin_cay === 'uoc_luong' ? 'estimate — verify' : 'evidence-based';
     li.append(tin);
     ul.append(li);
   });
@@ -353,18 +353,18 @@ function veCanhBaoAnhXa(ds) {
   if (!el) return;
   if (!ds || !ds.length) { el.style.display = 'none'; el.textContent = ''; return; }
   el.textContent = '';
-  el.append(_icEl('canhBao'), ' Report có cột NGHI là chỉ số quan trọng nhưng CHƯA ánh xạ được — kết quả '
-    + 'có thể thiếu/sai ở: ' + ds.join('; ')
-    + '. Hãy bổ sung dòng ánh xạ trong rules/column_mapping.csv.');
+  el.append(_icEl('canhBao'), ' The report has columns SUSPECTED to be key metrics but not yet mapped — results '
+    + 'may be missing/wrong for: ' + ds.join('; ')
+    + '. Add mapping rows in rules/column_mapping.csv.');
   el.style.display = 'block';
 }
 
 // Báo cáo kênh 9 mục cố định — 3 trạng thái → [nhãn tiếng Việt, class]. Chỉ 'có kết quả' mở
 // rộng (nội dung + số video căn cứ); 'chưa có số liệu' và 'chưa đủ' thu gọn 1 dòng ghi chú.
 const _NHAN_TT9 = {
-  co_ket_qua:           ['✓ Có kết quả',                   'bck-ok'],
-  chua_co_so_lieu:      ['— Chưa có số liệu',              'bck-thieu'],
-  chua_du_de_phan_tich: ['… Số liệu chưa đủ để phân tích', 'bck-chuadu'],
+  co_ket_qua:           ['✓ Has result',                     'bck-ok'],
+  chua_co_so_lieu:      ['— No data',                        'bck-thieu'],
+  chua_du_de_phan_tich: ['… Not enough data to analyze',     'bck-chuadu'],
 };
 // Dựng 1 mục khung 9 mục thành node (dùng chung cho danh sách đầy đủ veBaoCaoKenh() VÀ khối
 // Winning Format rút gọn trong báo cáo tổng hợp veWinningFormatTongHop() — MỘT nguồn render,
@@ -382,13 +382,13 @@ function _veMotMuc9(m) {
       nd.textContent = m.noi_dung || '';
       if (m.so_video != null) {
         const cc = document.createElement('span'); cc.className = 'can-cu';
-        cc.textContent = `  (căn cứ ${m.so_video} video)`;
+        cc.textContent = `  (based on ${m.so_video} videos)`;
         nd.appendChild(cc);
       }
       row.appendChild(nd);
     } else if (m.ghi_chu) {                              // THU GỌN: 1 dòng ghi chú lý do
       const g = document.createElement('div'); g.className = 'bck-ghi';
-      g.textContent = m.ghi_chu + (m.so_video != null ? ` (hiện có ${m.so_video} video)` : '');
+      g.textContent = m.ghi_chu + (m.so_video != null ? ` (currently ${m.so_video} videos)` : '');
       row.appendChild(g);
     }
     // Chiều phụ (Winning Format của B2: khung giờ + từ khóa) — mỗi chiều tự khai trạng thái riêng
@@ -398,7 +398,7 @@ function _veMotMuc9(m) {
       const ten = document.createElement('span'); ten.className = 'bck-phu-ten'; ten.textContent = cp.ten + ': ';
       const val = document.createElement('span');
       if (cp.trang_thai === 'co_ket_qua') {
-        val.textContent = (cp.noi_dung || '') + (cp.so_video != null ? ` (căn cứ ${cp.so_video} video)` : '');
+        val.textContent = (cp.noi_dung || '') + (cp.so_video != null ? ` (based on ${cp.so_video} videos)` : '');
       } else {
         val.textContent = cp.ghi_chu || (_NHAN_TT9[cp.trang_thai] || ['—'])[0];
       }
@@ -408,10 +408,10 @@ function _veMotMuc9(m) {
     if (m.ma_tran) {
       const mt = m.ma_tran;
       const o = [
-        ['Khỏe (CTR↑ Ret↑)', mt.khoe, 'khoe'],
-        ['Giật tít (CTR↑ Ret↓)', mt.giat_tit, 'giat_tit'],
-        ['Bao bì yếu (CTR↓ Ret↑)', mt.bao_bi_yeu, 'bao_bi_yeu'],
-        ['Yếu toàn diện (CTR↓ Ret↓)', mt.yeu_toan_dien, 'yeu_toan_dien'],
+        ['Healthy (CTR↑ Ret↑)', mt.khoe, 'khoe'],
+        ['Clickbait (CTR↑ Ret↓)', mt.giat_tit, 'giat_tit'],
+        ['Weak packaging (CTR↓ Ret↑)', mt.bao_bi_yeu, 'bao_bi_yeu'],
+        ['Weak overall (CTR↓ Ret↓)', mt.yeu_toan_dien, 'yeu_toan_dien'],
       ];
       let dong = null, maxn = -1;
       for (const [, n, key] of o) { if (n > maxn) { maxn = n; dong = key; } }
@@ -425,7 +425,7 @@ function _veMotMuc9(m) {
       row.appendChild(grid);
       if (mt.chua_du) {
         const cd = document.createElement('div'); cd.className = 'bck-matran-chuadu';
-        cd.textContent = `${mt.chua_du} video chưa đủ mẫu — không xếp vào ô nào (van chống bịa)`;
+        cd.textContent = `${mt.chua_du} videos lack sample size — not placed in any cell (anti-fabrication guard)`;
         row.appendChild(cd);
       }
     }
@@ -436,7 +436,7 @@ function _veMotMuc9(m) {
       if (m.dien_giai.critic_count) {
         const b = document.createElement('span'); b.className = 'bck-dg-badge';
         b.append(_icEl('khien'), document.createTextNode('  ' + m.dien_giai.critic_count + ' critic'
-          + (m.dien_giai.rewritten ? ' · đã viết lại' : '')));
+          + (m.dien_giai.rewritten ? ' · rewritten' : '')));
         dg.appendChild(b);
       }
       row.appendChild(dg);
@@ -469,7 +469,7 @@ function veWinningFormatTongHop(el, ds) {
   if (!muc.length) return;
   const tieu = document.createElement('div');
   tieu.className = 'cd-sec';
-  tieu.append(_icEl('sao'), document.createTextNode(' Công thức đang thắng (Winning Format)'));
+  tieu.append(_icEl('sao'), document.createTextNode(' Winning Format'));
   el.appendChild(tieu);
   for (const m of muc) el.appendChild(_veMotMuc9(m));
 }
@@ -478,14 +478,14 @@ async function lamMoiDienGiai() {
   const ctx = window.VIDEO_CTX;
   if (!ctx || !ctx.bao_cao_id) return;
   const btn = document.getElementById('bck-lam-moi');
-  btn.disabled = true; const cu = btn.textContent; btn.textContent = '↻ Đang làm mới…';
+  btn.disabled = true; const cu = btn.textContent; btn.textContent = '↻ Refreshing…';
   try {
     const fd = new FormData();
     fd.append('bao_cao_id', ctx.bao_cao_id);
     if (ctx.nguoi) fd.append('nguoi', ctx.nguoi);
     const res = await fetch('/chan-doan/muc-lam-moi', { method: 'POST', body: fd });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.detail || 'Lỗi');
+    if (!res.ok) throw new Error(data.detail || 'Error');
     if (window._BCK && data.dien_giai_9muc) {
       for (const m of window._BCK) if (data.dien_giai_9muc[m.ma]) m.dien_giai = data.dien_giai_9muc[m.ma];
       veBaoCaoKenh(window._BCK);   // vẽ lại với diễn giải mới
@@ -518,7 +518,7 @@ function _tienNhan(v) {
 
 function veBangVideo(videos) {
   const ds = (videos || []).slice().sort((a, b) => (b.views || 0) - (a.views || 0));
-  _soVideo.textContent = `(${ds.length} video — Analyze để phân tích từng tập)`;
+  _soVideo.textContent = `(${ds.length} videos — click Analyze for a per-video report)`;
   _tbodyVideo.textContent = '';
   for (const v of ds) {
     const chiMuc = v.chi_muc;
@@ -533,7 +533,7 @@ function veBangVideo(videos) {
     _themOTrang(tr, layTrang(td.noi_dung));
     // Trục Tiền: kênh CHƯA MONETIZE hiện 💰 + tooltip (khác '?' thiếu dữ liệu tạm thời)
     if (_tienNhan(v) === 'chua_monetize') {
-      _themOTrang(tr, '💰', 'Kênh chưa bật kiếm tiền — chưa xét doanh thu (tập trung view & giữ chân)');
+      _themOTrang(tr, '💰', 'Channel not monetized — revenue not assessed (focus on views & retention)');
     } else {
       const tienLyDo = v.tien_ly_do || (v.truc && v.truc.tien && v.truc.tien.ly_do) || null;
       _themOTrang(tr, layTrang(td.tien), tienLyDo);
@@ -551,7 +551,7 @@ function veBangVideo(videos) {
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'nut-act' + (tr._daCoBaoCao ? ' nut-xem' : '');
-    btn.textContent = tr._daCoBaoCao ? 'Xem báo cáo' : 'Analyze';
+    btn.textContent = tr._daCoBaoCao ? 'View report' : 'Analyze';
     btn.addEventListener('click', ev => { ev.stopPropagation(); moBaoCaoVideo(chiMuc, tr, false); });
     tr._btn = btn; actCell.appendChild(btn); tr.appendChild(actCell);
     // CHỈ nút Analyze/Xem báo cáo mới sinh/mở báo cáo — KHÔNG gắn click cả dòng (tránh bấm/
@@ -592,7 +592,7 @@ function _dongModal() {
   // Vừa phân tích LẦN ĐẦU thành công → dòng đó giờ đã có báo cáo → đổi nút ngay (không reload)
   if (_mvVuaPhanTich && _mvTr && _mvTr._btn) {
     _mvTr._daCoBaoCao = true;
-    _mvTr._btn.textContent = 'Xem báo cáo';
+    _mvTr._btn.textContent = 'View report';
     _mvTr._btn.classList.add('nut-xem');
   }
   _mvVuaPhanTich = false;
@@ -620,7 +620,7 @@ async function moBaoCaoVideo(chiMuc, tr, lamMoi) {
     if (lamMoi) fd.append('lam_moi', '1');
     const res = await fetch('/chan-doan/video', { method: 'POST', body: fd });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.detail || 'Lỗi không xác định');
+    if (!res.ok) throw new Error(data.detail || 'Unknown error');
     _ketThucTienDo();
     renderKetQua(_modalNoiDung, data, null);
     if (!daCache || lamMoi) _mvVuaPhanTich = true;   // lần đầu có báo cáo → đổi nút khi đóng

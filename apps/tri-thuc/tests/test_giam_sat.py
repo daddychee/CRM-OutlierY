@@ -72,7 +72,7 @@ def test_trang_thai_phien_va_khong_ro_noi_dung_tra_loi(tmp_path, monkeypatch):
     # Thu gọn 31/07/2026 (phương án A): giám sát chỉ TÓM TẮT lỗ hổng kho + link sang
     # /kho-thieu — nút Bổ sung tài liệu sống ở đó, một chức năng một chỗ
     assert 'href="/kho-thieu"' in r.text
-    assert "Bổ sung tài liệu" in _login("ql_kd").get("/kho-thieu").text
+    assert "Add document" in _login("ql_kd").get("/kho-thieu").text
 
 
 # ---- dọn menu + gom nhóm ngay trong Giám sát (tái dùng YC7) ----
@@ -87,7 +87,7 @@ def test_gom_nhom_da_don_ve_kho_thieu(tmp_path, monkeypatch):
     _gieo()
     r = _login("sep").get("/giam-sat")                  # 31/07: giám sát chỉ Owner
     assert 'action="/kho-thieu/gom"' not in r.text      # trang giám sát hết form gom
-    assert "câu kho chưa trả lời được" in r.text        # nhưng vẫn TÓM TẮT số câu chờ
+    assert "unanswered questions" in r.text             # nhưng vẫn TÓM TẮT số câu chờ
     c = _login("ql_kd")                                 # gom nhóm vẫn việc của Manager+
     r2 = c.post("/kho-thieu/gom", follow_redirects=False,
                 data={"ten_chu_de": "Nhóm từ giám sát", "cau": ["câu kho thiếu KD?"],

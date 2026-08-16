@@ -1,6 +1,6 @@
 {% extends "base.html" %}
-{% block title %}Giám sát — OUTLIERY{% endblock %}
-{% block topbar_ten %}Giám sát tri thức{% endblock %}
+{% block title %}Tracking — OUTLIERY{% endblock %}
+{% block topbar_ten %}Tracking{% endblock %}
 
 {% block style_them %}
   .gs-h{font-size:1.25rem;margin:0 0 .3rem}
@@ -21,24 +21,24 @@
 {% endblock %}
 
 {% block noi_dung %}
-<h2 class="gs-h">🌳 Giám sát tri thức</h2>
-<p class="mo-ta">{% if la_owner %}Owner — thấy toàn bộ nhân sự.{% else %}Manager — thấy nhân sự
-bộ phận <b>{{ user.bo_phan }}</b>.{% endif %} Cây chỉ hiện câu hỏi + trạng thái, KHÔNG hiện nội
-dung trả lời; chi tiết bấm sang trang lịch sử (theo luật giám sát hiện có).</p>
+<h2 class="gs-h">🌳 Knowledge Tracking</h2>
+<p class="mo-ta">{% if la_owner %}Owner — viewing all staff.{% else %}Manager — viewing staff of
+department <b>{{ user.bo_phan }}</b>.{% endif %} The tree shows only questions + status, NOT the
+answer content; click through to the history page for details (per current supervision rules).</p>
 
-<h2 class="gs">👥 Theo nhân sự</h2>
-{% if not cay %}<p class="trong">(Chưa có nhân sự nào trong phạm vi xem)</p>{% endif %}
+<h2 class="gs">👥 By staff</h2>
+{% if not cay %}<p class="trong">(No staff within your view scope)</p>{% endif %}
 {% for ns in cay %}
 <details>
   <summary>{{ ns.ten }} <span class="meta">({{ ns.bo_phan }} · {{ ns.level_chu }} ·
-    {{ ns.cac_phien | length }} phiên)</span>
-    {% if la_owner and ns.cac_phien %}<a href="/lich-su/{{ ns.ten }}">xem chi tiết →</a>{% endif %}
+    {{ ns.cac_phien | length }} sessions)</span>
+    {% if la_owner and ns.cac_phien %}<a href="/lich-su/{{ ns.ten }}">view details →</a>{% endif %}
   </summary>
-  {% if not ns.cac_phien %}<p class="trong">(Chưa có cuộc trò chuyện nào)</p>{% endif %}
+  {% if not ns.cac_phien %}<p class="trong">(No conversations yet)</p>{% endif %}
   {% for p in ns.cac_phien %}
   <details>
     <summary>{% if p.chua_dap %}<span class="canh">⚠️</span>{% else %}✅{% endif %}
-      {{ p.ten }} <span class="meta">({{ p.cau_hoi | length }} câu)</span></summary>
+      {{ p.ten }} <span class="meta">({{ p.cau_hoi | length }} questions)</span></summary>
     <ul class="cau">{% for c in p.cau_hoi %}<li>{{ c }}</li>{% endfor %}</ul>
   </details>
   {% endfor %}
@@ -48,13 +48,13 @@ dung trả lời; chi tiết bấm sang trang lịch sử (theo luật giám sá
 <!-- Thu gọn 31/07/2026 (user chốt phương án A): trang này CHỈ giám sát NHÂN SỰ.
      Toàn bộ xử lý lỗ hổng kho (bảng chờ, gom nhóm, Q&A, xóa câu, bổ sung tài liệu)
      sống MỘT nơi duy nhất ở /kho-thieu — hết cảnh một chức năng hai chỗ, sửa đôi. -->
-<h2 class="gs">🕳️ Lỗ hổng kho</h2>
+<h2 class="gs">🕳️ Knowledge gaps</h2>
 {% if not cac_nhom and not cac_nhom_chu_de %}
-<p class="trong">✅ Chưa có câu nào kho chưa trả lời được.</p>
+<p class="trong">✅ No unanswered questions yet.</p>
 {% else %}
 {% set nhom_cho = cac_nhom_chu_de | rejectattr("da_giai_quyet") | list %}
-<p class="mo-ta">Đang chờ xử lý: <b>{{ cac_nhom | length }}</b> câu kho chưa trả lời được{%
-  if nhom_cho %} · <b>{{ nhom_cho | length }}</b> nhóm chủ đề chờ bổ sung{% endif %} —
-  <a href="/kho-thieu">mở Kho cần bổ sung →</a></p>
+<p class="mo-ta">Pending: <b>{{ cac_nhom | length }}</b> unanswered questions{%
+  if nhom_cho %} · <b>{{ nhom_cho | length }}</b> topic groups awaiting documents{% endif %} —
+  <a href="/kho-thieu">open Gap →</a></p>
 {% endif %}
 {% endblock %}

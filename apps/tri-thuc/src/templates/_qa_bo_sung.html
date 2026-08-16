@@ -43,10 +43,10 @@
   <div class="qa-box">
     <div class="qa-dau">
       <svg class="ic" viewBox="0 0 24 24" style="width:17px;height:17px;flex:0 0 auto"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-      <b id="qa-tieu">Bổ sung Q&amp;A vào kho</b>
-      <button type="button" class="qa-x" id="qa-dong" aria-label="Đóng">✕</button>
+      <b id="qa-tieu">Add Q&amp;A to knowledge base</b>
+      <button type="button" class="qa-x" id="qa-dong" aria-label="Close">✕</button>
     </div>
-    <div class="qa-cau">Câu hỏi: <span id="qa-cau-hoi"></span></div>
+    <div class="qa-cau">Question: <span id="qa-cau-hoi"></span></div>
     <div id="qa-than"></div>
   </div>
 </div>
@@ -77,30 +77,30 @@
     let j = null; try { j = await r.json(); } catch (_) {}
     return { ok: r.ok, j };
   }
-  const loiCua = res => (res.j && (res.j.detail || res.j.message)) || 'Có lỗi, thử lại.';
+  const loiCua = res => (res.j && (res.j.detail || res.j.message)) || 'Something went wrong, try again.';
 
   // BƯỚC A — tìm ứng viên
   async function timUngVien() {
-    than.innerHTML = ''; than.appendChild(el('p', 'qa-cho', 'Đang tìm tài liệu liên quan…'));
+    than.innerHTML = ''; than.appendChild(el('p', 'qa-cho', 'Finding related documents…'));
     let res;
     try { res = await postForm('/kho-thieu/ung-vien-qa', { cau_hoi: cauHoi }); }
-    catch (_) { than.innerHTML = ''; than.appendChild(el('p', 'qa-loi', 'Có lỗi mạng, thử lại.')); return; }
+    catch (_) { than.innerHTML = ''; than.appendChild(el('p', 'qa-loi', 'Network error, try again.')); return; }
     than.innerHTML = '';
     if (!res.ok) { than.appendChild(el('p', 'qa-loi', loiCua(res))); return; }
     const d = res.j;
     if (!d.co_tai_lieu) {
-      than.appendChild(el('p', 'qa-loi', d.message || 'Kho chưa có tài liệu đủ liên quan.'));
-      const a = el('a', 'nut phu', 'Nạp tài liệu mới cho chủ đề này');
+      than.appendChild(el('p', 'qa-loi', d.message || 'No sufficiently related documents in the knowledge base yet.'));
+      const a = el('a', 'nut phu', 'Upload a new document for this topic');
       a.href = '/?goi_y_tieu_de=' + encodeURIComponent(cauHoi);
       than.appendChild(a);
       return;
     }
-    than.appendChild(el('p', 'qa-huong', 'Chọn tài liệu để bổ sung câu trả lời vào (Owner tự chọn):'));
+    than.appendChild(el('p', 'qa-huong', 'Choose the document to attach the answer to (Owner chooses):'));
     d.ung_vien.forEach(u => {
       const card = el('div', 'qa-ung-vien');
-      card.appendChild(el('div', 'qa-uv-ten', u.tieu_de_goc + '  ·  ' + u.doc_code_goc + '  ·  điểm ' + u.diem));
+      card.appendChild(el('div', 'qa-uv-ten', u.tieu_de_goc + '  ·  ' + u.doc_code_goc + '  ·  score ' + u.diem));
       card.appendChild(el('div', 'qa-uv-trich', u.doan_trich || ''));
-      const b = el('button', 'nut', 'Chọn tài liệu này');
+      const b = el('button', 'nut', 'Choose this document');
       b.type = 'button';
       b.addEventListener('click', () => soanNhap(u.doc_code_goc, u.tieu_de_goc));
       card.appendChild(b);
@@ -110,33 +110,33 @@
 
   // BƯỚC B — soạn nháp trên tài liệu đã chọn
   async function soanNhap(docCode, tenTL) {
-    than.innerHTML = ''; than.appendChild(el('p', 'qa-cho', 'Đang soạn nháp câu trả lời…'));
+    than.innerHTML = ''; than.appendChild(el('p', 'qa-cho', 'Drafting the answer…'));
     let res;
     try { res = await postForm('/kho-thieu/soan-nhap-qa', { cau_hoi: cauHoi, doc_code_goc: docCode }); }
-    catch (_) { than.innerHTML = ''; than.appendChild(el('p', 'qa-loi', 'Có lỗi mạng, thử lại.')); return; }
+    catch (_) { than.innerHTML = ''; than.appendChild(el('p', 'qa-loi', 'Network error, try again.')); return; }
     than.innerHTML = '';
     if (!res.ok || !res.j || !res.j.ok) {
       than.appendChild(el('p', 'qa-loi', loiCua(res)));
-      const back = el('button', 'nut phu', '← Chọn tài liệu khác');
+      const back = el('button', 'nut phu', '← Choose another document');
       back.type = 'button'; back.addEventListener('click', timUngVien);
       than.appendChild(back);
       return;
     }
     const d = res.j;
     const dich = el('p', 'qa-dich');
-    dich.innerHTML = 'Tài liệu đích: <b></b>';
+    dich.innerHTML = 'Target document: <b></b>';
     dich.querySelector('b').textContent = (d.tieu_de_goc || tenTL) + ' (' + d.doc_code_goc + ')';
     than.appendChild(dich);
     if (d.khong_du_co_so) {
       than.appendChild(el('p', 'qa-loi',
-        'AI thấy tài liệu này chưa đủ cơ sở — hãy tự viết câu trả lời đúng, hoặc chọn tài liệu khác.'));
+        'AI finds this document insufficient — write the correct answer yourself, or choose another document.'));
     }
     const ta = el('textarea', 'qa-nhap'); ta.value = d.nhap || '';
     than.appendChild(ta);
     const hang = el('div', 'qa-hang');
-    const back = el('button', 'nut phu', '← Chọn tài liệu khác');
+    const back = el('button', 'nut phu', '← Choose another document');
     back.type = 'button'; back.addEventListener('click', timUngVien);
-    const duyet = el('button', 'nut', 'Duyệt & ghi vào kho');
+    const duyet = el('button', 'nut', 'Approve & save');
     duyet.type = 'button';
     duyet.addEventListener('click', () => ghiDuyet(d.doc_code_goc, ta, duyet));
     hang.append(back, duyet);
@@ -147,15 +147,15 @@
   async function ghiDuyet(docCode, ta, btn) {
     than.querySelectorAll('.qa-loi').forEach(e => e.remove());
     const traLoi = ta.value.trim();
-    if (!traLoi) { ta.after(el('p', 'qa-loi', 'Câu trả lời trống — hãy viết nội dung trước khi duyệt.')); return; }
-    btn.disabled = true; const nhan = btn.textContent; btn.textContent = 'Đang ghi…';
+    if (!traLoi) { ta.after(el('p', 'qa-loi', 'Answer is empty — write the content before approving.')); return; }
+    btn.disabled = true; const nhan = btn.textContent; btn.textContent = 'Saving…';
     let res;
     try {
       res = await postForm('/kho-thieu/duyet-qa',
         { cau_hoi: cauHoi, doc_code_goc: docCode, cau_tra_loi: traLoi });
     } catch (_) {
       btn.disabled = false; btn.textContent = nhan;
-      ta.after(el('p', 'qa-loi', 'Có lỗi mạng, thử lại (nháp của bạn vẫn còn).')); return;
+      ta.after(el('p', 'qa-loi', 'Network error, try again (your draft is kept).')); return;
     }
     if (!res.ok || !res.j || !res.j.ok) {
       btn.disabled = false; btn.textContent = nhan;
@@ -163,8 +163,8 @@
       return;
     }
     than.innerHTML = '';
-    than.appendChild(el('p', 'qa-ok', res.j.message || 'Đã bổ sung Q&A vào kho.'));
-    const xong = el('button', 'nut', 'Xong (tải lại trang)');
+    than.appendChild(el('p', 'qa-ok', res.j.message || 'Q&A added to knowledge base.'));
+    const xong = el('button', 'nut', 'Done (reload page)');
     xong.type = 'button';
     xong.addEventListener('click', () => location.reload());  // câu tự rơi khỏi bảng ở lần load sau
     than.appendChild(xong);

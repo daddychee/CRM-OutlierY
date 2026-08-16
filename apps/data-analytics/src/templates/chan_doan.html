@@ -47,54 +47,54 @@
 
 <form id="form" class="cd-form">
   <input type="file" id="file" accept=".csv,.xlsx,.xls" required>
-  <label class="o-ngay-wrap" for="o-kenh">Tên kênh
-    <input type="text" id="o-kenh" list="dl-kenh" placeholder="vd: Outland" maxlength="120" required>
+  <label class="o-ngay-wrap" for="o-kenh">Channel name
+    <input type="text" id="o-kenh" list="dl-kenh" placeholder="e.g. Outland" maxlength="120" required>
     <datalist id="dl-kenh"></datalist>
   </label>
-  <label class="o-ngay-wrap" for="o-ten">Tên báo cáo (tùy chọn)
-    <input type="text" id="o-ten" placeholder="vd: Tháng 7" maxlength="120">
+  <label class="o-ngay-wrap" for="o-ten">Report name (optional)
+    <input type="text" id="o-ten" placeholder="e.g. July" maxlength="120">
   </label>
-  <label class="o-ngay-wrap" for="o-loai">Loại kênh (tùy chọn)
+  <label class="o-ngay-wrap" for="o-loai">Channel type (optional)
     <select id="o-loai">
-      <option value="">— Không xác định —</option>
-      <option value="tre_em">Trẻ em</option>
+      <option value="">— Not specified —</option>
+      <option value="tre_em">Kids</option>
       <option value="documentary">Documentary</option>
-      <option value="narrator">Người kể chuyện</option>
-      <option value="compilation">Tổng hợp</option>
-      <option value="tutorial">Hướng dẫn</option>
-      <option value="giai_tri">Giải trí chung</option>
+      <option value="narrator">Narrator</option>
+      <option value="compilation">Compilation</option>
+      <option value="tutorial">Tutorial</option>
+      <option value="giai_tri">General entertainment</option>
     </select>
   </label>
-  <label class="o-ngay-wrap" for="o-ngay">Ngày chạy report
+  <label class="o-ngay-wrap" for="o-ngay">Report run date
     <input type="date" id="o-ngay">
   </label>
-  <label class="o-ngay-wrap" for="o-ky-dau">Kỳ báo cáo — từ ngày (chỉ cần nếu file không có Chart data)
+  <label class="o-ngay-wrap" for="o-ky-dau">Report period — from (only needed if file has no Chart data)
     <input type="date" id="o-ky-dau">
   </label>
-  <label class="o-ngay-wrap" for="o-ky-cuoi">đến ngày
+  <label class="o-ngay-wrap" for="o-ky-cuoi">to
     <input type="date" id="o-ky-cuoi">
   </label>
-  <button id="nut" type="submit">Chẩn đoán</button>
+  <button id="nut" type="submit">Diagnose</button>
 </form>
-<p class="ghi-chu">Nạp report YouTube Studio (.csv/.xlsx) — bản xuất theo video. App tự đọc
-cột tiếng Anh + quy đổi %. Dòng <b>Total</b> = tổng kênh. Sửa/thêm luật trong
-<b>rules/diagnosis_rules.csv</b> — không cần sửa code.<br>
-<b>Tên kênh</b> gõ NHẤT QUÁN giữa các lần nạp (gõ vài chữ để xem gợi ý) — dùng để nối các báo
-cáo cùng kênh qua thời gian, phục vụ so sánh tăng trưởng giữa các kỳ sau này.<br>
-<b>Ngày chạy report</b> để trống cũng được; nhập vào thì có thêm phân tích theo tuổi video (mới/đang chạy/đuôi dài).<br>
-<b>Kỳ báo cáo</b>: file .xlsx có sheet Chart data thì app TỰ NHẬN khoảng ngày, khỏi nhập; file
-.csv "Table data" rời không có Chart data thì nhập tay cả hai ô mới so sánh tăng trưởng được.</p>
+<p class="ghi-chu">Upload a YouTube Studio report (.csv/.xlsx) — per-video export. The app reads
+English columns + converts %. The <b>Total</b> row = whole channel. Edit/add rules in
+<b>rules/diagnosis_rules.csv</b> — no code changes needed.<br>
+<b>Channel name</b>: type it CONSISTENTLY across uploads (type a few letters for suggestions) —
+it links reports of the same channel over time for period-over-period growth comparison.<br>
+<b>Report run date</b> can be left blank; filling it adds video-age analysis (new/running/long-tail).<br>
+<b>Report period</b>: .xlsx files with a Chart data sheet auto-detect the date range, no input needed;
+standalone "Table data" .csv without Chart data needs both fields filled to compare growth.</p>
 
-<a class="cd-ls" id="nut-ls" href="/bao-cao-lich-su" title="Xem lại các báo cáo đã chẩn đoán">
+<a class="cd-ls" id="nut-ls" href="/bao-cao-lich-su" title="Review past diagnosed reports">
   <svg class="ic" viewBox="0 0 24 24"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l4 2"/></svg>
-  Lịch sử báo cáo <span class="cd-ls-mui" id="ls-mui">▾</span></a>
+  Report history <span class="cd-ls-mui" id="ls-mui">▾</span></a>
 <div id="ls-panel" class="ls-panel" hidden></div>
 
 <div id="dang-phan-tich" class="dpt" style="display:none">
-  <div class="dpt-nhan">🧠 Đang phân tích… <span id="dpt-pct">0%</span></div>
+  <div class="dpt-nhan">🧠 Analyzing… <span id="dpt-pct">0%</span></div>
   <div class="dpt-thanh"><div id="dpt-bar" class="dpt-bar"></div></div>
-  <div class="dpt-ghi">Có thể đóng tab hoặc chuyển mục — phân tích vẫn chạy nền và tự lưu vào
-    <a href="/bao-cao-lich-su">lịch sử báo cáo</a>.</div>
+  <div class="dpt-ghi">You can close this tab or navigate away — analysis keeps running in the
+    background and saves to <a href="/bao-cao-lich-su">report history</a>.</div>
 </div>
 <div id="canh-bao-ngay"></div>
 <div id="kq-kenh"></div>
@@ -137,12 +137,12 @@ function veKetQuaYouTube(data, fileHienTai) {
     cb.textContent = '⚠️ ' + data.canh_bao_ngay;
     canhBaoNgay.appendChild(cb);
   }
-  renderKetQua(kqKenh, data.kenh, '📈 Chẩn đoán CẢ KÊNH (tổng so với mặt bằng video)');
+  renderKetQua(kqKenh, data.kenh, '📈 CHANNEL-WIDE diagnosis (total vs per-video baseline)');
   veWinningFormatTongHop(kqKenh, data.bao_cao_kenh);   // Winning Format B1/B2 lồng vào tổng hợp
   if (data.bao_cao_id) {   // Tầng 1: đã lưu vào lịch sử báo cáo
     const luu = document.createElement('div');
     luu.style.cssText = 'margin-top:.6rem;font-size:.85rem;color:var(--muted)';
-    luu.innerHTML = '✅ Đã lưu vào <a href="/bao-cao-lich-su/' + data.bao_cao_id + '">lịch sử báo cáo</a>.';
+    luu.innerHTML = '✅ Saved to <a href="/bao-cao-lich-su/' + data.bao_cao_id + '">report history</a>.';
     kqKenh.appendChild(luu);
   }
   veLoaiKenh(data.profile_loai_kenh);
@@ -176,7 +176,7 @@ function chayNen(taskId, fileHienTai) {
     } else {
       const e = document.createElement('div');
       e.className = 'tom-tat vo';
-      e.textContent = '❌ ' + (tt.loi || 'Phân tích nền gặp lỗi.');
+      e.textContent = '❌ ' + (tt.loi || 'Background analysis failed.');
       kqKenh.appendChild(e);
     }
   }, 1200);
@@ -186,7 +186,7 @@ form.addEventListener('submit', async e => {
   e.preventDefault();
   _dungTienDoNen();          // huỷ poll cũ nếu bấm lại khi đang chạy
   nut.disabled = true;
-  nut.textContent = 'Đang chẩn đoán…';
+  nut.textContent = 'Diagnosing…';
   canhBaoNgay.textContent = '';
   kqKenh.textContent = '';
   dpt.style.display = 'none';
@@ -208,7 +208,7 @@ form.addEventListener('submit', async e => {
     fd.append('ky_ket_thuc', oKyCuoi.value || '');
     const res = await fetch('/chan-doan', { method: 'POST', body: fd });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.detail || 'Lỗi không xác định');
+    if (!res.ok) throw new Error(data.detail || 'Unknown error');
 
     if (data.loai === 'nen') {
       chayNen(data.task_id, fileHienTai);          // report YouTube → chạy nền + poll
@@ -224,7 +224,7 @@ form.addEventListener('submit', async e => {
     kqKenh.appendChild(e);
   } finally {
     nut.disabled = false;
-    nut.textContent = 'Chẩn đoán';
+    nut.textContent = 'Diagnose';
   }
 });
 </script>
@@ -247,16 +247,16 @@ form.addEventListener('submit', async e => {
     const tg = document.createElement('span'); tg.className = 'tg';
     tg.textContent = (r.thoi_gian || '').replace('T', ' ').slice(0, 16);  // ISO → "2026-07-21 11:22"
     const ten = document.createElement('span'); ten.className = 'ten';
-    ten.textContent = (r.ten || '(không tên)') + (r.nguoi_chay ? ' · ' + r.nguoi_chay : '');
+    ten.textContent = (r.ten || '(untitled)') + (r.nguoi_chay ? ' · ' + r.nguoi_chay : '');
     const tang = document.createElement('span');
     tang.className = 'tang ' + (r.tang_vo ? 'vo' : 'ok');
-    tang.textContent = r.tang_vo || 'không vỡ';
+    tang.textContent = r.tang_vo || 'intact';
     a.append(tg, ten, tang);
     return a;
   }
 
   async function nap() {
-    panel.innerHTML = '<div class="ls-cho">Đang tải…</div>';
+    panel.innerHTML = '<div class="ls-cho">Loading…</div>';
     try {
       const res = await fetch('/api/bao-cao-lich-su');
       if (!res.ok) throw new Error(res.status);
@@ -265,18 +265,18 @@ form.addEventListener('submit', async e => {
       if (!data.bao_cao.length) {
         const t = document.createElement('div');
         t.className = 'ls-trong';
-        t.textContent = 'Chưa có báo cáo nào — nạp report ở trên rồi bấm Chẩn đoán.';
+        t.textContent = 'No reports yet — upload a report above and click Diagnose.';
         panel.appendChild(t);
       } else {
         data.bao_cao.forEach(r => panel.appendChild(dong(r)));
       }
       const them = document.createElement('a');
       them.className = 'ls-them'; them.href = '/bao-cao-lich-su';
-      them.textContent = 'Mở trang lịch sử đầy đủ →';
+      them.textContent = 'Open full history page →';
       panel.appendChild(them);
       daNap = true;
     } catch (e) {
-      panel.innerHTML = '<div class="ls-trong">Không tải được danh sách — thử lại hoặc mở trang đầy đủ.</div>';
+      panel.innerHTML = '<div class="ls-trong">Could not load the list — try again or open the full page.</div>';
       daNap = false;  // lần mở sau thử fetch lại
     }
   }

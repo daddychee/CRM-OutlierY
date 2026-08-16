@@ -106,4 +106,4 @@ def test_trang_kho_thieu_co_nut_bo_sung(tmp_path, monkeypatch):
     c.post("/kho-thieu/gom", data={"ten_chu_de": "Chủ đề C", "cau": ["câu C?"]})
     r = c.get("/kho-thieu")
     assert doc_nhom()[0]["da_giai_quyet"] is False       # kho chưa thêm gì — còn chờ
-    assert "Bổ sung tài liệu" in r.text and "goi_y_tieu_de=" in r.text
+    assert "Add document" in r.text and "goi_y_tieu_de=" in r.text

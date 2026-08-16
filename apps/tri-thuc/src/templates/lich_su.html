@@ -1,6 +1,6 @@
 {% extends "base.html" %}
-{% block title %}Lịch sử — OUTLIERY{% endblock %}
-{% block topbar_ten %}Lịch sử hỏi–đáp{% endblock %}
+{% block title %}History — OUTLIERY{% endblock %}
+{% block topbar_ten %}History{% endblock %}
 
 {% block style_them %}
   .ls-h{font-size:1.25rem;margin:0 0 .3rem}
@@ -24,20 +24,20 @@
 {% endblock %}
 
 {% block noi_dung %}
-<h2 class="ls-h">🕘 Lịch sử hỏi–đáp{% if not cua_minh %} — của <b>{{ chu_nhan }}</b>{% endif %}</h2>
+<h2 class="ls-h">🕘 Q&A History{% if not cua_minh %} — of <b>{{ chu_nhan }}</b>{% endif %}</h2>
 
-{% if not cua_minh %}<div class="giam-sat">👁️ Chế độ giám sát: đang xem nguyên bản lịch sử của {{ chu_nhan }}.</div>{% endif %}
+{% if not cua_minh %}<div class="giam-sat">👁️ Supervision mode: viewing {{ chu_nhan }}'s history as-is.</div>{% endif %}
 
-{% if not cac_phien %}<p class="trong">Chưa có cuộc trò chuyện nào.</p>{% endif %}
+{% if not cac_phien %}<p class="trong">No conversations yet.</p>{% endif %}
 
 {% for p in cac_phien %}
 <a class="phien{% if p.highlight %} sang{% endif %}"
    href="{{ '/hoi-dap?phien=' + p.id if cua_minh else '/lich-su/' + chu_nhan + '/phien/' + p.id }}">
-  {% if cua_minh %}<button type="button" class="doi-ten" data-id="{{ p.id }}" title="Đổi tên">✏️</button>{% endif %}
+  {% if cua_minh %}<button type="button" class="doi-ten" data-id="{{ p.id }}" title="Rename">✏️</button>{% endif %}
   <div class="ten">{{ p.ten }}</div>
-  {% if p.highlight %}<div class="nhan-sang">💡 Đã có tài liệu mới trả lời được câu bạn từng hỏi</div>{% endif %}
+  {% if p.highlight %}<div class="nhan-sang">💡 New documents can now answer a question you asked</div>{% endif %}
   <div class="preview">❓ {{ p.preview }}</div>
-  <div class="meta"><span data-tg="{{ p.thoi_gian }}">{{ p.thoi_gian }}</span> · {{ p.so_luot }} lượt</div>
+  <div class="meta"><span data-tg="{{ p.thoi_gian }}">{{ p.thoi_gian }}</span> · {{ p.so_luot }} turns</div>
 </a>
 {% endfor %}
 {% endblock %}
@@ -46,7 +46,7 @@
 <script>
 // thời gian tương đối cho danh sách CHÍNH (sidebar do base xử lý riêng)
 (function(){
-  const rtf = new Intl.RelativeTimeFormat('vi', { numeric: 'auto' });
+  const rtf = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });
   const DV = [['year',31536000],['month',2592000],['day',86400],['hour',3600],['minute',60],['second',1]];
   document.querySelectorAll('.noi-dung [data-tg]').forEach(el => {
     const t = new Date(el.dataset.tg); if (isNaN(t)) return;
@@ -57,7 +57,7 @@
   document.querySelectorAll('.doi-ten').forEach(nut => {
     nut.addEventListener('click', e => {
       e.preventDefault();
-      const ten = prompt('Tên mới cho cuộc trò chuyện:');
+      const ten = prompt('New name for this conversation:');
       if (!ten || !ten.trim()) return;
       const fd = new FormData();
       fd.append('phien_id', nut.dataset.id);

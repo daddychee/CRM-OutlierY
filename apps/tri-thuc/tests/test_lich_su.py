@@ -108,7 +108,7 @@ def test_owner_giam_sat_xem_nguoi_khac(tmp_path, monkeypatch):
     r = c.get("/lich-su/nv2")                               # YC4: tầng 1 — list phiên
     assert r.status_code == 200
     assert "nv2 hỏi gì đó" in r.text                        # preview lượt gần nhất
-    assert "giám sát" in r.text.lower()                     # có nhãn chế độ giám sát
+    assert "supervision" in r.text.lower()                  # có nhãn chế độ giám sát
     r2 = c.get("/lich-su/nv2/phien/mac-dinh")               # tầng 2 — chi tiết nguyên bản
     assert "nv2 hỏi gì đó" in r2.text and "KD-9" in r2.text
 
@@ -116,7 +116,7 @@ def test_owner_giam_sat_xem_nguoi_khac(tmp_path, monkeypatch):
 def test_lich_su_rong_hien_thong_bao(tmp_path, monkeypatch):
     _users_file(tmp_path, monkeypatch)
     r = _dang_nhap("nv").get("/lich-su")
-    assert "Chưa có cuộc trò chuyện nào" in r.text          # YC4: chữ trang list phiên
+    assert "No conversations yet" in r.text                 # YC4: chữ trang list phiên
 
 
 # ---- MẢNH D2: ẩn lượt vượt quyền khi CHÍNH CHỦ xem ----

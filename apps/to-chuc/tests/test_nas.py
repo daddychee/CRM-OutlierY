@@ -33,7 +33,7 @@ def test_cau_hinh_roi_moi_nguoi_deu_thay(monkeypatch):
     assert "execCommand" in b                        # copy có đường lui (LAN HTTP)
     # kết nối cho máy Mac — smb:// dựng từ IP + tên share, nút mở Finder + ⌘K dự phòng
     assert "smb://192.168.1.99/kho-chung" in b
-    assert "Kết nối trên Mac" in b and "⌘K" in b
+    assert "Connect on Mac" in b and "⌘K" in b
     # có web UI thì thêm nút mở
     monkeypatch.setenv("NAS_WEB", "http://192.168.1.99:5000")
     assert "http://192.168.1.99:5000" in c.get("/nas").text

@@ -56,98 +56,99 @@
 {% set IC_IN = '<svg class="ic" viewBox="0 0 24 24"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>' %}
 
 {% block noi_dung %}
-<h2 class="v-h">{{ IC_KHOA|safe }} Vault tài khoản số</h2>
+<h2 class="v-h">{{ IC_KHOA|safe }} Digital accounts vault</h2>
 
 {% if canh_bao_http %}
-<div class="v-canhbao">⚠ Bạn đang mở vault qua <b>HTTP trong mạng LAN</b> — mật khẩu đi trên dây
-dạng thường. Khuyến nghị: chỉ thao tác vault ngay trên máy chủ (localhost) cho tới khi hệ bật HTTPS.</div>
+<div class="v-canhbao">⚠ You are opening the vault over <b>HTTP on the LAN</b> — passwords travel
+in plain text. Recommended: only use the vault directly on the server (localhost) until HTTPS is enabled.</div>
 {% endif %}
 
 {# ───────────────────────── CHƯA TẠO ───────────────────────── #}
 {% if trang_thai == 'chua_tao' %}
-<div class="v-note">Vault chưa được khởi tạo. Đặt <b>mật khẩu chủ</b> (≥12 ký tự — KHÁC mật khẩu
-đăng nhập) rồi bấm Tạo. Hệ thống sẽ cấp <b>10 safekey hiện đúng MỘT lần</b> — in/chép vào két:
-chúng vừa cứu vault khi quên mật khẩu chủ, vừa đặt lại được mật khẩu đăng nhập Owner.
-<b>Mất mật khẩu chủ VÀ hết safekey = mất trắng, không ai cứu được.</b></div>
+<div class="v-note">Vault not initialized. Set a <b>master password</b> (≥12 chars — DIFFERENT from
+your login password) then click Create. The system will issue <b>10 safekeys shown exactly ONCE</b> —
+print/copy them into a safe: they both rescue the vault if you forget the master password and can
+reset the Owner login password.
+<b>Losing the master password AND all safekeys = total loss, no one can recover it.</b></div>
 {% if loi %}<div class="v-canhbao">{{ loi }}</div>{% endif %}
 <form class="v-form" method="post" action="/vault/tao">
-  <label>Mật khẩu chủ (≥12 ký tự)</label>
+  <label>Master password (≥12 chars)</label>
   <input name="master" type="password" required minlength="12" autocomplete="new-password" autofocus>
-  <label>Nhập lại mật khẩu chủ</label>
+  <label>Re-enter master password</label>
   <input name="master2" type="password" required minlength="12" autocomplete="new-password">
-  <button type="submit" class="nut" style="margin-top:1.1rem">{{ IC_KHOA|safe }} Tạo vault + cấp 10 safekey</button>
+  <button type="submit" class="nut" style="margin-top:1.1rem">{{ IC_KHOA|safe }} Create vault + issue 10 safekeys</button>
 </form>
 
 {# ───────────────────────── VỪA TẠO — HIỆN SAFEKEY MỘT LẦN ───────────────────────── #}
 {% elif trang_thai == 'vua_tao' %}
-<div class="v-ok">Vault đã tạo. Dưới đây là <b>10 safekey — lần DUY NHẤT chúng hiện ra</b>.
-In hoặc chép tay vào giấy, cất két. Mỗi key dùng đúng 1 lần (cứu vault HOẶC đặt lại mật khẩu
-đăng nhập Owner). Hệ thống chỉ giữ bản băm — không ai xem lại được sau khi rời trang này.</div>
+<div class="v-ok">Vault created. Below are the <b>10 safekeys — the ONLY time they appear</b>.
+Print or copy them to paper and store in a safe. Each key works exactly once (rescue the vault OR
+reset the Owner login password). The system only keeps hashes — no one can view them again after leaving this page.</div>
 <div class="v-keys" id="v-keys">
   {% for k in safekeys %}{{ loop.index }}. {{ k }}<br>{% endfor %}
 </div>
-<button type="button" class="nut phu" onclick="window.print()">{{ IC_IN|safe }} In trang này</button>
-<a class="nut" href="/vault" style="margin-left:.5rem">Tôi đã cất vào két — vào vault →</a>
+<button type="button" class="nut phu" onclick="window.print()">{{ IC_IN|safe }} Print this page</button>
+<a class="nut" href="/vault" style="margin-left:.5rem">Stored in the safe — enter vault →</a>
 
 {# ───────────────────────── ĐANG KHÓA ───────────────────────── #}
 {% elif trang_thai == 'khoa' %}
-<div class="v-note">Vault đang <b>khóa</b>. Nhập mật khẩu chủ để mở — tự khóa lại sau
-{{ tu_khoa_phut }} phút không dùng. Safekey còn lại trong két: <b>{{ so_safekey }}</b>/10.</div>
+<div class="v-note">Vault is <b>locked</b>. Enter the master password to unlock — it auto-locks after
+{{ tu_khoa_phut }} minutes idle. Safekeys left in the safe: <b>{{ so_safekey }}</b>/10.</div>
 {% if loi %}<div class="v-canhbao">{{ loi }}</div>{% endif %}
 <form class="v-form" method="post" action="/vault/mo">
-  <label>Mật khẩu chủ</label>
+  <label>Master password</label>
   <input name="master" type="password" required autocomplete="off" autofocus>
-  <button type="submit" class="nut" style="margin-top:1.1rem">{{ IC_MO|safe }} Mở vault</button>
+  <button type="submit" class="nut" style="margin-top:1.1rem">{{ IC_MO|safe }} Unlock vault</button>
 </form>
 <details style="margin-top:1.4rem">
-  <summary style="cursor:pointer;color:var(--muted);font-size:.9rem">Quên mật khẩu chủ? Dùng safekey từ két</summary>
+  <summary style="cursor:pointer;color:var(--muted);font-size:.9rem">Forgot the master password? Use a safekey from the safe</summary>
   <form class="v-form" method="post" action="/vault/khoi-phuc-master">
     <label>Safekey</label>
     <input name="safekey" required placeholder="XXXXX-XXXXX-XXXXX-XXXXX" autocomplete="off">
-    <label>Mật khẩu chủ MỚI (≥12 ký tự)</label>
+    <label>NEW master password (≥12 chars)</label>
     <input name="master_moi" type="password" required minlength="12" autocomplete="new-password">
-    <label>Nhập lại</label>
+    <label>Re-enter</label>
     <input name="master_moi2" type="password" required minlength="12" autocomplete="new-password">
-    <button type="submit" class="nut" style="margin-top:1.1rem">{{ IC_KEY|safe }} Đặt mật khẩu chủ mới</button>
+    <button type="submit" class="nut" style="margin-top:1.1rem">{{ IC_KEY|safe }} Set new master password</button>
   </form>
 </details>
 
 {# ───────────────────────── ĐANG MỞ ───────────────────────── #}
 {% else %}
 <div class="v-hang-dau">
-  <span class="v-ok" style="margin:0;padding:.35rem .7rem;display:inline-flex;align-items:center;gap:.4rem">{{ IC_MO|safe }} Đang mở</span>
-  <span class="v-dong-ho">tự khóa sau {{ tu_khoa_phut }} phút không dùng</span>
+  <span class="v-ok" style="margin:0;padding:.35rem .7rem;display:inline-flex;align-items:center;gap:.4rem">{{ IC_MO|safe }} Unlocked</span>
+  <span class="v-dong-ho">auto-locks after {{ tu_khoa_phut }} minutes idle</span>
   <form method="post" action="/vault/khoa" style="margin-left:auto">
-    <button type="submit" class="v-nut">{{ IC_KHOA|safe }} Khóa ngay</button>
+    <button type="submit" class="v-nut">{{ IC_KHOA|safe }} Lock now</button>
   </form>
 </div>
 
 {# ── BẢNG 1: mục trong vault, lọc theo nhóm ── #}
-<h3 class="v-muc-tieu">{{ IC_KHOA|safe }} Tài khoản trong vault ({{ muc|length }})</h3>
+<h3 class="v-muc-tieu">{{ IC_KHOA|safe }} Accounts in vault ({{ muc|length }})</h3>
 {% if not muc %}
-<p style="color:var(--muted)">Chưa có mục nào — thêm tài khoản đầu tiên bên dưới.</p>
+<p style="color:var(--muted)">No entries yet — add the first account below.</p>
 {% else %}
 <div class="v-loc" id="v-loc">
-  <button type="button" class="active" data-nhom="">Tất cả ({{ muc|length }})</button>
+  <button type="button" class="active" data-nhom="">All ({{ muc|length }})</button>
   {% for gia_tri, nhan in ten_nhom.items() %}
   {% set so = muc | selectattr("nhom", "equalto", gia_tri) | list | length %}
   {% if so %}<button type="button" data-nhom="{{ gia_tri }}">{{ nhan }} ({{ so }})</button>{% endif %}
   {% endfor %}
 </div>
 <table class="v" id="v-bang-muc">
-  <tr><th>Nhóm</th><th>Tên mục</th><th>Tài khoản</th><th>Mật khẩu</th><th>Ghi chú</th><th>Sửa lúc</th><th></th></tr>
+  <tr><th>Group</th><th>Entry name</th><th>Account</th><th>Password</th><th>Notes</th><th>Edited at</th><th></th></tr>
   {% for m in muc %}
   <tr data-id="{{ m.id }}" data-nhom="{{ m.nhom }}">
     <td><span class="nhom-tag">{{ ten_nhom.get(m.nhom, m.nhom) }}</span></td>
     <td><b>{{ m.ten }}</b></td>
     <td>{{ m.tai_khoan or '—' }}</td>
     <td style="white-space:nowrap"><span class="mk-o">••••••</span>
-      <button type="button" class="v-nut xem-mk" data-id="{{ m.id }}">{{ IC_MAT|safe }} Xem</button></td>
+      <button type="button" class="v-nut xem-mk" data-id="{{ m.id }}">{{ IC_MAT|safe }} View</button></td>
     <td style="max-width:200px">{{ m.ghi_chu or '—' }}</td>
     <td style="color:var(--muted);font-size:.82rem;white-space:nowrap">{{ (m.sua_luc or '')[:16].replace('T', ' ') }}</td>
     <td style="white-space:nowrap">
-      <button type="button" class="v-nut sua-muc" data-muc='{{ {"id": m.id, "nhom": m.nhom, "ten": m.ten, "tai_khoan": m.tai_khoan, "ghi_chu": m.ghi_chu} | tojson }}'>{{ IC_BUT|safe }} Sửa</button>
-      <button type="button" class="v-nut nguy xoa-muc" data-id="{{ m.id }}">{{ IC_XOA|safe }} Xóa</button>
+      <button type="button" class="v-nut sua-muc" data-muc='{{ {"id": m.id, "nhom": m.nhom, "ten": m.ten, "tai_khoan": m.tai_khoan, "ghi_chu": m.ghi_chu} | tojson }}'>{{ IC_BUT|safe }} Edit</button>
+      <button type="button" class="v-nut nguy xoa-muc" data-id="{{ m.id }}">{{ IC_XOA|safe }} Delete</button>
     </td>
   </tr>
   {% endfor %}

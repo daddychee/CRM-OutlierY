@@ -30,7 +30,7 @@ def _form_hop_le():
 def test_trang_chu_tra_ve_200_va_co_dropdown():
     r = tc.get("/")
     assert r.status_code == 200
-    assert "Bộ phận" in r.text and "Kinh doanh" in r.text
+    assert "Department" in r.text and "Kinh doanh" in r.text
 
 
 def test_upload_mock_tra_ve_document_id():

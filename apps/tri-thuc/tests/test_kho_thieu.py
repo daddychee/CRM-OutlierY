@@ -223,7 +223,7 @@ def test_hoi_2_lan_that_van_dem_2(tmp_path, monkeypatch):
 def test_trang_rong_bao_kho_dap_ung_tot(tmp_path, monkeypatch):
     _users_file(tmp_path, monkeypatch)
     r = _dang_nhap("ql").get("/kho-thieu")
-    assert "Kho đang đáp ứng tốt" in r.text
+    assert "The knowledge base is doing well" in r.text
 
 
 # ═══ Nút xóa câu không phù hợp (31/07/2026) ═══

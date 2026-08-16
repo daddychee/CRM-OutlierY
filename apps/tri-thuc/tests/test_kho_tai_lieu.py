@@ -54,7 +54,7 @@ def test_owner_thay_toan_bo_catalog(tmp_path, monkeypatch):
     assert r.status_code == 200
     for ma in ("KD-PUB", "KD-L2", "KD-L4", "IT-L1", "KD-OLD"):
         assert ma in r.text                       # Owner thấy TẤT CẢ 5 tài liệu
-    assert "toàn bộ kho" in r.text                # ghi chú chế độ Owner
+    assert "entire library" in r.text             # ghi chú chế độ Owner
 
 
 def test_nhan_vien_kd_chi_thay_dung_quyen(tmp_path, monkeypatch):
@@ -102,7 +102,7 @@ def test_popup_tra_dung_du_lieu_day_du(tmp_path, monkeypatch):
 
 def test_owner_co_nut_sua_nguoi_khac_khong(tmp_path, monkeypatch):
     _setup(tmp_path, monkeypatch)
-    assert "Sửa thông tin" in _login("sep").get("/kho-tai-lieu").text   # Owner thấy nút Sửa
+    assert "Edit info" in _login("sep").get("/kho-tai-lieu").text   # Owner thấy nút Sửa
     assert "Sửa thông tin" not in _login("nv").get("/kho-tai-lieu").text  # nhân viên KHÔNG có nút
 
 

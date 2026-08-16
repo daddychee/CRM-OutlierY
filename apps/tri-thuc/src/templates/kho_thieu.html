@@ -1,6 +1,6 @@
 {% extends "base.html" %}
-{% block title %}Kho cần bổ sung — OUTLIERY{% endblock %}
-{% block topbar_ten %}Kho cần bổ sung{% endblock %}
+{% block title %}Gap — OUTLIERY{% endblock %}
+{% block topbar_ten %}Gap{% endblock %}
 
 {% block style_them %}
   .kt-h{font-size:1.25rem;margin:0 0 .3rem;display:flex;align-items:center;gap:.5rem}
@@ -38,24 +38,24 @@
 {% endblock %}
 
 {% block noi_dung %}
-<h2 class="kt-h"><svg class="ic" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h4"/></svg> Câu kho chưa trả lời được</h2>
-<p class="mo-ta">Gồm câu agent trả "tài liệu chưa nêu" vì kho thiếu THẬT (đã loại câu bị chặn
-quyền) + câu người dùng đánh giá không hữu ích + câu cắm cờ "Chưa có lời giải". Câu có cờ là do
-NGƯỜI DÙNG xác nhận kho thiếu — chắc chắn nhất, xếp trên cùng; sau đó theo số lần bị hỏi.</p>
+<h2 class="kt-h"><svg class="ic" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h4"/></svg> Unanswered questions</h2>
+<p class="mo-ta">Questions the agent answered "not covered by documents" because the knowledge base
+truly lacks them (permission-blocked questions excluded) + questions rated unhelpful + questions
+flagged "No answer yet". Flagged ones are USER-confirmed gaps — most certain, listed first; then by times asked.</p>
 
 {% if not cac_nhom %}
-<div class="tot"><svg class="ic" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> Chưa có câu nào kho chưa trả lời được. Kho đang đáp ứng tốt.</div>
+<div class="tot"><svg class="ic" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> No unanswered questions. The knowledge base is doing well.</div>
 {% else %}
 <!-- YC7: chọn câu bằng checkbox → đặt tên chủ đề → Gom nhóm -->
 <form method="post" action="/kho-thieu/gom">
 <table>
-  <tr><th></th><th>Câu hỏi</th><th>Số lần</th><th>Bộ phận hay hỏi</th><th>Context mẫu (mạch hỏi)</th><th>Gần nhất</th></tr>
+  <tr><th></th><th>Question</th><th>Times</th><th>Asking department</th><th>Sample context</th><th>Latest</th></tr>
   {% for n in cac_nhom %}
   <tr>
     <td><input type="checkbox" name="cau" value="{{ n.cau_hoi }}"></td>
-    <td><b>{{ n.cau_hoi }}</b>{% if n.co_tay %} <svg class="ic cau-flag" viewBox="0 0 24 24" title="Người dùng xác nhận chưa có lời giải"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>{% endif %}
-      <br><a class="bo-sung" href="/?goi_y_tieu_de={{ n.cau_hoi|urlencode }}"><svg class="ic" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> Bổ sung tài liệu</a>
-      {% if is_owner %}<button type="button" class="qa-btn" data-cau-hoi="{{ n.cau_hoi }}"><svg class="ic" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> Bổ sung Q&A</button> {% endif %}<button type="button" class="xoa-cau" data-cau-hoi="{{ n.cau_hoi }}" title="Xóa câu không phù hợp khỏi bảng (câu tán gẫu, gõ nhầm…)">Xóa câu</button></td>
+    <td><b>{{ n.cau_hoi }}</b>{% if n.co_tay %} <svg class="ic cau-flag" viewBox="0 0 24 24" title="User confirmed there is no answer yet"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>{% endif %}
+      <br><a class="bo-sung" href="/?goi_y_tieu_de={{ n.cau_hoi|urlencode }}"><svg class="ic" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> Add document</a>
+      {% if is_owner %}<button type="button" class="qa-btn" data-cau-hoi="{{ n.cau_hoi }}"><svg class="ic" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> Add Q&A</button> {% endif %}<button type="button" class="xoa-cau" data-cau-hoi="{{ n.cau_hoi }}" title="Remove an unsuitable question from this table (chit-chat, typos…)">Remove question</button></td>
     <td class="so-lan">{{ n.so_lan }}</td>
     <td>{{ n.bo_phan }}</td>
     <td class="ctx">{% for c in n.contexts %}↩ {{ c }}<br>{% endfor %}{% if not n.contexts %}—{% endif %}</td>
@@ -64,35 +64,35 @@ NGƯỜI DÙNG xác nhận kho thiếu — chắc chắn nhất, xếp trên cù
   {% endfor %}
 </table>
 <div class="gom">
-  <input name="ten_chu_de" placeholder="Tên chủ đề cho các câu đã chọn (vd: Lịch nghỉ phép)" required>
-  <button type="submit" class="nut"><svg class="ic" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg> Gom nhóm</button>
+  <input name="ten_chu_de" placeholder="Topic name for the selected questions (e.g. Leave policy)" required>
+  <button type="submit" class="nut"><svg class="ic" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg> Group</button>
 </div>
 </form>
 {% endif %}
 
 {% if cac_nhom_chu_de %}
-<h2 class="kt"><svg class="ic" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg> Nhóm chủ đề đang chờ bổ sung</h2>
+<h2 class="kt"><svg class="ic" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg> Topic groups awaiting documents</h2>
 {% for nh in cac_nhom_chu_de if not nh.da_giai_quyet %}
 <div class="nhom">
   <b>{{ nh.ten_chu_de }}</b> <span class="tg">({{ nh.thoi_gian }})</span>
   <ul>{% for c in nh.cac_cau %}<li>{{ c.cau }}</li>{% endfor %}</ul>
   <!-- YC7: nối trang nhập kèm gợi ý tiêu đề/từ khóa từ chủ đề — điền sẵn, sửa được -->
-  <a class="bo-sung" href="/?goi_y_tieu_de={{ nh.ten_chu_de|urlencode }}&goi_y_tu_khoa={{ nh.ten_chu_de|urlencode }}"><svg class="ic" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> Bổ sung tài liệu</a>
+  <a class="bo-sung" href="/?goi_y_tieu_de={{ nh.ten_chu_de|urlencode }}&goi_y_tu_khoa={{ nh.ten_chu_de|urlencode }}"><svg class="ic" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> Add document</a>
   <form method="post" action="/kho-thieu/xoa-nhom" style="display:inline">
     <input type="hidden" name="nhom_id" value="{{ nh.id }}"><input type="hidden" name="ve" value="kho-thieu">
-    <button type="submit" class="xoa-nhom"><svg class="ic" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg> Xóa nhóm</button>
+    <button type="submit" class="xoa-nhom"><svg class="ic" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg> Delete group</button>
   </form>
 </div>
 {% else %}
-<p class="mo-ta">(Chưa có nhóm nào đang chờ)</p>
+<p class="mo-ta">(No pending groups)</p>
 {% endfor %}
 
 {% set da_xong = cac_nhom_chu_de | selectattr('da_giai_quyet') | list %}
 {% if da_xong %}
-<h2 class="kt"><svg class="ic" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> Nhóm đã giải quyết</h2>
+<h2 class="kt"><svg class="ic" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> Resolved groups</h2>
 {% for nh in da_xong %}
 <div class="nhom xong">
-  <b>{{ nh.ten_chu_de }}</b> <span class="tg">({{ nh.thoi_gian }})</span> — kho đã có tài liệu trả lời
+  <b>{{ nh.ten_chu_de }}</b> <span class="tg">({{ nh.thoi_gian }})</span> — documents now answer these
   <ul>{% for c in nh.cac_cau %}<li>{{ c.cau }}</li>{% endfor %}</ul>
 </div>
 {% endfor %}
@@ -110,19 +110,19 @@ document.querySelectorAll('.xoa-cau').forEach(nut => {
   nut.addEventListener('click', async () => {
     if (!nut.classList.contains('chac')) {
       nut.classList.add('chac');
-      nut.textContent = 'Bấm lại để xóa';
-      hen = setTimeout(() => { nut.classList.remove('chac'); nut.textContent = 'Xóa câu'; }, 4000);
+      nut.textContent = 'Click again to remove';
+      hen = setTimeout(() => { nut.classList.remove('chac'); nut.textContent = 'Remove question'; }, 4000);
       return;
     }
     clearTimeout(hen);
-    nut.disabled = true; nut.textContent = 'Đang xóa…';
+    nut.disabled = true; nut.textContent = 'Removing…';
     try {
       const fd = new FormData(); fd.append('cau_hoi', nut.dataset.cauHoi);
       const res = await fetch('/kho-thieu/xoa-cau', { method: 'POST', body: fd });
       if (!res.ok) throw new Error();
       nut.closest('tr').remove();
     } catch (e) {
-      nut.disabled = false; nut.classList.remove('chac'); nut.textContent = 'Xóa câu';
+      nut.disabled = false; nut.classList.remove('chac'); nut.textContent = 'Remove question';
     }
   });
 });

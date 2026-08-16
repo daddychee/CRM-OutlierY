@@ -297,7 +297,7 @@ def test_route_danh_sach_va_xem_mot(tmp_path, monkeypatch):
     _users(tmp_path, monkeypatch)
     c = _login("nv")
     bid = _chan_doan_bid(c)
-    assert "Lịch sử báo cáo" in c.get("/bao-cao-lich-su").text
+    assert "Report history" in c.get("/bao-cao-lich-su").text
     r = c.get(f"/bao-cao-lich-su/{bid}")
     assert r.status_code == 200 and "report.csv" in r.text
     assert c.get("/bao-cao-lich-su/khong-co").status_code == 404
@@ -318,7 +318,7 @@ def test_lich_su_dung_chung_moi_nguoi_deu_xem(tmp_path, monkeypatch):
     c_nv2 = _login("nv2")
     assert c_nv2.get("/bao-cao-lich-su?nguoi=nv").status_code == 200
     trang = c_nv2.get("/bao-cao-lich-su").text
-    assert "Người chạy" in trang and ">nv<" in trang                  # bảng chung ghi ai chạy
+    assert "Run by" in trang and ">nv<" in trang                      # bảng chung ghi ai chạy
     # chi tiết KHÔNG cần ?nguoi= — route tự quét mọi người ra chủ báo cáo
     assert c_nv2.get(f"/bao-cao-lich-su/{bid}").status_code == 200
     # panel gọn: gộp mọi người + trường nguoi_chay
@@ -437,7 +437,7 @@ def test_xem_lai_dung_bang_4_truc_khong_goi_api(tmp_path, monkeypatch):
     r = c.get(f"/bao-cao-lich-su/{bid}")
     assert r.status_code == 200
     assert "veBangVideo(" in r.text                  # dựng lại bảng phán quyết 4 trục từ file gốc
-    assert "Chẩn đoán CẢ KÊNH" in r.text
+    assert "CHANNEL-WIDE diagnosis" in r.text
     assert dem["n"] == 0                             # xem lại KHÔNG gọi API (đọc cache)
 
 
@@ -465,7 +465,7 @@ def test_file_goc_mat_khong_vo_trang(tmp_path, monkeypatch):
     r = c.get(f"/bao-cao-lich-su/{bid}")
     assert r.status_code == 200
     assert "Không tìm thấy file gốc" in r.text                 # fallback note
-    assert "Chẩn đoán cả kênh (đã lưu)" in r.text              # tóm tắt cũ vẫn hiện
+    assert "Channel diagnosis (saved)" in r.text               # tóm tắt cũ vẫn hiện
 
 
 # ═══ Cờ da_co_bao_cao (Analyze / Xem báo cáo) + nút Phân tích lại (lam_moi) ═══

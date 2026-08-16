@@ -179,12 +179,12 @@ def test_highlight_phien_co_cau_gio_da_giai(tmp_path, monkeypatch):
     r = _login("nv").get("/lich-su")
     assert r.status_code == 200
     # nhãn CHÍNH có 💡 (main); sidebar recents chỉ có badge "mới" + tooltip → không tính
-    assert r.text.count("💡 Đã có tài liệu mới trả lời được") == 1  # đúng 1 phiên sáng
+    assert r.text.count("💡 New documents can now answer a question you asked") == 1  # đúng 1 phiên sáng
     # scope vùng nội dung chính (sidebar recents cũng link ph-sang — bỏ qua);
     # nhãn 💡 nằm trong khối .phien.sang của ph-sang, giữa link đó và link kế
     noi_dung = r.text.split('class="noi-dung"', 1)[1]
     khoi_sang = noi_dung.split("/hoi-dap?phien=ph-sang")[1].split("/hoi-dap?phien=")[0]
-    assert "Đã có tài liệu mới trả lời được" in khoi_sang
+    assert "New documents can now answer a question you asked" in khoi_sang
 
 
 # ---- Ý 3: mở cuộc trò chuyện cũ và HỎI TIẾP trong đó ----
@@ -256,7 +256,7 @@ def test_bam_thang_vao_cuoc_mo_chat(tmp_path, monkeypatch):
     trang = c.get("/lich-su").text
     assert "/hoi-dap?phien=ph-a" in trang                     # bấm cuộc = mở chat
     assert "tiep-tuc" not in trang                            # nút thừa đã gỡ
-    assert "Tiếp tục cuộc này" in c.get("/lich-su/phien/ph-a").text
+    assert "Continue this chat" in c.get("/lich-su/phien/ph-a").text
     r = _login("sep").get("/lich-su/nv")
     assert "/lich-su/nv/phien/ph-a" in r.text                 # giám sát: chỉ-đọc
     assert "/hoi-dap?phien=" not in r.text

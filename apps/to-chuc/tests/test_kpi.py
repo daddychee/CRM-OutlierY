@@ -190,15 +190,15 @@ def test_route_kpi_hien_bang_va_van_chong_bia():
     _iam_seed()
     _viet_plan([HOM_NAY])
     b = _login("sep", 5).get("/kpi?ky=tuan").text
-    assert "KPI kỳ" in b and "Tuần này" in b and "Tháng này" in b
+    assert "KPI period" in b and "This week" in b and "This month" in b
     # người VH từ IAM nối PlannerY qua họ tên hồ sơ ("Ngọc" trong plan.json)
     assert "ngoc_vh" in b and "Ngọc" in b
     # nguồn Content/SpeakY chết → cảnh báo nguồn + ô "—" (không 0 giả)
-    assert "Nguồn chưa đọc được" in b and "—" in b
+    assert "Sources unavailable" in b and "—" in b
     # người KD (sep) nằm bảng KD; BAO_CAO_DIR chưa tồn tại → cột báo cáo cũng "—"
-    assert "Báo cáo đã chạy" in b
+    assert "Reports run" in b
     # khối chấm công + van trung thực
-    assert "Chấm công ngày" in b and "hiện diện trên hệ công cụ" in b
+    assert "Daily attendance" in b and "presence on the tool system" in b
 
 
 def test_route_kpi_iam_chet_khong_bia_danh_sach(monkeypatch):

@@ -1,6 +1,6 @@
 {% extends "base.html" %}
-{% block title %}Nhập tài liệu — OUTLIERY{% endblock %}
-{% block topbar_ten %}Nhập tài liệu{% endblock %}
+{% block title %}Input — OUTLIERY{% endblock %}
+{% block topbar_ten %}Input{% endblock %}
 
 {% block style_them %}
   #drop{border:2px dashed var(--chip-line);border-radius:10px;padding:2.2rem 1rem;text-align:center;color:var(--muted);cursor:pointer;background:var(--th-182233)}
@@ -36,73 +36,73 @@
   <a href="/app/tri-thuc/" style="padding:6px 14px;border-radius:999px;font-size:13px;text-decoration:none;border:1px solid var(--line);background:var(--accent);color:#fff;border-color:var(--accent)">Upload</a>
   <a href="/app/tri-thuc/nguon-ngoai" style="padding:6px 14px;border-radius:999px;font-size:13px;text-decoration:none;border:1px solid var(--line);color:var(--muted)">External source</a>
 </div>
-<h2 class="ix-h"><svg class="ic" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> Nhập tài liệu vào kho tri thức</h2>
+<h2 class="ix-h"><svg class="ic" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> Upload documents to the knowledge base</h2>
 
 <form id="form" class="form-nhap">
-  <div id="drop">Kéo-thả file vào đây, hoặc bấm để chọn file</div>
+  <div id="drop">Drag &amp; drop a file here, or click to choose one</div>
   <input type="file" name="file" id="file" hidden>
   <div id="ten-file"></div>
 
-  <label class="bat-buoc">Tiêu đề</label>
-  <input name="title" required placeholder="Tên rõ nghĩa — Agent hiển thị khi trích nguồn"
+  <label class="bat-buoc">Title</label>
+  <input name="title" required placeholder="Clear name — shown when the Agent cites sources"
          value="{{ goi_y_tieu_de or '' }}">
 
-  <label>Chủ đề / Từ khóa</label>
+  <label>Topic / Keywords</label>
   <!-- Ý 2: chip + autocomplete từ từ khóa ĐÃ DÙNG (metadata nhất quán). Submit vẫn
        gửi chuỗi "a, b" qua input ẩn name=keywords — backend không đổi -->
   <input type="hidden" name="keywords" id="keywords" value="{{ goi_y_tu_khoa or '' }}">
   <div id="chips"></div>
   <div id="tk-khung">
-    <input id="tk-nhap" placeholder="Bấm để thấy từ khóa có sẵn — gõ để lọc, Enter thêm từ mới" autocomplete="off">
+    <input id="tk-nhap" placeholder="Click to see existing keywords — type to filter, Enter to add new" autocomplete="off">
     <div id="tk-goi-y"></div>
   </div>
 
-  <label>Phụ trách</label>
-  <input name="owner" placeholder="Ai chịu trách nhiệm nội dung">
+  <label>Owner</label>
+  <input name="owner" placeholder="Who is responsible for this content">
 
-  <label>Phiên bản</label>
+  <label>Version</label>
   <input name="version" value="v1">
 
-  <label class="bat-buoc">Bộ phận</label>
+  <label class="bat-buoc">Department</label>
   <select name="department" required>
-    <option value="">— Chọn bộ phận —</option>
+    <option value="">— Select department —</option>
     {% for v in departments %}<option>{{ v }}</option>{% endfor %}
   </select>
 
-  <label class="bat-buoc">Loại tài liệu</label>
+  <label class="bat-buoc">Document type</label>
   <select name="doc_type" required>
-    <option value="">— Chọn loại tài liệu —</option>
+    <option value="">— Select document type —</option>
     {% for v in doc_types %}<option>{{ v }}</option>{% endfor %}
   </select>
 
-  <label class="bat-buoc">Hiệu lực</label>
+  <label class="bat-buoc">Validity</label>
   <select name="effective_status" required>
-    <option value="">— Chọn hiệu lực —</option>
+    <option value="">— Select validity —</option>
     {% for v in effective_statuses %}<option>{{ v }}</option>{% endfor %}
   </select>
 
-  <label class="bat-buoc">Mức truy cập</label>
+  <label class="bat-buoc">Access level</label>
   <select name="access_level" required>
-    <option value="">— Chọn mức truy cập —</option>
+    <option value="">— Select access level —</option>
     {% for v in access_levels %}<option>{{ v }}</option>{% endfor %}
   </select>
 
-  <label class="bat-buoc">Level tối thiểu để xem</label>
+  <label class="bat-buoc">Minimum level to view</label>
   <select name="min_level" required>
-    <option value="">— Chọn level tối thiểu —</option>
+    <option value="">— Select minimum level —</option>
     {% for so, chu in min_levels %}<option value="{{ so }}">{{ so }} — {{ chu }}</option>{% endfor %}
   </select>
 
-  <label class="bat-buoc">Tầng nguồn</label>
+  <label class="bat-buoc">Source tier</label>
   <select name="tang_nguon" id="tang_nguon" required>
     {% for v, ten in tang_nguon_options %}<option value="{{ v }}">{{ ten }}</option>{% endfor %}
   </select>
   <div id="nguon-ten-wrap" style="display:none">
-    <label class="bat-buoc">Tên nguồn</label>
-    <input name="nguon_ten" id="nguon_ten" placeholder="Tên chuyên gia / tên nguồn ngoài" maxlength="120">
+    <label class="bat-buoc">Source name</label>
+    <input name="nguon_ten" id="nguon_ten" placeholder="Expert name / external source name" maxlength="120">
   </div>
 
-  <button id="luu" type="submit" disabled>Lưu tài liệu</button>
+  <button id="luu" type="submit" disabled>Save document</button>
 </form>
 <div id="ket-qua"></div>
 <div id="canh-bao"></div>
@@ -229,17 +229,17 @@ oTkNhap.addEventListener('keydown', e => {
 form.addEventListener('submit', async e => {
   e.preventDefault();
   nutLuu.disabled = true;
-  nutLuu.textContent = 'Đang lưu…';
+  nutLuu.textContent = 'Saving…';
   ketQua.className = '';
   canhBao.style.display = 'none';
   try {
     const res = await fetch('/upload', { method: 'POST', body: new FormData(form) });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.detail || 'Lỗi không xác định');
+    if (!res.ok) throw new Error(data.detail || 'Unknown error');
     ketQua.className = 'ok';
     ketQua.textContent = data.message +
-      '\nTên file mới: ' + data.new_filename +
-      '\nĐã chép vào ngăn: ' + data.folder +
+      '\nNew filename: ' + data.new_filename +
+      '\nStored in folder: ' + data.folder +
       '\ndocument_id: ' + data.document_id;
     if (data.warning) {
       canhBao.textContent = data.warning;
@@ -251,9 +251,9 @@ form.addEventListener('submit', async e => {
     capNhatTenFile();
   } catch (err) {
     ketQua.className = 'loi';
-    ketQua.textContent = 'Lưu thất bại: ' + err.message;
+    ketQua.textContent = 'Save failed: ' + err.message;
   } finally {
-    nutLuu.textContent = 'Lưu tài liệu';
+    nutLuu.textContent = 'Save document';
     kiemTra();
   }
 });

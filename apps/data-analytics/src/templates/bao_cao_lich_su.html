@@ -1,6 +1,6 @@
 {% extends "base.html" %}
-{% block title %}Lịch sử báo cáo — OUTLIERY{% endblock %}
-{% block topbar_ten %}Lịch sử báo cáo{% endblock %}
+{% block title %}Report history — OUTLIERY{% endblock %}
+{% block topbar_ten %}Report history{% endblock %}
 
 {% block style_them %}
   .bl-h{font-size:1.25rem;margin:0 0 .3rem}
@@ -44,11 +44,11 @@
 {% block noi_dung %}
 {% if mot %}
   <!-- Xem lại 1 báo cáo cũ -->
-  <a href="/bao-cao-lich-su{% if not cua_minh %}?nguoi={{ chu_nhan|urlencode }}{% endif %}">← Về danh sách báo cáo</a>
-  <h2 class="bl-h" style="margin-top:.5rem">📈 Báo cáo — {{ mot.ten_bao_cao or mot.ten_file_goc }}</h2>
+  <a href="/bao-cao-lich-su{% if not cua_minh %}?nguoi={{ chu_nhan|urlencode }}{% endif %}">← Back to report list</a>
+  <h2 class="bl-h" style="margin-top:.5rem">📈 Report — {{ mot.ten_bao_cao or mot.ten_file_goc }}</h2>
   <p class="giam-sat" style="background:none;border:0;color:var(--muted);padding:0;margin:.2rem 0 1rem">
-    Chạy lúc {{ mot.thoi_gian }} · bởi {{ mot.nguoi_chay }} · file: {{ mot.ten_file_goc }}
-    · <a href="/bao-cao-goc/{{ mot.id }}{% if not cua_minh %}?nguoi={{ chu_nhan|urlencode }}{% endif %}">⬇️ Tải file gốc</a></p>
+    Run at {{ mot.thoi_gian }} · by {{ mot.nguoi_chay }} · file: {{ mot.ten_file_goc }}
+    · <a href="/bao-cao-goc/{{ mot.id }}{% if not cua_minh %}?nguoi={{ chu_nhan|urlencode }}{% endif %}">⬇️ Download original file</a></p>
 
   {% if kenh %}
     <!-- Dựng lại đầy đủ từ file gốc: khối kênh (diễn giải LLM đọc cache) + tổng quan + bảng phán quyết -->
@@ -56,20 +56,20 @@
     {% include "_bang_phan_quyet.html" %}
   {% else %}
     <!-- File gốc không dựng lại được → tóm tắt kênh đã lưu (không gọi API) -->
-    {% if loi_dung_lai %}<div class="giam-sat">ℹ️ {{ loi_dung_lai }} Hiện tóm tắt kênh đã lưu.</div>{% endif %}
+    {% if loi_dung_lai %}<div class="giam-sat">ℹ️ {{ loi_dung_lai }} Showing saved channel summary.</div>{% endif %}
     <div class="chi-tiet">
-      <div class="kq-tieu-de" style="font-weight:600">Chẩn đoán cả kênh (đã lưu)</div>
+      <div class="kq-tieu-de" style="font-weight:600">Channel diagnosis (saved)</div>
       {% set k = mot.kenh %}
       <div class="tom-tat {% if k.luat_khop %}vo{% else %}ok{% endif %}">
-        {% if k.luat_khop %}🔴 Tầng phễu vỡ đầu tiên: {{ k.tang_vo }}{% else %}✅ Không phát hiện bất thường{% endif %}
+        {% if k.luat_khop %}🔴 First broken funnel tier: {{ k.tang_vo }}{% else %}✅ No anomalies detected{% endif %}
       </div>
       <div class="so-lieu">
-        {% if k.so_video is not none %}<div class="o"><b>Số video</b>{{ k.so_video }}</div>{% endif %}
+        {% if k.so_video is not none %}<div class="o"><b>Videos</b>{{ k.so_video }}</div>{% endif %}
         {% for ten, gt in k.metrics_chinh.items() %}
         <div class="o"><b>{{ ten }}</b>{{ "%.4f"|format(gt) if gt is number else gt }}</div>
         {% endfor %}
       </div>
-      {% if k.luat_khop %}<div style="margin-top:.7rem">Luật khớp:
+      {% if k.luat_khop %}<div style="margin-top:.7rem">Matched rules:
         {% for ma in k.luat_khop %}<span class="ma-luat">{{ ma }}</span>{% endfor %}</div>{% endif %}
     </div>
   {% endif %}
@@ -78,19 +78,19 @@
   <!-- Danh sách báo cáo -->
   {# 01/08/2026: lịch sử DÙNG CHUNG — mặc định hiện của MỌI người (cột Người chạy);
      ?nguoi=X lọc theo một người, mở cho mọi ai qua gate Data Analytics #}
-  <h2 class="bl-h">📊 Lịch sử báo cáo chẩn đoán{% if not cua_minh %} — của <b>{{ chu_nhan }}</b>{% endif %}</h2>
-  {% if not cua_minh %}<div class="giam-sat">👁️ Đang lọc theo báo cáo của {{ chu_nhan }} — <a href="/bao-cao-lich-su">xem tất cả</a>.</div>{% endif %}
+  <h2 class="bl-h">📊 Diagnosis report history{% if not cua_minh %} — by <b>{{ chu_nhan }}</b>{% endif %}</h2>
+  {% if not cua_minh %}<div class="giam-sat">👁️ Filtering by {{ chu_nhan }}'s reports — <a href="/bao-cao-lich-su">view all</a>.</div>{% endif %}
 
   {% if not cac_bao_cao %}
-  <p class="trong">Chưa có báo cáo nào. Vào <a href="/chan-doan">Data Analytics</a> để chạy báo cáo đầu tiên.</p>
+  <p class="trong">No reports yet. Go to <a href="/chan-doan">Data Analytics</a> to run your first report.</p>
   {% else %}
-  <p class="ghi-chu-ss">Tick 2 báo cáo CÙNG KÊNH để so sánh tăng trưởng giữa hai kỳ.</p>
+  <p class="ghi-chu-ss">Tick 2 reports of the SAME channel to compare growth between two periods.</p>
   <div id="so-sanh-toolbar" style="display:none">
-    <button type="button" id="btn-so-sanh" class="nut-so-sanh">So sánh 2 kỳ đã chọn</button>
+    <button type="button" id="btn-so-sanh" class="nut-so-sanh">Compare 2 selected periods</button>
   </div>
   <div id="so-sanh-ket-qua"></div>
   <table class="bl">
-    <thead><tr><th></th><th>Thời gian</th><th>Kênh</th><th>Tên báo cáo</th><th>Người chạy</th><th>File</th><th>Tầng vỡ</th><th class="num">Số video</th><th class="num">Luật khớp</th></tr></thead>
+    <thead><tr><th></th><th>Time</th><th>Channel</th><th>Report name</th><th>Run by</th><th>File</th><th>Broken tier</th><th class="num">Videos</th><th class="num">Rules matched</th></tr></thead>
     <tbody>
     {% for r in cac_bao_cao %}
     <tr onclick="location.href='/bao-cao-lich-su/{{ r.id }}?nguoi={{ r.nguoi_chay|urlencode }}'">
@@ -100,7 +100,7 @@
       <td>{{ r.ten_bao_cao or r.ten_file_goc }}</td>
       <td>{{ r.nguoi_chay }}</td>
       <td>{{ r.ten_file_goc }}</td>
-      <td><span class="tang {% if r.kenh.luat_khop %}vo{% else %}ok{% endif %}">{{ r.kenh.tang_vo or 'không vỡ' }}</span></td>
+      <td><span class="tang {% if r.kenh.luat_khop %}vo{% else %}ok{% endif %}">{{ r.kenh.tang_vo or 'intact' }}</span></td>
       <td class="num">{{ r.kenh.so_video if r.kenh.so_video is not none else '—' }}</td>
       <td class="num">{{ r.kenh.luat_khop|length }}</td>
     </tr>
@@ -120,7 +120,7 @@
                        nguoi: {{ (chu_nhan if not cua_minh else '')|tojson }} };
   // Khối chẩn đoán cả kênh — diễn giải LLM lấy từ CACHE (đã nhúng sẵn, không gọi API).
   renderKetQua(document.getElementById('kq-kenh'),
-               {{ kenh|tojson }}, '📈 Chẩn đoán CẢ KÊNH (tổng so với mặt bằng video)');
+               {{ kenh|tojson }}, '📈 CHANNEL-WIDE diagnosis (total vs per-video baseline)');
   {% if toan_bo %}
   veWinningFormatTongHop(document.getElementById('kq-kenh'), {{ toan_bo.bao_cao_kenh|tojson }});
   veLoaiKenh({{ toan_bo.profile_loai_kenh|tojson }});   // minh bạch loại kênh đã chẩn (từ file gốc)
@@ -156,7 +156,7 @@ function _hangSs(nhan, cu, moi, delta, pct) {
 async function _chayoSoSanh() {
   const daChon = [..._ckSoSanh].filter(c => c.checked).map(c => c.value);
   if (daChon.length !== 2) return;
-  _btnSs.disabled = true; _btnSs.textContent = 'Đang so sánh…';
+  _btnSs.disabled = true; _btnSs.textContent = 'Comparing…';
   try {
     const fd = new FormData();
     fd.append('id_a', daChon[0]); fd.append('id_b', daChon[1]);
@@ -166,12 +166,12 @@ async function _chayoSoSanh() {
     if (!r.ok || data.loi) {
       const d = document.createElement('div');
       d.className = 'tom-tat vo';
-      d.textContent = data.loi || data.detail || 'Không so sánh được.';
+      d.textContent = data.loi || data.detail || 'Could not compare.';
       _ketQuaSs.appendChild(d);
       return;
     }
-    const NHAN = { views: 'Lượt xem', ctr: 'CTR', retention: 'Retention',
-                  watchtime: 'Watchtime', revenue: 'Doanh thu' };
+    const NHAN = { views: 'Views', ctr: 'CTR', retention: 'Retention',
+                  watchtime: 'Watch time', revenue: 'Revenue' };
     // data.chi_so.*.{cu,moi,delta,pct} LUÔN số (qua _sach()/float() ở backend) — an toàn nối
     // trực tiếp vào innerHTML của bảng. ten_kenh/ky_*.tu/den LÀ CHUỖI NGƯỜI DÙNG NHẬP (tên kênh
     // gõ tay, ngày kỳ có thể nhập tay khi thiếu Chart data) — KHÔNG BAO GIỜ nối thẳng vào
@@ -185,19 +185,19 @@ async function _chayoSoSanh() {
     const dongKy = document.createElement('div');
     dongKy.className = 'ss-ky';
     const b = document.createElement('b'); b.textContent = data.ten_kenh;
-    dongKy.append('Kênh ', b, document.createTextNode(
-      ` — kỳ cũ ${data.ky_cu.tu} → ${data.ky_cu.den}, kỳ mới ${data.ky_moi.tu} → ${data.ky_moi.den}`));
+    dongKy.append('Channel ', b, document.createTextNode(
+      ` — old period ${data.ky_cu.tu} → ${data.ky_cu.den}, new period ${data.ky_moi.tu} → ${data.ky_moi.den}`));
     const bang = document.createElement('div');
-    bang.innerHTML = `<table class="ss-bang"><thead><tr><th>Chỉ số</th><th>Kỳ cũ</th>` +
-      `<th>Kỳ mới</th><th>Thay đổi</th><th>%</th></tr></thead><tbody>${hang}</tbody></table>`;
+    bang.innerHTML = `<table class="ss-bang"><thead><tr><th>Metric</th><th>Old period</th>` +
+      `<th>New period</th><th>Change</th><th>%</th></tr></thead><tbody>${hang}</tbody></table>`;
     hop.append(dongKy, bang);
     _ketQuaSs.appendChild(hop);
   } catch (e) {
     _ketQuaSs.textContent = '';
     const d = document.createElement('div'); d.className = 'tom-tat vo';
-    d.textContent = 'Lỗi mạng — thử lại.'; _ketQuaSs.appendChild(d);
+    d.textContent = 'Network error — try again.'; _ketQuaSs.appendChild(d);
   } finally {
-    _btnSs.disabled = false; _btnSs.textContent = 'So sánh 2 kỳ đã chọn';
+    _btnSs.disabled = false; _btnSs.textContent = 'Compare 2 selected periods';
   }
 }
 _btnSs.addEventListener('click', _chayoSoSanh);
