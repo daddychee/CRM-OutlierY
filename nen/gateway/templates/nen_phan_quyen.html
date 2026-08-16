@@ -1,38 +1,38 @@
 {% extends "nen_base.html" %}
-{% block tieu_de %}Phân quyền{% endblock %}
+{% block tieu_de %}Permissions{% endblock %}
 {% block noi_dung %}
-<h2>Bảng phân quyền <span class="phu" style="font-weight:400">— ô tick lẻ ĐÈ luật mặc định; gỡ tick là về mặc định. Mọi thay đổi có vết nhật ký.</span></h2>
+<h2>Permissions <span class="phu" style="font-weight:400">— a tick OVERRIDES the default rule; clearing it returns to default. Every change is audited.</span></h2>
 
 <div class="khoi" style="margin-bottom:14px">
   <form class="dong" method="get" action="/nen/phan-quyen">
-    <label class="phu">Chọn người:</label>
+    <label class="phu">Person:</label>
     <select name="ten">
-      <option value="">— chọn tài khoản —</option>
+      <option value="">— choose an account —</option>
       {% for tk in tai_khoan %}
       <option value="{{ tk.ten }}" {% if tk.ten == ten_chon %}selected{% endif %}>
         {{ tk.ten }} (L{{ tk.level }} · {{ tk.bo_phan }})</option>
       {% endfor %}
     </select>
-    <button>Xem quyền</button>
+    <button>View</button>
   </form>
 </div>
 
 {% if ten_chon %}
 {% set tk_chon = (tai_khoan | selectattr("ten", "equalto", ten_chon) | list)[0] %}
 {% if tk_chon.level >= 5 %}
-<p class="phu">Tài khoản Owner — toàn quyền theo giỏ Owner tuyệt đối, không tick gì được (luật sắt).</p>
+<p class="phu">Owner account — full rights via the absolute Owner basket; nothing can be ticked (iron rule).</p>
 {% else %}
 <table>
-  <tr><th>Quyền</th><th>Luật mặc định</th><th>Đang áp dụng</th><th>Đặt</th></tr>
+  <tr><th>Permission</th><th>Default rule</th><th>In effect</th><th>Set</th></tr>
   {% for h in hang %}
   {% set ov = overrides.get((h.app_slug, h.hanh_dong)) %}
   <tr>
     <td><b>{{ h.nhan }}</b><div class="phu">{{ h.app_slug }}/{{ h.hanh_dong }}</div></td>
     <td class="phu">{{ h.mac_dinh }}</td>
     <td>
-      {% if ov is none %}<span class="chip">theo mặc định</span>
-      {% elif ov %}<span class="chip" style="color:var(--ok)">✓ tick CHO PHÉP</span>
-      {% else %}<span class="chip" style="color:var(--loi)">✗ tick CHẶN</span>{% endif %}
+      {% if ov is none %}<span class="chip">default</span>
+      {% elif ov %}<span class="chip" style="color:var(--ok)">✓ ALLOW tick</span>
+      {% else %}<span class="chip" style="color:var(--loi)">✗ DENY tick</span>{% endif %}
     </td>
     <td>
       <form class="dong" method="post" action="/nen/phan-quyen/gan">
@@ -40,35 +40,35 @@
         <input type="hidden" name="app_slug" value="{{ h.app_slug }}">
         <input type="hidden" name="hanh_dong" value="{{ h.hanh_dong }}">
         <select name="gia_tri">
-          <option value="ke_thua">theo mặc định</option>
-          <option value="cho">✓ cho phép</option>
-          <option value="chan">✗ chặn</option>
+          <option value="ke_thua">default</option>
+          <option value="cho">✓ allow</option>
+          <option value="chan">✗ deny</option>
         </select>
-        <button>Đặt</button>
+        <button>Set</button>
       </form>
     </td>
   </tr>
   {% endfor %}
 </table>
 
-<h2>Admin ủy quyền</h2>
+<h2>Delegated admin</h2>
 <div class="khoi">
-  <p class="phu" style="margin-bottom:8px">Bật = {{ ten_chon }} được thay Owner làm các việc
-    giỏ ủy quyền (quản tài khoản, duyệt hồ sơ, nạp tài liệu, duyệt Q&amp;A, giám sát) —
-    mặc định TẮT (không bật thì phân quyền giống V1 100%). Giỏ Owner tuyệt đối
-    (vault, két, bảng này, xóa cứng tài liệu) KHÔNG BAO GIỜ ủy quyền được.</p>
+  <p class="phu" style="margin-bottom:8px">ON = {{ ten_chon }} can act for the Owner on delegated tasks
+    (accounts, people approval, document intake, Q&amp;A approval, tracking) —
+    default OFF (when off, permissions match V1 exactly). The absolute Owner basket
+    (vault, AI Models, this page, hard-delete) can NEVER be delegated.</p>
   <form class="dong" method="post" action="/nen/phan-quyen/uy-quyen">
     <input type="hidden" name="ten" value="{{ ten_chon }}">
     <select name="bat">
-      <option value="0" {% if not tk_chon.admin_uy_quyen %}selected{% endif %}>TẮT (mặc định)</option>
-      <option value="1" {% if tk_chon.admin_uy_quyen %}selected{% endif %}>BẬT Admin ủy quyền</option>
+      <option value="0" {% if not tk_chon.admin_uy_quyen %}selected{% endif %}>OFF (default)</option>
+      <option value="1" {% if tk_chon.admin_uy_quyen %}selected{% endif %}>ON — delegated admin</option>
     </select>
-    <button>Lưu</button>
+    <button>Save</button>
   </form>
 </div>
 {% endif %}
 {% else %}
-<p class="phu">Chọn một tài khoản để xem và tick quyền. Luật mặc định của từng app nằm ở
-  <code>nen/rules/phan_quyen.json</code> (luật ngoài code — sửa file là đổi mặc định cả hệ).</p>
+<p class="phu">Choose an account to view and tick permissions. Default rules per app live in
+  <code>nen/rules/phan_quyen.json</code> (rules outside code — edit the file to change system defaults).</p>
 {% endif %}
 {% endblock %}

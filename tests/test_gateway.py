@@ -86,7 +86,7 @@ def test_health_khong_can_dang_nhap(client):
 def test_dang_nhap_sai_401(client):
     r = _login(client, mk="sai")
     assert r.status_code == 401
-    assert "Sai tên đăng nhập" in r.text
+    assert "Wrong username" in r.text
 
 
 def test_dang_nhap_dung_vao_trang_chu(client):
@@ -149,7 +149,7 @@ def test_quan_tri_owner_vao_va_tao_tai_khoan(client):
     assert client.get("/nen/tai-khoan").status_code == 200
     r = client.post("/nen/tai-khoan/tao", data={
         "ten": "tk-moi", "mat_khau": "mk-tam-6", "bo_phan": "Kinh doanh", "level": 2})
-    assert "Đã tạo tài khoản tk-moi" in r.text
+    assert "Created account tk-moi" in r.text
     conn = iam.ket_noi()
     assert iam.lay_tai_khoan(conn, "tk-moi")["phai_doi_mk"] == 1
     conn.close()
@@ -159,7 +159,7 @@ def test_quan_tri_xoa_phai_go_lai_ten(client):
     _login(client)
     r = client.post("/nen/tai-khoan/sua", data={
         "ten": "nhanvien", "hanh_dong": "xoa", "gia_tri": "go-sai"})
-    assert "gõ lại đúng tên" in r.text
+    assert "retype the exact account name" in r.text
     conn = iam.ket_noi()
     assert iam.lay_tai_khoan(conn, "nhanvien") is not None   # chưa bị xóa
     conn.close()
@@ -186,7 +186,7 @@ def test_nhan_su_hr_l3_vao_duoc(client, iam_db):
     assert client.get("/nen/nhan-su").status_code == 200      # HR L3 vào được
     r = client.post("/nen/nhan-su/tao",
                     data={"ho_ten": "Người Test HR", "bo_phan": "Kinh doanh"})
-    assert "Đã tạo hồ sơ" in r.text                           # và tạo được hồ sơ
+    assert "Created profile" in r.text                           # và tạo được hồ sơ
     assert client.get("/nen/tai-khoan").status_code == 403    # nhưng KHÔNG đụng tài khoản
     assert client.get("/nen/phan-quyen").status_code == 403   # và không vào bảng phân quyền
 
@@ -207,7 +207,7 @@ def test_phan_quyen_tick_de_luat_mac_dinh(client, iam_db):
     r = client.post("/nen/phan-quyen/gan", data={
         "ten": "nhanvien", "app_slug": "data-analytics",
         "hanh_dong": "vao", "gia_tri": "chan"})
-    assert "Đã đặt" in r.text
+    assert "Set data-analytics/vao" in r.text
     assert not iam.co_quyen(nv, "vao", "data-analytics", conn)  # tick CHẶN thắng mặc định
     client.post("/nen/phan-quyen/gan", data={
         "ten": "nhanvien", "app_slug": "data-analytics",
@@ -286,6 +286,35 @@ def test_tong_quan_de_bao_dung_trang_thai(client, app_mau_server):
     _login(client)
     r = client.get("/nen")
     assert r.status_code == 200
-    assert "đang chạy" in r.text          # app-mau sống
-    assert "Tài khoản (IAM)" in r.text    # khối đế: số tài khoản
-    assert "Backup gần nhất" in r.text
+    assert "running" in r.text            # app-mau sống
+    assert "Accounts (IAM)" in r.text     # khối đế: số tài khoản
+    assert "Latest backup" in r.text
+
+
+def test_profile_tu_cap_nhat_va_doi_mk_can_mk_hien_tai(client):
+    """UI_FLOW.md mục 8: Profile tự cập nhật display name; đổi mật khẩu PHẢI gõ
+    đúng mật khẩu hiện tại (luật V1 — v2 từng thiếu bước này)."""
+    _login(client, "nhanvien", "mk-nv-6")
+    r = client.post("/profile", data={"ten_hien_thi": "Nguyễn Văn Test",
+                                      "email": "t@x.vn", "dien_thoai": "0900"})
+    assert "Profile saved" in r.text and "Nguyễn Văn Test" in r.text
+    r = client.post("/profile/mat-khau", data={
+        "mk_hien_tai": "SAI-MK", "mk_moi": "mk-moi-7", "mk_lai": "mk-moi-7"})
+    assert "Current password is incorrect" in r.text
+    r = client.post("/profile/mat-khau", data={
+        "mk_hien_tai": "mk-nv-6", "mk_moi": "mk-moi-7", "mk_lai": "mk-moi-7"})
+    assert "Password changed" in r.text
+    client.get("/logout")
+    assert _login(client, "nhanvien", "mk-moi-7").status_code == 303
+
+
+def test_proxy_phat_x_remote_name(client, app_mau_server, iam_db):
+    """Display name chảy sang app qua claims X-Remote-Name (URL-encode)."""
+    _login(client)
+    conn = iam.ket_noi()
+    ow = iam.claims_cua(iam.lay_tai_khoan(conn, "owner-test"))
+    iam.sua_ho_so_ca_nhan(conn, ow, ten_hien_thi="Chủ Doanh Nghiệp")
+    conn.close()
+    r = client.get("/app/app-mau/", headers={"X-Remote-Name": "gia-mao"})
+    assert r.status_code == 200
+    assert "gia-mao" not in r.text        # header giả bị vứt

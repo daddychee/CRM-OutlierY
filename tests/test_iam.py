@@ -30,8 +30,11 @@ def _owner(conn):
 # ---------- khởi tạo + migration ----------
 
 def test_migrate_ghi_phien_ban(conn):
+    # Ghim LUẬT (không ghim số): phiên bản schema = số file .sql trong migrations/
+    # — ghim số mặt chữ là test tự vỡ mỗi lần thêm migration (bài học self-test 05/08).
+    so_migration = len(list(iam.DUONG_MIGRATIONS.glob("*.sql")))
     v = conn.execute("SELECT phien_ban FROM schema_version").fetchone()["phien_ban"]
-    assert v == 1
+    assert v == so_migration >= 1
 
 
 def test_user_dau_tien_phai_owner(conn):

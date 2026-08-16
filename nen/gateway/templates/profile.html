@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Profile — OUTLIERY</title>
+<script>(function(){var d=document.documentElement,t=null;try{t=localStorage.getItem("outliery_theme")}catch(e){}if(t!=="light"&&t!=="dark"){t=(window.matchMedia&&matchMedia("(prefers-color-scheme: light)").matches)?"light":"dark"}d.setAttribute("data-theme",t)})()</script>
+<style>
+  :root{--nen:#F7F8FA;--the:#FFFFFF;--vien:#E6E6E6;--chu:#16181C;--phu:#6C6C72;
+        --accent:#2C6FC4;--ok:#1D7A46;--loi:#B4232A}
+  :root[data-theme="dark"]{--nen:#090C12;--the:#121826;--vien:#232B3D;--chu:#E8EDF4;
+        --phu:#8B96A8;--accent:#4C8FE0;--ok:#5CC98B;--loi:#F08A8F}
+  *{box-sizing:border-box;margin:0}
+  body{font-family:Inter,system-ui,sans-serif;background:var(--nen);color:var(--chu)}
+  header{display:flex;justify-content:space-between;padding:14px 24px;
+         border-bottom:1px solid var(--vien);background:var(--the)}
+  a{color:var(--accent);text-decoration:none}
+  main{max-width:560px;margin:32px auto;padding:0 20px}
+  h2{font-size:15px;margin:24px 0 10px}
+  .bao{color:var(--ok);font-size:13px;margin:10px 0}
+  .loi{color:var(--loi);font-size:13px;margin:10px 0}
+  .khoi{background:var(--the);border:1px solid var(--vien);border-radius:12px;padding:16px 18px}
+  label{display:block;font-size:12px;color:var(--phu);margin:10px 0 4px}
+  input{width:100%;padding:8px 10px;border:1px solid var(--vien);border-radius:8px;
+        background:var(--nen);color:var(--chu);font-size:13px}
+  input[readonly]{opacity:.65;cursor:not-allowed}
+  button{margin-top:14px;padding:8px 16px;border:0;border-radius:8px;
+         background:var(--accent);color:#fff;font-size:13px;cursor:pointer}
+  .phu{color:var(--phu);font-size:12px}
+</style>
+</head>
+<body>
+<header><b>Profile</b>
+  <span class="phu">{{ tk.ten_hien_thi or user.ten }} — {{ rank }} ·
+    <a href="/app/tri-thuc/hoi-dap">← Back to Chat</a></span></header>
+<main>
+  {% if bao %}<p class="bao">✓ {{ bao }}</p>{% endif %}
+  {% if loi %}<p class="loi">✗ {{ loi }}</p>{% endif %}
+
+  <h2>Personal info</h2>
+  <div class="khoi">
+    <form method="post" action="/profile">
+      <label>Display name (shown at the bottom of the sidebar)</label>
+      <input name="ten_hien_thi" value="{{ tk.ten_hien_thi or '' }}" maxlength="80"
+             placeholder="e.g. Nguyễn Văn A">
+      <label>Email</label>
+      <input name="email" value="{{ tk.email or '' }}" maxlength="120" type="email">
+      <label>Phone</label>
+      <input name="dien_thoai" value="{{ tk.dien_thoai or '' }}" maxlength="30">
+      <label>Username</label>
+      <input value="{{ user.ten }}" readonly>
+      <label>Department · Level <span class="phu">(managed by Owner — read-only)</span></label>
+      <input value="{{ user.bo_phan }} · L{{ user.level }} {{ rank }}" readonly>
+      <button>Save</button>
+    </form>
+  </div>
+
+  <h2>Change password</h2>
+  <div class="khoi">
+    <form method="post" action="/profile/mat-khau">
+      <label>Current password</label>
+      <input name="mk_hien_tai" type="password" required>
+      <label>New password</label>
+      <input name="mk_moi" type="password" required>
+      <label>Repeat new password</label>
+      <input name="mk_lai" type="password" required>
+      <button>Change password</button>
+    </form>
+  </div>
+</main>
+</body>
+</html>

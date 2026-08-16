@@ -113,7 +113,7 @@ def login_gui(request: Request, ten: str = Form(""), mat_khau: str = Form("")):
     if not claims:
         return templates.TemplateResponse(
             request, "login.html",
-            {"loi": "Sai tên đăng nhập hoặc mật khẩu.", "che_do_mo": False},
+            {"loi": "Wrong username or password.", "che_do_mo": False},
             status_code=401)
     resp = RedirectResponse("/", status_code=303)
     resp.set_cookie(COOKIE_TEN, _ky.dumps(claims["ten"]), max_age=PHIEN_TTL,
@@ -141,6 +141,62 @@ def logout(request: Request):
     return resp
 
 
+# ---------- Profile (tự phục vụ — UI_FLOW.md mục 8) ----------
+
+def _render_profile(request: Request, user: dict, loi: str = "",
+                    bao: str = "") -> HTMLResponse:
+    conn = iam.ket_noi()
+    try:
+        tk = iam.lay_tai_khoan(conn, user["ten"]) or {}
+    finally:
+        conn.close()
+    return templates.TemplateResponse(
+        request, "profile.html",
+        {"user": user, "tk": tk, "loi": loi, "bao": bao,
+         "rank": _TEN_LEVEL.get(user["level"], f"L{user['level']}")})
+
+
+@app.get("/profile", response_class=HTMLResponse)
+def profile_form(request: Request):
+    user = _kiem(request)
+    if isinstance(user, RedirectResponse):
+        return user
+    return _render_profile(request, user)
+
+
+@app.post("/profile", response_class=HTMLResponse)
+def profile_luu(request: Request, ten_hien_thi: str = Form(""),
+                email: str = Form(""), dien_thoai: str = Form("")):
+    user = _kiem(request)
+    if isinstance(user, RedirectResponse):
+        return user
+    conn = iam.ket_noi()
+    try:
+        iam.sua_ho_so_ca_nhan(conn, user, ten_hien_thi, email, dien_thoai)
+    finally:
+        conn.close()
+    return _render_profile(request, user, bao="Profile saved.")
+
+
+@app.post("/profile/mat-khau", response_class=HTMLResponse)
+def profile_doi_mk(request: Request, mk_hien_tai: str = Form(""),
+                   mk_moi: str = Form(""), mk_lai: str = Form("")):
+    user = _kiem(request)
+    if isinstance(user, RedirectResponse):
+        return user
+    if mk_moi != mk_lai:
+        return _render_profile(request, user, loi="New passwords do not match.")
+    conn = iam.ket_noi()
+    try:
+        # Luật V1 (v2 từng thiếu): đổi mật khẩu CỦA MÌNH phải gõ mật khẩu hiện tại.
+        iam.doi_mat_khau_ca_nhan(conn, user, mk_hien_tai, mk_moi)
+    except iam.LoiIam as e:
+        return _render_profile(request, user, loi=str(e))
+    finally:
+        conn.close()
+    return _render_profile(request, user, bao="Password changed.")
+
+
 @app.get("/doi-mat-khau", response_class=HTMLResponse)
 def doi_mk_form(request: Request):
     user = user_hien_tai(request)
@@ -158,7 +214,7 @@ def doi_mk_gui(request: Request, mk_moi: str = Form(""), mk_lai: str = Form(""))
     if mk_moi != mk_lai:
         return templates.TemplateResponse(
             request, "doimatkhau.html",
-            {"user": user, "loi": "Hai lần gõ không khớp.", "xong": False})
+            {"user": user, "loi": "Passwords do not match.", "xong": False})
     conn = iam.ket_noi()
     try:
         iam.doi_mat_khau(conn, user, user["ten"], mk_moi, ep_doi_lan_sau=False)
@@ -185,7 +241,7 @@ def trang_chu(request: Request):
 
 # ---------- KHU QUẢN TRỊ NỀN (UI_FLOW.md mục 5 — mỗi trang MỘT việc) ----------
 
-_TEN_LEVEL = {1: "Intern", 2: "Nhân viên", 3: "Leader", 4: "Manager", 5: "Owner"}
+_TEN_LEVEL = {1: "Intern", 2: "Staff", 3: "Leader", 4: "Manager", 5: "Owner"}
 _NHAN_GIO = {"quan_tai_khoan": "Quản tài khoản", "duyet_ho_so": "Duyệt hồ sơ nhân sự",
              "nap_tai_lieu": "Nạp tài liệu", "duyet_qa": "Duyệt Q&A bổ sung",
              "giam_sat": "Giám sát hoạt động"}
@@ -210,7 +266,7 @@ def _gate_nen(request: Request, quyen: str | None = None,
                 return user
         finally:
             conn.close()
-    return Response("Bạn không có quyền vào trang này.", status_code=403)
+    return Response("You do not have access to this page.", status_code=403)
 
 
 async def _do_dich_vu() -> list[dict]:
@@ -323,8 +379,8 @@ def nen_tk_tao(request: Request, ten: str = Form(""), mat_khau: str = Form(""),
     conn = iam.ket_noi()
     try:
         iam.tao_tai_khoan(conn, user, ten, mat_khau, bo_phan, level)
-        return _render_tai_khoan(request, user, bao=f"Đã tạo tài khoản {ten} "
-                                 "(bị ép đổi mật khẩu lần đăng nhập đầu).")
+        return _render_tai_khoan(request, user, bao=f"Created account {ten} "
+                                 "(must change password at first sign-in).")
     except iam.LoiIam as e:
         return _render_tai_khoan(request, user, loi=str(e))
     finally:
@@ -348,13 +404,13 @@ def nen_tk_sua(request: Request, ten: str = Form(...),
         elif hanh_dong == "xoa":
             if gia_tri != ten:   # xác nhận 2 lớp: client gõ lại tên, SERVER kiểm
                 return _render_tai_khoan(request, user,
-                                         loi="Muốn xóa phải gõ lại đúng tên tài khoản.")
+                                         loi="To delete, retype the exact account name.")
             iam.xoa_tai_khoan(conn, user, ten)
         elif hanh_dong == "reset_mk":
             iam.doi_mat_khau(conn, user, ten, gia_tri, ep_doi_lan_sau=True)
         else:
-            return _render_tai_khoan(request, user, loi="Hành động lạ.")
-        return _render_tai_khoan(request, user, bao=f"Đã {hanh_dong}: {ten}")
+            return _render_tai_khoan(request, user, loi="Unknown action.")
+        return _render_tai_khoan(request, user, bao=f"Done {hanh_dong}: {ten}")
     except iam.LoiIam as e:
         return _render_tai_khoan(request, user, loi=str(e))
     finally:
@@ -392,7 +448,7 @@ def nen_ns_tao(request: Request, ho_ten: str = Form(""),
     conn = iam.ket_noi()
     try:
         ns = iam.tao_nguoi(conn, user, ho_ten, bo_phan, vi_tri)
-        return _render_nhan_su(request, user, bao=f"Đã tạo hồ sơ {ns['ma']}.")
+        return _render_nhan_su(request, user, bao=f"Created profile {ns['ma']}.")
     except iam.LoiIam as e:
         return _render_nhan_su(request, user, loi=str(e))
     finally:
@@ -462,7 +518,7 @@ def nen_pq_gan(request: Request, ten: str = Form(...), app_slug: str = Form(...)
     try:
         iam.gan_override(conn, user, ten, app_slug, hanh_dong, cho_phep)
         return _render_phan_quyen(request, user, ten=ten,
-                                  bao=f"Đã đặt {app_slug}/{hanh_dong} = {gia_tri}")
+                                  bao=f"Set {app_slug}/{hanh_dong} = {gia_tri}")
     except iam.LoiIam as e:
         return _render_phan_quyen(request, user, ten=ten, loi=str(e))
     finally:
@@ -478,7 +534,7 @@ def nen_pq_uy_quyen(request: Request, ten: str = Form(...), bat: str = Form("0")
     try:
         iam.sua_tai_khoan(conn, user, ten, admin_uy_quyen=(bat == "1"))
         return _render_phan_quyen(request, user, ten=ten,
-                                  bao=f"Admin ủy quyền của {ten} = {bat}")
+                                  bao=f"Delegated admin for {ten} = {bat}")
     except iam.LoiIam as e:
         return _render_phan_quyen(request, user, ten=ten, loi=str(e))
     finally:
@@ -512,7 +568,7 @@ def nen_cau_hinh_llm(request: Request, vai: str = Form(...),
     vai = vai.strip().lower()
     if not vai.isidentifier():
         return RedirectResponse(
-            "/nen/cau-hinh?loi=T%C3%AAn+vai+kh%C3%B4ng+h%E1%BB%A3p+l%E1%BB%87",
+            "/nen/cau-hinh?loi=Invalid+role+name",
             status_code=303)
     conn = ket.ket_noi()
     try:
@@ -525,7 +581,7 @@ def nen_cau_hinh_llm(request: Request, vai: str = Form(...),
     finally:
         conn.close()
     return RedirectResponse(
-        f"/nen/cau-hinh?bao=%C4%90%C3%A3+l%C6%B0u+vai+{vai}", status_code=303)
+        f"/nen/cau-hinh?bao=Saved+role+{vai}", status_code=303)
 
 
 # --- Dữ liệu & backup / Nhật ký / Ứng dụng ---
@@ -673,11 +729,12 @@ async def proxy_app(request: Request, slug: str, duong_dan: str):
     if user.get("phai_doi_mk"):
         return RedirectResponse("/doi-mat-khau", status_code=303)
     if not muc:
-        return Response("Không có app này.", status_code=404)
+        return Response("No such app.", status_code=404)
     if not duoc_vao:
-        return Response("Bạn không có quyền vào công cụ này.", status_code=403)
+        return Response("You do not have access to this tool.", status_code=403)
     return await chuyen_tiep(
         request, cong=muc["cong"], goc=f"/app/{slug}", duong_dan=duong_dan,
         ten_user=user["ten"], tien_to_app=muc.get("tien_to", []),
         vai=iam.vai_cho_app(user, slug), level=user["level"],
-        bo_phan=user.get("bo_phan", ""), apps_duoc_vao=apps_duoc_vao)
+        bo_phan=user.get("bo_phan", ""), apps_duoc_vao=apps_duoc_vao,
+        ten_hien_thi=user.get("ten_hien_thi", ""))

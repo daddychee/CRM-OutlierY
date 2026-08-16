@@ -124,7 +124,31 @@ def xac_thuc(conn: sqlite3.Connection, ten: str, mat_khau: str) -> dict | None:
 
 def claims_cua(tk: dict) -> dict:
     return {"ten": tk["ten"], "bo_phan": tk["bo_phan"], "level": tk["level"],
-            "admin_uy_quyen": bool(tk["admin_uy_quyen"])}
+            "admin_uy_quyen": bool(tk["admin_uy_quyen"]),
+            "ten_hien_thi": tk.get("ten_hien_thi", "") or ""}
+
+
+# ---------- hồ sơ cá nhân (trang Profile — tự phục vụ, UI_FLOW.md mục 8) ----------
+
+def sua_ho_so_ca_nhan(conn: sqlite3.Connection, ai_lam: dict,
+                      ten_hien_thi: str = "", email: str = "",
+                      dien_thoai: str = "") -> None:
+    """Tự sửa hồ sơ CỦA MÌNH. Bộ phận/level KHÔNG sửa được ở đây (Owner quản —
+    nhân viên tự sửa là tự thăng quyền)."""
+    with conn:
+        conn.execute(
+            "UPDATE tai_khoan SET ten_hien_thi=?, email=?, dien_thoai=? WHERE ten=?",
+            (ten_hien_thi.strip()[:80], email.strip()[:120],
+             dien_thoai.strip()[:30], ai_lam["ten"]))
+    ghi_nhat_ky(conn, ai_lam["ten"], "sua_ho_so_ca_nhan", ai_lam["ten"])
+
+
+def doi_mat_khau_ca_nhan(conn: sqlite3.Connection, ai_lam: dict,
+                         mk_hien_tai: str, mk_moi: str) -> None:
+    """Đổi mật khẩu CỦA MÌNH — bắt gõ mật khẩu hiện tại (luật V1, v2 từng thiếu)."""
+    if not xac_thuc(conn, ai_lam["ten"], mk_hien_tai):
+        raise LoiIam("Current password is incorrect.")
+    doi_mat_khau(conn, ai_lam, ai_lam["ten"], mk_moi, ep_doi_lan_sau=False)
 
 
 def _kiem_khong_tu_sua(ai_lam: dict, ten_dich: str) -> None:

@@ -3,14 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{% block tieu_de %}Quản trị nền{% endblock %} — OUTLIERY</title>
+<script>(function(){var d=document.documentElement,t=null;try{t=localStorage.getItem("outliery_theme")}catch(e){}if(t!=="light"&&t!=="dark"){t=(window.matchMedia&&matchMedia("(prefers-color-scheme: light)").matches)?"light":"dark"}d.setAttribute("data-theme",t)})()</script>
+<title>{% block tieu_de %}General{% endblock %} — OUTLIERY</title>
 <style>
   :root{--nen:#F7F8FA;--the:#FFFFFF;--vien:#E6E6E6;--chu:#16181C;--phu:#6C6C72;
         --accent:#2C6FC4;--ok:#1D7A46;--loi:#B4232A}
-  @media (prefers-color-scheme: dark){
-    :root{--nen:#090C12;--the:#121826;--vien:#232B3D;--chu:#E8EDF4;--phu:#8B96A8;
-          --accent:#4C8FE0;--ok:#5CC98B;--loi:#F08A8F}
-  }
+  :root[data-theme="dark"]{--nen:#090C12;--the:#121826;--vien:#232B3D;--chu:#E8EDF4;
+        --phu:#8B96A8;--accent:#4C8FE0;--ok:#5CC98B;--loi:#F08A8F}
   *{box-sizing:border-box;margin:0}
   body{font-family:Inter,system-ui,sans-serif;background:var(--nen);color:var(--chu)}
   header{display:flex;justify-content:space-between;align-items:center;gap:12px;
@@ -44,23 +43,23 @@
 </head>
 <body>
 <header>
-  <b>⛭ Quản trị nền</b>
+  <b>⛭ General</b>
   <span class="phu">{{ user.ten }} (L{{ user.level }}) ·
-    <a href="/app/tri-thuc/hoi-dap">← Về Hỏi–đáp</a> · <a href="/logout">Đăng xuất</a></span>
+    <a href="/app/tri-thuc/hoi-dap">← Back to Chat</a> · <a href="/logout">Log out</a></span>
 </header>
-{# Nav 8 trang — UI_FLOW.md mục 5: mỗi trang MỘT việc. Mục Nhân sự mở cho HR L3+,
-   còn lại chỉ Owner nên ẩn bớt với người không phải Owner. #}
+{# Nav 8 trang (General) — UI_FLOW.md mục 5+8: mỗi trang MỘT việc. People mở cho
+   HR L3+, còn lại chỉ Owner nên ẩn bớt với người không phải Owner. #}
 <nav class="muc">
   {% set la_owner = user.level >= 5 %}
-  {% if la_owner %}<a href="/nen" class="{% if trang == 'tong-quan' %}active{% endif %}">Tổng quan đế</a>{% endif %}
-  {% if la_owner %}<a href="/nen/tai-khoan" class="{% if trang == 'tai-khoan' %}active{% endif %}">Tài khoản</a>{% endif %}
-  <a href="/nen/nhan-su" class="{% if trang == 'nhan-su' %}active{% endif %}">Nhân sự</a>
+  {% if la_owner %}<a href="/nen" class="{% if trang == 'tong-quan' %}active{% endif %}">Overview</a>{% endif %}
+  {% if la_owner %}<a href="/nen/tai-khoan" class="{% if trang == 'tai-khoan' %}active{% endif %}">Accounts</a>{% endif %}
+  <a href="/nen/nhan-su" class="{% if trang == 'nhan-su' %}active{% endif %}">People</a>
   {% if la_owner %}
-  <a href="/nen/phan-quyen" class="{% if trang == 'phan-quyen' %}active{% endif %}">Phân quyền</a>
-  <a href="/nen/cau-hinh" class="{% if trang == 'cau-hinh' %}active{% endif %}">Cấu hình LLM</a>
-  <a href="/nen/du-lieu" class="{% if trang == 'du-lieu' %}active{% endif %}">Dữ liệu &amp; backup</a>
-  <a href="/nen/nhat-ky" class="{% if trang == 'nhat-ky' %}active{% endif %}">Nhật ký</a>
-  <a href="/nen/ung-dung" class="{% if trang == 'ung-dung' %}active{% endif %}">Ứng dụng</a>
+  <a href="/nen/phan-quyen" class="{% if trang == 'phan-quyen' %}active{% endif %}">Permissions</a>
+  <a href="/nen/cau-hinh" class="{% if trang == 'cau-hinh' %}active{% endif %}">AI Models</a>
+  <a href="/nen/du-lieu" class="{% if trang == 'du-lieu' %}active{% endif %}">Data &amp; Backup</a>
+  <a href="/nen/nhat-ky" class="{% if trang == 'nhat-ky' %}active{% endif %}">Audit Log</a>
+  <a href="/nen/ung-dung" class="{% if trang == 'ung-dung' %}active{% endif %}">Applications</a>
   {% endif %}
 </nav>
 <main>

@@ -50,7 +50,7 @@ _HEADER_CAM = {"host", "connection", "keep-alive", "transfer-encoding", "upgrade
                "proxy-authorization", "proxy-authenticate", "te", "trailer",
                "content-length", "accept-encoding",
                "x-remote-user", "x-remote-role", "x-remote-level", "x-remote-dept",
-               "x-remote-apps", "x-role-code", "x-forwarded-for"}
+               "x-remote-apps", "x-remote-name", "x-role-code", "x-forwarded-for"}
 
 _LOAI_CHU = ("text/html", "text/css", "application/javascript", "text/javascript",
              "application/json", "text/plain")
@@ -89,7 +89,8 @@ def _viet_lai_header(ten: str, gia_tri: str, goc: str, tien_to_app: list[str]) -
 async def chuyen_tiep(request: Request, cong: int, goc: str, duong_dan: str,
                       ten_user: str, tien_to_app: list[str], vai: str = "",
                       level: int | None = None, bo_phan: str = "",
-                      apps_duoc_vao: list[str] | None = None) -> Response:
+                      apps_duoc_vao: list[str] | None = None,
+                      ten_hien_thi: str = "") -> Response:
     """Chuyển tiếp request sang app 127.0.0.1:<cong>, tiêm claims do GATEWAY quyết."""
     dich = f"http://127.0.0.1:{cong}/{duong_dan}"
     cam = set(_HEADER_CAM)
@@ -108,6 +109,9 @@ async def chuyen_tiep(request: Request, cong: int, goc: str, duong_dan: str,
         # Bộ phận có dấu tiếng Việt, header chỉ nhận ASCII → URL-encode ở đây,
         # app nhận unquote lại (RBAC bộ phận × level cần CHUỖI GỐC khớp payload).
         headers["X-Remote-Dept"] = quote(bo_phan)
+    if ten_hien_thi:
+        # Display name (tiếng Việt có dấu) → URL-encode như Dept, app unquote lại.
+        headers["X-Remote-Name"] = quote(ten_hien_thi)
     if apps_duoc_vao is not None:
         # UI_FLOW.md mục 2: sidebar app nào hiện là GATEWAY quyết (một nguồn sự
         # thật quyền) — app chỉ đọc danh sách slug ASCII này, không tự đoán.

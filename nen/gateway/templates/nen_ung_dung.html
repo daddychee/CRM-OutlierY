@@ -1,19 +1,19 @@
 {% extends "nen_base.html" %}
-{% block tieu_de %}Ứng dụng{% endblock %}
+{% block tieu_de %}Applications{% endblock %}
 {% block noi_dung %}
-<h2>Hợp đồng ứng dụng <span class="phu" style="font-weight:400">— nguồn: nen/rules/apps.json; app không khai = không tồn tại với tầng nền</span></h2>
+<h2>App contracts <span class="phu" style="font-weight:400">— source: nen/rules/apps.json; an undeclared app does not exist to the platform</span></h2>
 <table>
-  <tr><th>App</th><th>Slug</th><th>Cổng</th><th>Trạng thái</th><th>Tiền tố tự khai</th></tr>
+  <tr><th>App</th><th>Slug</th><th>Port</th><th>Status</th><th>Declared prefixes</th></tr>
   {% for a in apps %}
   <tr>
     <td><b>{{ a.ten }}</b></td>
     <td class="phu">{{ a.slug }}</td>
     <td>{{ a.cong }}</td>
-    <td><span class="cham {{ 'song' if dich_vu.get(a.ten) else 'chet' }}"></span>{{ "đang chạy" if dich_vu.get(a.ten) else "KHÔNG phản hồi" }}</td>
+    <td><span class="cham {{ 'song' if dich_vu.get(a.ten) else 'chet' }}"></span>{{ "running" if dich_vu.get(a.ten) else "NOT responding" }}</td>
     <td class="phu" style="max-width:340px">{{ a.tien_to | join(" ") or "—" }}</td>
   </tr>
   {% endfor %}
 </table>
-<p class="phu" style="margin-top:10px">Thêm app mới = khai một mục vào apps.json
-  (khuôn: apps/app-mau) + luật vào ở phan_quyen.json — gateway tự nhận, không sửa code nền.</p>
+<p class="phu" style="margin-top:10px">Adding an app = one entry in apps.json
+  (template: apps/app-mau) + an access rule in phan_quyen.json — the gateway picks it up, no platform code changes.</p>
 {% endblock %}

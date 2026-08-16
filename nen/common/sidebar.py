@@ -8,7 +8,7 @@ danh sách phiên chat) nhưng đọc cùng một header này.
 """
 from urllib.parse import unquote
 
-TEN_LEVEL = {1: "Intern", 2: "Nhân viên", 3: "Leader", 4: "Manager", 5: "Owner"}
+TEN_LEVEL = {1: "Intern", 2: "Staff", 3: "Leader", 4: "Manager", 5: "Owner"}
 
 
 def ctx_sidebar(request) -> dict:
@@ -22,8 +22,10 @@ def ctx_sidebar(request) -> dict:
     except ValueError:
         level = 0
     dept = unquote(request.headers.get("x-remote-dept") or "")
+    ten_ht = unquote(request.headers.get("x-remote-name") or "")
     apps_vao = [s for s in (request.headers.get("x-remote-apps") or "").split(",") if s]
-    return {"sb_user": {"ten": ten, "level": level, "bo_phan": dept},
+    return {"sb_user": {"ten": ten, "level": level, "bo_phan": dept,
+                        "ten_hien_thi": ten_ht},
             "sb_phien": [],   # phiên chat thuộc tri-thuc — app khác không truy chéo (Luật 4)
             "sb_level_chu": TEN_LEVEL.get(level, ""), "lite": False,
             "sb_apps": [],    # app phụ chưa di trú: ẨN HẲN (Owner chốt 16/08)
