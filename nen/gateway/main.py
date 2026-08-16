@@ -38,7 +38,26 @@ templates = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
 # bản CHUẨN ở nen/gateway/static; app nào cần bản riêng thì khai /static trong
 # tien_to như tri-thuc. Thiếu mount này là DA/to-chuc mất font (đo 16/08).
 from fastapi.staticfiles import StaticFiles  # noqa: E402
-app.mount("/static", StaticFiles(directory=str(Path(__file__).parent / "static")),
+
+
+class StaticCache(StaticFiles):
+    """StaticFiles + Cache-Control. Thiếu header này là trình duyệt REVALIDATE font
+    mỗi lần chuyển trang → trang vẽ bằng Segoe UI rồi mới swap sang Inter
+    (font-display:swap) → cả app 'zoom nhẹ' mỗi điều hướng (Owner báo 16/08, đo
+    bằng curl: response chỉ có ETag, không Cache-Control). Font/CSS font đổi cực
+    hiếm → cache 30 ngày; còn lại (theme.js…) 10 phút là đủ tươi cho LAN."""
+
+    def file_response(self, full_path, stat_result, scope, status_code=200):
+        resp = super().file_response(full_path, stat_result, scope, status_code)
+        duong = str(full_path)
+        if duong.endswith((".woff2", ".woff")) or duong.endswith("fonts.css"):
+            resp.headers["Cache-Control"] = "public, max-age=2592000"
+        else:
+            resp.headers["Cache-Control"] = "public, max-age=600"
+        return resp
+
+
+app.mount("/static", StaticCache(directory=str(Path(__file__).parent / "static")),
           name="static")
 _ky = URLSafeTimedSerializer(SESSION_SECRET, salt="phien-v2")
 
@@ -227,7 +246,7 @@ def doi_mk_gui(request: Request, mk_moi: str = Form(""), mk_lai: str = Form(""))
 
 
 @app.get("/")
-def trang_chu(request: Request):
+async def trang_chu(request: Request):
     # UI_FLOW.md mục 1: đăng nhập xong vào THẲNG Hỏi–đáp như V1. Trang "bảng chọn
     # app" đã XÓA HẲN (Owner chốt 16/08) — mọi điều hướng qua sidebar.
     user = _kiem(request)
@@ -236,7 +255,9 @@ def trang_chu(request: Request):
     # Miền quản trị (UI_FLOW.md mục 7): quantri.* vào thẳng khu nền.
     if (request.url.hostname or "").startswith("quantri."):
         return RedirectResponse("/nen", status_code=303)
-    return RedirectResponse("/app/tri-thuc/hoi-dap", status_code=303)
+    # URL ĐẸP (Owner chốt 16/08, UI_FLOW.md mục 9): Home = "/" PHỤC VỤ thẳng trang
+    # chat (không redirect sang /app/... nữa — thanh địa chỉ phải khớp nút bấm).
+    return await proxy_app(request, "tri-thuc", "hoi-dap")
 
 
 # ---------- KHU QUẢN TRỊ NỀN (UI_FLOW.md mục 5 — mỗi trang MỘT việc) ----------
@@ -693,10 +714,43 @@ def api_hoi_so_lieu(request: Request, cau_hoi: str = Form(...)):
 
 # ---------- proxy app ----------
 
+# --- URL ĐẸP cấp 1 (Owner chốt 16/08/2026, UI_FLOW.md mục 9) ---
+# Thanh địa chỉ khớp nút bấm: alias cấp-1 PHỤC VỤ thẳng trang (URL giữ nguyên),
+# URL /app/... cũ của đúng các TRANG này 303 về alias. Route con (form/API/stream)
+# vẫn đi /app/<slug>/... như cũ — không đổi hợp đồng app.
+_ALIAS: dict[str, tuple[str, str]] = {
+    "/input": ("tri-thuc", ""),
+    "/library": ("tri-thuc", "kho-tai-lieu"),
+    "/gap": ("tri-thuc", "kho-thieu"),
+    "/history": ("tri-thuc", "lich-su"),
+    "/tracking": ("tri-thuc", "giam-sat"),
+    "/data-analytics": ("data-analytics", "chan-doan"),
+    "/nas": ("to-chuc", "nas"),
+    "/kpi": ("to-chuc", "kpi"),
+    "/vault": ("to-chuc", "vault"),
+}
+# (slug, duong_dan) → URL đẹp; Home "/" phục vụ hoi-dap ở trang_chu.
+_ALIAS_NGUOC = {v: k for k, v in _ALIAS.items()} | {("tri-thuc", "hoi-dap"): "/"}
+# Đường alias trùng mặt chữ tien_to (vd /nas của to-chuc) không bị proxy viết lại
+# thành /app/... — xem viet_lai_duong_dan(bo_qua=).
+_ALIAS_BO_QUA = tuple(_ALIAS)
+
+
 @app.api_route("/app/{slug}/{duong_dan:path}",
                methods=["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"])
 async def proxy_app(request: Request, slug: str, duong_dan: str):
     from starlette.concurrency import run_in_threadpool
+
+    # Trang có URL đẹp mà bị mở bằng đường /app/... cũ → 303 về URL đẹp (chỉ
+    # điều hướng HTML thật; fetch/stream/form giữ nguyên đường cũ).
+    if (request.method in ("GET", "HEAD")
+            and request.url.path.startswith("/app/")
+            and "text/html" in (request.headers.get("accept") or "")
+            and (slug, duong_dan) in _ALIAS_NGUOC):
+        dich = _ALIAS_NGUOC[(slug, duong_dan)]
+        if request.url.query:
+            dich += "?" + request.url.query
+        return RedirectResponse(dich, status_code=303)
 
     def _auth_va_quyen():
         """Gom mọi việc chạm sqlite/file vào MỘT lần xuống threadpool — proxy là
@@ -737,4 +791,15 @@ async def proxy_app(request: Request, slug: str, duong_dan: str):
         ten_user=user["ten"], tien_to_app=muc.get("tien_to", []),
         vai=iam.vai_cho_app(user, slug), level=user["level"],
         bo_phan=user.get("bo_phan", ""), apps_duoc_vao=apps_duoc_vao,
-        ten_hien_thi=user.get("ten_hien_thi", ""))
+        ten_hien_thi=user.get("ten_hien_thi", ""), bo_qua=_ALIAS_BO_QUA)
+
+
+def _lam_alias(slug: str, dd: str):
+    async def _alias(request: Request):
+        return await proxy_app(request, slug, dd)
+    return _alias
+
+
+for _duong, (_slug, _dd) in _ALIAS.items():
+    app.add_api_route(_duong, _lam_alias(_slug, _dd), methods=["GET", "HEAD"],
+                      name=f"alias_{_duong.strip('/')}")

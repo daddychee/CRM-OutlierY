@@ -143,3 +143,30 @@ nút, khu nền, login). Chuỗi tiếng Việt NẰM TRONG 5 khối script chat
 
 **Theme**: mục trong user menu, dùng ĐÚNG cơ chế chung `outliery_theme` +
 data-theme; nhân dịp này các trang khu nền bỏ media query về đúng cơ chế chung.
+
+## 9. URL GỌN CẤP 1 — thanh địa chỉ khớp nút bấm (chốt Owner 16/08/2026, đổi
+chốt cũ "route giữ nguyên" của mục 8)
+
+Owner phê bình đúng: nút Input mà URL là /app/tri-thuc/, Home lại là /hoi-dap.
+Chốt: **alias cấp-1 tại GATEWAY** — app không đổi route (diff nhỏ nhất), hợp lộ
+trình "mỗi app một miền" giai đoạn thay thế.
+
+| Nút | URL | Ghi chú |
+|---|---|---|
+| Home (chat) | `/` | phục vụ THẲNG trang Hỏi–đáp, hết redirect /hoi-dap |
+| Input | `/input` | |
+| Library | `/library` | |
+| Gap | `/gap` | |
+| View all history | `/history` | |
+| Data Analytics | `/data-analytics` | |
+| NAS / KPI / Vault / Tracking | `/nas` `/kpi` `/vault` `/tracking` | user menu |
+| General 8 trang | `/nen/*` | đã khớp từ mục 5 |
+
+Luật kỹ thuật: (a) alias PHỤC VỤ thẳng (URL giữ nguyên trên thanh địa chỉ);
+(b) URL /app/... CŨ của đúng các trang này 303 về alias — CHỈ điều hướng HTML
+thật (Accept: text/html), fetch/SSE/form giữ đường cũ; (c) route con (form,
+API, stream, đường sâu /nas/...) vẫn /app/<slug>/... — hợp đồng app không đổi;
+(d) proxy KHÔNG viết lại alias trùng mặt chữ tien_to (bo_qua trong
+viet_lai_duong_dan — vd href="/nas" giữ nguyên, /nas/cai-dat vẫn viết lại).
+Bảng alias = `_ALIAS` trong nen/gateway/main.py — thêm trang mới có nút sidebar
+là THÊM dòng alias ở đó.

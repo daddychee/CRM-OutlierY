@@ -206,7 +206,7 @@
       <a class="nav-item" href="/app/{{ a.slug }}">{% include "_icon_app.html" %} {{ a.ten }}</a>
       {% endfor %}
       {% if sb_da %}
-      <a class="nav-item" href="/app/data-analytics/chan-doan">
+      <a class="nav-item" href="/data-analytics">
         <svg class="ic" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15l3-4 3 3 4-6"/></svg> Data Analytics</a>
       {% endif %}
       {% for a in sb_apps if a.slug == 'niche' %}
@@ -219,7 +219,7 @@
         <input placeholder="Search your history…" disabled title="Coming soon"></div>
       <div class="sb-label">Recents</div>
       {% for p in cac_phien_sidebar %}
-      <a class="rec-item{% if p.id == phien_dang_mo %} active{% endif %}" href="/hoi-dap?phien={{ p.id }}"
+      <a class="rec-item{% if p.id == phien_dang_mo %} active{% endif %}" href="/?phien={{ p.id }}"
          title="{{ p.thoi_gian }} · {{ p.so_luot }} turns">
         <svg class="ic" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
         <span style="overflow:hidden;text-overflow:ellipsis">{{ p.ten }}</span>
@@ -228,7 +228,7 @@
       {% else %}
       <div class="tb-trong">No chats yet — ask your first question!</div>
       {% endfor %}
-      <a class="rec-item" href="/lich-su" style="color:var(--muted)">
+      <a class="rec-item" href="/history" style="color:var(--muted)">
         <svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
         View all history →</a>
     </div>
@@ -238,9 +238,11 @@
     <div class="pane" id="pane-mon">
       {% if can_upload %}
       <div class="sb-label">Manager+</div>
-      <a class="nav-item" href="/app/tri-thuc/">
+      <a class="nav-item" href="/input">
         <svg class="ic" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg> Input</a>
-      <a class="nav-item" href="/kho-thieu">
+      <a class="nav-item" href="/library">
+        <svg class="ic" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg> Library</a>
+      <a class="nav-item" href="/gap">
         <svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg> Gap</a>
       {% endif %}
     </div>
@@ -257,16 +259,16 @@
       <button type="button" class="nav-item" onclick="(function(){var d=document.documentElement,t=d.getAttribute('data-theme')==='dark'?'light':'dark';d.setAttribute('data-theme',t);try{localStorage.setItem('outliery_theme',t)}catch(e){}})()">
         <svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg> Theme</button>
       {% if sb_nas %}
-      <a class="nav-item" href="/app/to-chuc/nas">
+      <a class="nav-item" href="/nas">
         <svg class="ic" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="6" rx="1"/><rect x="3" y="13" width="18" height="6" rx="1"/><circle cx="7" cy="8" r=".9"/><circle cx="7" cy="16" r=".9"/></svg> NAS</a>
       {% endif %}
       {% if is_owner %}
-      <a class="nav-item" href="/giam-sat">
+      <a class="nav-item" href="/tracking">
         <svg class="ic" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg> Tracking</a>
       <a class="nav-item" href="/nen">
         <svg class="ic" viewBox="0 0 24 24"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3"/><path d="M1 14h6M9 8h6M17 16h6"/></svg> General</a>
       {% if not lite %}
-      <a class="nav-item" href="/app/to-chuc/vault">
+      <a class="nav-item" href="/vault">
         <svg class="ic" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Vault</a>
       {% endif %}
       {% elif sb_ns %}

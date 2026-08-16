@@ -90,12 +90,12 @@ def test_dang_nhap_sai_401(client):
 
 
 def test_dang_nhap_dung_vao_trang_chu(client):
-    # UI_FLOW.md mục 1: đăng nhập xong vào THẲNG Hỏi–đáp như V1 — trang
-    # "bảng chọn app" đã xóa hẳn (Owner chốt 16/08/2026).
+    # UI_FLOW.md mục 1 + mục 9 (URL đẹp, Owner chốt 16/08/2026): "/" PHỤC VỤ
+    # thẳng trang Hỏi–đáp (không redirect sang /app/... nữa — thanh địa chỉ giữ
+    # "/"). 502 chấp nhận được trong môi trường test khi app tri-thuc không chạy.
     assert _login(client).status_code == 303
     r = client.get("/")
-    assert r.status_code == 303
-    assert r.headers["location"] == "/app/tri-thuc/hoi-dap"
+    assert r.status_code in (200, 502)
 
 
 def test_dang_xuat_mat_phien(client):
@@ -129,12 +129,12 @@ def test_phai_doi_mk_bi_ep_sang_trang_doi(client, iam_db):
     r = client.get("/")
     assert r.status_code == 303
     assert r.headers["location"] == "/doi-mat-khau"
-    # đổi xong thì vào được — "/" giờ 303 sang Hỏi–đáp (UI_FLOW.md mục 1),
+    # đổi xong thì vào được — "/" giờ PHỤC VỤ thẳng Hỏi–đáp (UI_FLOW.md mục 9),
     # không còn bị ép về /doi-mat-khau nữa
     client.post("/doi-mat-khau", data={"mk_moi": "mk-moi-6", "mk_lai": "mk-moi-6"})
     r = client.get("/")
-    assert r.status_code == 303
-    assert r.headers["location"] == "/app/tri-thuc/hoi-dap"
+    assert not (r.status_code == 303
+                and r.headers.get("location") == "/doi-mat-khau")
 
 
 # ---------- khu quản trị nền (UI_FLOW.md mục 5-6) ----------

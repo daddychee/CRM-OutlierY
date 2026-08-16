@@ -66,13 +66,26 @@ def ten_cho_header(ten: str) -> str:
     return s or "user"
 
 
-def viet_lai_duong_dan(noi_dung: str, tien_to_app: list[str], goc: str) -> str:
+def viet_lai_duong_dan(noi_dung: str, tien_to_app: list[str], goc: str,
+                       bo_qua: tuple[str, ...] = ()) -> str:
     """Đổi đường dẫn tuyệt đối app tự khai (vd /api/x) thành đường qua gateway
-    (/app/<slug>/api/x). Chỉ thay ở vị trí URL thật (sau nháy/ngoặc/dấu bằng)."""
+    (/app/<slug>/api/x). Chỉ thay ở vị trí URL thật (sau nháy/ngoặc/dấu bằng).
+
+    bo_qua = các URL ĐẸP cấp-1 của gateway (Owner chốt 16/08: /nas, /vault, /kpi…
+    trùng mặt chữ với tien_to của app): xuất hiện NGUYÊN VẸN (không có / đi sau —
+    đường sâu /nas/... vẫn viết lại) thì giữ nguyên để thanh địa chỉ ra URL đẹp."""
+    giu: list[str] = []
+    for b in bo_qua:
+        def _cat(m, b=b):
+            giu.append(m.group(0))
+            return f"\x00GIU{len(giu) - 1}\x00"
+        noi_dung = re.sub(rf'''(["'`(=])({re.escape(b)})(?=["'`?#])''', _cat, noi_dung)
     for t in tien_to_app:
         noi_dung = re.sub(
             rf'''(["'`(=])({re.escape(t)})(?=["'`/?#])''',
             rf'\1{goc}\2', noi_dung)
+    for i, v in enumerate(giu):
+        noi_dung = noi_dung.replace(f"\x00GIU{i}\x00", v)
     return noi_dung
 
 
@@ -90,7 +103,7 @@ async def chuyen_tiep(request: Request, cong: int, goc: str, duong_dan: str,
                       ten_user: str, tien_to_app: list[str], vai: str = "",
                       level: int | None = None, bo_phan: str = "",
                       apps_duoc_vao: list[str] | None = None,
-                      ten_hien_thi: str = "") -> Response:
+                      ten_hien_thi: str = "", bo_qua: tuple[str, ...] = ()) -> Response:
     """Chuyển tiếp request sang app 127.0.0.1:<cong>, tiêm claims do GATEWAY quyết."""
     dich = f"http://127.0.0.1:{cong}/{duong_dan}"
     cam = set(_HEADER_CAM)
@@ -152,7 +165,7 @@ async def chuyen_tiep(request: Request, cong: int, goc: str, duong_dan: str,
     if tien_to_app and any(l in loai for l in _LOAI_CHU):
         try:
             noi_dung = viet_lai_duong_dan(
-                noi_dung.decode("utf-8"), tien_to_app, goc).encode("utf-8")
+                noi_dung.decode("utf-8"), tien_to_app, goc, bo_qua).encode("utf-8")
         except UnicodeDecodeError:
             pass
     return Response(noi_dung, status_code=phan_hoi.status_code, headers=ra,
