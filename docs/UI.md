@@ -86,3 +86,27 @@
 - Trang nội dung còn link `/hoi-dap?phien=` cũ (thẻ cuộc trong /history) — hoạt
   động qua redirect về URL đẹp; đổi thẳng href khi tiện.
 - Caddy root CA cho máy nhân viên khi mở LAN; DNS zone lúc thay thế (UI_FLOW.md mục 7).
+
+## ĐỢT TỐI ƯU UI (Owner chốt 16/08: "hôm nay dừng ở Content Ultimate, sau đó tối ưu lại UI")
+
+Mạch đưa app DỪNG sau Content Ultimate (SEO/PlannerY/SpeakY để sau) → chuyển UI.
+Hạng mục đề xuất, xếp theo "Owner nhìn thấy nhiều nhất" (chốt lại khi bắt đầu):
+
+**A. Trang mới dựng vội, chưa theo mockup đã duyệt** (nợ tự khai trong DE.md)
+1. **Niches + Channels** — đang là form `<details>` kiểu khu nền; mockup duyệt là
+   MODAL "+ New", bộ lọc, chip kênh trong niche, stepper niche→kênh.
+2. **API Keys** — dựng theo K1-K8 nhưng chưa soi mắt: bảng khóa, thanh usage,
+   badge trạng thái, modal Add key.
+3. **Permissions P1-P5** — khối `<details>` per app + badge N overrides mới dựng.
+4. **HR Hub tab Accounts gộp** — bảng + H1b chi tiết (double-click) + Documents.
+
+**B. Nhất quán vỏ** — khung `/open/<slug>` mới (nen_khung_app.html viết ĐỘC LẬP,
+không extends) phải cùng token/spacing với 3 base.html; kiểm 2 theme sáng/tối.
+
+**C. Nợ cũ còn treo** (mục "Việc treo UI" ở trên): phá đóng băng hoi_dap.html
+(dịch 5 khối script + emoji→SVG), emoji trong chuỗi JS trang khác, nhãn server
+còn tiếng Việt (TRANSLATE.md đợt 6), link `/hoi-dap?phien=` cũ.
+
+**Cách làm giữ nguyên**: UI-trước (mockup/ảnh cho Owner duyệt rồi mới code khi
+đổi bố cục), mỗi trang một commit, giữ logic + ID mà JS bám, không sờ 5 khối
+script đóng băng ngoài đợt C.
