@@ -26,10 +26,23 @@
   .canh{margin:.5rem 0;padding:.55rem .8rem;border-radius:9px;background:var(--chip);border:1px solid var(--chip-line);font-size:.86rem;color:var(--muted)}
   .o{font:inherit;background:transparent;color:var(--ink);border:1px solid var(--line);border-radius:7px;padding:3px 8px}
   .dg-form{display:inline-flex;gap:5px;align-items:center;flex-wrap:wrap}
+  .tb{margin:.2rem 0 .8rem;padding:.5rem .8rem;border-radius:9px;border:1px solid var(--chip-line);background:var(--chip);font-size:.86rem;display:flex;align-items:center;gap:.45rem}
+  .tb svg.ic{width:15px;height:15px;flex:none}
+  .tb.ok{color:var(--accent)}
+  .tb.err{color:var(--th-d97c6c)}
+  .f-dong{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin:.4rem 0 1rem}
+  details.sua summary{cursor:pointer;list-style:none;color:var(--muted);font-size:.8rem;display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
+  details.sua summary::-webkit-details-marker{display:none}
+  details.sua[open] summary{color:var(--accent)}
+  details.sua svg.ic{width:13px;height:13px}
+  .f-sua{display:flex;gap:5px;align-items:center;flex-wrap:wrap;margin-top:.45rem}
 {% endblock %}
 
 {% block noi_dung %}
 <div class="hub-wrap">
+
+{% if bao %}<div class="tb ok"><svg class="ic" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg> {{ bao }}</div>{% endif %}
+{% if loi %}<div class="tb err"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg> {{ loi }}</div>{% endif %}
 
 <div class="stat-row">
   <div class="stat"><div class="n">{% if stats.ho_so is none %}<span class="thieu" title="Could not read IAM registry">—</span>{% else %}{{ stats.ho_so }}{% endif %}</div><div class="t">active profiles</div></div>
@@ -42,32 +55,62 @@
   <a href="/hr?tab=attendance&thang={{ thang }}" class="{% if tab == 'attendance' %}active{% endif %}">Attendance</a>
   <a href="/hr?tab=kpi" class="{% if tab == 'kpi' %}active{% endif %}">KPI Review</a>
   <a href="/hr?tab=leaves" class="{% if tab == 'leaves' %}active{% endif %}">Leaves</a>
+  {% if co_accounts %}<a href="/hr?tab=accounts" class="{% if tab == 'accounts' %}active{% endif %}">Accounts</a>{% endif %}
 </div>
 
 {% if tab == 'people' %}
+{% set nhan_tt = {'hoat_dong': 'Active', 'cho_duyet': 'Pending', 'nghi': 'Left'} %}
 <h3 class="hub-tieu">
   <svg class="ic" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M15.5 4.6a3.5 3.5 0 0 1 0 6.8"/><path d="M17 13.4a6.5 6.5 0 0 1 4.5 6.6"/></svg>
   People
-  <span style="margin-left:auto"><a class="nut phu" href="/general/people">Open People →</a></span>
 </h3>
 {% if iam_loi %}<div class="canh">{{ iam_loi }}</div>{% endif %}
 {% if ho_so %}
 <div class="bang-cuon">
 <table class="bang">
   <tr><th>Code</th><th>Full name</th><th>Department</th><th>Position</th>
-    <th>Status</th><th>PlannerY</th><th>Created</th></tr>
+    <th>Status</th><th>PlannerY</th><th>Created</th><th></th></tr>
   {% for h in ho_so %}
   <tr><td class="tk">{{ h.ma }}</td><td>{{ h.ho_ten }}</td><td>{{ h.bo_phan }}</td>
     <td>{{ h.vi_tri or '—' }}</td>
-    <td>{% if h.trang_thai == 'hoat_dong' %}<span class="badge ok">Active</span>{% else %}<span class="badge">{{ h.trang_thai }}</span>{% endif %}</td>
+    <td>{% if h.trang_thai == 'hoat_dong' %}<span class="badge ok">Active</span>{% else %}<span class="badge">{{ nhan_tt.get(h.trang_thai, h.trang_thai) }}</span>{% endif %}</td>
     <td class="tk">{{ h.planner_id }}</td>
-    <td>{{ (h.tao_luc or '')[:10] or '—' }}</td></tr>
+    <td>{{ (h.tao_luc or '')[:10] or '—' }}</td>
+    <td>
+      <details class="sua">
+        <summary><svg class="ic" viewBox="0 0 24 24"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5z"/></svg> Edit</summary>
+        <form method="post" action="/general/people/update" class="f-sua">
+          <input type="hidden" name="ve" value="hr">
+          <input type="hidden" name="ma" value="{{ h.ma }}">
+          <input class="o" name="ho_ten" value="{{ h.ho_ten }}" placeholder="Full name" style="width:140px">
+          <input class="o" name="bo_phan" value="{{ h.bo_phan }}" placeholder="Department" style="width:130px">
+          <input class="o" name="vi_tri" value="{{ h.vi_tri }}" placeholder="Position" style="width:110px">
+          <select class="o" name="trang_thai">
+            {% for tt, nhan in nhan_tt.items() %}
+            <option value="{{ tt }}"{% if h.trang_thai == tt %} selected{% endif %}>{{ nhan }}</option>
+            {% endfor %}
+          </select>
+          <button type="submit" class="nut phu" style="padding:2px 10px;font-size:.8rem">Save</button>
+        </form>
+      </details>
+    </td></tr>
   {% endfor %}
 </table>
 </div>
 {% elif ho_so is not none %}
 <div class="canh">No profiles in the IAM registry yet.</div>
 {% endif %}
+<h3 class="hub-tieu">
+  <svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg>
+  New profile
+</h3>
+<form method="post" action="/general/people/create" class="f-dong">
+  <input type="hidden" name="ve" value="hr">
+  <input class="o" name="ho_ten" placeholder="Full name" required>
+  <input class="o" name="bo_phan" placeholder="Department" required>
+  <input class="o" name="vi_tri" placeholder="Position">
+  <button type="submit" class="nut" style="padding:.35rem .9rem;font-size:.84rem">Create</button>
+</form>
 
 {% elif tab == 'attendance' %}
 <h3 class="hub-tieu">
@@ -196,6 +239,64 @@
   {% endfor %}
 </table>
 </div>
+
+{% elif tab == 'accounts' and co_accounts %}
+<h3 class="hub-tieu">
+  <svg class="ic" viewBox="0 0 24 24"><path d="M21 2l-2 2m-7.6 7.6a5.5 5.5 0 1 1-7.78 7.78 5.5 5.5 0 0 1 7.78-7.78zm0 0L15.5 7.5m3 3L21 8m-3.5-3.5L19 6"/></svg>
+  Accounts
+</h3>
+{% if tk_loi %}<div class="canh">{{ tk_loi }}</div>{% endif %}
+{% if tai_khoan %}
+<div class="bang-cuon">
+<table class="bang">
+  <tr><th>Username</th><th>Department</th><th>Level</th><th>Profile</th>
+    <th>Locked</th><th>Created</th><th></th></tr>
+  {% for tk in tai_khoan %}
+  <tr><td class="tk">{{ tk.ten }}</td><td>{{ tk.bo_phan or '—' }}</td>
+    <td>L{{ tk.level }}{% if tk.level >= 5 %} <span class="badge ok">Owner</span>{% endif %}</td>
+    <td class="tk">{{ tk.nguoi_ma or '—' }}</td>
+    <td>{% if tk.khoa %}<span class="badge"><svg class="ic" style="width:11px;height:11px" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Locked</span>{% else %}—{% endif %}</td>
+    <td>{{ (tk.tao_luc or '')[:10] or '—' }}</td>
+    <td>
+      <details class="sua">
+        <summary><svg class="ic" viewBox="0 0 24 24"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5z"/></svg> Edit</summary>
+        <form method="post" action="/general/accounts/update" class="f-sua">
+          <input type="hidden" name="ve" value="hr">
+          <input type="hidden" name="ten" value="{{ tk.ten }}">
+          <select class="o" name="hanh_dong">
+            <option value="level">set level =</option>
+            <option value="bo_phan">set department =</option>
+            <option value="reset_mk">reset password =</option>
+            <option value="khoa">lock (1) / unlock (0) =</option>
+            {% if user.level >= 5 %}<option value="xoa">DELETE (retype name) =</option>{% endif %}
+          </select>
+          <input class="o" name="gia_tri" placeholder="value" style="width:120px">
+          <button type="submit" class="nut phu" style="padding:2px 10px;font-size:.8rem">Apply</button>
+        </form>
+      </details>
+    </td></tr>
+  {% endfor %}
+</table>
+</div>
+{% elif tai_khoan is not none %}
+<div class="canh">No accounts in the IAM registry yet.</div>
+{% endif %}
+<h3 class="hub-tieu">
+  <svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg>
+  New account
+</h3>
+<form method="post" action="/general/accounts/create" class="f-dong">
+  <input type="hidden" name="ve" value="hr">
+  <input class="o" name="ten" placeholder="Username (a-z0-9._-)" required>
+  <input class="o" name="mat_khau" placeholder="Temporary password" required>
+  <input class="o" name="bo_phan" placeholder="Department" required>
+  <select class="o" name="level">
+    <option value="1">L1 Intern</option><option value="2" selected>L2 Staff</option>
+    <option value="3">L3 Leader</option><option value="4">L4 Manager</option>
+    {% if user.level >= 5 %}<option value="5">L5 Owner</option>{% endif %}
+  </select>
+  <button type="submit" class="nut" style="padding:.35rem .9rem;font-size:.84rem">Create</button>
+</form>
 {% endif %}
 
 </div>

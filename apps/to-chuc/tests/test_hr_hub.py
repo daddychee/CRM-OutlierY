@@ -58,7 +58,55 @@ def test_hr_people_doc_iam_va_planner_id():
     b = _client().get("/hr?tab=people").text
     assert ma in b and "Ngọc Test" in b
     assert "ns_" + ma.replace("-", "").lower() in b          # planner_id dẫn xuất
-    assert "/general/people" in b                            # cửa sửa hồ sơ vẫn ở People
+
+
+def test_hr_people_form_tao_sua_tro_gateway():
+    """People một cửa (16/08): form tạo + sửa/đổi trạng thái POST THẲNG route
+    gateway /general/people/* kèm ve=hr — app to-chuc KHÔNG viết IAM (Luật 4)."""
+    _iam_seed()
+    b = _client().get("/hr?tab=people").text
+    assert 'action="/general/people/create"' in b
+    assert 'action="/general/people/update"' in b
+    assert 'name="ve" value="hr"' in b
+    assert 'name="trang_thai"' in b and 'value="nghi"' in b   # đổi trạng thái (gỡ mềm)
+
+
+def test_hr_hien_bao_loi_tu_query():
+    """Gateway xử lý form xong 303 về /hr kèm bao/loi ngắn — hub hiện thông báo."""
+    c = _client()
+    assert "Created profile NS-001." in c.get(
+        "/hr?tab=people&bao=Created+profile+NS-001.").text
+    assert "Thiếu họ tên." in c.get(
+        "/hr?tab=people&loi=Thi%E1%BA%BFu%20h%E1%BB%8D%20t%C3%AAn.").text
+
+
+# ---------- Accounts: tab CHỈ hiện khi gateway phát cờ 'accounts' ----------
+
+def test_hr_tab_accounts_an_khi_khong_co():
+    """Người không cờ 'accounts' (kể cả HR đủ cờ 'hr'): nav KHÔNG có link tab,
+    gõ ?tab=accounts tay cũng bị ẩn nội dung (rơi về People) — không có chuỗi
+    'tab=accounts' actionable nào trên trang."""
+    b = _client().get("/hr?tab=accounts").text               # apps mặc định không 'accounts'
+    assert "tab=accounts" not in b
+    assert "/general/accounts" not in b                      # không lộ form tài khoản
+
+
+def test_hr_tab_accounts_doc_iam_va_form_gateway():
+    """Có cờ: bảng tài khoản đọc IAM CHỈ-ĐỌC (tiền lệ _ds_nguoi_iam) + form
+    tạo/update đa-hành-động trỏ route gateway sẵn có kèm ve=hr; xóa giữ khuôn
+    gõ-lại-tên của /general/accounts/update."""
+    from nen.iam import iam
+    conn = iam.ket_noi()
+    iam.tao_tai_khoan(conn, None, "chu-he", "mk-6-ky-tu", "Ban quản trị", 5,
+                      phai_doi_mk=False)
+    conn.close()
+    c = _client(apps="to-chuc,hr,accounts", ten="chu-he", level=5)
+    b = c.get("/hr?tab=accounts").text
+    assert "tab=accounts" in b and "chu-he" in b             # tab + bảng đọc IAM
+    assert 'action="/general/accounts/create"' in b
+    assert 'action="/general/accounts/update"' in b
+    assert 'name="ve" value="hr"' in b
+    assert 'name="hanh_dong"' in b and 'value="xoa"' in b    # đa-hành-động, giữ field cũ
 
 
 # ---------- Attendance: bảng công tháng + chốt chỉ-thêm ----------

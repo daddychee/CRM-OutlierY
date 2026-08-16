@@ -185,6 +185,33 @@ def test_nhan_vien_khong_tao_duoc_nguoi(conn):
         iam.tao_nguoi(conn, nv, "Ai Đó", "Kinh doanh")
 
 
+def test_sua_nguoi_doi_truong_va_trang_thai(conn):
+    """sua_nguoi (trả nợ 'hồ sơ chỉ tạo được'): None = giữ nguyên; trạng thái chỉ
+    trong 3 giá trị; KHÔNG có xóa hồ sơ — nghỉ việc = 'nghi' (gỡ mềm); có vết."""
+    ow = _owner(conn)
+    ns = iam.tao_nguoi(conn, ow, "Người Sửa", "Kinh doanh", "SEO")
+    iam.sua_nguoi(conn, ow, ns["ma"], ho_ten="Người Đã Sửa", trang_thai="nghi")
+    moi = next(n for n in iam.liet_ke_nguoi(conn) if n["ma"] == ns["ma"])
+    assert moi["ho_ten"] == "Người Đã Sửa" and moi["trang_thai"] == "nghi"
+    assert moi["bo_phan"] == "Kinh doanh" and moi["vi_tri"] == "SEO"  # None = giữ
+    with pytest.raises(iam.LoiIam):
+        iam.sua_nguoi(conn, ow, ns["ma"], trang_thai="xoa-han")  # ngoài 3 trạng thái
+    with pytest.raises(iam.LoiIam):
+        iam.sua_nguoi(conn, ow, "NS-999", trang_thai="nghi")     # hồ sơ không tồn tại
+    nk = iam.doc_nhat_ky(conn, 5)
+    assert any(d["hanh_dong"] == "sua_nguoi" and ns["ma"] in d["chi_tiet"]
+               for d in nk)                                       # luật sắt 3: có vết
+
+
+def test_sua_nguoi_can_quyen_nhan_su(conn):
+    ow = _owner(conn)
+    ns = iam.tao_nguoi(conn, ow, "Người Sửa", "Kinh doanh")
+    iam.tao_tai_khoan(conn, ow, "nv", "123456", "Kinh doanh", 2)
+    nv = iam.claims_cua(iam.lay_tai_khoan(conn, "nv"))
+    with pytest.raises(iam.LoiIam):
+        iam.sua_nguoi(conn, nv, ns["ma"], trang_thai="nghi")     # nhân viên thường: chặn
+
+
 # ---------- migration users.txt hệ cũ ----------
 
 def test_nhap_users_txt_giu_hash_va_level(conn, tmp_path):

@@ -271,6 +271,7 @@ def xoa_tai_khoan(conn: sqlite3.Connection, ai_lam: dict, ten_dich: str) -> None
 # ---------- người (hồ sơ) ----------
 
 HR_BO_PHAN = "Hành chính Nhân sự"
+TRANG_THAI_NGUOI = ("cho_duyet", "hoat_dong", "nghi")
 
 
 def quyen_nhan_su(claims: dict) -> bool:
@@ -298,6 +299,36 @@ def tao_nguoi(conn: sqlite3.Connection, ai_lam: dict | None, ho_ten: str,
     ghi_nhat_ky(conn, (ai_lam or {}).get("ten", "(khoi tao)"), "tao_nguoi",
                 f"{ma} {ho_ten} {bo_phan}")
     return dict(conn.execute("SELECT * FROM nguoi WHERE ma=?", (ma,)).fetchone())
+
+
+def sua_nguoi(conn: sqlite3.Connection, ai_lam: dict | None, ma: str,
+              ho_ten: str | None = None, bo_phan: str | None = None,
+              vi_tri: str | None = None, trang_thai: str | None = None) -> None:
+    """Sửa hồ sơ người (trả nợ 'hồ sơ chỉ tạo được' — DE.md mục 9/12). None = giữ
+    nguyên trường đó. KHÔNG có xóa hồ sơ: nghỉ việc = trang_thai 'nghi' (gỡ mềm,
+    mã NS bất biến như doc_code)."""
+    if ai_lam is not None and not quyen_nhan_su(ai_lam):
+        raise LoiIam("Bạn không có quyền quản hồ sơ nhân sự.")
+    if not conn.execute("SELECT 1 FROM nguoi WHERE ma=?", (ma,)).fetchone():
+        raise LoiIam("Không có hồ sơ này.")
+    if ho_ten is not None and not ho_ten.strip():
+        raise LoiIam("Thiếu họ tên.")
+    if trang_thai is not None and trang_thai not in TRANG_THAI_NGUOI:
+        raise LoiIam("Trạng thái phải là: " + " / ".join(TRANG_THAI_NGUOI))
+    cap_nhat, gia_tri = [], []
+    for cot, gt in (("ho_ten", ho_ten.strip() if ho_ten else None),
+                    ("bo_phan", bo_phan), ("vi_tri", vi_tri),
+                    ("trang_thai", trang_thai)):
+        if gt is not None:
+            cap_nhat.append(f"{cot}=?")
+            gia_tri.append(gt)
+    if not cap_nhat:
+        return
+    with conn:
+        conn.execute(f"UPDATE nguoi SET {', '.join(cap_nhat)} WHERE ma=?",
+                     (*gia_tri, ma))
+    ghi_nhat_ky(conn, (ai_lam or {}).get("ten", "(khoi tao)"), "sua_nguoi",
+                f"{ma}: {', '.join(cap_nhat)} = {gia_tri}")
 
 
 def liet_ke_nguoi(conn: sqlite3.Connection) -> list[dict]:

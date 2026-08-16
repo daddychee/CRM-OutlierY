@@ -237,6 +237,22 @@ def _ds_ho_so_iam() -> tuple[list[dict] | None, str]:
                       "chưa dựng được danh sách hồ sơ.")
 
 
+def _ds_tai_khoan_iam() -> tuple[list[dict] | None, str]:
+    """Tài khoản CHỈ-ĐỌC từ sổ IAM chung (tiền lệ _ds_nguoi_iam) cho tab Accounts
+    của HR Hub. App KHÔNG ghi IAM (Luật 4) — mọi form ghi POST thẳng về route
+    gateway /general/accounts/* sẵn có; đây chỉ là bảng đọc."""
+    try:
+        from nen.iam import iam
+        conn = iam.ket_noi()
+        try:
+            return iam.liet_ke_tai_khoan(conn), ""
+        finally:
+            conn.close()
+    except Exception as e:
+        return None, (f"Không đọc được sổ IAM ({e.__class__.__name__}) — "
+                      "chưa dựng được danh sách tài khoản.")
+
+
 def _thang_hop_le(thang: str) -> str:
     thang = (thang or "").strip()
     if not re.fullmatch(r"\d{4}-\d{2}", thang):
@@ -246,12 +262,18 @@ def _thang_hop_le(thang: str) -> str:
 
 @app.get("/hr", response_class=HTMLResponse)
 def hr_trang(request: Request, tab: str = "people", thang: str = "",
-             user: dict = Depends(yeu_cau_hr)):
-    """HR Hub — 4 tab theo mockup hr-hub.html (Approvals chưa thuộc đợt này):
-    People (IAM chỉ-đọc) · Attendance (bảng công kỳ + chốt) · KPI Review (số từ
-    tong_hop_kpi + xếp loại) · Leaves (PlannerY, nguồn chết → '—')."""
-    if tab not in ("people", "attendance", "kpi", "leaves"):
+             bao: str = "", loi: str = "", user: dict = Depends(yeu_cau_hr),
+             x_remote_apps: str = Header("")):
+    """HR Hub — MỘT CỬA công tác nhân sự (Owner chốt 16/08): People (bảng + form
+    tạo/sửa POST thẳng route gateway /general/people/* kèm ve=hr) · Attendance ·
+    KPI Review · Leaves · Accounts (CHỈ khi gateway phát cờ 'accounts' — giỏ
+    quan_tai_khoan; người khác không thấy tab, gõ ?tab=accounts cũng bị ẩn).
+    bao/loi trên query = thông báo ngắn gateway gửi về sau khi xử lý form."""
+    co_accounts = "accounts" in _cac_khu(x_remote_apps)
+    if tab not in ("people", "attendance", "kpi", "leaves", "accounts"):
         tab = "people"
+    if tab == "accounts" and not co_accounts:
+        tab = "people"          # ẩn nội dung với người không cờ, kể cả gõ URL tay
     thang = _thang_hop_le(thang)
     ky_kpi = date.today().strftime("%Y-%m")   # KPI Review chấm kỳ THÁNG HIỆN TẠI
 
@@ -282,12 +304,17 @@ def hr_trang(request: Request, tab: str = "people", thang: str = "",
                       if ho_so is not None else None,
              "co_mat": len(cc_doc_ngay(date.today().isoformat())),
              "chua_xep": len(chua_xep)}
+    tai_khoan, tk_loi = (None, "")
+    if tab == "accounts":       # chỉ tới được đây khi co_accounts (đã ép ở trên)
+        tai_khoan, tk_loi = _ds_tai_khoan_iam()
     return templates.TemplateResponse(request, "hr.html", {
         "user": user, "tab": tab, "thang": thang, "ky_kpi": ky_kpi,
         "ho_so": ho_so, "iam_loi": iam_loi, "stats": stats,
         "bang_cong": bang_cong, "chot": chot, "ho_ten_cua": ho_ten_cua,
         "kpi": kpi, "danh_gia": danh_gia,
-        "nghi": nghi, "planner_song": planner is not None, "tu": tu, "den": den})
+        "nghi": nghi, "planner_song": planner is not None, "tu": tu, "den": den,
+        "co_accounts": co_accounts, "tai_khoan": tai_khoan, "tk_loi": tk_loi,
+        "bao": bao, "loi": loi})
 
 
 @app.post("/hr/chot-cong")

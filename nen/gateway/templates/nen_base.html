@@ -48,13 +48,11 @@
   <span class="phu">{{ user.ten }} (L{{ user.level }}) ·
     <a href="/app/ai-agent/hoi-dap">← Back to Chat</a> · <a href="/logout">Log out</a></span>
 </header>
-{# Nav 8 trang (General) — UI_FLOW.md mục 5+8: mỗi trang MỘT việc. People mở cho
-   HR L3+, còn lại chỉ Owner nên ẩn bớt với người không phải Owner. #}
+{# Nav khu General — UI_FLOW.md mục 5+8: mỗi trang MỘT việc. People/Accounts đã
+   GỘP về HR Hub /hr (một cửa nhân sự, Owner chốt 16/08) nên rời nav này. #}
 <nav class="muc">
   {% set la_owner = user.level >= 5 %}
   {% if la_owner %}<a href="/general" class="{% if trang == 'tong-quan' %}active{% endif %}">Overview</a>{% endif %}
-  {% if la_owner %}<a href="/general/accounts" class="{% if trang == 'tai-khoan' %}active{% endif %}">Accounts</a>{% endif %}
-  <a href="/general/people" class="{% if trang == 'nhan-su' %}active{% endif %}">People</a>
   {% if user.level >= 4 %}
   <a href="/general/niches" class="{% if trang == 'niches' %}active{% endif %}">Niches</a>
   <a href="/general/channels" class="{% if trang == 'channels' %}active{% endif %}">Channels</a>

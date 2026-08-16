@@ -18,7 +18,8 @@ def ctx_sidebar(request) -> dict:
     if not ten:
         return {"sb_user": None, "sb_ngay": ngay, "sb_phien": [], "sb_level_chu": "", "lite": False,
                 "sb_apps": [], "sb_da": False, "sb_ns": False, "sb_cho_duyet": 0,
-                "sb_nas": False, "sb_hr": False, "sb_fin": False}
+                "sb_nas": False, "sb_hr": False, "sb_fin": False,
+                "sb_accounts": False}
     try:
         level = int(request.headers.get("x-remote-level") or 0)
     except ValueError:
@@ -37,4 +38,7 @@ def ctx_sidebar(request) -> dict:
             "sb_nas": "nas" in apps_vao,
             # Khu chức năng (DE.md mục 10): gateway phát cờ 'hr'/'finance' —
             # sidebar chỉ hiện mục khi có cờ, app không tự tính quyền.
-            "sb_hr": "hr" in apps_vao, "sb_fin": "finance" in apps_vao}
+            "sb_hr": "hr" in apps_vao, "sb_fin": "finance" in apps_vao,
+            # Cờ 'accounts' (HR HUB một cửa 16/08): tab Accounts trong /hr —
+            # gateway phát theo giỏ quan_tai_khoan, template chỉ tin cờ.
+            "sb_accounts": "accounts" in apps_vao}

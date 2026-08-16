@@ -10,6 +10,7 @@ from __future__ import annotations
 import os
 import secrets
 from pathlib import Path
+from urllib.parse import quote
 
 import httpx
 from dotenv import load_dotenv
@@ -403,6 +404,22 @@ async def nen_tong_quan(request: Request):
 
 # --- Tài khoản (tách từ /quan-tri cũ) ---
 
+# HR HUB một cửa (Owner chốt 16/08, DE.md mục 10+12): form trong /hr POST THẲNG
+# về các route General sẵn có kèm field ẩn `ve` (whitelist) — có ve hợp lệ thì
+# xử lý xong 303 về /hr kèm bao/loi ngắn trên query để hub hiện thông báo;
+# không có ve → render General như cũ (backend giữ nguyên, test cũ không vỡ).
+_VE_HOP_LE = {"hr"}
+
+
+def _ve_hub(tab: str, bao: str = "", loi: str = "") -> RedirectResponse:
+    duong = f"/hr?tab={tab}"
+    if bao:
+        duong += "&bao=" + quote(bao)
+    if loi:
+        duong += "&loi=" + quote(loi)
+    return RedirectResponse(duong, status_code=303)
+
+
 def _render_tai_khoan(request: Request, user: dict, loi: str = "",
                       bao: str = "") -> HTMLResponse:
     conn = iam.ket_noi()
@@ -416,26 +433,30 @@ def _render_tai_khoan(request: Request, user: dict, loi: str = "",
         conn.close()
 
 
-@app.get("/general/accounts", response_class=HTMLResponse)
+@app.get("/general/accounts")
 def nen_tai_khoan(request: Request):
-    user = _gate_nen(request, quyen="quan_tai_khoan")
-    if isinstance(user, Response):
-        return user
-    return _render_tai_khoan(request, user)
+    # Nghỉ hưu kiểu /quan-tri (Owner chốt 16/08): HR Hub tab Accounts là cửa mới.
+    # POST /general/accounts/* GIỮ NGUYÊN — chúng là backend của hub.
+    return RedirectResponse("/hr?tab=accounts", status_code=303)
 
 
 @app.post("/general/accounts/create", response_class=HTMLResponse)
 def nen_tk_tao(request: Request, ten: str = Form(""), mat_khau: str = Form(""),
-               bo_phan: str = Form(""), level: int = Form(1)):
+               bo_phan: str = Form(""), level: int = Form(1), ve: str = Form("")):
     user = _gate_nen(request, quyen="quan_tai_khoan")
     if isinstance(user, Response):
         return user
     conn = iam.ket_noi()
     try:
         iam.tao_tai_khoan(conn, user, ten, mat_khau, bo_phan, level)
-        return _render_tai_khoan(request, user, bao=f"Created account {ten} "
-                                 "(must change password at first sign-in).")
+        bao = (f"Created account {ten} "
+               "(must change password at first sign-in).")
+        if ve in _VE_HOP_LE:
+            return _ve_hub("accounts", bao=bao)
+        return _render_tai_khoan(request, user, bao=bao)
     except iam.LoiIam as e:
+        if ve in _VE_HOP_LE:
+            return _ve_hub("accounts", loi=str(e))
         return _render_tai_khoan(request, user, loi=str(e))
     finally:
         conn.close()
@@ -443,10 +464,17 @@ def nen_tk_tao(request: Request, ten: str = Form(""), mat_khau: str = Form(""),
 
 @app.post("/general/accounts/update", response_class=HTMLResponse)
 def nen_tk_sua(request: Request, ten: str = Form(...),
-               hanh_dong: str = Form(...), gia_tri: str = Form("")):
+               hanh_dong: str = Form(...), gia_tri: str = Form(""),
+               ve: str = Form("")):
     user = _gate_nen(request, quyen="quan_tai_khoan")
     if isinstance(user, Response):
         return user
+
+    def _loi(thong_diep: str):
+        if ve in _VE_HOP_LE:
+            return _ve_hub("accounts", loi=thong_diep)
+        return _render_tai_khoan(request, user, loi=thong_diep)
+
     conn = iam.ket_noi()
     try:
         if hanh_dong == "level":
@@ -457,16 +485,17 @@ def nen_tk_sua(request: Request, ten: str = Form(...),
             iam.sua_tai_khoan(conn, user, ten, khoa=(gia_tri == "1"))
         elif hanh_dong == "xoa":
             if gia_tri != ten:   # xác nhận 2 lớp: client gõ lại tên, SERVER kiểm
-                return _render_tai_khoan(request, user,
-                                         loi="To delete, retype the exact account name.")
+                return _loi("To delete, retype the exact account name.")
             iam.xoa_tai_khoan(conn, user, ten)
         elif hanh_dong == "reset_mk":
             iam.doi_mat_khau(conn, user, ten, gia_tri, ep_doi_lan_sau=True)
         else:
-            return _render_tai_khoan(request, user, loi="Unknown action.")
+            return _loi("Unknown action.")
+        if ve in _VE_HOP_LE:
+            return _ve_hub("accounts", bao=f"Done {hanh_dong}: {ten}")
         return _render_tai_khoan(request, user, bao=f"Done {hanh_dong}: {ten}")
     except iam.LoiIam as e:
-        return _render_tai_khoan(request, user, loi=str(e))
+        return _loi(str(e))
     finally:
         conn.close()
 
@@ -485,25 +514,55 @@ def _render_nhan_su(request: Request, user: dict, loi: str = "",
         conn.close()
 
 
-@app.get("/general/people", response_class=HTMLResponse)
+@app.get("/general/people")
 def nen_nhan_su(request: Request):
-    user = _gate_nen(request, nhan_su=True)
-    if isinstance(user, Response):
-        return user
-    return _render_nhan_su(request, user)
+    # Nghỉ hưu kiểu /quan-tri (Owner chốt 16/08): HR Hub tab People là cửa mới.
+    # POST /general/people/* GIỮ NGUYÊN — chúng là backend của hub.
+    return RedirectResponse("/hr?tab=people", status_code=303)
 
 
 @app.post("/general/people/create", response_class=HTMLResponse)
 def nen_ns_tao(request: Request, ho_ten: str = Form(""),
-               bo_phan: str = Form(""), vi_tri: str = Form("")):
+               bo_phan: str = Form(""), vi_tri: str = Form(""),
+               ve: str = Form("")):
     user = _gate_nen(request, nhan_su=True)
     if isinstance(user, Response):
         return user
     conn = iam.ket_noi()
     try:
         ns = iam.tao_nguoi(conn, user, ho_ten, bo_phan, vi_tri)
+        if ve in _VE_HOP_LE:
+            return _ve_hub("people", bao=f"Created profile {ns['ma']}.")
         return _render_nhan_su(request, user, bao=f"Created profile {ns['ma']}.")
     except iam.LoiIam as e:
+        if ve in _VE_HOP_LE:
+            return _ve_hub("people", loi=str(e))
+        return _render_nhan_su(request, user, loi=str(e))
+    finally:
+        conn.close()
+
+
+@app.post("/general/people/update", response_class=HTMLResponse)
+def nen_ns_sua(request: Request, ma: str = Form(...), ho_ten: str = Form(""),
+               bo_phan: str = Form(""), vi_tri: str = Form(""),
+               trang_thai: str = Form(""), ve: str = Form("")):
+    """Sửa hồ sơ + đổi trạng thái (iam.sua_nguoi — trả nợ 'hồ sơ chỉ tạo được').
+    KHÔNG có xóa hồ sơ: nghỉ việc = trang_thai 'nghi' (gỡ mềm). Trường bỏ trống =
+    giữ nguyên. Gate nhan_su=True như /general/people (Owner + HR L3+)."""
+    user = _gate_nen(request, nhan_su=True)
+    if isinstance(user, Response):
+        return user
+    conn = iam.ket_noi()
+    try:
+        iam.sua_nguoi(conn, user, ma, ho_ten=ho_ten or None,
+                      bo_phan=bo_phan or None, vi_tri=vi_tri or None,
+                      trang_thai=trang_thai or None)
+        if ve in _VE_HOP_LE:
+            return _ve_hub("people", bao=f"Saved profile {ma}.")
+        return _render_nhan_su(request, user, bao=f"Saved profile {ma}.")
+    except iam.LoiIam as e:
+        if ve in _VE_HOP_LE:
+            return _ve_hub("people", loi=str(e))
         return _render_nhan_su(request, user, loi=str(e))
     finally:
         conn.close()
@@ -1141,12 +1200,18 @@ async def proxy_app(request: Request, slug: str, duong_dan: str):
                 duoc.append("nas")
             # Cờ 'quan-tri': ai mở được mục Nhân sự/User trên sidebar — luật V1:
             # Owner + HR L3+ (iam.quyen_nhan_su) hoặc Admin ủy quyền tài khoản.
-            if iam.quyen_nhan_su(u) or iam.co_quyen(u, "quan_tai_khoan", conn=conn2):
+            quan_tk = iam.co_quyen(u, "quan_tai_khoan", conn=conn2)
+            if iam.quyen_nhan_su(u) or quan_tk:
                 duoc.append("quan-tri")
             # Cờ khu chức năng 'hr'/'finance' (DE.md mục 10) — chỉ khi vào được
             # to-chuc (hub sống trong app đó); app CHỈ TIN cờ này, không tự tính.
+            # Cờ 'accounts': tab Accounts trong HR Hub (một cửa nhân sự 16/08) —
+            # giỏ ủy quyền quan_tai_khoan sẵn có (mặc định Owner/Admin ủy quyền);
+            # người không cờ KHÔNG thấy tab, backend /general/accounts/* vẫn tự gate.
             if "to-chuc" in duoc:
                 duoc += _gio_chuc_nang(u, conn2)
+                if quan_tk:
+                    duoc.append("accounts")
             return u, tim_app(slug), slug in duoc, duoc
         finally:
             conn2.close()
