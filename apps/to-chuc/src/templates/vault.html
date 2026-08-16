@@ -155,46 +155,46 @@ reset the Owner login password). The system only keeps hashes — no one can vie
 </table>
 {% endif %}
 
-<h3 class="v-muc-tieu" id="v-form-tieu">{{ IC_THEM|safe }} <span id="v-form-chu">Thêm mục mới</span></h3>
+<h3 class="v-muc-tieu" id="v-form-tieu">{{ IC_THEM|safe }} <span id="v-form-chu">Add new entry</span></h3>
 <form class="v-form" method="post" action="/vault/muc" id="v-form-muc">
   <input type="hidden" name="id" id="f-id" value="">
-  <label>Nhóm</label>
+  <label>Group</label>
   <select name="nhom" id="f-nhom">
     {% for gia_tri, nhan in ten_nhom.items() %}<option value="{{ gia_tri }}">{{ nhan }}</option>{% endfor %}
   </select>
-  <label>Tên mục (vd: Kênh History A — tài khoản Google chính)</label>
+  <label>Entry name (e.g. History Channel A — main Google account)</label>
   <input name="ten" id="f-ten" required maxlength="200">
-  <label>Tài khoản / email / IP</label>
+  <label>Account / email / IP</label>
   <input name="tai_khoan" id="f-tai-khoan" maxlength="300" autocomplete="off">
-  <label>Mật khẩu / khóa bí mật <span style="font-weight:400;color:var(--muted)">(khi sửa: bỏ trống = giữ nguyên)</span></label>
+  <label>Password / secret key <span style="font-weight:400;color:var(--muted)">(when editing: leave blank = keep current)</span></label>
   <input name="mat_khau" id="f-mat-khau" type="password" maxlength="500" autocomplete="new-password">
-  <label>Ghi chú (mã dự phòng, số điện thoại khôi phục…)</label>
+  <label>Notes (backup codes, recovery phone…)</label>
   <textarea name="ghi_chu" id="f-ghi-chu" rows="2" maxlength="1000"></textarea>
   <div style="display:flex;gap:.5rem;margin-top:1.1rem">
-    <button type="submit" class="nut" id="f-luu">Lưu mục</button>
-    <button type="button" class="nut phu" id="f-huy" style="display:none">Hủy sửa</button>
+    <button type="submit" class="nut" id="f-luu">Save entry</button>
+    <button type="button" class="nut phu" id="f-huy" style="display:none">Cancel edit</button>
   </div>
 </form>
 
 {# ── BẢNG 2 + 3: safekey trong két · sổ kiểm toán — xem trực tiếp (yêu cầu user 31/07) ── #}
 <div class="v-2cot">
   <div>
-    <h3 class="v-muc-tieu">{{ IC_KEY|safe }} Safekey trong két ({{ so_safekey }}/10 còn dùng được)</h3>
+    <h3 class="v-muc-tieu">{{ IC_KEY|safe }} Safekeys in the safe ({{ so_safekey }}/10 usable)</h3>
     <table class="v">
-      <tr><th>Mã</th><th>Trạng thái</th></tr>
+      <tr><th>Code</th><th>Status</th></tr>
       {% for sk in safekey_bang %}
       <tr><td style="font-family:ui-monospace,monospace">{{ sk.id }}</td>
-        <td>{% if sk.da_dung %}<span class="sk-tag het">đã dùng — vô hiệu</span>
-            {% else %}<span class="sk-tag con">còn trong két</span>{% endif %}</td></tr>
+        <td>{% if sk.da_dung %}<span class="sk-tag het">used — void</span>
+            {% else %}<span class="sk-tag con">in the safe</span>{% endif %}</td></tr>
       {% endfor %}
     </table>
-    <p style="font-size:.8rem;color:var(--muted);margin-top:.4rem">Bản rõ chỉ nằm trên giấy trong két —
-    hệ thống giữ bản băm, không xem lại được. Key nào "đã dùng" thì gạch bỏ trên giấy.</p>
+    <p style="font-size:.8rem;color:var(--muted);margin-top:.4rem">Plaintext keys exist only on paper in the safe —
+    the system keeps hashes and cannot show them again. Cross any "used" key off the paper.</p>
   </div>
   <div>
-    <h3 class="v-muc-tieu">{{ IC_SO|safe }} Sổ kiểm toán ({{ audit|length }} dòng gần nhất)</h3>
+    <h3 class="v-muc-tieu">{{ IC_SO|safe }} Audit log ({{ audit|length }} most recent rows)</h3>
     <table class="v">
-      <tr><th>Lúc</th><th>Ai</th><th>Hành động</th><th>Mục</th></tr>
+      <tr><th>Time</th><th>Who</th><th>Action</th><th>Entry</th></tr>
       {% for d in audit %}
       <tr{% if d.canh %} class="canh"{% endif %}><td style="white-space:nowrap">{{ d.luc[:16].replace('T', ' ') }}</td>
         <td>{{ d.ai }}</td><td>{{ d.hanh_dong }}</td><td>{{ d.muc }}</td></tr>
@@ -224,15 +224,15 @@ document.querySelectorAll('.xem-mk').forEach(nut => nut.addEventListener('click'
   const o = nut.parentElement.querySelector('.mk-o');
   if (nut.dataset.dangLo) {           // đang lộ → che lại
     o.textContent = '••••••'; o.className = 'mk-o';
-    nut.innerHTML = IC_MAT + ' Xem'; delete nut.dataset.dangLo;
+    nut.innerHTML = IC_MAT + ' View'; delete nut.dataset.dangLo;
     return;
   }
   const fd = new FormData(); fd.append('id', nut.dataset.id);
   const res = await fetch('/vault/xem', { method: 'POST', body: fd });
   if (!res.ok) { location.reload(); return; }   // vault tự khóa giữa chừng → về form mở
   const d = await res.json();
-  o.textContent = d.mat_khau || '(trống)'; o.className = 'mk-o mk-lo';
-  nut.innerHTML = IC_MAT_CHE + ' Che'; nut.dataset.dangLo = '1';
+  o.textContent = d.mat_khau || '(empty)'; o.className = 'mk-o mk-lo';
+  nut.innerHTML = IC_MAT_CHE + ' Hide'; nut.dataset.dangLo = '1';
 }));
 
 // Sửa: đổ dữ liệu mục vào form dưới (mật khẩu bỏ trống = giữ nguyên)
@@ -244,16 +244,16 @@ document.querySelectorAll('.sua-muc').forEach(nut => nut.addEventListener('click
   document.getElementById('f-tai-khoan').value = m.tai_khoan || '';
   document.getElementById('f-mat-khau').value = '';
   document.getElementById('f-ghi-chu').value = m.ghi_chu || '';
-  document.getElementById('v-form-chu').textContent = 'Sửa mục: ' + m.ten;
-  document.getElementById('f-luu').textContent = 'Lưu thay đổi';
+  document.getElementById('v-form-chu').textContent = 'Edit entry: ' + m.ten;
+  document.getElementById('f-luu').textContent = 'Save changes';
   document.getElementById('f-huy').style.display = 'inline-flex';
   document.getElementById('v-form-muc').scrollIntoView({ behavior: 'smooth' });
 }));
 document.getElementById('f-huy')?.addEventListener('click', () => {
   document.getElementById('v-form-muc').reset();
   document.getElementById('f-id').value = '';
-  document.getElementById('v-form-chu').textContent = 'Thêm mục mới';
-  document.getElementById('f-luu').textContent = 'Lưu mục';
+  document.getElementById('v-form-chu').textContent = 'Add new entry';
+  document.getElementById('f-luu').textContent = 'Save entry';
   document.getElementById('f-huy').style.display = 'none';
 });
 
@@ -263,7 +263,7 @@ document.querySelectorAll('.xoa-muc').forEach(nut => {
   let hen = null;
   nut.addEventListener('click', async () => {
     if (!nut.classList.contains('chac')) {
-      nut.classList.add('chac'); nut.textContent = 'Bấm lại để xóa';
+      nut.classList.add('chac'); nut.textContent = 'Click again to delete';
       hen = setTimeout(() => { nut.classList.remove('chac'); nut.innerHTML = goc; }, 4000);
       return;
     }
