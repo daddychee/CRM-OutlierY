@@ -110,6 +110,23 @@
      "giu": "vinh-vien",
      "ghi_chu": "Mỗi user 1 file JSON ghi nguyên tử — nội dung hỏi-đáp, không đưa ra ngoài"
     }
+   ],
+   "viec_api": [
+    {
+     "ma": "writer",
+     "ten": "Writer (trả lời hỏi–đáp)",
+     "loai": "llm"
+    },
+    {
+     "ma": "critic",
+     "ten": "Critic (phản biện)",
+     "loai": "llm"
+    },
+    {
+     "ma": "extract",
+     "ten": "Trích nguồn ngoài",
+     "loai": "llm"
+    }
    ]
   },
   {
@@ -146,6 +163,13 @@
      "muc_quy": "vang",
      "backup": "copy",
      "giu": "vinh-vien"
+    }
+   ],
+   "viec_api": [
+    {
+     "ma": "dien_giai",
+     "ten": "Diễn giải kết quả",
+     "loai": "llm"
     }
    ]
   },

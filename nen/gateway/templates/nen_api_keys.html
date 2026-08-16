@@ -1,0 +1,206 @@
+{% extends "nen_base.html" %}
+{% block tieu_de %}API Keys{% endblock %}
+{% block noi_dung %}
+{# Trang theo mockup ĐÃ DUYỆT docs/mockup-de/api-keys.html (K1-K8): hiển thị THEO
+   API, cấu hình theo app sinh từ viec_api hợp đồng, quota log P4. Ô khóa
+   WRITE-ONLY — không bao giờ render lại giá trị. #}
+<nav class="muc" style="padding:8px 0;border-bottom:0">
+  <a href="/general/api-keys?tab=api" class="{% if tab == 'api' %}active{% endif %}">1 · Add API</a>
+  <a href="/general/api-keys?tab=app" class="{% if tab == 'app' %}active{% endif %}">2 · Per-app config</a>
+  <a href="/general/api-keys?tab=log" class="{% if tab == 'log' %}active{% endif %}">3 · Quota log</a>
+</nav>
+
+{% if tab == 'api' %}
+<details class="khoi" style="margin:12px 0">
+  <summary style="cursor:pointer;font-weight:600">+ Add API key</summary>
+  <form class="dong" method="post" action="/general/api-keys/add"
+        style="flex-wrap:wrap;margin-top:10px">
+    <select name="loai_chon">
+      <option value="youtube">YouTube Data v3</option>
+      <option value="llm:claude">LLM — Claude</option>
+      <option value="llm:glm">LLM — GLM</option>
+      <option value="llm:gemini">LLM — Gemini</option>
+      <option value="llm:chatgpt">LLM — ChatGPT</option>
+      <option value="llm:deepseek">LLM — Deepseek</option>
+      <option value="veo">VEO</option>
+      <option value="seedream">Seedream</option>
+    </select>
+    <input name="khoa" type="password" placeholder="key (never shown again)" size="26" required>
+    <input name="model" placeholder="default model" size="16">
+    <button>Save key</button>
+  </form>
+</details>
+
+{% for loai in ['youtube', 'llm', 'veo', 'seedream'] %}
+<h2>{{ ten_loai[loai] }} <span class="chip">{{ theo_loai[loai] | length }} key{{ 's' if theo_loai[loai] | length != 1 }}</span></h2>
+<table>
+  <tr>{% if loai == 'llm' %}<th>Provider</th>{% else %}<th>#</th>{% endif %}
+    <th>Key (tail)</th>{% if loai != 'youtube' %}<th>Model</th>{% endif %}
+    <th>Calls today</th><th>Status</th><th>Added</th><th></th></tr>
+  {% if loai == 'llm' %}
+    {% for nha in nha_llm %}
+      {% for k in theo_loai['llm'] if k.nha == nha %}
+      <tr><td>{{ nha_info[nha].ten }}</td>
+        <td><span class="chip">••••{{ k.duoi }}</span></td>
+        <td>
+          <form class="dong" method="post" action="/general/api-keys/model">
+            <input type="hidden" name="id" value="{{ k.id }}">
+            <select name="model" onchange="this.form.submit()">
+              <option value="{{ k.model }}" selected>{{ k.model or '—' }}</option>
+              {% for m in model_goi_y.get(nha, []) if m != k.model %}
+              <option value="{{ m }}">{{ m }}</option>
+              {% endfor %}
+            </select>
+          </form></td>
+        <td>{{ luot.get(k.duoi, 0) }}</td>
+        <td>{% if k.id in dang_dung %}<span class="chip">in use</span>{% else %}<span class="chip phu">idle</span>{% endif %}</td>
+        <td>{{ k.ngay or '—' }}</td>
+        <td>
+          <form class="dong" method="post" action="/general/api-keys/revoke">
+            <input type="hidden" name="id" value="{{ k.id }}">
+            <input name="go_lai" size="5" placeholder="tail">
+            <button style="background:var(--loi)">Revoke</button>
+          </form></td></tr>
+      {% endfor %}
+      {% if theo_loai['llm'] | selectattr('nha', 'equalto', nha) | list | length == 0 %}
+      <tr><td>{{ nha_info[nha].ten }}</td><td><span class="chip phu">no key yet</span></td>
+        <td>—</td><td>—</td><td>—</td><td>—</td><td></td></tr>
+      {% endif %}
+    {% endfor %}
+  {% else %}
+    {% for k in theo_loai[loai] %}
+    <tr><td>{{ loop.index }}</td>
+      <td><span class="chip">••••{{ k.duoi }}</span></td>
+      {% if loai != 'youtube' %}
+      <td>
+        <form class="dong" method="post" action="/general/api-keys/model">
+          <input type="hidden" name="id" value="{{ k.id }}">
+          <select name="model" onchange="this.form.submit()">
+            <option value="{{ k.model }}" selected>{{ k.model or '—' }}</option>
+            {% for m in model_goi_y.get(loai, []) if m != k.model %}
+            <option value="{{ m }}">{{ m }}</option>
+            {% endfor %}
+          </select>
+        </form></td>
+      {% endif %}
+      <td>{{ luot.get(k.duoi, 0) }}</td>
+      <td>{% if k.id in dang_dung %}<span class="chip">in use</span>{% else %}<span class="chip phu">idle</span>{% endif %}</td>
+      <td>{{ k.ngay or '—' }}</td>
+      <td>
+        <form class="dong" method="post" action="/general/api-keys/revoke">
+          <input type="hidden" name="id" value="{{ k.id }}">
+          <input name="go_lai" size="5" placeholder="tail">
+          <button style="background:var(--loi)">Revoke</button>
+        </form></td></tr>
+    {% else %}
+    <tr><td colspan="{{ 6 if loai == 'youtube' else 7 }}" class="phu">No key yet.</td></tr>
+    {% endfor %}
+  {% endif %}
+</table>
+{% endfor %}
+
+{% elif tab == 'app' %}
+<h2>Per-app configuration</h2>
+{% if viec_api %}
+<form class="dong" method="get" action="/general/api-keys" style="margin-bottom:10px">
+  <input type="hidden" name="tab" value="app">
+  <select name="app" onchange="this.form.submit()">
+    {% for slug, muc in viec_api.items() %}
+    <option value="{{ slug }}"{% if slug == app_chon %} selected{% endif %}>{{ slug }} ({{ muc.ten }})</option>
+    {% endfor %}
+  </select>
+</form>
+{% set cap_app = cap_phat.get(app_chon, {}) %}
+<table>
+  <tr><th>App task (from contract)</th><th>API type</th><th>Assigned keys</th>
+    <th>Mode</th><th>Model</th><th>Configured</th><th></th></tr>
+  {% for v in viec_api[app_chon].viec %}
+  {% set muc = cap_app.get(v.ma, {}) %}
+  {% set ids = muc.get('khoa', []) %}
+  <tr><td>{{ v.ten }}</td><td>{{ ten_loai.get(v.loai, v.loai) }}</td>
+    <td>
+      {% for kid in ids %}
+        {% for k in keys if k.id == kid %}
+        <form class="dong" method="post" action="/general/api-keys/cap-phat">
+          <input type="hidden" name="app_slug" value="{{ app_chon }}">
+          <input type="hidden" name="viec" value="{{ v.ma }}">
+          <input type="hidden" name="go" value="{{ kid }}">
+          <span class="chip">{% if k.nha %}{{ k.nha }} {% endif %}••••{{ k.duoi }}</span>
+          <button style="padding:2px 7px" title="Remove">×</button>
+        </form>
+        {% endfor %}
+      {% endfor %}
+      {% set con_lai = keys | selectattr('loai', 'equalto', v.loai) | rejectattr('id', 'in', ids) | list %}
+      {% if con_lai %}
+      <form class="dong" method="post" action="/general/api-keys/cap-phat">
+        <input type="hidden" name="app_slug" value="{{ app_chon }}">
+        <input type="hidden" name="viec" value="{{ v.ma }}">
+        <select name="them">
+          {% for k in con_lai %}
+          <option value="{{ k.id }}">{% if k.nha %}{{ k.nha }} {% endif %}••••{{ k.duoi }}</option>
+          {% endfor %}
+        </select>
+        <button style="padding:2px 8px">+ key</button>
+      </form>
+      {% elif not ids %}<span class="chip phu">no key of this type — add in tab 1</span>{% endif %}
+    </td>
+    <td>{% if ids | length > 1 %}<span class="chip">{{ {'xoay_vong': 'rotate', 'du_phong': 'failover'}.get(muc.get('che_do'), 'rotate') }} · {{ ids | length }} keys</span>
+        {% elif ids %}<span class="chip phu">single key</span>{% else %}—{% endif %}</td>
+    <td>{{ muc.get('model') or '—' }}</td>
+    <td>{{ muc.get('ngay') or '—' }}</td>
+    <td>
+      <form class="dong" method="post" action="/general/api-keys/cap-phat">
+        <input type="hidden" name="app_slug" value="{{ app_chon }}">
+        <input type="hidden" name="viec" value="{{ v.ma }}">
+        {% if ids | length > 1 %}
+        <select name="che_do">
+          <option value="xoay_vong"{% if muc.get('che_do') != 'du_phong' %} selected{% endif %}>rotate</option>
+          <option value="du_phong"{% if muc.get('che_do') == 'du_phong' %} selected{% endif %}>failover</option>
+        </select>
+        {% endif %}
+        {% if v.loai != 'youtube' %}
+        <input name="model" size="13" placeholder="model" value="{{ muc.get('model', '') }}">
+        {% endif %}
+        <button style="padding:2px 10px">Save</button>
+      </form></td></tr>
+  {% endfor %}
+</table>
+{% else %}
+<p class="phu">No app declares viec_api in its contract yet.</p>
+{% endif %}
+
+{% elif tab == 'log' %}
+<h2>Quota log</h2>
+<form class="dong" method="get" action="/general/api-keys" style="margin-bottom:10px;flex-wrap:wrap">
+  <input type="hidden" name="tab" value="log">
+  <input type="date" name="ngay" value="{{ ngay }}">
+  <select name="loc_api">
+    <option value="">API: All</option>
+    {% for lo, ten in ten_loai.items() %}
+    <option value="{{ lo }}"{% if loc.api == lo %} selected{% endif %}>{{ ten }}</option>
+    {% endfor %}
+  </select>
+  <select name="loc_khoa">
+    <option value="">Key: All</option>
+    {% for k in keys %}
+    <option value="{{ k.duoi }}"{% if loc.khoa == k.duoi %} selected{% endif %}>••••{{ k.duoi }}</option>
+    {% endfor %}
+  </select>
+  <input name="loc_app" size="12" placeholder="App" value="{{ loc.app }}">
+  <button>Filter</button>
+  <a class="chip" href="/general/api-keys/export?ngay={{ ngay }}&loc_api={{ loc.api }}&loc_khoa={{ loc.khoa }}&loc_app={{ loc.app }}">Export CSV</a>
+</form>
+<table>
+  <tr><th>Time</th><th>API</th><th>Key</th><th>App</th><th>Task</th>
+    <th>Calls</th><th>Quota used</th></tr>
+  {% for d in log_rows %}
+  <tr><td>{{ d.luc }}</td><td>{{ ten_loai.get(d.api, d.api) }}</td>
+    <td><span class="chip">••••{{ d.khoa_duoi }}</span></td>
+    <td>{{ d.app }}</td><td>{{ d.viec }}</td>
+    <td>{{ d.luot }}</td><td>{{ d.quota_tieu or '—' }}</td></tr>
+  {% else %}
+  <tr><td colspan="7" class="phu">No usage logged yet.</td></tr>
+  {% endfor %}
+</table>
+{% endif %}
+{% endblock %}

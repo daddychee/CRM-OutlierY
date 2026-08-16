@@ -182,7 +182,7 @@ def test_trang_cu_redirect_sang_khu_nen(client):
     """Trang cũ nghỉ hưu (UI_FLOW.md mục 5) — redirect giữ 1 nhịp chuyển tiếp."""
     _login(client)
     for cu, moi in (("/quan-tri", "/general/accounts"),
-                    ("/cai-dat", "/general/ai-models"), ("/suc-khoe", "/general")):
+                    ("/cai-dat", "/general/api-keys"), ("/suc-khoe", "/general")):
         r = client.get(cu)
         assert r.status_code == 303 and r.headers["location"] == moi
 

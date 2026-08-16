@@ -28,16 +28,14 @@
   </div>
 </div>
 
-<h2>AI Models (per role)</h2>
+<h2>API Keys (by API)</h2>
 <table>
-  <tr><th>Role</th><th>Provider</th><th>Model</th><th>API key</th></tr>
-  {% for vai, ch in vai_llm | dictsort %}
-  <tr><td><b>{{ vai }}</b></td><td>{{ ch.provider or "—" }}</td><td>{{ ch.model or "—" }}</td>
-      <td>{% if ch.key_duoi %}<span class="chip">✓ set (••••{{ ch.key_duoi }})</span>
-          {% else %}<span class="chip" style="color:var(--loi)">not set</span>{% endif %}</td></tr>
-  {% else %}
-  <tr><td colspan="4" class="phu">No roles configured — go to <a href="/general/ai-models">AI Models</a>.
-      Without a key, Chat runs in mock mode.</td></tr>
+  <tr><th>API</th><th>Keys</th><th></th></tr>
+  {% for loai, ten in ten_loai_api.items() %}
+  <tr><td>{{ ten }}</td>
+      <td>{% if so_api.get(loai) %}<span class="chip">{{ so_api.get(loai) }}</span>
+          {% else %}<span class="chip" style="color:var(--loi)">0</span>{% endif %}</td>
+      <td class="phu">{% if loop.first %}<a href="/general/api-keys">manage →</a>{% endif %}</td></tr>
   {% endfor %}
 </table>
 
