@@ -474,3 +474,18 @@ sống V2: sau restart đo từng app từng vai (manager /keys 403…) + test g
 
 **Trạng thái: CHỜ OWNER DUYỆT MOCKUP** — duyệt xong mới code (sửa
 phan_quyen.json schema + co_quyen + trang /general/permissions + hợp đồng).
+- 16/08/2026 — **PERMISSIONS V2 THI CÔNG XONG** (`5e897c1` — Owner xem thiết kế
+  mục 14 rồi đòi thấy trong UI). Trang /general/permissions chạy đúng P1-P5;
+  luật phan_quyen.json schema hành-động-thật per app (nhan/mo_ta hiện trên
+  trang); vai dịch từ hành động, danh pháp chuẩn "admin" (test quét không còn
+  vai "owner"); migration iam 004 (acting + ly_do/ai_gan/luc trên override,
+  đặt cho/chặn BẮT BUỘC lý do, L5 không hạ được); X-Remote-Actions tiêm mỗi
+  request (proxy chặn giả mạo), app gate CHỈ TIN CỜ fail-closed — kiểm sống
+  L2-có-cờ 200 / L5-không-cờ 403; test hồi quy sổ-rỗng byte-identical.
+  4 suite 120(+6)/308+3skip/64/58. NGHIỆM THU CÒN CHỜ OWNER (không còn phiên
+  Bot): vòng hồi quy 3 vai chưa tick gì phải y trước; tick giam_sat cho L2 →
+  vào được NGAY lượt sau, gỡ ở P5 → 403; acting L2→L4; soi Audit đủ vết kèm
+  lý do. VIỆC TREO: gate sửa/xóa kho ai-agent còn level-based (chuyển nốt
+  sang cờ quan_tri); app đã khai hành động muốn hiện vai "manager" cần khai
+  toan_quyen (hiện Manager hiển thị viewer trên app như ai-agent — nhãn thôi,
+  cờ hành động vẫn đúng).
