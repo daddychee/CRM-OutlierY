@@ -16,7 +16,7 @@
       {% if tk.phai_doi_mk %}<span class="chip">must change pw</span>{% endif %}
     </td>
     <td>
-      <form class="dong" method="post" action="/nen/tai-khoan/sua">
+      <form class="dong" method="post" action="/general/accounts/update">
         <input type="hidden" name="ten" value="{{ tk.ten }}">
         <select name="hanh_dong">
           <option value="level">set level =</option>
@@ -33,12 +33,12 @@
   {% endfor %}
 </table>
 <p class="phu" style="margin-top:8px">Delegated admin on/off moved to
-  <a href="/nen/phan-quyen">Permissions</a> — right place, audited.</p>
+  <a href="/general/permissions">Permissions</a> — right place, audited.</p>
 
 <h2>Create account <span class="phu" style="font-weight:400">
   (new users must change password at first sign-in)</span></h2>
 <div class="khoi">
-  <form class="dong" method="post" action="/nen/tai-khoan/tao">
+  <form class="dong" method="post" action="/general/accounts/create">
     <input name="ten" placeholder="username (a-z0-9._-)" required>
     <input name="mat_khau" placeholder="temporary password" required>
     <input name="bo_phan" placeholder="department" required>

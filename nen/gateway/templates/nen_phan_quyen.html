@@ -4,7 +4,7 @@
 <h2>Permissions <span class="phu" style="font-weight:400">— a tick OVERRIDES the default rule; clearing it returns to default. Every change is audited.</span></h2>
 
 <div class="khoi" style="margin-bottom:14px">
-  <form class="dong" method="get" action="/nen/phan-quyen">
+  <form class="dong" method="get" action="/general/permissions">
     <label class="phu">Person:</label>
     <select name="ten">
       <option value="">— choose an account —</option>
@@ -35,7 +35,7 @@
       {% else %}<span class="chip" style="color:var(--loi)">✗ DENY tick</span>{% endif %}
     </td>
     <td>
-      <form class="dong" method="post" action="/nen/phan-quyen/gan">
+      <form class="dong" method="post" action="/general/permissions/grant">
         <input type="hidden" name="ten" value="{{ ten_chon }}">
         <input type="hidden" name="app_slug" value="{{ h.app_slug }}">
         <input type="hidden" name="hanh_dong" value="{{ h.hanh_dong }}">
@@ -57,7 +57,7 @@
     (accounts, people approval, document intake, Q&amp;A approval, tracking) —
     default OFF (when off, permissions match V1 exactly). The absolute Owner basket
     (vault, AI Models, this page, hard-delete) can NEVER be delegated.</p>
-  <form class="dong" method="post" action="/nen/phan-quyen/uy-quyen">
+  <form class="dong" method="post" action="/general/permissions/delegate">
     <input type="hidden" name="ten" value="{{ ten_chon }}">
     <select name="bat">
       <option value="0" {% if not tk_chon.admin_uy_quyen %}selected{% endif %}>OFF (default)</option>

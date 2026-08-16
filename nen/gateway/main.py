@@ -254,7 +254,7 @@ async def trang_chu(request: Request):
         return user
     # Miền quản trị (UI_FLOW.md mục 7): quantri.* vào thẳng khu nền.
     if (request.url.hostname or "").startswith("quantri."):
-        return RedirectResponse("/nen", status_code=303)
+        return RedirectResponse("/general", status_code=303)
     # URL ĐẸP (Owner chốt 16/08, UI_FLOW.md mục 9): Home = "/" PHỤC VỤ thẳng trang
     # chat (không redirect sang /app/... nữa — thanh địa chỉ phải khớp nút bấm).
     return await proxy_app(request, "tri-thuc", "hoi-dap")
@@ -355,7 +355,7 @@ def _thong_ke_de() -> dict:
             "backup_moi": backup_moi, "bk_dir": str(bk_dir)}
 
 
-@app.get("/nen", response_class=HTMLResponse)
+@app.get("/general", response_class=HTMLResponse)
 async def nen_tong_quan(request: Request):
     from starlette.concurrency import run_in_threadpool
     user = await run_in_threadpool(_gate_nen, request)
@@ -383,7 +383,7 @@ def _render_tai_khoan(request: Request, user: dict, loi: str = "",
         conn.close()
 
 
-@app.get("/nen/tai-khoan", response_class=HTMLResponse)
+@app.get("/general/accounts", response_class=HTMLResponse)
 def nen_tai_khoan(request: Request):
     user = _gate_nen(request, quyen="quan_tai_khoan")
     if isinstance(user, Response):
@@ -391,7 +391,7 @@ def nen_tai_khoan(request: Request):
     return _render_tai_khoan(request, user)
 
 
-@app.post("/nen/tai-khoan/tao", response_class=HTMLResponse)
+@app.post("/general/accounts/create", response_class=HTMLResponse)
 def nen_tk_tao(request: Request, ten: str = Form(""), mat_khau: str = Form(""),
                bo_phan: str = Form(""), level: int = Form(1)):
     user = _gate_nen(request, quyen="quan_tai_khoan")
@@ -408,7 +408,7 @@ def nen_tk_tao(request: Request, ten: str = Form(""), mat_khau: str = Form(""),
         conn.close()
 
 
-@app.post("/nen/tai-khoan/sua", response_class=HTMLResponse)
+@app.post("/general/accounts/update", response_class=HTMLResponse)
 def nen_tk_sua(request: Request, ten: str = Form(...),
                hanh_dong: str = Form(...), gia_tri: str = Form("")):
     user = _gate_nen(request, quyen="quan_tai_khoan")
@@ -452,7 +452,7 @@ def _render_nhan_su(request: Request, user: dict, loi: str = "",
         conn.close()
 
 
-@app.get("/nen/nhan-su", response_class=HTMLResponse)
+@app.get("/general/people", response_class=HTMLResponse)
 def nen_nhan_su(request: Request):
     user = _gate_nen(request, nhan_su=True)
     if isinstance(user, Response):
@@ -460,7 +460,7 @@ def nen_nhan_su(request: Request):
     return _render_nhan_su(request, user)
 
 
-@app.post("/nen/nhan-su/tao", response_class=HTMLResponse)
+@app.post("/general/people/create", response_class=HTMLResponse)
 def nen_ns_tao(request: Request, ho_ten: str = Form(""),
                bo_phan: str = Form(""), vi_tri: str = Form("")):
     user = _gate_nen(request, nhan_su=True)
@@ -520,7 +520,7 @@ def _render_phan_quyen(request: Request, user: dict, ten: str = "",
          "gio_tuyet_doi": luat.get("gio_owner_tuyet_doi", [])})
 
 
-@app.get("/nen/phan-quyen", response_class=HTMLResponse)
+@app.get("/general/permissions", response_class=HTMLResponse)
 def nen_phan_quyen(request: Request, ten: str = "", bao: str = "", loi: str = ""):
     user = _gate_nen(request, quyen="bang_phan_quyen")   # giỏ tuyệt đối = chỉ Owner
     if isinstance(user, Response):
@@ -528,7 +528,7 @@ def nen_phan_quyen(request: Request, ten: str = "", bao: str = "", loi: str = ""
     return _render_phan_quyen(request, user, ten=ten, bao=bao, loi=loi)
 
 
-@app.post("/nen/phan-quyen/gan", response_class=HTMLResponse)
+@app.post("/general/permissions/grant", response_class=HTMLResponse)
 def nen_pq_gan(request: Request, ten: str = Form(...), app_slug: str = Form(...),
                hanh_dong: str = Form(...), gia_tri: str = Form(...)):
     user = _gate_nen(request, quyen="bang_phan_quyen")
@@ -546,7 +546,7 @@ def nen_pq_gan(request: Request, ten: str = Form(...), app_slug: str = Form(...)
         conn.close()
 
 
-@app.post("/nen/phan-quyen/uy-quyen", response_class=HTMLResponse)
+@app.post("/general/permissions/delegate", response_class=HTMLResponse)
 def nen_pq_uy_quyen(request: Request, ten: str = Form(...), bat: str = Form("0")):
     user = _gate_nen(request, quyen="bang_phan_quyen")
     if isinstance(user, Response):
@@ -564,7 +564,7 @@ def nen_pq_uy_quyen(request: Request, ten: str = Form(...), bat: str = Form("0")
 
 # --- Cấu hình LLM (két — chỉ Owner, giỏ tuyệt đối ket_cau_hinh) ---
 
-@app.get("/nen/cau-hinh", response_class=HTMLResponse)
+@app.get("/general/ai-models", response_class=HTMLResponse)
 def nen_cau_hinh(request: Request, bao: str = "", loi: str = ""):
     user = _gate_nen(request, quyen="ket_cau_hinh")   # giỏ tuyệt đối = chỉ Owner
     if isinstance(user, Response):
@@ -579,7 +579,7 @@ def nen_cau_hinh(request: Request, bao: str = "", loi: str = ""):
         {"user": user, "trang": "cau-hinh", "ds": ds, "bao": bao, "loi": loi})
 
 
-@app.post("/nen/cau-hinh/llm", response_class=HTMLResponse)
+@app.post("/general/ai-models/llm", response_class=HTMLResponse)
 def nen_cau_hinh_llm(request: Request, vai: str = Form(...),
                      provider: str = Form(""), model: str = Form(""),
                      base_url: str = Form(""), api_key: str = Form("")):
@@ -589,7 +589,7 @@ def nen_cau_hinh_llm(request: Request, vai: str = Form(...),
     vai = vai.strip().lower()
     if not vai.isidentifier():
         return RedirectResponse(
-            "/nen/cau-hinh?loi=Invalid+role+name",
+            "/general/ai-models?loi=Invalid+role+name",
             status_code=303)
     conn = ket.ket_noi()
     try:
@@ -602,12 +602,12 @@ def nen_cau_hinh_llm(request: Request, vai: str = Form(...),
     finally:
         conn.close()
     return RedirectResponse(
-        f"/nen/cau-hinh?bao=Saved+role+{vai}", status_code=303)
+        f"/general/ai-models?bao=Saved+role+{vai}", status_code=303)
 
 
 # --- Dữ liệu & backup / Nhật ký / Ứng dụng ---
 
-@app.get("/nen/du-lieu", response_class=HTMLResponse)
+@app.get("/general/data-backup", response_class=HTMLResponse)
 def nen_du_lieu(request: Request):
     import json
     user = _gate_nen(request)
@@ -630,7 +630,7 @@ def nen_du_lieu(request: Request):
          "backup_moi": de["backup_moi"], "bk_dir": de["bk_dir"]})
 
 
-@app.get("/nen/nhat-ky", response_class=HTMLResponse)
+@app.get("/general/audit-log", response_class=HTMLResponse)
 def nen_nhat_ky(request: Request):
     user = _gate_nen(request)
     if isinstance(user, Response):
@@ -645,7 +645,7 @@ def nen_nhat_ky(request: Request):
         {"user": user, "trang": "nhat-ky", "nhat_ky": nk})
 
 
-@app.get("/nen/ung-dung", response_class=HTMLResponse)
+@app.get("/general/applications", response_class=HTMLResponse)
 async def nen_ung_dung(request: Request):
     from starlette.concurrency import run_in_threadpool
     user = await run_in_threadpool(_gate_nen, request)
@@ -662,12 +662,12 @@ async def nen_ung_dung(request: Request):
 
 @app.get("/suc-khoe")
 def suc_khoe_cu():
-    return RedirectResponse("/nen", status_code=303)
+    return RedirectResponse("/general", status_code=303)
 
 
 @app.get("/quan-tri")
 def quan_tri_cu():
-    return RedirectResponse("/nen/tai-khoan", status_code=303)
+    return RedirectResponse("/general/accounts", status_code=303)
 
 
 # ---------- két cấu hình (P3) ----------
@@ -690,7 +690,36 @@ def api_cau_hinh_llm(request: Request, vai: str):
 
 @app.get("/cai-dat")
 def cai_dat_cu():
-    return RedirectResponse("/nen/cau-hinh", status_code=303)
+    return RedirectResponse("/general/ai-models", status_code=303)
+
+
+# Khu nền đổi URL /nen/* → /general/* EN (Owner 16/08, UI_FLOW.md mục 9 — URL khớp
+# nhãn tab). Đường cũ redirect trọn bộ: GET 303, POST 307 (giữ method+body cho form
+# mở sẵn từ trước khi đổi).
+_NEN_CU = {
+    "": "/general",
+    "/tai-khoan": "/general/accounts",
+    "/tai-khoan/tao": "/general/accounts/create",
+    "/tai-khoan/sua": "/general/accounts/update",
+    "/nhan-su": "/general/people",
+    "/nhan-su/tao": "/general/people/create",
+    "/phan-quyen": "/general/permissions",
+    "/phan-quyen/gan": "/general/permissions/grant",
+    "/phan-quyen/uy-quyen": "/general/permissions/delegate",
+    "/cau-hinh": "/general/ai-models",
+    "/cau-hinh/llm": "/general/ai-models/llm",
+    "/du-lieu": "/general/data-backup",
+    "/nhat-ky": "/general/audit-log",
+    "/ung-dung": "/general/applications",
+}
+
+
+@app.api_route("/nen{duong:path}", methods=["GET", "POST"])
+def nen_cu(request: Request, duong: str):
+    moi = _NEN_CU.get(duong, "/general")
+    if request.url.query:
+        moi += "?" + request.url.query
+    return RedirectResponse(moi, status_code=307 if request.method == "POST" else 303)
 
 
 # ---------- cầu nối: hỏi số liệu (P6) ----------

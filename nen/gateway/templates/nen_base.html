@@ -52,15 +52,15 @@
    HR L3+, còn lại chỉ Owner nên ẩn bớt với người không phải Owner. #}
 <nav class="muc">
   {% set la_owner = user.level >= 5 %}
-  {% if la_owner %}<a href="/nen" class="{% if trang == 'tong-quan' %}active{% endif %}">Overview</a>{% endif %}
-  {% if la_owner %}<a href="/nen/tai-khoan" class="{% if trang == 'tai-khoan' %}active{% endif %}">Accounts</a>{% endif %}
-  <a href="/nen/nhan-su" class="{% if trang == 'nhan-su' %}active{% endif %}">People</a>
+  {% if la_owner %}<a href="/general" class="{% if trang == 'tong-quan' %}active{% endif %}">Overview</a>{% endif %}
+  {% if la_owner %}<a href="/general/accounts" class="{% if trang == 'tai-khoan' %}active{% endif %}">Accounts</a>{% endif %}
+  <a href="/general/people" class="{% if trang == 'nhan-su' %}active{% endif %}">People</a>
   {% if la_owner %}
-  <a href="/nen/phan-quyen" class="{% if trang == 'phan-quyen' %}active{% endif %}">Permissions</a>
-  <a href="/nen/cau-hinh" class="{% if trang == 'cau-hinh' %}active{% endif %}">AI Models</a>
-  <a href="/nen/du-lieu" class="{% if trang == 'du-lieu' %}active{% endif %}">Data &amp; Backup</a>
-  <a href="/nen/nhat-ky" class="{% if trang == 'nhat-ky' %}active{% endif %}">Audit Log</a>
-  <a href="/nen/ung-dung" class="{% if trang == 'ung-dung' %}active{% endif %}">Applications</a>
+  <a href="/general/permissions" class="{% if trang == 'phan-quyen' %}active{% endif %}">Permissions</a>
+  <a href="/general/ai-models" class="{% if trang == 'cau-hinh' %}active{% endif %}">AI Models</a>
+  <a href="/general/data-backup" class="{% if trang == 'du-lieu' %}active{% endif %}">Data &amp; Backup</a>
+  <a href="/general/audit-log" class="{% if trang == 'nhat-ky' %}active{% endif %}">Audit Log</a>
+  <a href="/general/applications" class="{% if trang == 'ung-dung' %}active{% endif %}">Applications</a>
   {% endif %}
 </nav>
 <main>

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Test két nối gateway (P3): /nen/cau-hinh chỉ Owner (giỏ tuyệt đối — Admin ủy quyền
+"""Test két nối gateway (P3): /general/ai-models chỉ Owner (giỏ tuyệt đối — Admin ủy quyền
 cũng KHÔNG vào được), API loopback, key write-only."""
 import asyncio
 
@@ -41,22 +41,22 @@ def _login(client, ten, mk):
 
 def test_cai_dat_admin_uy_quyen_van_403(client):
     _login(client, "admin", "mk-admin")
-    assert client.get("/nen/cau-hinh").status_code == 403   # giỏ Owner tuyệt đối
+    assert client.get("/general/ai-models").status_code == 403   # giỏ Owner tuyệt đối
 
 
 def test_owner_luu_vai_llm_va_key_write_only(client):
     _login(client, "owner-test", "mk-test")
-    assert client.get("/nen/cau-hinh").status_code == 200
-    r = client.post("/nen/cau-hinh/llm", data={
+    assert client.get("/general/ai-models").status_code == 200
+    r = client.post("/general/ai-models/llm", data={
         "vai": "writer", "provider": "openai_compatible", "model": "glm-4.5-air",
         "base_url": "https://api.z.ai/api/paas/v4", "api_key": "sk-that-9999"})
     assert r.status_code == 303
-    trang = client.get("/nen/cau-hinh").text
+    trang = client.get("/general/ai-models").text
     assert "glm-4.5-air" in trang
     assert "••••9999" in trang            # chỉ đuôi
     assert "sk-that-9999" not in trang    # KHÔNG bao giờ hiện lại key
     # sửa model, bỏ trống key → key cũ GIỮ NGUYÊN
-    client.post("/nen/cau-hinh/llm", data={"vai": "writer", "model": "glm-5",
+    client.post("/general/ai-models/llm", data={"vai": "writer", "model": "glm-5",
                                       "provider": "", "base_url": "", "api_key": ""})
     conn = ket.ket_noi()
     assert ket.lay_bi_mat(conn, "llm.writer.api_key") == "sk-that-9999"

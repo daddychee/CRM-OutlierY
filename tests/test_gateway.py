@@ -141,13 +141,13 @@ def test_phai_doi_mk_bi_ep_sang_trang_doi(client, iam_db):
 
 def test_quan_tri_nhan_vien_403(client):
     _login(client, "nhanvien", "mk-nv-6")
-    assert client.get("/nen/tai-khoan").status_code == 403
+    assert client.get("/general/accounts").status_code == 403
 
 
 def test_quan_tri_owner_vao_va_tao_tai_khoan(client):
     _login(client)
-    assert client.get("/nen/tai-khoan").status_code == 200
-    r = client.post("/nen/tai-khoan/tao", data={
+    assert client.get("/general/accounts").status_code == 200
+    r = client.post("/general/accounts/create", data={
         "ten": "tk-moi", "mat_khau": "mk-tam-6", "bo_phan": "Kinh doanh", "level": 2})
     assert "Created account tk-moi" in r.text
     conn = iam.ket_noi()
@@ -157,7 +157,7 @@ def test_quan_tri_owner_vao_va_tao_tai_khoan(client):
 
 def test_quan_tri_xoa_phai_go_lai_ten(client):
     _login(client)
-    r = client.post("/nen/tai-khoan/sua", data={
+    r = client.post("/general/accounts/update", data={
         "ten": "nhanvien", "hanh_dong": "xoa", "gia_tri": "go-sai"})
     assert "retype the exact account name" in r.text
     conn = iam.ket_noi()
@@ -168,8 +168,8 @@ def test_quan_tri_xoa_phai_go_lai_ten(client):
 def test_trang_cu_redirect_sang_khu_nen(client):
     """Trang cũ nghỉ hưu (UI_FLOW.md mục 5) — redirect giữ 1 nhịp chuyển tiếp."""
     _login(client)
-    for cu, moi in (("/quan-tri", "/nen/tai-khoan"),
-                    ("/cai-dat", "/nen/cau-hinh"), ("/suc-khoe", "/nen")):
+    for cu, moi in (("/quan-tri", "/general/accounts"),
+                    ("/cai-dat", "/general/ai-models"), ("/suc-khoe", "/general")):
         r = client.get(cu)
         assert r.status_code == 303 and r.headers["location"] == moi
 
@@ -183,17 +183,17 @@ def test_nhan_su_hr_l3_vao_duoc(client, iam_db):
     iam.doi_mat_khau(conn, ow, "hr-leader", "mk-hr-7", ep_doi_lan_sau=False)
     conn.close()
     _login(client, "hr-leader", "mk-hr-7")
-    assert client.get("/nen/nhan-su").status_code == 200      # HR L3 vào được
-    r = client.post("/nen/nhan-su/tao",
+    assert client.get("/general/people").status_code == 200      # HR L3 vào được
+    r = client.post("/general/people/create",
                     data={"ho_ten": "Người Test HR", "bo_phan": "Kinh doanh"})
     assert "Created profile" in r.text                           # và tạo được hồ sơ
-    assert client.get("/nen/tai-khoan").status_code == 403    # nhưng KHÔNG đụng tài khoản
-    assert client.get("/nen/phan-quyen").status_code == 403   # và không vào bảng phân quyền
+    assert client.get("/general/accounts").status_code == 403    # nhưng KHÔNG đụng tài khoản
+    assert client.get("/general/permissions").status_code == 403   # và không vào bảng phân quyền
 
 
 def test_nhan_su_nhan_vien_thuong_403(client):
     _login(client, "nhanvien", "mk-nv-6")
-    assert client.get("/nen/nhan-su").status_code == 403
+    assert client.get("/general/people").status_code == 403
 
 
 def test_phan_quyen_tick_de_luat_mac_dinh(client, iam_db):
@@ -204,12 +204,12 @@ def test_phan_quyen_tick_de_luat_mac_dinh(client, iam_db):
     nv = iam.claims_cua(iam.lay_tai_khoan(conn, "nhanvien"))
     # nhanvien = Kinh doanh L2 → mặc định ĐƯỢC vào data-analytics (luật KD L2+)
     assert iam.co_quyen(nv, "vao", "data-analytics", conn)
-    r = client.post("/nen/phan-quyen/gan", data={
+    r = client.post("/general/permissions/grant", data={
         "ten": "nhanvien", "app_slug": "data-analytics",
         "hanh_dong": "vao", "gia_tri": "chan"})
     assert "Set data-analytics/vao" in r.text
     assert not iam.co_quyen(nv, "vao", "data-analytics", conn)  # tick CHẶN thắng mặc định
-    client.post("/nen/phan-quyen/gan", data={
+    client.post("/general/permissions/grant", data={
         "ten": "nhanvien", "app_slug": "data-analytics",
         "hanh_dong": "vao", "gia_tri": "ke_thua"})
     assert iam.co_quyen(nv, "vao", "data-analytics", conn)      # gỡ tick về mặc định
@@ -219,7 +219,7 @@ def test_phan_quyen_tick_de_luat_mac_dinh(client, iam_db):
 def test_phan_quyen_khong_tick_duoc_gio_owner(client):
     """Luật sắt: giỏ Owner tuyệt đối (vault, két...) không tick nào đè được."""
     _login(client)
-    r = client.post("/nen/phan-quyen/gan", data={
+    r = client.post("/general/permissions/grant", data={
         "ten": "nhanvien", "app_slug": "*", "hanh_dong": "vault", "gia_tri": "cho"})
     assert "không tick được" in r.text
 
@@ -229,7 +229,7 @@ def test_mien_quantri_ve_khu_nen(client):
     _login(client)
     r = client.get("/", headers={"host": "quantri.outliery.test"})
     assert r.status_code == 303
-    assert r.headers["location"] == "/nen"
+    assert r.headers["location"] == "/general"
 
 
 def test_cookie_mien_cha_khi_vao_bang_ten_mien(client):
@@ -284,7 +284,7 @@ def test_proxy_health_qua_gateway(client, app_mau_server):
 def test_tong_quan_de_bao_dung_trang_thai(client, app_mau_server):
     """Trang Tổng quan đế (thay suc-khoe cũ): dịch vụ sống/chết + đế đã nạp gì."""
     _login(client)
-    r = client.get("/nen")
+    r = client.get("/general")
     assert r.status_code == 200
     assert "running" in r.text            # app-mau sống
     assert "Accounts (IAM)" in r.text     # khối đế: số tài khoản

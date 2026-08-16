@@ -66,18 +66,18 @@ Nguyên tắc: **mỗi trang MỘT việc, mỗi việc MỘT đường dẫn** 
 
 | Trang | Đường | Việc | Ai vào |
 |---|---|---|---|
-| Tổng quan đế | /nen | dịch vụ sống/chết + đế đã nạp gì: tài khoản theo bộ phận×level, key LLM có/chưa, số thực thể danh bạ, backup gần nhất | Owner |
-| Tài khoản | /nen/tai-khoan | thêm/xóa/sửa tài khoản IAM | Owner (+giỏ ủy quyền quan_tai_khoan) |
-| Nhân sự | /nen/nhan-su | hồ sơ + duyệt hồ sơ | **Owner + Hành chính Nhân sự L3+** (đúng V1) (+giỏ duyet_ho_so) |
-| Phân quyền | /nen/phan-quyen | bảng TICK app × tính năng, ô tick lẻ đè mặc định + bật/tắt Admin ủy quyền | chỉ Owner (giỏ owner tuyệt đối) |
-| Cấu hình LLM | /nen/cau-hinh | két: provider/model/key theo vai | chỉ Owner |
-| Dữ liệu & backup | /nen/du-lieu | sổ địa bạ sống từ apps.json + tuổi backup + backup tay | Owner |
-| Nhật ký | /nen/nhat-ky | vết quyền + đăng nhập | Owner |
-| Ứng dụng | /nen/ung-dung | hợp đồng app: cổng, health, phiên bản, tiền tố | Owner |
+| Tổng quan đế | /general | dịch vụ sống/chết + đế đã nạp gì: tài khoản theo bộ phận×level, key LLM có/chưa, số thực thể danh bạ, backup gần nhất | Owner |
+| Tài khoản | /general/accounts | thêm/xóa/sửa tài khoản IAM | Owner (+giỏ ủy quyền quan_tai_khoan) |
+| Nhân sự | /general/people | hồ sơ + duyệt hồ sơ | **Owner + Hành chính Nhân sự L3+** (đúng V1) (+giỏ duyet_ho_so) |
+| Phân quyền | /general/permissions | bảng TICK app × tính năng, ô tick lẻ đè mặc định + bật/tắt Admin ủy quyền | chỉ Owner (giỏ owner tuyệt đối) |
+| Cấu hình LLM | /general/ai-models | két: provider/model/key theo vai | chỉ Owner |
+| Dữ liệu & backup | /general/data-backup | sổ địa bạ sống từ apps.json + tuổi backup + backup tay | Owner |
+| Nhật ký | /general/audit-log | vết quyền + đăng nhập | Owner |
+| Ứng dụng | /general/applications | hợp đồng app: cổng, health, phiên bản, tiền tố | Owner |
 
-Sidebar KHÔNG đổi hình dạng — chỉ đổi đích: Nhân sự → /nen/nhan-su · User →
-/nen/tai-khoan · Phân quyền → /nen/phan-quyen · Setting → /nen/cau-hinh ·
-Sức khỏe hệ → /nen (tổng quan đế nuốt trang suc-khoe cũ).
+Sidebar KHÔNG đổi hình dạng — chỉ đổi đích: Nhân sự → /general/people · User →
+/general/accounts · Phân quyền → /general/permissions · Setting → /general/ai-models ·
+Sức khỏe hệ → /general (tổng quan đế nuốt trang suc-khoe cũ).
 
 ## 6. PHÂN QUYỀN — luật đối chiếu V1 (chốt 16/08/2026)
 
@@ -94,7 +94,7 @@ Sức khỏe hệ → /nen (tổng quan đế nuốt trang suc-khoe cũ).
 
 - **Giai đoạn test (làm ngay):** 2 miền qua Caddy — `outliery.test` (cổng chính:
   đăng nhập + chat + app, đường /app/... như nay) và `quantri.outliery.test`
-  (khu nền mục 5; cùng handler với /nen — vào bằng IP vẫn chạy). Máy test thêm
+  (khu nền mục 5; cùng handler với /general — vào bằng IP vẫn chạy). Máy test thêm
   2 dòng hosts. Cookie đăng nhập đặt Domain miền cha → một đăng nhập chạy mọi
   miền con. HTTPS Caddy tls internal.
 - **Giai đoạn thay thế:** bật vai trò DNS Server của Windows Server, zone
@@ -160,7 +160,7 @@ trình "mỗi app một miền" giai đoạn thay thế.
 | View all history | `/history` | |
 | Data Analytics | `/data-analytics` | |
 | NAS / KPI / Vault / Tracking | `/nas` `/kpi` `/vault` `/tracking` | user menu |
-| General 8 trang | `/nen/*` | đã khớp từ mục 5 |
+| General 8 trang | `/general/*` | đã khớp từ mục 5 |
 
 Luật kỹ thuật: (a) alias PHỤC VỤ thẳng (URL giữ nguyên trên thanh địa chỉ);
 (b) URL /app/... CŨ của đúng các trang này 303 về alias — CHỈ điều hướng HTML

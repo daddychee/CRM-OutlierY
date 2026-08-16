@@ -3,7 +3,7 @@
 {% block noi_dung %}
 <h2>Add / edit LLM role <span class="phu" style="font-weight:400">— key is WRITE-ONLY: leave blank to keep the old key; keys are never shown again</span></h2>
 <div class="khoi">
-  <form class="dong" method="post" action="/nen/cau-hinh/llm" style="flex-wrap:wrap">
+  <form class="dong" method="post" action="/general/ai-models/llm" style="flex-wrap:wrap">
     <input name="vai" placeholder="role (writer / critic...)" required>
     <input name="provider" placeholder="provider (openai_compatible / anthropic)">
     <input name="model" placeholder="model (glm-4.5-air...)">

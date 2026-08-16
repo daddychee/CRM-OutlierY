@@ -14,7 +14,7 @@
   <div class="khoi">
     <div class="phu">People profiles</div>
     <div class="so-lon">{{ so_ho_so }}</div>
-    <div class="phu"><a href="/nen/nhan-su">view list →</a></div>
+    <div class="phu"><a href="/general/people">view list →</a></div>
   </div>
   <div class="khoi">
     <div class="phu">Entity directory</div>
@@ -24,7 +24,7 @@
   <div class="khoi">
     <div class="phu">Latest backup</div>
     <div class="so-lon" style="font-size:17px">{{ backup_moi or "— none yet" }}</div>
-    <div class="phu">{{ bk_dir }} · <a href="/nen/du-lieu">details →</a></div>
+    <div class="phu">{{ bk_dir }} · <a href="/general/data-backup">details →</a></div>
   </div>
 </div>
 
@@ -36,7 +36,7 @@
       <td>{% if ch.key_duoi %}<span class="chip">✓ set (••••{{ ch.key_duoi }})</span>
           {% else %}<span class="chip" style="color:var(--loi)">not set</span>{% endif %}</td></tr>
   {% else %}
-  <tr><td colspan="4" class="phu">No roles configured — go to <a href="/nen/cau-hinh">AI Models</a>.
+  <tr><td colspan="4" class="phu">No roles configured — go to <a href="/general/ai-models">AI Models</a>.
       Without a key, Chat runs in mock mode.</td></tr>
   {% endfor %}
 </table>

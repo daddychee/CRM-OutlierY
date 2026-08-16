@@ -41,7 +41,7 @@
 | Đợt | Nội dung | Commit chốt |
 |---|---|---|
 | Chốt UI=V1 | "/" → Hỏi–đáp, xóa launcher, app chưa di trú ẩn, claims sidebar | `d64a00e` |
-| Khu nền | 8 trang /nen mỗi trang một việc + phân quyền V1 + 2 miền Caddy | `a88c384`, `a84fd1d` |
+| Khu nền | 8 trang /general mỗi trang một việc + phân quyền V1 + 2 miền Caddy | `a88c384`, `a84fd1d` |
 | Đợt 2 | Vỏ điều hướng EN + user menu kiểu Claude + tab Database + /profile | `dbff341`→`9140710` |
 | Đợt 3 | 5 điểm Owner: logo=Home, topbar ngày, bỏ nút theme cũ, icon DB/Gap | `07a8bed` |
 | Đợt 4 | Dịch nhãn EN 14 trang nội dung 3 app (xem TRANSLATE.md) | `16d36a3`, `b7a5cfa` |
