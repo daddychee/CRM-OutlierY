@@ -71,3 +71,51 @@ def test_tick_sua_phat_leader_khong_len_admin(conn):
     assert iam.cac_hanh_dong(nv, "content-ultimate", conn) == ["sua"]
     iam.gan_override(conn, ow, "nv", "content-ultimate", "quan_tri", True, "thử nấc quản trị")
     assert iam.vai_cho_app(nv, "content-ultimate", conn) == "admin"    # chỉ quan_tri mới admin
+
+
+def test_viec_api_content_khai_dung():
+    """viec_api sinh từ TÍNH NĂNG THẬT (đọc code): 2 việc LLM (viết kịch bản +
+    phân tích outline) · transcript (S1b) · youtube (S1c comment)."""
+    a = tim_app("content-ultimate")
+    assert [(v["ma"], v["loai"]) for v in a["viec_api"]] == [
+        ("viet_kich_ban", "llm"), ("phan_tich_outline", "llm"),
+        ("lay_transcript", "transcript"), ("lay_comment", "youtube")]
+    from nen.ket_cau_hinh import ket
+    for _, loai in [(v["ma"], v["loai"]) for v in a["viec_api"]]:
+        assert loai in ket.LOAI_API          # loại phải có trong két (transcript mới thêm)
+        assert loai in ket.TEN_LOAI_API      # và có nhãn hiển thị trên trang API Keys
+
+
+def test_di_tru_khoa_content_idempotent(tmp_path, monkeypatch):
+    """Migration .env → két: đúng loại/nhà, GLM dùng chung 2 việc LLM, marker
+    chống nạp đôi, không lộ plaintext qua liet_ke; ADMIN_USERS/HTPASSWD bỏ qua."""
+    import importlib.util
+    monkeypatch.setenv("KET_DB", str(tmp_path / "ket.db"))
+    monkeypatch.setenv("KET_KEY", str(tmp_path / "ket.key"))
+    from nen.ket_cau_hinh import ket
+    spec = importlib.util.spec_from_file_location(
+        "di_tru_khoa_content",
+        str(__import__("pathlib").Path(__file__).resolve().parents[1]
+            / "scripts" / "di_tru_khoa_content.py"))
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+
+    env = tmp_path / ".env"
+    env.write_text("GLM_API_KEY=sk-glm-1111\nGLM_MODEL=glm-5.2\n"
+                   "TRANSCRIPT_API_KEY=tr-2222\nYOUTUBE_API_KEY=AIza-3333\n"
+                   "ADMIN_USERS=thanh\nHTPASSWD_FILE=/x/.htpasswd\n", encoding="utf-8")
+    c = ket.ket_noi()
+    try:
+        ds = mod.di_tru(env, c)
+        assert sorted((m["loai"], m["duoi"]) for m in ds) == [
+            ("llm", "1111"), ("transcript", "2222"), ("youtube", "3333")]
+        cp = ket.doc_cap_phat(c)["content-ultimate"]
+        assert cp["viet_kich_ban"]["khoa"] == cp["phan_tich_outline"]["khoa"]  # chung khóa GLM
+        assert cp["viet_kich_ban"]["model"] == "glm-5.2"
+        assert len(cp["lay_transcript"]["khoa"]) == 1 and len(cp["lay_comment"]["khoa"]) == 1
+        assert mod.di_tru(env, c) == []                 # idempotent
+        assert len(ket.liet_ke_api_keys(c)) == 3        # ADMIN_USERS/HTPASSWD không vào
+        assert not any("sk-glm" in str(v) for k in ket.liet_ke_api_keys(c)
+                       for v in k.values())
+    finally:
+        c.close()

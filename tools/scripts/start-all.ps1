@@ -25,6 +25,8 @@ $env:RADARY_TRUST_PROXY = '1'
 # App KHONG co scheduler nen (pipeline chi chay khi user bam) - khac RadarY.
 $env:CU_DATA_DIR = (Join-Path $root 'data/content-ultimate')
 $env:CU_TRUST_PROXY = '1'
+# Bay UTF-8 may Windows nay: app in tieng Viet ra stdout -> cp1252 chet luc khoi dong.
+$env:PYTHONIOENCODING = 'utf-8'
 $dichVu = @(
     @{ Ten = 'qdrant-test'; Cong = 6343
        Exe = (Join-Path $root 'tools\qdrant\qdrant.exe')

@@ -114,7 +114,9 @@ def liet_ke(conn: sqlite3.Connection) -> dict:
 # Owner chốt qua 4 vòng mockup: hiển thị THEO API, LLM là MỘT loại trong đó,
 # cấu hình theo app sinh từ viec_api của HỢP ĐỒNG, quota log JSON-lines chuẩn P4.
 
-LOAI_API = ("youtube", "llm", "veo", "seedream")
+# transcript: dich vu transcriptapi.com (Content Ultimate S1b) — them loai khi
+# app that can, dung tinh than DE.md 3b "dich_vu.<ten>" (khong de khoa ngoai ket).
+LOAI_API = ("youtube", "llm", "veo", "seedream", "transcript")
 NHA_LLM = ("claude", "glm", "gemini", "chatgpt", "deepseek")
 # provider/base_url suy từ NHÀ khi khóa không mang override riêng (migration giữ
 # nguyên giá trị cũ per-khóa nên hệ đang chạy resolve ra ĐÚNG như trước).
@@ -130,7 +132,8 @@ NHA_LLM_INFO = {
                  "base_url": "https://api.deepseek.com"},
 }
 TEN_LOAI_API = {"youtube": "YouTube Data API v3", "llm": "LLM",
-                "veo": "VEO (Google Flow)", "seedream": "Seedream"}
+                "veo": "VEO (Google Flow)", "seedream": "Seedream",
+                "transcript": "Transcript API (transcriptapi.com)"}
 # Model gợi ý cho dropdown (mockup K2-K3) — gợi ý thôi, giá trị hiện hành luôn giữ.
 MODEL_GOI_Y = {
     "claude": ["claude-fable-5", "claude-sonnet-5", "claude-haiku-4-5"],

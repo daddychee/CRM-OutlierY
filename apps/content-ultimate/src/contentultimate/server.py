@@ -124,6 +124,18 @@ def _env_dict() -> dict[str, str]:
     return load_env_file(ENV_PATH) if ENV_PATH.exists() else {}
 
 
+def _sso_quan_tri_dong(handler) -> bool:
+    """LÀM GỌN (Owner 16/08, khuôn RadarY): chạy sau cổng OUTLIERY thì MỌI cửa
+    quản trị của app — API key / cấu hình dịch vụ LLM (tab Cài đặt) và tài khoản /
+    mời / vai — ĐÓNG kể cả vai admin nội bộ: khóa nhập ở General › API Keys,
+    quyền cấp ở General › Permissions. Tab Quản lý (nhật ký chạy, log lỗi, lịch
+    sử kịch bản team) là VẬN HÀNH → giữ nguyên."""
+    return os.environ.get("CU_TRUST_PROXY") == "1"
+
+
+THONG_DIEP_QT = ("quản trị chuyển về OUTLIERY — General › API Keys / Permissions")
+
+
 def _is_admin(handler) -> bool:
     """ADMIN_USERS chưa cấu hình → mọi người là admin (chạy local một người).
 
@@ -1113,9 +1125,11 @@ MANAGE_HTML = """<!doctype html>
   <a class="back" href="/">← Trang chủ</a>
   <h1>👥 <em>Quản lý</em></h1>
   <p class="sub">Nhật ký làm việc từng người · token đã tiêu · dấu hiệu bất thường.
-    Thành viên &amp; phân quyền →
+    <span class="chi-v2">Thành viên &amp; phân quyền →
     <a href="/settings#sp_members" style="color:var(--accent)">Cài đặt · Thành viên &amp; quyền</a>
-    (chỉ quản trị viên).</p>
+    (chỉ quản trị viên).</span>
+    <span class="chi-v3" hidden>Thành viên &amp; phân quyền quản ở OUTLIERY —
+    General › Permissions.</span></p>
 
   <div class="tabs">
     <div class="tab on" data-p="h">Nhật ký làm việc</div>
@@ -1488,7 +1502,8 @@ def make_handler(run_name: str):
             _touch(self)
             if path in ("/", "/index.html"):
                 card = ((MANAGE_CARD if _can_manage(self) else "")
-                        + (SETTINGS_CARD if _is_admin(self) else ""))
+                        + (SETTINGS_CARD if (_is_admin(self)
+                                             and not _sso_quan_tri_dong(self)) else ""))
                 self._send(200, self._page(HOME.replace("<!--SETTINGS-->", card)),
                            "text/html; charset=utf-8")
             elif path == "/logout":
@@ -1519,7 +1534,14 @@ def make_handler(run_name: str):
                             "bạn lên Leader trong Cài đặt → Thành viên."),
                         "text/html; charset=utf-8")
                     return
-                self._send(200, self._page(MANAGE_HTML), "text/html; charset=utf-8")
+                # SSO: đổi dòng nhắc "Thành viên & quyền → Cài đặt" (cửa đã đóng)
+                # sang chỉ đường OUTLIERY — tab Quản lý (vận hành) giữ nguyên.
+                html_qly = MANAGE_HTML
+                if _sso_quan_tri_dong(self):
+                    html_qly = (MANAGE_HTML
+                                .replace('<span class="chi-v2">', '<span class="chi-v2" hidden>')
+                                .replace('<span class="chi-v3" hidden>', '<span class="chi-v3">'))
+                self._send(200, self._page(html_qly), "text/html; charset=utf-8")
             elif path == "/api/users":
                 # GET (danh sách + cảnh báo IP) cho leader — tab Bảo mật cần;
                 # THAY ĐỔI thành viên/quyền vẫn chỉ admin (nhánh POST).
@@ -1559,11 +1581,18 @@ def make_handler(run_name: str):
                 self.end_headers()
                 self.wfile.write(data)
             elif path == "/settings":
+                if _sso_quan_tri_dong(self):
+                    self._send(404, THONG_DIEP_QT.encode("utf-8"),
+                               "text/plain; charset=utf-8")
+                    return
                 if not _is_admin(self):
                     self._send(403, _forbidden_page(self), "text/html; charset=utf-8")
                     return
                 self._send(200, self._page(SETTINGS_HTML), "text/html; charset=utf-8")
             elif path == "/api/settings":
+                if _sso_quan_tri_dong(self):
+                    self._json(404, {"error": THONG_DIEP_QT})
+                    return
                 if not _is_admin(self):
                     self._json(403, {"error": "chỉ quản trị viên"})
                     return
@@ -1577,6 +1606,9 @@ def make_handler(run_name: str):
                     return
                 self._send(200, INVITE_HTML.encode("utf-8"), "text/html; charset=utf-8")
             elif path == "/api/invites":
+                if _sso_quan_tri_dong(self):
+                    self._json(404, {"error": THONG_DIEP_QT})
+                    return
                 if not _is_admin(self):
                     self._json(403, {"error": "chỉ quản trị viên"})
                     return
@@ -1622,6 +1654,9 @@ def make_handler(run_name: str):
             _touch(self)
             path = self.path.split("?", 1)[0]
             if path == "/api/users":
+                if _sso_quan_tri_dong(self):     # đổi thành viên/vai: về OUTLIERY
+                    self._json(404, {"error": THONG_DIEP_QT})
+                    return
                 if not _is_admin(self):
                     self._json(403, {"error": "chỉ quản trị viên"})
                     return
@@ -1632,6 +1667,9 @@ def make_handler(run_name: str):
                     code, out = 500, {"error": str(e)[:200]}
                 self._json(code, out)
             elif path == "/api/settings":
+                if _sso_quan_tri_dong(self):
+                    self._json(404, {"error": THONG_DIEP_QT})
+                    return
                 if not _is_admin(self):
                     self._json(403, {"error": "chỉ quản trị viên"})
                     return
@@ -1673,6 +1711,9 @@ def make_handler(run_name: str):
                     out["notice"] = msg
                 self._json(200 if ok else 422, out)
             elif path == "/api/invites":
+                if _sso_quan_tri_dong(self):
+                    self._json(404, {"error": THONG_DIEP_QT})
+                    return
                 if not _is_admin(self):
                     self._json(403, {"error": "chỉ quản trị viên"})
                     return

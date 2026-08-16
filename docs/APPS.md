@@ -41,8 +41,8 @@
 
 | # | App | Cổng | Data | Quyền (khai Permissions) | Trạng thái |
 |---|---|---|---|---|---|
-| 1 | RadarY | 9111 | data\radary\ (db 88M + niche 41M + reports; thumbs 636M TÁI-SINH không snapshot) | mọi BP L1 xem · them_video/tao_pool KD L3 · toan_quyen Manager chủ quản (vai manager) · quan_tri Owner | **ĐANG LÀM** |
-| 2 | Content Ultimate | 9112 | data\content-ultimate\ | VH L2 · sua L3 leader · quan_tri Owner | chờ |
+| 1 | RadarY | 9111 | data\radary\ (db 88M + niche 41M + reports; thumbs 636M TÁI-SINH không snapshot) | mọi BP L1 xem · them_video/tao_pool KD L3 · toan_quyen Manager chủ quản (vai manager) · quan_tri Owner | **XONG** (chờ Owner chạy migration khóa) |
+| 2 | Content Ultimate | 9112 | data\content-ultimate\ | VH L2 · sua L3 leader · quan_tri Owner | **XONG** (chờ Owner chạy migration khóa) |
 | 3 | SEO Optimize | 9113 | data\seo-optimize\ | KD L2 vai seo · sua L3 · toan_quyen L4 manager · quan_tri Owner | chờ |
 | 4 | Data Analytics | 9102 | data\data-analytics\ | đã trong V3 từ đầu | XONG (còn Đ2.2 nối danh bạ) |
 | 5 | PlannerY | 9114 | data\plannery\ | mọi BP L1 · them_kenh_video KD L2 seo · sua L3 · quan_tri Owner + VÁ bẫy users.json thắng header | chờ |
@@ -101,6 +101,35 @@
   nen/common (sidebar.py, proxy.py) + nen/gateway PHẢI RESTART mọi app import
   (ai-agent/DA/to-chuc/gateway) mới thấy sidebar mới** — Owner tự restart.
   Content Ultimate vẫn ĐỨNG YÊN, chưa đụng tiếp đợt này.
+- 17/08/2026 — **CONTENT ULTIMATE XONG (app 2/6)** — làm gọn đúng khuôn RadarY:
+  (1) **Quản trị nội bộ ĐÓNG khi SSO** (7 route: GET/POST `/api/settings`,
+  GET/POST `/api/invites`, POST `/api/users`, trang `/settings`, `/invite`) —
+  404 kèm "quản trị chuyển về OUTLIERY — General › API Keys / Permissions", KỂ
+  CẢ vai admin nội bộ; UI: thẻ ⚙ Cài đặt ẩn khỏi trang chủ, dòng nhắc "Thành
+  viên & quyền → Cài đặt" ở tab Quản lý đổi thành chỉ đường OUTLIERY. **Tab
+  Quản lý GIỮ NGUYÊN** (nhật ký chạy · token · bảo mật · lịch sử kịch bản =
+  VẬN HÀNH, không phải quản trị) — leader vào 200, creator 403.
+  (2) **Nguồn khóa = KÉT V3**: `viec_api` khai 4 việc theo tính năng thật —
+  viet_kich_ban (llm) · phan_tich_outline (llm) · lay_transcript (**loại mới
+  `transcript`** thêm vào két cho transcriptapi.com) · lay_comment (youtube);
+  `contentultimate/khoa_v3.py` (khuôn radary) lấy khóa MỖI lần chạy, ánh xạ về
+  đúng biến env app đang đọc; **4 điểm đọc khóa** rẽ qua két khi `CU_TRUST_PROXY=1`:
+  `oe/llm.py` (GLM), `voiceprofile/llm.py::_load_env` (mọi provider),
+  `oe/transcript.py::load_key`, `oe/s5_server.py` (bơm khóa YouTube vào
+  videos.txt của run) — **không nhánh fallback .env nào**.
+  (3) `scripts/di_tru_khoa_content.py` idempotent (marker, audit CHỈ ĐUÔI) —
+  **Owner chạy**, nguồn .env hệ cũ (snapshot không có .env).
+  (4) **Không có scheduler/job nền** (khác RadarY): pipeline chỉ chạy khi user
+  bấm; `--no-browser` trong start-all chặn Timer mở trình duyệt.
+  (5) **BẪY UTF-8 (đã vá)**: app in tiếng Việt ra stdout → cp1252 giết tiến
+  trình lúc khởi động → start-all thêm `$env:PYTHONIOENCODING = 'utf-8'`.
+  (6) **2 fail `test_generator` = BASELINE V2**, KHÔNG do V3: `generator.py` và
+  `test_generator.py` md5 GIỐNG HỆT bản C:\ (byte-identical), fail lặp lại khi
+  đổi `CU_DATA_DIR`, và chính docstring code ghi đã ĐỔI THUẬT TOÁN chọn k
+  (2026-07-14 "cộng mention lên trên ⇒ vượt có hệ thống") sau khi test được
+  viết → test cũ chưa cập nhật. Không sửa (không đụng logic nghiệp vụ V2).
+  Suite content **245 pass / 4 fail** (2 env Windows: path-separator + chmod
+  read-only; 2 baseline nêu trên) — **không tăng fail so với lúc nhận**.
 - 16/08/2026 — BẪY MỚI khi agent ghi start-all.ps1: chuỗi `data\radary` bị nuốt
   `\r` thành byte xuống dòng thật (0x0D) → comment gãy đôi thành lệnh, script
   chết trước khi bật service nào. Sửa bằng thay byte, đường dẫn trong .ps1 từ

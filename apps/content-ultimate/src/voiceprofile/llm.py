@@ -102,6 +102,10 @@ def find_env_file() -> Path | None:
 def _load_env(env: dict[str, str] | None) -> dict[str, str]:
     if env is not None:
         return env
+    # V3: khoa tu KET OUTLIERY (khong doc .env) khi chay sau cong — xem khoa_v3.
+    from contentultimate import khoa_v3
+    if khoa_v3.bat():
+        return khoa_v3.env_ket()
     env_path = find_env_file()
     return load_env_file(env_path) if env_path else dict(os.environ)
 

@@ -47,7 +47,10 @@ def _no_balance(body: str) -> bool:
 
 class LLM:
     def __init__(self, env_path: str | Path, kind: str = "oe"):
-        cfg = load_env(env_path)
+        # V3 (lam gon 16/08): chay sau cong OUTLIERY thi khoa lay tu KET moi lan
+        # goi — KHONG doc .env (mot nguon khoa duy nhat, khong fallback).
+        from contentultimate import khoa_v3
+        cfg = khoa_v3.env_ket() if khoa_v3.bat() else load_env(env_path)
         self.kind = kind                                # nhãn cho sổ ghi token
         provider = cfg.get("LLM_PROVIDER", "glm").lower()
         if provider != "glm":

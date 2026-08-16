@@ -245,13 +245,21 @@ def _run_pipeline(run_name: str, urls_text: str, *, resume: bool = False):
         if urls_text.strip():                           # lần đầu: ghi videos.txt từ URL user dán
             _ids, keys = common.parse_videos_txt(common.ROOT / "videos.txt") \
                 if (common.ROOT / "videos.txt").exists() else ([], [])
-            envf = common.ROOT / ".env"                 # YOUTUBE_API_KEY admin nhập ở tab Cài đặt
-            if envf.exists():
-                for eline in envf.read_text(encoding="utf-8").splitlines():
-                    if eline.strip().startswith("YOUTUBE_API_KEY="):
-                        k = eline.split("=", 1)[1].strip()
-                        if k and k not in keys:
-                            keys.append(k)
+            # V3: khoa YouTube tu KET OUTLIERY (viec 'lay_comment', nhieu khoa
+            # xoay vong); V2: doc .env nhu cu (YOUTUBE_API_KEY tab Cai dat).
+            from contentultimate import khoa_v3
+            if khoa_v3.bat():
+                for k in khoa_v3.khoa_theo_viec("lay_comment"):
+                    if k not in keys:
+                        keys.append(k)
+            else:
+                envf = common.ROOT / ".env"
+                if envf.exists():
+                    for eline in envf.read_text(encoding="utf-8").splitlines():
+                        if eline.strip().startswith("YOUTUBE_API_KEY="):
+                            k = eline.split("=", 1)[1].strip()
+                            if k and k not in keys:
+                                keys.append(k)
             lines = ["# auto từ màn nhập video"] + keys + [""] + \
                     [u.strip() for u in urls_text.splitlines() if u.strip()]
             run_vtxt.write_text("\n".join(lines) + "\n", encoding="utf-8")

@@ -432,7 +432,29 @@
      "ghi_chu": "SECRET — cookies YouTube của team (Netscape), gitignore theo data/; backup như bản mã két, không đưa vào gói chia sẻ"
     }
    ],
-   "giao_dien": "khung"
+   "giao_dien": "khung",
+   "viec_api": [
+    {
+     "ma": "viet_kich_ban",
+     "ten": "Viết kịch bản (Author/Writing board)",
+     "loai": "llm"
+    },
+    {
+     "ma": "phan_tich_outline",
+     "ten": "Phân tích Outline (beats · label · cluster)",
+     "loai": "llm"
+    },
+    {
+     "ma": "lay_transcript",
+     "ten": "Lấy transcript video (S1b)",
+     "loai": "transcript"
+    },
+    {
+     "ma": "lay_comment",
+     "ten": "Lấy comment video (S1c)",
+     "loai": "youtube"
+    }
+   ]
   }
  ]
 }

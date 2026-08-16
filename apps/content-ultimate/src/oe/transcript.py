@@ -41,6 +41,14 @@ class Segment:
 def load_key(env_path: str | Path) -> str:
     """Đọc TRANSCRIPT_API_KEY: env thật ưu tiên, rồi tới file .env (giống get_env Niche Research)."""
     import os
+    from contentultimate import khoa_v3
+    if khoa_v3.bat():        # V3: khoa tu KET, khong doc .env (khong fallback)
+        khoa = khoa_v3.env_ket().get("TRANSCRIPT_API_KEY")
+        if not khoa:
+            raise RuntimeError(
+                "OUTLIERY chua cap khoa transcript cho content-ultimate — "
+                "cap o General > API Keys (viec 'lay_transcript')")
+        return khoa
     if os.environ.get("TRANSCRIPT_API_KEY"):
         return os.environ["TRANSCRIPT_API_KEY"]
     p = Path(env_path)
