@@ -289,3 +289,13 @@ sqlite-snapshot như iam.db.
 - 16/08/2026 — Chốt Kế toán = bộ phận riêng kiêm nhiệm (mục 10) + phản hồi vòng 1
   trên mockup đã áp (mục 12). **Đang ở bước: Owner duyệt mockup vòng 2
   (`docs/mockup-de/` — 6 trang) → chốt → Đ1 code.**
+- 16/08/2026 — **Đ1.1 + Đ1.2/Đ1.3 CODE XONG** (`9720213` + commit trang):
+  danh_ba.db 5 bảng (niche TRƯỚC kênh) + danh_ba.py v2 (API đọc giữ chữ ký, ghi
+  + sinh mã + alias unique + liên kết app + khai tử mềm + xuất CSV, cache chịu
+  WAL) + 2 trang /general/niches /general/channels (gate Manager+ tạo/sửa ·
+  Owner liên kết/khai tử gõ-lại-mã · audit nhat_ky_quyen từng thao tác) —
+  suite 89 + 64 pass, nghiệm thu sống HTTPS. UI đang theo style khu nền
+  (form <details> thay modal mockup — làm đẹp đợt UI riêng).
+  **SẴN SÀNG cho Owner nhập danh bạ thật** (thứ tự: Markets → Niches → Channels;
+  bảng tham khảo mục 7). CÒN Đ1: API Keys (mục 3b + mockup K1-K8) + hồ sơ nhân
+  sự mở rộng (mục 12.1) + cột thuc_the cho quyen_override.

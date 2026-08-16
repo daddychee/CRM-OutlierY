@@ -1,0 +1,80 @@
+{% extends "nen_base.html" %}
+{% block tieu_de %}Niches{% endblock %}
+{% block noi_dung %}
+<h2>Niches</h2>
+<table>
+  <tr><th>Code</th><th>Name</th><th>Channels</th><th>Niche Research</th><th>Aliases</th>
+      <th>Status</th><th>Created</th><th></th></tr>
+  {% for n in ds_ngach %}
+  <tr>
+    <td><b>{{ n.ma }}</b></td><td>{{ n.ten_chuan }}</td>
+    <td>{% for k in n.kenh_con %}<a href="/general/channels?ngach={{ n.ma }}"><code>{{ k }}</code></a> {% else %}<span class="phu">0</span>{% endfor %}</td>
+    <td>{% if n.lien_ket.get('niche-research') %}<code>{{ n.lien_ket['niche-research'] }}</code>{% else %}<span class="phu">—</span>{% endif %}</td>
+    <td>{% for a in n.bi_danh.split(';') if a %}<code>{{ a }}</code> {% endfor %}</td>
+    <td>{{ n.trang_thai }}</td><td class="phu">{{ n.tao_luc[:10] }}</td>
+    <td>
+      <details style="display:inline"><summary style="cursor:pointer">edit</summary>
+        <form class="dong" method="post" action="/general/niches/update" style="margin-top:6px">
+          <input type="hidden" name="ma" value="{{ n.ma }}">
+          <input name="ten_chuan" value="{{ n.ten_chuan }}" required>
+          <select name="trang_thai">{% for tt in tt_ngach %}<option value="{{ tt }}" {% if tt == n.trang_thai %}selected{% endif %}>{{ tt }}</option>{% endfor %}</select>
+          <input name="ghi_chu" value="{{ n.ghi_chu }}" placeholder="note">
+          <button>Save</button>
+        </form>
+        <form class="dong" method="post" action="/general/niches/alias" style="margin-top:6px">
+          <input type="hidden" name="ma" value="{{ n.ma }}">
+          <input name="bi_danh" placeholder="alias" required>
+          <button name="viec" value="them">+ alias</button>
+          <button name="viec" value="xoa">− alias</button>
+        </form>
+        {% if la_owner %}
+        <form class="dong" method="post" action="/general/niches/link" style="margin-top:6px">
+          <input type="hidden" name="ma" value="{{ n.ma }}">
+          <input name="khoa" value="{{ n.lien_ket.get('niche-research','') }}" placeholder="Niche Research project">
+          <button>Link</button>
+        </form>
+        {% endif %}
+      </details>
+    </td>
+  </tr>
+  {% else %}
+  <tr><td colspan="8" class="phu">No niches yet — a niche must exist before its channels.</td></tr>
+  {% endfor %}
+</table>
+
+<div class="khoi">
+  <details {% if not ds_ngach %}open{% endif %}><summary style="cursor:pointer"><b>+ New niche</b></summary>
+  <form class="dong" method="post" action="/general/niches/create" style="margin-top:8px">
+    <input name="ten_chuan" placeholder="name" required>
+    <select name="trang_thai">{% for tt in tt_ngach %}<option value="{{ tt }}">{{ tt }}</option>{% endfor %}</select>
+    <input name="ghi_chu" placeholder="note">
+    <button>Create niche</button>
+  </form>
+  </details>
+</div>
+
+<h2>Markets</h2>
+<table>
+  <tr><th>Code</th><th>Market</th><th>Language</th><th>Created</th><th></th></tr>
+  {% for m in ds_tt %}
+  <tr><td><b>{{ m.ma }}</b></td><td>{{ m.ten_chuan }}</td><td>{{ m.ngon_ngu }}</td>
+      <td class="phu">{{ m.tao_luc[:10] }}</td>
+      <td><details style="display:inline"><summary style="cursor:pointer">edit</summary>
+        <form class="dong" method="post" action="/general/markets/update" style="margin-top:6px">
+          <input type="hidden" name="ma" value="{{ m.ma }}">
+          <input name="ten" value="{{ m.ten_chuan }}" required>
+          <input name="ngon_ngu" value="{{ m.ngon_ngu }}" placeholder="language">
+          <button>Save</button>
+        </form></details></td></tr>
+  {% else %}
+  <tr><td colspan="5" class="phu">No markets yet.</td></tr>
+  {% endfor %}
+</table>
+<div class="khoi">
+  <form class="dong" method="post" action="/general/markets/create">
+    <input name="ten" placeholder="market (e.g. US)" required>
+    <input name="ngon_ngu" placeholder="language (e.g. English)">
+    <button>Create market</button>
+  </form>
+</div>
+{% endblock %}

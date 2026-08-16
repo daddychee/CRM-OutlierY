@@ -658,6 +658,309 @@ async def nen_ung_dung(request: Request):
          "dich_vu": dich_vu})
 
 
+# ---------- DANH BẠ THỰC THỂ — Niches + Channels (Đ1 khối đế, DE.md) ----------
+# Gate theo chốt Owner 16/08: Manager+ (L4) tạo/sửa vận hành; liên kết app +
+# khai tử (gõ lại mã) chỉ Owner. Mọi thao tác ghi nhat_ky_quyen.
+from nen.common import danh_ba  # noqa: E402
+
+_LOAI_KENH = ("compilation", "narrator", "documentary", "tre_em", "tutorial", "giai_tri")
+_APP_LIEN_KET = ("seo-optimize", "plannery", "radary", "niche-research", "speaky",
+                 "content", "vox", "flowkit", "bao-cao")
+
+
+def _gate_danh_ba(request: Request, chi_owner: bool = False):
+    user = _kiem(request)
+    if isinstance(user, RedirectResponse):
+        return user
+    if user["level"] < (5 if chi_owner else 4):
+        return Response("Owner/Manager only.", status_code=403)
+    return user
+
+
+def _audit_danh_ba(user: dict, chi_tiet: str) -> None:
+    conn = iam.ket_noi()
+    try:
+        iam.ghi_nhat_ky(conn, user["ten"], "danh_ba", chi_tiet)
+    finally:
+        conn.close()
+
+
+def _render_niches(request, user, bao="", loi=""):
+    ds = danh_ba.doc_danh_muc()
+    kenh = [t for t in ds if t["loai"] == "kenh"]
+    # dict nằm trong cache module — copy trước khi gắn trường phụ kenh_con
+    ngach = [dict(n, kenh_con=[k["ma"] for k in kenh if k["ngach_ma"] == n["ma"]])
+             for n in ds if n["loai"] == "ngach"]
+    return templates.TemplateResponse(request, "nen_niches.html", {
+        "user": user, "trang": "niches", "la_owner": user["level"] >= 5,
+        "ds_ngach": ngach, "ds_tt": [t for t in ds if t["loai"] == "thi_truong"],
+        "tt_ngach": danh_ba.TRANG_THAI_NGACH, "bao": bao, "loi": loi})
+
+
+@app.get("/general/niches", response_class=HTMLResponse)
+def nen_niches(request: Request):
+    user = _gate_danh_ba(request)
+    if not isinstance(user, dict):
+        return user
+    return _render_niches(request, user)
+
+
+@app.post("/general/niches/create", response_class=HTMLResponse)
+def nen_niches_tao(request: Request, ten_chuan: str = Form(...),
+                   trang_thai: str = Form("thu"), ghi_chu: str = Form("")):
+    user = _gate_danh_ba(request)
+    if not isinstance(user, dict):
+        return user
+    conn = danh_ba.ket_noi()
+    try:
+        ma = danh_ba.them_ngach(conn, ten_chuan, trang_thai, ghi_chu)
+    except ValueError as e:
+        return _render_niches(request, user, loi=str(e))
+    finally:
+        conn.close()
+    _audit_danh_ba(user, f"tao ngach {ma} ({ten_chuan})")
+    return _render_niches(request, user, bao=f"Created niche {ma}.")
+
+
+@app.post("/general/niches/update", response_class=HTMLResponse)
+def nen_niches_sua(request: Request, ma: str = Form(...), ten_chuan: str = Form(...),
+                   trang_thai: str = Form("thu"), ghi_chu: str = Form("")):
+    user = _gate_danh_ba(request)
+    if not isinstance(user, dict):
+        return user
+    conn = danh_ba.ket_noi()
+    try:
+        danh_ba.sua_thuc_the(conn, "ngach", ma, ten_chuan=ten_chuan,
+                             trang_thai=trang_thai, ghi_chu=ghi_chu)
+    except ValueError as e:
+        return _render_niches(request, user, loi=str(e))
+    finally:
+        conn.close()
+    _audit_danh_ba(user, f"sua ngach {ma}")
+    return _render_niches(request, user, bao=f"Saved {ma}.")
+
+
+def _alias_chung(request, ma, bi_danh, viec, ve):
+    user = _gate_danh_ba(request)
+    if not isinstance(user, dict):
+        return user
+    conn = danh_ba.ket_noi()
+    try:
+        if viec == "them":
+            danh_ba.them_bi_danh(conn, ma, bi_danh)
+        else:
+            danh_ba.xoa_bi_danh(conn, bi_danh)
+    except ValueError as e:
+        return ve(request, user, loi=str(e))
+    finally:
+        conn.close()
+    _audit_danh_ba(user, f"alias {viec} '{bi_danh}' cho {ma}")
+    return ve(request, user, bao=f"Alias updated for {ma}.")
+
+
+@app.post("/general/niches/alias", response_class=HTMLResponse)
+def nen_niches_alias(request: Request, ma: str = Form(...),
+                     bi_danh: str = Form(...), viec: str = Form("them")):
+    return _alias_chung(request, ma, bi_danh, viec, _render_niches)
+
+
+@app.post("/general/niches/link", response_class=HTMLResponse)
+def nen_niches_link(request: Request, ma: str = Form(...), khoa: str = Form("")):
+    user = _gate_danh_ba(request, chi_owner=True)
+    if not isinstance(user, dict):
+        return user
+    conn = danh_ba.ket_noi()
+    try:
+        danh_ba.dat_lien_ket(conn, ma, "niche-research", khoa)
+    finally:
+        conn.close()
+    _audit_danh_ba(user, f"lien ket niche-research {ma} = '{khoa}'")
+    return _render_niches(request, user, bao=f"Linked {ma}.")
+
+
+@app.post("/general/markets/create", response_class=HTMLResponse)
+def nen_markets_tao(request: Request, ten: str = Form(...), ngon_ngu: str = Form("")):
+    user = _gate_danh_ba(request)
+    if not isinstance(user, dict):
+        return user
+    conn = danh_ba.ket_noi()
+    try:
+        ma = danh_ba.them_thi_truong(conn, ten, ngon_ngu)
+    finally:
+        conn.close()
+    _audit_danh_ba(user, f"tao thi truong {ma}")
+    return _render_niches(request, user, bao=f"Created market {ma}.")
+
+
+@app.post("/general/markets/update", response_class=HTMLResponse)
+def nen_markets_sua(request: Request, ma: str = Form(...), ten: str = Form(...),
+                    ngon_ngu: str = Form("")):
+    user = _gate_danh_ba(request)
+    if not isinstance(user, dict):
+        return user
+    conn = danh_ba.ket_noi()
+    try:
+        danh_ba.sua_thuc_the(conn, "thi_truong", ma, ten=ten, ngon_ngu=ngon_ngu)
+    except ValueError as e:
+        return _render_niches(request, user, loi=str(e))
+    finally:
+        conn.close()
+    _audit_danh_ba(user, f"sua thi truong {ma}")
+    return _render_niches(request, user, bao=f"Saved {ma}.")
+
+
+def _render_channels(request, user, bao="", loi=""):
+    ds = danh_ba.doc_danh_muc()
+    ngach = [t for t in ds if t["loai"] == "ngach"]
+    tt = [t for t in ds if t["loai"] == "thi_truong"]
+    kenh = [t for t in ds if t["loai"] == "kenh"]
+    loc_ngach = request.query_params.get("ngach", "")
+    loc_tt = request.query_params.get("trang_thai", "")
+    ds_kenh = [k for k in kenh
+               if (not loc_ngach or k["ngach_ma"] == loc_ngach)
+               and (not loc_tt or k["trang_thai"] == loc_tt)]
+    ma_mo = request.query_params.get("ma", "")
+    chi_tiet = next((k for k in kenh if k["ma"] == ma_mo), None)
+    conn = iam.ket_noi()
+    try:
+        ds_nguoi = iam.liet_ke_nguoi(conn)
+    finally:
+        conn.close()
+    return templates.TemplateResponse(request, "nen_channels.html", {
+        "user": user, "trang": "channels", "la_owner": user["level"] >= 5,
+        "ds_ngach": ngach, "ds_tt": tt, "ds_kenh": ds_kenh, "ds_kenh_moi": kenh,
+        "chi_tiet": chi_tiet, "ds_loai": _LOAI_KENH, "ds_app": _APP_LIEN_KET,
+        "ds_nguoi": ds_nguoi, "tt_kenh": danh_ba.TRANG_THAI_KENH,
+        "ten_ngach": {n["ma"]: n["ten_chuan"] for n in ngach},
+        "ten_tt": {m["ma"]: m["ten_chuan"] for m in tt},
+        "loc_ngach": loc_ngach, "loc_tt": loc_tt, "bao": bao, "loi": loi})
+
+
+@app.get("/general/channels", response_class=HTMLResponse)
+def nen_channels(request: Request):
+    user = _gate_danh_ba(request)
+    if not isinstance(user, dict):
+        return user
+    return _render_channels(request, user)
+
+
+@app.get("/general/channels/export")
+def nen_channels_export(request: Request):
+    user = _gate_danh_ba(request)
+    if not isinstance(user, dict):
+        return user
+    return Response(danh_ba.xuat_csv(), media_type="text/csv; charset=utf-8",
+                    headers={"Content-Disposition":
+                             "attachment; filename=danh-ba.csv"})
+
+
+@app.post("/general/channels/create", response_class=HTMLResponse)
+def nen_channels_tao(request: Request, ten_chuan: str = Form(...),
+                     ngach_ma: str = Form(...), thi_truong_ma: str = Form(""),
+                     channel_id: str = Form(""), loai_kenh: str = Form(""),
+                     kenh_goc_ma: str = Form(""), phu_trach: str = Form(""),
+                     trang_thai: str = Form("uom_mam")):
+    user = _gate_danh_ba(request)
+    if not isinstance(user, dict):
+        return user
+    conn = danh_ba.ket_noi()
+    try:
+        ma = danh_ba.them_kenh(conn, ten_chuan, ngach_ma, thi_truong_ma,
+                               channel_id, loai_kenh, trang_thai, kenh_goc_ma,
+                               phu_trach, bo_phan_chu_quan=user.get("bo_phan", ""),
+                               nguoi_tao=user["ten"])
+    except Exception as e:
+        return _render_channels(request, user, loi=str(e))
+    finally:
+        conn.close()
+    _audit_danh_ba(user, f"tao kenh {ma} ({ten_chuan})")
+    return _render_channels(request, user, bao=f"Created channel {ma}.")
+
+
+@app.post("/general/channels/update", response_class=HTMLResponse)
+def nen_channels_sua(request: Request, ma: str = Form(...), ten_chuan: str = Form(...),
+                     channel_id: str = Form(""), ngach_ma: str = Form(...),
+                     thi_truong_ma: str = Form(""), loai_kenh: str = Form(""),
+                     kenh_goc_ma: str = Form(""), phu_trach: str = Form(""),
+                     ghi_chu: str = Form("")):
+    user = _gate_danh_ba(request)
+    if not isinstance(user, dict):
+        return user
+    conn = danh_ba.ket_noi()
+    try:
+        danh_ba.sua_thuc_the(conn, "kenh", ma, ten_chuan=ten_chuan,
+                             channel_id=channel_id, ngach_ma=ngach_ma,
+                             thi_truong_ma=thi_truong_ma or None,
+                             loai_kenh=loai_kenh, kenh_goc_ma=kenh_goc_ma or None,
+                             phu_trach=phu_trach, ghi_chu=ghi_chu)
+    except Exception as e:
+        return _render_channels(request, user, loi=str(e))
+    finally:
+        conn.close()
+    _audit_danh_ba(user, f"sua kenh {ma}")
+    return _render_channels(request, user, bao=f"Saved {ma}.")
+
+
+@app.post("/general/channels/trang-thai", response_class=HTMLResponse)
+def nen_channels_trang_thai(request: Request, ma: str = Form(...),
+                            trang_thai: str = Form(...)):
+    user = _gate_danh_ba(request)
+    if not isinstance(user, dict):
+        return user
+    conn = danh_ba.ket_noi()
+    try:
+        danh_ba.doi_trang_thai_kenh(conn, ma, trang_thai)
+    except ValueError as e:
+        return _render_channels(request, user, loi=str(e))
+    finally:
+        conn.close()
+    _audit_danh_ba(user, f"kenh {ma} -> {trang_thai}")
+    return _render_channels(request, user, bao=f"{ma} → {trang_thai}.")
+
+
+@app.post("/general/channels/alias", response_class=HTMLResponse)
+def nen_channels_alias(request: Request, ma: str = Form(...),
+                       bi_danh: str = Form(...), viec: str = Form("them")):
+    return _alias_chung(request, ma, bi_danh, viec, _render_channels)
+
+
+@app.post("/general/channels/link", response_class=HTMLResponse)
+def nen_channels_link(request: Request, ma: str = Form(...),
+                      app_slug: str = Form(...), khoa: str = Form("")):
+    user = _gate_danh_ba(request, chi_owner=True)
+    if not isinstance(user, dict):
+        return user
+    if app_slug not in _APP_LIEN_KET:
+        return _render_channels(request, user, loi="Unknown app.")
+    conn = danh_ba.ket_noi()
+    try:
+        danh_ba.dat_lien_ket(conn, ma, app_slug, khoa)
+    finally:
+        conn.close()
+    _audit_danh_ba(user, f"lien ket {app_slug} {ma} = '{khoa}'")
+    return _render_channels(request, user, bao=f"Linked {ma}.")
+
+
+@app.post("/general/channels/khai-tu", response_class=HTMLResponse)
+def nen_channels_khai_tu(request: Request, ma: str = Form(...),
+                         go_lai: str = Form("")):
+    user = _gate_danh_ba(request, chi_owner=True)
+    if not isinstance(user, dict):
+        return user
+    if go_lai.strip() != ma:
+        return _render_channels(request, user,
+                                loi="Retype the exact channel code to retire.")
+    conn = danh_ba.ket_noi()
+    try:
+        danh_ba.khai_tu_kenh(conn, ma)
+    except ValueError as e:
+        return _render_channels(request, user, loi=str(e))
+    finally:
+        conn.close()
+    _audit_danh_ba(user, f"KHAI TU kenh {ma}")
+    return _render_channels(request, user, bao=f"Retired {ma}.")
+
+
 # --- Trang cũ nghỉ hưu → redirect (giữ 1 nhịp chuyển tiếp, UI_FLOW.md mục 5) ---
 
 @app.get("/suc-khoe")

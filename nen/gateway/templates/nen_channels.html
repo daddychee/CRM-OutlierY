@@ -1,0 +1,106 @@
+{% extends "nen_base.html" %}
+{% block tieu_de %}Channels{% endblock %}
+{% block noi_dung %}
+<h2>Channels</h2>
+<form class="dong" method="get" action="/general/channels" style="margin-bottom:10px">
+  <select name="ngach"><option value="">Niche: All</option>
+    {% for n in ds_ngach %}<option value="{{ n.ma }}" {% if n.ma == loc_ngach %}selected{% endif %}>{{ n.ten_chuan }}</option>{% endfor %}</select>
+  <select name="trang_thai"><option value="">Lifecycle: All</option>
+    {% for tt in tt_kenh %}<option value="{{ tt }}" {% if tt == loc_tt %}selected{% endif %}>{{ tt }}</option>{% endfor %}</select>
+  <button>Filter</button>
+  <a href="/general/channels/export" style="margin-left:8px">Export CSV</a>
+</form>
+<table>
+  <tr><th>Code</th><th>Name</th><th>YouTube ID</th><th>Niche</th><th>Market</th><th>Type</th>
+      <th>Lifecycle</th><th>Owner (People)</th><th>Created</th><th></th></tr>
+  {% for k in ds_kenh %}
+  <tr>
+    <td><b>{{ k.ma }}</b></td>
+    <td>{{ k.ten_chuan }}{% if k.kenh_goc_ma %} <span class="phu">clone of {{ k.kenh_goc_ma }}</span>{% endif %}</td>
+    <td>{% if k.channel_id %}<code>{{ k.channel_id }}</code>{% else %}<span class="phu">—</span>{% endif %}</td>
+    <td>{{ ten_ngach.get(k.ngach_ma, k.ngach_ma) }}</td>
+    <td>{{ ten_tt.get(k.thi_truong_ma, '—') }}</td>
+    <td>{{ k.loai_kenh or '—' }}</td>
+    <td>{{ k.trang_thai }}</td>
+    <td>{% if k.phu_trach %}{{ k.phu_trach }}{% else %}<span class="loi">chưa gán</span>{% endif %}</td>
+    <td class="phu">{{ k.tao_luc[:10] }}</td>
+    <td><a href="/general/channels?ma={{ k.ma }}">open</a></td>
+  </tr>
+  {% else %}
+  <tr><td colspan="10" class="phu">No channels{% if loc_ngach or loc_tt %} matching filter{% endif %}.</td></tr>
+  {% endfor %}
+</table>
+
+{% if chi_tiet %}
+<h2>Channel — {{ chi_tiet.ma }} · {{ chi_tiet.ten_chuan }}</h2>
+<div class="khoi">
+  <form class="dong" method="post" action="/general/channels/trang-thai">
+    <input type="hidden" name="ma" value="{{ chi_tiet.ma }}">
+    {% for tt in tt_kenh %}
+    <button name="trang_thai" value="{{ tt }}" {% if tt == chi_tiet.trang_thai %}disabled style="font-weight:700"{% endif %}>{{ tt }}</button>
+    {% endfor %}
+  </form>
+  <form class="dong" method="post" action="/general/channels/update" style="margin-top:10px">
+    <input type="hidden" name="ma" value="{{ chi_tiet.ma }}">
+    <input name="ten_chuan" value="{{ chi_tiet.ten_chuan }}" required>
+    <input name="channel_id" value="{{ chi_tiet.channel_id or '' }}" placeholder="UC…">
+    <select name="ngach_ma">{% for n in ds_ngach %}<option value="{{ n.ma }}" {% if n.ma == chi_tiet.ngach_ma %}selected{% endif %}>{{ n.ten_chuan }}</option>{% endfor %}</select>
+    <select name="thi_truong_ma"><option value="">market —</option>
+      {% for m in ds_tt %}<option value="{{ m.ma }}" {% if m.ma == chi_tiet.thi_truong_ma %}selected{% endif %}>{{ m.ten_chuan }}</option>{% endfor %}</select>
+    <select name="loai_kenh"><option value="">type —</option>
+      {% for lk in ds_loai %}<option value="{{ lk }}" {% if lk == chi_tiet.loai_kenh %}selected{% endif %}>{{ lk }}</option>{% endfor %}</select>
+    <select name="kenh_goc_ma"><option value="">clone of —</option>
+      {% for k in ds_kenh_moi if k.ma != chi_tiet.ma %}<option value="{{ k.ma }}" {% if k.ma == chi_tiet.kenh_goc_ma %}selected{% endif %}>{{ k.ma }}</option>{% endfor %}</select>
+    <select name="phu_trach"><option value="">owner —</option>
+      {% for ns in ds_nguoi %}<option value="{{ ns.ma }}" {% if ns.ma == chi_tiet.phu_trach %}selected{% endif %}>{{ ns.ma }} · {{ ns.ho_ten }}</option>{% endfor %}</select>
+    <input name="ghi_chu" value="{{ chi_tiet.ghi_chu }}" placeholder="note">
+    <button>Save</button>
+  </form>
+  <form class="dong" method="post" action="/general/channels/alias" style="margin-top:8px">
+    <input type="hidden" name="ma" value="{{ chi_tiet.ma }}">
+    {% for a in chi_tiet.bi_danh.split(';') if a %}<code>{{ a }}</code> {% endfor %}
+    <input name="bi_danh" placeholder="alias" required>
+    <button name="viec" value="them">+ alias</button>
+    <button name="viec" value="xoa">− alias</button>
+  </form>
+  {% if la_owner %}
+  <form class="dong" method="post" action="/general/channels/link" style="margin-top:8px">
+    <input type="hidden" name="ma" value="{{ chi_tiet.ma }}">
+    <select name="app_slug">{% for a in ds_app %}<option>{{ a }}</option>{% endfor %}</select>
+    <input name="khoa" placeholder="key in app (empty = unlink)">
+    <button>Link app</button>
+  </form>
+  <p style="margin:6px 0 0">{% for slug, khoa in chi_tiet.lien_ket.items() %}<code>{{ slug }}: {{ khoa }}</code> {% endfor %}</p>
+  <form class="dong" method="post" action="/general/channels/khai-tu" style="margin-top:10px">
+    <input type="hidden" name="ma" value="{{ chi_tiet.ma }}">
+    <input name="go_lai" placeholder="retype code to retire" required>
+    <button>Retire channel</button>
+  </form>
+  {% endif %}
+</div>
+{% endif %}
+
+<div class="khoi">
+  <details {% if not ds_kenh and not chi_tiet %}open{% endif %}><summary style="cursor:pointer"><b>+ New channel</b></summary>
+  {% if not ds_ngach %}
+  <p class="phu" style="margin-top:8px">Create a <a href="/general/niches">niche</a> first — every channel belongs to one.</p>
+  {% else %}
+  <form class="dong" method="post" action="/general/channels/create" style="margin-top:8px">
+    <select name="ngach_ma" required>{% for n in ds_ngach %}<option value="{{ n.ma }}">{{ n.ten_chuan }}</option>{% endfor %}</select>
+    <select name="thi_truong_ma"><option value="">market —</option>
+      {% for m in ds_tt %}<option value="{{ m.ma }}">{{ m.ten_chuan }}</option>{% endfor %}</select>
+    <input name="ten_chuan" placeholder="display name" required>
+    <input name="channel_id" placeholder="UC… (optional)">
+    <select name="loai_kenh"><option value="">type —</option>
+      {% for lk in ds_loai %}<option value="{{ lk }}">{{ lk }}</option>{% endfor %}</select>
+    <select name="kenh_goc_ma"><option value="">clone of —</option>
+      {% for k in ds_kenh_moi %}<option value="{{ k.ma }}">{{ k.ma }}</option>{% endfor %}</select>
+    <select name="phu_trach"><option value="">owner —</option>
+      {% for ns in ds_nguoi %}<option value="{{ ns.ma }}">{{ ns.ma }} · {{ ns.ho_ten }}</option>{% endfor %}</select>
+    <select name="trang_thai"><option>uom_mam</option><option>sandbox</option></select>
+    <button>Create channel</button>
+  </form>
+  {% endif %}
+  </details>
+</div>
+{% endblock %}

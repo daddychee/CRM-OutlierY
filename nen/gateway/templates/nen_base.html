@@ -55,6 +55,10 @@
   {% if la_owner %}<a href="/general" class="{% if trang == 'tong-quan' %}active{% endif %}">Overview</a>{% endif %}
   {% if la_owner %}<a href="/general/accounts" class="{% if trang == 'tai-khoan' %}active{% endif %}">Accounts</a>{% endif %}
   <a href="/general/people" class="{% if trang == 'nhan-su' %}active{% endif %}">People</a>
+  {% if user.level >= 4 %}
+  <a href="/general/niches" class="{% if trang == 'niches' %}active{% endif %}">Niches</a>
+  <a href="/general/channels" class="{% if trang == 'channels' %}active{% endif %}">Channels</a>
+  {% endif %}
   {% if la_owner %}
   <a href="/general/permissions" class="{% if trang == 'phan-quyen' %}active{% endif %}">Permissions</a>
   <a href="/general/ai-models" class="{% if trang == 'cau-hinh' %}active{% endif %}">AI Models</a>
