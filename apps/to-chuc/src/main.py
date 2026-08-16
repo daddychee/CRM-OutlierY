@@ -59,7 +59,9 @@ from src.kpi import tong_hop_kpi                         # noqa: E402
 
 PHIEN_BAN = "2.0.0"
 app = FastAPI(title="Tổ chức v2")
-templates = Jinja2Templates(directory=str(_APP_DIR / "src" / "templates"))
+from nen.common.sidebar import ctx_sidebar  # noqa: E402 — cờ sidebar UI_FLOW.md mục 2
+templates = Jinja2Templates(directory=str(_APP_DIR / "src" / "templates"),
+                            context_processors=[ctx_sidebar])
 
 
 # ---------- claims (thay auth hệ cũ) ----------

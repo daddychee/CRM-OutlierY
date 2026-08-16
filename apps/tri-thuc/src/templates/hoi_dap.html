@@ -206,14 +206,14 @@
       <a class="nav-item" href="/app/{{ a.slug }}">{% include "_icon_app.html" %} {{ a.ten }}</a>
       {% endfor %}
       {% if sb_da %}
-      <a class="nav-item" href="/chan-doan">
+      <a class="nav-item" href="/app/data-analytics/chan-doan">
         <svg class="ic" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15l3-4 3 3 4-6"/></svg> Data Analytics</a>
       {% endif %}
       {% for a in sb_apps if a.slug == 'niche' %}
       <a class="nav-item" href="/app/{{ a.slug }}">{% include "_icon_app.html" %} {{ a.ten }}</a>
       {% endfor %}
       {% if sb_nas %}
-      <a class="nav-item" href="/nas">
+      <a class="nav-item" href="/app/to-chuc/nas">
         <svg class="ic" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="6" rx="1"/><rect x="3" y="13" width="18" height="6" rx="1"/><circle cx="7" cy="8" r=".9"/><circle cx="7" cy="16" r=".9"/></svg> NAS công ty</a>
       {% endif %}
 
@@ -242,7 +242,7 @@
     <div class="pane" id="pane-mon">
       {% if can_upload %}
       <div class="sb-label">Quản trị (Manager+)</div>
-      <a class="nav-item" href="/">
+      <a class="nav-item" href="/app/tri-thuc/">
         <svg class="ic" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg> Datafeed</a>
       <a class="nav-item" href="/kho-thieu">
         <svg class="ic" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h4"/></svg> Kho cần bổ sung</a>
@@ -253,7 +253,7 @@
       {% endif %}
       {% if sb_ns %}
       <div class="sb-label">Nhân sự</div>
-      <a class="nav-item" href="/nhan-su">
+      <a class="nav-item" href="/quan-tri">
         <svg class="ic" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg> Nhân sự</a>
       {% endif %}
     </div>
@@ -267,17 +267,19 @@
       <a class="nav-item" href="/giam-sat">
         <svg class="ic" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg> Hoạt động team</a>
       {# Trang User gộp luôn duyệt hồ sơ nhân sự (31/07/2026) — badge = số chờ #}
-      <a class="nav-item" href="/quan-ly-user">
+      <a class="nav-item" href="/quan-tri">
         <svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg> User
         {% if sb_cho_duyet %}<span style="margin-left:auto;font-size:10.5px;background:var(--th-16263f);color:var(--accent);border-radius:999px;padding:1px 7px" title="{{ sb_cho_duyet }} hồ sơ nhân sự chờ duyệt">{{ sb_cho_duyet }}</span>{% endif %}</a>
       {% if not lite %}
-      <a class="nav-item" href="/vault">
+      <a class="nav-item" href="/app/to-chuc/vault">
         <svg class="ic" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Vault</a>
       {% endif %}
-      <a class="nav-item" href="/phan-quyen">
+      <a class="nav-item" href="/quan-tri">
         <svg class="ic" viewBox="0 0 24 24"><path d="M9 11l3 3 8-8"/><path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/></svg> Phân quyền</a>
       <a class="nav-item" href="/cai-dat">
         <svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.01a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.01a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.01a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> Setting</a>
+      <a class="nav-item{% if request.url.path == '/suc-khoe' %} active{% endif %}" href="/suc-khoe">
+        <svg class="ic" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg> Sức khỏe hệ</a>
       </div>
       <button type="button" class="nav-item" id="sb-mgmt-nut" aria-expanded="false">
         <svg class="ic" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg> Management
@@ -297,7 +299,7 @@
       <div class="userinfo">
         <span class="who">{{ user.ten }}</span><span>· {{ user.bo_phan }} · {{ level_chu }}</span>
         <a href="/doi-mat-khau" style="color:var(--th-9aa5b5)" title="Đổi mật khẩu đăng nhập của chính bạn (cần mật khẩu hiện tại)">Đổi mật khẩu</a>
-        <a href="/dang-xuat">Đăng xuất</a>
+        <a href="/logout">Đăng xuất</a>
       </div>
       {% endif %}
     </div>

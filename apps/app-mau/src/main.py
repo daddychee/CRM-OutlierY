@@ -24,6 +24,7 @@ async def trang_chu(request: Request):
     user = request.headers.get("x-remote-user", "(không có — gọi thẳng không qua gateway?)")
     vai = request.headers.get("x-remote-role", "(không có)")
     level = request.headers.get("x-remote-level", "(không có)")
+    apps_vao = request.headers.get("x-remote-apps", "(không có)")
     return f"""<!doctype html><html lang="vi"><head><meta charset="utf-8">
 <title>App mẫu</title></head>
 <body style="font-family:system-ui;max-width:560px;margin:48px auto;line-height:1.7">
@@ -32,6 +33,7 @@ async def trang_chu(request: Request):
 <ul>
 <li>Người dùng: <b>{user}</b></li>
 <li>Vai: <b>{vai}</b> · Level: <b>{level}</b></li>
+<li>Được vào app: <b>{apps_vao}</b> (X-Remote-Apps — sidebar dựng từ đây)</li>
 </ul>
 <p style="color:#777;font-size:13px">Nếu bạn thấy tên thật của mình ở trên nghĩa là:
 đăng nhập một lần ở gateway → mọi app phía sau tự biết bạn là ai. Header giả gửi từ

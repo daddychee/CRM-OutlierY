@@ -45,7 +45,9 @@ from src.diagnosis_engine import (chan_doan, chan_doan_kenh, chan_doan_toan_bo, 
 
 PHIEN_BAN = "2.0.0"
 app = FastAPI(title="Data Analytics v2")
-templates = Jinja2Templates(directory=str(_APP_DIR / "src" / "templates"))
+from nen.common.sidebar import ctx_sidebar  # noqa: E402 — cờ sidebar UI_FLOW.md mục 2
+templates = Jinja2Templates(directory=str(_APP_DIR / "src" / "templates"),
+                            context_processors=[ctx_sidebar])
 
 
 @app.on_event("startup")

@@ -184,13 +184,15 @@ def _user_tu_headers(request: Request) -> dict | None:
 def _ctx_outliery(request: Request) -> dict:
     """Context processor: bơm ngữ cảnh khung OUTLIERY (user + recents sidebar) cho MỌI
     template extends base.html — KHÔNG raise (lỗi phụ → khung tối giản, không vỡ trang).
-    V2: app phụ nhúng / Data Analytics / Nhân sự / NAS thuộc gateway & app khác →
-    các cờ sidebar tương ứng tắt hẳn (sb_apps rỗng, sb_da/sb_ns/sb_nas False)."""
+    Cờ sidebar theo UI_FLOW.md mục 2: GATEWAY quyết user thấy app nào qua claims
+    X-Remote-Apps (danh sách slug + cờ 'nas' khi đã cấu hình) — app KHÔNG tự đoán
+    quyền. App phụ chưa di trú (RadarY…) ẩn hẳn nên sb_apps luôn rỗng (chốt 16/08)."""
     user = _user_tu_headers(request)
     if user is None:
         return {"sb_user": None, "sb_phien": [], "sb_level_chu": "", "lite": False,
                 "sb_apps": [], "sb_da": False, "sb_ns": False, "sb_cho_duyet": 0,
                 "sb_nas": False}
+    apps_vao = [s for s in (request.headers.get("x-remote-apps") or "").split(",") if s]
     phien = []
     # /hoi-dap tự truyền cac_phien_sidebar riêng — tính lại ở đây là phí 1 lượt Qdrant
     if user.get("bo_phan") and request.url.path != "/hoi-dap":
@@ -199,8 +201,9 @@ def _ctx_outliery(request: Request) -> dict:
         except Exception:
             phien = []
     return {"sb_user": user, "sb_phien": phien, "sb_level_chu": ten_level(user["level"]),
-            "lite": False, "sb_apps": [], "sb_da": False, "sb_ns": False,
-            "sb_cho_duyet": 0, "sb_nas": False}
+            "lite": False, "sb_apps": [], "sb_da": "data-analytics" in apps_vao,
+            "sb_ns": "quan-tri" in apps_vao, "sb_cho_duyet": 0,
+            "sb_nas": "nas" in apps_vao}
 
 
 templates = Jinja2Templates(directory=str(Path(__file__).parent / "templates"),

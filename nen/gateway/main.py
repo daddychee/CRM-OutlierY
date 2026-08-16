@@ -34,6 +34,12 @@ PHIEN_TTL = 30 * 24 * 3600  # 30 ngày, như hệ cũ
 
 app = FastAPI(title="OUTLIERY Gateway v2")
 templates = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
+# /static dùng chung cả hệ (font Inter/Space Grotesk, theme.js, markdown.js) —
+# bản CHUẨN ở nen/gateway/static; app nào cần bản riêng thì khai /static trong
+# tien_to như tri-thuc. Thiếu mount này là DA/to-chuc mất font (đo 16/08).
+from fastapi.staticfiles import StaticFiles  # noqa: E402
+app.mount("/static", StaticFiles(directory=str(Path(__file__).parent / "static")),
+          name="static")
 _ky = URLSafeTimedSerializer(SESSION_SECRET, salt="phien-v2")
 
 
@@ -151,22 +157,14 @@ def doi_mk_gui(request: Request, mk_moi: str = Form(""), mk_lai: str = Form(""))
     return RedirectResponse("/", status_code=303)
 
 
-@app.get("/", response_class=HTMLResponse)
+@app.get("/")
 def trang_chu(request: Request):
+    # UI_FLOW.md mục 1: đăng nhập xong vào THẲNG Hỏi–đáp như V1. Trang "bảng chọn
+    # app" đã XÓA HẲN (Owner chốt 16/08) — mọi điều hướng qua sidebar.
     user = _kiem(request)
     if isinstance(user, RedirectResponse):
         return user
-    conn = iam.ket_noi()
-    try:
-        apps_thay = [a for a in doc_hop_dong()
-                     if iam.co_quyen(user, "vao", a["slug"], conn)]
-        duoc_quan_tri = iam.co_quyen(user, "quan_tai_khoan", conn=conn)
-    finally:
-        conn.close()
-    return templates.TemplateResponse(
-        request, "trangchu.html",
-        {"user": user, "vai": iam.vai_cho_app(user, "*"), "apps": apps_thay,
-         "duoc_quan_tri": duoc_quan_tri})
+    return RedirectResponse("/app/tri-thuc/hoi-dap", status_code=303)
 
 
 @app.get("/suc-khoe", response_class=HTMLResponse)
@@ -391,14 +389,26 @@ async def proxy_app(request: Request, slug: str, duong_dan: str):
         route nóng nhất, tuyệt đối không block loop (đo thật load test 16/08)."""
         u = user_hien_tai(request)
         if not u:
-            return None, None, False
+            return None, None, False, []
         conn2 = iam.ket_noi()
         try:
-            return u, tim_app(slug), iam.co_quyen(u, "vao", slug, conn2)
+            # Danh sách slug user được vào → claims X-Remote-Apps cho sidebar
+            # (UI_FLOW.md mục 2). 'nas' là CỜ phụ: chỉ phát khi đã cấu hình
+            # NAS_DUONG_DAN (luật V1: mục NAS ẩn tới khi cấu hình).
+            duoc = [a["slug"] for a in doc_hop_dong()
+                    if iam.co_quyen(u, "vao", a["slug"], conn2)]
+            if "to-chuc" in duoc and os.getenv("NAS_DUONG_DAN", "").strip():
+                duoc.append("nas")
+            # Cờ 'quan-tri': ai mở được trang quản trị IAM (Owner / Admin ủy
+            # quyền) thì sidebar mới hiện mục Nhân sự / User (UI_FLOW.md mục 2).
+            if iam.co_quyen(u, "duyet_ho_so", conn=conn2) or \
+               iam.co_quyen(u, "quan_tai_khoan", conn=conn2):
+                duoc.append("quan-tri")
+            return u, tim_app(slug), slug in duoc, duoc
         finally:
             conn2.close()
 
-    user, muc, duoc_vao = await run_in_threadpool(_auth_va_quyen)
+    user, muc, duoc_vao, apps_duoc_vao = await run_in_threadpool(_auth_va_quyen)
     if not user:
         if "text/html" in (request.headers.get("accept") or ""):
             return _ve_login()
@@ -413,4 +423,4 @@ async def proxy_app(request: Request, slug: str, duong_dan: str):
         request, cong=muc["cong"], goc=f"/app/{slug}", duong_dan=duong_dan,
         ten_user=user["ten"], tien_to_app=muc.get("tien_to", []),
         vai=iam.vai_cho_app(user, slug), level=user["level"],
-        bo_phan=user.get("bo_phan", ""))
+        bo_phan=user.get("bo_phan", ""), apps_duoc_vao=apps_duoc_vao)

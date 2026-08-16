@@ -90,11 +90,12 @@ def test_dang_nhap_sai_401(client):
 
 
 def test_dang_nhap_dung_vao_trang_chu(client):
+    # UI_FLOW.md mục 1: đăng nhập xong vào THẲNG Hỏi–đáp như V1 — trang
+    # "bảng chọn app" đã xóa hẳn (Owner chốt 16/08/2026).
     assert _login(client).status_code == 303
     r = client.get("/")
-    assert r.status_code == 200
-    assert "App mẫu" in r.text            # menu từ hợp đồng app
-    assert "owner-test" in r.text
+    assert r.status_code == 303
+    assert r.headers["location"] == "/app/tri-thuc/hoi-dap"
 
 
 def test_dang_xuat_mat_phien(client):
@@ -128,9 +129,12 @@ def test_phai_doi_mk_bi_ep_sang_trang_doi(client, iam_db):
     r = client.get("/")
     assert r.status_code == 303
     assert r.headers["location"] == "/doi-mat-khau"
-    # đổi xong thì vào được
+    # đổi xong thì vào được — "/" giờ 303 sang Hỏi–đáp (UI_FLOW.md mục 1),
+    # không còn bị ép về /doi-mat-khau nữa
     client.post("/doi-mat-khau", data={"mk_moi": "mk-moi-6", "mk_lai": "mk-moi-6"})
-    assert client.get("/").status_code == 200
+    r = client.get("/")
+    assert r.status_code == 303
+    assert r.headers["location"] == "/app/tri-thuc/hoi-dap"
 
 
 # ---------- trang quản trị ----------
@@ -179,6 +183,18 @@ def test_proxy_tiem_claims_va_vut_header_gia(client, app_mau_server):
     assert "owner-test" in r.text        # claims thật từ session gateway
     assert "hacker" not in r.text        # header giả không lọt qua
     assert "owner" in r.text             # vai theo phan_quyen.json
+
+
+def test_proxy_phat_x_remote_apps(client, app_mau_server):
+    """UI_FLOW.md mục 2: gateway phát danh sách app user được vào qua
+    X-Remote-Apps — sidebar các app dựng từ claims này, không tự đoán quyền.
+    Header giả từ trình duyệt phải bị vứt (nằm trong _HEADER_CAM)."""
+    _login(client)
+    r = client.get("/app/app-mau/", headers={"X-Remote-Apps": "vault,gia-mao"})
+    assert r.status_code == 200
+    assert "gia-mao" not in r.text                    # header giả bị vứt
+    assert "app-mau" in r.text                        # owner vào được app-mau
+    assert "quan-tri" in r.text                       # owner mở được trang quản trị
 
 
 def test_proxy_health_qua_gateway(client, app_mau_server):
