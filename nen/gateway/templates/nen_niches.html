@@ -1,80 +1,177 @@
 {% extends "nen_base.html" %}
 {% block tieu_de %}Niches{% endblock %}
 {% block noi_dung %}
+{# Bám mockup ĐÃ DUYỆT docs/mockup-de/niches.html (ô N1 + M1): bảng niche kèm CHIP
+   kênh, modal "+ New niche", bảng Markets có số kênh. Route/field/quyền GIỮ NGUYÊN
+   — chỉ đổi lớp trình bày. Lọc: tìm kiếm + trạng thái làm CLIENT-SIDE (không đụng
+   backend); mọi thao tác ghi vẫn POST đúng đường cũ. #}
+{% set nhan_tt = {'khai_thac': 'Exploiting', 'thu': 'Testing', 'nghi': 'Paused'} %}
+
 <h2>Niches</h2>
-<table>
+<div class="toolbar">
+  <input id="q-niche" type="search" placeholder="Search name / code / alias" size="26">
+  <select id="loc-tt-niche">
+    <option value="">Status: All</option>
+    {% for tt in tt_ngach %}<option value="{{ tt }}">{{ nhan_tt.get(tt, tt) }}</option>{% endfor %}
+  </select>
+  <span class="day"></span>
+  <button type="button" data-mo="md-niche">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> New niche</button>
+</div>
+<table id="bang-niche">
   <tr><th>Code</th><th>Name</th><th>Channels</th><th>Niche Research</th><th>Aliases</th>
       <th>Status</th><th>Created</th><th></th></tr>
   {% for n in ds_ngach %}
-  <tr>
+  <tr data-tim="{{ (n.ma ~ ' ' ~ n.ten_chuan ~ ' ' ~ n.bi_danh) | lower }}" data-tt="{{ n.trang_thai }}">
     <td><b>{{ n.ma }}</b></td><td>{{ n.ten_chuan }}</td>
-    <td>{% for k in n.kenh_con %}<a href="/general/channels?ngach={{ n.ma }}"><code>{{ k }}</code></a> {% else %}<span class="phu">0</span>{% endfor %}</td>
-    <td>{% if n.lien_ket.get('niche-research') %}<code>{{ n.lien_ket['niche-research'] }}</code>{% else %}<span class="phu">—</span>{% endif %}</td>
-    <td>{% for a in n.bi_danh.split(';') if a %}<code>{{ a }}</code> {% endfor %}</td>
-    <td>{{ n.trang_thai }}</td><td class="phu">{{ n.tao_luc[:10] }}</td>
-    <td>
-      <details style="display:inline"><summary style="cursor:pointer">edit</summary>
-        <form class="dong" method="post" action="/general/niches/update" style="margin-top:6px">
-          <input type="hidden" name="ma" value="{{ n.ma }}">
-          <input name="ten_chuan" value="{{ n.ten_chuan }}" required>
-          <select name="trang_thai">{% for tt in tt_ngach %}<option value="{{ tt }}" {% if tt == n.trang_thai %}selected{% endif %}>{{ tt }}</option>{% endfor %}</select>
-          <input name="ghi_chu" value="{{ n.ghi_chu }}" placeholder="note">
-          <button>Save</button>
-        </form>
-        <form class="dong" method="post" action="/general/niches/alias" style="margin-top:6px">
-          <input type="hidden" name="ma" value="{{ n.ma }}">
-          <input name="bi_danh" placeholder="alias" required>
-          <button name="viec" value="them">+ alias</button>
-          <button name="viec" value="xoa">− alias</button>
-        </form>
-        {% if la_owner %}
-        <form class="dong" method="post" action="/general/niches/link" style="margin-top:6px">
-          <input type="hidden" name="ma" value="{{ n.ma }}">
-          <input name="khoa" value="{{ n.lien_ket.get('niche-research','') }}" placeholder="Niche Research project">
-          <button>Link</button>
-        </form>
-        {% endif %}
-      </details>
-    </td>
+    <td>{% for k in n.kenh_con %}<a class="chip-o" href="/general/channels?ngach={{ n.ma }}">{{ k }}</a>{% else %}<span class="badge">0 channels</span>{% endfor %}</td>
+    <td>{% if n.lien_ket.get('niche-research') %}<span class="chip-o">{{ n.lien_ket['niche-research'] }}</span>{% else %}<span class="badge">not linked</span>{% endif %}</td>
+    <td>{% for a in n.bi_danh.split(';') if a %}<span class="chip-o">{{ a }}</span>{% endfor %}</td>
+    <td>{% if n.trang_thai == 'khai_thac' %}<span class="badge ok">{{ nhan_tt['khai_thac'] }}</span>
+        {% elif n.trang_thai == 'thu' %}<span class="badge warn">{{ nhan_tt['thu'] }}</span>
+        {% else %}<span class="badge">{{ nhan_tt.get(n.trang_thai, n.trang_thai) }}</span>{% endif %}</td>
+    <td class="phu">{{ n.tao_luc[:10] }}</td>
+    <td><button type="button" class="phu" style="padding:2px 9px"
+        data-mo="md-niche" data-ma="{{ n.ma }}" data-ten="{{ n.ten_chuan }}"
+        data-tt="{{ n.trang_thai }}" data-ghi="{{ n.ghi_chu }}"
+        data-link="{{ n.lien_ket.get('niche-research','') }}">Edit</button></td>
   </tr>
   {% else %}
   <tr><td colspan="8" class="phu">No niches yet — a niche must exist before its channels.</td></tr>
   {% endfor %}
 </table>
 
-<div class="khoi">
-  <details {% if not ds_ngach %}open{% endif %}><summary style="cursor:pointer"><b>+ New niche</b></summary>
-  <form class="dong" method="post" action="/general/niches/create" style="margin-top:8px">
-    <input name="ten_chuan" placeholder="name" required>
-    <select name="trang_thai">{% for tt in tt_ngach %}<option value="{{ tt }}">{{ tt }}</option>{% endfor %}</select>
-    <input name="ghi_chu" placeholder="note">
-    <button>Create niche</button>
-  </form>
-  </details>
-</div>
-
 <h2>Markets</h2>
 <table>
-  <tr><th>Code</th><th>Market</th><th>Language</th><th>Created</th><th></th></tr>
+  <tr><th>Code</th><th>Market</th><th>Language</th><th>Channels</th><th>Created</th><th></th></tr>
   {% for m in ds_tt %}
-  <tr><td><b>{{ m.ma }}</b></td><td>{{ m.ten_chuan }}</td><td>{{ m.ngon_ngu }}</td>
+  <tr><td><b>{{ m.ma }}</b></td><td>{{ m.ten_chuan }}</td><td>{{ m.ngon_ngu or '—' }}</td>
+      <td>{{ so_kenh_tt.get(m.ma, 0) }}</td>
       <td class="phu">{{ m.tao_luc[:10] }}</td>
-      <td><details style="display:inline"><summary style="cursor:pointer">edit</summary>
-        <form class="dong" method="post" action="/general/markets/update" style="margin-top:6px">
-          <input type="hidden" name="ma" value="{{ m.ma }}">
-          <input name="ten" value="{{ m.ten_chuan }}" required>
-          <input name="ngon_ngu" value="{{ m.ngon_ngu }}" placeholder="language">
-          <button>Save</button>
-        </form></details></td></tr>
+      <td><button type="button" class="phu" style="padding:2px 9px" data-mo="md-market"
+          data-ma="{{ m.ma }}" data-ten="{{ m.ten_chuan }}" data-ngon-ngu="{{ m.ngon_ngu }}">Edit</button></td></tr>
   {% else %}
-  <tr><td colspan="5" class="phu">No markets yet.</td></tr>
+  <tr><td colspan="6" class="phu">No markets yet.</td></tr>
   {% endfor %}
 </table>
-<div class="khoi">
-  <form class="dong" method="post" action="/general/markets/create">
-    <input name="ten" placeholder="market (e.g. US)" required>
-    <input name="ngon_ngu" placeholder="language (e.g. English)">
-    <button>Create market</button>
-  </form>
+<div class="toolbar" style="margin-top:10px">
+  <button type="button" class="phu" data-mo="md-market">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> New market</button>
 </div>
+
+{# ===== MODAL niche: tạo (create) hoặc sửa (update) — cùng khuôn field cũ ===== #}
+<div class="modal-bg" id="md-niche">
+  <div class="modal">
+    <h3><span id="md-niche-tieu">New niche</span>
+      <button type="button" class="dong-x" data-dong="md-niche" aria-label="Close">✕</button></h3>
+    <form method="post" id="f-niche" action="/general/niches/create">
+      <input type="hidden" name="ma" id="f-niche-ma" disabled>
+      <div class="form-grid">
+        <div><label>Name</label><input name="ten_chuan" id="f-niche-ten" required></div>
+        <div><label>Status</label><select name="trang_thai" id="f-niche-tt">
+          {% for tt in tt_ngach %}<option value="{{ tt }}">{{ nhan_tt.get(tt, tt) }}</option>{% endfor %}
+        </select></div>
+        <div><label>Note</label><input name="ghi_chu" id="f-niche-ghi"></div>
+      </div>
+      <div style="margin-top:14px"><button>Save niche</button>
+        <button type="button" class="phu" data-dong="md-niche">Cancel</button></div>
+    </form>
+    <div id="md-niche-them" hidden>
+      <h3 style="margin-top:16px">Aliases</h3>
+      <form class="dong" method="post" action="/general/niches/alias">
+        <input type="hidden" name="ma" class="f-ma-phu">
+        <input name="bi_danh" placeholder="alias" required>
+        <button name="viec" value="them">Add</button>
+        <button name="viec" value="xoa" class="phu">Remove</button>
+      </form>
+      {% if la_owner %}
+      <h3 style="margin-top:16px">Niche Research link</h3>
+      <form class="dong" method="post" action="/general/niches/link">
+        <input type="hidden" name="ma" class="f-ma-phu">
+        <input name="khoa" id="f-niche-link" placeholder="project key (empty = unlink)">
+        <button>Link</button>
+      </form>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+{# ===== MODAL market ===== #}
+<div class="modal-bg" id="md-market">
+  <div class="modal">
+    <h3><span id="md-market-tieu">New market</span>
+      <button type="button" class="dong-x" data-dong="md-market" aria-label="Close">✕</button></h3>
+    <form method="post" id="f-market" action="/general/markets/create">
+      <input type="hidden" name="ma" id="f-market-ma" disabled>
+      <div class="form-grid">
+        <div><label>Market</label><input name="ten" id="f-market-ten" required></div>
+        <div><label>Language</label><input name="ngon_ngu" id="f-market-nn"></div>
+      </div>
+      <div style="margin-top:14px"><button>Save market</button>
+        <button type="button" class="phu" data-dong="md-market">Cancel</button></div>
+    </form>
+  </div>
+</div>
+
+<script>
+// JS THUẦN (chạy được trên HTTP LAN — không API secure-context-only).
+(function () {
+  function mo(id) { document.getElementById(id).classList.add('show'); }
+  function dong(id) { document.getElementById(id).classList.remove('show'); }
+
+  document.querySelectorAll('[data-mo]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var id = b.dataset.mo, ma = b.dataset.ma || '';
+      if (id === 'md-niche') {
+        var f = document.getElementById('f-niche');
+        f.action = ma ? '/general/niches/update' : '/general/niches/create';
+        document.getElementById('md-niche-tieu').textContent = ma ? ('Edit ' + ma) : 'New niche';
+        document.getElementById('f-niche-ma').value = ma;
+        document.getElementById('f-niche-ma').disabled = !ma;   // create không gửi field ma
+        document.getElementById('f-niche-ten').value = b.dataset.ten || '';
+        document.getElementById('f-niche-tt').value = b.dataset.tt || '{{ tt_ngach[0] }}';
+        document.getElementById('f-niche-ghi').value = b.dataset.ghi || '';
+        var link = document.getElementById('f-niche-link');
+        if (link) link.value = b.dataset.link || '';
+        document.getElementById('md-niche-them').hidden = !ma;  // alias/link chỉ khi sửa
+        document.querySelectorAll('#md-niche .f-ma-phu').forEach(function (i) { i.value = ma; });
+      } else {
+        var g = document.getElementById('f-market');
+        g.action = ma ? '/general/markets/update' : '/general/markets/create';
+        document.getElementById('md-market-tieu').textContent = ma ? ('Edit ' + ma) : 'New market';
+        document.getElementById('f-market-ma').value = ma;
+        document.getElementById('f-market-ma').disabled = !ma;
+        document.getElementById('f-market-ten').value = b.dataset.ten || '';
+        document.getElementById('f-market-nn').value = b.dataset.ngonNgu || '';
+      }
+      mo(id);
+    });
+  });
+  document.querySelectorAll('[data-dong]').forEach(function (b) {
+    b.addEventListener('click', function () { dong(b.dataset.dong); });
+  });
+  // Đóng khi bấm NỀN: đòi mousedown VÀ click cùng trên nền — bôi đen kéo chuột ra
+  // ngoài không làm bay dữ liệu đang gõ (bẫy modal V2).
+  document.querySelectorAll('.modal-bg').forEach(function (bg) {
+    var tuNen = false;
+    bg.addEventListener('mousedown', function (e) { tuNen = (e.target === bg); });
+    bg.addEventListener('click', function (e) { if (tuNen && e.target === bg) bg.classList.remove('show'); });
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') document.querySelectorAll('.modal-bg.show').forEach(
+      function (bg) { bg.classList.remove('show'); });
+  });
+
+  // Lọc CLIENT-SIDE bảng niche (tìm kiếm + trạng thái) — không đụng route/backend.
+  var q = document.getElementById('q-niche'), lt = document.getElementById('loc-tt-niche');
+  function loc() {
+    var t = (q.value || '').trim().toLowerCase(), tt = lt.value;
+    document.querySelectorAll('#bang-niche tr[data-tim]').forEach(function (tr) {
+      var hop = (!t || tr.dataset.tim.indexOf(t) >= 0) && (!tt || tr.dataset.tt === tt);
+      tr.hidden = !hop;
+    });
+  }
+  q.addEventListener('input', loc); lt.addEventListener('change', loc);
+})();
+</script>
 {% endblock %}

@@ -93,8 +93,15 @@ Mạch đưa app DỪNG sau Content Ultimate (SEO/PlannerY/SpeakY để sau) →
 Hạng mục đề xuất, xếp theo "Owner nhìn thấy nhiều nhất" (chốt lại khi bắt đầu):
 
 **A. Trang mới dựng vội, chưa theo mockup đã duyệt** (nợ tự khai trong DE.md)
-1. **Niches + Channels** — đang là form `<details>` kiểu khu nền; mockup duyệt là
-   MODAL "+ New", bộ lọc, chip kênh trong niche, stepper niche→kênh.
+1. ~~**Niches + Channels**~~ — **XONG 17/08**: modal "+ New" (niche/market/channel)
+   thay `<details>`; Niches có search + lọc trạng thái (client) + CHIP kênh + cột
+   Channels ở Markets; Channels giữ lọc niche/lifecycle SERVER-side, thêm lọc
+   market + search CLIENT-side, bấm dòng mở chi tiết, stepper vòng đời, khối
+   alias/app-link/khai-tử theo C2. Lớp dùng chung (toolbar/chip-o/badge/modal/
+   form-grid/steps) đặt trong `nen_base.html` gateway — CHỈ token có sẵn.
+   Logic/route/field/quyền giữ 100%. Bẫy modal V2 đã chặn: chỉ đóng khi mousedown
+   VÀ click cùng trên nền (bôi đen kéo chuột ra ngoài không mất dữ liệu đang gõ);
+   Esc + ✕ đóng; không alert/confirm.
 2. **API Keys** — dựng theo K1-K8 nhưng chưa soi mắt: bảng khóa, thanh usage,
    badge trạng thái, modal Add key.
 3. **Permissions P1-P5** — khối `<details>` per app + badge N overrides mới dựng.

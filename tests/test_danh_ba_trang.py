@@ -108,3 +108,70 @@ def test_export_csv(he):
     r = c.get("/general/channels/export")
     assert r.status_code == 200 and "N-LIFE-IN" in r.text
     assert "text/csv" in r.headers["content-type"]
+
+
+# ---------- UI A1: bám mockup đã duyệt (modal · lọc · chip kênh) ----------
+
+def test_modal_thay_form_details(he):
+    """Mockup N1/C1: "+ New" mở MODAL (không còn <details> khai form)."""
+    c = _login("quanly", "mk-ql-6")
+    for duong, md in (("/general/niches", "md-niche"), ("/general/channels", "md-kenh")):
+        b = c.get(duong).text
+        assert f'class="modal-bg" id="{md}"' in b          # modal có mặt
+        assert f'data-mo="{md}"' in b                      # nút + New mở nó
+        assert "<summary" not in b                         # form <details> đã đi
+        assert "modal-bg" in b and 'class="dong-x"' in b   # nút ✕
+    b = c.get("/general/niches").text
+    assert 'class="modal-bg" id="md-market"' in b          # market cũng dùng modal
+
+
+def test_bo_loc_va_chip_kenh_trong_niche(he):
+    """Lọc niche/lifecycle SERVER-side lọc đúng; chip kênh của niche đủ số;
+    bảng Markets đếm đúng số kênh."""
+    c = _login("quanly", "mk-ql-6")
+    c.post("/general/niches/create", data={"ten_chuan": "Life In"})
+    c.post("/general/niches/create", data={"ten_chuan": "Space"})
+    c.post("/general/markets/create", data={"ten": "US", "ngon_ngu": "English"})
+    for ten in ("Outland", "Life Decoded"):
+        c.post("/general/channels/create", data={
+            "ten_chuan": ten, "ngach_ma": "N-LIFE-IN", "thi_truong_ma": "TT-US",
+            "trang_thai": "sandbox"})
+    c.post("/general/channels/create", data={
+        "ten_chuan": "Space Archive", "ngach_ma": "N-SPACE", "trang_thai": "uom_mam"})
+
+    b = c.get("/general/niches").text
+    assert b.count('href="/general/channels?ngach=N-LIFE-IN"') == 2   # 2 chip kênh
+    assert b.count('href="/general/channels?ngach=N-SPACE"') == 1
+    # Markets đếm ĐÚNG số kênh gắn thị trường đó (Space Archive không gắn TT-US)
+    dong_us = [d for d in b.split("<tr>") if "TT-US" in d][0]
+    assert "<td>2</td>" in dong_us
+
+    def _bang(html):      # chỉ xét BẢNG (dropdown "Clone of" trong modal liệt kê mọi kênh)
+        return html.split('id="bang-kenh"', 1)[1].split("</table>", 1)[0]
+    b = _bang(c.get("/general/channels?ngach=N-LIFE-IN").text)         # lọc theo niche
+    assert "K-OUTLAND" in b and "K-SPACE-ARCHIVE" not in b
+    b = _bang(c.get("/general/channels?trang_thai=uom_mam").text)      # lọc vòng đời
+    assert "K-SPACE-ARCHIVE" in b and "K-OUTLAND" not in b
+    # dữ liệu cho lọc CLIENT-side (market + search) có sẵn trên từng dòng
+    b = c.get("/general/channels").text
+    assert 'data-market="TT-US"' in b and 'id="q-kenh"' in b
+    assert 'id="loc-tt-market"' in b
+
+
+def test_nhan_en_va_khong_ghi_chu_man_hinh(he):
+    """Chuẩn UI hệ: nhãn EN, nhãn vòng đời/trạng thái dịch sang EN, không câu
+    giải thích tiếng Việt trên màn hình (luật Owner mục 12.2)."""
+    c = _login("quanly", "mk-ql-6")
+    c.post("/general/niches/create", data={"ten_chuan": "Life In", "trang_thai": "khai_thac"})
+    c.post("/general/channels/create", data={"ten_chuan": "Outland",
+                                             "ngach_ma": "N-LIFE-IN", "trang_thai": "sandbox"})
+    b = c.get("/general/niches").text
+    # nhãn EN hiện ra; mã máy chỉ còn trong value/data-* (không phải chữ người đọc)
+    assert ">Exploiting</span>" in b and ">khai_thac<" not in b
+    b = c.get("/general/channels?ma=K-OUTLAND").text
+    assert "Sandbox" in b and "Export CSV" in b
+    assert "chưa gán" not in b and "gõ lại" not in b        # hết chuỗi VN cũ trên màn
+    # khối khai tử vẫn CHỈ Owner (quyền không đổi) — nhãn EN + gõ-lại-mã giữ nguyên
+    assert "Retire channel" not in b
+    ow = _login("owner-t", "mk-test").get("/general/channels?ma=K-OUTLAND").text
+    assert "Retire channel" in ow and 'placeholder="retype K-OUTLAND"' in ow

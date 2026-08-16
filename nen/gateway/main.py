@@ -1306,9 +1306,15 @@ def _render_niches(request, user, bao="", loi=""):
     # dict nằm trong cache module — copy trước khi gắn trường phụ kenh_con
     ngach = [dict(n, kenh_con=[k["ma"] for k in kenh if k["ngach_ma"] == n["ma"]])
              for n in ds if n["loai"] == "ngach"]
+    # Cột "Channels" của bảng Markets (mockup M1) — đếm tại chỗ, không đổi dữ liệu.
+    so_kenh_tt: dict[str, int] = {}
+    for k in kenh:
+        if k.get("thi_truong_ma"):
+            so_kenh_tt[k["thi_truong_ma"]] = so_kenh_tt.get(k["thi_truong_ma"], 0) + 1
     return templates.TemplateResponse(request, "nen_niches.html", {
         "user": user, "trang": "niches", "la_owner": user["level"] >= 5,
         "ds_ngach": ngach, "ds_tt": [t for t in ds if t["loai"] == "thi_truong"],
+        "so_kenh_tt": so_kenh_tt,
         "tt_ngach": danh_ba.TRANG_THAI_NGACH, "bao": bao, "loi": loi})
 
 
