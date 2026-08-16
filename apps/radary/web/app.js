@@ -1609,8 +1609,10 @@ function App() {
   const orgId = cur ? cur.org_id : (me.orgs || [])[0]?.id;
   const role = (me.orgs || []).find(o => o.id === orgId)?.role || 'viewer';
   const canEdit = role !== 'viewer';
+  // V3 (lam gon 16/08): SSO qua OUTLIERY -> tab Quan tri AN HAN ke ca owner —
+  // khoa nhap o General > API Keys, quyen o General > Permissions (server cung 404).
   const tabs = TABS.filter(([k]) => (['new', 'pool', 'harvest'].includes(k) ? canEdit
-    : k === 'admin' ? (role === 'owner' || role === 'manager') : true));
+    : k === 'admin' ? (!me.sso && (role === 'owner' || role === 'manager')) : true));
   // 23/07: Data Pool/Harvest/New Niche = leader trở lên. 04/08: manager vào tab Quản trị
   // CHỈ thấy khối xóa niche (vận hành) — key/thành viên/LLM vẫn riêng owner (server chặn thật).
   return html`
@@ -1625,7 +1627,7 @@ function App() {
         <span class="note" title=${me.email}>${me.email.split('@')[0]}${role !== 'owner' ? html` · <span class="rolechip ${role}">${role}</span>` : ''}</span>
         <button class="btn small ghost" onClick=${logout}>Thoát</button>`}
     </header>
-    ${tab === 'admin' && (role === 'owner' || role === 'manager') ? html`
+    ${tab === 'admin' && !me.sso && (role === 'owner' || role === 'manager') ? html`
         ${role === 'owner' && html`<${OrgAdmin} orgId=${orgId} meEmail=${me.email} wss=${wss.filter(w => w.org_id === orgId)}/>`}
         <${OrgNiches} wss=${wss.filter(w => w.org_id === orgId)}
           onChanged=${async deletedId => { const l = await loadWs(true); if (ws === deletedId) setWs(l[0]?.id ?? null); }}/>

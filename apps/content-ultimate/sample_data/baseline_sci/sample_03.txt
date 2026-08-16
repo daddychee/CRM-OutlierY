@@ -1,0 +1,7 @@
+Enzymes are biological catalysts that accelerate chemical reactions within cells. Most enzymes are proteins, although some catalytic functions are performed by RNA molecules known as ribozymes. An enzyme works by lowering the activation energy required for a reaction to proceed.
+
+Each enzyme typically catalyzes a specific reaction or a narrow range of reactions, due to the precise shape of its active site. This specificity is often explained using the induced fit model, which describes how the enzyme's active site changes shape slightly upon binding its substrate, improving the fit between the two molecules.
+
+Enzyme activity can be affected by several factors, including temperature, pH, and the concentration of substrate available. Most enzymes have an optimal temperature range; activity decreases outside this range, and extreme temperatures can cause denaturation, a process in which the enzyme loses its functional three-dimensional structure.
+
+Industrial applications of enzymes include their use in detergents, food production, and pharmaceutical manufacturing. Enzymes are also central to diagnostic testing, where their activity levels can indicate the presence of specific diseases or conditions.

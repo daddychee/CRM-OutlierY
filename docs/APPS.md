@@ -22,7 +22,11 @@
 3. Snapshot dữ liệu → `data\<slug>\` + khai du_lieu (mức quý theo sổ địa bạ).
 4. SSO adapter: đọc claims V3 (X-Remote-Actions + vai chuẩn `admin`), vá bẫy
    đã biết từng app, DEFAULT vai thấp nhất, rà mọi chỗ đọc cookie.
-5. Khóa API từ trang API Keys (cấp phát → app nhận lúc khởi động qua loopback).
+5. **Khóa + quản trị app PHẢI về MỘT CỬA V3 NGAY trong đợt app đó** (luật Owner
+   16/08 — "làm gọn từng app trước khi sang app khác"): nguồn khóa = két trang
+   API Keys (app lấy qua loopback `/api/cau-hinh/api-khoa/<slug>` mỗi run, không
+   fallback sổ nội bộ); mọi cửa quản trị key/thành viên/cấu hình TRONG app đóng
+   404 khi SSO — kể cả vai cao nhất nội bộ.
 6. Nghiệm thu sống qua 9443 từng vai (Chrome headless cho bẫy proxy) → commit.
 
 ## Bảng phân công
@@ -54,14 +58,28 @@
   luật Permissions v2, SSO adapter Actions→vai nội bộ, smoke từng vai đạt trên
   snapshot thật — org Outliery, 19 khóa). Chạy: `tools\scripts\start-all.ps1`
   (env `RADARY_DATA_DIR=data\radary` + `RADARY_SCHEDULER=0` + `RADARY_TRUST_PROXY=1`).
-  **Việc treo Đ4b — khóa YouTube**: bảng `api_keys` (Fernet, `secret.key`) trong
-  db snapshot GIỮ làm nguồn khóa nội bộ đợt này; chuyển nguồn sang trang API Keys
-  của két (cấp phát → app đọc loopback) làm sau. **SCHEDULER V3 TẮT CỐ ĐỊNH**
+  **SCHEDULER V3 TẮT CỐ ĐỊNH**
   (`RADARY_SCHEDULER=0` trong start-all): hệ thật C:\ vẫn tự quét theo lịch bằng
   CÙNG bộ khóa — V3 quét song song là ĐỐT ĐÔI QUOTA + db snapshot lệch khỏi hệ
   thật; nghiệm thu quét bằng POST /run tay; bật lại scheduler CHỈ khi cutover.
   RADARY_SSO_MAP đã GỠ HẲN khỏi V3 (map-tên-chết); cửa login/register/reset cục
   bộ đóng 404 khi TRUST_PROXY=1.
+- 16/08/2026 — **RadarY LÀM GỌN xong** (luật Owner "gọn từng app rồi mới sang
+  app khác" — việc treo Đ4b HỦY, làm ngay): (1) 14 endpoint quản trị org (keys ×5
+  · members ×3 · invites ×3 · LLM ×3) đóng 404 khi SSO KỂ CẢ vai owner nội bộ —
+  khóa nhập ở General › API Keys, quyền ở General › Permissions; tab Quản trị
+  app.js ẨN HẲN khi `me.sso` (cả lọc tab lẫn chặn render). **LƯU Ý CAPABILITY:
+  khối "Xóa niche" nằm trong tab đó cũng mất UI khi SSO** (endpoint DELETE
+  workspace vẫn sống — vận hành manager); cần thì chuyển nút xóa sang tab
+  Settings từng niche đợt sau. (2) Nguồn khóa = KÉT V3: radary khai `viec_api`
+  harvest/quet_dinh_ky (youtube) + dien_giai (llm); gateway loopback MỚI
+  `GET /api/cau-hinh/api-khoa/{slug}`; `radary/khoa_v3.py` lấy khóa MỖI run —
+  gateway chết/việc chưa cấp → run DỪNG thông điệp rõ "chưa lấy được khóa từ
+  OUTLIERY", KHÔNG rơi về bảng nội bộ (bảng `api_keys` NGHỈ — giữ làm sử liệu).
+  (3) Migration một lần `scripts/di_tru_khoa_radary.py` (idempotent, marker két,
+  GIỮ NGĂN V2: harvest=1→việc harvest, còn lại→quet_dinh_ky, đều xoay vòng; vết
+  audit CHỈ ĐUÔI) — **Owner quyết thời điểm chạy thật**; chạy xong mới nghiệm
+  thu quét. Suite radary 8 test.
 - 16/08/2026 — BẪY MỚI khi agent ghi start-all.ps1: chuỗi `data\radary` bị nuốt
   `\r` thành byte xuống dòng thật (0x0D) → comment gãy đôi thành lệnh, script
   chết trước khi bật service nào. Sửa bằng thay byte, đường dẫn trong .ps1 từ

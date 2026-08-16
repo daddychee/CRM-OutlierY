@@ -20,6 +20,11 @@ $py = Join-Path $root '.venv\Scripts\python.exe'
 $env:RADARY_DATA_DIR = (Join-Path $root 'data/radary')
 $env:RADARY_SCHEDULER = '0'
 $env:RADARY_TRUST_PROXY = '1'
+
+# Content Ultimate (APPS.md app 2/6): du lieu tro data/content-ultimate; SSO bat.
+# App KHONG co scheduler nen (pipeline chi chay khi user bam) - khac RadarY.
+$env:CU_DATA_DIR = (Join-Path $root 'data/content-ultimate')
+$env:CU_TRUST_PROXY = '1'
 $dichVu = @(
     @{ Ten = 'qdrant-test'; Cong = 6343
        Exe = (Join-Path $root 'tools\qdrant\qdrant.exe')
@@ -42,6 +47,9 @@ $dichVu = @(
        Wd = $root }
     @{ Ten = 'radary'; Cong = 9111; Exe = $py
        Args = '-m uvicorn radary.api:app --app-dir "apps/radary" --host 127.0.0.1 --port 9111'
+       Wd = $root }
+    @{ Ten = 'content-ultimate'; Cong = 9112; Exe = $py
+       Args = '-m contentultimate.server --port 9112 --no-browser'
        Wd = $root }
     @{ Ten = 'caddy-tls'; Cong = 9443
        Exe = (Join-Path $root 'tools\caddy\caddy.exe')

@@ -1606,6 +1606,32 @@ def api_cau_hinh_llm(request: Request, vai: str):
         conn.close()
 
 
+@app.get("/api/cau-hinh/api-khoa/{app_slug}")
+def api_cau_hinh_api_khoa(request: Request, app_slug: str):
+    """App phụ (bind loopback) lấy KHÓA ĐƯỢC CẤP PHÁT theo VIỆC từ két (trang API
+    Keys — làm gọn RadarY 16/08: nguồn khóa duy nhất, bảng nội bộ app nghỉ).
+    Trả {viec: {khoa: [{id, key, loai, nha}], che_do, model}} — key plaintext cho
+    app DÙNG, TUYỆT ĐỐI không log giá trị. CHỈ phục vụ loopback (khuôn llm/{vai})."""
+    if request.client and request.client.host not in ("127.0.0.1", "::1"):
+        return JSONResponse({"loi": "chi loopback"}, status_code=403)
+    conn = ket.ket_noi()
+    try:
+        ra = {}
+        for viec, muc in ket.doc_cap_phat(conn).get(app_slug, {}).items():
+            khoa = []
+            for kid in muc.get("khoa", []):
+                gia_tri = ket.lay_bi_mat(conn, f"api.{kid}.key")
+                if gia_tri:
+                    khoa.append({"id": kid, "key": gia_tri,
+                                 "loai": ket.lay_cau_hinh(conn, f"api.{kid}.loai"),
+                                 "nha": ket.lay_cau_hinh(conn, f"api.{kid}.nha")})
+            ra[viec] = {"khoa": khoa, "che_do": muc.get("che_do", "mot_khoa"),
+                        "model": muc.get("model", "")}
+        return ra
+    finally:
+        conn.close()
+
+
 @app.get("/cai-dat")
 def cai_dat_cu():
     return RedirectResponse("/general/api-keys", status_code=303)

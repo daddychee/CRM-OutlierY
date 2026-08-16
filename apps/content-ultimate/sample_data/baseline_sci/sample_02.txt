@@ -1,0 +1,7 @@
+Plate tectonics describes the large-scale motion of seven major plates and numerous smaller plates of the Earth's lithosphere. The theory was developed during the 1950s and 1960s, building on the earlier concept of continental drift proposed by Alfred Wegener in 1912.
+
+The lithosphere is divided into plates that float on the more fluid asthenosphere beneath them. These plates move relative to one another at boundaries classified into three types: divergent, convergent, and transform. At divergent boundaries, plates move apart, allowing magma to rise and form new crust. At convergent boundaries, one plate may be forced beneath another in a process called subduction.
+
+Evidence for plate tectonics includes the matching shapes of continental coastlines, the distribution of fossils across now-separated landmasses, and patterns of magnetic striping on the ocean floor. Seafloor spreading, documented through magnetic surveys conducted in the mid-twentieth century, provided particularly strong confirmation.
+
+The rate of plate movement is generally measured in centimeters per year, comparable to the rate at which human fingernails grow. Despite this slow pace, cumulative movement over millions of years has reshaped the distribution of continents and oceans repeatedly throughout Earth's history.

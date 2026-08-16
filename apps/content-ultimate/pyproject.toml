@@ -1,0 +1,35 @@
+[project]
+name = "content-ultimate"
+version = "0.2.0"
+description = "Content Ultimate — Outline board (bang chung tu video) + Author Extract (giong van + kich ban)"
+requires-python = ">=3.11"
+dependencies = [
+    "typer>=0.12",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+llm = ["anthropic"]
+embed = ["fastembed>=0.8"]
+
+[project.scripts]
+content-ultimate = "contentultimate.server:main"
+voiceprofile = "voiceprofile.cli:app"
+author-extract = "voiceprofile.server:main"
+author-extract-gui = "voiceprofile.gui:main"
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+voiceprofile = ["board.html"]
+oe = ["board.html"]
+
+[tool.pytest.ini_options]
+# 2 bộ test có module trùng tên (tests/test_llm.py ↔ tests/oe/test_llm.py) — importlib
+# mode cho phép trùng basename mà không cần __init__.py hay đổi tên file.
+addopts = "--import-mode=importlib"

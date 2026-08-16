@@ -80,3 +80,94 @@ def test_tick_toan_quyen_phat_manager_khong_len_admin(conn):
     assert iam.vai_cho_app(nv, "ai-agent", conn) == "viewer"    # app khác không lây
     iam.gan_override(conn, ow, "nv", "radary", "quan_tri", True, "thử nấc quản trị")
     assert iam.vai_cho_app(nv, "radary", conn) == "admin"       # chỉ quan_tri mới admin
+
+
+# ---------- LÀM GỌN (Owner 16/08): khóa về KÉT V3, quản trị về một cửa ----------
+
+def test_viec_api_radary_khai_dung():
+    a = tim_app("radary")
+    assert [(v["ma"], v["loai"]) for v in a["viec_api"]] == \
+        [("harvest", "youtube"), ("quet_dinh_ky", "youtube"), ("dien_giai", "llm")]
+
+
+@pytest.fixture()
+def ket_tmp(tmp_path, monkeypatch):
+    monkeypatch.setenv("KET_DB", str(tmp_path / "ket.db"))
+    monkeypatch.setenv("KET_KEY", str(tmp_path / "ket.key"))
+    from nen.ket_cau_hinh import ket
+    c = ket.ket_noi()
+    yield ket, c
+    c.close()
+
+
+def test_loopback_api_khoa_tra_cap_phat_va_chan_ngoai(ket_tmp):
+    """GET /api/cau-hinh/api-khoa/{app}: khóa plaintext cho app DÙNG (khuôn
+    llm/{vai}) — chỉ loopback; máy LAN gọi thẳng bị chặn."""
+    import asyncio
+
+    import httpx
+
+    from nen.gateway.main import app as gateway_app
+    ket, c = ket_tmp
+    k1 = ket.them_api_key(c, "youtube", "AIza-that-7f2a")
+    k2 = ket.them_api_key(c, "youtube", "AIza-that-c9d1")
+    ket.luu_cap_phat_viec(c, "radary", "harvest", [k1, k2], "xoay_vong")
+
+    async def goi(client_addr):
+        transport = httpx.ASGITransport(app=gateway_app, client=client_addr)
+        async with httpx.AsyncClient(transport=transport, base_url="http://t") as cl:
+            return await cl.get("/api/cau-hinh/api-khoa/radary")
+
+    r = asyncio.run(goi(("127.0.0.1", 50000)))
+    assert r.status_code == 200
+    muc = r.json()["harvest"]
+    assert [k["key"] for k in muc["khoa"]] == ["AIza-that-7f2a", "AIza-that-c9d1"]
+    assert muc["che_do"] == "xoay_vong"
+    assert asyncio.run(goi(("192.168.1.50", 50000))).status_code == 403
+
+
+def test_di_tru_khoa_radary_idempotent_dung_ngan(ket_tmp, tmp_path):
+    """Migration khóa nội bộ radary → két: Fernet giải đúng, trùng giá trị nạp
+    MỘT lần, GIỮ NGĂN V2 (harvest=1 → việc harvest; 0 → quet_dinh_ky), marker
+    chống nạp đôi, két không bao giờ lộ plaintext qua liet_ke."""
+    import importlib.util
+    import sqlite3
+
+    from cryptography.fernet import Fernet
+    ket, c = ket_tmp
+    spec = importlib.util.spec_from_file_location(
+        "di_tru_khoa_radary",
+        __file__.replace("tests", "scripts").replace("test_radary.py",
+                                                     "di_tru_khoa_radary.py"))
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+
+    sk = tmp_path / "secret.key"
+    sk.write_bytes(Fernet.generate_key())
+    f = Fernet(sk.read_bytes())
+    db = tmp_path / "radary.db"
+    rc = sqlite3.connect(db)
+    rc.execute("CREATE TABLE api_keys (id INTEGER PRIMARY KEY, org_id INT, key TEXT, "
+               "note TEXT, workspace_id INT, backup INT DEFAULT 0, harvest INT DEFAULT 0)")
+    ma = lambda v: f.encrypt(v.encode()).decode("ascii")
+    rc.execute("INSERT INTO api_keys (org_id, key, harvest) VALUES (1, ?, 1)",
+               (ma("AIza-harvest-1111"),))
+    rc.execute("INSERT INTO api_keys (org_id, key, harvest) VALUES (1, ?, 1)",
+               (ma("AIza-harvest-1111"),))          # TRÙNG giá trị → chỉ nạp 1
+    rc.execute("INSERT INTO api_keys (org_id, key, harvest, backup) VALUES (1, ?, 0, 1)",
+               (ma("AIza-scan-2222"),))
+    rc.execute("INSERT INTO api_keys (org_id, key, harvest) VALUES (1, ?, 0)",
+               ("AIza-scan-tran-3333",))            # thời tiền-Fernet: plaintext
+    rc.commit(); rc.close()
+
+    ds = mod.di_tru(db, sk, c)
+    assert sorted((m["viec"], m["duoi"]) for m in ds) == \
+        [("harvest", "1111"), ("quet_dinh_ky", "2222"), ("quet_dinh_ky", "3333")]
+    cp = ket.doc_cap_phat(c)["radary"]
+    assert len(cp["harvest"]["khoa"]) == 1 and cp["harvest"]["che_do"] == "mot_khoa"
+    assert len(cp["quet_dinh_ky"]["khoa"]) == 2
+    assert cp["quet_dinh_ky"]["che_do"] == "xoay_vong"
+    assert mod.di_tru(db, sk, c) == []              # idempotent — marker chặn nạp đôi
+    assert len(ket.liet_ke_api_keys(c)) == 3
+    assert not any("AIza-" in str(v) for k in ket.liet_ke_api_keys(c)
+                   for v in k.values())             # không plaintext ra UI

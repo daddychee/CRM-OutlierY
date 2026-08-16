@@ -111,6 +111,27 @@
         "min_level": 5
       },
       "vai_xoa": "manager"
+    },
+    "content-ultimate": {
+      "vao": {
+        "min_level": 2,
+        "bo_phan": [
+          "Vận hành - Sản xuất"
+        ]
+      },
+      "sua": {
+        "nhan": "Vận hành",
+        "mo_ta": "Tab Quản lý: nhật ký chạy · log lỗi · token · lịch sử team (vai leader — trần vận hành, Manager không ngang Owner)",
+        "min_level": 3,
+        "bo_phan": [
+          "Vận hành - Sản xuất"
+        ]
+      },
+      "quan_tri": {
+        "nhan": "Quản trị",
+        "mo_ta": "Tab Cài đặt: API key + cấu hình dịch vụ + thành viên (vai admin nội bộ app)",
+        "min_level": 5
+      }
     }
   }
 }

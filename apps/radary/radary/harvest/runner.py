@@ -84,9 +84,12 @@ def _run(org, api_factory=None):
     try:
         job = current_job(conn, org)
         if not job: return
-        keys = db.harvest_keys(conn, org)
-        if not keys:
-            _set(conn, job['id'], 'ERROR', note='Kho Key Harvest trống — thêm key ở tab Setting trước')
+        # V3 (lam gon 16/08): khoa harvest tu KET OUTLIERY — khong doc bang noi bo nua
+        from .. import khoa_v3
+        try:
+            keys = khoa_v3.lay_khoa('harvest')
+        except RuntimeError as e:
+            _set(conn, job['id'], 'ERROR', note=str(e))
             return
         api = api_factory(keys) if api_factory else API(keys)
         t0 = time.time()

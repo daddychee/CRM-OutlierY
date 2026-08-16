@@ -1,0 +1,18 @@
+# systemd unit cho Content Ultimate — copy vào /etc/systemd/system/content-ultimate.service
+# rồi:  sudo systemctl daemon-reload && sudo systemctl enable --now content-ultimate
+[Unit]
+Description=Content Ultimate (Outline board + Author Extract)
+After=network.target
+
+[Service]
+Type=simple
+User=contentult
+WorkingDirectory=/opt/content-ultimate
+ExecStart=/opt/content-ultimate/.venv/bin/content-ultimate --no-browser --port 8770
+Restart=on-failure
+RestartSec=3
+# PATH có .venv/bin để pipeline tìm thấy yt-dlp cài trong venv
+Environment=PATH=/opt/content-ultimate/.venv/bin:/usr/local/bin:/usr/bin:/bin
+
+[Install]
+WantedBy=multi-user.target

@@ -49,6 +49,15 @@ async def _no_stale_ui(request: Request, call_next):
 #  - rate-limit đăng nhập/đăng ký theo (IP, email): 20 lần thử / 5 phút — chống brute-force
 INVITE_ONLY = os.environ.get('RADARY_INVITE_ONLY') == '1'
 
+def _sso_quan_tri_dong():
+    """LÀM GỌN (Owner 16/08): khi chạy sau cổng OUTLIERY, MỌI cửa quản trị org của
+    radary — API key, thành viên, lời mời, cấu hình LLM — đóng 404 KỂ CẢ vai owner
+    nội bộ: khóa nhập ở General › API Keys, quyền cấp ở General › Permissions.
+    App tự đọc khóa để CHẠY vẫn được (khoa_v3) — chỉ đóng cửa nhập/xem/sửa."""
+    if os.environ.get('RADARY_TRUST_PROXY') == '1':
+        raise HTTPException(404, 'quản trị chuyển về OUTLIERY — General › API Keys / Permissions')
+
+
 def _sso_dong_cua_local():
     """V3: khi chạy sau cổng OUTLIERY (RADARY_TRUST_PROXY=1) thì các cửa tài
     khoản CỤC BỘ đóng 404 như V2 đã làm — một hệ đăng nhập duy nhất, tài khoản
@@ -199,6 +208,7 @@ def orgs(request: Request):
 
 @app.get('/api/orgs/{org}/keys')
 def org_keys(org: int, request: Request):
+    _sso_quan_tri_dong()   # V3: quan tri org ve mot cua OUTLIERY (API Keys + Permissions)
     with get_conn() as c:
         u = auth.require_user(c, request)
         auth.require_role(c, u['id'], org, 'owner')     # key là tài sản nhạy cảm nhất của org
@@ -215,6 +225,7 @@ def org_keys(org: int, request: Request):
 
 @app.post('/api/orgs/{org}/keys', status_code=201)
 def add_key(org: int, body: KeyIn, request: Request):
+    _sso_quan_tri_dong()   # V3: quan tri org ve mot cua OUTLIERY (API Keys + Permissions)
     k = body.key.strip()
     if len(k) < 20: raise HTTPException(422, 'key quá ngắn')
     with get_conn() as c:
@@ -240,6 +251,7 @@ def add_key(org: int, body: KeyIn, request: Request):
 
 @app.post('/api/orgs/{org}/keys/{kid}/test')
 def test_key(org: int, kid: int, request: Request):
+    _sso_quan_tri_dong()   # V3: quan tri org ve mot cua OUTLIERY (API Keys + Permissions)
     """Phase 5.1: kiểm key sống/chết ngay trong app (tốn 1 unit khi key còn quota)."""
     import urllib.error, urllib.request
     with get_conn() as c:
@@ -281,6 +293,7 @@ def patch_key(org: int, kid: int, body: KeyPatch, request: Request):
 
 @app.delete('/api/orgs/{org}/keys/{kid}')
 def del_key(org: int, kid: int, request: Request):
+    _sso_quan_tri_dong()   # V3: quan tri org ve mot cua OUTLIERY (API Keys + Permissions)
     with get_conn() as c:
         u = auth.require_user(c, request)
         auth.require_role(c, u['id'], org, 'owner')
@@ -296,6 +309,7 @@ class InviteIn(BaseModel):
 
 @app.get('/api/orgs/{org}/members')
 def org_members(org: int, request: Request):
+    _sso_quan_tri_dong()   # V3: quan tri org ve mot cua OUTLIERY (API Keys + Permissions)
     with get_conn() as c:
         u = auth.require_user(c, request)
         auth.require_role(c, u['id'], org, 'owner')
@@ -341,6 +355,7 @@ def patch_member(org: int, uid: int, body: MemberPatch, request: Request):
 
 @app.post('/api/orgs/{org}/members/{uid}/pwreset', status_code=201)
 def create_pwreset(org: int, uid: int, request: Request):
+    _sso_quan_tri_dong()   # V3: quan tri org ve mot cua OUTLIERY (API Keys + Permissions)
     """Phase 5.2: owner phát mã reset mật khẩu cho thành viên quên mật khẩu (1 lần, 24h)."""
     with get_conn() as c:
         u = auth.require_user(c, request)
@@ -356,6 +371,7 @@ def create_pwreset(org: int, uid: int, request: Request):
 
 @app.delete('/api/orgs/{org}/members/{uid}')
 def remove_member(org: int, uid: int, request: Request):
+    _sso_quan_tri_dong()   # V3: quan tri org ve mot cua OUTLIERY (API Keys + Permissions)
     with get_conn() as c:
         u = auth.require_user(c, request)
         auth.require_role(c, u['id'], org, 'owner')
@@ -367,6 +383,7 @@ def remove_member(org: int, uid: int, request: Request):
 
 @app.post('/api/orgs/{org}/invites', status_code=201)
 def create_invite(org: int, body: InviteIn, request: Request):
+    _sso_quan_tri_dong()   # V3: quan tri org ve mot cua OUTLIERY (API Keys + Permissions)
     if body.role not in ('viewer', 'leader'):
         raise HTTPException(422, 'vai của mã mời phải là viewer|leader (không mời owner qua mã)')
     with get_conn() as c:
@@ -386,6 +403,7 @@ def create_invite(org: int, body: InviteIn, request: Request):
 
 @app.get('/api/orgs/{org}/invites')
 def list_invites(org: int, request: Request):
+    _sso_quan_tri_dong()   # V3: quan tri org ve mot cua OUTLIERY (API Keys + Permissions)
     with get_conn() as c:
         u = auth.require_user(c, request)
         auth.require_role(c, u['id'], org, 'owner')
@@ -396,6 +414,7 @@ def list_invites(org: int, request: Request):
 
 @app.delete('/api/orgs/{org}/invites/{iid}')
 def revoke_invite(org: int, iid: int, request: Request):
+    _sso_quan_tri_dong()   # V3: quan tri org ve mot cua OUTLIERY (API Keys + Permissions)
     with get_conn() as c:
         u = auth.require_user(c, request)
         auth.require_role(c, u['id'], org, 'owner')
@@ -412,6 +431,7 @@ class LlmIn(BaseModel):
 
 @app.get('/api/orgs/{org}/llm')
 def get_llm(org: int, request: Request):
+    _sso_quan_tri_dong()   # V3: quan tri org ve mot cua OUTLIERY (API Keys + Permissions)
     with get_conn() as c:
         u = auth.require_user(c, request)
         auth.require_role(c, u['id'], org, 'owner')
@@ -423,6 +443,7 @@ def get_llm(org: int, request: Request):
 
 @app.put('/api/orgs/{org}/llm')
 def put_llm(org: int, body: LlmIn, request: Request):
+    _sso_quan_tri_dong()   # V3: quan tri org ve mot cua OUTLIERY (API Keys + Permissions)
     if body.provider not in llm.PROVIDERS:
         raise HTTPException(422, f'provider phải là {"|".join(llm.PROVIDERS)}')
     with get_conn() as c:
@@ -439,6 +460,7 @@ def put_llm(org: int, body: LlmIn, request: Request):
 
 @app.post('/api/orgs/{org}/llm/test')
 def test_llm(org: int, request: Request):
+    _sso_quan_tri_dong()   # V3: quan tri org ve mot cua OUTLIERY (API Keys + Permissions)
     with get_conn() as c:
         u = auth.require_user(c, request)
         auth.require_role(c, u['id'], org, 'owner')
@@ -1066,6 +1088,7 @@ class HarvestRemoveChIn(BaseModel):
 
 @app.post('/api/orgs/{org}/keys/harvest-bulk', status_code=201)
 def add_harvest_keys_bulk(org: int, body: HarvestKeysBulkIn, request: Request):
+    _sso_quan_tri_dong()   # V3: quan tri org ve mot cua OUTLIERY (API Keys + Permissions)
     """Dán NHIỀU key Harvest một lần (mỗi dòng 1 key) — kho TÁCH RIÊNG, radar không đụng."""
     with get_conn() as c:
         u = auth.require_user(c, request)

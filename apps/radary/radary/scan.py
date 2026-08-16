@@ -274,8 +274,13 @@ def run_cycle(conn, ws, budget_s=9999.0):
     """Một chu kỳ quét cho 1 workspace. Trả dict tóm tắt (tag, jobs chạy, events, quota)."""
     from . import report
     cy = Cycle(conn, ws, budget_s)
-    keys = db.api_keys(conn, ws)
-    if not keys: return {'tag': 'NO-KEY', 'ran': [], 'events': 0, 'quota': 0}
+    # V3 (lam gon 16/08): khoa lay tu KET OUTLIERY moi run — bang api_keys noi bo NGHI,
+    # khong fallback (hai nguon khoa lech nhau la nguon loi quota kho lan).
+    from . import khoa_v3
+    try:
+        keys = khoa_v3.lay_khoa('quet_dinh_ky')
+    except RuntimeError as e:
+        return {'tag': 'NO-KEY', 'ran': [], 'events': 0, 'quota': 0, 'loi': str(e)}
     api = API(keys)
     tz = core.tzinfo(conn.execute('SELECT tz FROM workspaces WHERE id=?', (ws,)).fetchone()['tz'])
     V = db.load_videos(conn, ws)

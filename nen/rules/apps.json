@@ -326,6 +326,110 @@
      "giu": "tai-sinh",
      "ghi_chu": "Thumbnail cache tự tái sinh khi quét — loại khỏi backup (đúng lệ hệ cũ)"
     }
+   ],
+   "viec_api": [
+    {
+     "ma": "harvest",
+     "ten": "Quét pool đối thủ (harvest scan)",
+     "loai": "youtube"
+    },
+    {
+     "ma": "quet_dinh_ky",
+     "ten": "Cào video định kỳ (tick 15')",
+     "loai": "youtube"
+    },
+    {
+     "ma": "dien_giai",
+     "ten": "Diễn giải kết quả (LLM)",
+     "loai": "llm"
+    }
+   ]
+  },
+  {
+   "slug": "content-ultimate",
+   "ten": "Content Ultimate",
+   "mo_ta": "Outline board (bằng chứng từ video đối thủ) + Author Extract (giọng văn + kịch bản). Đưa vào V3 từ hệ cũ 16/08 (APPS.md app 2/6).",
+   "cong": 9112,
+   "tien_to": [
+    "/api",
+    "/oe",
+    "/author",
+    "/outline",
+    "/write",
+    "/manage",
+    "/settings",
+    "/logout"
+   ],
+   "health": "/api/health",
+   "phien_ban": "0.2-v3",
+   "chay": {
+    "kieu": "python-module",
+    "app_dir": "apps/content-ultimate",
+    "module": "contentultimate.server"
+   },
+   "du_lieu": [
+    {
+     "ten": "cu-authors",
+     "loai": "kho-file",
+     "duong": "data/content-ultimate/authors",
+     "muc_quy": "vang",
+     "backup": "copy",
+     "giu": "vinh-vien",
+     "ghi_chu": "Hồ sơ giọng văn + corpus tác giả (Author Extract)"
+    },
+    {
+     "ten": "cu-library",
+     "loai": "json",
+     "duong": "data/content-ultimate/library",
+     "muc_quy": "vang",
+     "backup": "copy",
+     "giu": "vinh-vien",
+     "ghi_chu": "Sổ đăng ký tác giả index.json (mã A001… bất biến)"
+    },
+    {
+     "ten": "cu-runs",
+     "loai": "kho-file",
+     "duong": "data/content-ultimate/runs",
+     "muc_quy": "vang",
+     "backup": "copy",
+     "giu": "vinh-vien",
+     "ghi_chu": "Run pipeline Outline (bằng chứng + cluster + beat)"
+    },
+    {
+     "ten": "cu-uploads",
+     "loai": "kho-file",
+     "duong": "data/content-ultimate/uploads",
+     "muc_quy": "vang",
+     "backup": "copy",
+     "giu": "vinh-vien"
+    },
+    {
+     "ten": "cu-admin",
+     "loai": "json",
+     "duong": "data/content-ultimate/admin",
+     "muc_quy": "vang",
+     "backup": "copy",
+     "giu": "vinh-vien",
+     "ghi_chu": "usage/history/access .jsonl chỉ-thêm — KPI đọc history.jsonl"
+    },
+    {
+     "ten": "cu-cau-hinh",
+     "loai": "json",
+     "duong": "data/content-ultimate/roles.json",
+     "muc_quy": "vang",
+     "backup": "copy",
+     "giu": "vinh-vien",
+     "ghi_chu": "roles.json + invites.json di sản V2 — SSO bật thì KHÔNG thắng header, giữ làm dữ liệu"
+    },
+    {
+     "ten": "cu-cookies",
+     "loai": "file-khoa",
+     "duong": "data/content-ultimate/cookies.txt",
+     "muc_quy": "vang",
+     "backup": "copy",
+     "giu": "vinh-vien",
+     "ghi_chu": "SECRET — cookies YouTube của team (Netscape), gitignore theo data/; backup như bản mã két, không đưa vào gói chia sẻ"
+    }
    ]
   }
  ]
