@@ -1788,7 +1788,49 @@ async def proxy_app(request: Request, slug: str, duong_dan: str):
         vai=vai, level=user["level"],
         bo_phan=user.get("bo_phan", ""), apps_duoc_vao=apps_duoc_vao,
         ten_hien_thi=user.get("ten_hien_thi", ""), bo_qua=_ALIAS_BO_QUA,
-        hanh_dong=hanh_dong)
+        hanh_dong=hanh_dong, khung=muc.get("giao_dien") == "khung")
+
+
+# ---------- KHUNG MỞ APP GIỮ SIDEBAR (Owner 16/08: "mở app vẫn còn sidebar") ----------
+
+@app.get("/open/{slug}", response_class=HTMLResponse)
+def mo_app_khung(request: Request, slug: str):
+    """App NGOÀI (hợp đồng khai giao_dien 'khung' — SPA tự render trọn trang) mở
+    trong khung OUTLIERY: sidebar + topbar chuẩn, nội dung là MỘT iframe
+    /app/<slug>/ (cùng origin — cookie/back trình duyệt tự ăn). Gate Y HỆT cửa
+    vào app; app native / slug lạ → 404. /app/<slug> trực tiếp vẫn sống nguyên
+    (bookmark cũ, không redirect — tránh vòng lặp iframe)."""
+    user = _kiem(request)
+    if isinstance(user, RedirectResponse):
+        return user
+    muc = tim_app(slug)
+    if not muc or muc.get("giao_dien") != "khung":
+        return Response("Not found.", status_code=404)
+    conn = iam.ket_noi()
+    try:
+        if not iam.co_quyen(user, "vao", slug, conn):
+            return Response("You do not have access to this tool.", status_code=403)
+        duoc = [a["slug"] for a in doc_hop_dong()
+                if iam.co_quyen(user, "vao", a["slug"], conn)]
+        co_nas = "to-chuc" in duoc and bool(os.getenv("NAS_DUONG_DAN", "").strip())
+        co_hub = _gio_chuc_nang(user, conn) if "to-chuc" in duoc else []
+        quan_tri = iam.quyen_nhan_su(user) or iam.co_quyen(user, "quan_tai_khoan", conn=conn)
+    finally:
+        conn.close()
+    from nen.common.sidebar import KHONG_LAP_TOOLS
+    ds_tools = [{"slug": a["slug"], "ten": a["ten"],
+                 "href": (f"/open/{a['slug']}" if a.get("giao_dien") == "khung"
+                          else f"/app/{a['slug']}")}
+                for a in doc_hop_dong()
+                if a["slug"] in duoc and a["slug"] not in KHONG_LAP_TOOLS]
+    from datetime import datetime as _dt
+    return templates.TemplateResponse(request, "nen_khung_app.html", {
+        "user": user, "app": muc, "ds_tools": ds_tools,
+        "sb_da": "data-analytics" in duoc, "sb_nas": co_nas,
+        "sb_hr": "hr" in co_hub, "sb_fin": "finance" in co_hub,
+        "sb_ns": quan_tri, "la_owner": user["level"] >= iam.OWNER_LEVEL,
+        "sb_ngay": _dt.now().strftime("%d/%m/%Y"),
+        "level_chu": _TEN_LEVEL.get(user["level"], "")})
 
 
 def _lam_alias(slug: str, dd: str):

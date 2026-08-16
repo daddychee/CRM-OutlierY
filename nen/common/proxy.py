@@ -90,6 +90,16 @@ def viet_lai_duong_dan(noi_dung: str, tien_to_app: list[str], goc: str,
     return noi_dung
 
 
+def _bo_vi_khung(ten: str, gia_tri: str) -> bool:
+    """Header phải CẮT khỏi response app 'khung' (mở trong iframe /open/<slug> —
+    Owner 16/08 'mở app vẫn còn sidebar'): X-Frame-Options + CSP có
+    frame-ancestors. Same-origin thường tự qua nhưng cắt cho chắc; app NATIVE
+    không bị đụng (khung=False mặc định)."""
+    if ten == "x-frame-options":
+        return True
+    return ten == "content-security-policy" and "frame-ancestors" in gia_tri.lower()
+
+
 def _viet_lai_header(ten: str, gia_tri: str, goc: str, tien_to_app: list[str]) -> str:
     if ten == "location" and gia_tri.startswith("/"):
         if gia_tri == goc or gia_tri.startswith(goc + "/"):
@@ -105,7 +115,8 @@ async def chuyen_tiep(request: Request, cong: int, goc: str, duong_dan: str,
                       level: int | None = None, bo_phan: str = "",
                       apps_duoc_vao: list[str] | None = None,
                       ten_hien_thi: str = "", bo_qua: tuple[str, ...] = (),
-                      hanh_dong: list[str] | None = None) -> Response:
+                      hanh_dong: list[str] | None = None,
+                      khung: bool = False) -> Response:
     """Chuyển tiếp request sang app 127.0.0.1:<cong>, tiêm claims do GATEWAY quyết."""
     dich = f"http://127.0.0.1:{cong}/{duong_dan}"
     cam = set(_HEADER_CAM)
@@ -153,7 +164,8 @@ async def chuyen_tiep(request: Request, cong: int, goc: str, duong_dan: str,
     if tien_to_app:
         bo_ra |= {"etag", "last-modified"}
     ra = {k: _viet_lai_header(k.lower(), v, goc, tien_to_app)
-          for k, v in phan_hoi.headers.multi_items() if k.lower() not in bo_ra}
+          for k, v in phan_hoi.headers.multi_items()
+          if k.lower() not in bo_ra and not (khung and _bo_vi_khung(k.lower(), v))}
 
     if _LOAI_CHAY in loai:
         async def chay():

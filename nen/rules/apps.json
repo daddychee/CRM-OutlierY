@@ -343,7 +343,8 @@
      "ten": "Diễn giải kết quả (LLM)",
      "loai": "llm"
     }
-   ]
+   ],
+   "giao_dien": "khung"
   },
   {
    "slug": "content-ultimate",
@@ -430,7 +431,8 @@
      "giu": "vinh-vien",
      "ghi_chu": "SECRET — cookies YouTube của team (Netscape), gitignore theo data/; backup như bản mã két, không đưa vào gói chia sẻ"
     }
-   ]
+   ],
+   "giao_dien": "khung"
   }
  ]
 }

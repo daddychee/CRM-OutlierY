@@ -27,6 +27,14 @@
    API Keys (app lấy qua loopback `/api/cau-hinh/api-khoa/<slug>` mỗi run, không
    fallback sổ nội bộ); mọi cửa quản trị key/thành viên/cấu hình TRONG app đóng
    404 khi SSO — kể cả vai cao nhất nội bộ.
+6. **App ngoài (SPA tự render trọn trang) mở qua `/open/<slug>` — sidebar KHÔNG
+   BAO GIỜ mất** (Owner 16/08): hợp đồng khai `giao_dien: "khung"`; sidebar +
+   khối menu app tự trỏ `/open/<slug>` thay `/app/<slug>`; route render shell
+   OUTLIERY (sidebar/topbar chuẩn) + `<iframe src="/app/<slug>/">` cùng origin
+   (cookie/back trình duyệt tự ăn); gate y hệt cửa vào app; `/app/<slug>` thẳng
+   vẫn sống (bookmark cũ, không redirect — tránh vòng lặp iframe); proxy cắt
+   `X-Frame-Options` + CSP `frame-ancestors` CHỈ ở response app khung. App
+   native (tự vẽ sidebar OUTLIERY trong template) KHÔNG khai — giữ `/app/<slug>`.
 6. Nghiệm thu sống qua 9443 từng vai (Chrome headless cho bẫy proxy) → commit.
 
 ## Bảng phân công
@@ -80,6 +88,19 @@
   GIỮ NGĂN V2: harvest=1→việc harvest, còn lại→quet_dinh_ky, đều xoay vòng; vết
   audit CHỈ ĐUÔI) — **Owner quyết thời điểm chạy thật**; chạy xong mới nghiệm
   thu quét. Suite radary 8 test.
+- 16/08/2026 — **Owner DUYỆT RadarY làm gọn** + yêu cầu mới "mở app vẫn còn
+  sidebar" (SPA app ngoài trước đó chiếm trọn trang khi vào `/app/<slug>`).
+  **KHUNG MỞ APP GIỮ SIDEBAR làm xong** (bước 6 ở trên): route
+  `GET /open/{slug}` + `nen_khung_app.html` (iframe cùng origin); radary +
+  content-ultimate khai `giao_dien: "khung"` trong apps.json; sidebar 4
+  template (to-chuc/DA/ai-agent base.html + hoi_dap.html) đổi `href="/app/{{
+  a.slug }}"` → `href="{{ a.href }}"` (nguồn `sb_apps_tu_claims` tính sẵn).
+  Test mới `tests/test_khung_app.py` (6 ca: gate/404/native/sidebar-href/strip-
+  header) + `test_radary.py` sửa 1 assert. 5 suite: root 136(+6) · radary 8 ·
+  ai-agent 308+3skip · DA 64 · to-chuc 58 — tất cả pass. **BẪY GHI LẠI: sửa
+  nen/common (sidebar.py, proxy.py) + nen/gateway PHẢI RESTART mọi app import
+  (ai-agent/DA/to-chuc/gateway) mới thấy sidebar mới** — Owner tự restart.
+  Content Ultimate vẫn ĐỨNG YÊN, chưa đụng tiếp đợt này.
 - 16/08/2026 — BẪY MỚI khi agent ghi start-all.ps1: chuỗi `data\radary` bị nuốt
   `\r` thành byte xuống dòng thật (0x0D) → comment gãy đôi thành lệnh, script
   chết trước khi bật service nào. Sửa bằng thay byte, đường dẫn trong .ps1 từ

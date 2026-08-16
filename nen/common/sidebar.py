@@ -19,10 +19,15 @@ def sb_apps_tu_claims(apps_vao) -> list[dict]:
     """App ĐÃ DI TRÚ hiện ở nhóm Tools (APPS.md bước 2: thêm app vào apps.json là
     sidebar tự ăn): giao giữa hợp đồng app và danh sách user được vào
     (X-Remote-Apps — gateway quyết). App chưa di trú không có trong hợp đồng nên
-    tự ẩn (giữ chốt 16/08). Lỗi đọc hợp đồng → rỗng, không vỡ trang."""
+    tự ẩn (giữ chốt 16/08). Lỗi đọc hợp đồng → rỗng, không vỡ trang.
+    href (Owner 16/08 'mở app vẫn còn sidebar'): app khai giao_dien 'khung' mở
+    qua /open/<slug> (iframe trong khung OUTLIERY); app native giữ /app/<slug>."""
     try:
         from nen.common.hop_dong import doc_hop_dong
-        return [{"slug": a["slug"], "ten": a["ten"]} for a in doc_hop_dong()
+        return [{"slug": a["slug"], "ten": a["ten"],
+                 "href": (f"/open/{a['slug']}" if a.get("giao_dien") == "khung"
+                          else f"/app/{a['slug']}")}
+                for a in doc_hop_dong()
                 if a["slug"] in apps_vao and a["slug"] not in KHONG_LAP_TOOLS]
     except Exception:
         return []
