@@ -1,7 +1,15 @@
 <!doctype html><html lang="vi"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>MOCKUP — General › Permissions</title>
-<link rel="stylesheet" href="style.css"></head><body>
+<link rel="stylesheet" href="style.css">
+<style>
+details.app{border:1px solid var(--vien);border-radius:8px;margin:8px 0;padding:0 12px}
+details.app summary{cursor:pointer;padding:10px 0;font-weight:600;display:flex;gap:8px;align-items:center}
+details.app[open] summary{border-bottom:1px solid var(--vien)}
+.le{outline:2px solid var(--acc);outline-offset:-2px}
+td select{min-width:96px}
+.uu-tien{font-size:12px;color:var(--phu)}
+</style></head><body>
 
 <div class="sidebar">
   <div class="brand"><span class="bars">▎▍▌▋█</span> OUTLIERY</div>
@@ -19,14 +27,14 @@
 <div class="main">
   <div class="topbar"><h1>General — quản trị nền</h1></div>
   <div class="gen-nav">
-    <a class="dis">Overview</a><a class="dis">Accounts</a><a class="dis">People</a>
+    <a class="dis">Overview</a><a class="dis">Accounts</a>
     <a class="active">Permissions</a><a href="niches.html">Niches</a>
     <a href="channels.html">Channels</a><a href="api-keys.html">API Keys</a>
-    <a class="dis">AI Models</a><a class="dis">Data &amp; Backup</a>
+    <a class="dis">Data &amp; Backup</a>
     <a class="dis">Audit Log</a><a class="dis">Applications</a>
   </div>
 
-  <div class="mock-banner"><b>MOCKUP — chưa có logic · phản hồi theo mã ô P1… · URL dự kiến: /general/permissions</b></div>
+  <div class="mock-banner"><b>MOCKUP v2 (16/08) — thiết kế lại theo phản hồi Owner: mặc định đi theo tài khoản (chỉ đọc), trang đi sâu NGOẠI LỆ, tôn trọng hệ quyền riêng từng app (khuôn V2 đã chạy ổn) · phản hồi theo mã ô P1… · URL: /general/permissions</b></div>
 
   <div class="khoi"><span class="ma-o">P1</span>
     <h2>Nhân sự</h2>
@@ -37,49 +45,119 @@
         <option>NS-007 · Phan Thảo — Kinh doanh · Manager (L4)</option>
       </select>
       <span class="badge b-acc">đang xem: NS-002</span>
+      <span style="flex:1"></span>
+      <span class="uu-tien">Ưu tiên: Ô TICK LẺ &gt; CẤP TRUY CẬP &gt; thường quy</span>
     </div>
   </div>
 
   <div class="khoi"><span class="ma-o">P2</span>
-    <h2>Luật thường quy — nhân sự bộ phận nào xem bộ phận đó</h2>
+    <h2>Quyền mặc định của NS-002 — suy từ Bộ phận × Cấp bậc, CHỈ ĐỌC</h2>
     <table>
-      <tr><th>Bộ phận</th><th>Được vào (mặc định)</th><th>Dữ liệu nhìn thấy</th><th>Khu chức năng</th></tr>
-      <tr><td>Ban quản trị (Owner)</td><td>Toàn hệ</td><td>Toàn bộ</td><td>HR Hub · Finance Hub · General</td></tr>
-      <tr><td>Kinh doanh</td><td>AI Agent · Data Analytics (L2+) · Organization</td><td>Chỉ bộ phận mình</td><td>—</td></tr>
-      <tr><td>Vận hành - Sản xuất</td><td>AI Agent · Organization</td><td>Chỉ bộ phận mình</td><td>—</td></tr>
-      <tr><td><b>Hành chính Nhân sự</b> <span class="badge b-acc">bộ phận của NS-002</span></td><td>AI Agent · Organization</td><td>Chỉ bộ phận mình + hồ sơ nhân sự (L3+)</td><td>HR Hub (L3+)</td></tr>
-      <tr><td>Kế toán</td><td>AI Agent · Organization</td><td>Chỉ bộ phận mình + sổ thu chi (L2+)</td><td>Finance Hub (L2+)</td></tr>
+      <tr><th>App / Khu</th><th>Vào được?</th><th>Vai trong app</th><th>Vì sao</th></tr>
+      <tr><td>AI Agent</td><td><span class="badge b-ok">có</span></td><td>viewer</td><td>mọi bộ phận · L1+</td></tr>
+      <tr><td>Data Analytics</td><td><span class="badge b-mut">không</span></td><td>—</td><td>chỉ Kinh doanh L2+ (HCNS không thuộc)</td></tr>
+      <tr><td>Organization</td><td><span class="badge b-ok">có</span></td><td>leader</td><td>mọi bộ phận · L1+ · L3 → leader</td></tr>
+      <tr><td>HR Hub</td><td><span class="badge b-ok">có</span></td><td>—</td><td>HCNS L3+ (giỏ nhan_su)</td></tr>
+      <tr><td>Finance Hub</td><td><span class="badge b-mut">không</span></td><td>—</td><td>Kế toán L2+ hoặc Owner</td></tr>
+      <tr><td>RadarY <span class="badge b-mut">khi port</span></td><td><span class="badge b-ok">có</span></td><td>viewer</td><td>mọi bộ phận L1+ · toàn quyền chỉ Manager bộ phận chủ quản</td></tr>
     </table>
+    <div class="toolbar" style="margin-top:8px">
+      <span class="uu-tien">Muốn đổi mặc định → đổi Bộ phận / Cấp bậc ở tab Accounts (một nguồn sự thật). Tầng QUẢN TRỊ app (tài khoản · API key · cấu hình) độc quyền Owner — Manager không bao giờ ngang Owner; cấp lẻ duy nhất qua ô "Quản trị" ở P4.</span>
+    </div>
   </div>
 
   <div class="khoi"><span class="ma-o">P3</span>
-    <h2>Ngoại lệ — NS-002 được vào xem thêm gì</h2>
-    <table>
-      <tr><th>Ngoại lệ</th><th>Chi tiết</th><th>Ngày gán · người gán</th><th></th></tr>
-      <tr><td><span class="badge b-warn">Khu chức năng</span></td><td>Finance Hub — <b>kiêm nhiệm Kế toán</b></td><td>16/08/2026 · owner</td>
-          <td><button class="nut nguy" style="padding:2px 8px">gỡ</button></td></tr>
-      <tr><td><span class="badge b-acc">Vào thêm app</span></td><td>Data Analytics — xem báo cáo kênh</td><td>16/08/2026 · owner</td>
-          <td><button class="nut nguy" style="padding:2px 8px">gỡ</button></td></tr>
-      <tr><td><span class="badge b-mut">Phạm vi kênh/ngách</span></td><td>Không giới hạn (theo luật thường quy)</td><td>—</td>
-          <td><button class="nut phu" style="padding:2px 8px">đặt giới hạn…</button></td></tr>
-    </table>
-    <div class="toolbar" style="margin-top:8px">
-      <button class="nut" onclick="document.getElementById('md-ngoai-le').classList.add('show')">+ Thêm ngoại lệ</button>
+    <h2>Cấp truy cập (acting)</h2>
+    <div class="toolbar">
+      <span>NS-002 truy cập như cấp:</span>
+      <select><option>— theo chức danh thật (L3)</option><option>L1</option><option>L2</option><option selected>L4 — Manager</option></select>
+      <button class="nut">Lưu</button>
+      <span class="badge b-warn">đang nâng: L3 → L4</span>
+      <span style="flex:1"></span>
+      <span class="uu-tien">Chức danh thật không đổi · Owner thật (L5) không bao giờ bị hạ</span>
     </div>
   </div>
-</div>
 
-<div class="modal-bg" id="md-ngoai-le" onclick="if(event.target===this)this.classList.remove('show')">
-  <div class="modal">
-    <h3>Thêm ngoại lệ cho NS-002 · Lê Thị C</h3>
-    <div class="form-grid">
-      <div><label>Loại ngoại lệ</label>
-        <select><option>Vào thêm app</option><option selected>Khu chức năng (HR / Finance)</option><option>Phạm vi kênh/ngách</option><option>Chặn bớt (thu hẹp)</option></select></div>
-      <div><label>Giá trị</label><select><option>Finance Hub (giỏ ke_toan)</option><option>HR Hub (giỏ nhan_su)</option></select></div>
-      <div><label>Lý do (bắt buộc — vào nhật ký)</label><input type="text" value="Kiêm nhiệm Kế toán tới khi tuyển chuyên trách"></div>
+  <div class="khoi"><span class="ma-o">P4</span>
+    <h2>Ngoại lệ theo app — hành động thật của từng app, tick đè mặc định</h2>
+
+    <details class="app" open>
+      <summary>AI Agent <span class="badge b-warn">2 lệ riêng</span>
+        <span class="uu-tien" style="font-weight:400">vai: viewer &lt; leader &lt; manager &lt; admin</span></summary>
+      <table>
+        <tr><th>Hành động</th><th>Tính năng mở khóa</th><th>Mặc định</th><th>Hiệu lực</th><th>Đặt</th></tr>
+        <tr><td>Nạp tài liệu</td><td>Upload kho tri thức + từ khóa gợi ý</td><td>Manager+ (L4)</td>
+            <td><span class="badge b-ok">CÓ (acting L4)</span></td>
+            <td><select><option selected>kế thừa</option><option>cho</option><option>chặn</option></select></td></tr>
+        <tr class="le"><td>Nguồn ngoài</td><td>Nạp video/transcript → bài học kinh nghiệm</td><td>Manager+ (L4)</td>
+            <td><span class="badge b-ok">CÓ (tick lẻ)</span></td>
+            <td><select><option>kế thừa</option><option selected>cho</option><option>chặn</option></select></td></tr>
+        <tr class="le"><td>Giám sát</td><td>Cây giám sát tri thức + lịch sử mọi người</td><td>Chỉ Owner</td>
+            <td><span class="badge b-ok">CÓ (tick lẻ)</span></td>
+            <td><select><option>kế thừa</option><option selected>cho</option><option>chặn</option></select></td></tr>
+        <tr><td>Duyệt Q&amp;A</td><td>Duyệt Q&amp;A bổ sung vào kho</td><td>Chỉ Owner</td>
+            <td><span class="badge b-mut">KHÔNG</span></td>
+            <td><select><option selected>kế thừa</option><option>cho</option><option>chặn</option></select></td></tr>
+        <tr><td>Quản trị</td><td>Sửa/xóa tài liệu kho + cấu hình app</td><td>Chỉ Owner</td>
+            <td><span class="badge b-mut">KHÔNG</span></td>
+            <td><select><option selected>kế thừa</option><option>cho</option><option>chặn</option></select></td></tr>
+      </table>
+    </details>
+
+    <details class="app">
+      <summary>Data Analytics <span class="badge b-mut">0 lệ riêng</span>
+        <span class="uu-tien" style="font-weight:400">vai: viewer &lt; leader &lt; manager &lt; admin</span></summary>
+      <table>
+        <tr><th>Hành động</th><th>Tính năng mở khóa</th><th>Mặc định</th><th>Hiệu lực</th><th>Đặt</th></tr>
+        <tr><td>Xem + chạy báo cáo</td><td>Upload report + bảng phán quyết</td><td>Kinh doanh L2+</td>
+            <td><span class="badge b-mut">KHÔNG (HCNS)</span></td>
+            <td><select><option selected>kế thừa</option><option>cho</option><option>chặn</option></select></td></tr>
+        <tr><td>Quản trị</td><td>Xóa báo cáo + sửa luật chẩn đoán</td><td>Chỉ Owner</td>
+            <td><span class="badge b-mut">KHÔNG</span></td>
+            <td><select><option selected>kế thừa</option><option>cho</option><option>chặn</option></select></td></tr>
+      </table>
+    </details>
+
+    <details class="app">
+      <summary>RadarY <span class="badge b-mut">khi port — khuôn sẵn</span>
+        <span class="uu-tien" style="font-weight:400">vai: viewer &lt; leader &lt; manager &lt; admin · tick "Toàn quyền vận hành" phát manager, KHÔNG lên admin</span></summary>
+      <table>
+        <tr><th>Hành động</th><th>Tính năng mở khóa</th><th>Mặc định</th><th>Hiệu lực</th><th>Đặt</th></tr>
+        <tr><td>Thêm video / tạo pool</td><td>Harvest + Data Pool</td><td>Kinh doanh L3+</td>
+            <td><span class="badge b-mut">KHÔNG</span></td>
+            <td><select><option selected>kế thừa</option><option>cho</option><option>chặn</option></select></td></tr>
+        <tr><td>Toàn quyền vận hành</td><td>Xóa video/kênh/pool/workspace</td><td>Manager bộ phận chủ quản</td>
+            <td><span class="badge b-mut">KHÔNG</span></td>
+            <td><select><option selected>kế thừa</option><option>cho</option><option>chặn</option></select></td></tr>
+        <tr><td>Quản trị</td><td>API key · thành viên · cấu hình LLM</td><td>Chỉ Owner</td>
+            <td><span class="badge b-mut">KHÔNG</span></td>
+            <td><select><option selected>kế thừa</option><option>cho</option><option>chặn</option></select></td></tr>
+      </table>
+    </details>
+
+    <div class="toolbar" style="margin-top:8px">
+      <button class="nut">Lưu thay đổi của NS-002</button>
+      <span class="uu-tien">Chỉ lưu ô KHÁC mặc định · tick về đúng mặc định là lệ tự xóa · hàng Owner khóa ở server</span>
     </div>
-    <div style="margin-top:12px"><button class="nut">Lưu ngoại lệ</button>
-      <button class="nut phu" onclick="document.getElementById('md-ngoai-le').classList.remove('show')">Hủy</button></div>
+  </div>
+
+  <div class="khoi"><span class="ma-o">P5</span>
+    <h2>Sổ ngoại lệ toàn hệ — mọi chỗ đang lệch thường quy</h2>
+    <table>
+      <tr><th>Người</th><th>App</th><th>Hành động</th><th>Đặt</th><th>Lý do</th><th>Ngày · người gán</th><th></th></tr>
+      <tr><td>NS-002 · Lê Thị C</td><td>AI Agent</td><td>Nguồn ngoài</td><td><span class="badge b-ok">cho</span></td>
+          <td>Phụ trách nạp bài học kênh</td><td>16/08/2026 · Bot</td>
+          <td><button class="nut nguy" style="padding:2px 8px">gỡ</button></td></tr>
+      <tr><td>NS-002 · Lê Thị C</td><td>AI Agent</td><td>Giám sát</td><td><span class="badge b-ok">cho</span></td>
+          <td>Theo dõi lỗ hổng kho thay Owner</td><td>16/08/2026 · Bot</td>
+          <td><button class="nut nguy" style="padding:2px 8px">gỡ</button></td></tr>
+      <tr><td>NS-016 · Trần Việt Thanh</td><td>Finance Hub</td><td>Vào khu (giỏ ke_toan)</td><td><span class="badge b-ok">cho</span></td>
+          <td>Kiêm nhiệm Kế toán tới khi tuyển chuyên trách</td><td>16/08/2026 · Bot</td>
+          <td><button class="nut nguy" style="padding:2px 8px">gỡ</button></td></tr>
+      <tr><td>NS-007 · Phan Thảo</td><td>Data Analytics</td><td>Xem + chạy báo cáo</td><td><span class="badge b-nguy">chặn</span></td>
+          <td>Tạm khóa trong thời gian bàn giao</td><td>16/08/2026 · Bot</td>
+          <td><button class="nut nguy" style="padding:2px 8px">gỡ</button></td></tr>
+    </table>
   </div>
 </div>
 </body></html>

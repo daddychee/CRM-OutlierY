@@ -421,3 +421,56 @@ sqlite-snapshot như iam.db.
   tab 2, restart ai-agent → chat chạy thật; Ctrl+U không thấy khóa. VIỆC
   TREO: engine xoay khóa thật ở app tiêu thụ (Đ4); các app nối
   `quota_log.ghi` dần; trạng thái "nghi cạn" (K1) cần quota log có dữ liệu.
+
+## 14. PERMISSIONS THIẾT KẾ LẠI (16/08 — mockup v2 CHỜ OWNER DUYỆT, chưa code)
+
+Owner phê trang Permissions "không bám sát thảo luận": (1) tài khoản đã mang
+Bộ phận × Cấp bậc = quyền MẶC ĐỊNH có sẵn — trang không được bắt cấu hình lại;
+(2) thứ cần đi sâu là NGOẠI LỆ; (3) từng app có HỆ QUYỀN RIÊNG phải tôn trọng
+— mảng từng hỏng nhiều nhất V2. Đã khảo sát trọn hệ quyền V2 (App_Rule.md +
+apps_registry + phan_quyen.py + vai nội bộ 6 app + 13 vụ hỏng). Mockup
+`permissions.html` viết lại P1–P5:
+
+- **P1** chọn nhân sự + dòng ưu tiên `Ô TICK LẺ > CẤP TRUY CẬP > thường quy`.
+- **P2 MẶC ĐỊNH CHỈ ĐỌC**: bảng per app — Vào được? / Vai trong app / Vì sao
+  (suy từ bộ phận × level); đổi mặc định = đổi ở Accounts (một nguồn sự thật).
+  In rõ luật tuyệt đối: tầng QUẢN TRỊ app (tài khoản · key · cấu hình) độc
+  quyền Owner — Manager không bao giờ ngang Owner.
+- **P3 CẤP TRUY CẬP (acting)**: truy cập như cấp 1–4, chức danh thật không
+  đổi, Owner thật không bao giờ bị hạ (chống tự khóa).
+- **P4 NGOẠI LỆ THEO APP (trọng tâm)**: mỗi app một khối <details> (khuôn V2
+  Owner đã duyệt) — từng HÀNH ĐỘNG THẬT khai trong hợp đồng, kèm cột "tính
+  năng mở khóa" (khuôn nhan_hd/mo_ta_hd V2), Mặc định / Hiệu lực / Đặt
+  (kế thừa·cho·chặn), ô lệch viền xanh, badge "N lệ riêng"; nấc **Quản trị**
+  mặc định chỉ Owner nhưng tick cấp lẻ được; chỉ lưu ô khác mặc định, tick về
+  mặc định tự xóa, hàng Owner khóa ở server.
+- **P5 SỔ NGOẠI LỆ TOÀN HỆ**: mọi override đang tồn — người/app/hành động/
+  cho-chặn/**lý do bắt buộc**/ngày · người gán/nút gỡ.
+
+**Hợp đồng app mở rộng** (áp khi code, sẵn chỗ cho app V2 port sang):
+`hanh_dong: {ma: {nhan, mo_ta, bo_phan, min_level}}` (fail-closed khi không
+khai) + `quan_tri` (mặc định chỉ Owner, phát vai cao nhất) + `vai_xoa` (vai
+phát khi có toàn-quyền-vận-hành — chống thăng quyền lặng lẽ) + thang vai
+CHUẨN HÓA DANH PHÁP một kiểu: `viewer < (vai đặc thù) < leader < manager <
+admin` — chữ "owner" chỉ còn MỘT nghĩa là Owner của OUTLIERY (V2 lệch:
+radary/seo gọi owner, content/niche/planner gọi admin). Vai dịch từ hành
+động kiểu dừng-tại-hit-đầu, tiêm X-Remote-Role MỖI request.
+
+**13 luật ghim từ vụ hỏng V2** (rút gọn — chi tiết ở khảo sát 16/08):
+(1) dịch vai "gần đúng" = thăng quyền lặng lẽ — đối chiếu TỪNG NẤC;
+(2) OUTLIERY là nguồn sự thật duy nhất — đồng bộ vai MỖI request, mọi nhánh,
+sổ riêng app không được thắng (bẫy PlannerY users.json còn nguyên ở V2);
+(3) cấm map theo TÊN đăng nhập — nối bằng mã (nguoi_ma/planner_id);
+(4) vai không-gán-phạm-vi là ca chưa từng chạy — test user "trắng";
+(5) ghép SSO phải rà MỌI chỗ đọc cookie; (6) endpoint nhạy cảm phải SAU cổng
+— đo 401/200 thật; (7) NAS chỉ-thêm L1-2; (8) Manager XEM ngang, TOÀN QUYỀN
+chỉ bộ phận chủ quản; (9) DEFAULT = vai THẤP NHẤT, fail-closed đo bằng chi
+phí token/quota; (10) danh mục cũ grandfather khi đọc, cấm gán mới, phản
+biện khi lệnh phá chỗ đứng Owner; (11) test hồi quy dựng từ BẢN GHI CŨ thiếu
+trường; (12) self-test ghim LUẬT không ghim hằng số; (13) chẩn quyền phải
+soi DB vai THẬT của app, không dừng ở bảng OUTLIERY. Cộng chuẩn nghiệm thu
+sống V2: sau restart đo từng app từng vai (manager /keys 403…) + test ghim
+"sổ ngoại lệ RỖNG = hành vi thường quy byte-identical".
+
+**Trạng thái: CHỜ OWNER DUYỆT MOCKUP** — duyệt xong mới code (sửa
+phan_quyen.json schema + co_quyen + trang /general/permissions + hợp đồng).
