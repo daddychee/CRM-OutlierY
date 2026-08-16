@@ -241,6 +241,36 @@ C2… để trỏ khi phản hồi).
    việc · lượt · quota tiêu · còn lại; đọc từ log JSON-lines chuẩn P4, lọc + xuất
    CSV). Bỏ khái niệm "nhóm khóa" làm trục chính — nhóm chỉ còn là nhãn lọc.
 
+## 13. PHẢN HỒI OWNER VÒNG 3 (16/08 — đã áp vào mockup, chờ duyệt)
+
+1. **NICHE CÓ TRƯỚC KÊNH**: Niches đứng đầu điều hướng; bảng niche hiện CHIP các
+   kênh thuộc nó; niche nối app **Niche Research** qua `lien_ket_app`. Kênh chỉ
+   tạo được khi đã có niche (form bắt chọn từ dropdown).
+2. **Gộp C1+C4**: form tạo kênh thành MODAL mở từ nút "+ New channel" (một khối
+   một việc, không còn form đứng thường trực). Kênh gắn mật thiết **Data
+   Analytics**: bảng kênh thêm cột số báo cáo + ngày mới nhất; chi tiết kênh có
+   khối báo cáo + đường sang Data Analytics.
+3. **API-FIRST, đa loại API**: thứ tự tab = ① Add API → ② Cấu hình theo app →
+   ③ Quota log. Loại API: YouTube Data v3 · **LLM (Claude/GLM/Gemini/ChatGPT/
+   Deepseek — được CHỌN MODEL từng khóa)** · VEO · Seedream. Cấu hình theo app =
+   mỗi VIỆC trong app chọn API (+model) nào — thay khái niệm vai LLM cũ của két
+   (AI Models sẽ gộp về đây khi code — hết 2 trang một chuyện).
+4. **Permissions về đúng 2 khái niệm**: P1 đổi nhãn "Nhân sự"; P2 = LUẬT THƯỜNG
+   QUY (bộ phận nào xem bộ phận đó — bảng mặc định theo bộ phận); P3 = NGOẠI LỆ
+   của từng nhân sự (vào thêm app / khu chức năng / phạm vi kênh-ngách / chặn
+   bớt, mỗi ngoại lệ kèm lý do + ngày + người gán). Bỏ ma trận P2-P5 cũ.
+5. **HR Hub**: hồ sơ chi tiết H1b chỉ mở khi DOUBLE-CLICK dòng nhân sự.
+6. **Finance Hub**: thêm trục **MỤC TIÊU** — mọi bút toán bắt buộc gắn mục tiêu
+   (tab Mục tiêu: ngân sách/đã chi/đã thu/tiến độ); Categories hiện TỔNG tháng +
+   lũy kế từng mã. Khi code: **tham khảo lõi mở kế toán** (beancount/hledger
+   plain-text ledger — khớp triết lý text-thuần + chỉ-thêm; quyết ở Đ2b) thay vì
+   tự viết engine sổ.
+
+**Hai luật toàn cục Owner chốt:** (a) MỌI bảng/bản ghi hiển thị **ngày nhập
+thông tin**; (b) **số tiền là DỮ LIỆU BẢO QUẢN LÂU DÀI** — sổ thu chi vào
+`du_lieu_nen` mức quý VÀNG, giữ VĨNH VIỄN, chỉ-thêm (sửa = bút toán đảo), backup
+sqlite-snapshot như iam.db.
+
 ## Trạng thái
 
 - 16/08/2026 — Sổ lập, đề xuất hoàn chỉnh, 4 quyết định Owner đã chốt (mục 1).

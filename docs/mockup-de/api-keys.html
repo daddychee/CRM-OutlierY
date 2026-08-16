@@ -7,8 +7,8 @@
   <div class="brand"><span class="bars">▎▍▌▋█</span> OUTLIERY</div>
   <div class="nav">
     <div class="lbl">Mockup khối đế</div>
-    <a href="channels.html">Channels</a>
     <a href="niches.html">Niches</a>
+    <a href="channels.html">Channels</a>
     <a class="active" href="api-keys.html">API Keys</a>
     <a href="permissions.html">Permissions</a>
     <a href="hr-hub.html">HR Hub</a>
@@ -20,8 +20,8 @@
   <div class="topbar"><h1>General — quản trị nền</h1></div>
   <div class="gen-nav">
     <a class="dis">Overview</a><a class="dis">Accounts</a><a class="dis">People</a>
-    <a href="permissions.html">Permissions</a><a href="channels.html">Channels</a>
-    <a href="niches.html">Niches</a><a class="active">API Keys</a>
+    <a href="permissions.html">Permissions</a><a href="niches.html">Niches</a>
+    <a href="channels.html">Channels</a><a class="active">API Keys</a>
     <a class="dis">AI Models</a><a class="dis">Data &amp; Backup</a>
     <a class="dis">Audit Log</a><a class="dis">Applications</a>
   </div>
@@ -29,97 +29,139 @@
   <div class="mock-banner"><b>MOCKUP — chưa có logic · phản hồi theo mã ô K1… · URL dự kiến: /general/api-keys</b></div>
 
   <div class="tabs">
-    <button class="active" onclick="mo('api',this)">Theo API</button>
-    <button onclick="mo('app',this)">Cấu hình theo app</button>
-    <button onclick="mo('log',this)">Quota log</button>
+    <button class="active" onclick="mo('api',this)">1 · Add API</button>
+    <button onclick="mo('app',this)">2 · Cấu hình theo app</button>
+    <button onclick="mo('log',this)">3 · Quota log</button>
   </div>
 
   <div class="pane show" id="p-api">
+    <div class="toolbar">
+      <button class="nut" onclick="document.getElementById('md-api').classList.add('show')">+ Add API key</button>
+    </div>
+
     <div class="khoi"><span class="ma-o">K1</span>
       <h2>YouTube Data API v3 <span class="badge b-acc">31 khóa</span></h2>
-      <div class="toolbar">
-        <select><option>App: All</option><option>seo-optimize</option><option>radary</option></select>
-        <select><option>Trạng thái: All</option><option>Đang dùng</option><option>Nghỉ</option><option>Nghi cạn</option></select>
-        <span style="flex:1"></span><button class="nut">+ Thêm khóa</button>
-      </div>
       <table>
-        <tr><th>#</th><th>Khóa (đuôi)</th><th>Cấu hình cho app</th><th class="num">Lượt gọi hôm nay</th><th>Quota hôm nay</th><th>Trạng thái</th><th></th></tr>
-        <tr><td>1</td><td class="chip">••••7f2a</td><td><span class="chip">seo-optimize</span></td>
-            <td class="num">8 412</td><td><div class="usage"><i style="width:84%;background:var(--warn)"></i></div></td>
-            <td><span class="badge b-warn">nghi cạn</span></td>
-            <td><button class="nut phu" style="padding:2px 8px">cấu hình</button> <button class="nut nguy" style="padding:2px 8px">thu hồi</button></td></tr>
-        <tr><td>2</td><td class="chip">••••c9d1</td><td><span class="chip">seo-optimize</span></td>
-            <td class="num">6 108</td><td><div class="usage"><i style="width:61%"></i></div></td>
-            <td><span class="badge b-ok">đang dùng</span></td>
-            <td><button class="nut phu" style="padding:2px 8px">cấu hình</button> <button class="nut nguy" style="padding:2px 8px">thu hồi</button></td></tr>
-        <tr><td>3</td><td class="chip">••••b3e8</td><td><span class="chip">radary</span></td>
-            <td class="num">12 040</td><td><div class="usage"><i style="width:74%"></i></div></td>
-            <td><span class="badge b-ok">đang dùng</span></td>
-            <td><button class="nut phu" style="padding:2px 8px">cấu hình</button> <button class="nut nguy" style="padding:2px 8px">thu hồi</button></td></tr>
-        <tr><td>4</td><td class="chip">••••11be</td><td><span class="badge b-mut">chưa cấp</span></td>
-            <td class="num">0</td><td><div class="usage"><i style="width:0%"></i></div></td>
-            <td><span class="badge b-mut">nghỉ</span></td>
-            <td><button class="nut phu" style="padding:2px 8px">cấu hình</button> <button class="nut nguy" style="padding:2px 8px">thu hồi</button></td></tr>
+        <tr><th>#</th><th>Khóa (đuôi)</th><th class="num">Lượt gọi hôm nay</th><th>Quota hôm nay</th><th>Trạng thái</th><th>Ngày thêm</th><th></th></tr>
+        <tr><td>1</td><td class="chip">••••7f2a</td><td class="num">8 412</td><td><div class="usage"><i style="width:84%;background:var(--warn)"></i></div></td>
+            <td><span class="badge b-warn">nghi cạn</span></td><td>03/08/2026</td><td><button class="nut nguy" style="padding:2px 8px">thu hồi</button></td></tr>
+        <tr><td>2</td><td class="chip">••••c9d1</td><td class="num">6 108</td><td><div class="usage"><i style="width:61%"></i></div></td>
+            <td><span class="badge b-ok">đang dùng</span></td><td>03/08/2026</td><td><button class="nut nguy" style="padding:2px 8px">thu hồi</button></td></tr>
+        <tr><td>3</td><td class="chip">••••b3e8</td><td class="num">12 040</td><td><div class="usage"><i style="width:74%"></i></div></td>
+            <td><span class="badge b-ok">đang dùng</span></td><td>30/07/2026</td><td><button class="nut nguy" style="padding:2px 8px">thu hồi</button></td></tr>
+        <tr><td>4</td><td class="chip">••••11be</td><td class="num">0</td><td><div class="usage"><i style="width:0%"></i></div></td>
+            <td><span class="badge b-mut">nghỉ</span></td><td>03/08/2026</td><td><button class="nut nguy" style="padding:2px 8px">thu hồi</button></td></tr>
       </table>
     </div>
 
     <div class="khoi"><span class="ma-o">K2</span>
-      <h2>Google Flow / Veo 3.1 <span class="badge b-acc">1 khóa</span></h2>
+      <h2>LLM <span class="badge b-acc">4 khóa · 5 nhà</span></h2>
       <table>
-        <tr><th>#</th><th>Khóa (đuôi)</th><th>Cấu hình cho app</th><th class="num">Lượt gọi hôm nay</th><th>Quota hôm nay</th><th>Trạng thái</th><th></th></tr>
-        <tr><td>1</td><td class="chip">••••f0a3</td><td><span class="chip">flowkit</span><span class="chip">vox</span></td>
-            <td class="num">37</td><td><div class="usage"><i style="width:18%"></i></div></td>
-            <td><span class="badge b-ok">đang dùng</span></td>
-            <td><button class="nut phu" style="padding:2px 8px">cấu hình</button> <button class="nut nguy" style="padding:2px 8px">thu hồi</button></td></tr>
+        <tr><th>Nhà</th><th>Khóa (đuôi)</th><th>Model đang chọn</th><th class="num">Lượt gọi hôm nay</th><th>Trạng thái</th><th>Ngày thêm</th><th></th></tr>
+        <tr><td>GLM (Z.ai)</td><td class="chip">••••9k2f</td>
+            <td><select><option selected>glm-4.5-air</option><option>glm-5</option><option>glm-5.2</option></select></td>
+            <td class="num">250</td><td><span class="badge b-ok">đang dùng</span></td><td>18/07/2026</td><td><button class="nut nguy" style="padding:2px 8px">thu hồi</button></td></tr>
+        <tr><td>Claude (Anthropic)</td><td class="chip">••••a1c8</td>
+            <td><select><option>claude-fable-5</option><option selected>claude-sonnet-5</option><option>claude-haiku-4-5</option></select></td>
+            <td class="num">0</td><td><span class="badge b-mut">dự phòng</span></td><td>16/08/2026</td><td><button class="nut nguy" style="padding:2px 8px">thu hồi</button></td></tr>
+        <tr><td>Gemini (Google)</td><td class="chip">••••e77d</td>
+            <td><select><option selected>gemini-2.5-pro</option><option>gemini-2.5-flash</option></select></td>
+            <td class="num">18</td><td><span class="badge b-ok">đang dùng</span></td><td>16/08/2026</td><td><button class="nut nguy" style="padding:2px 8px">thu hồi</button></td></tr>
+        <tr><td>Deepseek</td><td class="chip">••••02fb</td>
+            <td><select><option selected>deepseek-chat</option><option>deepseek-reasoner</option></select></td>
+            <td class="num">0</td><td><span class="badge b-mut">dự phòng</span></td><td>16/08/2026</td><td><button class="nut nguy" style="padding:2px 8px">thu hồi</button></td></tr>
+        <tr><td>ChatGPT (OpenAI)</td><td><span class="badge b-mut">chưa thêm khóa</span></td><td>—</td><td class="num">—</td><td>—</td><td>—</td>
+            <td><button class="nut phu" style="padding:2px 8px">+ thêm</button></td></tr>
       </table>
     </div>
 
     <div class="khoi"><span class="ma-o">K3</span>
-      <h2>LLM (writer / critic / diễn giải) <span class="badge b-acc">3 vai</span></h2>
+      <h2>VEO (Google Flow) <span class="badge b-acc">1 khóa</span></h2>
       <table>
-        <tr><th>Vai</th><th>Provider · Model</th><th>Khóa (đuôi)</th><th class="num">Lượt gọi hôm nay</th><th></th></tr>
-        <tr><td>writer</td><td>openai_compatible · glm-4.5-air</td><td class="chip">••••9k2f</td><td class="num">214</td><td><a href="#">sửa ở AI Models →</a></td></tr>
-        <tr><td>critic</td><td>openai_compatible · glm-5</td><td class="chip">••••9k2f</td><td class="num">0</td><td><a href="#">sửa ở AI Models →</a></td></tr>
-        <tr><td>dien_giai</td><td>openai_compatible · glm-4.5-air</td><td class="chip">••••9k2f</td><td class="num">36</td><td><a href="#">sửa ở AI Models →</a></td></tr>
+        <tr><th>#</th><th>Khóa (đuôi)</th><th>Model</th><th class="num">Lượt gọi hôm nay</th><th>Trạng thái</th><th>Ngày thêm</th><th></th></tr>
+        <tr><td>1</td><td class="chip">••••f0a3</td><td><select><option selected>veo-3.1</option><option>veo-3</option></select></td>
+            <td class="num">37</td><td><span class="badge b-ok">đang dùng</span></td><td>16/08/2026</td><td><button class="nut nguy" style="padding:2px 8px">thu hồi</button></td></tr>
+      </table>
+    </div>
+
+    <div class="khoi"><span class="ma-o">K4</span>
+      <h2>Seedream <span class="badge b-mut">0 khóa</span></h2>
+      <table>
+        <tr><td><span class="badge b-mut">Chưa thêm khóa</span></td>
+            <td style="text-align:right"><button class="nut phu" style="padding:2px 8px" onclick="document.getElementById('md-api').classList.add('show')">+ thêm khóa Seedream</button></td></tr>
       </table>
     </div>
   </div>
 
   <div class="pane" id="p-app">
-    <div class="khoi"><span class="ma-o">K4</span>
-      <h2>Cấu hình khóa cho từng app</h2>
+    <div class="khoi"><span class="ma-o">K5</span>
+      <h2>Cấu hình theo app — chọn API nào cho app nào</h2>
       <div class="toolbar">
-        <select style="min-width:220px"><option selected>App: seo-optimize</option><option>radary</option><option>vox</option><option>flowkit</option><option>tri-thuc</option><option>data-analytics</option></select>
+        <select style="min-width:220px"><option selected>App: tri-thuc (Knowledge)</option><option>data-analytics</option><option>seo-optimize</option><option>radary</option><option>vox</option><option>flowkit</option><option>speaky</option></select>
       </div>
       <table>
-        <tr><th>API</th><th>Khóa được cấp</th><th class="num">Trần lượt/ngày (tùy chọn)</th><th></th></tr>
-        <tr><td>YouTube Data v3</td><td><span class="chip">••••7f2a ×</span><span class="chip">••••c9d1 ×</span> <button class="nut phu" style="padding:2px 8px">+ khóa</button></td>
-            <td class="num"><input type="number" value="9000" style="width:90px"></td>
-            <td><button class="nut phu" style="padding:2px 8px">Lưu</button></td></tr>
-        <tr><td>LLM</td><td><span class="chip">theo vai (AI Models)</span></td><td class="num">—</td><td></td></tr>
+        <tr><th>Việc trong app</th><th>API được chọn</th><th>Model</th><th>Ngày cấu hình</th><th></th></tr>
+        <tr><td>Writer (trả lời)</td>
+            <td><select><option selected>LLM · GLM ••••9k2f</option><option>LLM · Claude ••••a1c8</option><option>LLM · Gemini ••••e77d</option><option>LLM · Deepseek ••••02fb</option></select></td>
+            <td><select><option selected>glm-4.5-air</option><option>glm-5</option></select></td>
+            <td>16/08/2026</td><td><button class="nut phu" style="padding:2px 8px">Lưu</button></td></tr>
+        <tr><td>Critic (phản biện)</td>
+            <td><select><option selected>— TẮT</option><option>LLM · GLM ••••9k2f</option><option>LLM · Claude ••••a1c8</option></select></td>
+            <td>—</td><td>16/08/2026</td><td><button class="nut phu" style="padding:2px 8px">Lưu</button></td></tr>
+        <tr><td>Trích nguồn ngoài (extract)</td>
+            <td><select><option selected>LLM · GLM ••••9k2f</option><option>LLM · Gemini ••••e77d</option></select></td>
+            <td><select><option selected>glm-4.5-air</option></select></td>
+            <td>16/08/2026</td><td><button class="nut phu" style="padding:2px 8px">Lưu</button></td></tr>
+      </table>
+    </div>
+
+    <div class="khoi"><span class="ma-o">K6</span>
+      <h2>Ví dụ app khác — vox</h2>
+      <table>
+        <tr><th>Việc trong app</th><th>API được chọn</th><th>Model</th><th>Ngày cấu hình</th><th></th></tr>
+        <tr><td>Sinh prompt cảnh</td><td><select><option selected>LLM · Gemini ••••e77d</option><option>LLM · GLM ••••9k2f</option></select></td>
+            <td><select><option selected>gemini-2.5-flash</option></select></td><td>16/08/2026</td><td><button class="nut phu" style="padding:2px 8px">Lưu</button></td></tr>
+        <tr><td>Render video</td><td><select><option selected>VEO ••••f0a3</option></select></td>
+            <td><select><option selected>veo-3.1</option></select></td><td>16/08/2026</td><td><button class="nut phu" style="padding:2px 8px">Lưu</button></td></tr>
+        <tr><td>Sinh ảnh</td><td><select><option selected>— chưa có khóa Seedream</option></select></td>
+            <td>—</td><td>—</td><td><button class="nut phu" style="padding:2px 8px">Lưu</button></td></tr>
       </table>
     </div>
   </div>
 
   <div class="pane" id="p-log">
-    <div class="khoi"><span class="ma-o">K5</span>
+    <div class="khoi"><span class="ma-o">K7</span>
       <h2>Quota log</h2>
       <div class="toolbar">
         <input type="date" value="2026-08-16">
-        <select><option>API: All</option><option>YouTube Data v3</option><option>Flow/Veo</option><option>LLM</option></select>
-        <select><option>Khóa: All</option><option>••••7f2a</option><option>••••c9d1</option></select>
-        <select><option>App: All</option><option>seo-optimize</option><option>radary</option></select>
+        <select><option>API: All</option><option>YouTube v3</option><option>LLM</option><option>VEO</option><option>Seedream</option></select>
+        <select><option>Khóa: All</option><option>••••7f2a</option><option>••••9k2f</option></select>
+        <select><option>App: All</option><option>seo-optimize</option><option>radary</option><option>tri-thuc</option><option>vox</option></select>
         <span style="flex:1"></span><button class="nut phu">⇩ Export CSV</button>
       </div>
       <table>
         <tr><th>Thời gian</th><th>API</th><th>Khóa</th><th>App</th><th>Việc</th><th class="num">Lượt</th><th class="num">Quota tiêu</th><th class="num">Còn lại (ước)</th></tr>
         <tr><td>16/08 14:32</td><td>YouTube v3</td><td class="chip">••••7f2a</td><td>seo-optimize</td><td>channel_video_ids</td><td class="num">120</td><td class="num">360</td><td class="num">1 590</td></tr>
         <tr><td>16/08 14:05</td><td>YouTube v3</td><td class="chip">••••b3e8</td><td>radary</td><td>harvest scan</td><td class="num">2 400</td><td class="num">2 400</td><td class="num">2 610</td></tr>
-        <tr><td>16/08 13:58</td><td>Flow/Veo</td><td class="chip">••••f0a3</td><td>vox</td><td>scene render ×8</td><td class="num">8</td><td class="num">8</td><td class="num">—</td></tr>
-        <tr><td>16/08 13:41</td><td>LLM</td><td class="chip">••••9k2f</td><td>tri-thuc</td><td>writer trả lời</td><td class="num">14</td><td class="num">—</td><td class="num">—</td></tr>
+        <tr><td>16/08 13:58</td><td>VEO</td><td class="chip">••••f0a3</td><td>vox</td><td>scene render ×8</td><td class="num">8</td><td class="num">8</td><td class="num">—</td></tr>
+        <tr><td>16/08 13:41</td><td>LLM · GLM</td><td class="chip">••••9k2f</td><td>tri-thuc</td><td>writer trả lời</td><td class="num">14</td><td class="num">—</td><td class="num">—</td></tr>
         <tr><td>16/08 12:10</td><td>YouTube v3</td><td class="chip">••••7f2a</td><td>seo-optimize</td><td>extract format</td><td class="num">4 080</td><td class="num">7 900</td><td class="num">2 100</td></tr>
       </table>
     </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="md-api" onclick="if(event.target===this)this.classList.remove('show')">
+  <div class="modal">
+    <h3>Add API key</h3>
+    <div class="form-grid">
+      <div><label>Loại API *</label>
+        <select><option>YouTube Data v3</option><option>LLM — Claude</option><option>LLM — GLM</option><option>LLM — Gemini</option><option>LLM — ChatGPT</option><option>LLM — Deepseek</option><option>VEO</option><option selected>Seedream</option></select></div>
+      <div><label>Khóa * (không hiện lại sau khi lưu)</label><input type="text" placeholder="dán khóa…"></div>
+      <div><label>Model mặc định (API có model)</label><input type="text" placeholder="vd: seedream-3.0"></div>
+    </div>
+    <div style="margin-top:12px"><button class="nut">Save key</button>
+      <button class="nut phu" onclick="document.getElementById('md-api').classList.remove('show')">Hủy</button></div>
   </div>
 </div>
 

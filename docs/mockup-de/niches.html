@@ -7,8 +7,8 @@
   <div class="brand"><span class="bars">▎▍▌▋█</span> OUTLIERY</div>
   <div class="nav">
     <div class="lbl">Mockup khối đế</div>
-    <a href="channels.html">Channels</a>
     <a class="active" href="niches.html">Niches</a>
+    <a href="channels.html">Channels</a>
     <a href="api-keys.html">API Keys</a>
     <a href="permissions.html">Permissions</a>
     <a href="hr-hub.html">HR Hub</a>
@@ -20,8 +20,8 @@
   <div class="topbar"><h1>General — quản trị nền</h1></div>
   <div class="gen-nav">
     <a class="dis">Overview</a><a class="dis">Accounts</a><a class="dis">People</a>
-    <a href="permissions.html">Permissions</a><a href="channels.html">Channels</a>
-    <a class="active">Niches</a><a href="api-keys.html">API Keys</a>
+    <a href="permissions.html">Permissions</a><a class="active">Niches</a>
+    <a href="channels.html">Channels</a><a href="api-keys.html">API Keys</a>
     <a class="dis">AI Models</a><a class="dis">Data &amp; Backup</a>
     <a class="dis">Audit Log</a><a class="dis">Applications</a>
   </div>
@@ -29,50 +29,69 @@
   <div class="mock-banner"><b>MOCKUP — chưa có logic · phản hồi theo mã ô N/M · URL dự kiến: /general/niches</b></div>
 
   <div class="khoi"><span class="ma-o">N1</span>
-    <h2>Niches</h2>
+    <h2>Niches — đơn vị gốc, có trước kênh</h2>
     <div class="toolbar">
       <input type="text" placeholder="Search name / alias">
-      <span style="flex:1"></span><button class="nut">+ New niche</button>
+      <span style="flex:1"></span><button class="nut" onclick="document.getElementById('md-niche').classList.add('show')">+ New niche</button>
     </div>
     <table>
-      <tr><th>Code</th><th>Name</th><th>Aliases (khớp máy)</th><th>Status</th><th class="num">Channels</th><th>Ghi chú</th></tr>
-      <tr><td><b>N-LIFEIN</b></td><td>Life In</td><td><span class="chip">life in x</span><span class="chip">đời sống mỹ</span><span class="chip">Life_In</span></td>
-          <td><span class="badge b-ok">Exploiting</span></td><td class="num">3</td><td>RadarY ws#1 · SEO "Life In" · PlannerY "Life In"</td></tr>
-      <tr><td><b>N-SPACE</b></td><td>Space</td><td><span class="chip">space</span></td>
-          <td><span class="badge b-ok">Exploiting</span></td><td class="num">1</td><td></td></tr>
-      <tr><td><b>N-OLD</b></td><td>OLD</td><td><span class="chip">old investigate</span><span class="chip">old newbie</span><span class="chip">old invest</span></td>
-          <td><span class="badge b-ok">Exploiting</span></td><td class="num">1</td><td>gộp 2 workspace RadarY (#8 + #16)</td></tr>
-      <tr><td><b>N-INVEST</b></td><td>Investigation</td><td><span class="chip">investigate</span></td>
-          <td><span class="badge b-ok">Exploiting</span></td><td class="num">1</td><td></td></tr>
-      <tr><td><b>N-HEALTH</b></td><td>Senior Health</td><td><span class="chip">health</span><span class="chip">bluezone</span></td>
-          <td><span class="badge b-warn">Testing</span></td><td class="num">1</td><td></td></tr>
-      <tr><td><b>N-QUANTUM</b></td><td>Quantum</td><td></td>
-          <td><span class="badge b-warn">Testing</span></td><td class="num">1</td><td>chỉ có ở PlannerY</td></tr>
-      <tr><td><b>N-STORM</b></td><td>Storm</td><td></td>
-          <td><span class="badge b-mut">Paused</span></td><td class="num">0</td><td>chỉ còn pool đối thủ RadarY ws#3</td></tr>
+      <tr><th>Code</th><th>Name</th><th>Kênh trong niche</th><th>Niche Research</th><th>Aliases</th><th>Status</th><th>Ngày tạo</th></tr>
+      <tr><td><b>N-LIFEIN</b></td><td>Life In</td>
+          <td><span class="chip">K-OUTLAND</span><span class="chip">K-OUTLAND-KR</span><span class="chip">K-LIFEDECODED</span></td>
+          <td><span class="chip">📊 Life_In</span></td>
+          <td><span class="chip">life in x</span><span class="chip">đời sống mỹ</span></td>
+          <td><span class="badge b-ok">Exploiting</span></td><td>16/08/2026</td></tr>
+      <tr><td><b>N-SPACE</b></td><td>Space</td>
+          <td><span class="chip">K-SPACEARCH</span></td>
+          <td><span class="badge b-mut">chưa có dự án</span></td>
+          <td><span class="chip">space</span></td>
+          <td><span class="badge b-ok">Exploiting</span></td><td>16/08/2026</td></tr>
+      <tr><td><b>N-OLD</b></td><td>OLD</td>
+          <td><span class="chip">K-TIMEVAULT</span></td>
+          <td><span class="badge b-mut">chưa có dự án</span></td>
+          <td><span class="chip">old investigate</span><span class="chip">old invest</span></td>
+          <td><span class="badge b-ok">Exploiting</span></td><td>16/08/2026</td></tr>
+      <tr><td><b>N-HEALTH</b></td><td>Senior Health</td>
+          <td><span class="chip">K-HEALTHYELDER</span></td>
+          <td><span class="badge b-mut">chưa có dự án</span></td>
+          <td><span class="chip">health</span><span class="chip">bluezone</span></td>
+          <td><span class="badge b-warn">Testing</span></td><td>16/08/2026</td></tr>
+      <tr><td><b>N-QUANTUM</b></td><td>Quantum</td>
+          <td><span class="chip">K-COSMICDEPTH</span></td>
+          <td><span class="badge b-mut">chưa có dự án</span></td>
+          <td></td>
+          <td><span class="badge b-warn">Testing</span></td><td>16/08/2026</td></tr>
+      <tr><td><b>N-STORM</b></td><td>Storm</td>
+          <td><span class="badge b-mut">0 kênh</span></td>
+          <td><span class="badge b-mut">chưa có dự án</span></td>
+          <td></td>
+          <td><span class="badge b-mut">Paused</span></td><td>16/08/2026</td></tr>
     </table>
-  </div>
-
-  <div class="khoi"><span class="ma-o">N2</span>
-    <h2>Form tạo/sửa ngách</h2>
-    <div class="form-grid">
-      <div><label>Tên chuẩn *</label><input type="text" value="Senior Health"></div>
-      <div><label>Trạng thái</label><select><option>Exploiting — đang khai thác</option><option selected>Testing — đang thử</option><option>Paused — tạm nghỉ</option></select></div>
-      <div><label>Aliases</label><span class="chip">health ×</span><span class="chip">bluezone ×</span> <input type="text" style="width:110px" placeholder="+ alias, Enter"></div>
-      <div><label>Ghi chú</label><input type="text"></div>
-    </div>
-    <div style="margin-top:8px"><button class="nut">Save niche</button></div>
   </div>
 
   <div class="khoi"><span class="ma-o">M1</span>
     <h2>Markets</h2>
     <table>
-      <tr><th>Code</th><th>Market</th><th>Language</th><th class="num">Channels</th><th></th></tr>
-      <tr><td><b>TT-US</b></td><td>US</td><td>English</td><td class="num">4</td><td><button class="nut phu" style="padding:2px 8px">sửa</button></td></tr>
-      <tr><td><b>TT-KR</b></td><td>KOREA</td><td>Korean</td><td class="num">1</td><td><button class="nut phu" style="padding:2px 8px">sửa</button></td></tr>
-      <tr><td><b>TT-ES</b></td><td>SPAIN</td><td>Spanish</td><td class="num">0</td><td><button class="nut phu" style="padding:2px 8px">sửa</button></td></tr>
+      <tr><th>Code</th><th>Market</th><th>Language</th><th class="num">Channels</th><th>Ngày tạo</th><th></th></tr>
+      <tr><td><b>TT-US</b></td><td>US</td><td>English</td><td class="num">4</td><td>16/08/2026</td><td><button class="nut phu" style="padding:2px 8px">sửa</button></td></tr>
+      <tr><td><b>TT-KR</b></td><td>KOREA</td><td>Korean</td><td class="num">1</td><td>16/08/2026</td><td><button class="nut phu" style="padding:2px 8px">sửa</button></td></tr>
+      <tr><td><b>TT-ES</b></td><td>SPAIN</td><td>Spanish</td><td class="num">0</td><td>16/08/2026</td><td><button class="nut phu" style="padding:2px 8px">sửa</button></td></tr>
     </table>
     <div class="toolbar" style="margin-top:8px"><button class="nut phu">+ New market</button></div>
+  </div>
+</div>
+
+<div class="modal-bg" id="md-niche" onclick="if(event.target===this)this.classList.remove('show')">
+  <div class="modal">
+    <h3>New niche</h3>
+    <div class="form-grid">
+      <div><label>Tên chuẩn *</label><input type="text"></div>
+      <div><label>Trạng thái</label><select><option>Exploiting</option><option selected>Testing</option><option>Paused</option></select></div>
+      <div><label>Aliases</label><input type="text" placeholder="+ alias, Enter"></div>
+      <div><label>Dự án Niche Research</label><select><option>— chưa nối</option><option>Life_In</option></select></div>
+    </div>
+    <div style="margin-top:12px"><button class="nut">Save niche</button>
+      <button class="nut phu" onclick="document.getElementById('md-niche').classList.remove('show')">Hủy</button></div>
   </div>
 </div>
 </body></html>

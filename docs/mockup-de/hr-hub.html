@@ -40,15 +40,15 @@
     <div class="khoi"><span class="ma-o">H1</span>
       <h2>People</h2>
       <table>
-        <tr><th>Mã</th><th>Họ tên</th><th>Bộ phận</th><th>Vị trí</th><th>Trạng thái</th><th>PlannerY</th><th></th></tr>
-        <tr><td>NS-016</td><td>Trần Việt Thanh</td><td>Kinh doanh</td><td>SEO</td><td><span class="badge b-ok">Đang làm</span></td><td class="chip">ns_ns016</td><td><button class="nut phu" style="padding:2px 8px">sửa</button></td></tr>
-        <tr><td>NS-005</td><td>Nguyễn Văn B</td><td>Vận hành - Sản xuất</td><td>Content</td><td><span class="badge b-ok">Đang làm</span></td><td class="chip">ns_ns005</td><td><button class="nut phu" style="padding:2px 8px">sửa</button></td></tr>
-        <tr><td>NS-002</td><td>Lê Thị C <span class="badge b-warn">kiêm nhiệm Kế toán</span></td><td>Hành chính Nhân sự</td><td>HR Leader</td><td><span class="badge b-ok">Đang làm</span></td><td>—</td><td><button class="nut phu" style="padding:2px 8px">sửa</button></td></tr>
+        <tr><th>Mã</th><th>Họ tên</th><th>Bộ phận</th><th>Vị trí</th><th>Trạng thái</th><th>PlannerY</th><th>Ngày nhập</th></tr>
+        <tr ondblclick="document.getElementById('h1b').style.display='block';document.getElementById('h1b').scrollIntoView({behavior:'smooth'})" style="cursor:pointer"><td>NS-016</td><td>Trần Việt Thanh</td><td>Kinh doanh</td><td>SEO</td><td><span class="badge b-ok">Đang làm</span></td><td class="chip">ns_ns016</td><td>31/07/2026</td></tr>
+        <tr ondblclick="document.getElementById('h1b').style.display='block';document.getElementById('h1b').scrollIntoView({behavior:'smooth'})" style="cursor:pointer"><td>NS-005</td><td>Nguyễn Văn B</td><td>Vận hành - Sản xuất</td><td>Content</td><td><span class="badge b-ok">Đang làm</span></td><td class="chip">ns_ns005</td><td>31/07/2026</td></tr>
+        <tr ondblclick="document.getElementById('h1b').style.display='block';document.getElementById('h1b').scrollIntoView({behavior:'smooth'})" style="cursor:pointer"><td>NS-002</td><td>Lê Thị C <span class="badge b-warn">kiêm nhiệm Kế toán</span></td><td>Hành chính Nhân sự</td><td>HR Leader</td><td><span class="badge b-ok">Đang làm</span></td><td>—</td><td>31/07/2026</td></tr>
       </table>
       <div class="toolbar" style="margin-top:8px"><button class="nut">+ New profile</button></div>
     </div>
 
-    <div class="khoi"><span class="ma-o">H1b</span>
+    <div class="khoi" id="h1b" style="display:none"><span class="ma-o">H1b</span>
       <h2>Hồ sơ lưu trữ — NS-016 · Trần Việt Thanh</h2>
       <div class="form-grid">
         <div><label>Tên *</label><input type="text" value="Trần Việt Thanh"></div>
@@ -70,7 +70,8 @@
         <tr><td>Khác</td><td><span class="badge b-mut">chưa có</span></td><td>—</td>
             <td><button class="nut phu" style="padding:2px 8px">⇧ tải lên</button></td></tr>
       </table>
-      <div style="margin-top:10px"><button class="nut">Save profile</button> <button class="nut phu">Hủy</button></div>
+      <div style="margin-top:10px"><button class="nut">Save profile</button>
+        <button class="nut phu" onclick="document.getElementById('h1b').style.display='none'">Đóng</button></div>
     </div>
   </div>
 
