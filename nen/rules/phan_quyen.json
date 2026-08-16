@@ -11,7 +11,9 @@
     "duyet_ho_so",
     "nap_tai_lieu",
     "duyet_qa",
-    "giam_sat"
+    "giam_sat",
+    "nhan_su",
+    "ke_toan"
   ],
   "apps": {
     "app-mau": {

@@ -213,6 +213,14 @@
       <a class="nav-item" href="/nas">
         <svg class="ic" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="6" rx="1"/><rect x="3" y="13" width="18" height="6" rx="1"/><circle cx="7" cy="8" r=".9"/><circle cx="7" cy="16" r=".9"/></svg> NAS</a>
       {% endif %}
+      {% if sb_hr %}
+      <a class="nav-item" href="/hr">
+        <svg class="ic" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M15.5 4.6a3.5 3.5 0 0 1 0 6.8"/><path d="M17 13.4a6.5 6.5 0 0 1 4.5 6.6"/></svg> HR</a>
+      {% endif %}
+      {% if sb_fin %}
+      <a class="nav-item" href="/finance">
+        <svg class="ic" viewBox="0 0 24 24"><path d="M12 2v20"/><path d="M17 5.5H9.5a3 3 0 0 0 0 6h5a3 3 0 0 1 0 6H6.5"/></svg> Finance</a>
+      {% endif %}
       {% if is_owner %}
       <a class="nav-item" href="/tracking">
         <svg class="ic" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg> Tracking</a>

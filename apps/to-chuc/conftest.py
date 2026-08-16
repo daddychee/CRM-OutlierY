@@ -22,6 +22,14 @@ def _cach_ly_du_lieu(tmp_path, monkeypatch):
     # dữ liệu của chính app
     monkeypatch.setenv("CHAM_CONG_DIR", str(tmp_path / "cham-cong"))
     monkeypatch.setenv("VAULT_DIR", str(tmp_path / "vault"))
+    # HR Hub + Finance Hub: 4 store mới + log P4 + danh bạ đế đều trỏ tmp —
+    # suite tuyệt đối không ghi sổ tiền/chốt công/danh bạ thật
+    monkeypatch.setenv("CHAM_CONG_CHOT_DIR", str(tmp_path / "cham-cong-chot"))
+    monkeypatch.setenv("KPI_DANH_GIA_DIR", str(tmp_path / "kpi-danh-gia"))
+    monkeypatch.setenv("SO_THU_CHI_DIR", str(tmp_path / "so-thu-chi"))
+    monkeypatch.setenv("MUC_TIEU_PATH", str(tmp_path / "muc-tieu.json"))
+    monkeypatch.setenv("LOGS_DIR", str(tmp_path / "logs"))
+    monkeypatch.setenv("DANH_BA_DB", str(tmp_path / "danh_ba.db"))
     # 4 nguồn KPI: mặc định KHÔNG TỒN TẠI (thử van chống bịa "nguồn chết → —");
     # test nào cần thì tự tạo file tại đúng đường env này
     monkeypatch.setenv("PLANNERY_PLAN", str(tmp_path / "plan.json"))

@@ -318,3 +318,61 @@ def test_proxy_phat_x_remote_name(client, app_mau_server, iam_db):
     r = client.get("/app/app-mau/", headers={"X-Remote-Name": "gia-mao"})
     assert r.status_code == 200
     assert "gia-mao" not in r.text        # header giả bị vứt
+
+
+# ---------- giỏ chức năng HR/Finance (DE.md mục 10) ----------
+
+def test_proxy_phat_co_hr_finance(client, app_mau_server, iam_db):
+    """Gateway phát cờ khu chức năng 'hr'/'finance' vào X-Remote-Apps — app to-chuc
+    CHỈ TIN cờ này. Mặc định: Owner + HR L3+ → hr; Owner + Kế toán L2+ → finance.
+    Ô TICK nhan_su/ke_toan trên trang Permissions THẮNG luật mặc định (cả hai
+    chiều cho lẫn chặn) — helper _gio_chuc_nang, KHÔNG sửa iam.co_quyen."""
+    conn = iam.ket_noi()
+    ow = iam.claims_cua(iam.lay_tai_khoan(conn, "owner-test"))
+    iam.tao_tai_khoan(conn, ow, "hr2", "mk-hr2-6", "Hành chính Nhân sự", 3,
+                      phai_doi_mk=False)
+    iam.tao_tai_khoan(conn, ow, "ketoan", "mk-kt-6", "Kế toán", 2, phai_doi_mk=False)
+    conn.close()
+
+    _login(client)                                       # Owner: đủ cả hai cờ
+    t = client.get("/app/app-mau/").text
+    assert ",hr" in t and "finance" in t
+
+    _login(client, "hr2", "mk-hr2-6")                    # HR L3: hr có, finance không
+    t = client.get("/app/app-mau/").text
+    assert ",hr" in t and "finance" not in t
+
+    _login(client, "ketoan", "mk-kt-6")                  # Kế toán L2: finance, không hr
+    t = client.get("/app/app-mau/").text
+    assert "finance" in t and ",hr" not in t
+
+    _login(client, "nhanvien", "mk-nv-6")                # KD L2: không cờ nào
+    t = client.get("/app/app-mau/").text
+    assert ",hr" not in t and "finance" not in t
+
+    conn = iam.ket_noi()                                 # tick lẻ thắng mặc định
+    iam.gan_override(conn, ow, "nhanvien", "*", "ke_toan", True)   # CHO kiêm nhiệm
+    iam.gan_override(conn, ow, "hr2", "*", "nhan_su", False)       # CHẶN đè luật HR
+    conn.close()
+    _login(client, "nhanvien", "mk-nv-6")
+    assert "finance" in client.get("/app/app-mau/").text
+    _login(client, "hr2", "mk-hr2-6")
+    assert ",hr" not in client.get("/app/app-mau/").text
+
+
+def test_alias_hr_finance_tro_to_chuc(client, iam_db):
+    """URL đẹp /hr + /finance trỏ app to-chuc (bo_qua tự bảo vệ vì lấy từ khóa
+    _ALIAS). KHÔNG gọi sống cổng 9103 — máy dev có thể đang chạy bản to-chuc CŨ
+    (luật: không restart service trong đợt code) → kiểm dây nối tĩnh:
+    alias + route đã đăng ký + tien_to hợp đồng app có /hr /finance để proxy
+    viết lại được đường con (/hr/chot-cong → /app/to-chuc/...)."""
+    from nen.common.hop_dong import tim_app
+    from nen.gateway.main import _ALIAS, _ALIAS_BO_QUA
+    from nen.gateway.main import app as gw
+    assert _ALIAS["/hr"] == ("to-chuc", "hr")
+    assert _ALIAS["/finance"] == ("to-chuc", "finance")
+    assert "/hr" in _ALIAS_BO_QUA and "/finance" in _ALIAS_BO_QUA
+    duong = {r.path: getattr(r, "methods", set()) for r in gw.routes}
+    assert "GET" in duong["/hr"] and "GET" in duong["/finance"]
+    tc = tim_app("to-chuc")
+    assert "/hr" in tc["tien_to"] and "/finance" in tc["tien_to"]

@@ -18,6 +18,7 @@ NGUYÊN TỬ; throttle bộ nhớ: request thường ghi đĩa tối đa 1 lần
 
 import json
 import os
+import re
 import threading
 from datetime import datetime
 from pathlib import Path
@@ -99,3 +100,68 @@ def tong_gio(vao: str, ra: str) -> str:
         return f"{s // 3600}g{(s % 3600) // 60:02d}"
     except (TypeError, ValueError):
         return ""
+
+
+def gio_chu(giay: int) -> str:
+    """Tổng giây → '112g30' cho bảng công. 0/âm → '' (không bịa số)."""
+    if not giay or giay < 0:
+        return ""
+    return f"{giay // 3600}g{(giay % 3600) // 60:02d}"
+
+
+# ── BẢNG CÔNG KỲ THÁNG + CHỐT CÔNG (HR Hub, DE.md mục 10) ──────────────────────
+
+def bang_cong_thang(thang: str) -> dict:
+    """Gộp file tháng thành bảng công per user:
+    {user: {so_ngay, tong_giay, ngay_cuoi}} — chỉ cộng ngày có cặp vào/ra hợp lệ,
+    ngày thiếu giờ ra thì vẫn đếm CÓ MẶT nhưng không cộng giờ (không bịa số)."""
+    ra: dict[str, dict] = {}
+    for ngay, nguoi in sorted(_doc(thang).items()):
+        for ten, d in nguoi.items():
+            m = ra.setdefault(ten, {"so_ngay": 0, "tong_giay": 0, "ngay_cuoi": ""})
+            if d.get("vao"):
+                m["so_ngay"] += 1
+                m["ngay_cuoi"] = max(m["ngay_cuoi"], ngay)
+            try:
+                a = datetime.strptime(d.get("vao", ""), "%H:%M:%S")
+                b = datetime.strptime(d.get("ra", ""), "%H:%M:%S")
+                s = int((b - a).total_seconds())
+                if s > 0:
+                    m["tong_giay"] += s
+            except (TypeError, ValueError):
+                pass
+    return ra
+
+
+def _thu_muc_chot() -> Path:
+    return Path(os.getenv("CHAM_CONG_CHOT_DIR", "nhan-su/cham-cong-chot"))
+
+
+def doc_chot(thang: str) -> dict | None:
+    """Bản chốt công của kỳ (None = chưa chốt)."""
+    p = _thu_muc_chot() / f"{thang}.json"
+    if not p.is_file():
+        return None
+    try:
+        du = json.loads(p.read_text(encoding="utf-8"))
+        return du if isinstance(du, dict) else None
+    except ValueError:
+        return None
+
+
+def chot_ky(thang: str, nguoi_chot: str) -> dict:
+    """CHỐT CÔNG kỳ tháng — file chốt CHỈ-THÊM: mỗi kỳ ghi ĐÚNG MỘT LẦN, đã chốt
+    thì từ chối (không ghi đè lịch sử — đúng lệ sổ chỉ-ghi-thêm hệ cũ). Ghi
+    nguyên tử tmp + os.replace."""
+    if not re.fullmatch(r"\d{4}-\d{2}", thang or ""):
+        raise ValueError("Kỳ phải dạng YYYY-MM.")
+    if doc_chot(thang) is not None:
+        raise ValueError(f"Kỳ {thang} đã chốt rồi — bản chốt không ghi đè được.")
+    ban = {"ky": thang, "chot_luc": datetime.now().isoformat(timespec="seconds"),
+           "nguoi_chot": nguoi_chot, "bang": bang_cong_thang(thang)}
+    p = _thu_muc_chot() / f"{thang}.json"
+    p.parent.mkdir(parents=True, exist_ok=True)
+    tam = p.with_name(p.name + ".tmp")
+    tam.write_text(json.dumps(ban, ensure_ascii=False, indent=1), encoding="utf-8")
+    os.replace(tam, p)
+    return ban

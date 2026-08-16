@@ -1,0 +1,218 @@
+{% extends "base.html" %}
+{% block title %}Finance — OUTLIERY{% endblock %}
+{% block topbar_ten %}<svg class="ic" viewBox="0 0 24 24"><path d="M12 2v20"/><path d="M17 5.5H9.5a3 3 0 0 0 0 6h5a3 3 0 0 1 0 6H6.5"/></svg> Finance{% endblock %}
+
+{% block style_them %}
+  /* style_them nằm TRONG thẻ style chung của base — CSS TRẦN, không viết thẻ style */
+  .hub-wrap{max-width:1120px;margin:1.2rem auto;padding:0 1rem}
+  .stat-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin:0 0 1rem}
+  .stat{border:1px solid var(--line);border-radius:12px;padding:10px 14px;background:var(--chip)}
+  .stat .n{font-size:1.3rem;font-weight:700}
+  .stat .t{font-size:.78rem;color:var(--muted)}
+  .tab-nav{display:flex;gap:6px;margin:.2rem 0 1rem;flex-wrap:wrap}
+  .tab-nav a{font-size:.85rem;padding:.35rem .95rem;border-radius:999px;border:1px solid var(--chip-line);color:var(--muted);text-decoration:none}
+  .tab-nav a.active{background:var(--th-182233);color:var(--ink);font-weight:600}
+  .hub-tieu{font-size:1.05rem;margin:.6rem 0 .5rem;display:flex;align-items:center;gap:.5rem;flex-wrap:wrap}
+  .hub-tieu svg.ic{width:17px;height:17px;color:var(--muted)}
+  .bang-cuon{overflow-x:auto}
+  table.bang{width:100%;border-collapse:collapse;font-size:.9rem;margin-top:.4rem}
+  .bang th,.bang td{text-align:left;padding:.45rem .55rem;border-bottom:1px solid var(--line);vertical-align:top}
+  .bang th{color:var(--muted);font-size:.78rem;white-space:nowrap}
+  .bang td.so,.bang th.so{text-align:right;white-space:nowrap}
+  .tk{font-family:var(--mono,monospace);font-size:.84rem}
+  .badge{display:inline-block;font-size:.72rem;padding:1px 8px;border-radius:999px;border:1px solid var(--chip-line);color:var(--muted);white-space:nowrap}
+  .badge.ok{color:var(--accent);border-color:var(--th-31425e)}
+  .badge.do{color:var(--th-d97c6c)}
+  .thieu{color:var(--muted)}
+  .canh{margin:.5rem 0;padding:.55rem .8rem;border-radius:9px;background:var(--chip);border:1px solid var(--chip-line);font-size:.86rem;color:var(--muted)}
+  .o{font:inherit;background:transparent;color:var(--ink);border:1px solid var(--line);border-radius:7px;padding:3px 8px}
+  .form-moi{border:1px solid var(--line);border-radius:12px;padding:10px 14px;margin:.5rem 0;background:var(--chip)}
+  .form-moi summary{cursor:pointer;font-weight:600;font-size:.9rem}
+  .form-luoi{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;margin-top:10px}
+  .form-luoi label{display:block;font-size:.75rem;color:var(--muted);margin-bottom:2px}
+  .form-luoi .o{width:100%;box-sizing:border-box}
+  .usage{height:7px;border-radius:999px;background:var(--th-1d2840);overflow:hidden}
+  .usage i{display:block;height:100%;background:var(--accent)}
+  .duong{color:var(--accent)}
+  .am{color:var(--th-d97c6c)}
+{% endblock %}
+
+{% block noi_dung %}
+<div class="hub-wrap">
+
+<div class="stat-row">
+  <div class="stat"><div class="n duong">{{ tong.thu | tien }}</div><div class="t">income {{ thang }}</div></div>
+  <div class="stat"><div class="n am">{{ tong.chi | tien }}</div><div class="t">expense {{ thang }}</div></div>
+  <div class="stat"><div class="n">{{ (tong.thu - tong.chi) | tien }}</div><div class="t">net {{ thang }}</div></div>
+</div>
+
+<div class="tab-nav">
+  <a href="/finance?tab=ledger&thang={{ thang }}" class="{% if tab == 'ledger' %}active{% endif %}">Ledger</a>
+  <a href="/finance?tab=goals&thang={{ thang }}" class="{% if tab == 'goals' %}active{% endif %}">Goals</a>
+  <a href="/finance?tab=categories&thang={{ thang }}" class="{% if tab == 'categories' %}active{% endif %}">Categories</a>
+  <a href="/finance?tab=pnl&thang={{ thang }}" class="{% if tab == 'pnl' %}active{% endif %}">Channel P&amp;L</a>
+</div>
+
+{% if tab == 'ledger' %}
+<h3 class="hub-tieu">
+  <svg class="ic" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+  Ledger — {{ thang }}
+  <form method="get" action="/finance" style="display:inline-flex;gap:.4rem;align-items:center">
+    <input type="hidden" name="tab" value="ledger">
+    <input type="month" name="thang" value="{{ thang }}" class="o">
+    <button type="submit" class="nut phu" style="padding:.3rem .8rem;font-size:.82rem">View</button>
+  </form></h3>
+
+{% if not muc_tieu %}<div class="canh">No goals yet — every entry needs a goal. Add one in the Goals tab first.</div>{% endif %}
+<details class="form-moi">
+  <summary>+ New entry</summary>
+  <form method="post" action="/finance/but-toan">
+    <div class="form-luoi">
+      <div><label>Date</label><input type="date" name="ngay" value="{{ hom_nay }}" required class="o"></div>
+      <div><label>Category</label><select name="danh_muc" required class="o">
+        {% for d in danh_muc %}
+        <option value="{{ d.ma }}">{{ d.ten }} ({{ 'Income' if d.loai == 'thu' else 'Expense' }})</option>
+        {% endfor %}
+      </select></div>
+      <div><label>Amount</label><input type="number" name="so_tien" min="0.01" step="0.01" required class="o"></div>
+      <div><label>Goal</label><select name="muc_tieu" required class="o">
+        {% for m in muc_tieu %}<option value="{{ m.ten }}">{{ m.ten }}</option>{% endfor %}
+      </select></div>
+      <div><label>Channel</label><select name="kenh_ma" class="o">
+        <option value="">Shared (system-wide)</option>
+        {% for k in ds_kenh %}<option value="{{ k.ma }}">{{ k.ma }} — {{ k.ten_chuan }}</option>{% endfor %}
+      </select></div>
+      <div><label>Voucher</label><input type="text" name="chung_tu" class="o"></div>
+      <div><label>Note</label><input type="text" name="ghi_chu" class="o"></div>
+    </div>
+    <div style="margin-top:10px"><button type="submit" class="nut">Save entry</button></div>
+  </form>
+</details>
+
+<div class="bang-cuon">
+<table class="bang">
+  <tr><th>Date</th><th>Type</th><th>Category</th><th class="so">Amount</th>
+    <th>Goal</th><th>Channel</th><th>By</th><th>Voucher</th><th>Note</th><th>Entered</th><th></th></tr>
+  {% for b in so_thang %}
+  <tr><td>{{ b.ngay }}</td>
+    <td>{% if b.loai == 'thu' %}<span class="badge ok">Income</span>{% elif b.loai == 'chi' %}<span class="badge do">Expense</span>{% else %}<span class="badge">Reversal</span>{% endif %}</td>
+    <td class="tk">{{ b.danh_muc }}</td>
+    <td class="so">{{ b.so_tien | tien }}</td>
+    <td>{{ b.muc_tieu or '—' }}</td>
+    <td>{% if b.kenh_ma %}<span class="tk">{{ b.kenh_ma }}</span>{% else %}<span class="badge">shared</span>{% endif %}</td>
+    <td class="tk">{{ b.nguoi_ghi }}</td>
+    <td>{% if b.chung_tu %}{{ b.chung_tu }}{% else %}<span class="badge do">missing</span>{% endif %}</td>
+    <td>{{ b.ghi_chu }}{% if b.tham_chieu %} <span class="tk">→ {{ b.tham_chieu }}</span>{% endif %}</td>
+    <td>{{ (b.tao_luc or '')[:16] }}</td>
+    <td>{% if b.loai != 'dao' and b.id not in da_dao %}
+      <form method="post" action="/finance/dao" style="display:inline">
+        <input type="hidden" name="id" value="{{ b.id }}">
+        <input type="hidden" name="thang" value="{{ thang }}">
+        <button type="submit" class="nut phu" style="padding:2px 10px;font-size:.78rem">Reverse</button>
+      </form>
+      {% elif b.id in da_dao %}<span class="badge">reversed</span>{% endif %}</td></tr>
+  {% else %}
+  <tr><td colspan="11">No entries for this period.</td></tr>
+  {% endfor %}
+</table>
+</div>
+
+{% elif tab == 'goals' %}
+<h3 class="hub-tieu">
+  <svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.2"/></svg>
+  Goals
+</h3>
+<details class="form-moi">
+  <summary>+ New goal</summary>
+  <form method="post" action="/finance/muc-tieu">
+    <div class="form-luoi">
+      <div><label>Name</label><input type="text" name="ten" required class="o"></div>
+      <div><label>Budget</label><input type="number" name="ngan_sach" min="0" step="0.01" required class="o"></div>
+      <div><label>Status</label><select name="trang_thai" class="o">
+        <option value="dang_chay">Running</option>
+        <option value="tam_dung">Paused</option>
+        <option value="xong">Done</option>
+      </select></div>
+    </div>
+    <div style="margin-top:10px"><button type="submit" class="nut">Save goal</button></div>
+  </form>
+</details>
+<div class="bang-cuon">
+<table class="bang">
+  <tr><th>Goal</th><th class="so">Budget</th><th class="so">Spent</th><th class="so">Received</th>
+    <th style="min-width:110px">Spend progress</th><th>Status</th><th>Created</th></tr>
+  {% for m in muc_tieu %}
+  {% set t = mt_tong.get(m.ten, {'da_chi': 0, 'da_thu': 0}) %}
+  <tr><td><b>{{ m.ten }}</b></td>
+    <td class="so">{{ m.ngan_sach | tien }}</td>
+    <td class="so">{{ t.da_chi | tien }}</td>
+    <td class="so">{{ t.da_thu | tien }}</td>
+    <td>{% if m.ngan_sach %}<div class="usage"><i style="width:{{ [100, (100 * t.da_chi / m.ngan_sach) | round | int] | min }}%"></i></div>{% else %}<span class="thieu">—</span>{% endif %}</td>
+    <td>{% if m.trang_thai == 'dang_chay' %}<span class="badge ok">Running</span>{% elif m.trang_thai == 'tam_dung' %}<span class="badge">Paused</span>{% else %}<span class="badge">Done</span>{% endif %}</td>
+    <td>{{ (m.tao_luc or '')[:10] }}</td></tr>
+  {% else %}
+  <tr><td colspan="7">No goals yet.</td></tr>
+  {% endfor %}
+</table>
+</div>
+
+{% elif tab == 'categories' %}
+<h3 class="hub-tieu">
+  <svg class="ic" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+  Categories — rules/danh_muc_thu_chi.csv
+</h3>
+<div class="bang-cuon">
+<table class="bang">
+  <tr><th>Code</th><th>Name</th><th>Type</th><th class="so">Total {{ thang }}</th>
+    <th class="so">All-time</th><th>Note</th></tr>
+  {% for d in danh_muc %}
+  {% set t = dm_tong.get(d.ma, {'thang': 0, 'luy_ke': 0}) %}
+  <tr><td class="tk">{{ d.ma }}</td><td>{{ d.ten }}</td>
+    <td>{% if d.loai == 'thu' %}<span class="badge ok">Income</span>{% else %}<span class="badge do">Expense</span>{% endif %}</td>
+    <td class="so">{{ t.thang | tien }}</td>
+    <td class="so">{{ t.luy_ke | tien }}</td>
+    <td>{{ d.ghi_chu }}</td></tr>
+  {% else %}
+  <tr><td colspan="6">rules/danh_muc_thu_chi.csv is empty or missing.</td></tr>
+  {% endfor %}
+</table>
+</div>
+
+{% elif tab == 'pnl' %}
+<h3 class="hub-tieu">
+  <svg class="ic" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15l3-4 3 3 4-6"/></svg>
+  Channel P&amp;L — {{ thang }}
+  <form method="get" action="/finance" style="display:inline-flex;gap:.4rem;align-items:center">
+    <input type="hidden" name="tab" value="pnl">
+    <input type="month" name="thang" value="{{ thang }}" class="o">
+    <button type="submit" class="nut phu" style="padding:.3rem .8rem;font-size:.82rem">View</button>
+  </form></h3>
+<div class="bang-cuon">
+<table class="bang">
+  <tr><th>Channel</th><th>Niche</th><th>Lifecycle</th>
+    <th class="so">Income</th><th class="so">Expense</th><th class="so">Net</th></tr>
+  {% for ma, t in pnl.items() | sort if ma %}
+  {% set k = kenh_cua.get(ma) %}
+  <tr><td><b class="tk">{{ ma }}</b>{% if k %} {{ k.ten_chuan }}{% endif %}</td>
+    <td>{{ ten_ngach.get(k.ngach_ma, '—') if k else '—' }}</td>
+    <td>{% if k %}<span class="badge">{{ k.trang_thai }}</span>{% else %}<span class="thieu">—</span>{% endif %}</td>
+    <td class="so">{{ t.thu | tien }}</td>
+    <td class="so">{{ t.chi | tien }}</td>
+    <td class="so {% if t.thu - t.chi >= 0 %}duong{% else %}am{% endif %}"><b>{{ (t.thu - t.chi) | tien }}</b></td></tr>
+  {% endfor %}
+  {% if '' in pnl %}
+  {% set t = pnl[''] %}
+  <tr><td colspan="3"><b>Shared (system-wide)</b></td>
+    <td class="so">{{ t.thu | tien }}</td>
+    <td class="so">{{ t.chi | tien }}</td>
+    <td class="so {% if t.thu - t.chi >= 0 %}duong{% else %}am{% endif %}"><b>{{ (t.thu - t.chi) | tien }}</b></td></tr>
+  {% endif %}
+  {% if not pnl %}
+  <tr><td colspan="6">No entries for this period.</td></tr>
+  {% endif %}
+</table>
+</div>
+{% endif %}
+
+</div>
+{% endblock %}

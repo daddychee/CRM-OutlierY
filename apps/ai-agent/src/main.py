@@ -193,7 +193,7 @@ def _ctx_outliery(request: Request) -> dict:
     if user is None:
         return {"sb_user": None, "sb_ngay": ngay, "sb_phien": [], "sb_level_chu": "", "lite": False,
                 "sb_apps": [], "sb_da": False, "sb_ns": False, "sb_cho_duyet": 0,
-                "sb_nas": False}
+                "sb_nas": False, "sb_hr": False, "sb_fin": False}
     apps_vao = [s for s in (request.headers.get("x-remote-apps") or "").split(",") if s]
     phien = []
     # /hoi-dap tự truyền cac_phien_sidebar riêng — tính lại ở đây là phí 1 lượt Qdrant
@@ -206,7 +206,10 @@ def _ctx_outliery(request: Request) -> dict:
             "sb_level_chu": ten_level(user["level"]),
             "lite": False, "sb_apps": [], "sb_da": "data-analytics" in apps_vao,
             "sb_ns": "quan-tri" in apps_vao, "sb_cho_duyet": 0,
-            "sb_nas": "nas" in apps_vao}
+            "sb_nas": "nas" in apps_vao,
+            # Khu chức năng HR/Finance (DE.md mục 10) — cờ do gateway phát,
+            # app chỉ đọc (một nguồn sự thật quyền, khuôn sb_ns/sb_nas).
+            "sb_hr": "hr" in apps_vao, "sb_fin": "finance" in apps_vao}
 
 
 templates = Jinja2Templates(directory=str(Path(__file__).parent / "templates"),

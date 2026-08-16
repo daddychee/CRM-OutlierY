@@ -265,7 +265,40 @@ async def trang_chu(request: Request):
 _TEN_LEVEL = {1: "Intern", 2: "Staff", 3: "Leader", 4: "Manager", 5: "Owner"}
 _NHAN_GIO = {"quan_tai_khoan": "Quản tài khoản", "duyet_ho_so": "Duyệt hồ sơ nhân sự",
              "nap_tai_lieu": "Nạp tài liệu", "duyet_qa": "Duyệt Q&A bổ sung",
-             "giam_sat": "Giám sát hoạt động"}
+             "giam_sat": "Giám sát hoạt động",
+             "nhan_su": "HR Hub (khu nhân sự)", "ke_toan": "Finance Hub (khu thu chi)"}
+# Giỏ CHỨC NĂNG (DE.md mục 10): mặc định KHÁC giỏ ủy quyền thường — cột mô tả
+# trên trang Permissions phải nói đúng luật thật (tính ở _gio_chuc_nang dưới).
+_MAC_DINH_GIO = {"nhan_su": "Owner / HR L3+ / Admin ủy quyền",
+                 "ke_toan": "Owner / Kế toán L2+"}
+
+KE_TOAN_BO_PHAN = "Kế toán"
+
+
+def _gio_chuc_nang(u: dict, conn) -> list[str]:
+    """Cờ khu chức năng HR/Finance phát vào X-Remote-Apps (DE.md mục 10) — GATEWAY
+    là nơi DUY NHẤT tính quyền hub; app to-chuc chỉ tin cờ (khuôn sb_ns/nas).
+
+    KHÔNG đi qua iam.co_quyen cho 2 giỏ này: co_quyen xếp gio_uy_quyen mặc định
+    chỉ Owner/admin_uy_quyen, còn luật hub có thêm vế BỘ PHẬN (HR L3+ / Kế toán
+    L2+). Helper đọc thẳng Ô TICK (quyen_override — tick THẮNG luật mặc định,
+    đúng lệ bảng phân quyền) rồi mới xét luật bộ phận."""
+    def _tick(gio: str) -> bool | None:
+        r = conn.execute(
+            "SELECT cho_phep FROM quyen_override WHERE ten_tai_khoan=? "
+            "AND app_slug='*' AND hanh_dong=?", (u["ten"], gio)).fetchone()
+        return None if r is None else bool(r["cho_phep"])
+
+    co: list[str] = []
+    t = _tick("nhan_su")
+    if t if t is not None else iam.quyen_nhan_su(u):
+        co.append("hr")
+    t = _tick("ke_toan")
+    if t if t is not None else (
+            u["level"] >= iam.OWNER_LEVEL
+            or (u.get("bo_phan") == KE_TOAN_BO_PHAN and u["level"] >= 2)):
+        co.append("finance")
+    return co
 
 
 def _gate_nen(request: Request, quyen: str | None = None,
@@ -511,7 +544,7 @@ def _render_phan_quyen(request: Request, user: dict, ten: str = "",
     for hd in luat.get("gio_uy_quyen", []):
         hang.append({"app_slug": "*", "hanh_dong": hd,
                      "nhan": _NHAN_GIO.get(hd, hd),
-                     "mac_dinh": "Owner / Admin ủy quyền"})
+                     "mac_dinh": _MAC_DINH_GIO.get(hd, "Owner / Admin ủy quyền")})
     return templates.TemplateResponse(
         request, "nen_phan_quyen.html",
         {"user": user, "trang": "phan-quyen", "loi": loi, "bao": bao,
@@ -1060,6 +1093,8 @@ _ALIAS: dict[str, tuple[str, str]] = {
     "/nas": ("to-chuc", "nas"),
     "/kpi": ("to-chuc", "kpi"),
     "/vault": ("to-chuc", "vault"),
+    "/hr": ("to-chuc", "hr"),
+    "/finance": ("to-chuc", "finance"),
 }
 # (slug, duong_dan) → URL đẹp; Home "/" phục vụ hoi-dap ở trang_chu.
 _ALIAS_NGUOC = {v: k for k, v in _ALIAS.items()} | {("ai-agent", "hoi-dap"): "/"}
@@ -1108,6 +1143,10 @@ async def proxy_app(request: Request, slug: str, duong_dan: str):
             # Owner + HR L3+ (iam.quyen_nhan_su) hoặc Admin ủy quyền tài khoản.
             if iam.quyen_nhan_su(u) or iam.co_quyen(u, "quan_tai_khoan", conn=conn2):
                 duoc.append("quan-tri")
+            # Cờ khu chức năng 'hr'/'finance' (DE.md mục 10) — chỉ khi vào được
+            # to-chuc (hub sống trong app đó); app CHỈ TIN cờ này, không tự tính.
+            if "to-chuc" in duoc:
+                duoc += _gio_chuc_nang(u, conn2)
             return u, tim_app(slug), slug in duoc, duoc
         finally:
             conn2.close()

@@ -316,3 +316,14 @@ sqlite-snapshot như iam.db.
   cột Bản đẹp hệ cũ), gate DA chung; (e) test: từ chối kênh lạ · lưu kenh_ma ·
   loai_kenh tự điền · so kỳ theo mã chạy được với 2 báo cáo cùng kênh · gán tay.
   Lưu ý: conftest DA đã trỏ DANH_BA_DB tmp — test seed kênh qua API danh_ba.
+- 16/08/2026 — **Đ1b HR HUB + Đ2b FINANCE HUB XONG** (Owner đòi đúng — 2 hub bị
+  xếp sau danh bạ, nay đã trả): /hr (People·Attendance+chốt công chỉ-thêm·KPI
+  Review xếp loại A/B/C append·Leaves) + /finance (Ledger JSONL chỉ-thêm + bút
+  toán đảo·Goals ngân sách/đã chi·Categories 7 mã + tổng tháng/lũy kế·Channel
+  P&L theo kenh_ma từ danh bạ). Giỏ nhan_su/ke_toan vào gio_uy_quyen (tick được
+  ở Permissions, tick thắng mặc định cả 2 chiều); gateway phát cờ hr/finance
+  (HCNS L3+ · Kế toán L2+ · Owner); sidebar user-menu + URL đẹp /hr /finance;
+  4 store mới khai du_lieu (sổ tiền VÀNG vĩnh viễn). 4 suite 92+307/3+64+53
+  pass; nghiệm thu sống: Owner 200 đủ tab, L2 không giỏ 403. Việc treo hub:
+  Approvals + H1b hồ sơ chi tiết (đợi mục 12.1), export CSV, lọc ledger sâu,
+  lương (nối chốt công + xếp loại).

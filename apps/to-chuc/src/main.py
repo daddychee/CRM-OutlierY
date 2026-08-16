@@ -51,17 +51,41 @@ os.environ.setdefault("PLANNERY_PLAN", str(ROOT / "data" / "to-chuc" / "nguon" /
 os.environ.setdefault("CONTENT_HISTORY", str(ROOT / "data" / "to-chuc" / "nguon" / "content-history.jsonl"))
 os.environ.setdefault("SPEAKY_JOBS_LOG", str(ROOT / "data" / "to-chuc" / "nguon" / "speaky-jobs_log.csv"))
 os.environ.setdefault("BAO_CAO_DIR", str(ROOT / "data" / "data-analytics" / "db" / "bao-cao-lich-su"))
+# HR Hub + Finance Hub (DE.md mục 10) — 4 store mới, đều khai du_lieu trong apps.json
+os.environ.setdefault("CHAM_CONG_CHOT_DIR", str(ROOT / "data" / "to-chuc" / "db" / "cham-cong-chot"))
+os.environ.setdefault("KPI_DANH_GIA_DIR", str(ROOT / "data" / "to-chuc" / "db" / "kpi-danh-gia"))
+os.environ.setdefault("SO_THU_CHI_DIR", str(ROOT / "data" / "to-chuc" / "db" / "so-thu-chi"))
+os.environ.setdefault("MUC_TIEU_PATH", str(ROOT / "data" / "to-chuc" / "db" / "muc-tieu.json"))
 
-from src import vault                                    # noqa: E402
+from src import kpi_danh_gia, tai_chinh, vault           # noqa: E402
 from src.cham_cong import doc_ngay as cc_doc_ngay        # noqa: E402
-from src.cham_cong import ghi_nhan, tong_gio             # noqa: E402
-from src.kpi import tong_hop_kpi                         # noqa: E402
+from src.cham_cong import (bang_cong_thang, chot_ky, doc_chot, ghi_nhan,  # noqa: E402
+                           gio_chu, tong_gio)
+from src.kpi import kpi_plannery, ky_hien_tai, tong_hop_kpi  # noqa: E402
 
 PHIEN_BAN = "2.0.0"
 app = FastAPI(title="Tổ chức v2")
+from nen.common import danh_ba, nhat_ky     # noqa: E402 — danh bạ đế (chỉ-đọc) + log P4
 from nen.common.sidebar import ctx_sidebar  # noqa: E402 — cờ sidebar UI_FLOW.md mục 2
 templates = Jinja2Templates(directory=str(_APP_DIR / "src" / "templates"),
                             context_processors=[ctx_sidebar])
+
+
+def _fmt_tien(v) -> str:
+    """Hiển thị tiền cho template ($ theo mockup F1): 2140→$2,140 · -43→−$43;
+    không phải số → '—' (không bịa)."""
+    try:
+        v = float(v)
+    except (TypeError, ValueError):
+        return "—"
+    s = f"{abs(v):,.2f}"
+    if s.endswith(".00"):
+        s = s[:-3]
+    return ("−$" if v < 0 else "$") + s
+
+
+templates.env.filters["tien"] = _fmt_tien
+templates.env.filters["gio_chu"] = gio_chu
 
 
 # ---------- claims (thay auth hệ cũ) ----------
@@ -172,6 +196,192 @@ def kpi_trang(request: Request, ky: str = "tuan", ngay_cc: str = "",
     return templates.TemplateResponse(request, "kpi.html", {
         "user": user, "kpi": kpi, "iam_loi": iam_loi,
         "ngay_cc": ngay, "cham_cong": cham_cong})
+
+
+# ═══════════════ HR HUB + FINANCE HUB (DE.md mục 10 — khu chức năng) ═══════════════
+# Quyền: GATEWAY tính (giỏ nhan_su/ke_toan + luật bộ phận + ô tick) và phát cờ
+# 'hr'/'finance' vào X-Remote-Apps — app CHỈ TIN CỜ, không tự tính lại (khuôn
+# sb_ns/sb_nas). Thiếu cờ → 403.
+
+def _cac_khu(x_remote_apps: str) -> set[str]:
+    return {s.strip() for s in (x_remote_apps or "").split(",") if s.strip()}
+
+
+def yeu_cau_hr(user: dict = Depends(lay_user), x_remote_apps: str = Header("")) -> dict:
+    if "hr" not in _cac_khu(x_remote_apps):
+        raise HTTPException(403, "HR Hub cần giỏ chức năng nhân sự (gateway chưa phát cờ 'hr').")
+    return user
+
+
+def yeu_cau_finance(user: dict = Depends(lay_user),
+                    x_remote_apps: str = Header("")) -> dict:
+    if "finance" not in _cac_khu(x_remote_apps):
+        raise HTTPException(403, "Finance Hub cần giỏ chức năng kế toán (gateway chưa phát cờ 'finance').")
+    return user
+
+
+def _ds_ho_so_iam() -> tuple[list[dict] | None, str]:
+    """Hồ sơ nhân sự CHỈ-ĐỌC từ sổ IAM chung (khuôn _ds_nguoi_iam — hub không giữ
+    bản sao, IAM vẫn là nguồn sự thật; sửa/xóa làm ở /general/people).
+    planner_id dẫn xuất ns_<mã NS> đúng khuôn Đ2 khối đế."""
+    try:
+        from nen.iam import iam
+        conn = iam.ket_noi()
+        try:
+            return [dict(n, planner_id="ns_" + (n.get("ma") or "").replace("-", "").lower())
+                    for n in iam.liet_ke_nguoi(conn)], ""
+        finally:
+            conn.close()
+    except Exception as e:
+        return None, (f"Không đọc được sổ IAM ({e.__class__.__name__}) — "
+                      "chưa dựng được danh sách hồ sơ.")
+
+
+def _thang_hop_le(thang: str) -> str:
+    thang = (thang or "").strip()
+    if not re.fullmatch(r"\d{4}-\d{2}", thang):
+        return date.today().strftime("%Y-%m")
+    return thang
+
+
+@app.get("/hr", response_class=HTMLResponse)
+def hr_trang(request: Request, tab: str = "people", thang: str = "",
+             user: dict = Depends(yeu_cau_hr)):
+    """HR Hub — 4 tab theo mockup hr-hub.html (Approvals chưa thuộc đợt này):
+    People (IAM chỉ-đọc) · Attendance (bảng công kỳ + chốt) · KPI Review (số từ
+    tong_hop_kpi + xếp loại) · Leaves (PlannerY, nguồn chết → '—')."""
+    if tab not in ("people", "attendance", "kpi", "leaves"):
+        tab = "people"
+    thang = _thang_hop_le(thang)
+    ky_kpi = date.today().strftime("%Y-%m")   # KPI Review chấm kỳ THÁNG HIỆN TẠI
+
+    ho_so, iam_loi = _ds_ho_so_iam()
+    ds_nguoi, _ = _ds_nguoi_iam()
+    ho_ten_cua = {n["ten"]: n.get("ho_ten", "") for n in (ds_nguoi or [])}
+
+    bang_cong = bang_cong_thang(thang)
+    chot = doc_chot(thang)
+
+    kpi = tong_hop_kpi(ds_nguoi or [], "thang")
+    danh_gia = kpi_danh_gia.moi_nhat_theo_nguoi(ky_kpi)
+
+    # Leaves: đọc từ kpi_plannery kỳ tháng hiện tại — nguồn chết → None → UI '—'
+    tu, den = ky_hien_tai("thang")
+    planner = kpi_plannery(tu, den)
+    nghi = []
+    for n in (ds_nguoi or []):
+        muc = None
+        if planner is not None:
+            muc = (planner.get(n.get("planner_id") or "")
+                   or planner.get((n.get("ho_ten") or n.get("ten") or "").strip().lower()))
+        nghi.append({"ten": n["ten"], "ho_ten": n.get("ho_ten", ""),
+                     "ngay_nghi": muc["ngay_nghi"] if muc else None})
+
+    chua_xep = [r["ten"] for r in (kpi["vh"] + kpi["kd"]) if r["ten"] not in danh_gia]
+    stats = {"ho_so": sum(1 for h in (ho_so or []) if h.get("trang_thai") == "hoat_dong")
+                      if ho_so is not None else None,
+             "co_mat": len(cc_doc_ngay(date.today().isoformat())),
+             "chua_xep": len(chua_xep)}
+    return templates.TemplateResponse(request, "hr.html", {
+        "user": user, "tab": tab, "thang": thang, "ky_kpi": ky_kpi,
+        "ho_so": ho_so, "iam_loi": iam_loi, "stats": stats,
+        "bang_cong": bang_cong, "chot": chot, "ho_ten_cua": ho_ten_cua,
+        "kpi": kpi, "danh_gia": danh_gia,
+        "nghi": nghi, "planner_song": planner is not None, "tu": tu, "den": den})
+
+
+@app.post("/hr/chot-cong")
+def hr_chot_cong(thang: str = Form(...), user: dict = Depends(yeu_cau_hr)):
+    """Chốt công kỳ — file chốt CHỈ-THÊM (đã chốt → 409, không ghi đè)."""
+    try:
+        chot_ky(thang, user["ten"])
+    except ValueError as e:
+        raise HTTPException(409, str(e))
+    nhat_ky.ghi("to-chuc", user["ten"], "chot_cong", thang)
+    return RedirectResponse(f"/hr?tab=attendance&thang={thang}", status_code=303)
+
+
+@app.post("/hr/kpi-danh-gia")
+def hr_kpi_danh_gia(nguoi: str = Form(...), ky: str = Form(...),
+                    xep_loai: str = Form(...), nhan_xet: str = Form(""),
+                    user: dict = Depends(yeu_cau_hr)):
+    """Xếp loại KPI — APPEND bản ghi (giữ trọn lịch sử chấm), hiển thị bản mới nhất."""
+    try:
+        kpi_danh_gia.them_danh_gia(nguoi, ky, xep_loai, nhan_xet, user["ten"])
+    except ValueError as e:
+        raise HTTPException(422, str(e))
+    nhat_ky.ghi("to-chuc", user["ten"], "kpi_danh_gia", f"{nguoi} {ky} = {xep_loai}")
+    return RedirectResponse("/hr?tab=kpi", status_code=303)
+
+
+@app.get("/finance", response_class=HTMLResponse)
+def finance_trang(request: Request, tab: str = "ledger", thang: str = "",
+                  user: dict = Depends(yeu_cau_finance)):
+    """Finance Hub — 4 tab theo mockup finance-hub.html: Ledger (sổ chỉ-thêm +
+    đảo) · Goals (mục tiêu) · Categories (rules CSV + tổng) · Channel P&L."""
+    if tab not in ("ledger", "goals", "categories", "pnl"):
+        tab = "ledger"
+    thang = _thang_hop_le(thang)
+
+    so = tai_chinh.doc_so()
+    so_thang = sorted((b for b in so if (b.get("ngay") or "")[:7] == thang),
+                      key=lambda b: (b.get("ngay", ""), b.get("tao_luc", "")),
+                      reverse=True)
+    da_dao = {b.get("tham_chieu") for b in so if b.get("loai") == "dao"}
+
+    ds_kenh = danh_ba.liet_ke("kenh")
+    kenh_cua = {k["ma"]: k for k in ds_kenh}
+    ten_ngach = {n["ma"]: n.get("ten_chuan", "") for n in danh_ba.liet_ke("ngach")}
+
+    muc_tieu = tai_chinh.doc_muc_tieu()
+    mt_tong = tai_chinh.tong_hop_muc_tieu()
+    return templates.TemplateResponse(request, "finance.html", {
+        "user": user, "tab": tab, "thang": thang, "hom_nay": date.today().isoformat(),
+        "tong": tai_chinh.tong_thang(thang), "so_thang": so_thang, "da_dao": da_dao,
+        "danh_muc": tai_chinh.doc_danh_muc(),
+        "dm_tong": tai_chinh.tong_hop_danh_muc(thang),
+        "muc_tieu": muc_tieu, "mt_tong": mt_tong,
+        "ds_kenh": ds_kenh, "kenh_cua": kenh_cua, "ten_ngach": ten_ngach,
+        "pnl": tai_chinh.pnl_theo_kenh(thang)})
+
+
+@app.post("/finance/but-toan")
+def finance_but_toan(ngay: str = Form(...), danh_muc: str = Form(...),
+                     so_tien: str = Form(...), muc_tieu: str = Form(...),
+                     kenh_ma: str = Form(""), chung_tu: str = Form(""),
+                     ghi_chu: str = Form(""), user: dict = Depends(yeu_cau_finance)):
+    try:
+        b = tai_chinh.them_but_toan(user["ten"], ngay, danh_muc, so_tien,
+                                    muc_tieu, kenh_ma, chung_tu, ghi_chu)
+    except ValueError as e:
+        raise HTTPException(422, str(e))
+    nhat_ky.ghi("to-chuc", user["ten"], "but_toan",
+                f"{b['id']} {b['loai']} {b['danh_muc']} {b['so_tien']}")
+    return RedirectResponse(f"/finance?tab=ledger&thang={ngay[:7]}", status_code=303)
+
+
+@app.post("/finance/dao")
+def finance_dao(id: str = Form(...), thang: str = Form(""),
+                user: dict = Depends(yeu_cau_finance)):
+    try:
+        b = tai_chinh.dao_but_toan(user["ten"], id)
+    except ValueError as e:
+        raise HTTPException(422, str(e))
+    nhat_ky.ghi("to-chuc", user["ten"], "but_toan_dao", f"{b['id']} dao {id}")
+    return RedirectResponse(
+        f"/finance?tab=ledger&thang={_thang_hop_le(thang)}", status_code=303)
+
+
+@app.post("/finance/muc-tieu")
+def finance_muc_tieu(ten: str = Form(...), ngan_sach: str = Form(...),
+                     trang_thai: str = Form("dang_chay"),
+                     user: dict = Depends(yeu_cau_finance)):
+    try:
+        tai_chinh.them_muc_tieu(ten, ngan_sach, trang_thai)
+    except ValueError as e:
+        raise HTTPException(422, str(e))
+    nhat_ky.ghi("to-chuc", user["ten"], "muc_tieu_moi", ten)
+    return RedirectResponse("/finance?tab=goals", status_code=303)
 
 
 # ═══════════════ NAS (01-05/08/2026 hệ cũ — mọi người có claims đều xem) ═══════════════

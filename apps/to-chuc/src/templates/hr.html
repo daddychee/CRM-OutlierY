@@ -1,0 +1,202 @@
+{% extends "base.html" %}
+{% block title %}HR — OUTLIERY{% endblock %}
+{% block topbar_ten %}<svg class="ic" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M15.5 4.6a3.5 3.5 0 0 1 0 6.8"/><path d="M17 13.4a6.5 6.5 0 0 1 4.5 6.6"/></svg> HR{% endblock %}
+
+{% block style_them %}
+  /* style_them nằm TRONG thẻ style chung của base — CSS TRẦN, không viết thẻ style */
+  .hub-wrap{max-width:1080px;margin:1.2rem auto;padding:0 1rem}
+  .stat-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin:0 0 1rem}
+  .stat{border:1px solid var(--line);border-radius:12px;padding:10px 14px;background:var(--chip)}
+  .stat .n{font-size:1.3rem;font-weight:700}
+  .stat .t{font-size:.78rem;color:var(--muted)}
+  .tab-nav{display:flex;gap:6px;margin:.2rem 0 1rem;flex-wrap:wrap}
+  .tab-nav a{font-size:.85rem;padding:.35rem .95rem;border-radius:999px;border:1px solid var(--chip-line);color:var(--muted);text-decoration:none}
+  .tab-nav a.active{background:var(--th-182233);color:var(--ink);font-weight:600}
+  .hub-tieu{font-size:1.05rem;margin:.6rem 0 .5rem;display:flex;align-items:center;gap:.5rem;flex-wrap:wrap}
+  .hub-tieu svg.ic{width:17px;height:17px;color:var(--muted)}
+  .bang-cuon{overflow-x:auto}
+  table.bang{width:100%;border-collapse:collapse;font-size:.9rem;margin-top:.4rem}
+  .bang th,.bang td{text-align:left;padding:.45rem .55rem;border-bottom:1px solid var(--line);vertical-align:top}
+  .bang th{color:var(--muted);font-size:.78rem;white-space:nowrap}
+  .bang td.so,.bang th.so{text-align:right;white-space:nowrap}
+  .tk{font-family:var(--mono,monospace);font-size:.84rem}
+  .badge{display:inline-block;font-size:.72rem;padding:1px 8px;border-radius:999px;border:1px solid var(--chip-line);color:var(--muted);white-space:nowrap}
+  .badge.ok{color:var(--accent);border-color:var(--th-31425e)}
+  .thieu{color:var(--muted);cursor:help}
+  .canh{margin:.5rem 0;padding:.55rem .8rem;border-radius:9px;background:var(--chip);border:1px solid var(--chip-line);font-size:.86rem;color:var(--muted)}
+  .o{font:inherit;background:transparent;color:var(--ink);border:1px solid var(--line);border-radius:7px;padding:3px 8px}
+  .dg-form{display:inline-flex;gap:5px;align-items:center;flex-wrap:wrap}
+{% endblock %}
+
+{% block noi_dung %}
+<div class="hub-wrap">
+
+<div class="stat-row">
+  <div class="stat"><div class="n">{% if stats.ho_so is none %}<span class="thieu" title="Could not read IAM registry">—</span>{% else %}{{ stats.ho_so }}{% endif %}</div><div class="t">active profiles</div></div>
+  <div class="stat"><div class="n">{{ stats.co_mat }}</div><div class="t">present today (tool system)</div></div>
+  <div class="stat"><div class="n">{{ stats.chua_xep }}</div><div class="t">not rated for {{ ky_kpi }}</div></div>
+</div>
+
+<div class="tab-nav">
+  <a href="/hr?tab=people" class="{% if tab == 'people' %}active{% endif %}">People</a>
+  <a href="/hr?tab=attendance&thang={{ thang }}" class="{% if tab == 'attendance' %}active{% endif %}">Attendance</a>
+  <a href="/hr?tab=kpi" class="{% if tab == 'kpi' %}active{% endif %}">KPI Review</a>
+  <a href="/hr?tab=leaves" class="{% if tab == 'leaves' %}active{% endif %}">Leaves</a>
+</div>
+
+{% if tab == 'people' %}
+<h3 class="hub-tieu">
+  <svg class="ic" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M15.5 4.6a3.5 3.5 0 0 1 0 6.8"/><path d="M17 13.4a6.5 6.5 0 0 1 4.5 6.6"/></svg>
+  People
+  <span style="margin-left:auto"><a class="nut phu" href="/general/people">Open People →</a></span>
+</h3>
+{% if iam_loi %}<div class="canh">{{ iam_loi }}</div>{% endif %}
+{% if ho_so %}
+<div class="bang-cuon">
+<table class="bang">
+  <tr><th>Code</th><th>Full name</th><th>Department</th><th>Position</th>
+    <th>Status</th><th>PlannerY</th><th>Created</th></tr>
+  {% for h in ho_so %}
+  <tr><td class="tk">{{ h.ma }}</td><td>{{ h.ho_ten }}</td><td>{{ h.bo_phan }}</td>
+    <td>{{ h.vi_tri or '—' }}</td>
+    <td>{% if h.trang_thai == 'hoat_dong' %}<span class="badge ok">Active</span>{% else %}<span class="badge">{{ h.trang_thai }}</span>{% endif %}</td>
+    <td class="tk">{{ h.planner_id }}</td>
+    <td>{{ (h.tao_luc or '')[:10] or '—' }}</td></tr>
+  {% endfor %}
+</table>
+</div>
+{% elif ho_so is not none %}
+<div class="canh">No profiles in the IAM registry yet.</div>
+{% endif %}
+
+{% elif tab == 'attendance' %}
+<h3 class="hub-tieu">
+  <svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+  Attendance — {{ thang }}
+  <form method="get" action="/hr" style="display:inline-flex;gap:.4rem;align-items:center">
+    <input type="hidden" name="tab" value="attendance">
+    <input type="month" name="thang" value="{{ thang }}" class="o">
+    <button type="submit" class="nut phu" style="padding:.3rem .8rem;font-size:.82rem">View</button>
+  </form>
+  <span style="margin-left:auto">
+    {% if chot %}
+    <span class="badge ok">Closed {{ (chot.chot_luc or '')[:16] }} · {{ chot.nguoi_chot }}</span>
+    {% else %}
+    <form method="post" action="/hr/chot-cong" style="display:inline">
+      <input type="hidden" name="thang" value="{{ thang }}">
+      <button type="submit" class="nut" style="padding:.35rem .9rem;font-size:.84rem">Close period {{ thang }}</button>
+    </form>
+    {% endif %}
+  </span></h3>
+<div class="bang-cuon">
+<table class="bang">
+  <tr><th>Account</th><th>Full name</th><th class="so">Days present</th>
+    <th class="so">Total hours</th><th>Last day</th></tr>
+  {% for ten, m in bang_cong.items() | sort %}
+  <tr><td class="tk">{{ ten }}</td><td>{{ ho_ten_cua.get(ten, '') or '—' }}</td>
+    <td class="so">{{ m.so_ngay }}</td>
+    <td class="so">{{ m.tong_giay | gio_chu or '—' }}</td>
+    <td>{{ m.ngay_cuoi or '—' }}</td></tr>
+  {% else %}
+  <tr><td colspan="5">No presence signals for this period.</td></tr>
+  {% endfor %}
+</table>
+</div>
+
+{% elif tab == 'kpi' %}
+<h3 class="hub-tieu">
+  <svg class="ic" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15l3-4 3 3 4-6"/></svg>
+  KPI Review — {{ ky_kpi }}
+</h3>
+{% if kpi.thieu.plannery or kpi.thieu.content or kpi.thieu.speaky or kpi.thieu.bao_cao %}
+<div class="canh">Sources unavailable this period:
+  {% if kpi.thieu.plannery %}<b>PlannerY</b>{% endif %}
+  {% if kpi.thieu.content %} · <b>Content</b>{% endif %}
+  {% if kpi.thieu.speaky %} · <b>SpeakY</b>{% endif %}
+  {% if kpi.thieu.bao_cao %} · <b>Data Analytics</b>{% endif %}</div>
+{% endif %}
+{% if kpi.vh %}
+<div class="bang-cuon">
+<table class="bang">
+  <tr><th colspan="2">Vận hành - Sản xuất</th>
+    <th class="so">Scripts done</th><th class="so">Voice</th>
+    <th class="so">Videos due</th><th class="so">Progress</th>
+    <th>Rating</th><th>Latest</th></tr>
+  {% for r in kpi.vh %}
+  <tr><td class="tk">{{ r.ten }}</td><td>{{ r.ho_ten or '—' }}</td>
+    <td class="so">{% if r.script_xong is none %}<span class="thieu">—</span>{% else %}{{ r.script_xong }}{% endif %}</td>
+    <td class="so">{% if r.so_voice is none %}<span class="thieu">—</span>{% else %}{{ r.so_voice }}{% endif %}</td>
+    <td class="so">{% if r.video_den_han is none %}<span class="thieu">—</span>{% else %}{{ r.video_den_han }}{% endif %}</td>
+    <td class="so">{% if r.tien_do is none %}<span class="thieu">—</span>{% else %}<b>{{ r.tien_do }}%</b>{% endif %}</td>
+    <td>
+      <form method="post" action="/hr/kpi-danh-gia" class="dg-form">
+        <input type="hidden" name="nguoi" value="{{ r.ten }}">
+        <input type="hidden" name="ky" value="{{ ky_kpi }}">
+        <select name="xep_loai" class="o">
+          {% for x in ['A', 'B', 'C'] %}
+          <option value="{{ x }}"{% if danh_gia.get(r.ten, {}).get('xep_loai') == x %} selected{% endif %}>{{ x }}</option>
+          {% endfor %}
+        </select>
+        <input type="text" name="nhan_xet" class="o" style="width:150px"
+               value="{{ danh_gia.get(r.ten, {}).get('nhan_xet', '') }}">
+        <button type="submit" class="nut phu" style="padding:2px 10px;font-size:.8rem">Save</button>
+      </form></td>
+    <td>{% set dg = danh_gia.get(r.ten) %}{% if dg %}<b>{{ dg.xep_loai }}</b> · {{ (dg.luc or '')[:16] }} · {{ dg.nguoi_cham }}{% else %}<span class="thieu">—</span>{% endif %}</td></tr>
+  {% endfor %}
+</table>
+</div>
+{% endif %}
+{% if kpi.kd %}
+<div class="bang-cuon">
+<table class="bang">
+  <tr><th colspan="2">Kinh doanh</th>
+    <th class="so">Reports run</th><th class="so">Videos analyzed</th>
+    <th>Rating</th><th>Latest</th></tr>
+  {% for r in kpi.kd %}
+  <tr><td class="tk">{{ r.ten }}</td><td>{{ r.ho_ten or '—' }}</td>
+    <td class="so">{% if r.so_bao_cao is none %}<span class="thieu">—</span>{% else %}{{ r.so_bao_cao }}{% endif %}</td>
+    <td class="so">{% if r.tong_video is none %}<span class="thieu">—</span>{% else %}{{ r.tong_video }}{% endif %}</td>
+    <td>
+      <form method="post" action="/hr/kpi-danh-gia" class="dg-form">
+        <input type="hidden" name="nguoi" value="{{ r.ten }}">
+        <input type="hidden" name="ky" value="{{ ky_kpi }}">
+        <select name="xep_loai" class="o">
+          {% for x in ['A', 'B', 'C'] %}
+          <option value="{{ x }}"{% if danh_gia.get(r.ten, {}).get('xep_loai') == x %} selected{% endif %}>{{ x }}</option>
+          {% endfor %}
+        </select>
+        <input type="text" name="nhan_xet" class="o" style="width:150px"
+               value="{{ danh_gia.get(r.ten, {}).get('nhan_xet', '') }}">
+        <button type="submit" class="nut phu" style="padding:2px 10px;font-size:.8rem">Save</button>
+      </form></td>
+    <td>{% set dg = danh_gia.get(r.ten) %}{% if dg %}<b>{{ dg.xep_loai }}</b> · {{ (dg.luc or '')[:16] }} · {{ dg.nguoi_cham }}{% else %}<span class="thieu">—</span>{% endif %}</td></tr>
+  {% endfor %}
+</table>
+</div>
+{% endif %}
+{% if not kpi.vh and not kpi.kd %}
+<div class="canh">No one belongs to a department with KPI sources
+  (Vận hành - Sản xuất / Kinh doanh).</div>
+{% endif %}
+
+{% elif tab == 'leaves' %}
+<h3 class="hub-tieu">
+  <svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4M16 2v4M3 9h18"/></svg>
+  Leaves — {{ tu }} → {{ den }}
+</h3>
+{% if not planner_song %}<div class="canh">PlannerY source (plan.json) is not readable.</div>{% endif %}
+<div class="bang-cuon">
+<table class="bang">
+  <tr><th>Account</th><th>Full name</th><th class="so">Leave days</th></tr>
+  {% for r in nghi %}
+  <tr><td class="tk">{{ r.ten }}</td><td>{{ r.ho_ten or '—' }}</td>
+    <td class="so">{% if r.ngay_nghi is none %}<span class="thieu" title="PlannerY source dead or person not on the schedule">—</span>{% else %}{{ r.ngay_nghi }}{% endif %}</td></tr>
+  {% else %}
+  <tr><td colspan="3">No people in the IAM registry.</td></tr>
+  {% endfor %}
+</table>
+</div>
+{% endif %}
+
+</div>
+{% endblock %}

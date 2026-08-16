@@ -150,7 +150,9 @@
     "/nas",
     "/api/nhip",
     "/api/nhip-thoat",
-    "/vault"
+    "/vault",
+    "/hr",
+    "/finance"
    ],
    "health": "/health",
    "phien_ban": "2.0.0",
@@ -176,6 +178,42 @@
      "backup": "copy",
      "giu": "vinh-vien",
      "ghi_chu": "CHỈ BẢN MÃ vault.enc + hash safekey + audit.csv — backup nhận bản mã, đúng lệ hệ cũ"
+    },
+    {
+     "ten": "cham-cong-chot",
+     "loai": "json",
+     "duong": "data/to-chuc/db/cham-cong-chot",
+     "muc_quy": "vang",
+     "backup": "copy",
+     "giu": "vinh-vien",
+     "ghi_chu": "Bảng công đã CHỐT kỳ (HR Hub) — chỉ-thêm, mỗi kỳ một file, không ghi đè"
+    },
+    {
+     "ten": "kpi-danh-gia",
+     "loai": "json",
+     "duong": "data/to-chuc/db/kpi-danh-gia",
+     "muc_quy": "vang",
+     "backup": "copy",
+     "giu": "vinh-vien",
+     "ghi_chu": "Xếp loại KPI per người per kỳ (HR Hub) — append bản ghi, giữ trọn lịch sử chấm"
+    },
+    {
+     "ten": "so-thu-chi",
+     "loai": "json",
+     "duong": "data/to-chuc/db/so-thu-chi",
+     "muc_quy": "vang",
+     "backup": "copy",
+     "giu": "vinh-vien",
+     "ghi_chu": "SỔ THU CHI JSONL theo năm (Finance Hub) — SỐ TIỀN là dữ liệu bảo quản lâu dài, chỉ-thêm, sửa = bút toán đảo (luật toàn cục DE.md mục 13)"
+    },
+    {
+     "ten": "muc-tieu",
+     "loai": "json",
+     "duong": "data/to-chuc/db/muc-tieu.json",
+     "muc_quy": "vang",
+     "backup": "copy",
+     "giu": "vinh-vien",
+     "ghi_chu": "Sổ mục tiêu chi tiêu (Finance Hub) — mọi bút toán gắn một mục tiêu"
     }
    ]
   },
