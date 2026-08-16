@@ -30,7 +30,7 @@ import re
 import shutil
 import subprocess
 import time
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
 from urllib.parse import quote, unquote
 
@@ -222,19 +222,44 @@ def yeu_cau_finance(user: dict = Depends(lay_user),
 
 def _ds_ho_so_iam() -> tuple[list[dict] | None, str]:
     """Hồ sơ nhân sự CHỈ-ĐỌC từ sổ IAM chung (khuôn _ds_nguoi_iam — hub không giữ
-    bản sao, IAM vẫn là nguồn sự thật; sửa/xóa làm ở /general/people).
-    planner_id dẫn xuất ns_<mã NS> đúng khuôn Đ2 khối đế."""
+    bản sao, IAM vẫn là nguồn sự thật; mọi GHI đi route gateway /general/people/*).
+    planner_id dẫn xuất ns_<mã NS> đúng khuôn Đ2 khối đế.
+    CCCD NHẠY CẢM (DE.md mục 12.1): app này KHÔNG BAO GIỜ giữ/render bản đầy đủ —
+    pop khỏi dict ngay tại cửa đọc, chỉ còn cccd_che (8 số đầu + ****); xem đủ đi
+    route gateway /general/people/cccd/<mã> có vết."""
     try:
         from nen.iam import iam
         conn = iam.ket_noi()
         try:
-            return [dict(n, planner_id="ns_" + (n.get("ma") or "").replace("-", "").lower())
-                    for n in iam.liet_ke_nguoi(conn)], ""
+            ds = []
+            for n in iam.liet_ke_nguoi(conn):
+                d = dict(n, planner_id="ns_" + (n.get("ma") or "").replace("-", "").lower())
+                so = d.pop("cccd", "") or ""
+                d["cccd_che"] = (so[:8] + "****") if so else ""
+                ds.append(d)
+            return ds, ""
         finally:
             conn.close()
     except Exception as e:
         return None, (f"Không đọc được sổ IAM ({e.__class__.__name__}) — "
                       "chưa dựng được danh sách hồ sơ.")
+
+
+def _tai_lieu_ns(ma: str) -> list[dict]:
+    """Liệt kê CHỈ-ĐỌC tài liệu gốc của một hồ sơ từ kho tầng nền
+    data/nen/ho-so-tai-lieu/<mã>/ (tiền lệ đọc IAM) — upload/xem đi route gateway."""
+    goc = Path(os.getenv("HO_SO_TAI_LIEU_DIR",
+                         str(ROOT / "data" / "nen" / "ho-so-tai-lieu")))
+    d = goc / ma
+    if not d.is_dir():
+        return []
+    ra = []
+    for f in sorted(d.iterdir()):
+        if f.is_file() and not f.name.endswith(".tmp"):
+            ra.append({"ten": f.name, "loai": f.name.split("_", 1)[0],
+                       "luc": datetime.fromtimestamp(
+                           f.stat().st_mtime).strftime("%Y-%m-%d %H:%M")})
+    return ra
 
 
 def _ds_tai_khoan_iam() -> tuple[list[dict] | None, str]:
@@ -307,6 +332,18 @@ def hr_trang(request: Request, tab: str = "people", thang: str = "",
     tai_khoan, tk_loi = (None, "")
     if tab == "accounts":       # chỉ tới được đây khi co_accounts (đã ép ở trên)
         tai_khoan, tk_loi = _ds_tai_khoan_iam()
+    # Danh mục hồ sơ (luật ngoài code — nen/rules/chuc_danh.csv + hằng IAM) và
+    # tài liệu gốc: chỉ tab People cần; IAM chết → danh mục rỗng, trang không vỡ.
+    ds_chuc_danh, ds_bo_phan, ds_cap_bac, tai_lieu_cua = [], [], [], {}
+    if tab == "people":
+        try:
+            from nen.iam import iam as _iam
+            ds_chuc_danh = _iam.doc_chuc_danh()
+            ds_bo_phan = list(_iam.DEPARTMENTS)
+            ds_cap_bac = list(_iam.CAP_BAC)
+        except Exception:
+            pass
+        tai_lieu_cua = {h["ma"]: _tai_lieu_ns(h["ma"]) for h in (ho_so or [])}
     return templates.TemplateResponse(request, "hr.html", {
         "user": user, "tab": tab, "thang": thang, "ky_kpi": ky_kpi,
         "ho_so": ho_so, "iam_loi": iam_loi, "stats": stats,
@@ -314,6 +351,8 @@ def hr_trang(request: Request, tab: str = "people", thang: str = "",
         "kpi": kpi, "danh_gia": danh_gia,
         "nghi": nghi, "planner_song": planner is not None, "tu": tu, "den": den,
         "co_accounts": co_accounts, "tai_khoan": tai_khoan, "tk_loi": tk_loi,
+        "ds_chuc_danh": ds_chuc_danh, "ds_bo_phan": ds_bo_phan,
+        "ds_cap_bac": ds_cap_bac, "tai_lieu_cua": tai_lieu_cua,
         "bao": bao, "loi": loi})
 
 

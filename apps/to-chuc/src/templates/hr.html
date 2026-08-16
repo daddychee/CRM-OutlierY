@@ -36,6 +36,11 @@
   details.sua[open] summary{color:var(--accent)}
   details.sua svg.ic{width:13px;height:13px}
   .f-sua{display:flex;gap:5px;align-items:center;flex-wrap:wrap;margin-top:.45rem}
+  tr.ns-dong{cursor:pointer}
+  .h1b{border:1px solid var(--line);border-radius:12px;padding:.9rem 1.1rem;margin:.9rem 0;background:var(--chip)}
+  .fg{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:.6rem .8rem;margin:.4rem 0 .7rem}
+  .fg label{display:block;font-size:.74rem;color:var(--muted);margin-bottom:2px}
+  .fg .o{width:100%}
 {% endblock %}
 
 {% block noi_dung %}
@@ -60,6 +65,9 @@
 
 {% if tab == 'people' %}
 {% set nhan_tt = {'hoat_dong': 'Active', 'cho_duyet': 'Pending', 'nghi': 'Left'} %}
+{% set nhan_cb = {'intern': 'Intern', 'staff': 'Staff', 'leader': 'Leader', 'manager': 'Manager'} %}
+{% set nhan_tl = {'cccd': 'ID card (CCCD)', 'syll': 'Curriculum vitae', 'khac': 'Other'} %}
+{% set ten_csv = ds_chuc_danh | map(attribute='chuc_danh') | list %}
 <h3 class="hub-tieu">
   <svg class="ic" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M15.5 4.6a3.5 3.5 0 0 1 0 6.8"/><path d="M17 13.4a6.5 6.5 0 0 1 4.5 6.6"/></svg>
   People
@@ -69,48 +77,160 @@
 <div class="bang-cuon">
 <table class="bang">
   <tr><th>Code</th><th>Full name</th><th>Department</th><th>Position</th>
-    <th>Status</th><th>PlannerY</th><th>Created</th><th></th></tr>
+    <th>Level</th><th>Status</th><th>PlannerY</th><th>Created</th></tr>
   {% for h in ho_so %}
-  <tr><td class="tk">{{ h.ma }}</td><td>{{ h.ho_ten }}</td><td>{{ h.bo_phan }}</td>
+  <tr class="ns-dong" data-ma="{{ h.ma }}">
+    <td class="tk">{{ h.ma }}</td><td>{{ h.ho_ten }}</td><td>{{ h.bo_phan }}</td>
     <td>{{ h.vi_tri or '—' }}</td>
+    <td>{{ nhan_cb.get(h.get('cap_bac', ''), '—') }}</td>
     <td>{% if h.trang_thai == 'hoat_dong' %}<span class="badge ok">Active</span>{% else %}<span class="badge">{{ nhan_tt.get(h.trang_thai, h.trang_thai) }}</span>{% endif %}</td>
     <td class="tk">{{ h.planner_id }}</td>
-    <td>{{ (h.tao_luc or '')[:10] or '—' }}</td>
-    <td>
-      <details class="sua">
-        <summary><svg class="ic" viewBox="0 0 24 24"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5z"/></svg> Edit</summary>
-        <form method="post" action="/general/people/update" class="f-sua">
-          <input type="hidden" name="ve" value="hr">
-          <input type="hidden" name="ma" value="{{ h.ma }}">
-          <input class="o" name="ho_ten" value="{{ h.ho_ten }}" placeholder="Full name" style="width:140px">
-          <input class="o" name="bo_phan" value="{{ h.bo_phan }}" placeholder="Department" style="width:130px">
-          <input class="o" name="vi_tri" value="{{ h.vi_tri }}" placeholder="Position" style="width:110px">
-          <select class="o" name="trang_thai">
-            {% for tt, nhan in nhan_tt.items() %}
-            <option value="{{ tt }}"{% if h.trang_thai == tt %} selected{% endif %}>{{ nhan }}</option>
-            {% endfor %}
-          </select>
-          <button type="submit" class="nut phu" style="padding:2px 10px;font-size:.8rem">Save</button>
-        </form>
-      </details>
-    </td></tr>
+    <td>{{ (h.tao_luc or '')[:10] or '—' }}</td></tr>
   {% endfor %}
 </table>
 </div>
+
+{% for h in ho_so %}
+<div class="h1b" id="h1b-{{ h.ma }}" hidden>
+  <h3 class="hub-tieu">
+    <svg class="ic" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><circle cx="8.5" cy="11" r="2.2"/><path d="M4.8 17a3.7 3.7 0 0 1 7.4 0"/><path d="M14.5 9.5h5M14.5 13h5M14.5 16.5h3"/></svg>
+    {{ h.ma }} · {{ h.ho_ten }}
+    <span style="margin-left:auto"><button type="button" class="nut phu dong-h1b" style="padding:2px 10px;font-size:.8rem">Close</button></span>
+  </h3>
+  <form method="post" action="/general/people/update" class="js-ho-so">
+    <input type="hidden" name="ve" value="hr">
+    <input type="hidden" name="ma" value="{{ h.ma }}">
+    <div class="fg">
+      <div><label>Full name</label><input class="o" name="ho_ten" value="{{ h.ho_ten }}"></div>
+      <div><label>Date of birth</label><input class="o" type="date" name="ngay_sinh" value="{{ h.get('ngay_sinh', '') }}"></div>
+      <div><label>CCCD</label><input class="o" name="cccd" maxlength="12" placeholder="{{ h.get('cccd_che') or '············' }}">
+        <div style="margin-top:3px;font-size:.78rem"><span class="tk" id="cccd-{{ h.ma }}">{{ h.get('cccd_che') or '—' }}</span>
+          <button type="button" class="nut phu xem-cccd" data-ma="{{ h.ma }}" style="padding:1px 8px;font-size:.74rem">View</button></div></div>
+      <div><label>Address</label><input class="o" name="dia_chi" value="{{ h.get('dia_chi', '') }}"></div>
+      <div><label>Start date</label><input class="o" type="date" name="ngay_vao" value="{{ h.get('ngay_vao', '') }}"></div>
+      <div><label>Department</label><select class="o" name="bo_phan">
+        {% for bp in ds_bo_phan %}<option value="{{ bp }}"{% if h.bo_phan == bp %} selected{% endif %}>{{ bp }}</option>{% endfor %}
+        {% if h.bo_phan and h.bo_phan not in ds_bo_phan %}<option value="{{ h.bo_phan }}" selected>{{ h.bo_phan }}</option>{% endif %}
+      </select></div>
+      <div><label>Position</label><select class="o" name="vi_tri">
+        <option value=""></option>
+        {% for c in ds_chuc_danh if not c.bo_phan or h.bo_phan in c.bo_phan %}
+        <option value="{{ c.chuc_danh }}"{% if h.get('vi_tri') == c.chuc_danh %} selected{% endif %}>{{ c.chuc_danh }}</option>
+        {% endfor %}
+        {% if h.get('vi_tri') and h.get('vi_tri') not in ten_csv %}<option value="{{ h.vi_tri }}" selected>{{ h.vi_tri }}</option>{% endif %}
+      </select></div>
+      <div><label>Level</label><select class="o" name="cap_bac">
+        <option value=""></option>
+        {% for cb in ds_cap_bac %}<option value="{{ cb }}"{% if h.get('cap_bac') == cb %} selected{% endif %}>{{ nhan_cb.get(cb, cb) }}</option>{% endfor %}
+      </select></div>
+      <div><label>Status</label><select class="o" name="trang_thai">
+        {% for tt, nhan in nhan_tt.items() %}<option value="{{ tt }}"{% if h.trang_thai == tt %} selected{% endif %}>{{ nhan }}</option>{% endfor %}
+      </select></div>
+    </div>
+    <button type="submit" class="nut" style="padding:.35rem .9rem;font-size:.84rem">Save profile</button>
+  </form>
+  <h3 class="hub-tieu" style="margin-top:.9rem">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M21.4 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+    Documents
+  </h3>
+  <div class="bang-cuon">
+  <table class="bang">
+    <tr><th>Type</th><th>File</th><th>Submitted</th><th></th></tr>
+    {% for t in tai_lieu_cua.get(h.ma, []) %}
+    <tr><td>{{ nhan_tl.get(t.loai, 'Other') }}</td><td class="tk">{{ t.ten }}</td>
+      <td>{{ t.luc }}</td>
+      <td><a class="nut phu" style="padding:1px 10px;font-size:.78rem" href="/general/people/tai-lieu/{{ h.ma }}/{{ t.ten }}">View</a></td></tr>
+    {% else %}
+    <tr><td colspan="4">—</td></tr>
+    {% endfor %}
+  </table>
+  </div>
+  <form method="post" action="/general/people/tai-lieu" enctype="multipart/form-data" class="f-dong">
+    <input type="hidden" name="ve" value="hr">
+    <input type="hidden" name="ma" value="{{ h.ma }}">
+    <select class="o" name="loai">
+      {% for k, v in nhan_tl.items() %}<option value="{{ k }}">{{ v }}</option>{% endfor %}
+    </select>
+    <input class="o" type="file" name="file" accept=".pdf,.jpg,.jpeg,.png" required>
+    <button type="submit" class="nut phu" style="padding:.3rem .8rem;font-size:.82rem">Upload</button>
+  </form>
+</div>
+{% endfor %}
 {% elif ho_so is not none %}
 <div class="canh">No profiles in the IAM registry yet.</div>
 {% endif %}
+
 <h3 class="hub-tieu">
   <svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg>
   New profile
 </h3>
-<form method="post" action="/general/people/create" class="f-dong">
+{% set bp0 = ds_bo_phan[0] if ds_bo_phan else '' %}
+<form method="post" action="/general/people/create" class="js-ho-so">
   <input type="hidden" name="ve" value="hr">
-  <input class="o" name="ho_ten" placeholder="Full name" required>
-  <input class="o" name="bo_phan" placeholder="Department" required>
-  <input class="o" name="vi_tri" placeholder="Position">
+  <div class="fg">
+    <div><label>Full name</label><input class="o" name="ho_ten" required></div>
+    <div><label>Date of birth</label><input class="o" type="date" name="ngay_sinh"></div>
+    <div><label>CCCD</label><input class="o" name="cccd" maxlength="12"></div>
+    <div><label>Address</label><input class="o" name="dia_chi"></div>
+    <div><label>Start date</label><input class="o" type="date" name="ngay_vao"></div>
+    <div><label>Department</label><select class="o" name="bo_phan">
+      {% for bp in ds_bo_phan %}<option value="{{ bp }}">{{ bp }}</option>{% endfor %}
+    </select></div>
+    <div><label>Position</label><select class="o" name="vi_tri">
+      <option value=""></option>
+      {% for c in ds_chuc_danh if not c.bo_phan or bp0 in c.bo_phan %}
+      <option value="{{ c.chuc_danh }}">{{ c.chuc_danh }}</option>
+      {% endfor %}
+    </select></div>
+    <div><label>Level</label><select class="o" name="cap_bac">
+      <option value=""></option>
+      {% for cb in ds_cap_bac %}<option value="{{ cb }}">{{ nhan_cb.get(cb, cb) }}</option>{% endfor %}
+    </select></div>
+  </div>
   <button type="submit" class="nut" style="padding:.35rem .9rem;font-size:.84rem">Create</button>
 </form>
+
+<script>
+(function(){
+  var CD = {{ ds_chuc_danh | tojson }};
+  function lapViTri(sel, boPhan){
+    var hien = sel.value;
+    while (sel.firstChild) sel.removeChild(sel.firstChild);
+    var o0 = document.createElement("option"); o0.value = ""; sel.appendChild(o0);
+    CD.forEach(function(c){
+      if (!c.bo_phan.length || c.bo_phan.indexOf(boPhan) >= 0){
+        var o = document.createElement("option");
+        o.value = c.chuc_danh; o.textContent = c.chuc_danh;
+        if (c.chuc_danh === hien) o.selected = true;
+        sel.appendChild(o);
+      }
+    });
+  }
+  document.querySelectorAll("form.js-ho-so").forEach(function(f){
+    var bp = f.querySelector("select[name=bo_phan]"),
+        vt = f.querySelector("select[name=vi_tri]");
+    if (bp && vt) bp.addEventListener("change", function(){ lapViTri(vt, bp.value); });
+  });
+  document.querySelectorAll("tr.ns-dong").forEach(function(r){
+    r.addEventListener("dblclick", function(){
+      document.querySelectorAll(".h1b").forEach(function(k){ k.hidden = true; });
+      var k = document.getElementById("h1b-" + r.dataset.ma);
+      if (k){ k.hidden = false; k.scrollIntoView({behavior: "smooth"}); }
+    });
+  });
+  document.querySelectorAll(".dong-h1b").forEach(function(b){
+    b.addEventListener("click", function(){ b.closest(".h1b").hidden = true; });
+  });
+  document.querySelectorAll(".xem-cccd").forEach(function(b){
+    b.addEventListener("click", function(){
+      fetch("/general/people/cccd/" + b.dataset.ma)
+        .then(function(r){ return r.ok ? r.text() : "—"; })
+        .then(function(t){ document.getElementById("cccd-" + b.dataset.ma).textContent = t; })
+        .catch(function(){});
+    });
+  });
+})();
+</script>
 
 {% elif tab == 'attendance' %}
 <h3 class="hub-tieu">

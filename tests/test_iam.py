@@ -203,6 +203,49 @@ def test_sua_nguoi_doi_truong_va_trang_thai(conn):
                for d in nk)                                       # luật sắt 3: có vết
 
 
+def test_ho_so_mo_rong_luu_va_validate(conn):
+    """Hồ sơ ĐẦY ĐỦ (DE.md mục 12.1): 5 cột mới lưu đúng; cap_bac ngoài thang /
+    vị trí ngoài CSV / CẶP bộ phận×vị trí sai (bài học 01/08) / bộ phận ngoài
+    danh mục 5 / CCCD không đủ 12 số / ngày sai dạng — đều LoiIam."""
+    ow = _owner(conn)
+    ns = iam.tao_nguoi(conn, ow, "Đầy Đủ", "Kinh doanh", "SEO",
+                       ngay_sinh="1998-04-12", cccd="079098012345",
+                       dia_chi="123 Lê Lợi", ngay_vao="2026-07-31",
+                       cap_bac="staff")
+    assert ns["cccd"] == "079098012345" and ns["cap_bac"] == "staff"
+    assert ns["ngay_sinh"] == "1998-04-12" and ns["dia_chi"] == "123 Lê Lợi"
+    with pytest.raises(iam.LoiIam):
+        iam.tao_nguoi(conn, ow, "A", "Kinh doanh", cap_bac="boss")
+    with pytest.raises(iam.LoiIam):
+        iam.tao_nguoi(conn, ow, "B", "Vận hành - Sản xuất", "SEO")   # cặp sai
+    with pytest.raises(iam.LoiIam):
+        iam.tao_nguoi(conn, ow, "C", "Kinh doanh", "Phi công")       # ngoài CSV
+    with pytest.raises(iam.LoiIam):
+        iam.tao_nguoi(conn, ow, "D", "IT")                           # ngoài danh mục 5
+    with pytest.raises(iam.LoiIam):
+        iam.tao_nguoi(conn, ow, "E", "Kinh doanh", cccd="123")
+    with pytest.raises(iam.LoiIam):
+        iam.tao_nguoi(conn, ow, "F", "Kinh doanh", ngay_sinh="12/04/1998")
+
+
+def test_sua_nguoi_kiem_cap_sau_gop_va_grandfather(conn):
+    ow = _owner(conn)
+    ns = iam.tao_nguoi(conn, ow, "Người Ghép", "Kinh doanh", "SEO")
+    with pytest.raises(iam.LoiIam):     # đổi MỘT MÌNH bộ phận → cặp SAU GỘP sai
+        iam.sua_nguoi(conn, ow, ns["ma"], bo_phan="Vận hành - Sản xuất")
+    iam.sua_nguoi(conn, ow, ns["ma"], bo_phan="Vận hành - Sản xuất",
+                  vi_tri="Editor (Dựng video)")          # đổi cả cặp hợp lệ
+    # hồ sơ CŨ ngoài danh mục (grandfather 04/08): không đụng bộ phận/vị trí thì
+    # vẫn đổi được trạng thái; cột mới thiếu → DEFAULT '' , đọc không vỡ
+    with conn:
+        conn.execute(
+            "INSERT INTO nguoi (ma, ho_ten, bo_phan, vi_tri, trang_thai, tao_luc) "
+            "VALUES ('NS-090', 'Người Cũ', 'IT', 'Content', 'hoat_dong', '2026-01-01')")
+    iam.sua_nguoi(conn, ow, "NS-090", trang_thai="nghi")
+    cu = next(n for n in iam.liet_ke_nguoi(conn) if n["ma"] == "NS-090")
+    assert cu["trang_thai"] == "nghi" and cu["cap_bac"] == ""
+
+
 def test_sua_nguoi_can_quyen_nhan_su(conn):
     ow = _owner(conn)
     ns = iam.tao_nguoi(conn, ow, "Người Sửa", "Kinh doanh")

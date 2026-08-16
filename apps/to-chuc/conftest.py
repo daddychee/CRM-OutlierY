@@ -38,6 +38,8 @@ def _cach_ly_du_lieu(tmp_path, monkeypatch):
     monkeypatch.setenv("BAO_CAO_DIR", str(tmp_path / "bao-cao-lich-su"))
     # IAM: trỏ DB tạm — route /kpi đọc sổ IAM, suite tuyệt đối không đụng iam.db thật
     monkeypatch.setenv("IAM_DB", str(tmp_path / "iam.db"))
+    # Kho tài liệu gốc hồ sơ (DE.md mục 12.1) — trỏ tmp, không đụng kho thật
+    monkeypatch.setenv("HO_SO_TAI_LIEU_DIR", str(tmp_path / "ho-so-tai-lieu"))
     # NAS: mặc định chưa cấu hình + không chạy trên server (không gọi PowerShell)
     monkeypatch.delenv("NAS_DUONG_DAN", raising=False)
     monkeypatch.setenv("NAS_DONG_BO", "false")

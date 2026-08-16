@@ -425,6 +425,56 @@ def test_people_update_sua_ho_so_va_quyen(client, iam_db):
         "ma": ma, "trang_thai": "hoat_dong"}).status_code == 403
 
 
+def test_people_cccd_va_tai_lieu_co_vet(client, iam_db, tmp_path, monkeypatch):
+    """Hồ sơ mở rộng (DE.md mục 12.1): CCCD đầy đủ CHỈ qua route riêng + MỖI lượt
+    xem một dòng nhật ký (khuôn vault); tài liệu gốc upload whitelist đuôi 422,
+    tên traversal bị slug hóa, xem có vết, nhân viên thường 403."""
+    monkeypatch.setenv("HO_SO_TAI_LIEU_DIR", str(tmp_path / "kho-tl"))
+    _login(client)
+    client.post("/general/people/create", data={
+        "ho_ten": "Người Đầy Đủ", "bo_phan": "Kinh doanh", "vi_tri": "SEO",
+        "ngay_sinh": "1998-04-12", "cccd": "079098012345",
+        "dia_chi": "123 Lê Lợi", "ngay_vao": "2026-07-31", "cap_bac": "staff"})
+    conn = iam.ket_noi()
+    ma = iam.liet_ke_nguoi(conn)[-1]["ma"]
+    conn.close()
+
+    r = client.get(f"/general/people/cccd/{ma}")
+    assert r.status_code == 200 and r.text == "079098012345"
+    client.get(f"/general/people/cccd/{ma}")
+    conn = iam.ket_noi()
+    so_xem = sum(1 for d in iam.doc_nhat_ky(conn, 50)
+                 if d["hanh_dong"] == "xem_cccd" and d["chi_tiet"] == ma)
+    conn.close()
+    assert so_xem == 2                                     # MỖI lượt một dòng vết
+
+    r = client.post("/general/people/tai-lieu", data={"ma": ma, "loai": "cccd"},
+                    files={"file": ("virus.exe", b"x", "application/octet-stream")})
+    assert r.status_code == 422                            # đuôi lạ bị chặn
+    r = client.post("/general/people/tai-lieu",
+                    data={"ma": ma, "loai": "cccd", "ve": "hr"},
+                    files={"file": ("..\\..\\scan cccd.pdf", b"PDF",
+                                    "application/pdf")})
+    assert r.status_code == 303
+    assert r.headers["location"].startswith("/hr?tab=people&bao=")
+    ten = [f.name for f in (tmp_path / "kho-tl" / ma).iterdir()]
+    assert len(ten) == 1 and ten[0].startswith("cccd_") and ten[0].endswith(".pdf")
+    assert ".." not in ten[0] and "\\" not in ten[0]       # traversal đã slug hóa
+
+    assert client.get(f"/general/people/tai-lieu/{ma}/{ten[0]}").status_code == 200
+    assert client.get(
+        f"/general/people/tai-lieu/{ma}/..%5Ciam.db").status_code == 404
+    conn = iam.ket_noi()
+    assert any(d["hanh_dong"] == "xem_tai_lieu_ns" and ten[0] in d["chi_tiet"]
+               for d in iam.doc_nhat_ky(conn, 20))
+    assert any(d["hanh_dong"] == "nop_tai_lieu_ns" for d in iam.doc_nhat_ky(conn, 20))
+    conn.close()
+
+    _login(client, "nhanvien", "mk-nv-6")                  # ngoài giỏ nhan_su: 403
+    assert client.get(f"/general/people/cccd/{ma}").status_code == 403
+    assert client.get(f"/general/people/tai-lieu/{ma}/{ten[0]}").status_code == 403
+
+
 def test_proxy_phat_co_accounts(client, app_mau_server, iam_db):
     """Cờ 'accounts' (tab Accounts của HR Hub) phát theo giỏ quan_tai_khoan:
     Owner có, HR L3 (chỉ quyen_nhan_su) KHÔNG — giữ luật 'tài khoản độc quyền

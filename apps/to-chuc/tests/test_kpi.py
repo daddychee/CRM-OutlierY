@@ -172,7 +172,7 @@ def _iam_seed():
     try:
         iam.tao_tai_khoan(conn, None, "sep", "matkhau6", "Kinh doanh", 5)
         claims = {"ten": "sep", "bo_phan": "Kinh doanh", "level": 5, "admin_uy_quyen": False}
-        ho_so = iam.tao_nguoi(conn, claims, "Ngọc", "Vận hành - Sản xuất", "Content")
+        ho_so = iam.tao_nguoi(conn, claims, "Ngọc", "Vận hành - Sản xuất", "Content (Kịch bản)")
         iam.tao_tai_khoan(conn, claims, "ngoc_vh", "matkhau6", "Vận hành - Sản xuất", 2,
                           nguoi_ma=ho_so["ma"])
     finally:

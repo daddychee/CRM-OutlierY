@@ -8,14 +8,16 @@ sức khỏe, trang quản trị IAM. KHÔNG nghiệp vụ. Nguồn danh tính D
 from __future__ import annotations
 
 import os
+import re
 import secrets
 from pathlib import Path
 from urllib.parse import quote
 
 import httpx
 from dotenv import load_dotenv
-from fastapi import FastAPI, Form, Request
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
+from fastapi import FastAPI, File, Form, Request, UploadFile
+from fastapi.responses import (FileResponse, HTMLResponse, JSONResponse,
+                               RedirectResponse, Response)
 from fastapi.templating import Jinja2Templates
 from itsdangerous import BadSignature, URLSafeTimedSerializer
 
@@ -524,13 +526,17 @@ def nen_nhan_su(request: Request):
 @app.post("/general/people/create", response_class=HTMLResponse)
 def nen_ns_tao(request: Request, ho_ten: str = Form(""),
                bo_phan: str = Form(""), vi_tri: str = Form(""),
-               ve: str = Form("")):
+               ngay_sinh: str = Form(""), cccd: str = Form(""),
+               dia_chi: str = Form(""), ngay_vao: str = Form(""),
+               cap_bac: str = Form(""), ve: str = Form("")):
     user = _gate_nen(request, nhan_su=True)
     if isinstance(user, Response):
         return user
     conn = iam.ket_noi()
     try:
-        ns = iam.tao_nguoi(conn, user, ho_ten, bo_phan, vi_tri)
+        ns = iam.tao_nguoi(conn, user, ho_ten, bo_phan, vi_tri,
+                           ngay_sinh=ngay_sinh, cccd=cccd, dia_chi=dia_chi,
+                           ngay_vao=ngay_vao, cap_bac=cap_bac)
         if ve in _VE_HOP_LE:
             return _ve_hub("people", bao=f"Created profile {ns['ma']}.")
         return _render_nhan_su(request, user, bao=f"Created profile {ns['ma']}.")
@@ -545,10 +551,14 @@ def nen_ns_tao(request: Request, ho_ten: str = Form(""),
 @app.post("/general/people/update", response_class=HTMLResponse)
 def nen_ns_sua(request: Request, ma: str = Form(...), ho_ten: str = Form(""),
                bo_phan: str = Form(""), vi_tri: str = Form(""),
-               trang_thai: str = Form(""), ve: str = Form("")):
+               trang_thai: str = Form(""), ngay_sinh: str = Form(""),
+               cccd: str = Form(""), dia_chi: str = Form(""),
+               ngay_vao: str = Form(""), cap_bac: str = Form(""),
+               ve: str = Form("")):
     """Sửa hồ sơ + đổi trạng thái (iam.sua_nguoi — trả nợ 'hồ sơ chỉ tạo được').
     KHÔNG có xóa hồ sơ: nghỉ việc = trang_thai 'nghi' (gỡ mềm). Trường bỏ trống =
-    giữ nguyên. Gate nhan_su=True như /general/people (Owner + HR L3+)."""
+    giữ nguyên — riêng CCCD nhờ vậy form không bao giờ phải render giá trị đầy đủ.
+    Gate nhan_su=True như /general/people (Owner + HR L3+)."""
     user = _gate_nen(request, nhan_su=True)
     if isinstance(user, Response):
         return user
@@ -556,7 +566,9 @@ def nen_ns_sua(request: Request, ma: str = Form(...), ho_ten: str = Form(""),
     try:
         iam.sua_nguoi(conn, user, ma, ho_ten=ho_ten or None,
                       bo_phan=bo_phan or None, vi_tri=vi_tri or None,
-                      trang_thai=trang_thai or None)
+                      trang_thai=trang_thai or None, ngay_sinh=ngay_sinh or None,
+                      cccd=cccd or None, dia_chi=dia_chi or None,
+                      ngay_vao=ngay_vao or None, cap_bac=cap_bac or None)
         if ve in _VE_HOP_LE:
             return _ve_hub("people", bao=f"Saved profile {ma}.")
         return _render_nhan_su(request, user, bao=f"Saved profile {ma}.")
@@ -566,6 +578,105 @@ def nen_ns_sua(request: Request, ma: str = Form(...), ho_ten: str = Form(""),
         return _render_nhan_su(request, user, loi=str(e))
     finally:
         conn.close()
+
+
+# --- Hồ sơ nhân sự: CCCD + tài liệu gốc (DE.md mục 12.1 — NHẠY CẢM, có vết) ---
+
+_LOAI_TAI_LIEU = ("cccd", "syll", "khac")
+_DUOI_TAI_LIEU = (".pdf", ".jpg", ".jpeg", ".png")
+_TRAN_TAI_LIEU = 10 * 1024 * 1024
+
+
+def _kho_tai_lieu_ns() -> Path:
+    return Path(os.getenv("HO_SO_TAI_LIEU_DIR",
+                          str(ROOT / "data" / "nen" / "ho-so-tai-lieu")))
+
+
+@app.get("/general/people/cccd/{ma}")
+def nen_ns_cccd(request: Request, ma: str):
+    """Xem CCCD ĐẦY ĐỦ — app to-chuc chỉ render bản CHE, xem đủ phải qua đây:
+    gate nhan_su + MỖI lượt xem một dòng nhat_ky_quyen (khuôn audit vault)."""
+    user = _gate_nen(request, nhan_su=True)
+    if isinstance(user, Response):
+        return user
+    conn = iam.ket_noi()
+    try:
+        r = conn.execute("SELECT cccd FROM nguoi WHERE ma=?", (ma,)).fetchone()
+        if not r:
+            return Response("Not found.", status_code=404)
+        iam.ghi_nhat_ky(conn, user["ten"], "xem_cccd", ma)
+    finally:
+        conn.close()
+    return Response(r["cccd"] or "—", media_type="text/plain; charset=utf-8")
+
+
+@app.post("/general/people/tai-lieu")
+def nen_ns_tai_lieu(request: Request, ma: str = Form(...), loai: str = Form(...),
+                    file: UploadFile = File(...), ve: str = Form("")):
+    """Nộp tài liệu gốc hồ sơ (scan CCCD/SYLL/khác) vào kho
+    data/nen/ho-so-tai-lieu/<mã NS>/ (du_lieu_nen VÀNG vĩnh viễn): whitelist đuôi,
+    trần 10MB, tên lưu slug an toàn chống path traversal, KHÔNG ghi đè (hậu tố
+    -2/-3 — bản cũ giữ nguyên), ghi nguyên tử tmp+os.replace, có vết nộp."""
+    user = _gate_nen(request, nhan_su=True)
+    if isinstance(user, Response):
+        return user
+
+    def _loi(thong_diep: str):
+        if ve in _VE_HOP_LE:
+            return _ve_hub("people", loi=thong_diep)
+        return Response(thong_diep, status_code=422)
+
+    conn = iam.ket_noi()
+    try:
+        if not (re.fullmatch(r"NS-\d{3,}", ma)
+                and conn.execute("SELECT 1 FROM nguoi WHERE ma=?", (ma,)).fetchone()):
+            return _loi("Không có hồ sơ này.")
+        if loai not in _LOAI_TAI_LIEU:
+            return _loi("Loại tài liệu phải là: " + " / ".join(_LOAI_TAI_LIEU))
+        goc = Path(file.filename or "tep").name
+        duoi = Path(goc).suffix.lower()
+        if duoi not in _DUOI_TAI_LIEU:
+            return _loi("Chỉ nhận tệp: " + " ".join(_DUOI_TAI_LIEU))
+        noi_dung = file.file.read(_TRAN_TAI_LIEU + 1)
+        if len(noi_dung) > _TRAN_TAI_LIEU:
+            return _loi("Tệp vượt trần 10MB.")
+        stem = re.sub(r"[^A-Za-z0-9_-]+", "-", Path(goc).stem).strip("-") or "tep"
+        thu_muc = _kho_tai_lieu_ns() / ma
+        thu_muc.mkdir(parents=True, exist_ok=True)
+        ten_luu, dem = f"{loai}_{stem}{duoi}", 2
+        while (thu_muc / ten_luu).exists():
+            ten_luu, dem = f"{loai}_{stem}-{dem}{duoi}", dem + 1
+        tam = thu_muc / (ten_luu + ".tmp")
+        tam.write_bytes(noi_dung)
+        os.replace(tam, thu_muc / ten_luu)
+        iam.ghi_nhat_ky(conn, user["ten"], "nop_tai_lieu_ns",
+                        f"{ma} {loai} {ten_luu}")
+    finally:
+        conn.close()
+    if ve in _VE_HOP_LE:
+        return _ve_hub("people", bao=f"Uploaded {ten_luu} for {ma}.")
+    return RedirectResponse("/hr?tab=people", status_code=303)
+
+
+@app.get("/general/people/tai-lieu/{ma}/{ten}")
+def nen_ns_tai_lieu_xem(request: Request, ma: str, ten: str):
+    """Xem/tải một tài liệu hồ sơ — gate nhan_su, MỖI lượt xem có vết
+    (nhạy cảm như CCCD); tên tệp/mã sai khuôn → 404 lặng lẽ (chống traversal)."""
+    user = _gate_nen(request, nhan_su=True)
+    if isinstance(user, Response):
+        return user
+    if (not re.fullmatch(r"NS-\d{3,}", ma) or Path(ten).name != ten
+            or ten.startswith(".")):
+        return Response("Not found.", status_code=404)
+    duong = _kho_tai_lieu_ns() / ma / ten
+    if not duong.is_file():
+        return Response("Not found.", status_code=404)
+    conn = iam.ket_noi()
+    try:
+        iam.ghi_nhat_ky(conn, user["ten"], "xem_tai_lieu_ns", f"{ma} {ten}")
+    finally:
+        conn.close()
+    return FileResponse(duong)
 
 
 # --- Phân quyền tick (chỉ Owner — giỏ tuyệt đối bang_phan_quyen) ---

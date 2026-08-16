@@ -1,6 +1,15 @@
-{
+﻿{
  "_ghi_chu": "HỢP ĐỒNG APP — mỗi app tự khai với tầng nền (khuôn manifest Odoo/Nextcloud). Thêm app = thêm mục ở đây + ghi cổng vào docs/PORTS.md TRƯỚC. Mục du_lieu: mọi store phải có danh phận (xem docs/SO_DIA_BA_DU_LIEU.md) — store không khai = không được backup.",
  "du_lieu_nen": [
+  {
+   "ten": "ho-so-tai-lieu",
+   "loai": "kho-file",
+   "duong": "data/nen/ho-so-tai-lieu",
+   "muc_quy": "vang",
+   "backup": "copy",
+   "giu": "vinh-vien",
+   "ghi_chu": "Tài liệu gốc hồ sơ nhân sự <mã NS>/ (scan CCCD, SYLL — DE.md mục 12.1). NHẠY CẢM: chỉ Owner + giỏ nhan_su xem, mọi lượt xem có vết nhat_ky_quyen."
+  },
   {
    "ten": "iam-db",
    "loai": "sqlite",

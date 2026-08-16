@@ -29,7 +29,7 @@ def _iam_seed():
     from nen.iam import iam
     conn = iam.ket_noi()
     try:
-        ho_so = iam.tao_nguoi(conn, None, "Ngọc Test", "Vận hành - Sản xuất", "Content")
+        ho_so = iam.tao_nguoi(conn, None, "Ngọc Test", "Vận hành - Sản xuất", "Content (Kịch bản)")
         return ho_so["ma"]
     finally:
         conn.close()
@@ -69,6 +69,36 @@ def test_hr_people_form_tao_sua_tro_gateway():
     assert 'action="/general/people/update"' in b
     assert 'name="ve" value="hr"' in b
     assert 'name="trang_thai"' in b and 'value="nghi"' in b   # đổi trạng thái (gỡ mềm)
+
+
+def test_hr_people_ho_so_day_du_cccd_che_va_tai_lieu():
+    """Hồ sơ ĐẦY ĐỦ (mockup H1b đã duyệt): form đủ 8 trường + dropdown danh mục;
+    CCCD KHÔNG BAO GIỜ xuất hiện đầy đủ trong HTML (chỉ bản che 8 số + ****, xem
+    đủ qua route gateway có vết); bảng tài liệu gốc đọc kho + link route gateway;
+    bảng People có cột ngày nhập."""
+    from nen.iam import iam
+    conn = iam.ket_noi()
+    ns = iam.tao_nguoi(conn, None, "Ngọc Test", "Vận hành - Sản xuất",
+                       "Content (Kịch bản)", ngay_sinh="1998-04-12",
+                       cccd="079098012345", dia_chi="123 Lê Lợi",
+                       ngay_vao="2026-07-31", cap_bac="staff")
+    conn.close()
+    kho = Path(os.environ["HO_SO_TAI_LIEU_DIR"]) / ns["ma"]
+    kho.mkdir(parents=True)
+    (kho / "cccd_scan.pdf").write_bytes(b"x")
+
+    b = _client().get("/hr?tab=people").text
+    assert "079098012345" not in b                           # tuyệt đối không lộ
+    assert "07909801****" in b                               # bản che 8 số + ****
+    for truong in ("ngay_sinh", "cccd", "dia_chi", "ngay_vao", "cap_bac"):
+        assert f'name="{truong}"' in b                       # form đủ trường
+    assert 'action="/general/people/tai-lieu"' in b          # nộp tài liệu → gateway
+    assert "/general/people/cccd/" in b                      # xem đủ → route có vết
+    assert "cccd_scan.pdf" in b
+    assert f"/general/people/tai-lieu/{ns['ma']}/cccd_scan.pdf" in b
+    assert ">Created<" in b                                  # cột ngày nhập
+    assert 'name="bo_phan"' in b and "Kế toán" in b          # dropdown danh mục 5
+    assert "Content (Kịch bản)" in b                         # dropdown vị trí từ CSV
 
 
 def test_hr_hien_bao_loi_tu_query():
@@ -174,7 +204,7 @@ def test_kpi_danh_gia_validate():
 def test_route_kpi_danh_gia_hien_ban_moi_nhat():
     from nen.iam import iam
     conn = iam.ket_noi()
-    ho_so = iam.tao_nguoi(conn, None, "Ngọc Test", "Vận hành - Sản xuất", "Content")
+    ho_so = iam.tao_nguoi(conn, None, "Ngọc Test", "Vận hành - Sản xuất", "Content (Kịch bản)")
     iam.tao_tai_khoan(conn, None, "ngoc-vh", "mk-6-ky-tu", "Vận hành - Sản xuất", 5,
                       nguoi_ma=ho_so["ma"], phai_doi_mk=False)
     conn.close()

@@ -272,6 +272,59 @@ def xoa_tai_khoan(conn: sqlite3.Connection, ai_lam: dict, ten_dich: str) -> None
 
 HR_BO_PHAN = "Hành chính Nhân sự"
 TRANG_THAI_NGUOI = ("cho_duyet", "hoat_dong", "nghi")
+# MỘT nguồn danh mục bộ phận cả hệ (DE.md mục 10: 4→5, thêm Kế toán) — hồ sơ mới
+# phải chọn từ đây; bản ghi cũ ngoài danh mục vẫn ĐỌC được (grandfather 04/08 hệ cũ).
+DEPARTMENTS = ("Kinh doanh", "Vận hành - Sản xuất", "Hành chính Nhân sự",
+               "Kế toán", "Ban quản trị")
+CAP_BAC = ("intern", "staff", "leader", "manager")   # lưu slug, UI hiện nhãn EN
+DUONG_CHUC_DANH = ROOT / "nen" / "rules" / "chuc_danh.csv"
+
+_chuc_danh_cache: dict = {}
+
+
+def doc_chuc_danh() -> list[dict]:
+    """Danh mục VỊ TRÍ ngoài code (nen/rules/chuc_danh.csv — kế thừa V2): thêm vị
+    trí = thêm dòng Excel, không sửa code. Cột bo_phan gắn vị trí ↔ bộ phận
+    (';' = nhiều, RỖNG = mọi bộ phận). Cache theo mtime như _luat."""
+    import csv
+    mtime = DUONG_CHUC_DANH.stat().st_mtime
+    if _chuc_danh_cache.get("mtime") != mtime:
+        ds = []
+        with open(DUONG_CHUC_DANH, encoding="utf-8-sig", newline="") as f:
+            for r in csv.DictReader(f):
+                if (r.get("chuc_danh") or "").strip():
+                    ds.append({"chuc_danh": r["chuc_danh"].strip(),
+                               "bo_phan": [b.strip() for b in
+                                           (r.get("bo_phan") or "").split(";")
+                                           if b.strip()]})
+        _chuc_danh_cache.update(mtime=mtime, ds=ds)
+    return _chuc_danh_cache["ds"]
+
+
+def _kiem_cap_bo_phan_vi_tri(bo_phan: str, vi_tri: str) -> None:
+    """Kiểm CẶP bộ phận×vị trí Ở SERVER (bài học 01/08 hệ cũ: 2 dropdown kiểm độc
+    lập vẫn lọt người sai bộ phận — phải kiểm trên giá trị SAU GỘP)."""
+    if bo_phan not in DEPARTMENTS:
+        raise LoiIam("Bộ phận phải chọn từ danh mục: " + " / ".join(DEPARTMENTS))
+    if not vi_tri:
+        return                                    # vị trí bỏ trống = chưa khai
+    muc = next((c for c in doc_chuc_danh() if c["chuc_danh"] == vi_tri), None)
+    if muc is None:
+        raise LoiIam("Vị trí không có trong danh mục chuc_danh.csv.")
+    if muc["bo_phan"] and bo_phan not in muc["bo_phan"]:
+        raise LoiIam(f"Vị trí '{vi_tri}' không thuộc bộ phận '{bo_phan}'.")
+
+
+def _kiem_truong_ho_so(cap_bac: str = "", ngay_sinh: str = "",
+                       ngay_vao: str = "", cccd: str = "") -> None:
+    """Validate các trường hồ sơ mở rộng (rỗng = chưa khai, cho qua)."""
+    if cap_bac and cap_bac not in CAP_BAC:
+        raise LoiIam("Cấp bậc phải là: " + " / ".join(CAP_BAC))
+    for nhan, gt in (("Ngày sinh", ngay_sinh), ("Ngày vào làm", ngay_vao)):
+        if gt and not re.fullmatch(r"\d{4}-\d{2}-\d{2}", gt):
+            raise LoiIam(f"{nhan} phải dạng YYYY-MM-DD.")
+    if cccd and not re.fullmatch(r"\d{12}", cccd):
+        raise LoiIam("CCCD phải gồm đúng 12 chữ số (hoặc bỏ trống).")
 
 
 def quyen_nhan_su(claims: dict) -> bool:
@@ -282,20 +335,26 @@ def quyen_nhan_su(claims: dict) -> bool:
 
 
 def tao_nguoi(conn: sqlite3.Connection, ai_lam: dict | None, ho_ten: str,
-              bo_phan: str, vi_tri: str = "") -> dict:
+              bo_phan: str, vi_tri: str = "", ngay_sinh: str = "",
+              cccd: str = "", dia_chi: str = "", ngay_vao: str = "",
+              cap_bac: str = "") -> dict:
     if ai_lam is not None and not quyen_nhan_su(ai_lam):
         raise LoiIam("Bạn không có quyền quản hồ sơ nhân sự.")
     if not ho_ten.strip():
         raise LoiIam("Thiếu họ tên.")
+    _kiem_cap_bo_phan_vi_tri(bo_phan, vi_tri)
+    _kiem_truong_ho_so(cap_bac, ngay_sinh, ngay_vao, cccd)
     so = conn.execute(
         "SELECT COALESCE(MAX(CAST(SUBSTR(ma,4) AS INTEGER)),0)+1 s FROM nguoi"
     ).fetchone()["s"]
     ma = f"NS-{so:03d}"
     with conn:
         conn.execute(
-            "INSERT INTO nguoi (ma, ho_ten, bo_phan, vi_tri, trang_thai, tao_luc) "
-            "VALUES (?,?,?,?, 'hoat_dong', ?)",
-            (ma, ho_ten.strip(), bo_phan, vi_tri, _gio()))
+            "INSERT INTO nguoi (ma, ho_ten, bo_phan, vi_tri, trang_thai, tao_luc, "
+            "ngay_sinh, cccd, dia_chi, ngay_vao, cap_bac) "
+            "VALUES (?,?,?,?, 'hoat_dong', ?,?,?,?,?,?)",
+            (ma, ho_ten.strip(), bo_phan, vi_tri, _gio(),
+             ngay_sinh, cccd, dia_chi.strip(), ngay_vao, cap_bac))
     ghi_nhat_ky(conn, (ai_lam or {}).get("ten", "(khoi tao)"), "tao_nguoi",
                 f"{ma} {ho_ten} {bo_phan}")
     return dict(conn.execute("SELECT * FROM nguoi WHERE ma=?", (ma,)).fetchone())
@@ -303,22 +362,35 @@ def tao_nguoi(conn: sqlite3.Connection, ai_lam: dict | None, ho_ten: str,
 
 def sua_nguoi(conn: sqlite3.Connection, ai_lam: dict | None, ma: str,
               ho_ten: str | None = None, bo_phan: str | None = None,
-              vi_tri: str | None = None, trang_thai: str | None = None) -> None:
+              vi_tri: str | None = None, trang_thai: str | None = None,
+              ngay_sinh: str | None = None, cccd: str | None = None,
+              dia_chi: str | None = None, ngay_vao: str | None = None,
+              cap_bac: str | None = None) -> None:
     """Sửa hồ sơ người (trả nợ 'hồ sơ chỉ tạo được' — DE.md mục 9/12). None = giữ
     nguyên trường đó. KHÔNG có xóa hồ sơ: nghỉ việc = trang_thai 'nghi' (gỡ mềm,
-    mã NS bất biến như doc_code)."""
+    mã NS bất biến như doc_code). Đụng bộ phận/vị trí → kiểm CẶP trên giá trị
+    SAU GỘP (bài học 01/08); không đụng → bản ghi cũ ngoài danh mục vẫn sửa được
+    trạng thái (grandfather)."""
     if ai_lam is not None and not quyen_nhan_su(ai_lam):
         raise LoiIam("Bạn không có quyền quản hồ sơ nhân sự.")
-    if not conn.execute("SELECT 1 FROM nguoi WHERE ma=?", (ma,)).fetchone():
+    hien = conn.execute("SELECT * FROM nguoi WHERE ma=?", (ma,)).fetchone()
+    if not hien:
         raise LoiIam("Không có hồ sơ này.")
     if ho_ten is not None and not ho_ten.strip():
         raise LoiIam("Thiếu họ tên.")
     if trang_thai is not None and trang_thai not in TRANG_THAI_NGUOI:
         raise LoiIam("Trạng thái phải là: " + " / ".join(TRANG_THAI_NGUOI))
+    if bo_phan is not None or vi_tri is not None:
+        _kiem_cap_bo_phan_vi_tri(
+            bo_phan if bo_phan is not None else hien["bo_phan"],
+            vi_tri if vi_tri is not None else (hien["vi_tri"] or ""))
+    _kiem_truong_ho_so(cap_bac or "", ngay_sinh or "", ngay_vao or "", cccd or "")
     cap_nhat, gia_tri = [], []
     for cot, gt in (("ho_ten", ho_ten.strip() if ho_ten else None),
                     ("bo_phan", bo_phan), ("vi_tri", vi_tri),
-                    ("trang_thai", trang_thai)):
+                    ("trang_thai", trang_thai), ("ngay_sinh", ngay_sinh),
+                    ("cccd", cccd), ("dia_chi", dia_chi),
+                    ("ngay_vao", ngay_vao), ("cap_bac", cap_bac)):
         if gt is not None:
             cap_nhat.append(f"{cot}=?")
             gia_tri.append(gt)
@@ -327,8 +399,9 @@ def sua_nguoi(conn: sqlite3.Connection, ai_lam: dict | None, ma: str,
     with conn:
         conn.execute(f"UPDATE nguoi SET {', '.join(cap_nhat)} WHERE ma=?",
                      (*gia_tri, ma))
+    # Nhật ký KHÔNG ghi giá trị cccd/dia_chi (nhạy cảm) — chỉ ghi tên cột đã đổi.
     ghi_nhat_ky(conn, (ai_lam or {}).get("ten", "(khoi tao)"), "sua_nguoi",
-                f"{ma}: {', '.join(cap_nhat)} = {gia_tri}")
+                f"{ma}: doi {', '.join(c.rstrip('=?') for c in cap_nhat)}")
 
 
 def liet_ke_nguoi(conn: sqlite3.Connection) -> list[dict]:
