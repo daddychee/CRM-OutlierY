@@ -16,7 +16,7 @@
   "apps": [
     {
       "slug": "tri-thuc",
-      "ten": "Tri thức",
+      "ten": "Knowledge",
       "mo_ta": "Hỏi–đáp RAG trích nguồn + nhập/quản kho tài liệu (Qdrant) + kho-thiếu/Q&A bổ sung + nguồn ngoài YouTube (bài học có neo) + lịch sử hội thoại + giám sát.",
       "cong": 9101,
       "tien_to": ["/hoi-dap", "/hoi", "/upload", "/kho-tai-lieu", "/kho-thieu",
@@ -53,7 +53,7 @@
     },
     {
       "slug": "to-chuc",
-      "ten": "Tổ chức",
+      "ten": "Organization",
       "mo_ta": "KPI tự động 4 nguồn chỉ-đọc + chấm công hiện diện + trang NAS + Vault tài khoản số (chỉ Owner).",
       "cong": 9103,
       "tien_to": ["/kpi", "/nas", "/api/nhip", "/api/nhip-thoat", "/vault"],
@@ -70,7 +70,7 @@
     },
     {
       "slug": "app-mau",
-      "ten": "App mẫu",
+      "ten": "Sample App",
       "mo_ta": "App 50 dòng chứng minh hợp đồng app: nhận claims, /health, proxy.",
       "cong": 9190,
       "tien_to": [],

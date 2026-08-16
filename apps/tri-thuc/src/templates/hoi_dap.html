@@ -179,17 +179,17 @@
 <body>
   <!-- ================= SIDEBAR (Ý1 — khung nền tảng Mức 1) ================= -->
   <aside class="sidebar" id="thanh-ben">
-    <div class="brand">
+    <div class="brand"><a href="/" title="Home" style="display:flex;align-items:center;gap:10px;color:inherit;text-decoration:none">
       <svg style="width:20px;height:20px;flex:0 0 auto" viewBox="0 0 24 24" aria-hidden="true"><rect x="0.5" y="15" width="3" height="6" rx="1" style="fill:var(--th-bar1)" opacity=".9"/><rect x="5.5" y="13" width="3" height="8" rx="1" style="fill:var(--th-bar2)" opacity=".9"/><rect x="10.5" y="11" width="3" height="10" rx="1" style="fill:var(--th-bar3)" opacity=".9"/><rect x="15.5" y="8" width="3" height="13" rx="1" style="fill:var(--th-bar4)" opacity=".9"/><rect x="20.5" y="1" width="3" height="20" rx="1" style="fill:var(--th-bar5)"/></svg>
       OUTLIERY
-    </div>
+    </a></div>
 
     <div class="tabs">
       <button type="button" class="tab active" data-pane="home">
         <svg class="ic" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg> Home</button>
       {% if can_upload %}
       <button type="button" class="tab" data-pane="mon">
-        <svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="2"/><path d="M4.9 19.1a10 10 0 0 1 0-14.2M7.8 16.2a6 6 0 0 1 0-8.4M19.1 4.9a10 10 0 0 1 0 14.2M16.2 7.8a6 6 0 0 1 0 8.4"/></svg> Database</button>
+        <svg class="ic" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.7 4 3 9 3s9-1.3 9-3V5"/><path d="M3 12c0 1.7 4 3 9 3s9-1.3 9-3"/></svg> Database</button>
       {% endif %}
     </div>
 
@@ -241,7 +241,7 @@
       <a class="nav-item" href="/app/tri-thuc/">
         <svg class="ic" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg> Input</a>
       <a class="nav-item" href="/kho-thieu">
-        <svg class="ic" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h4"/></svg> Gap</a>
+        <svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg> Gap</a>
       {% endif %}
     </div>
     {% endif %}
@@ -287,13 +287,10 @@
   <div class="main">
     <div class="topbar">
       <button type="button" id="nut-thanh-ben" title="Danh sách cuộc trò chuyện">☰</button>
-      <h1><svg style="width:17px;height:17px;flex:0 0 auto" viewBox="0 0 24 24" aria-hidden="true"><rect x="0.5" y="15" width="3" height="6" rx="1" style="fill:var(--th-bar1)" opacity=".9"/><rect x="5.5" y="13" width="3" height="8" rx="1" style="fill:var(--th-bar2)" opacity=".9"/><rect x="10.5" y="11" width="3" height="10" rx="1" style="fill:var(--th-bar3)" opacity=".9"/><rect x="15.5" y="8" width="3" height="13" rx="1" style="fill:var(--th-bar4)" opacity=".9"/><rect x="20.5" y="1" width="3" height="20" rx="1" style="fill:var(--th-bar5)"/></svg> OUTLIERY</h1>
+      <h1><a href="/" title="Home" style="display:inline-flex;color:inherit"><svg style="width:17px;height:17px;flex:0 0 auto" viewBox="0 0 24 24" aria-hidden="true"><rect x="0.5" y="15" width="3" height="6" rx="1" style="fill:var(--th-bar1)" opacity=".9"/><rect x="5.5" y="13" width="3" height="8" rx="1" style="fill:var(--th-bar2)" opacity=".9"/><rect x="10.5" y="11" width="3" height="10" rx="1" style="fill:var(--th-bar3)" opacity=".9"/><rect x="15.5" y="8" width="3" height="13" rx="1" style="fill:var(--th-bar4)" opacity=".9"/><rect x="20.5" y="1" width="3" height="20" rx="1" style="fill:var(--th-bar5)"/></svg></a> OUTLIERY</h1>
       <span class="spacer"></span>
-      <button type="button" id="nut-theme" class="nut-theme" title="Toggle light/dark theme"><svg class="ic ic-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg><svg class="ic ic-moon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></button> 
       {% if user.bo_phan %}
-      <div class="userinfo">
-        <span class="who">{{ user.ten }}</span><span>· {{ user.bo_phan }} · {{ level_chu }}</span>
-      </div>
+      <div class="userinfo"><span>{{ sb_ngay }}</span></div>
       {% endif %}
     </div>
 

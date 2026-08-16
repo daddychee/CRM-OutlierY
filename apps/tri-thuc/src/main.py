@@ -188,9 +188,10 @@ def _ctx_outliery(request: Request) -> dict:
     Cờ sidebar theo UI_FLOW.md mục 2: GATEWAY quyết user thấy app nào qua claims
     X-Remote-Apps (danh sách slug + cờ 'nas' khi đã cấu hình) — app KHÔNG tự đoán
     quyền. App phụ chưa di trú (RadarY…) ẩn hẳn nên sb_apps luôn rỗng (chốt 16/08)."""
+    ngay = datetime.now().strftime("%d/%m/%Y")
     user = _user_tu_headers(request)
     if user is None:
-        return {"sb_user": None, "sb_phien": [], "sb_level_chu": "", "lite": False,
+        return {"sb_user": None, "sb_ngay": ngay, "sb_phien": [], "sb_level_chu": "", "lite": False,
                 "sb_apps": [], "sb_da": False, "sb_ns": False, "sb_cho_duyet": 0,
                 "sb_nas": False}
     apps_vao = [s for s in (request.headers.get("x-remote-apps") or "").split(",") if s]
@@ -201,7 +202,8 @@ def _ctx_outliery(request: Request) -> dict:
             phien = _danh_sach_phien(user["ten"], user, gioi_han=SO_PHIEN_SIDEBAR)
         except Exception:
             phien = []
-    return {"sb_user": user, "sb_phien": phien, "sb_level_chu": ten_level(user["level"]),
+    return {"sb_user": user, "sb_ngay": ngay, "sb_phien": phien,
+            "sb_level_chu": ten_level(user["level"]),
             "lite": False, "sb_apps": [], "sb_da": "data-analytics" in apps_vao,
             "sb_ns": "quan-tri" in apps_vao, "sb_cho_duyet": 0,
             "sb_nas": "nas" in apps_vao}
