@@ -31,6 +31,11 @@
 {% endblock %}
 
 {% block noi_dung %}
+{# Tab con cua Input (UI_FLOW.md muc 8): Upload | External source - gop dieu huong, logic tung luong giu nguyen #}
+<div style="display:flex;gap:6px;margin-bottom:14px">
+  <a href="/app/tri-thuc/" style="padding:6px 14px;border-radius:999px;font-size:13px;text-decoration:none;border:1px solid var(--line);background:var(--accent);color:#fff;border-color:var(--accent)">Upload</a>
+  <a href="/app/tri-thuc/nguon-ngoai" style="padding:6px 14px;border-radius:999px;font-size:13px;text-decoration:none;border:1px solid var(--line);color:var(--muted)">External source</a>
+</div>
 <h2 class="ix-h"><svg class="ic" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> Nhập tài liệu vào kho tri thức</h2>
 
 <form id="form" class="form-nhap">

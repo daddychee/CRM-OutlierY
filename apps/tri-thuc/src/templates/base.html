@@ -137,15 +137,15 @@
     <div class="tabs">
       <button type="button" class="tab{% if pane_hien == 'home' %} active{% endif %}" data-pane="home">
         <svg class="ic" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg> Home</button>
-      {% if can_upload or sb_ns %}
+      {% if can_upload %}
       <button type="button" class="tab{% if pane_hien == 'mon' %} active{% endif %}" data-pane="mon">
-        <svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="2"/><path d="M4.9 19.1a10 10 0 0 1 0-14.2M7.8 16.2a6 6 0 0 1 0-8.4M19.1 4.9a10 10 0 0 1 0 14.2M16.2 7.8a6 6 0 0 1 0 8.4"/></svg> Monitoring</button>
+        <svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="2"/><path d="M4.9 19.1a10 10 0 0 1 0-14.2M7.8 16.2a6 6 0 0 1 0-8.4M19.1 4.9a10 10 0 0 1 0 14.2M16.2 7.8a6 6 0 0 1 0 8.4"/></svg> Database</button>
       {% endif %}
     </div>
 
     <div class="pane{% if pane_hien == 'home' %} show{% endif %}" id="pane-home">
       <a class="nav-item new" href="/app/tri-thuc/hoi-dap">
-        <svg class="ic" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> New</a>
+        <svg class="ic" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> New chat</a>
       {# Nấc 1: app phụ dựng theo apps_registry.APPS — sb_apps ĐÃ lọc quyền ở server, app
          ngoài quyền không xuất hiện (từ chối lặng lẽ). Thêm app = sửa APPS, không sửa đây.
          Data Analytics nằm đầu nhóm Công cụ (quyết định 30/07); Lịch sử báo cáo KHÔNG có
@@ -153,7 +153,7 @@
       {# Thứ tự user chốt 31/07: RadarY → Content → SpeakY → PlannerY → Data Analytics →
          Niche. DA là mục nội bộ (không nằm trong APPS) nên tách app loop làm hai:
          mọi app trước, rồi DA, rồi niche. #}
-      <div class="sb-label">Công cụ</div>
+      <div class="sb-label">Tools</div>
       {% for a in sb_apps if a.slug != 'niche' %}
       <a class="nav-item{% if request.url.path == '/app/' + a.slug %} active{% endif %}" href="/app/{{ a.slug }}">
         {% include "_icon_app.html" %} {{ a.ten }}</a>
@@ -166,87 +166,74 @@
       <a class="nav-item{% if request.url.path == '/app/' + a.slug %} active{% endif %}" href="/app/{{ a.slug }}">
         {% include "_icon_app.html" %} {{ a.ten }}</a>
       {% endfor %}
-      {% if sb_nas %}
-      <a class="nav-item{% if request.url.path == '/nas' %} active{% endif %}" href="/app/to-chuc/nas">
-        <svg class="ic" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="6" rx="1"/><rect x="3" y="13" width="18" height="6" rx="1"/><circle cx="7" cy="8" r=".9"/><circle cx="7" cy="16" r=".9"/></svg> NAS công ty</a>
-      {% endif %}
 
       <div class="sb-sep"></div>
       <div class="sb-search">
         <svg class="ic" style="width:15px;height:15px" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
-        <input placeholder="Tìm trong lịch sử của bạn…" disabled title="Sắp có (Ý2)"></div>
-      <div class="sb-label">Gần đây</div>
+        <input placeholder="Search your history…" disabled title="Coming soon"></div>
+      <div class="sb-label">Recents</div>
       {% for p in sb_phien %}
       <a class="rec-item{% if p.id == request.query_params.get('phien') %} active{% endif %}" href="/app/tri-thuc/hoi-dap?phien={{ p.id }}"
-         title="{{ p.thoi_gian }} · {{ p.so_luot }} lượt">
+         title="{{ p.thoi_gian }} · {{ p.so_luot }} turns">
         <svg class="ic" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
         <span style="overflow:hidden;text-overflow:ellipsis">{{ p.ten }}</span>
-        {% if p.highlight %}<span class="badge-moi" title="Đã có tài liệu mới trả lời được câu bạn từng hỏi">mới</span>{% endif %}
+        {% if p.highlight %}<span class="badge-moi" title="New documents can now answer a question you asked">new</span>{% endif %}
       </a>
       {% else %}
-      <div class="tb-trong">Chưa có cuộc nào.</div>
+      <div class="tb-trong">No chats yet.</div>
       {% endfor %}
       <a class="rec-item{% if request.url.path == '/lich-su' %} active{% endif %}" href="/app/tri-thuc/lich-su" style="color:var(--muted)">
-        <svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg> Xem tất cả lịch sử →</a>
+        <svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg> View all history →</a>
     </div>
 
-    {% if can_upload or sb_ns %}
+    {% if can_upload %}
     <div class="pane{% if pane_hien == 'mon' %} show{% endif %}" id="pane-mon">
       {% if can_upload %}
-      <div class="sb-label">Quản trị (Manager+)</div>
-      <a class="nav-item{% if request.url.path == '/' %} active{% endif %}" href="/app/tri-thuc/">
-        <svg class="ic" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg> Datafeed</a>
+      <div class="sb-label">Manager+</div>
+      <a class="nav-item{% if request.url.path in ['/', '/nguon-ngoai'] %} active{% endif %}" href="/app/tri-thuc/">
+        <svg class="ic" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg> Input</a>
       <a class="nav-item{% if request.url.path == '/kho-tai-lieu' %} active{% endif %}" href="/app/tri-thuc/kho-tai-lieu">
-        <svg class="ic" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg> Kho tài liệu</a>
+        <svg class="ic" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg> Library</a>
       <a class="nav-item{% if request.url.path == '/kho-thieu' %} active{% endif %}" href="/app/tri-thuc/kho-thieu">
-        <svg class="ic" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h4"/></svg> Kho cần bổ sung</a>
-      {# Nguồn ngoài về Monitoring 31/07/2026 (user chốt) — Manager+ thêm được nguồn.
-         AGENT_LITE (03/08): mục cắt khỏi bản đóng gói, route đã 404 ở middleware #}
-      {% if not lite %}
-      <a class="nav-item{% if request.url.path == '/nguon-ngoai' %} active{% endif %}" href="/app/tri-thuc/nguon-ngoai">
-        <svg class="ic" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><path d="M12 2a15 15 0 0 0 0 20M12 2a15 15 0 0 1 0 20M2 12h20"/></svg> Nguồn ngoài</a>
-      {% endif %}
-      {% endif %}
-      {% if sb_ns %}
-      {# Nhân sự (31/07/2026): KHÔNG nằm trong trang User — HR (L2+) phải thấy được;
-         Manager bộ phận khác cũng vào (chỉ xem bộ phận mình, route tự lọc). #}
-      <div class="sb-label">Nhân sự</div>
-      <a class="nav-item{% if request.url.path == '/nhan-su' %} active{% endif %}" href="/nen/nhan-su">
-        <svg class="ic" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg> Nhân sự</a>
+        <svg class="ic" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h4"/></svg> Gap</a>
       {% endif %}
     </div>
     {% endif %}
 
-    {# ── MANAGEMENT — MỘT DÒNG ghim đáy sidebar, CHỈ Owner: bấm mở POPUP NỔI bo tròn
-       phía trên (kiểu menu Claude, chốt 31/07/2026). Đứng ở trang thuộc nhóm → tô sáng
-       DÒNG Management (popup không tự bung — popup là menu, không phải trạng thái).
-       Tài chính sẽ vào đây đợt tới. ── #}
-    {% if is_owner %}
-    {% set mgmt_active = request.url.path in ['/giam-sat', '/quan-ly-user', '/vault', '/cai-dat', '/phan-quyen', '/suc-khoe'] %}
+    {# ── USER MENU kiểu Claude (UI_FLOW.md mục 8): chip đáy sidebar cho MỌI NGƯỜI —
+       giữ ID sb-mgmt/sb-mgmt-nut/sb-mgmt-muc để script popup sẵn có chạy y cũ.
+       Owner: Tracking/General/Vault; HR L3+ (sb_ns): General mở thẳng People. ── #}
     <div class="sb-mgmt" id="sb-mgmt">
       <div id="sb-mgmt-muc">
-      <a class="nav-item{% if request.url.path == '/giam-sat' %} active{% endif %}" href="/app/tri-thuc/giam-sat">
-        <svg class="ic" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg> Hoạt động team</a>
-      {# Trang User gộp luôn duyệt hồ sơ nhân sự (31/07/2026, user chốt) — badge = số chờ #}
-      <a class="nav-item{% if request.url.path == '/quan-ly-user' %} active{% endif %}" href="/nen/tai-khoan">
-        <svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg> User
-        {% if sb_cho_duyet %}<span style="margin-left:auto;font-size:10.5px;background:var(--th-16263f);color:var(--accent);border-radius:999px;padding:1px 7px" title="{{ sb_cho_duyet }} hồ sơ nhân sự chờ duyệt">{{ sb_cho_duyet }}</span>{% endif %}</a>
+      <a class="nav-item" href="/profile">
+        <svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg> Profile</a>
+      <button type="button" class="nav-item" onclick="(function(){var d=document.documentElement,t=d.getAttribute('data-theme')==='dark'?'light':'dark';d.setAttribute('data-theme',t);try{localStorage.setItem('outliery_theme',t)}catch(e){}})()">
+        <svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg> Theme</button>
+      {% if sb_nas %}
+      <a class="nav-item" href="/app/to-chuc/nas">
+        <svg class="ic" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="6" rx="1"/><rect x="3" y="13" width="18" height="6" rx="1"/><circle cx="7" cy="8" r=".9"/><circle cx="7" cy="16" r=".9"/></svg> NAS</a>
+      {% endif %}
+      {% if is_owner %}
+      <a class="nav-item" href="/app/tri-thuc/giam-sat">
+        <svg class="ic" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg> Tracking</a>
+      <a class="nav-item" href="/nen">
+        <svg class="ic" viewBox="0 0 24 24"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3"/><path d="M1 14h6M9 8h6M17 16h6"/></svg> General</a>
       {% if not lite %}
-      <a class="nav-item{% if request.url.path == '/vault' %} active{% endif %}" href="/app/to-chuc/vault">
+      <a class="nav-item" href="/app/to-chuc/vault">
         <svg class="ic" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Vault</a>
       {% endif %}
-      <a class="nav-item{% if request.url.path == '/phan-quyen' %} active{% endif %}" href="/nen/phan-quyen">
-        <svg class="ic" viewBox="0 0 24 24"><path d="M9 11l3 3 8-8"/><path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/></svg> Phân quyền</a>
-      <a class="nav-item{% if request.url.path == '/cai-dat' %} active{% endif %}" href="/nen/cau-hinh">
-        <svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.01a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.01a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.01a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> Setting</a>
-      <a class="nav-item{% if request.url.path == '/suc-khoe' %} active{% endif %}" href="/nen">
-        <svg class="ic" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg> Sức khỏe hệ</a>
+      {% elif sb_ns %}
+      <a class="nav-item" href="/nen/nhan-su">
+        <svg class="ic" viewBox="0 0 24 24"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3"/><path d="M1 14h6M9 8h6M17 16h6"/></svg> General</a>
+      {% endif %}
+      <a class="nav-item" href="/logout">
+        <svg class="ic" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg> Log out</a>
       </div>
-      <button type="button" class="nav-item{% if mgmt_active %} active{% endif %}" id="sb-mgmt-nut" aria-expanded="false">
-        <svg class="ic" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg> Management
+      <button type="button" class="nav-item" id="sb-mgmt-nut" aria-expanded="false">
+        <svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+        <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ sb_user.ten_hien_thi or sb_user.ten }} — {{ sb_level_chu }}</span>
         <svg class="ic mgmt-mui" style="width:14px;height:14px" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></button>
     </div>
-    {% endif %}
   </aside>
   {% endif %}
 
@@ -255,12 +242,10 @@
       {% if sb_user and sb_user.bo_phan %}<button type="button" id="nut-thanh-ben" title="Menu">☰</button>{% endif %}
       <h1><svg style="width:17px;height:17px;flex:0 0 auto" viewBox="0 0 24 24" aria-hidden="true"><rect x="0.5" y="15" width="3" height="6" rx="1" style="fill:var(--th-bar1)" opacity=".9"/><rect x="5.5" y="13" width="3" height="8" rx="1" style="fill:var(--th-bar2)" opacity=".9"/><rect x="10.5" y="11" width="3" height="10" rx="1" style="fill:var(--th-bar3)" opacity=".9"/><rect x="15.5" y="8" width="3" height="13" rx="1" style="fill:var(--th-bar4)" opacity=".9"/><rect x="20.5" y="1" width="3" height="20" rx="1" style="fill:var(--th-bar5)"/></svg> {% block topbar_ten %}OUTLIERY{% endblock %}</h1>
       <span class="spacer"></span>
-      <button type="button" id="nut-theme" class="nut-theme" title="Đổi giao diện sáng/tối"><svg class="ic ic-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg><svg class="ic ic-moon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></button> 
+      <button type="button" id="nut-theme" class="nut-theme" title="Toggle light/dark theme"><svg class="ic ic-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg><svg class="ic ic-moon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></button> 
       {% if sb_user and sb_user.bo_phan %}
       <div class="userinfo">
         <span class="who">{{ sb_user.ten }}</span><span>· {{ sb_user.bo_phan }} · {{ sb_level_chu }}</span>
-        <a href="/doi-mat-khau" style="color:var(--th-9aa5b5)" title="Đổi mật khẩu đăng nhập của chính bạn (cần mật khẩu hiện tại)">Đổi mật khẩu</a>
-        <a href="/logout">Đăng xuất</a>
       </div>
       {% endif %}
     </div>

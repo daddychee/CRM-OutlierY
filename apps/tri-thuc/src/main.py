@@ -82,7 +82,7 @@ ACCESS_LEVELS = ["Công khai nội bộ", "Giới hạn theo bộ phận", "Mậ
 DEPT_PREFIX = {"Ban quản trị": "BQT", "Hành chính Nhân sự": "HCNS", "IT": "IT",
                "Vận hành - Sản xuất": "VH", "Kinh doanh": "KD"}
 # Thang 5 level (nguyên hệ cũ — v2 level đến từ claims gateway, không còn users.txt)
-BAC_LEVEL = {1: "Intern", 2: "Nhân viên", 3: "Leader", 4: "Manager", 5: "Owner"}
+BAC_LEVEL = {1: "Intern", 2: "Staff", 3: "Leader", 4: "Manager", 5: "Owner"}
 MIN_LEVELS = sorted(BAC_LEVEL.items())  # [(1,"Intern"), ..., (5,"Owner")]
 
 # Supervisor (docs/supervisor.md) — TẦNG NGUỒN: (value máy, nhãn hiển thị)
@@ -178,7 +178,8 @@ def _user_tu_headers(request: Request) -> dict | None:
         level = 0
     dept = request.headers.get("x-remote-dept", "")
     return {"ten": ten, "level": level, "vai": request.headers.get("x-remote-role", ""),
-            "bo_phan": unquote(dept) if dept else ""}
+            "bo_phan": unquote(dept) if dept else "",
+            "ten_hien_thi": unquote(request.headers.get("x-remote-name") or "")}
 
 
 def _ctx_outliery(request: Request) -> dict:

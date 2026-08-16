@@ -285,7 +285,7 @@ def test_sidebar_khach_rong_khong_vo():
     from src.main import app
 
     trang = client_khach(app).get("/hoi-dap").text  # V2: claims thiếu bộ phận ≈ khách
-    assert 'id="thanh-ben"' in trang and "Chưa có cuộc nào" in trang
+    assert 'id="thanh-ben"' in trang and "No chats yet" in trang
 
 
 def test_sidebar_cat_gioi_han_nhung_lich_su_day_du_khong_cat(tmp_path, monkeypatch):
