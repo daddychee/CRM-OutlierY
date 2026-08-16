@@ -299,3 +299,20 @@ sqlite-snapshot như iam.db.
   **SẴN SÀNG cho Owner nhập danh bạ thật** (thứ tự: Markets → Niches → Channels;
   bảng tham khảo mục 7). CÒN Đ1: API Keys (mục 3b + mockup K1-K8) + hồ sơ nhân
   sự mở rộng (mục 12.1) + cột thuc_the cho quyen_override.
+- 16/08/2026 — **Đ2.1 + Đ2.3 XONG** (`00c8135`): router cầu nối khớp ranh giới
+  từ + cụm-con nhường tên dài (Life/Life In/Outland-vs-Space có test ghim); cổng
+  DA đọc từ hợp đồng app; KPI to-chuc phát planner_id dẫn xuất `ns_<mã NS>` —
+  nối PlannerY theo ID. Root 90 + to-chuc 32 pass.
+- **Đ2.2 KẾ TIẾP — data-analytics nối danh bạ (checklist thi công):**
+  (a) `/chan-doan/kenh-goi-y` trả `[{ma, ten}]` TỪ DANH BẠ (danh_sach_ten_kenh
+  nghỉ hưu khỏi gợi ý, giữ làm hiển thị bản ghi cũ); (b) form upload: ô kênh
+  thành DROPDOWN bắt buộc (gửi `kenh_ma`), server tra `danh_ba.tra_thuc_the` —
+  giá trị lạ từ chối 422; bản ghi lưu `kenh_ma` + `ten_kenh`=tên chuẩn;
+  `loai_kenh` TỰ ĐIỀN từ đế khi kênh đã khai (form chỉ dùng khi đế trống);
+  (c) `so_sanh_ky` (diagnosis_engine ~1503-1557) so `kenh_ma` khi cả 2 bản ghi
+  có, fallback so ten_chuan-hóa cho bản ghi cũ; (d) màn GÁN TAY: trang
+  bao-cao-lich-su hiện dropdown gán kênh cho bản ghi thiếu `kenh_ma`, POST
+  `/bao-cao-lich-su/gan-kenh` điền Ô RỖNG của dòng đã có (ghi nguyên tử, khuôn
+  cột Bản đẹp hệ cũ), gate DA chung; (e) test: từ chối kênh lạ · lưu kenh_ma ·
+  loai_kenh tự điền · so kỳ theo mã chạy được với 2 báo cáo cùng kênh · gán tay.
+  Lưu ý: conftest DA đã trỏ DANH_BA_DB tmp — test seed kênh qua API danh_ba.
