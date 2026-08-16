@@ -14,3 +14,11 @@ https://localhost:9443, https://127.0.0.1:9443 {
 	tls internal
 	reverse_proxy 127.0.0.1:9000
 }
+
+# MIỀN TEST (UI_FLOW.md mục 7, chốt 16/08/2026): outliery.test = cổng chính
+# (chat + app), quantri.outliery.test = khu quản trị nền. Máy test thêm 2 dòng
+# hosts trỏ 127.0.0.1. Khi thay thế thật: DNS Server role + zone outliery.lan.
+https://outliery.test:9443, https://quantri.outliery.test:9443 {
+	tls internal
+	reverse_proxy 127.0.0.1:9000
+}

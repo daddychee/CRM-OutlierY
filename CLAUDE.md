@@ -120,3 +120,24 @@
   Windows là CRLF, bản v2 LF — so byte khối script phải quy đồng newline; (c) fixture
   test dùng app-mau ĐANG CHẠY SẴN :9190 → sửa code app-mau phải restart tiến trình
   sống rồi mới tin kết quả test.
+- 16/08/2026 — **KHU QUẢN TRỊ NỀN + PHÂN QUYỀN V1 + 2 MIỀN XONG** (commit a88c384 /
+  0c08a4f + caddy; toàn hệ 480 pass / 3 skip; nghiệm thu sống HTTPS 2 miền). Làm theo
+  3 phê bình Owner (chưa thấy UI khối nền / phân quyền lệch V1 / URL multiplex) +
+  bản chốt UI_FLOW.md mục 5-7:
+  · KHU /nen 8 TRANG mỗi trang MỘT việc: /nen (tổng quan ĐẾ: dịch vụ sống/chết gồm
+    Qdrant + tài khoản theo level + hồ sơ + danh bạ + két key + backup gần nhất —
+    số thật, nguồn chết trả None không bịa 0) · tai-khoan · nhan-su · phan-quyen
+    (bảng TICK: chọn người → app × hành động, tick lẻ đè mặc định qua co_quyen sẵn
+    có, công tắc Admin ủy quyền mặc định TẮT, giỏ Owner tuyệt đối không tick được)
+    · cau-hinh (két LLM) · du-lieu (sổ địa bạ sống từ apps.json + tuổi backup) ·
+    nhat-ky · ung-dung. /quan-tri /cai-dat /suc-khoe nghỉ hưu → 303, template cũ xóa.
+  · SỬA LỖI PHÂN QUYỀN LỆCH V1: iam.quyen_nhan_su = Owner + Hành chính Nhân sự L3+
+    (bản trước khóa mất HR); MỘT hàm dùng chung gate + tao_nguoi + cờ sidebar
+    'quan-tri'. Test ghim: HR L3 vào nhan-su 200 + tạo hồ sơ, 403 tai-khoan/phan-quyen.
+  · 2 MIỀN: outliery.test (chat/app) + quantri.outliery.test (→ /nen) qua Caddy tls
+    internal; hosts máy chủ +2 dòng; cookie Domain=.outliery.test khi vào bằng miền
+    (MỘT login chạy mọi miền con — đo sống: login miền chính, cùng cookie mở miền
+    quản trị), vào bằng IP giữ host-only.
+  Việc treo: Caddy root CA cho máy nhân viên khi mở LAN (hoặc domain thật lúc thay
+  thế); DNS Server role zone outliery.lan lúc thay thế; mỗi-app-một-miền (bỏ tầng
+  viết-lại đường proxy) để giai đoạn thay thế.
