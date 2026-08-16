@@ -100,3 +100,23 @@
     connector API thay đọc-file-chéo của kpi.
   BẪY MỚI PHIÊN NÀY: Out-File PS 5.1 ghi BOM làm FastAPI 422 input-null (dùng
   [IO.File]::WriteAllText không BOM); route /hoi nhận FORM không phải JSON.
+- 16/08/2026 — **CHỐT UI/FLOW VỚI OWNER + ĐƯA UX VỀ ĐÚNG V1** (commit d64a00e; toàn hệ
+  473 pass / 3 skip). Bối cảnh: Owner phê bình đúng — v2 tự chế trang chủ "bảng chọn
+  app" khác hẳn V1, tên thư mục kỹ thuật (tri-thuc…) rò ra màn hình, thẻ Tổ chức bấm
+  là 404 (redirect /nas khi chưa cấu hình NAS_DUONG_DAN), sidebar DA rỗng.
+  **[docs/UI_FLOW.md](docs/UI_FLOW.md) ra đời = HỢP ĐỒNG giao diện**: UI/flow v2 chép
+  đúng V1, khác một mục phải hỏi Owner trước. Owner chốt 3 điểm: app phụ chưa di trú
+  ẨN HẲN; trang mới v2 (Sức khỏe hệ, quản trị IAM) nhét vào popup Management; launcher
+  XÓA HẲN. Đã làm: "/" → 303 thẳng Hỏi–đáp; proxy phát claims **X-Remote-Apps** (slug
+  được vào + cờ nas/quan-tri — GATEWAY quyết sidebar, app không tự đoán quyền;
+  `nen/common/sidebar.py` dùng chung, DA + to-chuc nối context processor vì trước
+  thiếu sb_user nên sidebar trống); sửa link chéo app trong hoi_dap.html NGOÀI 5 khối
+  script đóng băng; thêm dòng Sức khỏe hệ vào Management 4 template; gateway mount
+  /static chuẩn (fonts + theme.js). Nghiệm thu ĐÚNG ĐƯỜNG NGƯỜI DÙNG BẤM: Owner 12
+  đích sidebar đều 200, nhân viên thường bị ẩn đúng (không DA/quản trị/Vault), HTTPS
+  trọn luồng. BẪY MỚI: (a) comment CSS trong `<style>` của hoi_dap.html chứa NGUYÊN
+  VĂN chữ `<script>` → regex tách khối script nuốt cả sidebar (dính 2 lần trước khi
+  tìm ra — tách khối phải loại `<script>` nằm trong `<style>`); (b) file V1 trên máy
+  Windows là CRLF, bản v2 LF — so byte khối script phải quy đồng newline; (c) fixture
+  test dùng app-mau ĐANG CHẠY SẴN :9190 → sửa code app-mau phải restart tiến trình
+  sống rồi mới tin kết quả test.
