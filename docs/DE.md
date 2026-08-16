@@ -176,7 +176,49 @@ két: audit + xóa khóa · People: sửa/xóa hồ sơ + trạng thái · sinh 
 race + bỏ trần 999 · bo_phan hết text tự do (dropdown từ danh mục) · Audit lọc ·
 nút chạy backup · hợp đồng app validate du_lieu · cau_noi bỏ hardcode cổng.
 
+## 10. KHU CHỨC NĂNG NGHIỆP VỤ — HR Hub · Finance Hub (đề xuất theo yêu cầu Owner 16/08)
+
+Bối cảnh Owner nêu: HR hiện chỉ tạo được hồ sơ; tương lai HR cần CHẤM CÔNG +
+ĐÁNH GIÁ KPI; Kế toán cần chỗ làm THU CHI. Cần "tính năng to hơn" theo MẢNG
+nghiệp vụ, không phải từng trang lẻ.
+
+**Khái niệm — HUB (khu làm việc theo chức năng):** mỗi mảng hỗ trợ có MỘT cửa
+gộp mọi việc của mảng đó. Hub KHÔNG phải app mới và KHÔNG giữ dữ liệu riêng —
+nó là VỎ điều hướng đặt trong app to-chuc, mở bằng **GIỎ CHỨC NĂNG** cấp từ đế.
+
+**Giỏ chức năng (phan_quyen.json thêm nhóm `gio_chuc_nang`):**
+- `nhan_su` — HR Hub: hồ sơ nhân sự (CRUD qua API đế — IAM vẫn là nguồn sự thật,
+  hub không bản sao) · duyệt hồ sơ · chấm công (xem + chốt công kỳ) · KPI (xem +
+  **đánh giá xếp loại kỳ** A/B/C kèm nhận xét — dữ liệu mới ở to-chuc) · nghỉ phép.
+  Mặc định: Owner + Hành chính Nhân sự L3+ (thay luật hardcode `quyen_nhan_su`
+  hiện tại — chuyển thành giỏ tick được).
+- `ke_toan` — Finance Hub: SỔ THU CHI (append-only, sửa = bút toán đảo có vết) ·
+  danh mục khoản thu/chi (luật ngoài code, sửa Excel được) · mỗi bút toán GẮN MÃ
+  KÊNH từ danh bạ (tùy chọn) → **báo cáo LÃI/LỖ THEO KÊNH** (điểm ăn tiền: nối
+  trục thực thể mục 3 — chi phí proxy/tài khoản/voice và doanh thu AdSense quy
+  về từng K-xxx) · tổng hợp tháng · lương (đợt sau — nối chấm công + xếp loại KPI).
+  Mặc định: chỉ Owner; gán cho kế toán viên qua tick (bộ phận/vị trí Kế toán
+  chưa có trong danh mục — Owner quyết thêm vị trí thuộc HCNS hay bộ phận mới).
+
+**Chống chồng chéo (áp luật mục 2):** hồ sơ người = dữ liệu ĐẾ (IAM); chấm công/
+KPI/đánh giá/thu chi = dữ liệu NGHIỆP VỤ ở to-chuc, tham chiếu mã NS-xxx + K-xxx;
+danh mục khoản = rules CSV. Sidebar: mục "HR" / "Finance" chỉ hiện với người có
+giỏ (gateway phát cờ trong X-Remote-Apps như cờ `nas`/`quan-tri` sẵn có).
+Trang People trong General GIỮ vai trò quản trị gốc (Owner); HR Hub là cửa LÀM
+VIỆC hằng ngày — cùng dữ liệu, hai cửa hai vai, không đúp bảng.
+
+## 11. QUY TRÌNH LÀM UI TRƯỚC (Owner chốt 16/08: "chưa code, tạo trước UI")
+
+Mọi trang mới của mạch đế đi theo nhịp: **mockup tĩnh → Owner chỉnh trên UI →
+chốt → mới code logic**. Bộ mockup đợt 1 tại `docs/mockup-de/` (mở thẳng bằng
+trình duyệt, dữ liệu mẫu lấy từ khảo sát thật, banner vàng đánh dấu MOCKUP):
+`channels.html` · `niches.html` · `api-keys.html` · `hr-hub.html` ·
+`finance-hub.html`. Owner ghi chú thẳng lên từng khối (mỗi khối có mã ô vd C1,
+C2… để trỏ khi phản hồi).
+
 ## Trạng thái
 
 - 16/08/2026 — Sổ lập, đề xuất hoàn chỉnh, 4 quyết định Owner đã chốt (mục 1).
-  **CHỜ Owner duyệt tổng thể mục 2-9 → bắt đầu Đ1.**
+- 16/08/2026 — Owner bổ sung: kiểm đủ 9 app (mục 0b), mảnh API keys (mục 3b),
+  khu chức năng HR/Kế toán (mục 10), quy trình UI-trước (mục 11). **Đang ở bước:
+  Owner chỉnh mockup `docs/mockup-de/` → chốt → Đ1 code.**

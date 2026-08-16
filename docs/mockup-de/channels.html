@@ -1,0 +1,110 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MOCKUP — General › Channels</title>
+<link rel="stylesheet" href="style.css"></head><body>
+
+<div class="sidebar">
+  <div class="brand"><span class="bars">▎▍▌▋█</span> OUTLIERY</div>
+  <div class="sb-note">Sidebar rút gọn cho mockup — bản thật dùng sidebar chung của hệ.</div>
+  <div class="nav">
+    <div class="lbl">Mockup khối đế</div>
+    <a class="active" href="channels.html">Channels</a>
+    <a href="niches.html">Niches</a>
+    <a href="api-keys.html">API Keys</a>
+    <a href="hr-hub.html">HR Hub</a>
+    <a href="finance-hub.html">Finance Hub</a>
+  </div>
+</div>
+
+<div class="main">
+  <div class="topbar"><h1>General — quản trị nền</h1></div>
+  <div class="gen-nav">
+    <a class="dis">Overview</a><a class="dis">Accounts</a><a class="dis">People</a>
+    <a class="dis">Permissions</a><a class="active">Channels</a>
+    <a href="niches.html">Niches</a><a href="api-keys.html">API Keys</a>
+    <a class="dis">AI Models</a><a class="dis">Data &amp; Backup</a>
+    <a class="dis">Audit Log</a><a class="dis">Applications</a>
+  </div>
+
+  <div class="mock-banner"><b>MOCKUP — chưa có logic.</b> Dữ liệu mẫu lấy từ khảo sát 16/08.
+  Anh chỉnh/ghi chú theo mã ô (C1, C2…). URL dự kiến: <b>/general/channels</b>.
+  Gate: Owner + Manager bộ phận chủ quản tạo/sửa · đổi mã + khai tử chỉ Owner.</div>
+
+  <div class="khoi"><span class="ma-o">C1</span>
+    <div class="toolbar">
+      <select><option>Niche: All</option><option>Life In</option><option>Space</option><option>OLD</option><option>Investigation</option><option>Health</option></select>
+      <select><option>Market: All</option><option>US / English</option><option>KOREA / Korean</option><option>SPAIN / Spanish</option></select>
+      <select><option>Lifecycle: All</option><option>Incubating</option><option>Sandbox</option><option>Active</option><option>Monetized</option><option>Dormant</option><option>Retired</option></select>
+      <input type="text" placeholder="Search name / code / UC… / alias">
+      <span style="flex:1"></span>
+      <button class="nut">+ New channel</button>
+      <button class="nut phu">⇩ Export CSV</button>
+      <button class="nut phu">⇧ Import CSV</button>
+    </div>
+  </div>
+
+  <div class="khoi"><span class="ma-o">C2</span>
+    <h2>Channels <span class="phu">— 6/23 dòng mẫu · mã K-xxx BẤT BIẾN, tên đổi được</span></h2>
+    <table>
+      <tr><th>Code</th><th>Name</th><th>YouTube ID</th><th>Niche</th><th>Market</th><th>Type</th><th>Lifecycle</th><th>Owner (People)</th><th>Linked apps</th></tr>
+      <tr><td><b>K-OUTLAND</b></td><td>Outland</td><td class="chip">UCSoRLyGdOaYymHIUx4Gs6Lg</td><td>Life In</td><td>US</td><td>compilation</td>
+          <td><span class="badge b-ok">Monetized</span></td><td>NS-016 · Trần Việt Thanh</td>
+          <td><span class="chip">seo: outland-o-01</span><span class="chip">plannery: ch_mrj42kzn0</span><span class="chip">speaky: Lifein-Drew</span></td></tr>
+      <tr><td><b>K-OUTLAND-KR</b></td><td>Outland KR <span class="badge b-acc">clone of K-OUTLAND</span></td><td class="chip">UC3MUra_gPa3_trFpSuMISwg</td><td>Life In</td><td>KOREA</td><td>compilation</td>
+          <td><span class="badge b-warn">Sandbox</span></td><td>NS-009 · Khánh Huyền</td>
+          <td><span class="chip">seo: outland-kr-ok-01</span></td></tr>
+      <tr><td><b>K-LIFEDECODED</b></td><td>LIFE DECODED</td><td class="chip">UC…</td><td>Life In</td><td>US</td><td>narrator</td>
+          <td><span class="badge b-ok">Active</span></td><td>NS-005</td>
+          <td><span class="chip">plannery: ch_mrj0f3ng1</span></td></tr>
+      <tr><td><b>K-SPACEARCH</b></td><td>The Space Archive</td><td class="chip">UC…</td><td>Space</td><td>US</td><td>documentary</td>
+          <td><span class="badge b-ok">Active</span></td><td>NS-011</td>
+          <td><span class="chip">seo: the-space-archive-ts-01</span></td></tr>
+      <tr><td><b>K-WHEEL</b></td><td>Wheel</td><td class="chip">UC…</td><td>Kids</td><td>US</td><td>tre_em</td>
+          <td><span class="badge b-ok">Monetized</span></td><td class="badge b-bad">⚠ chưa gán</td>
+          <td><span class="chip">data-analytics: 3 báo cáo</span></td></tr>
+      <tr><td><b>K-TIMEVAULT</b></td><td>Time Vault</td><td class="chip">UC…</td><td>OLD</td><td>US</td><td>narrator</td>
+          <td><span class="badge b-mut">Dormant</span></td><td>NS-003</td>
+          <td><span class="chip">plannery: ch_mrj4bb9f2</span><span class="chip">speaky: OLD_BENJAMIN</span></td></tr>
+    </table>
+    <p class="ghi-chu">Dòng thiếu phụ trách / thiếu UCxxx hiện badge đỏ — cùng cảnh báo lên Overview.</p>
+  </div>
+
+  <div class="khoi"><span class="ma-o">C3</span>
+    <h2>Chi tiết kênh (mở khi bấm dòng) — K-OUTLAND-KR</h2>
+    <div class="steps" style="margin-bottom:10px">
+      <span class="s">Incubating</span>→<span class="s on">Sandbox</span>→<span class="s">Active</span>→<span class="s">Monetized</span>→<span class="s">Dormant</span>→<span class="s">Retired</span>
+      <button class="nut phu" style="margin-left:10px">Đổi trạng thái…</button>
+    </div>
+    <div class="form-grid">
+      <div><label>Aliases (máy khớp khi tìm/hỏi)</label><span class="chip">outland kr</span><span class="chip">outland hàn</span> <button class="nut phu" style="padding:2px 8px">+</button></div>
+      <div><label>Clone of</label>K-OUTLAND (Outland · US)</div>
+      <div><label>Voice chuẩn (SpeakY)</label><span class="chip">speaky: Lifein-Drew</span></div>
+      <div><label>Bộ phận chủ quản</label>Kinh doanh</div>
+    </div>
+    <label>Liên kết app (khóa của kênh này trong từng app — CHỈ OWNER sửa)</label>
+    <table>
+      <tr><th>App</th><th>Khóa</th><th></th></tr>
+      <tr><td>seo-optimize</td><td class="chip">outland-kr-ok-01</td><td><button class="nut phu" style="padding:2px 8px">sửa</button></td></tr>
+      <tr><td>plannery</td><td class="badge b-mut">chưa nối</td><td><button class="nut phu" style="padding:2px 8px">+ nối</button></td></tr>
+    </table>
+    <p class="ghi-chu">Nhật ký gần nhất: 16/08 14:02 · owner · đổi trạng thái Sandbox (từ Incubating) · vết ghi vào Audit Log chung.</p>
+    <div style="margin-top:8px"><button class="nut nguy">Khai tử kênh (chỉ Owner — gõ lại mã xác nhận)</button></div>
+  </div>
+
+  <div class="khoi"><span class="ma-o">C4</span>
+    <h2>Form tạo kênh mới <span class="phu">— toàn dropdown, không ô gõ tên tự do trừ Tên hiển thị</span></h2>
+    <div class="form-grid">
+      <div><label>Tên hiển thị *</label><input type="text" placeholder="vd: Outland France"></div>
+      <div><label>YouTube channel ID</label><input type="text" placeholder="UC… (bỏ trống nếu chưa lập kênh)"></div>
+      <div><label>Niche *</label><select><option>Life In</option><option>Space</option><option>OLD</option></select></div>
+      <div><label>Market *</label><select><option>US / English</option><option>KOREA / Korean</option></select></div>
+      <div><label>Loại kênh</label><select><option>compilation</option><option>narrator</option><option>documentary</option><option>tre_em</option></select></div>
+      <div><label>Clone of (nếu là bản dịch)</label><select><option>—</option><option>K-OUTLAND</option></select></div>
+      <div><label>Phụ trách</label><select><option>NS-016 · Trần Việt Thanh</option><option>NS-009 · Khánh Huyền</option></select></div>
+      <div><label>Trạng thái ban đầu</label><select><option>Incubating</option><option>Sandbox</option></select></div>
+    </div>
+    <p class="ghi-chu">Mã K-xxx do máy cấp khi lưu (Owner sửa được mã MỘT lần trước khi có liên kết app).</p>
+    <div style="margin-top:8px"><button class="nut">Save channel</button></div>
+  </div>
+</div>
+</body></html>

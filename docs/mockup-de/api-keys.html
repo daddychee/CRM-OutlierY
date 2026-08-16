@@ -1,0 +1,82 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MOCKUP — General › API Keys</title>
+<link rel="stylesheet" href="style.css"></head><body>
+
+<div class="sidebar">
+  <div class="brand"><span class="bars">▎▍▌▋█</span> OUTLIERY</div>
+  <div class="sb-note">Sidebar rút gọn cho mockup.</div>
+  <div class="nav">
+    <div class="lbl">Mockup khối đế</div>
+    <a href="channels.html">Channels</a>
+    <a href="niches.html">Niches</a>
+    <a class="active" href="api-keys.html">API Keys</a>
+    <a href="hr-hub.html">HR Hub</a>
+    <a href="finance-hub.html">Finance Hub</a>
+  </div>
+</div>
+
+<div class="main">
+  <div class="topbar"><h1>General — quản trị nền</h1></div>
+  <div class="gen-nav">
+    <a class="dis">Overview</a><a class="dis">Accounts</a><a class="dis">People</a>
+    <a class="dis">Permissions</a><a href="channels.html">Channels</a>
+    <a href="niches.html">Niches</a><a class="active">API Keys</a>
+    <a class="dis">AI Models</a><a class="dis">Data &amp; Backup</a>
+    <a class="dis">Audit Log</a><a class="dis">Applications</a>
+  </div>
+
+  <div class="mock-banner"><b>MOCKUP — chưa có logic.</b> URL dự kiến: <b>/general/api-keys</b> · CHỈ OWNER
+  (giỏ tuyệt đối như két). Key WRITE-ONLY: chỉ hiện đuôi 4 ký tự. LLM theo vai vẫn ở tab AI Models.
+  Ghi chú theo mã ô K1, K2, K3.</div>
+
+  <div class="stat-row">
+    <div class="stat"><div class="n">31</div><div class="t">khóa YouTube (2 nhóm)</div></div>
+    <div class="stat"><div class="n">3</div><div class="t">vai LLM (két — tab AI Models)</div></div>
+    <div class="stat"><div class="n">1</div><div class="t">khóa dịch vụ (Flow/Veo)</div></div>
+    <div class="stat"><div class="n" style="color:var(--warn)">2</div><div class="t">khóa nghi cạn quota hôm nay</div></div>
+  </div>
+
+  <div class="khoi"><span class="ma-o">K1</span>
+    <h2>Nhóm khóa <span class="phu">— gom theo mục đích, cấp phát cho app; app chỉ đọc được nhóm mình được cấp</span></h2>
+    <table>
+      <tr><th>Nhóm</th><th>Loại</th><th class="num">Số khóa</th><th>Cấp cho app</th><th>Dùng hôm nay</th><th></th></tr>
+      <tr><td><b>yt.harvest</b></td><td>YouTube Data v3</td><td class="num">12</td>
+          <td><span class="chip">radary</span></td>
+          <td><div class="usage"><i style="width:62%"></i></div></td>
+          <td><button class="nut phu" style="padding:2px 8px">mở</button></td></tr>
+      <tr><td><b>yt.seo-metadata</b></td><td>YouTube Data v3</td><td class="num">19</td>
+          <td><span class="chip">seo-optimize</span></td>
+          <td><div class="usage"><i style="width:84%;background:var(--warn)"></i></div></td>
+          <td><button class="nut phu" style="padding:2px 8px">mở</button></td></tr>
+      <tr><td><b>dich_vu.flow</b></td><td>Google Flow / Veo 3.1</td><td class="num">1</td>
+          <td><span class="chip">flowkit</span><span class="chip">vox</span></td>
+          <td><div class="usage"><i style="width:18%"></i></div></td>
+          <td><button class="nut phu" style="padding:2px 8px">mở</button></td></tr>
+    </table>
+    <p class="ghi-chu">Thay thế: 19-khóa-trong-một-biến-.env của SEO + bảng api_keys riêng của RadarY.
+    Lượt dùng đọc từ log JSON-lines chuẩn P4 — nguồn sự thật để xoay khóa.</p>
+  </div>
+
+  <div class="khoi"><span class="ma-o">K2</span>
+    <h2>Khóa trong nhóm — yt.seo-metadata <span class="phu">(19 khóa)</span></h2>
+    <table>
+      <tr><th>#</th><th>Đuôi</th><th class="num">Lượt gọi hôm nay</th><th>Quota</th><th>Thêm lúc</th><th></th></tr>
+      <tr><td>1</td><td class="chip">••••7f2a</td><td class="num">8 412</td><td><span class="badge b-warn">~84%</span></td><td>03/08</td><td><button class="nut nguy" style="padding:2px 8px">thu hồi</button></td></tr>
+      <tr><td>2</td><td class="chip">••••c9d1</td><td class="num">6 108</td><td><span class="badge b-ok">~61%</span></td><td>03/08</td><td><button class="nut nguy" style="padding:2px 8px">thu hồi</button></td></tr>
+      <tr><td>3</td><td class="chip">••••11be</td><td class="num">0</td><td><span class="badge b-mut">nghỉ</span></td><td>03/08</td><td><button class="nut nguy" style="padding:2px 8px">thu hồi</button></td></tr>
+    </table>
+    <p class="ghi-chu">Thu hồi = gỡ khỏi nhóm + ghi Audit Log (két hiện KHÔNG vết — nợ đã đo, đợt này trả).</p>
+  </div>
+
+  <div class="khoi"><span class="ma-o">K3</span>
+    <h2>Thêm khóa / cấp phát</h2>
+    <div class="form-grid">
+      <div><label>Nhóm</label><select><option>yt.seo-metadata</option><option>yt.harvest</option><option>dich_vu.flow</option><option>+ nhóm mới…</option></select></div>
+      <div><label>Khóa (dán — không hiện lại sau khi lưu)</label><input type="text" placeholder="AIza…"></div>
+      <div><label>Cấp nhóm cho app</label><select multiple size="3"><option selected>seo-optimize</option><option>radary</option><option>vox</option></select></div>
+    </div>
+    <div style="margin-top:8px"><button class="nut">Save key</button></div>
+  </div>
+</div>
+</body></html>

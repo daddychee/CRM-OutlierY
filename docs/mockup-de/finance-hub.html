@@ -1,0 +1,112 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MOCKUP — Finance Hub</title>
+<link rel="stylesheet" href="style.css"></head><body>
+
+<div class="sidebar">
+  <div class="brand"><span class="bars">▎▍▌▋█</span> OUTLIERY</div>
+  <div class="sb-note">Sidebar rút gọn. Bản thật: mục "Finance" chỉ hiện với người có GIỎ ke_toan (mặc định chỉ Owner; gán cho kế toán viên qua bảng phân quyền).</div>
+  <div class="nav">
+    <div class="lbl">Mockup khối đế</div>
+    <a href="channels.html">Channels</a>
+    <a href="niches.html">Niches</a>
+    <a href="api-keys.html">API Keys</a>
+    <a href="hr-hub.html">HR Hub</a>
+    <a class="active" href="finance-hub.html">Finance Hub</a>
+  </div>
+</div>
+
+<div class="main">
+  <div class="topbar"><h1>Finance — khu thu chi</h1></div>
+
+  <div class="mock-banner"><b>MOCKUP — chưa có logic.</b> Sổ CHỈ-THÊM: sửa = bút toán đảo có vết, không xóa dòng.
+  Mỗi bút toán gắn được MÃ KÊNH từ danh bạ → lãi/lỗ theo kênh. Danh mục khoản = CSV luật ngoài code.
+  Ghi chú theo mã ô F1…F4.</div>
+
+  <div class="stat-row">
+    <div class="stat"><div class="n" style="color:var(--ok)">$4 120</div><div class="t">Thu tháng 08 (AdSense 3 kênh)</div></div>
+    <div class="stat"><div class="n" style="color:var(--bad)">$1 730</div><div class="t">Chi tháng 08</div></div>
+    <div class="stat"><div class="n">$2 390</div><div class="t">Chênh lệch</div></div>
+    <div class="stat"><div class="n" style="color:var(--warn)">2</div><div class="t">bút toán thiếu chứng từ</div></div>
+  </div>
+
+  <div class="tabs">
+    <button class="active" onclick="mo('so',this)">Ledger</button>
+    <button onclick="mo('dm',this)">Categories</button>
+    <button onclick="mo('pnl',this)">Channel P&amp;L</button>
+  </div>
+
+  <div class="pane show" id="p-so">
+    <div class="khoi"><span class="ma-o">F1</span>
+      <h2>Sổ thu chi — 08/2026</h2>
+      <div class="toolbar">
+        <select><option>Kỳ: 08/2026</option></select>
+        <select><option>Loại: All</option><option>Thu</option><option>Chi</option></select>
+        <select><option>Kênh: All</option><option>K-OUTLAND</option><option>K-WHEEL</option></select>
+        <span style="flex:1"></span>
+        <button class="nut">+ New entry</button><button class="nut phu">⇩ Export CSV</button>
+      </div>
+      <table>
+        <tr><th>Ngày</th><th>Loại</th><th>Danh mục</th><th class="num">Số tiền</th><th>Kênh</th><th>Người ghi</th><th>Chứng từ</th><th>Ghi chú</th></tr>
+        <tr><td>14/08</td><td><span class="badge b-ok">Thu</span></td><td>AdSense</td><td class="num">$2 140</td>
+            <td><span class="chip">K-OUTLAND</span></td><td>ketoan01</td><td>📎 sao kê</td><td>kỳ 07/08</td></tr>
+        <tr><td>13/08</td><td><span class="badge b-bad">Chi</span></td><td>Proxy / IP</td><td class="num">$86</td>
+            <td><span class="chip">K-OUTLAND-KR</span></td><td>ketoan01</td><td>📎 hóa đơn</td><td>gói tháng</td></tr>
+        <tr><td>12/08</td><td><span class="badge b-bad">Chi</span></td><td>Thuê ngoài voice</td><td class="num">$150</td>
+            <td><span class="chip">K-TIMEVAULT</span></td><td>ketoan01</td><td><span class="badge b-warn">thiếu</span></td><td></td></tr>
+        <tr><td>12/08</td><td><span class="badge b-mut">Đảo</span></td><td>Proxy / IP</td><td class="num">-$43</td>
+            <td><span class="chip">K-OUTLAND-KR</span></td><td>owner</td><td>—</td><td>đảo bút toán 11/08 ghi trùng</td></tr>
+        <tr><td>10/08</td><td><span class="badge b-bad">Chi</span></td><td>API / công cụ</td><td class="num">$120</td>
+            <td><span class="badge b-mut">chung hệ</span></td><td>ketoan01</td><td>📎 invoice</td><td>Z.ai + YouTube quota</td></tr>
+      </table>
+      <p class="ghi-chu">Kênh là dropdown từ danh bạ (kèm lựa chọn "chung hệ" cho chi phí không thuộc kênh nào).
+      Dòng Đảo do máy sinh khi bấm "sửa" một bút toán đã ghi — sổ gốc không bao giờ bị đè.</p>
+    </div>
+  </div>
+
+  <div class="pane" id="p-dm">
+    <div class="khoi"><span class="ma-o">F2</span>
+      <h2>Danh mục khoản <span class="phu">— rules/danh_muc_thu_chi.csv, sửa bằng Excel được (luật ngoài code)</span></h2>
+      <table>
+        <tr><th>Mã</th><th>Tên</th><th>Loại</th><th>Ghi chú</th></tr>
+        <tr><td>THU-ADS</td><td>AdSense</td><td><span class="badge b-ok">Thu</span></td><td>doanh thu YouTube</td></tr>
+        <tr><td>THU-KHAC</td><td>Thu khác</td><td><span class="badge b-ok">Thu</span></td><td></td></tr>
+        <tr><td>CHI-PROXY</td><td>Proxy / IP</td><td><span class="badge b-bad">Chi</span></td><td>hạ tầng nuôi kênh</td></tr>
+        <tr><td>CHI-TK</td><td>Mua tài khoản</td><td><span class="badge b-bad">Chi</span></td><td></td></tr>
+        <tr><td>CHI-API</td><td>API / công cụ</td><td><span class="badge b-bad">Chi</span></td><td>LLM, quota, phần mềm</td></tr>
+        <tr><td>CHI-NGOAI</td><td>Thuê ngoài</td><td><span class="badge b-bad">Chi</span></td><td>voice, edit, thumbnail</td></tr>
+        <tr><td>CHI-LUONG</td><td>Lương</td><td><span class="badge b-bad">Chi</span></td><td>đợt sau — nối chấm công + xếp loại KPI</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="pane" id="p-pnl">
+    <div class="khoi"><span class="ma-o">F3</span>
+      <h2>Lãi / lỗ theo kênh — 08/2026 <span class="phu">— điểm ăn tiền của trục thực thể: mọi bút toán quy về K-xxx</span></h2>
+      <table>
+        <tr><th>Kênh</th><th>Niche</th><th>Lifecycle</th><th class="num">Thu</th><th class="num">Chi</th><th class="num">Lãi/Lỗ</th></tr>
+        <tr><td><b>K-OUTLAND</b> Outland</td><td>Life In</td><td><span class="badge b-ok">Monetized</span></td>
+            <td class="num">$2 140</td><td class="num">$310</td><td class="num" style="color:var(--ok)"><b>+$1 830</b></td></tr>
+        <tr><td><b>K-WHEEL</b> Wheel</td><td>Kids</td><td><span class="badge b-ok">Monetized</span></td>
+            <td class="num">$1 980</td><td class="num">$405</td><td class="num" style="color:var(--ok)"><b>+$1 575</b></td></tr>
+        <tr><td><b>K-OUTLAND-KR</b> Outland KR</td><td>Life In</td><td><span class="badge b-warn">Sandbox</span></td>
+            <td class="num">$0</td><td class="num">$129</td><td class="num" style="color:var(--bad)"><b>−$129</b></td></tr>
+        <tr><td><b>K-TIMEVAULT</b> Time Vault</td><td>OLD</td><td><span class="badge b-mut">Dormant</span></td>
+            <td class="num">$0</td><td class="num">$150</td><td class="num" style="color:var(--bad)"><b>−$150</b></td></tr>
+        <tr><td colspan="3"><b>Chung hệ (không thuộc kênh)</b></td><td class="num">$0</td><td class="num">$736</td><td class="num" style="color:var(--bad)"><b>−$736</b></td></tr>
+      </table>
+      <p class="ghi-chu">Kênh Sandbox lỗ là BÌNH THƯỜNG (giai đoạn nuôi) — bảng này trả lời "nuôi bao lâu thì hòa vốn"
+      khi ghép với vòng đời. Van chống bịa: chỉ cộng từ bút toán thật, không ước lượng.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+function mo(t, nut){
+  document.querySelectorAll('.pane').forEach(p=>p.classList.remove('show'));
+  document.getElementById('p-'+t).classList.add('show');
+  document.querySelectorAll('.tabs button').forEach(b=>b.classList.remove('active'));
+  nut.classList.add('active');
+}
+</script>
+</body></html>
