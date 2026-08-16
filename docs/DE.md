@@ -395,3 +395,29 @@ sqlite-snapshot như iam.db.
   bộ phận HỒ SƠ chưa tự chảy sang bộ phận TÀI KHOẢN (V2 có đồng bộ users.txt
   — cần Owner chốt chiều đồng bộ); rollback DELETE nguoi nằm ở gateway, cố ý
   KHÔNG thêm xoa_nguoi public vào iam (giữ luật không xóa hồ sơ).
+- 16/08/2026 — **API KEYS CODE LẠI ĐÚNG MOCKUP K1-K8 — GỠ "AI MODELS" TỰ CHẾ**
+  (`c661483`, Owner phê đúng VI PHẠM QUY TRÌNH: tên + cấu trúc "AI Models" tự
+  đặt trong đợt đổi URL EN, chưa qua duyệt, trái chốt mục 12.3 "hiển thị THEO
+  API"). Trang `/general/api-keys` (gate ket_cau_hinh chỉ Owner) 3 tab đúng
+  mockup: Add API (4 khối YouTube v3 / LLM 5 nhà / VEO / Seedream — khóa
+  write-only đuôi ••••4, thu hồi gõ-lại-đuôi, model lưu ngay) → Per-app
+  config (`viec_api` khai trong HỢP ĐỒNG apps.json: ai-agent writer/critic/
+  extract + DA dien_giai; một việc nhiều khóa, chế độ mot_khoa/xoay_vong/
+  du_phong) → Quota log (chuẩn P4 JSONL `data/logs/quota/`, helper
+  `nen/common/quota_log.py`, lọc + export CSV, rỗng thật không bịa 0).
+  TRẢ NỢ AUDIT KÉT: mọi thêm/thu hồi/cấp phát ghi nhat_ky_quyen CHỈ ĐUÔI.
+  TƯƠNG THÍCH: `ket.cau_hinh_llm` GIỮ CHỮ KÝ (ai-agent + DA đọc loopback
+  `/api/cau-hinh/llm/{vai}` → đổ env lúc khởi động — hai app không đổi một
+  byte); ưu tiên cấp phát ai-agent việc cùng tên → fallback `llm.<vai>.*` cũ
+  (test hồi quy bằng tuyệt đối); cấp phát 0 khóa = TẮT tường minh. Migration
+  `di_tru_llm_cu` idempotent chạy lúc Owner mở trang, giữ override provider/
+  base_url per-khóa; KÉT THẬT ĐANG RỖNG (V3 chưa nhập khóa nào — app chạy
+  mock .env) → no-op, loopback writer trước/sau bằng nhau đã kiểm sống.
+  Cấp phát lưu `api.cap_phat` trong cau_hinh két (ăn sẵn backup sqlite).
+  /general/ai-models + /cai-dat → 303 api-keys, nhãn AI Models sạch khỏi
+  mọi template. 4 suite 114(+11)/307+3skip/64/58. NGHIỆM THU CÒN CHỜ OWNER
+  (tôi không còn phiên Owner — mật khẩu Bot đã đổi, đúng thiết kế): mở
+  /general/api-keys, dán khóa GLM thật vào khối LLM, cấp cho việc writer ở
+  tab 2, restart ai-agent → chat chạy thật; Ctrl+U không thấy khóa. VIỆC
+  TREO: engine xoay khóa thật ở app tiêu thụ (Đ4); các app nối
+  `quota_log.ghi` dần; trạng thái "nghi cạn" (K1) cần quota log có dữ liệu.
