@@ -286,19 +286,18 @@ def _thang_hop_le(thang: str) -> str:
 
 
 @app.get("/hr", response_class=HTMLResponse)
-def hr_trang(request: Request, tab: str = "people", thang: str = "",
+def hr_trang(request: Request, tab: str = "accounts", thang: str = "",
              bao: str = "", loi: str = "", user: dict = Depends(yeu_cau_hr),
              x_remote_apps: str = Header("")):
-    """HR Hub — MỘT CỬA công tác nhân sự (Owner chốt 16/08): People (bảng + form
-    tạo/sửa POST thẳng route gateway /general/people/* kèm ve=hr) · Attendance ·
-    KPI Review · Leaves · Accounts (CHỈ khi gateway phát cờ 'accounts' — giỏ
-    quan_tai_khoan; người khác không thấy tab, gõ ?tab=accounts cũng bị ẩn).
+    """HR Hub — MỘT CỬA công tác nhân sự (Owner chốt 16/08, gộp People+Accounts
+    cùng ngày): Accounts (MỖI DÒNG = MỘT CON NGƯỜI — hồ sơ LEFT JOIN tài khoản
+    qua nguoi_ma; form POST thẳng route gateway kèm ve=hr; khối tài khoản trong
+    chi tiết CHỈ render khi gateway phát cờ 'accounts' — giỏ quan_tai_khoan) ·
+    Attendance · KPI Review · Leaves.
     bao/loi trên query = thông báo ngắn gateway gửi về sau khi xử lý form."""
     co_accounts = "accounts" in _cac_khu(x_remote_apps)
-    if tab not in ("people", "attendance", "kpi", "leaves", "accounts"):
-        tab = "people"
-    if tab == "accounts" and not co_accounts:
-        tab = "people"          # ẩn nội dung với người không cờ, kể cả gõ URL tay
+    if tab not in ("accounts", "attendance", "kpi", "leaves"):
+        tab = "accounts"        # gồm cả 'people' cũ — hai tab đã gộp một
     thang = _thang_hop_le(thang)
     ky_kpi = date.today().strftime("%Y-%m")   # KPI Review chấm kỳ THÁNG HIỆN TẠI
 
@@ -329,13 +328,12 @@ def hr_trang(request: Request, tab: str = "people", thang: str = "",
                       if ho_so is not None else None,
              "co_mat": len(cc_doc_ngay(date.today().isoformat())),
              "chua_xep": len(chua_xep)}
-    tai_khoan, tk_loi = (None, "")
-    if tab == "accounts":       # chỉ tới được đây khi co_accounts (đã ép ở trên)
-        tai_khoan, tk_loi = _ds_tai_khoan_iam()
-    # Danh mục hồ sơ (luật ngoài code — nen/rules/chuc_danh.csv + hằng IAM) và
-    # tài liệu gốc: chỉ tab People cần; IAM chết → danh mục rỗng, trang không vỡ.
+    # Tab Accounts (gộp): danh mục hồ sơ (luật ngoài code) + tài liệu gốc + LEFT
+    # JOIN tài khoản qua nguoi_ma — một hồ sơ có thể chưa có tài khoản (Username
+    # '—'); tài khoản không nối được hồ sơ vẫn hiện DÒNG RIÊNG (không giấu).
     ds_chuc_danh, ds_bo_phan, ds_cap_bac, tai_lieu_cua = [], [], [], {}
-    if tab == "people":
+    tk_cua, tk_mo_coi, tk_loi = {}, [], ""
+    if tab == "accounts":
         try:
             from nen.iam import iam as _iam
             ds_chuc_danh = _iam.doc_chuc_danh()
@@ -344,14 +342,22 @@ def hr_trang(request: Request, tab: str = "people", thang: str = "",
         except Exception:
             pass
         tai_lieu_cua = {h["ma"]: _tai_lieu_ns(h["ma"]) for h in (ho_so or [])}
+        tai_khoan, tk_loi = _ds_tai_khoan_iam()
+        ma_co = {h["ma"] for h in (ho_so or [])}
+        for tk in (tai_khoan or []):
+            ma_ns = tk.get("nguoi_ma") or ""
+            if ma_ns in ma_co and ma_ns not in tk_cua:
+                tk_cua[ma_ns] = tk
+            else:
+                tk_mo_coi.append(tk)
     return templates.TemplateResponse(request, "hr.html", {
         "user": user, "tab": tab, "thang": thang, "ky_kpi": ky_kpi,
         "ho_so": ho_so, "iam_loi": iam_loi, "stats": stats,
         "bang_cong": bang_cong, "chot": chot, "ho_ten_cua": ho_ten_cua,
         "kpi": kpi, "danh_gia": danh_gia,
         "nghi": nghi, "planner_song": planner is not None, "tu": tu, "den": den,
-        "co_accounts": co_accounts, "tai_khoan": tai_khoan, "tk_loi": tk_loi,
-        "ds_chuc_danh": ds_chuc_danh, "ds_bo_phan": ds_bo_phan,
+        "co_accounts": co_accounts, "tk_cua": tk_cua, "tk_mo_coi": tk_mo_coi,
+        "tk_loi": tk_loi, "ds_chuc_danh": ds_chuc_danh, "ds_bo_phan": ds_bo_phan,
         "ds_cap_bac": ds_cap_bac, "tai_lieu_cua": tai_lieu_cua,
         "bao": bao, "loi": loi})
 

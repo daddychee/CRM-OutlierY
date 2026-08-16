@@ -56,36 +56,48 @@
 </div>
 
 <div class="tab-nav">
-  <a href="/hr?tab=people" class="{% if tab == 'people' %}active{% endif %}">People</a>
+  <a href="/hr?tab=accounts" class="{% if tab == 'accounts' %}active{% endif %}">Accounts</a>
   <a href="/hr?tab=attendance&thang={{ thang }}" class="{% if tab == 'attendance' %}active{% endif %}">Attendance</a>
   <a href="/hr?tab=kpi" class="{% if tab == 'kpi' %}active{% endif %}">KPI Review</a>
   <a href="/hr?tab=leaves" class="{% if tab == 'leaves' %}active{% endif %}">Leaves</a>
-  {% if co_accounts %}<a href="/hr?tab=accounts" class="{% if tab == 'accounts' %}active{% endif %}">Accounts</a>{% endif %}
 </div>
 
-{% if tab == 'people' %}
+{% if tab == 'accounts' %}
 {% set nhan_tt = {'hoat_dong': 'Active', 'cho_duyet': 'Pending', 'nghi': 'Left'} %}
 {% set nhan_cb = {'intern': 'Intern', 'staff': 'Staff', 'leader': 'Leader', 'manager': 'Manager'} %}
 {% set nhan_tl = {'cccd': 'ID card (CCCD)', 'syll': 'Curriculum vitae', 'khac': 'Other'} %}
 {% set ten_csv = ds_chuc_danh | map(attribute='chuc_danh') | list %}
 <h3 class="hub-tieu">
   <svg class="ic" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M15.5 4.6a3.5 3.5 0 0 1 0 6.8"/><path d="M17 13.4a6.5 6.5 0 0 1 4.5 6.6"/></svg>
-  People
+  Accounts
 </h3>
 {% if iam_loi %}<div class="canh">{{ iam_loi }}</div>{% endif %}
-{% if ho_so %}
+{% if tk_loi %}<div class="canh">{{ tk_loi }}</div>{% endif %}
+{% if ho_so or tk_mo_coi %}
 <div class="bang-cuon">
 <table class="bang">
-  <tr><th>Code</th><th>Full name</th><th>Department</th><th>Position</th>
-    <th>Level</th><th>Status</th><th>PlannerY</th><th>Created</th></tr>
+  <tr><th>Name</th><th>Username</th><th>Department</th><th>Position</th>
+    <th>Level</th><th>Status</th><th>Created</th></tr>
   {% for h in ho_so %}
+  {% set tk = tk_cua.get(h.ma) %}
   <tr class="ns-dong" data-ma="{{ h.ma }}">
-    <td class="tk">{{ h.ma }}</td><td>{{ h.ho_ten }}</td><td>{{ h.bo_phan }}</td>
+    <td>{{ h.ho_ten }}</td>
+    <td class="tk">{% if tk %}{{ tk.ten }}{% else %}—{% endif %}</td>
+    <td>{{ h.bo_phan }}</td>
     <td>{{ h.vi_tri or '—' }}</td>
     <td>{{ nhan_cb.get(h.get('cap_bac', ''), '—') }}</td>
     <td>{% if h.trang_thai == 'hoat_dong' %}<span class="badge ok">Active</span>{% else %}<span class="badge">{{ nhan_tt.get(h.trang_thai, h.trang_thai) }}</span>{% endif %}</td>
-    <td class="tk">{{ h.planner_id }}</td>
     <td>{{ (h.tao_luc or '')[:10] or '—' }}</td></tr>
+  {% endfor %}
+  {% for tk in tk_mo_coi %}
+  <tr class="ns-dong" data-ma="tk-{{ tk.ten }}">
+    <td>—</td>
+    <td class="tk">{{ tk.ten }}</td>
+    <td>{{ tk.bo_phan or '—' }}</td>
+    <td>—</td>
+    <td>L{{ tk.level }}</td>
+    <td>{% if tk.khoa %}<span class="badge">Locked</span>{% else %}—{% endif %}</td>
+    <td>{{ (tk.tao_luc or '')[:10] or '—' }}</td></tr>
   {% endfor %}
 </table>
 </div>
@@ -95,6 +107,7 @@
   <h3 class="hub-tieu">
     <svg class="ic" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><circle cx="8.5" cy="11" r="2.2"/><path d="M4.8 17a3.7 3.7 0 0 1 7.4 0"/><path d="M14.5 9.5h5M14.5 13h5M14.5 16.5h3"/></svg>
     {{ h.ma }} · {{ h.ho_ten }}
+    <span class="badge tk">{{ h.planner_id }}</span>
     <span style="margin-left:auto"><button type="button" class="nut phu dong-h1b" style="padding:2px 10px;font-size:.8rem">Close</button></span>
   </h3>
   <form method="post" action="/general/people/update" class="js-ho-so">
@@ -154,18 +167,87 @@
     <input class="o" type="file" name="file" accept=".pdf,.jpg,.jpeg,.png" required>
     <button type="submit" class="nut phu" style="padding:.3rem .8rem;font-size:.82rem">Upload</button>
   </form>
+  {% if co_accounts %}
+  <h3 class="hub-tieu" style="margin-top:.9rem">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M21 2l-2 2m-7.6 7.6a5.5 5.5 0 1 1-7.78 7.78 5.5 5.5 0 0 1 7.78-7.78zm0 0L15.5 7.5m3 3L21 8m-3.5-3.5L19 6"/></svg>
+    Account
+  </h3>
+  {% set tk = tk_cua.get(h.ma) %}
+  {% if tk %}
+  <div class="f-dong">
+    <span class="tk">{{ tk.ten }}</span>
+    <span class="badge">L{{ tk.level }}</span>
+    {% if tk.khoa %}<span class="badge"><svg class="ic" style="width:11px;height:11px" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Locked</span>{% endif %}
+    {% if tk.phai_doi_mk %}<span class="badge">must change pw</span>{% endif %}
+  </div>
+  <form method="post" action="/general/accounts/update" class="f-dong">
+    <input type="hidden" name="ve" value="hr">
+    <input type="hidden" name="ten" value="{{ tk.ten }}">
+    <select class="o" name="hanh_dong">
+      <option value="reset_mk">reset password =</option>
+      <option value="level">set level =</option>
+      <option value="khoa">lock (1) / unlock (0) =</option>
+      {% if user.level >= 5 %}<option value="xoa">DELETE (retype username) =</option>{% endif %}
+    </select>
+    <input class="o" name="gia_tri" placeholder="value" style="width:120px">
+    <button type="submit" class="nut phu" style="padding:2px 10px;font-size:.8rem">Apply</button>
+  </form>
+  {% else %}
+  <form method="post" action="/general/accounts/grant" class="f-dong">
+    <input type="hidden" name="ve" value="hr">
+    <input type="hidden" name="ma" value="{{ h.ma }}">
+    <input class="o" name="username" placeholder="Username (a-z0-9._-)" required>
+    <input class="o" name="mat_khau" placeholder="Temporary password" required>
+    <select class="o" name="level">
+      <option value="1">L1 Intern</option><option value="2" selected>L2 Staff</option>
+      <option value="3">L3 Leader</option><option value="4">L4 Manager</option>
+      {% if user.level >= 5 %}<option value="5">L5 Owner</option>{% endif %}
+    </select>
+    <button type="submit" class="nut phu" style="padding:.3rem .8rem;font-size:.82rem">Grant account</button>
+  </form>
+  {% endif %}
+  {% endif %}
 </div>
 {% endfor %}
+
+{% if co_accounts %}
+{% for tk in tk_mo_coi %}
+<div class="h1b" id="h1b-tk-{{ tk.ten }}" hidden>
+  <h3 class="hub-tieu">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M21 2l-2 2m-7.6 7.6a5.5 5.5 0 1 1-7.78 7.78 5.5 5.5 0 0 1 7.78-7.78zm0 0L15.5 7.5m3 3L21 8m-3.5-3.5L19 6"/></svg>
+    {{ tk.ten }}
+    <span style="margin-left:auto"><button type="button" class="nut phu dong-h1b" style="padding:2px 10px;font-size:.8rem">Close</button></span>
+  </h3>
+  <div class="f-dong">
+    <span class="badge">L{{ tk.level }}</span>
+    {% if tk.khoa %}<span class="badge"><svg class="ic" style="width:11px;height:11px" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Locked</span>{% endif %}
+    {% if tk.phai_doi_mk %}<span class="badge">must change pw</span>{% endif %}
+  </div>
+  <form method="post" action="/general/accounts/update" class="f-dong">
+    <input type="hidden" name="ve" value="hr">
+    <input type="hidden" name="ten" value="{{ tk.ten }}">
+    <select class="o" name="hanh_dong">
+      <option value="reset_mk">reset password =</option>
+      <option value="level">set level =</option>
+      <option value="khoa">lock (1) / unlock (0) =</option>
+      {% if user.level >= 5 %}<option value="xoa">DELETE (retype username) =</option>{% endif %}
+    </select>
+    <input class="o" name="gia_tri" placeholder="value" style="width:120px">
+    <button type="submit" class="nut phu" style="padding:2px 10px;font-size:.8rem">Apply</button>
+  </form>
+</div>
+{% endfor %}
+{% endif %}
 {% elif ho_so is not none %}
 <div class="canh">No profiles in the IAM registry yet.</div>
 {% endif %}
 
 <h3 class="hub-tieu">
   <svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg>
-  New profile
+  New person
 </h3>
 {% set bp0 = ds_bo_phan[0] if ds_bo_phan else '' %}
-<form method="post" action="/general/people/create" class="js-ho-so">
+<form method="post" action="/general/accounts/create-full" class="js-ho-so">
   <input type="hidden" name="ve" value="hr">
   <div class="fg">
     <div><label>Full name</label><input class="o" name="ho_ten" required></div>
@@ -186,6 +268,15 @@
       <option value=""></option>
       {% for cb in ds_cap_bac %}<option value="{{ cb }}">{{ nhan_cb.get(cb, cb) }}</option>{% endfor %}
     </select></div>
+    {% if co_accounts %}
+    <div><label>Username</label><input class="o" name="username"></div>
+    <div><label>Temporary password</label><input class="o" name="mat_khau"></div>
+    <div><label>Access level</label><select class="o" name="level">
+      <option value="1">L1 Intern</option><option value="2" selected>L2 Staff</option>
+      <option value="3">L3 Leader</option><option value="4">L4 Manager</option>
+      {% if user.level >= 5 %}<option value="5">L5 Owner</option>{% endif %}
+    </select></div>
+    {% endif %}
   </div>
   <button type="submit" class="nut" style="padding:.35rem .9rem;font-size:.84rem">Create</button>
 </form>
@@ -359,64 +450,6 @@
   {% endfor %}
 </table>
 </div>
-
-{% elif tab == 'accounts' and co_accounts %}
-<h3 class="hub-tieu">
-  <svg class="ic" viewBox="0 0 24 24"><path d="M21 2l-2 2m-7.6 7.6a5.5 5.5 0 1 1-7.78 7.78 5.5 5.5 0 0 1 7.78-7.78zm0 0L15.5 7.5m3 3L21 8m-3.5-3.5L19 6"/></svg>
-  Accounts
-</h3>
-{% if tk_loi %}<div class="canh">{{ tk_loi }}</div>{% endif %}
-{% if tai_khoan %}
-<div class="bang-cuon">
-<table class="bang">
-  <tr><th>Username</th><th>Department</th><th>Level</th><th>Profile</th>
-    <th>Locked</th><th>Created</th><th></th></tr>
-  {% for tk in tai_khoan %}
-  <tr><td class="tk">{{ tk.ten }}</td><td>{{ tk.bo_phan or '—' }}</td>
-    <td>L{{ tk.level }}{% if tk.level >= 5 %} <span class="badge ok">Owner</span>{% endif %}</td>
-    <td class="tk">{{ tk.nguoi_ma or '—' }}</td>
-    <td>{% if tk.khoa %}<span class="badge"><svg class="ic" style="width:11px;height:11px" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Locked</span>{% else %}—{% endif %}</td>
-    <td>{{ (tk.tao_luc or '')[:10] or '—' }}</td>
-    <td>
-      <details class="sua">
-        <summary><svg class="ic" viewBox="0 0 24 24"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5z"/></svg> Edit</summary>
-        <form method="post" action="/general/accounts/update" class="f-sua">
-          <input type="hidden" name="ve" value="hr">
-          <input type="hidden" name="ten" value="{{ tk.ten }}">
-          <select class="o" name="hanh_dong">
-            <option value="level">set level =</option>
-            <option value="bo_phan">set department =</option>
-            <option value="reset_mk">reset password =</option>
-            <option value="khoa">lock (1) / unlock (0) =</option>
-            {% if user.level >= 5 %}<option value="xoa">DELETE (retype name) =</option>{% endif %}
-          </select>
-          <input class="o" name="gia_tri" placeholder="value" style="width:120px">
-          <button type="submit" class="nut phu" style="padding:2px 10px;font-size:.8rem">Apply</button>
-        </form>
-      </details>
-    </td></tr>
-  {% endfor %}
-</table>
-</div>
-{% elif tai_khoan is not none %}
-<div class="canh">No accounts in the IAM registry yet.</div>
-{% endif %}
-<h3 class="hub-tieu">
-  <svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg>
-  New account
-</h3>
-<form method="post" action="/general/accounts/create" class="f-dong">
-  <input type="hidden" name="ve" value="hr">
-  <input class="o" name="ten" placeholder="Username (a-z0-9._-)" required>
-  <input class="o" name="mat_khau" placeholder="Temporary password" required>
-  <input class="o" name="bo_phan" placeholder="Department" required>
-  <select class="o" name="level">
-    <option value="1">L1 Intern</option><option value="2" selected>L2 Staff</option>
-    <option value="3">L3 Leader</option><option value="4">L4 Manager</option>
-    {% if user.level >= 5 %}<option value="5">L5 Owner</option>{% endif %}
-  </select>
-  <button type="submit" class="nut" style="padding:.35rem .9rem;font-size:.84rem">Create</button>
-</form>
 {% endif %}
 
 </div>

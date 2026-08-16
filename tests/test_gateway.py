@@ -153,7 +153,7 @@ def test_general_people_accounts_get_ve_hr_hub(client):
     /quan-tri — GET 303 về /hr đúng tab; POST /general/* giữ nguyên (backend hub)."""
     _login(client)
     r = client.get("/general/people")
-    assert r.status_code == 303 and r.headers["location"] == "/hr?tab=people"
+    assert r.status_code == 303 and r.headers["location"] == "/hr?tab=accounts"
     r = client.get("/general/accounts")
     assert r.status_code == 303 and r.headers["location"] == "/hr?tab=accounts"
 
@@ -385,7 +385,7 @@ def test_post_ve_hr_303_ve_hub(client, iam_db):
     r = client.post("/general/people/create", data={
         "ho_ten": "Người Hub", "bo_phan": "Kinh doanh", "ve": "hr"})
     assert r.status_code == 303
-    assert r.headers["location"].startswith("/hr?tab=people&bao=")
+    assert r.headers["location"].startswith("/hr?tab=accounts&bao=")
     r = client.post("/general/accounts/create", data={
         "ten": "tk-hub", "mat_khau": "mk-tam-6", "bo_phan": "Kinh doanh",
         "level": 2, "ve": "hr"})
@@ -412,17 +412,102 @@ def test_people_update_sua_ho_so_va_quyen(client, iam_db):
     r = client.post("/general/people/update", data={
         "ma": ma, "trang_thai": "nghi", "ve": "hr"})
     assert r.status_code == 303
-    assert r.headers["location"].startswith("/hr?tab=people&bao=")
+    assert r.headers["location"].startswith("/hr?tab=accounts&bao=")
     conn = iam.ket_noi()
     ns = next(n for n in iam.liet_ke_nguoi(conn) if n["ma"] == ma)
     conn.close()
     assert ns["trang_thai"] == "nghi"
     r = client.post("/general/people/update", data={       # trạng thái lạ → loi
         "ma": ma, "trang_thai": "xoa-han", "ve": "hr"})
-    assert r.status_code == 303 and "/hr?tab=people&loi=" in r.headers["location"]
+    assert r.status_code == 303 and "/hr?tab=accounts&loi=" in r.headers["location"]
     _login(client, "nhanvien", "mk-nv-6")                  # nhân viên thường bị chặn
     assert client.post("/general/people/update", data={
         "ma": ma, "trang_thai": "hoat_dong"}).status_code == 403
+
+
+def test_create_full_tron_goi_va_rollback(client, iam_db):
+    """MỘT DÒNG = MỘT CON NGƯỜI (Owner gộp 16/08): create-full ra cả hồ sơ +
+    tài khoản nối nguoi_ma, bộ phận tài khoản LẤY TỪ HỒ SƠ; username trùng bị
+    chặn TRƯỚC khi tạo hồ sơ; lỗi tạo tài khoản → ROLLBACK hồ sơ vừa tạo
+    (không mồ côi — bài học V2 GĐ2), có vết."""
+    _login(client)
+    r = client.post("/general/accounts/create-full", data={
+        "ho_ten": "Người Trọn Gói", "bo_phan": "Kinh doanh", "vi_tri": "SEO",
+        "username": "trongoi", "mat_khau": "mk-tam-6", "level": 2, "ve": "hr"})
+    assert r.status_code == 303
+    assert r.headers["location"].startswith("/hr?tab=accounts&bao=")
+    conn = iam.ket_noi()
+    tk = iam.lay_tai_khoan(conn, "trongoi")
+    ns = next(n for n in iam.liet_ke_nguoi(conn) if n["ho_ten"] == "Người Trọn Gói")
+    so_nguoi = len(iam.liet_ke_nguoi(conn))
+    conn.close()
+    assert tk["nguoi_ma"] == ns["ma"]
+    assert tk["bo_phan"] == "Kinh doanh"          # bộ phận ăn theo hồ sơ
+    assert tk["phai_doi_mk"] == 1                 # mật khẩu tạm phải đổi lần đầu
+
+    r = client.post("/general/accounts/create-full", data={    # username TRÙNG
+        "ho_ten": "Người Trùng", "bo_phan": "Kinh doanh",
+        "username": "trongoi", "mat_khau": "mk-tam-6", "ve": "hr"})
+    assert r.status_code == 303 and "loi=" in r.headers["location"]
+    conn = iam.ket_noi()
+    assert len(iam.liet_ke_nguoi(conn)) == so_nguoi            # không đẻ hồ sơ
+    conn.close()
+
+    r = client.post("/general/accounts/create-full", data={    # mật khẩu ngắn
+        "ho_ten": "Người Lỗi TK", "bo_phan": "Kinh doanh",
+        "username": "loi-tk", "mat_khau": "mk", "ve": "hr"})
+    assert r.status_code == 303 and "loi=" in r.headers["location"]
+    conn = iam.ket_noi()
+    assert len(iam.liet_ke_nguoi(conn)) == so_nguoi            # rollback hồ sơ
+    assert iam.lay_tai_khoan(conn, "loi-tk") is None
+    assert any(d["hanh_dong"] == "rollback_tao_nguoi"
+               for d in iam.doc_nhat_ky(conn, 10))
+    conn.close()
+
+
+def test_create_full_va_grant_theo_quyen(client, iam_db):
+    """HR L3 (chỉ giỏ nhan_su): tạo hồ sơ KHÔNG kèm tài khoản qua create-full
+    được; kèm username → 403 không tạo gì; POST grant cũng 403 (tài khoản vẫn
+    độc quyền giỏ quan_tai_khoan). Owner grant cho hồ sơ sẵn → nối đúng, bộ phận
+    theo hồ sơ; hồ sơ đã có tài khoản → từ chối (1 người = 1 tài khoản)."""
+    conn = iam.ket_noi()
+    ow = iam.claims_cua(iam.lay_tai_khoan(conn, "owner-test"))
+    iam.tao_tai_khoan(conn, ow, "hr-b", "mk-hr-6", "Hành chính Nhân sự", 3,
+                      phai_doi_mk=False)
+    conn.close()
+    _login(client, "hr-b", "mk-hr-6")
+    r = client.post("/general/accounts/create-full", data={
+        "ho_ten": "Hồ Sơ HR Tạo", "bo_phan": "Kinh doanh", "ve": "hr"})
+    assert r.status_code == 303 and "bao=" in r.headers["location"]
+    conn = iam.ket_noi()
+    so_nguoi = len(iam.liet_ke_nguoi(conn))
+    ma = iam.liet_ke_nguoi(conn)[-1]["ma"]
+    conn.close()
+    r = client.post("/general/accounts/create-full", data={
+        "ho_ten": "HR Lấn Quyền", "bo_phan": "Kinh doanh",
+        "username": "lan-quyen", "mat_khau": "mk-tam-6", "ve": "hr"})
+    assert r.status_code == 403
+    r = client.post("/general/accounts/grant", data={
+        "ma": ma, "username": "lan-quyen", "mat_khau": "mk-tam-6", "level": 2})
+    assert r.status_code == 403
+    conn = iam.ket_noi()
+    assert len(iam.liet_ke_nguoi(conn)) == so_nguoi            # 403 không đẻ gì
+    assert iam.lay_tai_khoan(conn, "lan-quyen") is None
+    conn.close()
+
+    _login(client)
+    r = client.post("/general/accounts/grant", data={
+        "ma": ma, "username": "cap-sau", "mat_khau": "mk-tam-6", "level": 2,
+        "ve": "hr"})
+    assert r.status_code == 303
+    assert r.headers["location"].startswith("/hr?tab=accounts&bao=")
+    conn = iam.ket_noi()
+    tk = iam.lay_tai_khoan(conn, "cap-sau")
+    conn.close()
+    assert tk["nguoi_ma"] == ma and tk["bo_phan"] == "Kinh doanh"
+    r = client.post("/general/accounts/grant", data={          # đã có tài khoản
+        "ma": ma, "username": "cap-nua", "mat_khau": "mk-tam-6", "ve": "hr"})
+    assert r.status_code == 303 and "loi=" in r.headers["location"]
 
 
 def test_people_cccd_va_tai_lieu_co_vet(client, iam_db, tmp_path, monkeypatch):
@@ -456,7 +541,7 @@ def test_people_cccd_va_tai_lieu_co_vet(client, iam_db, tmp_path, monkeypatch):
                     files={"file": ("..\\..\\scan cccd.pdf", b"PDF",
                                     "application/pdf")})
     assert r.status_code == 303
-    assert r.headers["location"].startswith("/hr?tab=people&bao=")
+    assert r.headers["location"].startswith("/hr?tab=accounts&bao=")
     ten = [f.name for f in (tmp_path / "kho-tl" / ma).iterdir()]
     assert len(ten) == 1 and ten[0].startswith("cccd_") and ten[0].endswith(".pdf")
     assert ".." not in ten[0] and "\\" not in ten[0]       # traversal đã slug hóa

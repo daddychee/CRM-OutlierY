@@ -51,21 +51,25 @@ def test_hr_gate_post_cung_bi_chan():
         "nguoi": "x", "ky": THANG_NAY, "xep_loai": "A"}).status_code == 403
 
 
-# ---------- People: IAM chỉ-đọc ----------
+# ---------- Accounts (gộp People — MỖI DÒNG = MỘT CON NGƯỜI) ----------
 
 def test_hr_people_doc_iam_va_planner_id():
     ma = _iam_seed()
-    b = _client().get("/hr?tab=people").text
+    b = _client().get("/hr?tab=accounts").text
     assert ma in b and "Ngọc Test" in b
     assert "ns_" + ma.replace("-", "").lower() in b          # planner_id dẫn xuất
+    # tab 'people' cũ gõ tay → ép về tab Accounts gộp (không còn tab riêng)
+    b2 = _client().get("/hr?tab=people").text
+    assert "Ngọc Test" in b2 and 'name="ngay_sinh"' in b2
 
 
-def test_hr_people_form_tao_sua_tro_gateway():
-    """People một cửa (16/08): form tạo + sửa/đổi trạng thái POST THẲNG route
-    gateway /general/people/* kèm ve=hr — app to-chuc KHÔNG viết IAM (Luật 4)."""
+def test_hr_form_tao_sua_tro_gateway():
+    """Một cửa (Owner gộp 16/08): form New person trọn gói trỏ
+    /general/accounts/create-full, sửa hồ sơ trỏ /general/people/update, đều kèm
+    ve=hr — app to-chuc KHÔNG viết IAM (Luật 4)."""
     _iam_seed()
-    b = _client().get("/hr?tab=people").text
-    assert 'action="/general/people/create"' in b
+    b = _client().get("/hr?tab=accounts").text
+    assert 'action="/general/accounts/create-full"' in b
     assert 'action="/general/people/update"' in b
     assert 'name="ve" value="hr"' in b
     assert 'name="trang_thai"' in b and 'value="nghi"' in b   # đổi trạng thái (gỡ mềm)
@@ -87,7 +91,7 @@ def test_hr_people_ho_so_day_du_cccd_che_va_tai_lieu():
     kho.mkdir(parents=True)
     (kho / "cccd_scan.pdf").write_bytes(b"x")
 
-    b = _client().get("/hr?tab=people").text
+    b = _client().get("/hr?tab=accounts").text
     assert "079098012345" not in b                           # tuyệt đối không lộ
     assert "07909801****" in b                               # bản che 8 số + ****
     for truong in ("ngay_sinh", "cccd", "dia_chi", "ngay_vao", "cap_bac"):
@@ -105,38 +109,51 @@ def test_hr_hien_bao_loi_tu_query():
     """Gateway xử lý form xong 303 về /hr kèm bao/loi ngắn — hub hiện thông báo."""
     c = _client()
     assert "Created profile NS-001." in c.get(
-        "/hr?tab=people&bao=Created+profile+NS-001.").text
+        "/hr?tab=accounts&bao=Created+profile+NS-001.").text
     assert "Thiếu họ tên." in c.get(
-        "/hr?tab=people&loi=Thi%E1%BA%BFu%20h%E1%BB%8D%20t%C3%AAn.").text
+        "/hr?tab=accounts&loi=Thi%E1%BA%BFu%20h%E1%BB%8D%20t%C3%AAn.").text
 
 
-# ---------- Accounts: tab CHỈ hiện khi gateway phát cờ 'accounts' ----------
+# ---------- Khối Account: CHỈ render khi gateway phát cờ 'accounts' ----------
 
-def test_hr_tab_accounts_an_khi_khong_co():
-    """Người không cờ 'accounts' (kể cả HR đủ cờ 'hr'): nav KHÔNG có link tab,
-    gõ ?tab=accounts tay cũng bị ẩn nội dung (rơi về People) — không có chuỗi
-    'tab=accounts' actionable nào trên trang."""
+def test_hr_khoi_account_an_khi_khong_co():
+    """Người chỉ giỏ nhan_su (không cờ 'accounts'): vẫn thấy hồ sơ + dòng tài
+    khoản trong bảng gộp (không giấu) nhưng KHÔNG thấy khối Account — không form
+    cấp/sửa tài khoản, không ô mật khẩu tạm/username."""
+    ma = _iam_seed()
     b = _client().get("/hr?tab=accounts").text               # apps mặc định không 'accounts'
-    assert "tab=accounts" not in b
-    assert "/general/accounts" not in b                      # không lộ form tài khoản
+    assert ma in b                                            # hồ sơ vẫn thấy
+    assert 'action="/general/accounts/update"' not in b
+    assert 'action="/general/accounts/grant"' not in b
+    assert 'name="mat_khau"' not in b and 'name="username"' not in b
 
 
-def test_hr_tab_accounts_doc_iam_va_form_gateway():
-    """Có cờ: bảng tài khoản đọc IAM CHỈ-ĐỌC (tiền lệ _ds_nguoi_iam) + form
-    tạo/update đa-hành-động trỏ route gateway sẵn có kèm ve=hr; xóa giữ khuôn
-    gõ-lại-tên của /general/accounts/update."""
+def test_hr_gop_mot_dong_mot_nguoi():
+    """MỖI DÒNG = MỘT CON NGƯỜI: hồ sơ chưa cấp tài khoản → Username '—' + form
+    Grant trong chi tiết; tài khoản nối nguoi_ma hiện cùng dòng hồ sơ; tài khoản
+    không nối hồ sơ hiện DÒNG RIÊNG (không giấu); action tài khoản giữ khuôn
+    /general/accounts/update (xóa gõ-lại-tên)."""
     from nen.iam import iam
+    ma = _iam_seed()                                          # hồ sơ CHƯA tài khoản
     conn = iam.ket_noi()
     iam.tao_tai_khoan(conn, None, "chu-he", "mk-6-ky-tu", "Ban quản trị", 5,
-                      phai_doi_mk=False)
+                      phai_doi_mk=False)                      # mồ côi — không nguoi_ma
+    ns2 = iam.tao_nguoi(conn, None, "Người Có TK", "Kinh doanh", "SEO")
+    ow = iam.claims_cua(iam.lay_tai_khoan(conn, "chu-he"))
+    iam.tao_tai_khoan(conn, ow, "seo-kd", "mk-6-ky-tu", "Kinh doanh", 2,
+                      nguoi_ma=ns2["ma"], phai_doi_mk=False)  # nối hồ sơ
     conn.close()
     c = _client(apps="to-chuc,hr,accounts", ten="chu-he", level=5)
     b = c.get("/hr?tab=accounts").text
-    assert "tab=accounts" in b and "chu-he" in b             # tab + bảng đọc IAM
-    assert 'action="/general/accounts/create"' in b
+    assert "seo-kd" in b and "Người Có TK" in b               # nối cùng dòng
+    assert "chu-he" in b                                      # mồ côi vẫn hiện
+    assert '<td class="tk">—</td>' in b                       # hồ sơ chưa cấp: Username '—'
+    assert 'action="/general/accounts/grant"' in b            # cấp cho hồ sơ chưa có
+    assert f'value="{ma}"' in b                               # grant trỏ đúng hồ sơ
     assert 'action="/general/accounts/update"' in b
-    assert 'name="ve" value="hr"' in b
-    assert 'name="hanh_dong"' in b and 'value="xoa"' in b    # đa-hành-động, giữ field cũ
+    assert 'name="hanh_dong"' in b and 'value="xoa"' in b     # xóa gõ-lại-tên giữ khuôn
+    assert 'action="/general/accounts/create-full"' in b      # New person trọn gói
+    assert 'name="username"' in b and 'name="mat_khau"' in b
 
 
 # ---------- Attendance: bảng công tháng + chốt chỉ-thêm ----------

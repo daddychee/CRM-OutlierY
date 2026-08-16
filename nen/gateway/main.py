@@ -518,9 +518,10 @@ def _render_nhan_su(request: Request, user: dict, loi: str = "",
 
 @app.get("/general/people")
 def nen_nhan_su(request: Request):
-    # Nghỉ hưu kiểu /quan-tri (Owner chốt 16/08): HR Hub tab People là cửa mới.
+    # Nghỉ hưu kiểu /quan-tri (Owner chốt 16/08): HR Hub tab Accounts là cửa mới
+    # (People + Accounts đã GỘP MỘT — Owner chốt tiếp cùng ngày).
     # POST /general/people/* GIỮ NGUYÊN — chúng là backend của hub.
-    return RedirectResponse("/hr?tab=people", status_code=303)
+    return RedirectResponse("/hr?tab=accounts", status_code=303)
 
 
 @app.post("/general/people/create", response_class=HTMLResponse)
@@ -538,11 +539,11 @@ def nen_ns_tao(request: Request, ho_ten: str = Form(""),
                            ngay_sinh=ngay_sinh, cccd=cccd, dia_chi=dia_chi,
                            ngay_vao=ngay_vao, cap_bac=cap_bac)
         if ve in _VE_HOP_LE:
-            return _ve_hub("people", bao=f"Created profile {ns['ma']}.")
+            return _ve_hub("accounts", bao=f"Created profile {ns['ma']}.")
         return _render_nhan_su(request, user, bao=f"Created profile {ns['ma']}.")
     except iam.LoiIam as e:
         if ve in _VE_HOP_LE:
-            return _ve_hub("people", loi=str(e))
+            return _ve_hub("accounts", loi=str(e))
         return _render_nhan_su(request, user, loi=str(e))
     finally:
         conn.close()
@@ -570,12 +571,97 @@ def nen_ns_sua(request: Request, ma: str = Form(...), ho_ten: str = Form(""),
                       cccd=cccd or None, dia_chi=dia_chi or None,
                       ngay_vao=ngay_vao or None, cap_bac=cap_bac or None)
         if ve in _VE_HOP_LE:
-            return _ve_hub("people", bao=f"Saved profile {ma}.")
+            return _ve_hub("accounts", bao=f"Saved profile {ma}.")
         return _render_nhan_su(request, user, bao=f"Saved profile {ma}.")
     except iam.LoiIam as e:
         if ve in _VE_HOP_LE:
-            return _ve_hub("people", loi=str(e))
+            return _ve_hub("accounts", loi=str(e))
         return _render_nhan_su(request, user, loi=str(e))
+    finally:
+        conn.close()
+
+
+# --- MỘT DÒNG = MỘT CON NGƯỜI (Owner gộp People+Accounts 16/08) ---
+
+@app.post("/general/accounts/create-full", response_class=HTMLResponse)
+def nen_tk_tao_tron(request: Request, ho_ten: str = Form(""), bo_phan: str = Form(""),
+                    vi_tri: str = Form(""), ngay_sinh: str = Form(""),
+                    cccd: str = Form(""), dia_chi: str = Form(""),
+                    ngay_vao: str = Form(""), cap_bac: str = Form(""),
+                    username: str = Form(""), mat_khau: str = Form(""),
+                    level: int = Form(1), ve: str = Form("")):
+    """Tạo MỘT CON NGƯỜI trọn gói: hồ sơ + tài khoản TÙY CHỌN nối nguoi_ma
+    (username bỏ trống = chỉ hồ sơ). Trình tự chống mồ côi (bài học V2 GĐ2):
+    kiểm quyền + username TRƯỚC → tạo nguoi → tạo tai_khoan (bộ phận LẤY TỪ HỒ SƠ,
+    không nhận riêng) → lỗi tài khoản thì XÓA hồ sơ vừa tạo (rollback có vết)."""
+    user = _gate_nen(request, nhan_su=True)
+    if isinstance(user, Response):
+        return user
+    username = username.strip()
+
+    def _loi(thong_diep: str):
+        if ve in _VE_HOP_LE:
+            return _ve_hub("accounts", loi=thong_diep)
+        return _render_nhan_su(request, user, loi=thong_diep)
+
+    conn = iam.ket_noi()
+    try:
+        if username and not iam.co_quyen(user, "quan_tai_khoan", conn=conn):
+            return Response("Granting accounts requires the account-admin basket.",
+                            status_code=403)
+        if username and iam.lay_tai_khoan(conn, username):
+            return _loi("Tên đăng nhập đã tồn tại.")
+        ns = iam.tao_nguoi(conn, user, ho_ten, bo_phan, vi_tri,
+                           ngay_sinh=ngay_sinh, cccd=cccd, dia_chi=dia_chi,
+                           ngay_vao=ngay_vao, cap_bac=cap_bac)
+        bao = f"Created profile {ns['ma']}."
+        if username:
+            try:
+                iam.tao_tai_khoan(conn, user, username, mat_khau,
+                                  ns["bo_phan"], level, nguoi_ma=ns["ma"])
+                bao = f"Created profile {ns['ma']} + account {username}."
+            except iam.LoiIam:
+                with conn:   # rollback: không để hồ sơ mồ côi vừa tạo nửa chừng
+                    conn.execute("DELETE FROM nguoi WHERE ma=?", (ns["ma"],))
+                iam.ghi_nhat_ky(conn, user["ten"], "rollback_tao_nguoi",
+                                f"{ns['ma']} vi loi cap tai khoan {username}")
+                raise
+        if ve in _VE_HOP_LE:
+            return _ve_hub("accounts", bao=bao)
+        return _render_nhan_su(request, user, bao=bao)
+    except iam.LoiIam as e:
+        return _loi(str(e))
+    finally:
+        conn.close()
+
+
+@app.post("/general/accounts/grant", response_class=HTMLResponse)
+def nen_tk_cap(request: Request, ma: str = Form(...), username: str = Form(...),
+               mat_khau: str = Form(""), level: int = Form(1), ve: str = Form("")):
+    """Cấp tài khoản cho HỒ SƠ CÓ SẴN — nối nguoi_ma, bộ phận LẤY TỪ HỒ SƠ; mỗi
+    hồ sơ tối đa MỘT tài khoản. Gate quan_tai_khoan như mọi route accounts."""
+    user = _gate_nen(request, quyen="quan_tai_khoan")
+    if isinstance(user, Response):
+        return user
+    conn = iam.ket_noi()
+    try:
+        ns = conn.execute("SELECT * FROM nguoi WHERE ma=?", (ma,)).fetchone()
+        if not ns:
+            raise iam.LoiIam("Không có hồ sơ này.")
+        da_co = conn.execute(
+            "SELECT ten FROM tai_khoan WHERE nguoi_ma=?", (ma,)).fetchone()
+        if da_co:
+            raise iam.LoiIam(f"Hồ sơ này đã có tài khoản: {da_co['ten']}.")
+        iam.tao_tai_khoan(conn, user, username.strip(), mat_khau,
+                          ns["bo_phan"], level, nguoi_ma=ma)
+        bao = f"Granted account {username.strip()} for {ma}."
+        if ve in _VE_HOP_LE:
+            return _ve_hub("accounts", bao=bao)
+        return _render_tai_khoan(request, user, bao=bao)
+    except iam.LoiIam as e:
+        if ve in _VE_HOP_LE:
+            return _ve_hub("accounts", loi=str(e))
+        return _render_tai_khoan(request, user, loi=str(e))
     finally:
         conn.close()
 
@@ -623,7 +709,7 @@ def nen_ns_tai_lieu(request: Request, ma: str = Form(...), loai: str = Form(...)
 
     def _loi(thong_diep: str):
         if ve in _VE_HOP_LE:
-            return _ve_hub("people", loi=thong_diep)
+            return _ve_hub("accounts", loi=thong_diep)
         return Response(thong_diep, status_code=422)
 
     conn = iam.ket_noi()
@@ -654,7 +740,7 @@ def nen_ns_tai_lieu(request: Request, ma: str = Form(...), loai: str = Form(...)
     finally:
         conn.close()
     if ve in _VE_HOP_LE:
-        return _ve_hub("people", bao=f"Uploaded {ten_luu} for {ma}.")
+        return _ve_hub("accounts", bao=f"Uploaded {ten_luu} for {ma}.")
     return RedirectResponse("/hr?tab=people", status_code=303)
 
 
