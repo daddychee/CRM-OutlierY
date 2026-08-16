@@ -141,3 +141,28 @@
   Việc treo: Caddy root CA cho máy nhân viên khi mở LAN (hoặc domain thật lúc thay
   thế); DNS Server role zone outliery.lan lúc thay thế; mỗi-app-một-miền (bỏ tầng
   viết-lại đường proxy) để giai đoạn thay thế.
+- 16/08/2026 — **UI ĐỢT 2 XONG: TIẾNG ANH + USER MENU KIỂU CLAUDE + TAB DATABASE +
+  PROFILE** (4 commit dbff341/98507b9/f2be73a/9140710; toàn hệ 482 pass / 3 skip;
+  nghiệm thu sống từng vai qua 2 miền). Theo UI_FLOW.md mục 8 Owner chốt từng điểm:
+  · VỎ ĐIỀU HƯỚNG sang TIẾNG ANH (General: Overview/Accounts/People/Permissions/
+    AI Models/Data & Backup/Audit Log/Applications; Tools/Recents/New chat; Staff
+    thay Nhân viên; login/messages gateway EN). Chuỗi VN TRONG 5 khối script chat
+    đóng băng để ĐỢT RIÊNG (Owner đã cho phép can thiệp logic khi cần chuẩn).
+  · Tab Monitoring → **Database**: Input (Datafeed cũ) / Library / Gap; NGUỒN NGOÀI
+    GỘP vào Input = 2 tab con Upload | External source (gộp điều hướng, route +
+    logic từng luồng giữ nguyên); mục Nhân sự rời sidebar (People trong General).
+  · **USER MENU kiểu Claude** thay popup Management: chip đáy sidebar "Display
+    name — Rank" cho MỌI NGƯỜI; menu Profile/Theme/NAS(ẩn khi chưa cấu hình)/
+    Log out + Owner: Tracking/General/Vault + HR L3+: General mở thẳng People.
+    GIỮ 4 ID sb-mgmt* vì JS popup nằm TRONG khối script đóng băng của hoi_dap —
+    đổi markup không đổi ID là logic cũ chạy y nguyên.
+  · **Trang /profile** tự phục vụ: display name (→ chip, chảy qua claims mới
+    X-Remote-Name URL-encode) + email/điện thoại (iam migration 002); bộ phận/
+    level CHỈ ĐỌC (chống tự thăng quyền); đổi mật khẩu BẮT gõ mật khẩu hiện tại
+    (luật V1 — v2 từng thiếu). Khu General về cơ chế theme chung outliery_theme.
+  BẪY MỚI: (a) template trong repo trộn EOL — index.html CRLF, hoi_dap LF: script
+  sửa hàng loạt phải dò EOL từng file; (b) test ghim schema_version==1 tự vỡ khi
+  thêm migration → ghim LUẬT (= số file .sql); (c) nhãn UI nằm trong assertion
+  test (Chưa có cuộc nào…) — dịch nhãn phải quét cả tests. VIỆC TREO đợt sau:
+  dịch chuỗi VN trong 5 khối script chat (phá đóng băng có chủ đích + nghiệm thu
+  chat kỹ — Owner đã cho phép); nhãn EN các trang nội dung app (kho, nguồn, KPI…).
