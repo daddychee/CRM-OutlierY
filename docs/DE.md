@@ -266,6 +266,16 @@ C2… để trỏ khi phản hồi).
    plain-text ledger — khớp triết lý text-thuần + chỉ-thêm; quyết ở Đ2b) thay vì
    tự viết engine sổ.
 
+7. **K5 chỉnh vòng 4 (Owner 16/08)**: "việc trong app" phải sinh từ **TÍNH NĂNG
+   THẬT của app** — app khai danh sách việc-cần-API trong HỢP ĐỒNG APP (apps.json
+   thêm ô `viec_api: [{ten, loai_api, nhieu_khoa}]`), trang cấu hình dựng bảng từ
+   đó, không bịa việc chung chung. **Một việc nhận được NHIỀU khóa cùng loại**
+   (pool gán cho việc, chế độ "xoay vòng" khi cạn quota — ca điển hình: RadarY
+   harvest cần nhiều khóa YouTube v3; SEO extract 19 khóa cùng bản chất). Chế độ
+   khác: "một khóa", "dự phòng khi lỗi". Mockup K5-K7 đã thể hiện 3 app mẫu
+   (radary / tri-thuc / vox). **Finance Hub: Owner giữ nguyên bản hiện tại, sẽ
+   tự điều chỉnh sau** — không sửa thêm cho tới khi có phản hồi mới.
+
 **Hai luật toàn cục Owner chốt:** (a) MỌI bảng/bản ghi hiển thị **ngày nhập
 thông tin**; (b) **số tiền là DỮ LIỆU BẢO QUẢN LÂU DÀI** — sổ thu chi vào
 `du_lieu_nen` mức quý VÀNG, giữ VĨNH VIỄN, chỉ-thêm (sửa = bút toán đảo), backup

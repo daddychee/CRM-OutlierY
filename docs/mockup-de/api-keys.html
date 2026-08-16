@@ -95,42 +95,73 @@
 
   <div class="pane" id="p-app">
     <div class="khoi"><span class="ma-o">K5</span>
-      <h2>Cấu hình theo app — chọn API nào cho app nào</h2>
+      <h2>Cấu hình theo app — việc sinh từ tính năng app, một việc nhận được nhiều khóa</h2>
       <div class="toolbar">
-        <select style="min-width:220px"><option selected>App: tri-thuc (Knowledge)</option><option>data-analytics</option><option>seo-optimize</option><option>radary</option><option>vox</option><option>flowkit</option><option>speaky</option></select>
+        <select style="min-width:220px"><option selected>App: radary (RadarY)</option><option>seo-optimize</option><option>tri-thuc (Knowledge)</option><option>data-analytics</option><option>vox</option><option>flowkit</option></select>
       </div>
       <table>
-        <tr><th>Việc trong app</th><th>API được chọn</th><th>Model</th><th>Ngày cấu hình</th><th></th></tr>
-        <tr><td>Writer (trả lời)</td>
-            <td><select><option selected>LLM · GLM ••••9k2f</option><option>LLM · Claude ••••a1c8</option><option>LLM · Gemini ••••e77d</option><option>LLM · Deepseek ••••02fb</option></select></td>
-            <td><select><option selected>glm-4.5-air</option><option>glm-5</option></select></td>
-            <td>16/08/2026</td><td><button class="nut phu" style="padding:2px 8px">Lưu</button></td></tr>
-        <tr><td>Critic (phản biện)</td>
-            <td><select><option selected>— TẮT</option><option>LLM · GLM ••••9k2f</option><option>LLM · Claude ••••a1c8</option></select></td>
-            <td>—</td><td>16/08/2026</td><td><button class="nut phu" style="padding:2px 8px">Lưu</button></td></tr>
-        <tr><td>Trích nguồn ngoài (extract)</td>
-            <td><select><option selected>LLM · GLM ••••9k2f</option><option>LLM · Gemini ••••e77d</option></select></td>
-            <td><select><option selected>glm-4.5-air</option></select></td>
-            <td>16/08/2026</td><td><button class="nut phu" style="padding:2px 8px">Lưu</button></td></tr>
+        <tr><th>Việc trong app (theo tính năng)</th><th>Loại API</th><th>Khóa được cấp</th><th>Chế độ</th><th>Model</th><th>Ngày cấu hình</th><th></th></tr>
+        <tr><td>Quét pool đối thủ (harvest scan)</td><td>YouTube v3</td>
+            <td><span class="chip">••••b3e8 ×</span><span class="chip">••••4d21 ×</span><span class="chip">••••8ce0 ×</span><span class="chip">••••17aa ×</span><span class="chip">+ 4 khóa</span> <button class="nut phu" style="padding:2px 8px">+ khóa</button></td>
+            <td><span class="badge b-acc">xoay vòng 8 khóa</span></td><td>—</td><td>16/08/2026</td>
+            <td><button class="nut phu" style="padding:2px 8px">Lưu</button></td></tr>
+        <tr><td>Cào video định kỳ (tick 15')</td><td>YouTube v3</td>
+            <td><span class="chip">••••90df ×</span><span class="chip">••••33b1 ×</span> <button class="nut phu" style="padding:2px 8px">+ khóa</button></td>
+            <td><span class="badge b-acc">xoay vòng 2 khóa</span></td><td>—</td><td>16/08/2026</td>
+            <td><button class="nut phu" style="padding:2px 8px">Lưu</button></td></tr>
+        <tr><td>Diễn giải kết quả (LLM)</td><td>LLM</td>
+            <td><span class="chip">GLM ••••9k2f ×</span> <button class="nut phu" style="padding:2px 8px">+ khóa</button></td>
+            <td><span class="badge b-mut">một khóa</span></td>
+            <td><select><option selected>glm-4.5-air</option><option>glm-5</option></select></td><td>16/08/2026</td>
+            <td><button class="nut phu" style="padding:2px 8px">Lưu</button></td></tr>
       </table>
     </div>
 
     <div class="khoi"><span class="ma-o">K6</span>
-      <h2>Ví dụ app khác — vox</h2>
+      <h2>App: tri-thuc (Knowledge)</h2>
       <table>
-        <tr><th>Việc trong app</th><th>API được chọn</th><th>Model</th><th>Ngày cấu hình</th><th></th></tr>
-        <tr><td>Sinh prompt cảnh</td><td><select><option selected>LLM · Gemini ••••e77d</option><option>LLM · GLM ••••9k2f</option></select></td>
-            <td><select><option selected>gemini-2.5-flash</option></select></td><td>16/08/2026</td><td><button class="nut phu" style="padding:2px 8px">Lưu</button></td></tr>
-        <tr><td>Render video</td><td><select><option selected>VEO ••••f0a3</option></select></td>
-            <td><select><option selected>veo-3.1</option></select></td><td>16/08/2026</td><td><button class="nut phu" style="padding:2px 8px">Lưu</button></td></tr>
-        <tr><td>Sinh ảnh</td><td><select><option selected>— chưa có khóa Seedream</option></select></td>
-            <td>—</td><td>—</td><td><button class="nut phu" style="padding:2px 8px">Lưu</button></td></tr>
+        <tr><th>Việc trong app (theo tính năng)</th><th>Loại API</th><th>Khóa được cấp</th><th>Chế độ</th><th>Model</th><th>Ngày cấu hình</th><th></th></tr>
+        <tr><td>Writer (trả lời hỏi–đáp)</td><td>LLM</td>
+            <td><span class="chip">GLM ••••9k2f ×</span> <button class="nut phu" style="padding:2px 8px">+ khóa</button></td>
+            <td><span class="badge b-mut">một khóa</span></td>
+            <td><select><option selected>glm-4.5-air</option><option>glm-5</option></select></td><td>16/08/2026</td>
+            <td><button class="nut phu" style="padding:2px 8px">Lưu</button></td></tr>
+        <tr><td>Critic (phản biện)</td><td>LLM</td>
+            <td><span class="badge b-mut">— TẮT</span> <button class="nut phu" style="padding:2px 8px">+ khóa</button></td>
+            <td>—</td><td>—</td><td>16/08/2026</td>
+            <td><button class="nut phu" style="padding:2px 8px">Lưu</button></td></tr>
+        <tr><td>Trích nguồn ngoài (extract)</td><td>LLM</td>
+            <td><span class="chip">GLM ••••9k2f ×</span><span class="chip">Gemini ••••e77d ×</span> <button class="nut phu" style="padding:2px 8px">+ khóa</button></td>
+            <td><span class="badge b-acc">dự phòng khi lỗi</span></td>
+            <td><select><option selected>glm-4.5-air</option></select></td><td>16/08/2026</td>
+            <td><button class="nut phu" style="padding:2px 8px">Lưu</button></td></tr>
+      </table>
+    </div>
+
+    <div class="khoi"><span class="ma-o">K7</span>
+      <h2>App: vox</h2>
+      <table>
+        <tr><th>Việc trong app (theo tính năng)</th><th>Loại API</th><th>Khóa được cấp</th><th>Chế độ</th><th>Model</th><th>Ngày cấu hình</th><th></th></tr>
+        <tr><td>Sinh prompt cảnh</td><td>LLM</td>
+            <td><span class="chip">Gemini ••••e77d ×</span> <button class="nut phu" style="padding:2px 8px">+ khóa</button></td>
+            <td><span class="badge b-mut">một khóa</span></td>
+            <td><select><option selected>gemini-2.5-flash</option><option>gemini-2.5-pro</option></select></td><td>16/08/2026</td>
+            <td><button class="nut phu" style="padding:2px 8px">Lưu</button></td></tr>
+        <tr><td>Render video</td><td>VEO</td>
+            <td><span class="chip">••••f0a3 ×</span> <button class="nut phu" style="padding:2px 8px">+ khóa</button></td>
+            <td><span class="badge b-mut">một khóa</span></td>
+            <td><select><option selected>veo-3.1</option></select></td><td>16/08/2026</td>
+            <td><button class="nut phu" style="padding:2px 8px">Lưu</button></td></tr>
+        <tr><td>Sinh ảnh</td><td>Seedream</td>
+            <td><span class="badge b-warn">chưa có khóa — thêm ở tab Add API</span></td>
+            <td>—</td><td>—</td><td>—</td>
+            <td><button class="nut phu" style="padding:2px 8px">Lưu</button></td></tr>
       </table>
     </div>
   </div>
 
   <div class="pane" id="p-log">
-    <div class="khoi"><span class="ma-o">K7</span>
+    <div class="khoi"><span class="ma-o">K8</span>
       <h2>Quota log</h2>
       <div class="toolbar">
         <input type="date" value="2026-08-16">
