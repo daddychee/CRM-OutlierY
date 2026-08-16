@@ -1,0 +1,28 @@
+{% extends "nen_base.html" %}
+{% block tieu_de %}Dữ liệu &amp; backup{% endblock %}
+{% block noi_dung %}
+<h2>Sổ địa bạ dữ liệu <span class="phu" style="font-weight:400">— nguồn máy đọc: nen/rules/apps.json (mục du_lieu); bản người đọc: docs/SO_DIA_BA_DU_LIEU.md</span></h2>
+<table>
+  <tr><th>Chủ</th><th>Store</th><th>Loại</th><th>Đường</th><th>Mức quý</th><th>Backup</th><th>Trên đĩa</th></tr>
+  {% for k in khoi %}
+  <tr>
+    <td>{{ k.chu }}</td><td><b>{{ k.ten }}</b></td><td>{{ k.loai }}</td>
+    <td class="phu">{{ k.duong }}</td>
+    <td>{% if k.muc_quy == 'vang' %}🥇 vàng{% elif k.muc_quy == 'bac' %}🥈 bạc{% else %}{{ k.muc_quy }}{% endif %}</td>
+    <td class="phu">{{ k.backup }}</td>
+    <td>{% if k.co %}<span class="chip" style="color:var(--ok)">✓ có</span>
+        {% else %}<span class="chip" style="color:var(--loi)">CHƯA có</span>{% endif %}</td>
+  </tr>
+  {% endfor %}
+</table>
+<p class="phu" style="margin-top:10px">
+  Store khai trong apps.json mới được backup — app mới PHẢI khai mục du_lieu (Luật 6).
+</p>
+
+<h2>Backup</h2>
+<div class="khoi">
+  <p>Bản gần nhất: <b>{{ backup_moi or "— chưa có bản nào" }}</b></p>
+  <p class="phu">Thư mục đích: {{ bk_dir }} · Chạy tay: <code>tools\scripts\backup.ps1</code>
+    · SQLite dùng VACUUM INTO, Qdrant dùng snapshot API — không bao giờ copy trần file đang mở.</p>
+</div>
+{% endblock %}

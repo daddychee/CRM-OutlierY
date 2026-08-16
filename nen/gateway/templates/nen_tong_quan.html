@@ -1,0 +1,52 @@
+{% extends "nen_base.html" %}
+{% block tieu_de %}Tổng quan đế{% endblock %}
+{% block noi_dung %}
+<h2>Khối đế đã nạp gì</h2>
+<div class="luoi">
+  <div class="khoi">
+    <div class="phu">Tài khoản (IAM)</div>
+    <div class="so-lon">{{ so_tai_khoan }}</div>
+    <div class="phu">
+      {% for lv, so in theo_level | dictsort %}L{{ lv }} {{ ten_level[lv] }}: {{ so }}{% if not loop.last %} · {% endif %}{% endfor %}
+      {% if so_uy_quyen %}<br>Admin ủy quyền: {{ so_uy_quyen }}{% endif %}
+    </div>
+  </div>
+  <div class="khoi">
+    <div class="phu">Hồ sơ nhân sự</div>
+    <div class="so-lon">{{ so_ho_so }}</div>
+    <div class="phu"><a href="/nen/nhan-su">xem danh sách →</a></div>
+  </div>
+  <div class="khoi">
+    <div class="phu">Danh bạ thực thể</div>
+    <div class="so-lon">{{ so_thuc_the if so_thuc_the is not none else "—" }}</div>
+    <div class="phu">kênh / ngách / thị trường (nen/rules/danh_muc.csv)</div>
+  </div>
+  <div class="khoi">
+    <div class="phu">Backup gần nhất</div>
+    <div class="so-lon" style="font-size:17px">{{ backup_moi or "— chưa có" }}</div>
+    <div class="phu">{{ bk_dir }} · <a href="/nen/du-lieu">chi tiết →</a></div>
+  </div>
+</div>
+
+<h2>Két cấu hình LLM (theo vai)</h2>
+<table>
+  <tr><th>Vai</th><th>Provider</th><th>Model</th><th>API key</th></tr>
+  {% for vai, ch in vai_llm | dictsort %}
+  <tr><td><b>{{ vai }}</b></td><td>{{ ch.provider or "—" }}</td><td>{{ ch.model or "—" }}</td>
+      <td>{% if ch.key_duoi %}<span class="chip">✓ có (••••{{ ch.key_duoi }})</span>
+          {% else %}<span class="chip" style="color:var(--loi)">chưa nhập</span>{% endif %}</td></tr>
+  {% else %}
+  <tr><td colspan="4" class="phu">Chưa khai vai nào — vào <a href="/nen/cau-hinh">Cấu hình LLM</a>.
+      Chưa có key thì hỏi–đáp chạy chế độ mock.</td></tr>
+  {% endfor %}
+</table>
+
+<h2>Dịch vụ</h2>
+<table>
+  <tr><th>Dịch vụ</th><th>Trạng thái</th></tr>
+  {% for d in dich_vu %}
+  <tr><td>{{ d.ten }}</td>
+      <td><span class="cham {{ 'song' if d.song else 'chet' }}"></span>{{ "đang chạy" if d.song else "KHÔNG phản hồi" }}</td></tr>
+  {% endfor %}
+</table>
+{% endblock %}

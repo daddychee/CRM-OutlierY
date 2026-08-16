@@ -246,9 +246,19 @@ def xoa_tai_khoan(conn: sqlite3.Connection, ai_lam: dict, ten_dich: str) -> None
 
 # ---------- người (hồ sơ) ----------
 
+HR_BO_PHAN = "Hành chính Nhân sự"
+
+
+def quyen_nhan_su(claims: dict) -> bool:
+    """Ai được vào trang Nhân sự (UI_FLOW.md mục 6, đúng V1): Owner + HR L3+.
+    Giỏ ủy quyền duyet_ho_so mở thêm cho Admin ủy quyền (mặc định TẮT)."""
+    return co_quyen(claims, "duyet_ho_so") or \
+        (claims.get("bo_phan") == HR_BO_PHAN and claims["level"] >= 3)
+
+
 def tao_nguoi(conn: sqlite3.Connection, ai_lam: dict | None, ho_ten: str,
               bo_phan: str, vi_tri: str = "") -> dict:
-    if ai_lam is not None and not co_quyen(ai_lam, "duyet_ho_so"):
+    if ai_lam is not None and not quyen_nhan_su(ai_lam):
         raise LoiIam("Bạn không có quyền quản hồ sơ nhân sự.")
     if not ho_ten.strip():
         raise LoiIam("Thiếu họ tên.")

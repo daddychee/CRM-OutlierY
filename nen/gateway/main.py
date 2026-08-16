@@ -117,14 +117,27 @@ def login_gui(request: Request, ten: str = Form(""), mat_khau: str = Form("")):
             status_code=401)
     resp = RedirectResponse("/", status_code=303)
     resp.set_cookie(COOKIE_TEN, _ky.dumps(claims["ten"]), max_age=PHIEN_TTL,
-                    httponly=True, samesite="lax")
+                    httponly=True, samesite="lax", domain=_mien_cookie(request))
     return resp
 
 
+def _mien_cookie(request: Request) -> str | None:
+    """Vào bằng miền outliery.test → cookie đặt cấp miền CHA: một lần đăng nhập
+    chạy mọi miền con (UI_FLOW.md mục 7). Vào bằng IP/localhost → cookie host-only
+    như cũ (đặt domain là trình duyệt từ chối)."""
+    host = request.url.hostname or ""
+    if host == "outliery.test" or host.endswith(".outliery.test"):
+        return ".outliery.test"
+    return None
+
+
 @app.get("/logout")
-def logout():
+def logout(request: Request):
     resp = RedirectResponse("/login", status_code=303)
     resp.delete_cookie(COOKIE_TEN)
+    mien = _mien_cookie(request)
+    if mien:   # cookie đặt kèm domain phải xóa kèm đúng domain đó
+        resp.delete_cookie(COOKIE_TEN, domain=mien)
     return resp
 
 
@@ -164,90 +177,164 @@ def trang_chu(request: Request):
     user = _kiem(request)
     if isinstance(user, RedirectResponse):
         return user
+    # Miền quản trị (UI_FLOW.md mục 7): quantri.* vào thẳng khu nền.
+    if (request.url.hostname or "").startswith("quantri."):
+        return RedirectResponse("/nen", status_code=303)
     return RedirectResponse("/app/tri-thuc/hoi-dap", status_code=303)
 
 
-@app.get("/suc-khoe", response_class=HTMLResponse)
-async def suc_khoe(request: Request):
-    from starlette.concurrency import run_in_threadpool
-    user = await run_in_threadpool(_kiem, request)   # sqlite không chạy trên loop
+# ---------- KHU QUẢN TRỊ NỀN (UI_FLOW.md mục 5 — mỗi trang MỘT việc) ----------
+
+_TEN_LEVEL = {1: "Intern", 2: "Nhân viên", 3: "Leader", 4: "Manager", 5: "Owner"}
+_NHAN_GIO = {"quan_tai_khoan": "Quản tài khoản", "duyet_ho_so": "Duyệt hồ sơ nhân sự",
+             "nap_tai_lieu": "Nạp tài liệu", "duyet_qa": "Duyệt Q&A bổ sung",
+             "giam_sat": "Giám sát hoạt động"}
+
+
+def _gate_nen(request: Request, quyen: str | None = None,
+              nhan_su: bool = False) -> dict | Response:
+    """Cổng vào trang nền. Mặc định CHỈ Owner; quyen=<hành động> mở thêm theo
+    co_quyen (giỏ ủy quyền/ô tick — mặc định tắt → hành vi = V1); nhan_su=True
+    dùng luật Nhân sự V1 (Owner + HR L3+)."""
+    user = _kiem(request)
     if isinstance(user, RedirectResponse):
         return user
+    if user["level"] >= iam.OWNER_LEVEL:
+        return user
+    if nhan_su and iam.quyen_nhan_su(user):
+        return user
+    if quyen:
+        conn = iam.ket_noi()
+        try:
+            if iam.co_quyen(user, quyen, conn=conn):
+                return user
+        finally:
+            conn.close()
+    return Response("Bạn không có quyền vào trang này.", status_code=403)
+
+
+async def _do_dich_vu() -> list[dict]:
+    """Sức khỏe từng dịch vụ: mọi app trong hợp đồng + Qdrant kho vector."""
     import asyncio
 
-    async def _kiem_mot_app(client, muc):   # tên KHÁC _kiem module-level (đã dính UnboundLocal)
+    async def _mot(client, ten, url):
         try:
-            r = await client.get(f"http://127.0.0.1:{muc['cong']}{muc['health']}")
-            return {"app": muc, "song": r.status_code == 200}
+            r = await client.get(url)
+            return {"ten": ten, "song": r.status_code == 200}
         except httpx.HTTPError:
-            return {"app": muc, "song": False}
+            return {"ten": ten, "song": False}
 
+    qdrant = os.getenv("QDRANT_URL", "http://127.0.0.1:6343").rstrip("/")
     async with httpx.AsyncClient(timeout=3.0) as client:
-        ket_qua = list(await asyncio.gather(
-            *(_kiem_mot_app(client, m) for m in doc_hop_dong())))
+        viec = [_mot(client, m["ten"], f"http://127.0.0.1:{m['cong']}{m['health']}")
+                for m in doc_hop_dong()]
+        viec.append(_mot(client, "Qdrant (kho vector)", qdrant + "/readyz"))
+        return list(await asyncio.gather(*viec))
+
+
+def _thong_ke_de() -> dict:
+    """Đế đã nạp gì — số liệu THẬT đọc tại chỗ, nguồn chết thì None (không bịa 0)."""
+    import datetime
+    conn = iam.ket_noi()
+    try:
+        tk = iam.liet_ke_tai_khoan(conn)
+        nguoi = iam.liet_ke_nguoi(conn)
+    finally:
+        conn.close()
+    theo_level: dict[int, int] = {}
+    for t in tk:
+        theo_level[t["level"]] = theo_level.get(t["level"], 0) + 1
+    kconn = ket.ket_noi()
+    try:
+        ds = ket.liet_ke(kconn)
+    finally:
+        kconn.close()
+    vai_llm: dict[str, dict] = {}
+    for c in ds["cau_hinh"]:
+        manh = c["khoa"].split(".")
+        if len(manh) == 3 and manh[0] == "llm":
+            vai_llm.setdefault(manh[1], {})[manh[2]] = c["gia_tri"]
+    for b in ds["bi_mat"]:
+        manh = b["khoa"].split(".")
+        if len(manh) == 3 and manh[0] == "llm" and manh[2] == "api_key":
+            vai_llm.setdefault(manh[1], {})["key_duoi"] = b["duoi"]
+    try:
+        from nen.common import danh_ba
+        so_thuc_the = len(danh_ba.liet_ke())
+    except Exception:
+        so_thuc_the = None
+    bk_dir = Path(os.getenv("BACKUP_DIR", "D:/OUTLIERY-v2-backup"))
+    backup_moi = None
+    if bk_dir.exists():
+        cac = sorted((d for d in bk_dir.iterdir() if d.is_dir()),
+                     key=lambda d: d.stat().st_mtime)
+        if cac:
+            backup_moi = datetime.datetime.fromtimestamp(
+                cac[-1].stat().st_mtime).strftime("%d/%m/%Y %H:%M")
+    return {"so_tai_khoan": len(tk), "theo_level": theo_level,
+            "ten_level": _TEN_LEVEL, "so_ho_so": len(nguoi),
+            "so_uy_quyen": sum(1 for t in tk if t["admin_uy_quyen"]),
+            "vai_llm": vai_llm, "so_thuc_the": so_thuc_the,
+            "backup_moi": backup_moi, "bk_dir": str(bk_dir)}
+
+
+@app.get("/nen", response_class=HTMLResponse)
+async def nen_tong_quan(request: Request):
+    from starlette.concurrency import run_in_threadpool
+    user = await run_in_threadpool(_gate_nen, request)
+    if isinstance(user, Response):
+        return user
+    dich_vu = await _do_dich_vu()
+    de = await run_in_threadpool(_thong_ke_de)
     return templates.TemplateResponse(
-        request, "suckhoe.html", {"user": user, "ket_qua": ket_qua})
+        request, "nen_tong_quan.html",
+        {"user": user, "trang": "tong-quan", "dich_vu": dich_vu, **de})
 
 
-# ---------- trang quản trị IAM (giỏ ủy quyền: Owner + Admin ủy quyền) ----------
+# --- Tài khoản (tách từ /quan-tri cũ) ---
 
-def _render_quan_tri(request: Request, user: dict, loi: str = "",
-                     bao: str = "") -> HTMLResponse:
+def _render_tai_khoan(request: Request, user: dict, loi: str = "",
+                      bao: str = "") -> HTMLResponse:
     conn = iam.ket_noi()
     try:
         return templates.TemplateResponse(
-            request, "quantri.html",
-            {"user": user, "loi": loi, "bao": bao,
+            request, "nen_tai_khoan.html",
+            {"user": user, "trang": "tai-khoan", "loi": loi, "bao": bao,
              "tai_khoan": iam.liet_ke_tai_khoan(conn),
-             "nguoi": iam.liet_ke_nguoi(conn),
-             "nhat_ky": iam.doc_nhat_ky(conn, 30),
              "la_owner": user["level"] >= iam.OWNER_LEVEL})
     finally:
         conn.close()
 
 
-def _yeu_cau_quan_tri(request: Request) -> dict | Response:
-    user = _kiem(request)
-    if isinstance(user, RedirectResponse):
-        return user
-    conn = iam.ket_noi()
-    try:
-        if not iam.co_quyen(user, "quan_tai_khoan", conn=conn):
-            return Response("Bạn không có quyền vào trang quản trị.", status_code=403)
-    finally:
-        conn.close()
-    return user
-
-
-@app.get("/quan-tri", response_class=HTMLResponse)
-def quan_tri(request: Request):
-    user = _yeu_cau_quan_tri(request)
+@app.get("/nen/tai-khoan", response_class=HTMLResponse)
+def nen_tai_khoan(request: Request):
+    user = _gate_nen(request, quyen="quan_tai_khoan")
     if isinstance(user, Response):
         return user
-    return _render_quan_tri(request, user)
+    return _render_tai_khoan(request, user)
 
 
-@app.post("/quan-tri/tao-tai-khoan", response_class=HTMLResponse)
-def qt_tao_tk(request: Request, ten: str = Form(""), mat_khau: str = Form(""),
-                    bo_phan: str = Form(""), level: int = Form(1)):
-    user = _yeu_cau_quan_tri(request)
+@app.post("/nen/tai-khoan/tao", response_class=HTMLResponse)
+def nen_tk_tao(request: Request, ten: str = Form(""), mat_khau: str = Form(""),
+               bo_phan: str = Form(""), level: int = Form(1)):
+    user = _gate_nen(request, quyen="quan_tai_khoan")
     if isinstance(user, Response):
         return user
     conn = iam.ket_noi()
     try:
         iam.tao_tai_khoan(conn, user, ten, mat_khau, bo_phan, level)
-        return _render_quan_tri(request, user, bao=f"Đã tạo tài khoản {ten} "
-                                "(bị ép đổi mật khẩu lần đăng nhập đầu).")
+        return _render_tai_khoan(request, user, bao=f"Đã tạo tài khoản {ten} "
+                                 "(bị ép đổi mật khẩu lần đăng nhập đầu).")
     except iam.LoiIam as e:
-        return _render_quan_tri(request, user, loi=str(e))
+        return _render_tai_khoan(request, user, loi=str(e))
     finally:
         conn.close()
 
 
-@app.post("/quan-tri/sua", response_class=HTMLResponse)
-def qt_sua(request: Request, ten: str = Form(...),
-                 hanh_dong: str = Form(...), gia_tri: str = Form("")):
-    user = _yeu_cau_quan_tri(request)
+@app.post("/nen/tai-khoan/sua", response_class=HTMLResponse)
+def nen_tk_sua(request: Request, ten: str = Form(...),
+               hanh_dong: str = Form(...), gia_tri: str = Form("")):
+    user = _gate_nen(request, quyen="quan_tai_khoan")
     if isinstance(user, Response):
         return user
     conn = iam.ket_noi()
@@ -258,38 +345,252 @@ def qt_sua(request: Request, ten: str = Form(...),
             iam.sua_tai_khoan(conn, user, ten, bo_phan=gia_tri)
         elif hanh_dong == "khoa":
             iam.sua_tai_khoan(conn, user, ten, khoa=(gia_tri == "1"))
-        elif hanh_dong == "admin_uy_quyen":
-            iam.sua_tai_khoan(conn, user, ten, admin_uy_quyen=(gia_tri == "1"))
         elif hanh_dong == "xoa":
             if gia_tri != ten:   # xác nhận 2 lớp: client gõ lại tên, SERVER kiểm
-                return _render_quan_tri(request, user,
-                                        loi="Muốn xóa phải gõ lại đúng tên tài khoản.")
+                return _render_tai_khoan(request, user,
+                                         loi="Muốn xóa phải gõ lại đúng tên tài khoản.")
             iam.xoa_tai_khoan(conn, user, ten)
         elif hanh_dong == "reset_mk":
             iam.doi_mat_khau(conn, user, ten, gia_tri, ep_doi_lan_sau=True)
         else:
-            return _render_quan_tri(request, user, loi="Hành động lạ.")
-        return _render_quan_tri(request, user, bao=f"Đã {hanh_dong}: {ten}")
+            return _render_tai_khoan(request, user, loi="Hành động lạ.")
+        return _render_tai_khoan(request, user, bao=f"Đã {hanh_dong}: {ten}")
     except iam.LoiIam as e:
-        return _render_quan_tri(request, user, loi=str(e))
+        return _render_tai_khoan(request, user, loi=str(e))
     finally:
         conn.close()
 
 
-@app.post("/quan-tri/tao-nguoi", response_class=HTMLResponse)
-def qt_tao_nguoi(request: Request, ho_ten: str = Form(""),
-                       bo_phan: str = Form(""), vi_tri: str = Form("")):
-    user = _yeu_cau_quan_tri(request)
+# --- Nhân sự (Owner + HR L3+ — đúng V1, UI_FLOW.md mục 6) ---
+
+def _render_nhan_su(request: Request, user: dict, loi: str = "",
+                    bao: str = "") -> HTMLResponse:
+    conn = iam.ket_noi()
+    try:
+        return templates.TemplateResponse(
+            request, "nen_nhan_su.html",
+            {"user": user, "trang": "nhan-su", "loi": loi, "bao": bao,
+             "nguoi": iam.liet_ke_nguoi(conn)})
+    finally:
+        conn.close()
+
+
+@app.get("/nen/nhan-su", response_class=HTMLResponse)
+def nen_nhan_su(request: Request):
+    user = _gate_nen(request, nhan_su=True)
+    if isinstance(user, Response):
+        return user
+    return _render_nhan_su(request, user)
+
+
+@app.post("/nen/nhan-su/tao", response_class=HTMLResponse)
+def nen_ns_tao(request: Request, ho_ten: str = Form(""),
+               bo_phan: str = Form(""), vi_tri: str = Form("")):
+    user = _gate_nen(request, nhan_su=True)
     if isinstance(user, Response):
         return user
     conn = iam.ket_noi()
     try:
         ns = iam.tao_nguoi(conn, user, ho_ten, bo_phan, vi_tri)
-        return _render_quan_tri(request, user, bao=f"Đã tạo hồ sơ {ns['ma']}.")
+        return _render_nhan_su(request, user, bao=f"Đã tạo hồ sơ {ns['ma']}.")
     except iam.LoiIam as e:
-        return _render_quan_tri(request, user, loi=str(e))
+        return _render_nhan_su(request, user, loi=str(e))
     finally:
         conn.close()
+
+
+# --- Phân quyền tick (chỉ Owner — giỏ tuyệt đối bang_phan_quyen) ---
+
+def _luat_pq() -> dict:
+    import json
+    return json.loads((ROOT / "nen" / "rules" / "phan_quyen.json")
+                      .read_text(encoding="utf-8-sig"))
+
+
+def _render_phan_quyen(request: Request, user: dict, ten: str = "",
+                       loi: str = "", bao: str = "") -> HTMLResponse:
+    conn = iam.ket_noi()
+    try:
+        tai_khoan = iam.liet_ke_tai_khoan(conn)
+        overrides = {}
+        chon = next((t for t in tai_khoan if t["ten"] == ten), None)
+        if chon:
+            for r in conn.execute(
+                    "SELECT * FROM quyen_override WHERE ten_tai_khoan=?", (ten,)):
+                overrides[(r["app_slug"], r["hanh_dong"])] = bool(r["cho_phep"])
+    finally:
+        conn.close()
+    luat = _luat_pq()
+    hang = []
+    for a in doc_hop_dong():
+        if a["slug"] == "app-mau":
+            continue
+        dk = (luat.get("apps", {}).get(a["slug"], {}) or {}).get("vao", {})
+        mota = f"L{dk.get('min_level', 1)}+"
+        if dk.get("bo_phan"):
+            mota += " bộ phận " + "/".join(dk["bo_phan"]) + " (L4+ mọi bộ phận)"
+        hang.append({"app_slug": a["slug"], "hanh_dong": "vao",
+                     "nhan": f"Vào {a['ten']}", "mac_dinh": mota})
+    for hd in luat.get("gio_uy_quyen", []):
+        hang.append({"app_slug": "*", "hanh_dong": hd,
+                     "nhan": _NHAN_GIO.get(hd, hd),
+                     "mac_dinh": "Owner / Admin ủy quyền"})
+    return templates.TemplateResponse(
+        request, "nen_phan_quyen.html",
+        {"user": user, "trang": "phan-quyen", "loi": loi, "bao": bao,
+         "tai_khoan": tai_khoan, "ten_chon": ten if chon else "",
+         "hang": hang, "overrides": overrides,
+         "gio_tuyet_doi": luat.get("gio_owner_tuyet_doi", [])})
+
+
+@app.get("/nen/phan-quyen", response_class=HTMLResponse)
+def nen_phan_quyen(request: Request, ten: str = "", bao: str = "", loi: str = ""):
+    user = _gate_nen(request, quyen="bang_phan_quyen")   # giỏ tuyệt đối = chỉ Owner
+    if isinstance(user, Response):
+        return user
+    return _render_phan_quyen(request, user, ten=ten, bao=bao, loi=loi)
+
+
+@app.post("/nen/phan-quyen/gan", response_class=HTMLResponse)
+def nen_pq_gan(request: Request, ten: str = Form(...), app_slug: str = Form(...),
+               hanh_dong: str = Form(...), gia_tri: str = Form(...)):
+    user = _gate_nen(request, quyen="bang_phan_quyen")
+    if isinstance(user, Response):
+        return user
+    cho_phep = {"ke_thua": None, "cho": True, "chan": False}.get(gia_tri, None)
+    conn = iam.ket_noi()
+    try:
+        iam.gan_override(conn, user, ten, app_slug, hanh_dong, cho_phep)
+        return _render_phan_quyen(request, user, ten=ten,
+                                  bao=f"Đã đặt {app_slug}/{hanh_dong} = {gia_tri}")
+    except iam.LoiIam as e:
+        return _render_phan_quyen(request, user, ten=ten, loi=str(e))
+    finally:
+        conn.close()
+
+
+@app.post("/nen/phan-quyen/uy-quyen", response_class=HTMLResponse)
+def nen_pq_uy_quyen(request: Request, ten: str = Form(...), bat: str = Form("0")):
+    user = _gate_nen(request, quyen="bang_phan_quyen")
+    if isinstance(user, Response):
+        return user
+    conn = iam.ket_noi()
+    try:
+        iam.sua_tai_khoan(conn, user, ten, admin_uy_quyen=(bat == "1"))
+        return _render_phan_quyen(request, user, ten=ten,
+                                  bao=f"Admin ủy quyền của {ten} = {bat}")
+    except iam.LoiIam as e:
+        return _render_phan_quyen(request, user, ten=ten, loi=str(e))
+    finally:
+        conn.close()
+
+
+# --- Cấu hình LLM (két — chỉ Owner, giỏ tuyệt đối ket_cau_hinh) ---
+
+@app.get("/nen/cau-hinh", response_class=HTMLResponse)
+def nen_cau_hinh(request: Request, bao: str = "", loi: str = ""):
+    user = _gate_nen(request, quyen="ket_cau_hinh")   # giỏ tuyệt đối = chỉ Owner
+    if isinstance(user, Response):
+        return user
+    conn = ket.ket_noi()
+    try:
+        ds = ket.liet_ke(conn)
+    finally:
+        conn.close()
+    return templates.TemplateResponse(
+        request, "nen_cau_hinh.html",
+        {"user": user, "trang": "cau-hinh", "ds": ds, "bao": bao, "loi": loi})
+
+
+@app.post("/nen/cau-hinh/llm", response_class=HTMLResponse)
+def nen_cau_hinh_llm(request: Request, vai: str = Form(...),
+                     provider: str = Form(""), model: str = Form(""),
+                     base_url: str = Form(""), api_key: str = Form("")):
+    user = _gate_nen(request, quyen="ket_cau_hinh")
+    if isinstance(user, Response):
+        return user
+    vai = vai.strip().lower()
+    if not vai.isidentifier():
+        return RedirectResponse(
+            "/nen/cau-hinh?loi=T%C3%AAn+vai+kh%C3%B4ng+h%E1%BB%A3p+l%E1%BB%87",
+            status_code=303)
+    conn = ket.ket_noi()
+    try:
+        for khoa, gt in (("provider", provider), ("model", model),
+                         ("base_url", base_url)):
+            if gt.strip():
+                ket.dat_cau_hinh(conn, f"llm.{vai}.{khoa}", gt.strip())
+        if api_key.strip():   # WRITE-ONLY: bỏ trống = giữ key cũ
+            ket.dat_bi_mat(conn, f"llm.{vai}.api_key", api_key.strip())
+    finally:
+        conn.close()
+    return RedirectResponse(
+        f"/nen/cau-hinh?bao=%C4%90%C3%A3+l%C6%B0u+vai+{vai}", status_code=303)
+
+
+# --- Dữ liệu & backup / Nhật ký / Ứng dụng ---
+
+@app.get("/nen/du-lieu", response_class=HTMLResponse)
+def nen_du_lieu(request: Request):
+    import json
+    user = _gate_nen(request)
+    if isinstance(user, Response):
+        return user
+    raw = json.loads((ROOT / "nen" / "rules" / "apps.json")
+                     .read_text(encoding="utf-8-sig"))
+    khoi = []
+    for chu, stores in [("Tầng nền", raw.get("du_lieu_nen", []))] + \
+            [(a["ten"], a.get("du_lieu", [])) for a in raw.get("apps", [])]:
+        for s in stores:
+            duong = Path(s["duong"])
+            if not duong.is_absolute():
+                duong = ROOT / duong
+            khoi.append({"chu": chu, **s, "co": duong.exists()})
+    de = _thong_ke_de()
+    return templates.TemplateResponse(
+        request, "nen_du_lieu.html",
+        {"user": user, "trang": "du-lieu", "khoi": khoi,
+         "backup_moi": de["backup_moi"], "bk_dir": de["bk_dir"]})
+
+
+@app.get("/nen/nhat-ky", response_class=HTMLResponse)
+def nen_nhat_ky(request: Request):
+    user = _gate_nen(request)
+    if isinstance(user, Response):
+        return user
+    conn = iam.ket_noi()
+    try:
+        nk = iam.doc_nhat_ky(conn, 200)
+    finally:
+        conn.close()
+    return templates.TemplateResponse(
+        request, "nen_nhat_ky.html",
+        {"user": user, "trang": "nhat-ky", "nhat_ky": nk})
+
+
+@app.get("/nen/ung-dung", response_class=HTMLResponse)
+async def nen_ung_dung(request: Request):
+    from starlette.concurrency import run_in_threadpool
+    user = await run_in_threadpool(_gate_nen, request)
+    if isinstance(user, Response):
+        return user
+    dich_vu = {d["ten"]: d["song"] for d in await _do_dich_vu()}
+    return templates.TemplateResponse(
+        request, "nen_ung_dung.html",
+        {"user": user, "trang": "ung-dung", "apps": doc_hop_dong(),
+         "dich_vu": dich_vu})
+
+
+# --- Trang cũ nghỉ hưu → redirect (giữ 1 nhịp chuyển tiếp, UI_FLOW.md mục 5) ---
+
+@app.get("/suc-khoe")
+def suc_khoe_cu():
+    return RedirectResponse("/nen", status_code=303)
+
+
+@app.get("/quan-tri")
+def quan_tri_cu():
+    return RedirectResponse("/nen/tai-khoan", status_code=303)
 
 
 # ---------- két cấu hình (P3) ----------
@@ -310,52 +611,9 @@ def api_cau_hinh_llm(request: Request, vai: str):
         conn.close()
 
 
-def _yeu_cau_owner_ket(request: Request) -> dict | Response:
-    user = _kiem(request)
-    if isinstance(user, RedirectResponse):
-        return user
-    if not iam.co_quyen(user, "ket_cau_hinh"):   # giỏ Owner tuyệt đối
-        return Response("Két cấu hình chỉ dành cho Owner.", status_code=403)
-    return user
-
-
-@app.get("/cai-dat", response_class=HTMLResponse)
-def cai_dat(request: Request, bao: str = "", loi: str = ""):
-    user = _yeu_cau_owner_ket(request)
-    if isinstance(user, Response):
-        return user
-    conn = ket.ket_noi()
-    try:
-        ds = ket.liet_ke(conn)
-    finally:
-        conn.close()
-    return templates.TemplateResponse(
-        request, "caidat.html", {"user": user, "ds": ds, "bao": bao, "loi": loi})
-
-
-@app.post("/cai-dat/llm", response_class=HTMLResponse)
-def cai_dat_llm(request: Request, vai: str = Form(...),
-                      provider: str = Form(""), model: str = Form(""),
-                      base_url: str = Form(""), api_key: str = Form("")):
-    user = _yeu_cau_owner_ket(request)
-    if isinstance(user, Response):
-        return user
-    vai = vai.strip().lower()
-    if not vai.isidentifier():
-        return RedirectResponse("/cai-dat?loi=T%C3%AAn+vai+kh%C3%B4ng+h%E1%BB%A3p+l%E1%BB%87",
-                                status_code=303)
-    conn = ket.ket_noi()
-    try:
-        for khoa, gt in (("provider", provider), ("model", model),
-                         ("base_url", base_url)):
-            if gt.strip():
-                ket.dat_cau_hinh(conn, f"llm.{vai}.{khoa}", gt.strip())
-        if api_key.strip():   # WRITE-ONLY: bỏ trống = giữ key cũ
-            ket.dat_bi_mat(conn, f"llm.{vai}.api_key", api_key.strip())
-    finally:
-        conn.close()
-    return RedirectResponse(f"/cai-dat?bao=%C4%90%C3%A3+l%C6%B0u+vai+{vai}",
-                            status_code=303)
+@app.get("/cai-dat")
+def cai_dat_cu():
+    return RedirectResponse("/nen/cau-hinh", status_code=303)
 
 
 # ---------- cầu nối: hỏi số liệu (P6) ----------
@@ -399,10 +657,9 @@ async def proxy_app(request: Request, slug: str, duong_dan: str):
                     if iam.co_quyen(u, "vao", a["slug"], conn2)]
             if "to-chuc" in duoc and os.getenv("NAS_DUONG_DAN", "").strip():
                 duoc.append("nas")
-            # Cờ 'quan-tri': ai mở được trang quản trị IAM (Owner / Admin ủy
-            # quyền) thì sidebar mới hiện mục Nhân sự / User (UI_FLOW.md mục 2).
-            if iam.co_quyen(u, "duyet_ho_so", conn=conn2) or \
-               iam.co_quyen(u, "quan_tai_khoan", conn=conn2):
+            # Cờ 'quan-tri': ai mở được mục Nhân sự/User trên sidebar — luật V1:
+            # Owner + HR L3+ (iam.quyen_nhan_su) hoặc Admin ủy quyền tài khoản.
+            if iam.quyen_nhan_su(u) or iam.co_quyen(u, "quan_tai_khoan", conn=conn2):
                 duoc.append("quan-tri")
             return u, tim_app(slug), slug in duoc, duoc
         finally:

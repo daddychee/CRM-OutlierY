@@ -1,0 +1,53 @@
+{% extends "nen_base.html" %}
+{% block tieu_de %}Tài khoản{% endblock %}
+{% block noi_dung %}
+<h2>Tài khoản đăng nhập</h2>
+<table>
+  <tr><th>Tên</th><th>Bộ phận</th><th>Level</th><th>Nhãn</th><th>Thao tác</th></tr>
+  {% for tk in tai_khoan %}
+  <tr>
+    <td><b>{{ tk.ten }}</b></td>
+    <td>{{ tk.bo_phan }}</td>
+    <td>L{{ tk.level }}</td>
+    <td>
+      {% if tk.level >= 5 %}<span class="chip">Owner</span>{% endif %}
+      {% if tk.admin_uy_quyen %}<span class="chip">Admin ủy quyền</span>{% endif %}
+      {% if tk.khoa %}<span class="chip">🔒 khóa</span>{% endif %}
+      {% if tk.phai_doi_mk %}<span class="chip">chờ đổi MK</span>{% endif %}
+    </td>
+    <td>
+      <form class="dong" method="post" action="/nen/tai-khoan/sua">
+        <input type="hidden" name="ten" value="{{ tk.ten }}">
+        <select name="hanh_dong">
+          <option value="level">đổi level =</option>
+          <option value="bo_phan">đổi bộ phận =</option>
+          <option value="reset_mk">reset mật khẩu =</option>
+          <option value="khoa">khóa (1) / mở (0) =</option>
+          {% if la_owner %}<option value="xoa">XÓA (gõ tên để chắc) =</option>{% endif %}
+        </select>
+        <input name="gia_tri" size="10" placeholder="giá trị">
+        <button>Làm</button>
+      </form>
+    </td>
+  </tr>
+  {% endfor %}
+</table>
+<p class="phu" style="margin-top:8px">Bật/tắt Admin ủy quyền chuyển sang trang
+  <a href="/nen/phan-quyen">Phân quyền</a> — đúng chỗ, có vết nhật ký.</p>
+
+<h2>Tạo tài khoản mới <span class="phu" style="font-weight:400">
+  (người mới bị ép đổi mật khẩu lần đăng nhập đầu)</span></h2>
+<div class="khoi">
+  <form class="dong" method="post" action="/nen/tai-khoan/tao">
+    <input name="ten" placeholder="tên đăng nhập (a-z0-9._-)" required>
+    <input name="mat_khau" placeholder="mật khẩu tạm" required>
+    <input name="bo_phan" placeholder="bộ phận" required>
+    <select name="level">
+      <option value="1">L1 Intern</option><option value="2" selected>L2 Nhân viên</option>
+      <option value="3">L3 Leader</option><option value="4">L4 Manager</option>
+      {% if la_owner %}<option value="5">L5 Owner</option>{% endif %}
+    </select>
+    <button>Tạo</button>
+  </form>
+</div>
+{% endblock %}

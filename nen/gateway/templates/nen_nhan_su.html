@@ -1,0 +1,26 @@
+{% extends "nen_base.html" %}
+{% block tieu_de %}Nhân sự{% endblock %}
+{% block noi_dung %}
+<h2>Hồ sơ nhân sự</h2>
+<table>
+  <tr><th>Mã</th><th>Họ tên</th><th>Bộ phận</th><th>Vị trí</th><th>Trạng thái</th></tr>
+  {% for ns in nguoi %}
+  <tr><td>{{ ns.ma }}</td><td>{{ ns.ho_ten }}</td><td>{{ ns.bo_phan }}</td>
+      <td>{{ ns.vi_tri }}</td><td>{{ ns.trang_thai }}</td></tr>
+  {% else %}
+  <tr><td colspan="5" class="phu">Chưa có hồ sơ nào.</td></tr>
+  {% endfor %}
+</table>
+
+<h2>Tạo hồ sơ mới</h2>
+<div class="khoi">
+  <form class="dong" method="post" action="/nen/nhan-su/tao">
+    <input name="ho_ten" placeholder="họ tên" required>
+    <input name="bo_phan" placeholder="bộ phận" required>
+    <input name="vi_tri" placeholder="vị trí (tùy chọn)">
+    <button>Tạo hồ sơ</button>
+  </form>
+  <p class="phu" style="margin-top:8px">Hồ sơ là NGƯỜI (mã NS-xxx) — tài khoản đăng nhập
+    do Owner cấp ở trang Tài khoản. Trang này mở cho Owner và Hành chính Nhân sự L3+ (đúng luật V1).</p>
+</div>
+{% endblock %}

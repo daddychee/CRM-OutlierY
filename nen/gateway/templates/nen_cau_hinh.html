@@ -1,0 +1,35 @@
+{% extends "nen_base.html" %}
+{% block tieu_de %}Cấu hình LLM{% endblock %}
+{% block noi_dung %}
+<h2>Khai / sửa vai LLM <span class="phu" style="font-weight:400">— key WRITE-ONLY: bỏ trống là giữ key cũ, không bao giờ hiện lại key</span></h2>
+<div class="khoi">
+  <form class="dong" method="post" action="/nen/cau-hinh/llm" style="flex-wrap:wrap">
+    <input name="vai" placeholder="vai (writer / critic...)" required>
+    <input name="provider" placeholder="provider (openai_compatible / anthropic)">
+    <input name="model" placeholder="model (glm-4.5-air...)">
+    <input name="base_url" placeholder="base_url" size="28">
+    <input name="api_key" placeholder="API key (bỏ trống = giữ cũ)" type="password" size="24">
+    <button>Lưu</button>
+  </form>
+</div>
+
+<h2>Cấu hình đang có</h2>
+<table>
+  <tr><th>Khóa</th><th>Giá trị</th><th>Sửa lúc</th></tr>
+  {% for c in ds.cau_hinh %}
+  <tr><td>{{ c.khoa }}</td><td>{{ c.gia_tri }}</td><td class="phu">{{ c.sua_luc }}</td></tr>
+  {% else %}
+  <tr><td colspan="3" class="phu">Chưa có cấu hình nào.</td></tr>
+  {% endfor %}
+</table>
+
+<h2>Bí mật (chỉ hiện đuôi — bản mã Fernet trong két)</h2>
+<table>
+  <tr><th>Khóa</th><th>Đuôi</th><th>Sửa lúc</th></tr>
+  {% for b in ds.bi_mat %}
+  <tr><td>{{ b.khoa }}</td><td>••••{{ b.duoi }}</td><td class="phu">{{ b.sua_luc }}</td></tr>
+  {% else %}
+  <tr><td colspan="3" class="phu">Chưa có key nào — hỏi–đáp đang chạy chế độ mock.</td></tr>
+  {% endfor %}
+</table>
+{% endblock %}

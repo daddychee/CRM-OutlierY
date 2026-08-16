@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block tieu_de %}Quản trị nền{% endblock %} — OUTLIERY</title>
+<style>
+  :root{--nen:#F7F8FA;--the:#FFFFFF;--vien:#E6E6E6;--chu:#16181C;--phu:#6C6C72;
+        --accent:#2C6FC4;--ok:#1D7A46;--loi:#B4232A}
+  @media (prefers-color-scheme: dark){
+    :root{--nen:#090C12;--the:#121826;--vien:#232B3D;--chu:#E8EDF4;--phu:#8B96A8;
+          --accent:#4C8FE0;--ok:#5CC98B;--loi:#F08A8F}
+  }
+  *{box-sizing:border-box;margin:0}
+  body{font-family:Inter,system-ui,sans-serif;background:var(--nen);color:var(--chu)}
+  header{display:flex;justify-content:space-between;align-items:center;gap:12px;
+         padding:14px 24px;border-bottom:1px solid var(--vien);background:var(--the)}
+  a{color:var(--accent);text-decoration:none}
+  nav.muc{display:flex;gap:2px;flex-wrap:wrap;padding:8px 20px;background:var(--the);
+          border-bottom:1px solid var(--vien);font-size:13px}
+  nav.muc a{padding:6px 11px;border-radius:8px;color:var(--phu)}
+  nav.muc a.active{background:var(--nen);color:var(--chu);font-weight:600}
+  main{max-width:1020px;margin:26px auto;padding:0 20px}
+  h2{font-size:15px;margin:24px 0 10px}
+  .bao{color:var(--ok);font-size:13px;margin:10px 0}
+  .loi{color:var(--loi);font-size:13px;margin:10px 0}
+  table{width:100%;border-collapse:collapse;background:var(--the);
+        border:1px solid var(--vien);border-radius:12px;overflow:hidden;font-size:13px}
+  th,td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--vien);vertical-align:middle}
+  th{color:var(--phu);font-size:12px}
+  input,select{padding:6px 8px;border:1px solid var(--vien);border-radius:7px;
+        background:var(--nen);color:var(--chu);font-size:13px}
+  button{padding:6px 12px;border:0;border-radius:7px;background:var(--accent);
+         color:#fff;font-size:13px;cursor:pointer}
+  form.dong{display:inline-flex;gap:6px;align-items:center;margin:0}
+  .chip{padding:1px 8px;border-radius:99px;font-size:11px;border:1px solid var(--vien)}
+  .khoi{background:var(--the);border:1px solid var(--vien);border-radius:12px;padding:14px 16px}
+  .luoi{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px}
+  .so-lon{font-size:26px;font-weight:700;margin-top:4px}
+  .phu{color:var(--phu);font-size:12px}
+  .cham{display:inline-block;width:9px;height:9px;border-radius:99px;margin-right:7px}
+  .cham.song{background:var(--ok)} .cham.chet{background:var(--loi)}
+</style>
+</head>
+<body>
+<header>
+  <b>⛭ Quản trị nền</b>
+  <span class="phu">{{ user.ten }} (L{{ user.level }}) ·
+    <a href="/app/tri-thuc/hoi-dap">← Về Hỏi–đáp</a> · <a href="/logout">Đăng xuất</a></span>
+</header>
+{# Nav 8 trang — UI_FLOW.md mục 5: mỗi trang MỘT việc. Mục Nhân sự mở cho HR L3+,
+   còn lại chỉ Owner nên ẩn bớt với người không phải Owner. #}
+<nav class="muc">
+  {% set la_owner = user.level >= 5 %}
+  {% if la_owner %}<a href="/nen" class="{% if trang == 'tong-quan' %}active{% endif %}">Tổng quan đế</a>{% endif %}
+  {% if la_owner %}<a href="/nen/tai-khoan" class="{% if trang == 'tai-khoan' %}active{% endif %}">Tài khoản</a>{% endif %}
+  <a href="/nen/nhan-su" class="{% if trang == 'nhan-su' %}active{% endif %}">Nhân sự</a>
+  {% if la_owner %}
+  <a href="/nen/phan-quyen" class="{% if trang == 'phan-quyen' %}active{% endif %}">Phân quyền</a>
+  <a href="/nen/cau-hinh" class="{% if trang == 'cau-hinh' %}active{% endif %}">Cấu hình LLM</a>
+  <a href="/nen/du-lieu" class="{% if trang == 'du-lieu' %}active{% endif %}">Dữ liệu &amp; backup</a>
+  <a href="/nen/nhat-ky" class="{% if trang == 'nhat-ky' %}active{% endif %}">Nhật ký</a>
+  <a href="/nen/ung-dung" class="{% if trang == 'ung-dung' %}active{% endif %}">Ứng dụng</a>
+  {% endif %}
+</nav>
+<main>
+  {% if bao %}<p class="bao">✓ {{ bao }}</p>{% endif %}
+  {% if loi %}<p class="loi">✗ {{ loi }}</p>{% endif %}
+  {% block noi_dung %}{% endblock %}
+</main>
+</body>
+</html>

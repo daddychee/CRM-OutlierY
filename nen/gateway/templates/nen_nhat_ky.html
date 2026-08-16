@@ -1,0 +1,14 @@
+{% extends "nen_base.html" %}
+{% block tieu_de %}Nhật ký{% endblock %}
+{% block noi_dung %}
+<h2>Nhật ký quyền &amp; quản trị <span class="phu" style="font-weight:400">— 200 dòng gần nhất, chỉ-ghi-thêm, mọi thao tác quản trị đều có vết</span></h2>
+<table>
+  <tr><th>Lúc</th><th>Ai</th><th>Hành động</th><th>Chi tiết</th></tr>
+  {% for nk in nhat_ky %}
+  <tr><td class="phu">{{ nk.luc }}</td><td><b>{{ nk.ai }}</b></td>
+      <td>{{ nk.hanh_dong }}</td><td class="phu">{{ nk.chi_tiet }}</td></tr>
+  {% else %}
+  <tr><td colspan="4" class="phu">Chưa có dòng nào.</td></tr>
+  {% endfor %}
+</table>
+{% endblock %}
