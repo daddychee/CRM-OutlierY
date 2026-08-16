@@ -1,4 +1,4 @@
-{
+﻿{
   "_ghi_chu": "LUẬT QUYỀN NGOÀI CODE (Permissions v2 — DE.md mục 14, mockup P1-P5). Hai giỏ quản trị: gio_owner_tuyet_doi = chỉ Owner thật (level 5) — KHÔNG ủy quyền được. gio_uy_quyen = khu chức năng: Owner HOẶC tài khoản bật admin_uy_quyen (+ luật bộ phận riêng ở gateway). Mỗi app khai HÀNH ĐỘNG THẬT dạng {ma: {nhan, mo_ta, min_level, bo_phan?}} — nhan/mo_ta là metadata UI, co_quyen chỉ đọc min_level/bo_phan; 'vao' là hành động vào app. Ô tick lẻ (quyen_override, PHẢI có lý do) THẮNG cấp truy cập THẮNG luật mặc định — trừ giỏ Owner tuyệt đối. Vai X-Remote-Role dịch từ hành động dừng-tại-hit-đầu (quan_tri→admin · xoa/toan_quyen→vai_xoa · sua/tao/them→leader · còn lại viewer); app chưa khai hành động → level 5 admin / 4 manager / 3 leader / viewer. DANH PHÁP: 'owner' không còn là tên vai app.",
   "gio_owner_tuyet_doi": [
     "vault",
@@ -14,10 +14,14 @@
   ],
   "apps": {
     "app-mau": {
-      "vao": { "min_level": 1 }
+      "vao": {
+        "min_level": 1
+      }
     },
     "ai-agent": {
-      "vao": { "min_level": 1 },
+      "vao": {
+        "min_level": 1
+      },
       "nap_tai_lieu": {
         "nhan": "Nạp tài liệu",
         "mo_ta": "Upload kho tri thức + từ khóa gợi ý",
@@ -45,7 +49,12 @@
       }
     },
     "data-analytics": {
-      "vao": { "min_level": 2, "bo_phan": ["Kinh doanh"] },
+      "vao": {
+        "min_level": 2,
+        "bo_phan": [
+          "Kinh doanh"
+        ]
+      },
       "quan_tri": {
         "nhan": "Quản trị",
         "mo_ta": "Xóa báo cáo + sửa luật chẩn đoán",
@@ -53,7 +62,9 @@
       }
     },
     "to-chuc": {
-      "vao": { "min_level": 1 },
+      "vao": {
+        "min_level": 1
+      },
       "kpi": {
         "nhan": "KPI Review",
         "mo_ta": "Bảng KPI + chốt công kỳ",
@@ -64,6 +75,42 @@
         "mo_ta": "Cấu hình app tổ chức",
         "min_level": 5
       }
+    },
+    "radary": {
+      "vao": {
+        "min_level": 1
+      },
+      "them_video": {
+        "nhan": "Thêm video theo dõi",
+        "mo_ta": "Thêm video mới vào danh sách theo dõi (vai leader của RadarY)",
+        "min_level": 3,
+        "bo_phan": [
+          "Kinh doanh"
+        ]
+      },
+      "tao_pool": {
+        "nhan": "Tạo pool đối thủ",
+        "mo_ta": "Tạo pool kênh mới để hệ tự quét theo lịch (vai leader)",
+        "min_level": 3,
+        "bo_phan": [
+          "Kinh doanh"
+        ]
+      },
+      "toan_quyen": {
+        "nhan": "Toàn quyền vận hành",
+        "mo_ta": "Xóa video/kênh/pool, xóa cả niche (workspace) — KHÔNG gồm API key/thành viên/cấu hình LLM (vai manager)",
+        "min_level": 4,
+        "bo_phan": [
+          "Vận hành - Sản xuất",
+          "Kinh doanh"
+        ]
+      },
+      "quan_tri": {
+        "nhan": "Quản trị",
+        "mo_ta": "Tab Quản trị đầy đủ: API key YouTube · thành viên + lời mời · cấu hình LLM (vai owner nội bộ app)",
+        "min_level": 5
+      },
+      "vai_xoa": "manager"
     }
   }
 }

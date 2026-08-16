@@ -1,0 +1,11 @@
+.venv/
+data/
+radar_state/
+radar_reports/
+legacy/
+docs/
+__pycache__/
+*.pyc
+.git/
+verify_phase*.py
+daily_radar.py

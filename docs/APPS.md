@@ -50,3 +50,27 @@
 ## Nhật ký
 
 - 16/08/2026 — Mở sổ; Owner chốt 2 quyết định; bắt đầu RadarY (cổng 9111).
+- 16/08/2026 — **RadarY tích hợp xong bước 1-4+6** (chạy thật 9111, hợp đồng +
+  luật Permissions v2, SSO adapter Actions→vai nội bộ, smoke từng vai đạt trên
+  snapshot thật — org Outliery, 19 khóa). Chạy: `tools\scripts\start-all.ps1`
+  (env `RADARY_DATA_DIR=data\radary` + `RADARY_SCHEDULER=0` + `RADARY_TRUST_PROXY=1`).
+  **Việc treo Đ4b — khóa YouTube**: bảng `api_keys` (Fernet, `secret.key`) trong
+  db snapshot GIỮ làm nguồn khóa nội bộ đợt này; chuyển nguồn sang trang API Keys
+  của két (cấp phát → app đọc loopback) làm sau. **SCHEDULER V3 TẮT CỐ ĐỊNH**
+  (`RADARY_SCHEDULER=0` trong start-all): hệ thật C:\ vẫn tự quét theo lịch bằng
+  CÙNG bộ khóa — V3 quét song song là ĐỐT ĐÔI QUOTA + db snapshot lệch khỏi hệ
+  thật; nghiệm thu quét bằng POST /run tay; bật lại scheduler CHỈ khi cutover.
+  RADARY_SSO_MAP đã GỠ HẲN khỏi V3 (map-tên-chết); cửa login/register/reset cục
+  bộ đóng 404 khi TRUST_PROXY=1.
+- 16/08/2026 — BẪY MỚI khi agent ghi start-all.ps1: chuỗi `data\radary` bị nuốt
+  `\r` thành byte xuống dòng thật (0x0D) → comment gãy đôi thành lệnh, script
+  chết trước khi bật service nào. Sửa bằng thay byte, đường dẫn trong .ps1 từ
+  nay dùng GẠCH CHÉO XUÔI `data/radary` (Join-Path/Python đều hiểu) — cùng họ
+  bẫy PowerShell 5.1 (memory powershell-51-utf8-bom-va-log).
+- 16/08/2026 — RadarY NGHIỆM THU ĐỘC LẬP đạt (curl 9111 + qua cổng): health
+  200 · không claims 401 · viewer đọc orgs · manager(toan_quyen) /keys 403
+  (Manager không ngang Owner) · owner(quan_tri) 200 · login cục bộ body hợp lệ
+  404 (422 khi thiếu body = validation chạy trước guard, route vẫn bất khả
+  dụng) · /app/* không auth 401 trần là chuẩn chung nền. 5 suite xanh
+  124+3+308/3+64+58. CÒN CHỜ OWNER: soi UI RadarY qua 9443 (SPA/Console),
+  tick thử ở Permissions, POST /run tay 1 pool giờ thấp điểm (đốt quota thật).

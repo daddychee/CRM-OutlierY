@@ -229,9 +229,16 @@ def _ctx_outliery(request: Request) -> dict:
             phien = _danh_sach_phien(user["ten"], user, gioi_han=SO_PHIEN_SIDEBAR)
         except Exception:
             phien = []
+    # App đã di trú hiện ở nhóm Tools (APPS.md): giao hợp đồng × X-Remote-Apps —
+    # cùng nguồn nen.common.sidebar (Luật 4 không đụng: chỉ đọc hợp đồng chung).
+    try:
+        from nen.common.sidebar import sb_apps_tu_claims
+        sb_apps = sb_apps_tu_claims(apps_vao)
+    except Exception:
+        sb_apps = []
     return {"sb_user": user, "sb_ngay": ngay, "sb_phien": phien,
             "sb_level_chu": ten_level(user["level"]),
-            "lite": False, "sb_apps": [], "sb_da": "data-analytics" in apps_vao,
+            "lite": False, "sb_apps": sb_apps, "sb_da": "data-analytics" in apps_vao,
             "sb_ns": "quan-tri" in apps_vao, "sb_cho_duyet": 0,
             "sb_nas": "nas" in apps_vao,
             # Khu chức năng HR/Finance (DE.md mục 10) — cờ do gateway phát,

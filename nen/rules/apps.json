@@ -264,6 +264,69 @@
     "module": "main:app"
    },
    "du_lieu": []
+  },
+  {
+   "slug": "radary",
+   "ten": "RadarY",
+   "mo_ta": "Radar theo dõi video/kênh đối thủ YouTube: pool quét theo lịch, alert breakout, heatmap, niche report. Đưa vào V3 từ hệ cũ 16/08 (APPS.md app 1/6).",
+   "cong": 9111,
+   "tien_to": [
+    "/api",
+    "/app.js",
+    "/vendor"
+   ],
+   "health": "/api/health",
+   "phien_ban": "1.0-v3",
+   "chay": {
+    "kieu": "uvicorn",
+    "app_dir": "apps/radary",
+    "module": "radary.api:app"
+   },
+   "du_lieu": [
+    {
+     "ten": "radary-db",
+     "loai": "sqlite",
+     "duong": "data/radary/radary.db",
+     "muc_quy": "vang",
+     "backup": "sqlite-snapshot",
+     "giu": "vinh-vien",
+     "ghi_chu": "orgs/users/workspaces/channels/videos/ticks/events + api_keys Fernet — snapshot từ hệ thật 16/08"
+    },
+    {
+     "ten": "radary-secret",
+     "loai": "file-khoa",
+     "duong": "data/radary/secret.key",
+     "muc_quy": "vang",
+     "backup": "copy",
+     "giu": "vinh-vien",
+     "ghi_chu": "Khóa chủ Fernet mã hóa API key YouTube trong db — mất khóa là mất key"
+    },
+    {
+     "ten": "radary-niche",
+     "loai": "kho-file",
+     "duong": "data/radary/niche",
+     "muc_quy": "vang",
+     "backup": "copy",
+     "giu": "vinh-vien"
+    },
+    {
+     "ten": "radary-reports",
+     "loai": "kho-file",
+     "duong": "data/radary/reports",
+     "muc_quy": "vang",
+     "backup": "copy",
+     "giu": "vinh-vien"
+    },
+    {
+     "ten": "radary-thumbs",
+     "loai": "kho-file",
+     "duong": "data/radary/thumbs",
+     "muc_quy": "tai-sinh",
+     "backup": "khong",
+     "giu": "tai-sinh",
+     "ghi_chu": "Thumbnail cache tự tái sinh khi quét — loại khỏi backup (đúng lệ hệ cũ)"
+    }
+   ]
   }
  ]
 }

@@ -11,6 +11,22 @@ from urllib.parse import unquote
 
 TEN_LEVEL = {1: "Intern", 2: "Staff", 3: "Leader", 4: "Manager", 5: "Owner"}
 
+# App V3 đã có mục sidebar RIÊNG (hoặc app mẫu) — không lặp lại ở nhóm Tools.
+KHONG_LAP_TOOLS = {"ai-agent", "data-analytics", "to-chuc", "app-mau"}
+
+
+def sb_apps_tu_claims(apps_vao) -> list[dict]:
+    """App ĐÃ DI TRÚ hiện ở nhóm Tools (APPS.md bước 2: thêm app vào apps.json là
+    sidebar tự ăn): giao giữa hợp đồng app và danh sách user được vào
+    (X-Remote-Apps — gateway quyết). App chưa di trú không có trong hợp đồng nên
+    tự ẩn (giữ chốt 16/08). Lỗi đọc hợp đồng → rỗng, không vỡ trang."""
+    try:
+        from nen.common.hop_dong import doc_hop_dong
+        return [{"slug": a["slug"], "ten": a["ten"]} for a in doc_hop_dong()
+                if a["slug"] in apps_vao and a["slug"] not in KHONG_LAP_TOOLS]
+    except Exception:
+        return []
+
 
 def ctx_sidebar(request) -> dict:
     ngay = datetime.now().strftime("%d/%m/%Y")
@@ -32,7 +48,7 @@ def ctx_sidebar(request) -> dict:
             "sb_ngay": ngay,
             "sb_phien": [],   # phiên chat thuộc ai-agent — app khác không truy chéo (Luật 4)
             "sb_level_chu": TEN_LEVEL.get(level, ""), "lite": False,
-            "sb_apps": [],    # app phụ chưa di trú: ẨN HẲN (Owner chốt 16/08)
+            "sb_apps": sb_apps_tu_claims(apps_vao),
             "sb_da": "data-analytics" in apps_vao,
             "sb_ns": "quan-tri" in apps_vao, "sb_cho_duyet": 0,
             "sb_nas": "nas" in apps_vao,

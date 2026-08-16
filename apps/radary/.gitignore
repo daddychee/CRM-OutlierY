@@ -1,0 +1,15 @@
+radar_state/daily/videos.json
+radar_state/daily/cron.log
+radar_state/daily/*.tmp
+radar_state/daily/thumbs/
+__pycache__/
+data/
+.venv/
+
+# Dữ liệu sống + key (bổ sung 17/07/2026)
+radar_state/
+radar_reports/
+.DS_Store
+
+# Log chạy nền Windows (deploy/windows/chay-radary.ps1)
+logs/
