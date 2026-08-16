@@ -373,3 +373,25 @@ sqlite-snapshot như iam.db.
   qua form (chấp nhận). KẾ TIẾP mạch nhân sự (nợ V2 còn lại): luồng PHÊ
   DUYỆT (H2 — HR tạo trạng thái chờ → Owner duyệt + cấp tài khoản ngay màn
   duyệt, từ chối kèm lý do) + vòng đời hồ sơ↔tài khoản khi xóa/đổi.
+- 16/08/2026 — **GỘP PEOPLE + ACCOUNTS = MỘT TAB "ACCOUNTS" + XÓA DỮ LIỆU NẠP
+  MỚI** (`868708c`, Owner chốt: "People và account hiện đang trùng nhau. Gộp
+  chức năng làm 1, để tên là account. Xóa hết dữ liệu cũ, nạp mới từ đầu").
+  MỖI DÒNG = MỘT CON NGƯỜI (nguoi LEFT JOIN tai_khoan qua nguoi_ma; chưa cấp
+  tài khoản → Username "—"; tài khoản mồ côi hiện dòng riêng không giấu).
+  Form duy nhất "New person" → `POST /general/accounts/create-full`: hồ sơ đủ
+  8 trường + khối tài khoản TÙY CHỌN (chỉ render khi cờ accounts); kèm
+  username → gate quan_tai_khoan 403 TRƯỚC khi tạo gì; chống mồ côi (bài học
+  V2 GĐ2): kiểm username trước → tạo hồ sơ → tạo tài khoản nối nguoi_ma (bộ
+  phận LẤY TỪ HỒ SƠ) → lỗi thì XÓA hồ sơ vừa tạo + vết `rollback_tao_nguoi`
+  (đã kiểm sống: mk ngắn → kho về 0 sạch). `POST /general/accounts/grant`
+  cấp tài khoản cho hồ sơ có sẵn — mỗi hồ sơ TỐI ĐA MỘT tài khoản. Xóa tài
+  khoản = thu hồi đăng nhập, hồ sơ giữ (lệ V2). Hai lớp quyền giữ nguyên
+  trong MỘT tab: giỏ nhan_su thấy/sửa hồ sơ, khối Account (grant/reset/level/
+  khóa/xóa) chỉ render + chỉ server nhận với quan_tai_khoan. tab=people +
+  GET /general/people cũ đáp về tab gộp. 4 suite 103(+2)/58/307+3skip/64.
+  DỮ LIỆU: đã xóa 20 tài khoản seed V2 + 1 hồ sơ, GIỮ DUY NHẤT `owner`
+  (chống tự khóa), audit giữ nguyên làm sử liệu (vết `don_du_lieu`) — hệ
+  SẠCH chờ Owner/HR nhập người thật từ đầu qua New person. VIỆC TREO: sửa
+  bộ phận HỒ SƠ chưa tự chảy sang bộ phận TÀI KHOẢN (V2 có đồng bộ users.txt
+  — cần Owner chốt chiều đồng bộ); rollback DELETE nguoi nằm ở gateway, cố ý
+  KHÔNG thêm xoa_nguoi public vào iam (giữ luật không xóa hồ sơ).
