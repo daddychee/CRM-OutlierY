@@ -178,8 +178,9 @@ def test_highlight_phien_co_cau_gio_da_giai(tmp_path, monkeypatch):
              ["KD-2026-0042"], "2026-07-19T12:00:00", phien_id="ph-ok")
     r = _login("nv").get("/lich-su")
     assert r.status_code == 200
-    # nhãn CHÍNH có 💡 (main); sidebar recents chỉ có badge "mới" + tooltip → không tính
-    assert r.text.count("💡 New documents can now answer a question you asked") == 1  # đúng 1 phiên sáng
+    # nhãn CHÍNH (div.nhan-sang, icon 💡 đã thay SVG); sidebar recents chỉ có badge
+    # "mới" + tooltip (không có class này) → đếm class CSS vẫn phân biệt được 2 nơi
+    assert r.text.count('class="nhan-sang"') == 1  # đúng 1 phiên sáng
     # scope vùng nội dung chính (sidebar recents cũng link ph-sang — bỏ qua);
     # nhãn 💡 nằm trong khối .phien.sang của ph-sang, giữa link đó và link kế
     noi_dung = r.text.split('class="noi-dung"', 1)[1]
@@ -272,13 +273,14 @@ def test_sidebar_hien_cuoc_va_danh_dau_active(tmp_path, monkeypatch):
 
     trang = c.get("/hoi-dap").text
     assert 'id="thanh-ben"' in trang
-    assert "/hoi-dap?phien=ph-a" in trang and "/hoi-dap?phien=ph-b" in trang
+    # URL đẹp mục 9 (UI_FLOW.md, 16/08): rec-item sidebar trỏ "/?phien=..." — Home là "/"
+    assert "/?phien=ph-a" in trang and "/?phien=ph-b" in trang
     assert 'class="rec-item active"' not in trang       # chưa mở cuộc nào (CSS có chữ tb-active — so theo attribute)
 
     trang2 = c.get("/hoi-dap?phien=ph-a").text
     # class đứng TRƯỚC href trong thẻ → href của cuộc active nằm ngay SAU dấu active
     active = trang2.split('class="rec-item active"')[1].split('href="')[1].split('"')[0]
-    assert active == "/hoi-dap?phien=ph-a"                 # đúng cuộc đang mở được đánh dấu
+    assert active == "/?phien=ph-a"                 # đúng cuộc đang mở được đánh dấu
 
 
 def test_sidebar_khach_rong_khong_vo():
@@ -303,8 +305,8 @@ def test_sidebar_cat_gioi_han_nhung_lich_su_day_du_khong_cat(tmp_path, monkeypat
     c = _login("nv")
     sidebar = c.get("/hoi-dap").text
     for i in range(tong - SO_PHIEN_SIDEBAR, tong):          # N phiên MỚI NHẤT còn đủ
-        assert f"/hoi-dap?phien=ph-{i}" in sidebar
-    assert "/hoi-dap?phien=ph-0" not in sidebar             # phiên CŨ NHẤT bị cắt khỏi sidebar
+        assert f"/?phien=ph-{i}" in sidebar                 # URL đẹp mục 9: rec-item trỏ "/"
+    assert "/?phien=ph-0\"" not in sidebar                  # phiên CŨ NHẤT bị cắt khỏi sidebar
 
     day_du = c.get("/lich-su").text
     assert "/hoi-dap?phien=ph-0" in day_du                  # trang đầy đủ vẫn còn phiên cũ nhất

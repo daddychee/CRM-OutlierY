@@ -4,6 +4,8 @@
 
 {% block style_them %}
   .ls-h{font-size:1.25rem;margin:0 0 .3rem}
+  .ls-h svg.ic{width:20px;height:20px;vertical-align:-3px}
+  .giam-sat svg.ic,.nhan-sang svg.ic,.preview svg.ic,.doi-ten svg.ic{width:14px;height:14px;vertical-align:-2px}
   .giam-sat{margin:.5rem 0 1rem;padding:.55rem .8rem;border-radius:9px;background:var(--th-2b2517);color:var(--th-e0c070);
     border:1px solid var(--th-3a3220);font-size:.9rem}
   .phien{display:block;border:1px solid var(--chip-line);border-radius:12px;padding:.85rem 1rem;
@@ -24,19 +26,19 @@
 {% endblock %}
 
 {% block noi_dung %}
-<h2 class="ls-h">🕘 Q&A History{% if not cua_minh %} — of <b>{{ chu_nhan }}</b>{% endif %}</h2>
+<h2 class="ls-h"><svg class="ic" viewBox="0 0 24 24"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l4 2"/></svg> Q&A History{% if not cua_minh %} — of <b>{{ chu_nhan }}</b>{% endif %}</h2>
 
-{% if not cua_minh %}<div class="giam-sat">👁️ Supervision mode: viewing {{ chu_nhan }}'s history as-is.</div>{% endif %}
+{% if not cua_minh %}<div class="giam-sat"><svg class="ic" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> Supervision mode: viewing {{ chu_nhan }}'s history as-is.</div>{% endif %}
 
 {% if not cac_phien %}<p class="trong">No conversations yet.</p>{% endif %}
 
 {% for p in cac_phien %}
 <a class="phien{% if p.highlight %} sang{% endif %}"
    href="{{ '/hoi-dap?phien=' + p.id if cua_minh else '/lich-su/' + chu_nhan + '/phien/' + p.id }}">
-  {% if cua_minh %}<button type="button" class="doi-ten" data-id="{{ p.id }}" title="Rename">✏️</button>{% endif %}
+  {% if cua_minh %}<button type="button" class="doi-ten" data-id="{{ p.id }}" title="Rename"><svg class="ic" viewBox="0 0 24 24"><path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5z"/></svg></button>{% endif %}
   <div class="ten">{{ p.ten }}</div>
-  {% if p.highlight %}<div class="nhan-sang">💡 New documents can now answer a question you asked</div>{% endif %}
-  <div class="preview">❓ {{ p.preview }}</div>
+  {% if p.highlight %}<div class="nhan-sang"><svg class="ic" viewBox="0 0 24 24"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg> New documents can now answer a question you asked</div>{% endif %}
+  <div class="preview"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> {{ p.preview }}</div>
   <div class="meta"><span data-tg="{{ p.thoi_gian }}">{{ p.thoi_gian }}</span> · {{ p.so_luot }} turns</div>
 </a>
 {% endfor %}

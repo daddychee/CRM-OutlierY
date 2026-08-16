@@ -8,7 +8,7 @@
   <tr>
     <td>{{ k.chu }}</td><td><b>{{ k.ten }}</b></td><td>{{ k.loai }}</td>
     <td class="phu">{{ k.duong }}</td>
-    <td>{% if k.muc_quy == 'vang' %}🥇 gold{% elif k.muc_quy == 'bac' %}🥈 silver{% else %}{{ k.muc_quy }}{% endif %}</td>
+    <td>{% if k.muc_quy == 'vang' %}<svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="8" r="6"/><path d="M15.5 12.9 17 22l-5-3-5 3 1.5-9.1"/></svg> gold{% elif k.muc_quy == 'bac' %}<svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="8" r="6"/><path d="M15.5 12.9 17 22l-5-3-5 3 1.5-9.1"/></svg> silver{% else %}{{ k.muc_quy }}{% endif %}</td>
     <td class="phu">{{ k.backup }}</td>
     <td>{% if k.co %}<span class="chip" style="color:var(--ok)">✓ present</span>
         {% else %}<span class="chip" style="color:var(--loi)">MISSING</span>{% endif %}</td>

@@ -9,6 +9,7 @@
   h3.v-muc-tieu svg.ic{width:16px;height:16px;color:var(--muted)}
   .v-note{margin:.5rem 0 1rem;padding:.55rem .8rem;border-radius:9px;background:var(--chip);border:1px solid var(--chip-line);font-size:.88rem;color:var(--muted)}
   .v-canhbao{margin:.5rem 0;padding:.6rem .8rem;border-radius:9px;background:var(--th-33201b);color:var(--th-d97c6c);border:1px solid var(--th-5c3a30);font-size:.88rem}
+  .v-canhbao svg.ic{width:14px;height:14px;vertical-align:-2px}
   .v-ok{margin:.5rem 0;padding:.6rem .8rem;border-radius:9px;background:var(--th-1c2a20);color:var(--th-93a89a);border:1px solid var(--th-3a5a40);font-size:.88rem}
   .v-form{max-width:430px}
   .v-form label{display:block;margin-top:.85rem;font-weight:600;font-size:.9rem}
@@ -59,7 +60,7 @@
 <h2 class="v-h">{{ IC_KHOA|safe }} Digital accounts vault</h2>
 
 {% if canh_bao_http %}
-<div class="v-canhbao">⚠ You are opening the vault over <b>HTTP on the LAN</b> — passwords travel
+<div class="v-canhbao"><svg class="ic" viewBox="0 0 24 24"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> You are opening the vault over <b>HTTP on the LAN</b> — passwords travel
 in plain text. Recommended: only use the vault directly on the server (localhost) until HTTPS is enabled.</div>
 {% endif %}
 

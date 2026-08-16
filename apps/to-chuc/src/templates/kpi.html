@@ -13,6 +13,7 @@
   .kpi-note{color:var(--muted);font-size:.85rem;line-height:1.6;margin:.3rem 0 .8rem}
   .kpi-canh{margin:.5rem 0;padding:.55rem .8rem;border-radius:9px;background:var(--chip);
     border:1px solid var(--chip-line);font-size:.86rem;color:var(--muted)}
+  .kpi-canh svg.ic{width:14px;height:14px;vertical-align:-2px}
   .bang-cuon{overflow-x:auto}
   table.kpi{width:100%;border-collapse:collapse;font-size:.9rem;margin-top:.4rem}
   .kpi th,.kpi td{text-align:left;padding:.45rem .55rem;border-bottom:1px solid var(--line);vertical-align:top}
@@ -38,7 +39,7 @@
 <div class="kpi-note">Metrics are AUTOMATIC, read from data the apps generate daily (read-only, no manual entry).
   A <b>—</b> cell means <b>source dead / not connected</b> — the system says so instead of showing a fake 0 (anti-fabrication guard).</div>
 
-{% if iam_loi %}<div class="kpi-canh">⚠ {{ iam_loi }}</div>{% endif %}
+{% if iam_loi %}<div class="kpi-canh"><svg class="ic" viewBox="0 0 24 24"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> {{ iam_loi }}</div>{% endif %}
 {% if kpi.thieu.plannery or kpi.thieu.content or kpi.thieu.speaky or kpi.thieu.bao_cao %}
 <div class="kpi-canh">Sources unavailable this period:
   {% if kpi.thieu.plannery %}<b>PlannerY</b> (plan.json — Videos due/Leave columns){% endif %}

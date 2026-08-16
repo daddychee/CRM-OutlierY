@@ -4,6 +4,9 @@
 
 {% block style_them %}
   .bl-h{font-size:1.25rem;margin:0 0 .3rem}
+  .bl-h svg.ic{width:20px;height:20px;vertical-align:-3px}
+  .giam-sat svg.ic{width:14px;height:14px;vertical-align:-2px}
+  .tom-tat svg.ic{width:15px;height:15px;vertical-align:-2px}
   .giam-sat{margin:.5rem 0 1rem;padding:.55rem .8rem;border-radius:9px;background:var(--th-2b2517);color:var(--th-e0c070);border:1px solid var(--th-3a3220);font-size:.88rem}
   table.bl{width:100%;border-collapse:collapse;margin-top:.8rem;font-size:.92rem}
   .bl th,.bl td{text-align:left;padding:.5rem .55rem;border-bottom:1px solid var(--line);vertical-align:middle}
@@ -45,10 +48,10 @@
 {% if mot %}
   <!-- Xem lại 1 báo cáo cũ -->
   <a href="/bao-cao-lich-su{% if not cua_minh %}?nguoi={{ chu_nhan|urlencode }}{% endif %}">← Back to report list</a>
-  <h2 class="bl-h" style="margin-top:.5rem">📈 Report — {{ mot.ten_bao_cao or mot.ten_file_goc }}</h2>
+  <h2 class="bl-h" style="margin-top:.5rem"><svg class="ic" viewBox="0 0 24 24"><path d="M22 7l-8.5 8.5-5-5L2 17"/><path d="M16 7h6v6"/></svg> Report — {{ mot.ten_bao_cao or mot.ten_file_goc }}</h2>
   <p class="giam-sat" style="background:none;border:0;color:var(--muted);padding:0;margin:.2rem 0 1rem">
     Run at {{ mot.thoi_gian }} · by {{ mot.nguoi_chay }} · file: {{ mot.ten_file_goc }}
-    · <a href="/bao-cao-goc/{{ mot.id }}{% if not cua_minh %}?nguoi={{ chu_nhan|urlencode }}{% endif %}">⬇️ Download original file</a></p>
+    · <a href="/bao-cao-goc/{{ mot.id }}{% if not cua_minh %}?nguoi={{ chu_nhan|urlencode }}{% endif %}"><svg class="ic" style="width:14px;height:14px;vertical-align:-2px" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg> Download original file</a></p>
 
   {% if kenh %}
     <!-- Dựng lại đầy đủ từ file gốc: khối kênh (diễn giải LLM đọc cache) + tổng quan + bảng phán quyết -->
@@ -56,12 +59,12 @@
     {% include "_bang_phan_quyet.html" %}
   {% else %}
     <!-- File gốc không dựng lại được → tóm tắt kênh đã lưu (không gọi API) -->
-    {% if loi_dung_lai %}<div class="giam-sat">ℹ️ {{ loi_dung_lai }} Showing saved channel summary.</div>{% endif %}
+    {% if loi_dung_lai %}<div class="giam-sat"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg> {{ loi_dung_lai }} Showing saved channel summary.</div>{% endif %}
     <div class="chi-tiet">
       <div class="kq-tieu-de" style="font-weight:600">Channel diagnosis (saved)</div>
       {% set k = mot.kenh %}
       <div class="tom-tat {% if k.luat_khop %}vo{% else %}ok{% endif %}">
-        {% if k.luat_khop %}🔴 First broken funnel tier: {{ k.tang_vo }}{% else %}✅ No anomalies detected{% endif %}
+        {% if k.luat_khop %}<svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> First broken funnel tier: {{ k.tang_vo }}{% else %}<svg class="ic" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> No anomalies detected{% endif %}
       </div>
       <div class="so-lieu">
         {% if k.so_video is not none %}<div class="o"><b>Videos</b>{{ k.so_video }}</div>{% endif %}
@@ -78,8 +81,8 @@
   <!-- Danh sách báo cáo -->
   {# 01/08/2026: lịch sử DÙNG CHUNG — mặc định hiện của MỌI người (cột Người chạy);
      ?nguoi=X lọc theo một người, mở cho mọi ai qua gate Data Analytics #}
-  <h2 class="bl-h">📊 Diagnosis report history{% if not cua_minh %} — by <b>{{ chu_nhan }}</b>{% endif %}</h2>
-  {% if not cua_minh %}<div class="giam-sat">👁️ Filtering by {{ chu_nhan }}'s reports — <a href="/bao-cao-lich-su">view all</a>.</div>{% endif %}
+  <h2 class="bl-h"><svg class="ic" viewBox="0 0 24 24"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg> Diagnosis report history{% if not cua_minh %} — by <b>{{ chu_nhan }}</b>{% endif %}</h2>
+  {% if not cua_minh %}<div class="giam-sat"><svg class="ic" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> Filtering by {{ chu_nhan }}'s reports — <a href="/bao-cao-lich-su">view all</a>.</div>{% endif %}
 
   {% if not cac_bao_cao %}
   <p class="trong">No reports yet. Go to <a href="/chan-doan">Data Analytics</a> to run your first report.</p>

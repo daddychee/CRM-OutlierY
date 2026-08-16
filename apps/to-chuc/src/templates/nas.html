@@ -52,6 +52,7 @@
 {% set IC_WEB = '<svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>' %}
 {% set IC_LOG = '<svg class="ic" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h6"/></svg>' %}
 {% set IC_CHO = '<svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>' %}
+{% set IC_CANH = '<svg class="ic" viewBox="0 0 24 24"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>' %}
 <div class="nas-wrap">
   <h2 class="nas-h"><svg class="ic" style="width:22px;height:22px" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="6" rx="1"/><rect x="3" y="13" width="18" height="6" rx="1"/><circle cx="7" cy="8" r=".9"/><circle cx="7" cy="16" r=".9"/></svg>
     Company NAS storage</h2>
@@ -64,7 +65,7 @@
   {% if dong_bo_bat and tt_nas != 'tat' %}
   <div class="nas-tk">
     {% if chua_ok and tt_nas != 'ok' %}
-    <div class="nas-tt" style="margin:0 0 .5rem"><b>⚠ Could not download the Set up file</b> —
+    <div class="nas-tt" style="margin:0 0 .5rem"><b>{{ IC_CANH|safe }} Could not download the Set up file</b> —
       your NAS account is not ready yet. Complete the step below first, then come back.</div>
     {% endif %}
     <b>Your account</b> (when Windows asks while opening a drive):
@@ -78,12 +79,12 @@
     {% if tt_nas == 'ok' %}
     <div class="nas-tt">✓ NAS account is ready.</div>
     {% elif tt_nas == 'mk_yeu' %}
-    <div class="nas-tt">⚠ Your current password does not meet Windows standards, so NAS rejects it.
+    <div class="nas-tt">{{ IC_CANH|safe }} Your current password does not meet Windows standards, so NAS rejects it.
       <a href="/doi-mat-khau">Change your password</a>: at least 8 characters with UPPERCASE + lowercase +
       digits and <b>NOT containing your username</b> (e.g. <code>Abc12345</code>),
       then come back here.</div>
     {% elif tt_nas == 'loi' %}
-    <div class="nas-tt">⚠ The last sync failed — log out and log back in;
+    <div class="nas-tt">{{ IC_CANH|safe }} The last sync failed — log out and log back in;
       if this line persists, contact the administrator.</div>
     {% else %}
     <div class="nas-tt">{{ IC_CHO|safe }} NAS account not activated yet — <a href="/dang-xuat">log out</a>

@@ -64,8 +64,9 @@ def test_trang_thai_phien_va_khong_ro_noi_dung_tra_loi(tmp_path, monkeypatch):
     _users(tmp_path, monkeypatch)
     _gieo()
     r = _login("sep").get("/giam-sat")             # 31/07: chỉ Owner vào được
-    # phiên chưa đáp mang ⚠️, phiên đã đáp mang ✅ (cả 2 đều của nv_kd)
-    assert "⚠️" in r.text and "✅" in r.text
+    # phiên chưa đáp mang icon cảnh báo (span.canh), phiên đã đáp mang icon check
+    # (span.dap-ok) — emoji ⚠️/✅ đã thay bằng SVG line-icon, neo bằng class CSS
+    assert 'class="canh"' in r.text and 'class="dap-ok"' in r.text
     assert "câu kho thiếu KD?" in r.text                # câu hỏi hiện trong cây
     # KHÔNG show nội dung trả lời trong cây (user chốt — chống rò tài liệu)
     assert "Đăng khung 19h" not in r.text

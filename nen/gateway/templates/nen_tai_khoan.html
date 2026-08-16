@@ -12,7 +12,7 @@
     <td>
       {% if tk.level >= 5 %}<span class="chip">Owner</span>{% endif %}
       {% if tk.admin_uy_quyen %}<span class="chip">Delegated admin</span>{% endif %}
-      {% if tk.khoa %}<span class="chip">🔒 locked</span>{% endif %}
+      {% if tk.khoa %}<span class="chip"><svg class="ic" style="width:11px;height:11px" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> locked</span>{% endif %}
       {% if tk.phai_doi_mk %}<span class="chip">must change pw</span>{% endif %}
     </td>
     <td>
