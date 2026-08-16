@@ -181,3 +181,7 @@ Quy ước từ 16/08/2026 (user chốt): mỗi mạch việc lớn có MỘT s�
   `b7a5cfa`; toàn hệ 482 pass / 3 skip). Chi tiết, luật vàng, việc còn (đợt 5
   script chat + đợt 6 chuỗi server): xem docs/TRANSLATE.md. Cùng ngày lập cơ chế
   SỔ CHỦ ĐỀ (docs/UI.md + docs/TRANSLATE.md) — mốc từ nay ghi 1-2 dòng trỏ sổ.
+- 16/08/2026 — **UI ĐỢT 5 XONG — 3 phê bình Owner** (`74c6ef7` + `03a47b5`; 482 pass /
+  3 skip; nghiệm thu sống HTTPS): fix ZOOM chuyển trang (cache font — bẫy FOUT),
+  URL GỌN cấp 1 khớp nút bấm (UI_FLOW.md mục 9 mới), icon minimalist hết emoji màu
+  markup tĩnh. Chi tiết + bẫy + việc treo: docs/UI.md.
