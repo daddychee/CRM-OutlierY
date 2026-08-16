@@ -35,6 +35,8 @@ Quy ước từ 16/08/2026 (user chốt): mỗi mạch việc lớn có MỘT s�
   (+ hợp đồng Owner: [docs/UI_FLOW.md](docs/UI_FLOW.md)).
 - **Chuyển ngữ EN**: [docs/TRANSLATE.md](docs/TRANSLATE.md) — luật vàng
   dịch/không-dịch, quy trình, trạng thái từng đợt.
+- **Khối đế (danh bạ kênh/ngách, API keys, IAM, két)**: [docs/DE.md](docs/DE.md)
+  — đề xuất tái thiết + 4 quyết định Owner + nhịp Đ1-Đ4.
 
 ## Trạng thái (cập nhật mỗi mốc)
 
@@ -185,3 +187,9 @@ Quy ước từ 16/08/2026 (user chốt): mỗi mạch việc lớn có MỘT s�
   3 skip; nghiệm thu sống HTTPS): fix ZOOM chuyển trang (cache font — bẫy FOUT),
   URL GỌN cấp 1 khớp nút bấm (UI_FLOW.md mục 9 mới), icon minimalist hết emoji màu
   markup tĩnh. Chi tiết + bẫy + việc treo: docs/UI.md.
+- 16/08/2026 — **SỔ ĐỀ XUẤT TÁI THIẾT KHỐI ĐẾ (docs/DE.md) — CHỜ Owner duyệt.**
+  Từ 2 khảo sát (đế v2 + 9 app hệ cũ): trục thực thể kênh/ngách/thị trường
+  (danh_ba.db + 2 trang Channels/Niches), mảnh API keys tập trung (YouTube pool
+  + LLM + Veo/Flow, trang /general/api-keys), quyền chiều thực thể, 4 quyết định
+  Owner đã chốt (phạm vi kênh nhà · đa ngữ 2 kênh nối bản-sao · nhập tay từ đầu ·
+  Manager tạo/sửa - Owner xóa). Chi tiết + nhịp Đ1-Đ4: docs/DE.md.
