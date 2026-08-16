@@ -25,6 +25,17 @@
 - `docs\` — hiến pháp, PORTS, sổ địa bạ. `runbook\` — tài liệu vận hành cho người.
 - `tools\` — qdrant test, scripts start-all/stop-all.ps1.
 
+## Sổ chủ đề (đọc file nhỏ ĐÚNG task — đừng dò cả file này)
+
+Quy ước từ 16/08/2026 (user chốt): mỗi mạch việc lớn có MỘT sổ .md riêng trong
+`docs/`; CLAUDE.md chỉ ghi mốc 1-2 dòng trỏ về sổ. Nhận task loại nào → đọc sổ
+đó TRƯỚC khi làm. Task lớn mới chưa có sổ → ĐỀ XUẤT user tạo sổ tương ứng.
+
+- **UI / giao diện**: [docs/UI.md](docs/UI.md) — nguyên tắc, lịch sử đợt, bẫy
+  (+ hợp đồng Owner: [docs/UI_FLOW.md](docs/UI_FLOW.md)).
+- **Chuyển ngữ EN**: [docs/TRANSLATE.md](docs/TRANSLATE.md) — luật vàng
+  dịch/không-dịch, quy trình, trạng thái từng đợt.
+
 ## Trạng thái (cập nhật mỗi mốc)
 
 - 16/08/2026 — **PHASE 0 XONG**: cây thư mục + git + hiến pháp + PORTS + sổ địa bạ
@@ -166,3 +177,7 @@
   test (Chưa có cuộc nào…) — dịch nhãn phải quét cả tests. VIỆC TREO đợt sau:
   dịch chuỗi VN trong 5 khối script chat (phá đóng băng có chủ đích + nghiệm thu
   chat kỹ — Owner đã cho phép); nhãn EN các trang nội dung app (kho, nguồn, KPI…).
+- 16/08/2026 — **UI ĐỢT 4 XONG: dịch EN 14 trang nội dung 3 app** (`16d36a3` +
+  `b7a5cfa`; toàn hệ 482 pass / 3 skip). Chi tiết, luật vàng, việc còn (đợt 5
+  script chat + đợt 6 chuỗi server): xem docs/TRANSLATE.md. Cùng ngày lập cơ chế
+  SỔ CHỦ ĐỀ (docs/UI.md + docs/TRANSLATE.md) — mốc từ nay ghi 1-2 dòng trỏ sổ.
