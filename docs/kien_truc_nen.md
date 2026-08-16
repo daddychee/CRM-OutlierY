@@ -17,7 +17,7 @@
         — nhìn xuống toàn hệ qua CONNECTOR chỉ-đọc + kho tri thức —
 ┌────────────────────────────────────────────────────────────┐
 │  TẦNG NGHIỆP VỤ — apps độc lập, tự đủ, thay được            │
-│  tri-thuc · data-analytics · to-chuc · (app phụ giữ nguyên: │
+│  ai-agent · data-analytics · to-chuc · (app phụ giữ nguyên: │
 │  RadarY · PlannerY · Content · SpeakY · SEO · Niche)        │
 └────────────────────────────────────────────────────────────┘
 ┌────────────────────────────────────────────────────────────┐
@@ -53,7 +53,7 @@ Ba điều bắt buộc rút từ đối chiếu:
 
 ## 3. Bảng cổng (chi tiết: docs/PORTS.md)
 
-Gateway :9000 (HTTP) / :9443 (Caddy TLS) · app-mau :9190 · tri-thuc :9101 ·
+Gateway :9000 (HTTP) / :9443 (Caddy TLS) · app-mau :9190 · ai-agent :9101 ·
 data-analytics :9102 · to-chuc :9103 · Qdrant test :6343 (gRPC :6344).
 **Cấm đụng dải hệ thật: 8000, 8123, 8001, 7860, 8760, 6333, 6334.**
 
@@ -155,13 +155,13 @@ text-thuần cho ruột hệ (JSON/CSV/MD/SQLite); Excel/PDF là CỬA XUẤT si
 | File hiện tại (C:\OutlierY\apps\AI AGENT) | Về đâu |
 |---|---|
 | analytic_methodology.md, yeu_cau_code_nang_logic_phan_tich.md | `apps\data-analytics\docs\` |
-| supervisor.md, file_arrangement.md, Input_database.md (lỗi thời 1 phần) | `apps\tri-thuc\docs\` |
+| supervisor.md, file_arrangement.md, Input_database.md (lỗi thời 1 phần) | `apps\ai-agent\docs\` |
 | App_Rule.md, User_Management.md | `nen\iam\docs\` |
 | Lo-trinh…, danh_gia_chien_luoc.md, OUTLIERY-tich-hop-tong-quan.docx | `docs\` gốc |
 | HUONG_DAN_*.md, OUTLIERY-Runbook*.docx, VPS.txt | `runbook\` |
 | AI Agent API.txt (KEY) | KHÔNG copy file — nội dung nhập KÉT (Phase 3) |
 | CLAUDE.md 112KB | tách theo Luật 3 |
-| V1_implementation.md, V1_update.md | `apps\tri-thuc\docs\luu-tru\` |
+| V1_implementation.md, V1_update.md | `apps\ai-agent\docs\luu-tru\` |
 | Claude Tool, awesome-public-datasets, Report Sampling, design-system | không thuộc platform — giữ chỗ cũ |
 
 ## 10. Lộ trình 8 phase (chi tiết từng việc: xem phiên bàn 16/08 + cập nhật tại đây)
@@ -176,7 +176,7 @@ text-thuần cho ruột hệ (JSON/CSV/MD/SQLite); Excel/PDF là CỬA XUẤT si
   UI Owner, timeout/retry một chỗ.
 - **P4** Chuẩn dữ liệu: DATA_DIR, log chuẩn JSON-lines, backup manifest phân loại
   (snapshot vs copy), diễn tập restore.
-- **P5** Di trú nghiệp vụ: tri-thuc (RAG), data-analytics (+dropdown kênh từ danh bạ,
+- **P5** Di trú nghiệp vụ: ai-agent (RAG), data-analytics (+dropdown kênh từ danh bạ,
   kho năm/tháng), to-chuc (KPI/chấm công/NAS), vault; ~589 test theo sang; kèm docs +
   rules + CLAUDE.md từng app theo bảng ánh xạ mục 9.
 - **P6** Cầu nối: connector `bao_cao_kenh` + nút 📊 + router (danh bạ đã có từ P0).
@@ -185,6 +185,6 @@ text-thuần cho ruột hệ (JSON/CSV/MD/SQLite); Excel/PDF là CỬA XUẤT si
 
 ## 11. Backlog sau thay thế (KHÔNG làm trong bản này)
 
-LLM gateway đo chi phí per-app · tách nhỏ tiếp tri-thuc · connector RadarY/PlannerY/
+LLM gateway đo chi phí per-app · tách nhỏ tiếp ai-agent · connector RadarY/PlannerY/
 SEO đầy đủ + briefing tuần · tầng "AI suy luận chung" · bộ nút xuất Excel/PDF cho các
 bảng báo cáo (ưu tiên theo chỉ định Owner) · viết lại app phụ (không bao giờ).

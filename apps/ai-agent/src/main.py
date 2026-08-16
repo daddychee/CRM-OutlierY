@@ -9,10 +9,10 @@ phiên per-user). Chỉ đổi 4 mối nối theo kiến trúc nền (bắt chư
    (gateway đã kiểm quyền "vao" app theo nen/rules/phan_quyen.json).
 2. LLM: cấu hình writer/critic nạp từ KÉT qua gateway lúc khởi động
    (src/cau_hinh_llm.py) — không còn bắt sửa .env tay; gateway chết → env/mock.
-3. DỮ LIỆU: data/tri-thuc/{kho,db}/ theo Luật 6 (env đặt sẵn dưới đây).
+3. DỮ LIỆU: data/ai-agent/{kho,db}/ theo Luật 6 (env đặt sẵn dưới đây).
 4. Thêm /health (hợp đồng app); Qdrant TEST :6343 (kho thật :6333 cấm đụng).
 
-Chạy (từ ROOT): python -m uvicorn src.main:app --app-dir "apps/tri-thuc" --port 9101
+Chạy (từ ROOT): python -m uvicorn src.main:app --app-dir "apps/ai-agent" --port 9101
 """
 from __future__ import annotations
 
@@ -30,14 +30,14 @@ from datetime import date, datetime
 from pathlib import Path
 from urllib.parse import unquote
 
-_APP_DIR = Path(__file__).resolve().parents[1]           # apps/tri-thuc
+_APP_DIR = Path(__file__).resolve().parents[1]           # apps/ai-agent
 ROOT = _APP_DIR.parents[1]                                # D:\AI AGENT OUTLIERY
 # Luật 6: kho/ (file gốc + sổ vận hành tích lũy) vs db/ (lịch sử hội thoại per-user).
 # Đặt TRƯỚC khi import module src.* (module đọc env lúc GỌI hàm nên setdefault ở đây đủ;
 # conftest/test setenv trước khi gọi vẫn thắng). Các sổ phan_hoi.csv / nhom_kho_thieu.json /
 # nhap-phan-tich/ / youtube_cookies.txt đều treo dưới KHO_TAI_LIEU như hệ cũ — một env dời cả cụm.
-os.environ.setdefault("KHO_TAI_LIEU", str(ROOT / "data" / "tri-thuc" / "kho" / "kho-tai-lieu"))
-os.environ.setdefault("LICH_SU_DIR", str(ROOT / "data" / "tri-thuc" / "db" / "lich-su"))
+os.environ.setdefault("KHO_TAI_LIEU", str(ROOT / "data" / "ai-agent" / "kho" / "kho-tai-lieu"))
+os.environ.setdefault("LICH_SU_DIR", str(ROOT / "data" / "ai-agent" / "db" / "lich-su"))
 # Qdrant TEST :6343 (luật an toàn song song hệ cũ) — vector_client mặc định 6333 nên PHẢI đè ở đây.
 os.environ.setdefault("QDRANT_URL", "http://127.0.0.1:6343")
 
@@ -229,7 +229,7 @@ async def _startup():
 
 @app.get("/health")
 async def health():
-    return {"trang_thai": "ok", "app": "tri-thuc", "phien_ban": PHIEN_BAN}
+    return {"trang_thai": "ok", "app": "ai-agent", "phien_ban": PHIEN_BAN}
 
 
 # ================= các hàm phụ nhập liệu (chuyển thể nguyên từ app.py cũ) =================

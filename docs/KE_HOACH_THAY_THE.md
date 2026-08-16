@@ -16,8 +16,8 @@
 2. **Migration dữ liệu thật → v2** (mỗi bước có script, chạy trên bản SAO trước khi chạy thật):
    a. users.txt → iam.db: `python -m nen.iam.nhap_users_txt "C:\OutlierY\apps\AI AGENT\agent-app\users.txt"` (giữ nguyên hash — không ai phải đổi mật khẩu).
    b. Hồ sơ nhân sự ho_so.json + bảng tick phan_quyen.json → iam.db (script viết ở bước này — đối chiếu số người trước/sau).
-   c. Kho tài liệu + catalog → data/tri-thuc/kho; nạp lại Qdrant bằng nap_lai_kho (đếm point = số chunk kỳ vọng).
-   d. bao-cao-goc + bao-cao-lich-su → data/data-analytics; lich-su chat → data/tri-thuc/db; vault (bản mã) → data/vault; API key các app → Két (tab /cai-dat, nhập tay — key không đi qua file trung gian).
+   c. Kho tài liệu + catalog → data/ai-agent/kho; nạp lại Qdrant bằng nap_lai_kho (đếm point = số chunk kỳ vọng).
+   d. bao-cao-goc + bao-cao-lich-su → data/data-analytics; lich-su chat → data/ai-agent/db; vault (bản mã) → data/vault; API key các app → Két (tab /cai-dat, nhập tay — key không đi qua file trung gian).
 3. **Đổi cổng**: gateway v2 chuyển bind 0.0.0.0:8000 (đổi 1 dòng start-all) HOẶC giữ 9443 + thông báo bookmark mới — Owner chọn trước.
 4. **Cắm app phụ thật vào gateway v2**: khai 6 app phụ vào apps.json (cổng thật 8123/8001/7860/8760/...), giữ nguyên *_TRUST_PROXY=1 phía app.
 5. **Dựng Task Scheduler cho v2**: 5 tác vụ SYSTEM (qdrant-test→qdrant chính, gateway, các app, caddy, backup 23:00) — mẫu theo deploy-windows hệ cũ.

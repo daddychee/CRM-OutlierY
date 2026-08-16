@@ -13,7 +13,7 @@
 
 ## Nguyên tắc kỹ thuật bất biến
 
-- **5 khối `<script>` trong `hoi_dap.html` (tri-thuc) ĐÓNG BĂNG BYTE** — không sửa
+- **5 khối `<script>` trong `hoi_dap.html` (ai-agent) ĐÓNG BĂNG BYTE** — không sửa
   một byte bên trong, kể cả khoảng trắng. Ngoại lệ DUY NHẤT: đợt dịch chuỗi chat
   Owner đã cho phép phá đóng băng CÓ CHỦ ĐÍCH (xem TRANSLATE.md — chưa làm).
 - **JS phải chạy HTTP LAN** (không secure context): cấm `crypto.randomUUID`,

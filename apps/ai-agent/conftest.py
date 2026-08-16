@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-"""conftest app tri-thuc — chạy test TỪ THƯ MỤC APP (app tự đủ, Luật 2):
-  cd apps/tri-thuc && pytest
+"""conftest app ai-agent — chạy test TỪ THƯ MỤC APP (app tự đủ, Luật 2):
+  cd apps/ai-agent && pytest
 Mỗi app một process pytest riêng → package `src` không đụng app khác.
 """
 import os

@@ -18,7 +18,7 @@
 | **SpeakY** | voice profile đặt tên tay theo ngách/kênh (`Lifein-Drew`, `OLD_BENJAMIN` vs `OLD___Benjamin` — đã trùng lặp); jobs_log theo người | kênh ↔ voice profile qua `lien_ket_app` (app_slug=speaky) — mỗi kênh khai giọng chuẩn, hết đặt tên tự do |
 | **VOX** (mới, chưa vào một cửa) | video pipeline Veo 3.1; ngôn ngữ EN/ES; LLM OpenAI-compatible | thị trường/ngôn ngữ đọc từ đế + LLM key từ két; khai hợp đồng app khi nhúng — Owner chốt thời điểm |
 | **flowkit** (mới, dịch vụ :8100) | cầu Google Flow/Veo cho VOX; db riêng | dịch vụ hạ tầng — vào hợp đồng app (health) khi nhúng; khóa Flow vào két |
-| AI Agent (→ V3: tri-thuc/data-analytics/to-chuc) | báo cáo theo kênh, KPI, vault, writer/critic key .env | mục 6 + két đã có `llm.<vai>` |
+| AI Agent (→ V3: ai-agent/data-analytics/to-chuc) | báo cáo theo kênh, KPI, vault, writer/critic key .env | mục 6 + két đã có `llm.<vai>` |
 
 ## 0. Vì sao phải tái thiết (bằng chứng đo được 16/08)
 
@@ -143,7 +143,7 @@ LLM + Google Flow key mới. Bốn kho khóa, bốn kiểu mã hóa, không audi
   nghỉ hưu (chỉ còn fallback hiển thị bản ghi chưa gán).
 - **to-chuc/KPI**: nối PlannerY bằng `planner_id` dẫn xuất từ mã NS (đang so họ
   tên); về sau video-đến-hạn theo kênh đọc `kenh_ma`.
-- **tri-thuc**: chưa đụng (loai_kenh_ctx giữ); nút 📊 cầu nối vào chat thuộc đợt
+- **ai-agent**: chưa đụng (loai_kenh_ctx giữ); nút 📊 cầu nối vào chat thuộc đợt
   phá đóng băng hoi_dap (ghi việc treo — endpoint P6 hiện KHÔNG có cửa người dùng).
 
 ## 7. BẢNG THAM KHẢO NHẬP TAY (chỉ-đọc, để gõ nhanh — máy không tự ghi)
@@ -273,7 +273,7 @@ C2… để trỏ khi phản hồi).
    (pool gán cho việc, chế độ "xoay vòng" khi cạn quota — ca điển hình: RadarY
    harvest cần nhiều khóa YouTube v3; SEO extract 19 khóa cùng bản chất). Chế độ
    khác: "một khóa", "dự phòng khi lỗi". Mockup K5-K7 đã thể hiện 3 app mẫu
-   (radary / tri-thuc / vox). **Finance Hub: Owner giữ nguyên bản hiện tại, sẽ
+   (radary / ai-agent / vox). **Finance Hub: Owner giữ nguyên bản hiện tại, sẽ
    tự điều chỉnh sau** — không sửa thêm cho tới khi có phản hồi mới.
 
 **Hai luật toàn cục Owner chốt:** (a) MỌI bảng/bản ghi hiển thị **ngày nhập

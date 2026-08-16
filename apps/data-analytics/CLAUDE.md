@@ -13,8 +13,8 @@
 ## 4 mối nối khác hệ cũ (còn lại giữ nguyên)
 1. Auth = claims gateway (X-Remote-User/Level/Role/Dept — Dept phải unquote); gateway đã gate quyền vào app.
 2. Diễn giải LLM = `src/dien_giai.py` (trích từ qa_pipeline, giữ vòng phản biện).
-   `ponytail:` diễn giải CHƯA tra playbook kho công ty (rag thuộc app tri-thuc) —
-   nâng cấp: gọi API search tri-thuc qua cầu nối, KHÔNG import chéo.
+   `ponytail:` diễn giải CHƯA tra playbook kho công ty (rag thuộc app ai-agent) —
+   nâng cấp: gọi API search ai-agent qua cầu nối, KHÔNG import chéo.
 3. Config LLM nạp từ KÉT qua gateway lúc startup (không còn key trong app).
 4. `/chan-doan/kenh-goi-y`: DANH BẠ thực thể (nen/rules/danh_muc.csv) đứng trước tên đã dùng.
 

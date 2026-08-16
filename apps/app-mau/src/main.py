@@ -3,7 +3,7 @@
 
 Một app nghiệp vụ tối thiểu đúng chuẩn: bind 127.0.0.1, tin claims từ gateway
 (X-Remote-User/Role/Level — an toàn VÌ chỉ gateway tới được cổng này), trả /health
-cho trang sức khỏe. App thật (tri-thuc, data-analytics...) theo đúng khuôn này.
+cho trang sức khỏe. App thật (ai-agent, data-analytics...) theo đúng khuôn này.
 
 Chạy: python -m uvicorn main:app --app-dir "apps/app-mau/src" --port 9190
 """

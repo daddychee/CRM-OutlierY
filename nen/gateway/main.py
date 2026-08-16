@@ -36,7 +36,7 @@ app = FastAPI(title="OUTLIERY Gateway v2")
 templates = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
 # /static dùng chung cả hệ (font Inter/Space Grotesk, theme.js, markdown.js) —
 # bản CHUẨN ở nen/gateway/static; app nào cần bản riêng thì khai /static trong
-# tien_to như tri-thuc. Thiếu mount này là DA/to-chuc mất font (đo 16/08).
+# tien_to như ai-agent. Thiếu mount này là DA/to-chuc mất font (đo 16/08).
 from fastapi.staticfiles import StaticFiles  # noqa: E402
 
 
@@ -257,7 +257,7 @@ async def trang_chu(request: Request):
         return RedirectResponse("/general", status_code=303)
     # URL ĐẸP (Owner chốt 16/08, UI_FLOW.md mục 9): Home = "/" PHỤC VỤ thẳng trang
     # chat (không redirect sang /app/... nữa — thanh địa chỉ phải khớp nút bấm).
-    return await proxy_app(request, "tri-thuc", "hoi-dap")
+    return await proxy_app(request, "ai-agent", "hoi-dap")
 
 
 # ---------- KHU QUẢN TRỊ NỀN (UI_FLOW.md mục 5 — mỗi trang MỘT việc) ----------
@@ -748,18 +748,18 @@ def api_hoi_so_lieu(request: Request, cau_hoi: str = Form(...)):
 # URL /app/... cũ của đúng các TRANG này 303 về alias. Route con (form/API/stream)
 # vẫn đi /app/<slug>/... như cũ — không đổi hợp đồng app.
 _ALIAS: dict[str, tuple[str, str]] = {
-    "/input": ("tri-thuc", ""),
-    "/library": ("tri-thuc", "kho-tai-lieu"),
-    "/gap": ("tri-thuc", "kho-thieu"),
-    "/history": ("tri-thuc", "lich-su"),
-    "/tracking": ("tri-thuc", "giam-sat"),
+    "/input": ("ai-agent", ""),
+    "/library": ("ai-agent", "kho-tai-lieu"),
+    "/gap": ("ai-agent", "kho-thieu"),
+    "/history": ("ai-agent", "lich-su"),
+    "/tracking": ("ai-agent", "giam-sat"),
     "/data-analytics": ("data-analytics", "chan-doan"),
     "/nas": ("to-chuc", "nas"),
     "/kpi": ("to-chuc", "kpi"),
     "/vault": ("to-chuc", "vault"),
 }
 # (slug, duong_dan) → URL đẹp; Home "/" phục vụ hoi-dap ở trang_chu.
-_ALIAS_NGUOC = {v: k for k, v in _ALIAS.items()} | {("tri-thuc", "hoi-dap"): "/"}
+_ALIAS_NGUOC = {v: k for k, v in _ALIAS.items()} | {("ai-agent", "hoi-dap"): "/"}
 # Đường alias trùng mặt chữ tien_to (vd /nas của to-chuc) không bị proxy viết lại
 # thành /app/... — xem viet_lai_duong_dan(bo_qua=).
 _ALIAS_BO_QUA = tuple(_ALIAS)
@@ -769,6 +769,11 @@ _ALIAS_BO_QUA = tuple(_ALIAS)
                methods=["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"])
 async def proxy_app(request: Request, slug: str, duong_dan: str):
     from starlette.concurrency import run_in_threadpool
+
+    # Slug cũ nghỉ hưu (Owner chốt 16/08: app này tên là AI AGENT từ đầu,
+    # "tri-thuc" là tên kỹ thuật tự chế khi di trú) — đỡ URL/fetch cũ không vỡ.
+    if slug == "tri-thuc":
+        slug = "ai-agent"
 
     # Trang có URL đẹp mà bị mở bằng đường /app/... cũ → 303 về URL đẹp (chỉ
     # điều hướng HTML thật; fetch/stream/form giữ nguyên đường cũ).

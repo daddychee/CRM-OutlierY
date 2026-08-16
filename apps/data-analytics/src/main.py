@@ -90,7 +90,7 @@ async def goc():
 @app.get("/chan-doan", response_class=HTMLResponse)
 def chan_doan_trang(request: Request, user: dict = Depends(yeu_cau_data_analytics)):
     return templates.TemplateResponse(request, "chan_doan.html", {
-        "user": user, "can_upload": False,   # link nạp tài liệu thuộc app tri-thuc
+        "user": user, "can_upload": False,   # link nạp tài liệu thuộc app ai-agent
     })
 
 

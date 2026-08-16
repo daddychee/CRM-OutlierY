@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
-"""Cờ sidebar chuẩn theo UI_FLOW.md mục 2 — cho app KHÔNG phải tri-thuc.
+"""Cờ sidebar chuẩn theo UI_FLOW.md mục 2 — cho app KHÔNG phải ai-agent.
 
 Nguồn sự thật: gateway phát claims X-Remote-Apps (danh sách slug user được vào,
 kèm cờ phụ 'nas' khi đã cấu hình, 'quan-tri' khi mở được trang quản trị IAM).
-App CHỈ đọc, không tự tính quyền. tri-thuc có context processor riêng (thêm
+App CHỈ đọc, không tự tính quyền. ai-agent có context processor riêng (thêm
 danh sách phiên chat) nhưng đọc cùng một header này.
 """
 from datetime import datetime
@@ -29,7 +29,7 @@ def ctx_sidebar(request) -> dict:
     return {"sb_user": {"ten": ten, "level": level, "bo_phan": dept,
                         "ten_hien_thi": ten_ht},
             "sb_ngay": ngay,
-            "sb_phien": [],   # phiên chat thuộc tri-thuc — app khác không truy chéo (Luật 4)
+            "sb_phien": [],   # phiên chat thuộc ai-agent — app khác không truy chéo (Luật 4)
             "sb_level_chu": TEN_LEVEL.get(level, ""), "lite": False,
             "sb_apps": [],    # app phụ chưa di trú: ẨN HẲN (Owner chốt 16/08)
             "sb_da": "data-analytics" in apps_vao,

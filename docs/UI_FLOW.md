@@ -8,7 +8,7 @@
 ## 1. Luồng vào hệ
 
 1. Vào `https://<địa chỉ>:9443` → trang **đăng nhập** (nền OUTLIERY như V1).
-2. Đăng nhập xong → chuyển thẳng **trang Hỏi–đáp** (`/app/tri-thuc/hoi-dap`) —
+2. Đăng nhập xong → chuyển thẳng **trang Hỏi–đáp** (`/app/ai-agent/hoi-dap`) —
    đúng hành vi V1 (`RedirectResponse("/hoi-dap")` sau login).
 3. Tài khoản có mật khẩu tạm → bị ép **đổi mật khẩu** trước khi vào (YC6 V1).
 4. **KHÔNG có trang "bảng chọn app"** — đã xóa hẳn (chốt Owner). Mọi điều hướng
@@ -18,17 +18,17 @@
 
 | Khu | Mục (nhãn đúng chữ V1) | Đích trong v2 | Ai thấy |
 |---|---|---|---|
-| Tab **Home** | Hỏi–đáp (nút "New") | /app/tri-thuc/hoi-dap | mọi người |
+| Tab **Home** | Hỏi–đáp (nút "New") | /app/ai-agent/hoi-dap | mọi người |
 | — nhãn "Công cụ" | Data Analytics | /app/data-analytics/chan-doan | theo quyền vào app |
 | | NAS công ty | /app/to-chuc/nas | mọi người, **ẨN khi chưa cấu hình NAS_DUONG_DAN** (luật V1) |
 | | ~~RadarY · Content · SpeakY · PlannerY · Niche · SEO~~ | **ẨN HẲN** khi chưa di trú (chốt Owner) — chuyển app nào sang thì mục đó tự hiện | |
-| — ô tìm + nhãn "Gần đây" | các cuộc trò chuyện (phien) + "Xem tất cả lịch sử →" | /app/tri-thuc/hoi-dap?phien=… · /app/tri-thuc/lich-su | mọi người |
-| Tab **Monitoring** — nhãn "Quản trị (Manager+)" | Datafeed | /app/tri-thuc/ (trang nhập liệu) | Manager+ |
-| | Kho tài liệu | /app/tri-thuc/kho-tai-lieu | Manager+ |
-| | Kho cần bổ sung | /app/tri-thuc/kho-thieu | Manager+ |
-| | Nguồn ngoài | /app/tri-thuc/nguon-ngoai | Manager+ |
+| — ô tìm + nhãn "Gần đây" | các cuộc trò chuyện (phien) + "Xem tất cả lịch sử →" | /app/ai-agent/hoi-dap?phien=… · /app/ai-agent/lich-su | mọi người |
+| Tab **Monitoring** — nhãn "Quản trị (Manager+)" | Datafeed | /app/ai-agent/ (trang nhập liệu) | Manager+ |
+| | Kho tài liệu | /app/ai-agent/kho-tai-lieu | Manager+ |
+| | Kho cần bổ sung | /app/ai-agent/kho-thieu | Manager+ |
+| | Nguồn ngoài | /app/ai-agent/nguon-ngoai | Manager+ |
 | — nhãn "Nhân sự" | Nhân sự | /quan-tri (hồ sơ NS nằm trong IAM gateway) | Owner + HR L3+ |
-| **Management** (popup ghim đáy, kiểu menu Claude) | Hoạt động team | /app/tri-thuc/giam-sat | chỉ Owner |
+| **Management** (popup ghim đáy, kiểu menu Claude) | Hoạt động team | /app/ai-agent/giam-sat | chỉ Owner |
 | | User | /quan-tri | chỉ Owner (+ Admin ủy quyền theo giỏ quyền IAM) |
 | | Vault | /app/to-chuc/vault | chỉ Owner |
 | | Phân quyền | /quan-tri (khu phân quyền) | chỉ Owner |
@@ -36,11 +36,11 @@
 | | **Sức khỏe hệ** (dòng MỚI duy nhất của v2, chốt Owner 16/08) | /suc-khoe | chỉ Owner |
 | Đáy sidebar | Đổi mật khẩu · Đăng xuất | /doi-mat-khau · /logout | mọi người |
 
-Ghi chú kỹ thuật: link NỘI BỘ app tri-thuc trong template được proxy tự viết lại
+Ghi chú kỹ thuật: link NỘI BỘ app ai-agent trong template được proxy tự viết lại
 theo `tien_to` — giữ nguyên dạng V1 (`/hoi-dap`, `/kho-tai-lieu`…). Link CHÉO APP
 và link GATEWAY (Data Analytics, NAS, Vault, Nhân sự, User, Phân quyền, Setting,
 Sức khỏe, Đổi mật khẩu, Đăng xuất) phải ghi ĐƯỜNG TUYỆT ĐỐI như bảng trên —
-tien_to của tri-thuc không viết lại hộ.
+tien_to của ai-agent không viết lại hộ.
 
 ## 3. Topbar + hành vi chung (giữ nguyên V1)
 
@@ -54,7 +54,7 @@ tien_to của tri-thuc không viết lại hộ.
 ## 4. Những thứ KHÔNG có trong hợp đồng này
 
 - Trang chủ dạng thẻ app (launcher) — ĐÃ XÓA.
-- Tên thư mục kỹ thuật (`tri-thuc`, `to-chuc`, `app-mau`) — KHÔNG được xuất hiện
+- Tên thư mục kỹ thuật (`ai-agent`, `to-chuc`, `app-mau`) — KHÔNG được xuất hiện
   trên màn hình người dùng; nhãn hiển thị lấy theo bảng mục 2.
 - `app-mau` — khuôn cho dev, không bao giờ hiện trên UI.
 
@@ -147,7 +147,7 @@ data-theme; nhân dịp này các trang khu nền bỏ media query về đúng c
 ## 9. URL GỌN CẤP 1 — thanh địa chỉ khớp nút bấm (chốt Owner 16/08/2026, đổi
 chốt cũ "route giữ nguyên" của mục 8)
 
-Owner phê bình đúng: nút Input mà URL là /app/tri-thuc/, Home lại là /hoi-dap.
+Owner phê bình đúng: nút Input mà URL là /app/ai-agent/, Home lại là /hoi-dap.
 Chốt: **alias cấp-1 tại GATEWAY** — app không đổi route (diff nhỏ nhất), hợp lộ
 trình "mỗi app một miền" giai đoạn thay thế.
 

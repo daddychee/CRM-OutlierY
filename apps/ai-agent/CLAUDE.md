@@ -1,4 +1,4 @@
-# CLAUDE.md — app tri-thuc (nhật ký + bài học CỦA RIÊNG app)
+# CLAUDE.md — app ai-agent (nhật ký + bài học CỦA RIÊNG app)
 
 > Theo Luật 3: mốc/bài học của app này ghi ở đây; hiến pháp xem `docs/kien_truc_nen.md` gốc.
 
@@ -32,8 +32,8 @@ Cổng :9101. Chạy/test: xem README.md.
      lệ riêng tick từng người thuộc IAM tầng nền, app không giữ sổ.
   2. LLM → `src/cau_hinh_llm.py` nạp từ két qua gateway lúc startup rồi dựng lại
      qa.writer/qa.critics; gateway chết → env/mock.
-  3. Data → KHO_TAI_LIEU=data/tri-thuc/kho/kho-tai-lieu, LICH_SU_DIR=
-     data/tri-thuc/db/lich-su (setdefault TRƯỚC import module — Luật 6);
+  3. Data → KHO_TAI_LIEU=data/ai-agent/kho/kho-tai-lieu, LICH_SU_DIR=
+     data/ai-agent/db/lich-su (setdefault TRƯỚC import module — Luật 6);
      QDRANT_URL mặc định :6343 (kho thật :6333 cấm đụng).
   4. +/health; /giam-sat dựng cây từ `lich_su.danh_sach_nguoi_dung()` (quét
      LICH_SU_DIR) vì app không còn users.txt — bộ phận/level từng người thuộc IAM.

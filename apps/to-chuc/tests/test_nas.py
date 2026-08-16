@@ -4,7 +4,7 @@ lui execCommand (LAN HTTP không có clipboard API — bài học sự cố chat
 ổ NAS_RIENG_MANAGER ẩn hẳn với cấp thấp; smb:// quote tên share có dấu cách.
 
 DI TRÚ V2: đăng nhập → CLAIMS gateway; bỏ các assert sidebar /lich-su /hoi-dap
-(trang của app tri-thuc, không thuộc app này). Mạch nas_sync (tài khoản Windows
+(trang của app ai-agent, không thuộc app này). Mạch nas_sync (tài khoản Windows
 đồng bộ) chưa mang sang — trang luôn chạy nhánh copy/map-ổ như hệ cũ lúc chưa bật
 đồng bộ; /nas/cai-dat/{so} vẫn phát .bat (file tự hỏi mật khẩu, không chứa gì mật)."""
 

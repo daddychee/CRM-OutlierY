@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Nạp kho TEST cho platform v2 — chuyển thể từ scripts/nap_lai_kho.py hệ cũ.
 
-Nguồn: data/tri-thuc/kho/kho-tai-lieu (BẢN SAO từ D:\\OUTLIERY-backup, 52 file).
+Nguồn: data/ai-agent/kho/kho-tai-lieu (BẢN SAO từ D:\\OUTLIERY-backup, 52 file).
 Đích: Qdrant TEST :6343. ID điểm = UUID5(doc_code#chunk) → chạy lại là ghi đè.
 Chạy: python tools/scripts/nap_kho_test.py   (Qdrant test phải đang bật)
 """
@@ -10,10 +10,10 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-APP = ROOT / "apps" / "tri-thuc"
+APP = ROOT / "apps" / "ai-agent"
 os.environ["MOCK_MODE"] = "false"
 os.environ.setdefault("QDRANT_URL", "http://127.0.0.1:6343")
-os.environ.setdefault("KHO_TAI_LIEU", str(ROOT / "data" / "tri-thuc" / "kho" / "kho-tai-lieu"))
+os.environ.setdefault("KHO_TAI_LIEU", str(ROOT / "data" / "ai-agent" / "kho" / "kho-tai-lieu"))
 sys.path.insert(0, str(APP))
 os.chdir(APP)
 

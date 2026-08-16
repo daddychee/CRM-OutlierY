@@ -15,8 +15,8 @@
   ],
   "apps": [
     {
-      "slug": "tri-thuc",
-      "ten": "Knowledge",
+      "slug": "ai-agent",
+      "ten": "AI Agent",
       "mo_ta": "Hỏi–đáp RAG trích nguồn + nhập/quản kho tài liệu (Qdrant) + kho-thiếu/Q&A bổ sung + nguồn ngoài YouTube (bài học có neo) + lịch sử hội thoại + giám sát.",
       "cong": 9101,
       "tien_to": ["/hoi-dap", "/hoi", "/upload", "/kho-tai-lieu", "/kho-thieu",
@@ -25,12 +25,12 @@
                    "/co-tay", "/phan-hoi", "/kiem-stream", "/static"],
       "health": "/health",
       "phien_ban": "2.0.0",
-      "chay": {"kieu": "uvicorn", "app_dir": "apps/tri-thuc", "module": "src.main:app"},
+      "chay": {"kieu": "uvicorn", "app_dir": "apps/ai-agent", "module": "src.main:app"},
       "du_lieu": [
-        {"ten": "kho-tai-lieu", "loai": "kho-file", "duong": "data/tri-thuc/kho/kho-tai-lieu",
+        {"ten": "kho-tai-lieu", "loai": "kho-file", "duong": "data/ai-agent/kho/kho-tai-lieu",
          "muc_quy": "vang", "backup": "copy", "giu": "vinh-vien",
          "ghi_chu": "File gốc 8 ngăn + _catalog.csv + sổ vận hành + youtube_cookies.txt (NHẠY — write-only như key)"},
-        {"ten": "lich-su-hoi-thoai", "loai": "json", "duong": "data/tri-thuc/db/lich-su",
+        {"ten": "lich-su-hoi-thoai", "loai": "json", "duong": "data/ai-agent/db/lich-su",
          "muc_quy": "vang", "backup": "copy", "giu": "vinh-vien",
          "ghi_chu": "Mỗi user 1 file JSON ghi nguyên tử — nội dung hỏi-đáp, không đưa ra ngoài"}
       ]

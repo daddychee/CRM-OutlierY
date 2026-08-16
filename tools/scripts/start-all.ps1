@@ -24,8 +24,8 @@ $dichVu = @(
     @{ Ten = 'gateway'; Cong = 9000; Exe = $py
        Args = '-m uvicorn nen.gateway.main:app --host 127.0.0.1 --port 9000'
        Wd = $root }
-    @{ Ten = 'tri-thuc'; Cong = 9101; Exe = $py
-       Args = '-m uvicorn src.main:app --app-dir "apps/tri-thuc" --host 127.0.0.1 --port 9101'
+    @{ Ten = 'ai-agent'; Cong = 9101; Exe = $py
+       Args = '-m uvicorn src.main:app --app-dir "apps/ai-agent" --host 127.0.0.1 --port 9101'
        Wd = $root }
     @{ Ten = 'data-analytics'; Cong = 9102; Exe = $py
        Args = '-m uvicorn src.main:app --app-dir "apps/data-analytics" --host 127.0.0.1 --port 9102'

@@ -25,13 +25,13 @@
 
 | App | Store | Mức quý | Ghi chú di trú |
 |---|---|---|---|
-| AI Agent | kho-tai-lieu\ + _catalog.csv | 🥇 | → data\tri-thuc\kho + db |
+| AI Agent | kho-tai-lieu\ + _catalog.csv | 🥇 | → data\ai-agent\kho + db |
 | AI Agent | Qdrant collection kho_v1 (alias kho_tri_thuc) | 🥈 (dựng lại được từ kho bằng nap_lai_kho.py — nhưng coi như 🥇 vì tốn công) | → Qdrant test :6343 |
 | AI Agent | users.txt + ho_so.json + phan_quyen.json | 🥇 | → iam.db (P2) |
-| AI Agent | lich-su\*.json (hội thoại per-user) | 🥇 | → data\tri-thuc\db |
+| AI Agent | lich-su\*.json (hội thoại per-user) | 🥇 | → data\ai-agent\db |
 | AI Agent | nhan-su\ (hồ sơ, chấm công) | 🥇 | → iam.db + data\to-chuc |
 | AI Agent | bao-cao-goc\ + bao-cao-lich-su\ | 🥇 | → data\data-analytics (kho năm/tháng + db) |
-| AI Agent | phan_hoi.csv, nhom_kho_thieu.json, nhap-phan-tich\ | 🥇 | → data\tri-thuc |
+| AI Agent | phan_hoi.csv, nhom_kho_thieu.json, nhap-phan-tich\ | 🥇 | → data\ai-agent |
 | AI Agent | vault\ (bản mã AES) | 🥇 | → data\vault (chỉ bản mã, như cũ) |
 | RadarY | radary.db + data\niche\*\analysis.json | 🥇 | giữ nguyên app phụ |
 | RadarY | thumbs\ | 🔄 | loại khỏi backup theo-ngày (đã đúng) |
@@ -47,8 +47,8 @@
 | Chủ | Store | Đường | Mức quý | Backup |
 |---|---|---|---|---|
 | nen | iam.db / ket.db / ket.key / logs / qdrant | data\nen, data\logs, data\qdrant | 🥇 | snapshot/copy/api |
-| tri-thuc | kho-tai-lieu (file gốc 8 ngăn + catalog + sổ vận hành) | data\tri-thuc\kho\kho-tai-lieu | 🥇 | copy |
-| tri-thuc | lịch sử hội thoại per-user | data\tri-thuc\db\lich-su | 🥇 | copy |
+| ai-agent | kho-tai-lieu (file gốc 8 ngăn + catalog + sổ vận hành) | data\ai-agent\kho\kho-tai-lieu | 🥇 | copy |
+| ai-agent | lịch sử hội thoại per-user | data\ai-agent\db\lich-su | 🥇 | copy |
 | data-analytics | bao-cao-lich-su / bao-cao-goc | data\data-analytics\{db,kho} | 🥇 | copy |
 | to-chuc | chấm công | data\to-chuc\db\cham-cong | 🥇 | copy |
 | to-chuc | vault (CHỈ bản mã) | data\vault | 🥇 | copy |

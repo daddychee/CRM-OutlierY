@@ -2,7 +2,7 @@
 
 Bản di trú mạch tri thức từ hệ cũ (`C:\OutlierY\apps\AI AGENT\agent-app`) sang
 OUTLIERY Platform v2. Nghiệp vụ giữ nguyên; chỉ đổi 4 mối nối theo
-`docs/kien_truc_nen.md` (auth→claims, LLM→két, data→`data/tri-thuc/`, +/health).
+`docs/kien_truc_nen.md` (auth→claims, LLM→két, data→`data/ai-agent/`, +/health).
 
 ## App làm gì
 
@@ -24,20 +24,20 @@ OUTLIERY Platform v2. Nghiệp vụ giữ nguyên; chỉ đổi 4 mối nối th
 
 ```powershell
 # từ ROOT (D:\AI AGENT OUTLIERY) — PYTHONPATH tự đúng nhờ --app-dir
-.venv\Scripts\python.exe -m uvicorn src.main:app --app-dir "apps/tri-thuc" --port 9101
+.venv\Scripts\python.exe -m uvicorn src.main:app --app-dir "apps/ai-agent" --port 9101
 ```
 
 - Nhận claims từ gateway :9000 (X-Remote-User/Level/Role/Dept — Dept URL-encoded).
   Gọi thẳng :9101 không có claims → 401 (đúng thiết kế; vào qua cổng).
-- Dữ liệu: `data/tri-thuc/kho/kho-tai-lieu/` (file gốc + catalog + sổ vận hành),
-  `data/tri-thuc/db/lich-su/` (hội thoại per-user). Qdrant TEST `:6343`.
+- Dữ liệu: `data/ai-agent/kho/kho-tai-lieu/` (file gốc + catalog + sổ vận hành),
+  `data/ai-agent/db/lich-su/` (hội thoại per-user). Qdrant TEST `:6343`.
 - Cấu hình LLM writer/critic nạp từ KÉT qua gateway lúc khởi động; gateway chết →
   env/mock, app vẫn sống.
 
 ## Test
 
 ```powershell
-cd "D:\AI AGENT OUTLIERY\apps\tri-thuc"
+cd "D:\AI AGENT OUTLIERY\apps\ai-agent"
 D:\AI AGENT OUTLIERY\.venv\Scripts\python.exe -m pytest -q
 ```
 

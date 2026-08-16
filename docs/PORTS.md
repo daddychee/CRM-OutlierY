@@ -6,7 +6,7 @@
 |---|---|---|
 | 9000 | Gateway (HTTP) | Cửa vào duy nhất giai đoạn dev |
 | 9443 | Caddy TLS → gateway | Cert tự ký giai đoạn test; domain thật khi thay thế |
-| 9101 | apps/tri-thuc | Hỏi–đáp RAG + kho tài liệu + nguồn ngoài |
+| 9101 | apps/ai-agent | Hỏi–đáp RAG + kho tài liệu + nguồn ngoài |
 | 9102 | apps/data-analytics | Chẩn đoán số liệu |
 | 9103 | apps/to-chuc | KPI + chấm công + NAS |
 | 9190 | apps/app-mau | App mẫu chứng minh hợp đồng app |

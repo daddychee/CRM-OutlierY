@@ -5,9 +5,9 @@ dien_giai_chan_doan / dien_giai_muc_kenh + vòng _sinh_va_phan_bien + 3 prompt),
 chéo app).
 
 KHÁC hệ cũ đúng MỘT điểm: dien_giai_chan_doan không còn tra kho playbook
-(rag.search thuộc app tri-thuc).
+(rag.search thuộc app ai-agent).
 ponytail: phần "playbook liên quan trong kho" tạm là "(không có)" — trần: diễn
-giải thiếu bối cảnh playbook công ty; nâng cấp: gọi API search của app tri-thuc
+giải thiếu bối cảnh playbook công ty; nâng cấp: gọi API search của app ai-agent
 qua gateway (mạch cầu nối P6/B3), KHÔNG import chéo.
 
 Cấu hình LLM: nạp từ KÉT qua gateway loopback lúc khởi động (nap_cau_hinh_llm) →

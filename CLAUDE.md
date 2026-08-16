@@ -20,7 +20,8 @@
 
 - `nen\` — tầng nền: gateway, iam, ket_cau_hinh, rules (luật cả hệ: danh_muc.csv,
   apps.json), common (danh_ba.py…). Tên `nen` vì `platform` trùng stdlib Python.
-- `apps\` — app nghiệp vụ tự đủ: tri-thuc, data-analytics, to-chuc, app-mau.
+- `apps\` — app nghiệp vụ tự đủ: ai-agent (tên cũ tri-thuc — Owner chốt 16/08:
+  app này là AI AGENT từ đầu), data-analytics, to-chuc, app-mau.
 - `data\` — TÁCH KHỎI CODE, gitignore, backup theo SO_DIA_BA_DU_LIEU.md.
 - `docs\` — hiến pháp, PORTS, sổ địa bạ. `runbook\` — tài liệu vận hành cho người.
 - `tools\` — qdrant test, scripts start-all/stop-all.ps1.
@@ -193,3 +194,8 @@ Quy ước từ 16/08/2026 (user chốt): mỗi mạch việc lớn có MỘT s�
   + LLM + Veo/Flow, trang /general/api-keys), quyền chiều thực thể, 4 quyết định
   Owner đã chốt (phạm vi kênh nhà · đa ngữ 2 kênh nối bản-sao · nhập tay từ đầu ·
   Manager tạo/sửa - Owner xóa). Chi tiết + nhịp Đ1-Đ4: docs/DE.md.
+- 16/08/2026 — **ĐỔI TÊN APP tri-thuc → ai-agent ("AI Agent")** theo chốt Owner
+  ("app này là AI Agent từ đầu, không có app nào tên tri thức"): thư mục + slug +
+  hợp đồng (ten "AI Agent") + data/ai-agent + 86 tham chiếu toàn repo; gateway đỡ
+  slug cũ (URL/fetch /app/tri-thuc không vỡ); alias Qdrant kho_tri_thuc GIỮ (tên
+  kho dữ liệu, không phải tên app). 482 pass / 3 skip; nghiệm thu sống HTTPS.

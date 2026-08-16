@@ -14,10 +14,10 @@ from nen.common import nhat_ky, sao_luu
 
 def test_nhat_ky_ghi_dung_duong_nam_thang(tmp_path, monkeypatch):
     monkeypatch.setenv("LOGS_DIR", str(tmp_path))
-    nhat_ky.ghi("tri-thuc", "owner", "nap_tai_lieu", "KD-2026-XYZ")
+    nhat_ky.ghi("ai-agent", "owner", "nap_tai_lieu", "KD-2026-XYZ")
     files = list(tmp_path.rglob("*.log"))
     assert len(files) == 1
-    assert files[0].parent.parent.parent.name == "tri-thuc"   # <app>/<năm>/<tháng>
+    assert files[0].parent.parent.parent.name == "ai-agent"   # <app>/<năm>/<tháng>
     dong = json.loads(files[0].read_text(encoding="utf-8").strip())
     assert dong["hanh_dong"] == "nap_tai_lieu" and dong["user"] == "owner"
 

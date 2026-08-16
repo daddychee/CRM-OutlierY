@@ -92,7 +92,7 @@ def test_dang_nhap_sai_401(client):
 def test_dang_nhap_dung_vao_trang_chu(client):
     # UI_FLOW.md mục 1 + mục 9 (URL đẹp, Owner chốt 16/08/2026): "/" PHỤC VỤ
     # thẳng trang Hỏi–đáp (không redirect sang /app/... nữa — thanh địa chỉ giữ
-    # "/"). 502 chấp nhận được trong môi trường test khi app tri-thuc không chạy.
+    # "/"). 502 chấp nhận được trong môi trường test khi app ai-agent không chạy.
     assert _login(client).status_code == 303
     r = client.get("/")
     assert r.status_code in (200, 502)
