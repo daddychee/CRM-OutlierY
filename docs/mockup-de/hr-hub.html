@@ -5,7 +5,6 @@
 
 <div class="sidebar">
   <div class="brand"><span class="bars">▎▍▌▋█</span> OUTLIERY</div>
-  <div class="sb-note">Sidebar rút gọn. Bản thật: mục "HR" chỉ hiện với người có GIỎ CHỨC NĂNG nhan_su (Owner + HCNS L3+ mặc định, tick thêm được).</div>
   <div class="nav">
     <div class="lbl">Mockup khối đế</div>
     <a href="channels.html">Channels</a>
@@ -20,9 +19,7 @@
 <div class="main">
   <div class="topbar"><h1>HR — khu công tác nhân sự</h1></div>
 
-  <div class="mock-banner"><b>MOCKUP — chưa có logic.</b> HUB = một cửa gộp MỌI việc nhân sự; dữ liệu KHÔNG
-  nhân đôi: hồ sơ đọc/ghi qua API đế (IAM là nguồn sự thật), chấm công + đánh giá là dữ liệu to-chuc.
-  Ghi chú theo mã ô H1…H4.</div>
+  <div class="mock-banner"><b>MOCKUP — chưa có logic · phản hồi theo mã ô H1… · khu HR trong app Organization</b></div>
 
   <div class="stat-row">
     <div class="stat"><div class="n">17</div><div class="t">hồ sơ đang hoạt động</div></div>
@@ -41,7 +38,7 @@
 
   <div class="pane show" id="p-nguoi">
     <div class="khoi"><span class="ma-o">H1</span>
-      <h2>People <span class="phu">— cùng dữ liệu trang General›People, thêm SỬA/XÓA + đổi trạng thái (nợ đế đợt này trả)</span></h2>
+      <h2>People</h2>
       <table>
         <tr><th>Mã</th><th>Họ tên</th><th>Bộ phận</th><th>Vị trí</th><th>Trạng thái</th><th>PlannerY</th><th></th></tr>
         <tr><td>NS-016</td><td>Trần Việt Thanh</td><td>Kinh doanh</td><td>SEO</td><td><span class="badge b-ok">Đang làm</span></td><td class="chip">ns_ns016</td><td><button class="nut phu" style="padding:2px 8px">sửa</button></td></tr>
@@ -50,11 +47,36 @@
       </table>
       <div class="toolbar" style="margin-top:8px"><button class="nut">+ New profile</button></div>
     </div>
+
+    <div class="khoi"><span class="ma-o">H1b</span>
+      <h2>Hồ sơ lưu trữ — NS-016 · Trần Việt Thanh</h2>
+      <div class="form-grid">
+        <div><label>Tên *</label><input type="text" value="Trần Việt Thanh"></div>
+        <div><label>Ngày tháng năm sinh *</label><input type="date" value="1998-04-12"></div>
+        <div><label>CCCD *</label><input type="text" value="0790980123**"></div>
+        <div><label>Địa chỉ thường trú *</label><input type="text" value="123 Lê Lợi, P. Bến Thành, TP.HCM"></div>
+        <div><label>Ngày vào làm *</label><input type="date" value="2026-07-31"></div>
+        <div><label>Bộ phận *</label><select><option selected>Kinh doanh</option><option>Vận hành - Sản xuất</option><option>Hành chính Nhân sự</option><option>Kế toán</option><option>Ban quản trị</option></select></div>
+        <div><label>Vị trí *</label><select><option selected>SEO</option><option>Content</option><option>Editor</option><option>IT</option></select></div>
+        <div><label>Cấp bậc *</label><select><option>Intern</option><option selected>Staff</option><option>Leader</option><option>Manager</option></select></div>
+      </div>
+      <label>Tài liệu gốc (CCCD, SYLL…)</label>
+      <table>
+        <tr><th>Loại</th><th>Tệp</th><th>Nộp lúc</th><th></th></tr>
+        <tr><td>CCCD (2 mặt)</td><td>📎 NS-016_cccd.pdf</td><td>31/07/2026 · lethic</td>
+            <td><button class="nut phu" style="padding:2px 8px">xem</button> <button class="nut phu" style="padding:2px 8px">thay</button></td></tr>
+        <tr><td>Sơ yếu lý lịch</td><td>📎 NS-016_syll.pdf</td><td>31/07/2026 · lethic</td>
+            <td><button class="nut phu" style="padding:2px 8px">xem</button> <button class="nut phu" style="padding:2px 8px">thay</button></td></tr>
+        <tr><td>Khác</td><td><span class="badge b-mut">chưa có</span></td><td>—</td>
+            <td><button class="nut phu" style="padding:2px 8px">⇧ tải lên</button></td></tr>
+      </table>
+      <div style="margin-top:10px"><button class="nut">Save profile</button> <button class="nut phu">Hủy</button></div>
+    </div>
   </div>
 
   <div class="pane" id="p-duyet">
     <div class="khoi"><span class="ma-o">H2</span>
-      <h2>Approvals <span class="phu">— duyệt vẫn cần Owner/giỏ duyet_ho_so như luật hiện hành</span></h2>
+      <h2>Approvals</h2>
       <table>
         <tr><th>Mã</th><th>Họ tên</th><th>Bộ phận</th><th>HR trình lúc</th><th></th></tr>
         <tr><td>NS-018</td><td>Phạm D</td><td>Kinh doanh</td><td>16/08 09:12</td>
@@ -65,7 +87,7 @@
 
   <div class="pane" id="p-cong">
     <div class="khoi"><span class="ma-o">H3</span>
-      <h2>Attendance — 08/2026 <span class="phu">— nguồn: hiện diện hệ công cụ (van trung thực: ≠ máy chấm vân tay)</span></h2>
+      <h2>Attendance — 08/2026</h2>
       <div class="toolbar">
         <select><option>Kỳ: 08/2026</option><option>07/2026</option></select>
         <select><option>Bộ phận: All</option></select>
@@ -78,13 +100,12 @@
         <tr><td>NS-016 · Trần Việt Thanh</td><td class="num">13</td><td class="num">08:41</td><td class="num">17:52</td><td class="num">112.5</td><td class="num">1</td><td><input type="text" style="width:140px"></td></tr>
         <tr><td>NS-005 · Nguyễn Văn B</td><td class="num">12</td><td class="num">09:05</td><td class="num">18:10</td><td class="num">104.0</td><td class="num">2</td><td><input type="text" style="width:140px"></td></tr>
       </table>
-      <p class="ghi-chu">"Chốt công" = đóng băng số kỳ (bản ghi chỉ-thêm) → nguồn cho Finance tính lương đợt sau.</p>
     </div>
   </div>
 
   <div class="pane" id="p-kpi">
     <div class="khoi"><span class="ma-o">H4</span>
-      <h2>KPI Review — kỳ 08/2026 <span class="phu">— số KPI đọc từ bảng KPI to-chuc (4 nguồn chỉ-đọc, nguồn chết hiện "—" không bịa 0); HR chỉ THÊM cột đánh giá</span></h2>
+      <h2>KPI Review — kỳ 08/2026</h2>
       <table>
         <tr><th>Người</th><th class="num">Script xong</th><th class="num">Voice</th><th class="num">Video đến hạn</th><th class="num">Tiến độ</th><th>Xếp loại</th><th>Nhận xét HR</th><th></th></tr>
         <tr><td>NS-005 · Nguyễn Văn B</td><td class="num">18</td><td class="num">42</td><td class="num">20</td><td class="num"><b>90%</b></td>
@@ -96,13 +117,12 @@
             <td><input type="text" style="width:170px"></td>
             <td><button class="nut phu" style="padding:2px 8px">Lưu</button></td></tr>
       </table>
-      <p class="ghi-chu">Xếp loại lưu kèm kỳ + người chấm + thời gian (append-only) → Finance đọc khi tính thưởng.</p>
     </div>
   </div>
 
   <div class="pane" id="p-phep">
     <div class="khoi"><span class="ma-o">H5</span>
-      <h2>Leaves <span class="phu">— đọc từ PlannerY (khoảng from→to), HR ghi chú thêm</span></h2>
+      <h2>Leaves</h2>
       <table>
         <tr><th>Người</th><th>Từ</th><th>Đến</th><th>Lý do</th></tr>
         <tr><td>NS-005</td><td>12/08</td><td>13/08</td><td>Việc gia đình</td></tr>

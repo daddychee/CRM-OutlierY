@@ -5,7 +5,6 @@
 
 <div class="sidebar">
   <div class="brand"><span class="bars">▎▍▌▋█</span> OUTLIERY</div>
-  <div class="sb-note">Sidebar rút gọn. Bản thật: mục "Finance" chỉ hiện với người có GIỎ ke_toan — mặc định: Owner + bộ phận KẾ TOÁN (bộ phận riêng, mới thêm danh mục); giai đoạn HCNS kiêm nhiệm: gán giỏ qua tick ở Permissions (badge "kiêm nhiệm").</div>
   <div class="nav">
     <div class="lbl">Mockup khối đế</div>
     <a href="channels.html">Channels</a>
@@ -20,9 +19,7 @@
 <div class="main">
   <div class="topbar"><h1>Finance — khu thu chi</h1></div>
 
-  <div class="mock-banner"><b>MOCKUP — chưa có logic.</b> Sổ CHỈ-THÊM: sửa = bút toán đảo có vết, không xóa dòng.
-  Mỗi bút toán gắn được MÃ KÊNH từ danh bạ → lãi/lỗ theo kênh. Danh mục khoản = CSV luật ngoài code.
-  Ghi chú theo mã ô F1…F4.</div>
+  <div class="mock-banner"><b>MOCKUP — chưa có logic · phản hồi theo mã ô F1… · khu Finance trong app Organization</b></div>
 
   <div class="stat-row">
     <div class="stat"><div class="n" style="color:var(--ok)">$4 120</div><div class="t">Thu tháng 08 (AdSense 3 kênh)</div></div>
@@ -60,14 +57,12 @@
         <tr><td>10/08</td><td><span class="badge b-bad">Chi</span></td><td>API / công cụ</td><td class="num">$120</td>
             <td><span class="badge b-mut">chung hệ</span></td><td>ketoan01</td><td>📎 invoice</td><td>Z.ai + YouTube quota</td></tr>
       </table>
-      <p class="ghi-chu">Kênh là dropdown từ danh bạ (kèm lựa chọn "chung hệ" cho chi phí không thuộc kênh nào).
-      Dòng Đảo do máy sinh khi bấm "sửa" một bút toán đã ghi — sổ gốc không bao giờ bị đè.</p>
     </div>
   </div>
 
   <div class="pane" id="p-dm">
     <div class="khoi"><span class="ma-o">F2</span>
-      <h2>Danh mục khoản <span class="phu">— rules/danh_muc_thu_chi.csv, sửa bằng Excel được (luật ngoài code)</span></h2>
+      <h2>Danh mục khoản</h2>
       <table>
         <tr><th>Mã</th><th>Tên</th><th>Loại</th><th>Ghi chú</th></tr>
         <tr><td>THU-ADS</td><td>AdSense</td><td><span class="badge b-ok">Thu</span></td><td>doanh thu YouTube</td></tr>
@@ -83,7 +78,7 @@
 
   <div class="pane" id="p-pnl">
     <div class="khoi"><span class="ma-o">F3</span>
-      <h2>Lãi / lỗ theo kênh — 08/2026 <span class="phu">— điểm ăn tiền của trục thực thể: mọi bút toán quy về K-xxx</span></h2>
+      <h2>Lãi / lỗ theo kênh — 08/2026</h2>
       <table>
         <tr><th>Kênh</th><th>Niche</th><th>Lifecycle</th><th class="num">Thu</th><th class="num">Chi</th><th class="num">Lãi/Lỗ</th></tr>
         <tr><td><b>K-OUTLAND</b> Outland</td><td>Life In</td><td><span class="badge b-ok">Monetized</span></td>
@@ -96,8 +91,6 @@
             <td class="num">$0</td><td class="num">$150</td><td class="num" style="color:var(--bad)"><b>−$150</b></td></tr>
         <tr><td colspan="3"><b>Chung hệ (không thuộc kênh)</b></td><td class="num">$0</td><td class="num">$736</td><td class="num" style="color:var(--bad)"><b>−$736</b></td></tr>
       </table>
-      <p class="ghi-chu">Kênh Sandbox lỗ là BÌNH THƯỜNG (giai đoạn nuôi) — bảng này trả lời "nuôi bao lâu thì hòa vốn"
-      khi ghép với vòng đời. Van chống bịa: chỉ cộng từ bút toán thật, không ước lượng.</p>
     </div>
   </div>
 </div>

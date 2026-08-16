@@ -223,9 +223,29 @@ trình duyệt, dữ liệu mẫu lấy từ khảo sát thật, banner vàng đ
 `finance-hub.html`. Owner ghi chú thẳng lên từng khối (mỗi khối có mã ô vd C1,
 C2… để trỏ khi phản hồi).
 
+## 12. PHẢN HỒI OWNER TRÊN MOCKUP (16/08 — đã áp vào UI, chờ duyệt vòng 2)
+
+1. **Hồ sơ nhân viên LƯU TRỮ ĐẦY ĐỦ** (People / HR Hub ô H1b): Tên · Ngày sinh ·
+   CCCD · Địa chỉ thường trú · Ngày vào làm · Bộ phận · Vị trí · Cấp bậc + **kho
+   TÀI LIỆU GỐC đính kèm hồ sơ** (scan CCCD 2 mặt, Sơ yếu lý lịch, khác). Tác động
+   schema Đ1: bảng `nguoi` thêm `ngay_sinh, cccd, dia_chi, ngay_vao, cap_bac`;
+   kho file `data/nen/ho-so-tai-lieu/<ma NS>/` khai `du_lieu_nen` (vàng, vĩnh
+   viễn). **NHẠY CẢM**: CCCD + tài liệu chỉ Owner + giỏ nhan_su xem, mọi lượt XEM
+   ghi nhật ký (khuôn audit vault).
+2. **UI thật KHÔNG chứa ghi chú giải thích** (kiểu "— toàn dropdown, không ô gõ
+   tên…"): đã quét sạch mọi chú thích khỏi 6 trang mockup; thành LUẬT cho UI đế
+   khi code — giải thích để trong sổ/hướng dẫn, không để trên màn hình.
+3. **API Keys đổi cấu trúc** (Owner chốt): hiển thị THEO API (YouTube Data v3 /
+   Flow-Veo / LLM) → từng KHÓA một dòng → **cấu hình khóa cho từng app** (kèm
+   trần lượt/ngày tùy chọn) → tab **QUOTA LOG** (thời gian · API · khóa · app ·
+   việc · lượt · quota tiêu · còn lại; đọc từ log JSON-lines chuẩn P4, lọc + xuất
+   CSV). Bỏ khái niệm "nhóm khóa" làm trục chính — nhóm chỉ còn là nhãn lọc.
+
 ## Trạng thái
 
 - 16/08/2026 — Sổ lập, đề xuất hoàn chỉnh, 4 quyết định Owner đã chốt (mục 1).
 - 16/08/2026 — Owner bổ sung: kiểm đủ 9 app (mục 0b), mảnh API keys (mục 3b),
-  khu chức năng HR/Kế toán (mục 10), quy trình UI-trước (mục 11). **Đang ở bước:
-  Owner chỉnh mockup `docs/mockup-de/` → chốt → Đ1 code.**
+  khu chức năng HR/Kế toán (mục 10), quy trình UI-trước (mục 11).
+- 16/08/2026 — Chốt Kế toán = bộ phận riêng kiêm nhiệm (mục 10) + phản hồi vòng 1
+  trên mockup đã áp (mục 12). **Đang ở bước: Owner duyệt mockup vòng 2
+  (`docs/mockup-de/` — 6 trang) → chốt → Đ1 code.**

@@ -5,7 +5,6 @@
 
 <div class="sidebar">
   <div class="brand"><span class="bars">▎▍▌▋█</span> OUTLIERY</div>
-  <div class="sb-note">Sidebar rút gọn cho mockup.</div>
   <div class="nav">
     <div class="lbl">Mockup khối đế</div>
     <a href="channels.html">Channels</a>
@@ -27,57 +26,109 @@
     <a class="dis">Audit Log</a><a class="dis">Applications</a>
   </div>
 
-  <div class="mock-banner"><b>MOCKUP — chưa có logic.</b> URL dự kiến: <b>/general/api-keys</b> · CHỈ OWNER
-  (giỏ tuyệt đối như két). Key WRITE-ONLY: chỉ hiện đuôi 4 ký tự. LLM theo vai vẫn ở tab AI Models.
-  Ghi chú theo mã ô K1, K2, K3.</div>
+  <div class="mock-banner"><b>MOCKUP — chưa có logic · phản hồi theo mã ô K1… · URL dự kiến: /general/api-keys</b></div>
 
-  <div class="stat-row">
-    <div class="stat"><div class="n">31</div><div class="t">khóa YouTube (2 nhóm)</div></div>
-    <div class="stat"><div class="n">3</div><div class="t">vai LLM (két — tab AI Models)</div></div>
-    <div class="stat"><div class="n">1</div><div class="t">khóa dịch vụ (Flow/Veo)</div></div>
-    <div class="stat"><div class="n" style="color:var(--warn)">2</div><div class="t">khóa nghi cạn quota hôm nay</div></div>
+  <div class="tabs">
+    <button class="active" onclick="mo('api',this)">Theo API</button>
+    <button onclick="mo('app',this)">Cấu hình theo app</button>
+    <button onclick="mo('log',this)">Quota log</button>
   </div>
 
-  <div class="khoi"><span class="ma-o">K1</span>
-    <h2>Nhóm khóa <span class="phu">— gom theo mục đích, cấp phát cho app; app chỉ đọc được nhóm mình được cấp</span></h2>
-    <table>
-      <tr><th>Nhóm</th><th>Loại</th><th class="num">Số khóa</th><th>Cấp cho app</th><th>Dùng hôm nay</th><th></th></tr>
-      <tr><td><b>yt.harvest</b></td><td>YouTube Data v3</td><td class="num">12</td>
-          <td><span class="chip">radary</span></td>
-          <td><div class="usage"><i style="width:62%"></i></div></td>
-          <td><button class="nut phu" style="padding:2px 8px">mở</button></td></tr>
-      <tr><td><b>yt.seo-metadata</b></td><td>YouTube Data v3</td><td class="num">19</td>
-          <td><span class="chip">seo-optimize</span></td>
-          <td><div class="usage"><i style="width:84%;background:var(--warn)"></i></div></td>
-          <td><button class="nut phu" style="padding:2px 8px">mở</button></td></tr>
-      <tr><td><b>dich_vu.flow</b></td><td>Google Flow / Veo 3.1</td><td class="num">1</td>
-          <td><span class="chip">flowkit</span><span class="chip">vox</span></td>
-          <td><div class="usage"><i style="width:18%"></i></div></td>
-          <td><button class="nut phu" style="padding:2px 8px">mở</button></td></tr>
-    </table>
-    <p class="ghi-chu">Thay thế: 19-khóa-trong-một-biến-.env của SEO + bảng api_keys riêng của RadarY.
-    Lượt dùng đọc từ log JSON-lines chuẩn P4 — nguồn sự thật để xoay khóa.</p>
-  </div>
-
-  <div class="khoi"><span class="ma-o">K2</span>
-    <h2>Khóa trong nhóm — yt.seo-metadata <span class="phu">(19 khóa)</span></h2>
-    <table>
-      <tr><th>#</th><th>Đuôi</th><th class="num">Lượt gọi hôm nay</th><th>Quota</th><th>Thêm lúc</th><th></th></tr>
-      <tr><td>1</td><td class="chip">••••7f2a</td><td class="num">8 412</td><td><span class="badge b-warn">~84%</span></td><td>03/08</td><td><button class="nut nguy" style="padding:2px 8px">thu hồi</button></td></tr>
-      <tr><td>2</td><td class="chip">••••c9d1</td><td class="num">6 108</td><td><span class="badge b-ok">~61%</span></td><td>03/08</td><td><button class="nut nguy" style="padding:2px 8px">thu hồi</button></td></tr>
-      <tr><td>3</td><td class="chip">••••11be</td><td class="num">0</td><td><span class="badge b-mut">nghỉ</span></td><td>03/08</td><td><button class="nut nguy" style="padding:2px 8px">thu hồi</button></td></tr>
-    </table>
-    <p class="ghi-chu">Thu hồi = gỡ khỏi nhóm + ghi Audit Log (két hiện KHÔNG vết — nợ đã đo, đợt này trả).</p>
-  </div>
-
-  <div class="khoi"><span class="ma-o">K3</span>
-    <h2>Thêm khóa / cấp phát</h2>
-    <div class="form-grid">
-      <div><label>Nhóm</label><select><option>yt.seo-metadata</option><option>yt.harvest</option><option>dich_vu.flow</option><option>+ nhóm mới…</option></select></div>
-      <div><label>Khóa (dán — không hiện lại sau khi lưu)</label><input type="text" placeholder="AIza…"></div>
-      <div><label>Cấp nhóm cho app</label><select multiple size="3"><option selected>seo-optimize</option><option>radary</option><option>vox</option></select></div>
+  <div class="pane show" id="p-api">
+    <div class="khoi"><span class="ma-o">K1</span>
+      <h2>YouTube Data API v3 <span class="badge b-acc">31 khóa</span></h2>
+      <div class="toolbar">
+        <select><option>App: All</option><option>seo-optimize</option><option>radary</option></select>
+        <select><option>Trạng thái: All</option><option>Đang dùng</option><option>Nghỉ</option><option>Nghi cạn</option></select>
+        <span style="flex:1"></span><button class="nut">+ Thêm khóa</button>
+      </div>
+      <table>
+        <tr><th>#</th><th>Khóa (đuôi)</th><th>Cấu hình cho app</th><th class="num">Lượt gọi hôm nay</th><th>Quota hôm nay</th><th>Trạng thái</th><th></th></tr>
+        <tr><td>1</td><td class="chip">••••7f2a</td><td><span class="chip">seo-optimize</span></td>
+            <td class="num">8 412</td><td><div class="usage"><i style="width:84%;background:var(--warn)"></i></div></td>
+            <td><span class="badge b-warn">nghi cạn</span></td>
+            <td><button class="nut phu" style="padding:2px 8px">cấu hình</button> <button class="nut nguy" style="padding:2px 8px">thu hồi</button></td></tr>
+        <tr><td>2</td><td class="chip">••••c9d1</td><td><span class="chip">seo-optimize</span></td>
+            <td class="num">6 108</td><td><div class="usage"><i style="width:61%"></i></div></td>
+            <td><span class="badge b-ok">đang dùng</span></td>
+            <td><button class="nut phu" style="padding:2px 8px">cấu hình</button> <button class="nut nguy" style="padding:2px 8px">thu hồi</button></td></tr>
+        <tr><td>3</td><td class="chip">••••b3e8</td><td><span class="chip">radary</span></td>
+            <td class="num">12 040</td><td><div class="usage"><i style="width:74%"></i></div></td>
+            <td><span class="badge b-ok">đang dùng</span></td>
+            <td><button class="nut phu" style="padding:2px 8px">cấu hình</button> <button class="nut nguy" style="padding:2px 8px">thu hồi</button></td></tr>
+        <tr><td>4</td><td class="chip">••••11be</td><td><span class="badge b-mut">chưa cấp</span></td>
+            <td class="num">0</td><td><div class="usage"><i style="width:0%"></i></div></td>
+            <td><span class="badge b-mut">nghỉ</span></td>
+            <td><button class="nut phu" style="padding:2px 8px">cấu hình</button> <button class="nut nguy" style="padding:2px 8px">thu hồi</button></td></tr>
+      </table>
     </div>
-    <div style="margin-top:8px"><button class="nut">Save key</button></div>
+
+    <div class="khoi"><span class="ma-o">K2</span>
+      <h2>Google Flow / Veo 3.1 <span class="badge b-acc">1 khóa</span></h2>
+      <table>
+        <tr><th>#</th><th>Khóa (đuôi)</th><th>Cấu hình cho app</th><th class="num">Lượt gọi hôm nay</th><th>Quota hôm nay</th><th>Trạng thái</th><th></th></tr>
+        <tr><td>1</td><td class="chip">••••f0a3</td><td><span class="chip">flowkit</span><span class="chip">vox</span></td>
+            <td class="num">37</td><td><div class="usage"><i style="width:18%"></i></div></td>
+            <td><span class="badge b-ok">đang dùng</span></td>
+            <td><button class="nut phu" style="padding:2px 8px">cấu hình</button> <button class="nut nguy" style="padding:2px 8px">thu hồi</button></td></tr>
+      </table>
+    </div>
+
+    <div class="khoi"><span class="ma-o">K3</span>
+      <h2>LLM (writer / critic / diễn giải) <span class="badge b-acc">3 vai</span></h2>
+      <table>
+        <tr><th>Vai</th><th>Provider · Model</th><th>Khóa (đuôi)</th><th class="num">Lượt gọi hôm nay</th><th></th></tr>
+        <tr><td>writer</td><td>openai_compatible · glm-4.5-air</td><td class="chip">••••9k2f</td><td class="num">214</td><td><a href="#">sửa ở AI Models →</a></td></tr>
+        <tr><td>critic</td><td>openai_compatible · glm-5</td><td class="chip">••••9k2f</td><td class="num">0</td><td><a href="#">sửa ở AI Models →</a></td></tr>
+        <tr><td>dien_giai</td><td>openai_compatible · glm-4.5-air</td><td class="chip">••••9k2f</td><td class="num">36</td><td><a href="#">sửa ở AI Models →</a></td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="pane" id="p-app">
+    <div class="khoi"><span class="ma-o">K4</span>
+      <h2>Cấu hình khóa cho từng app</h2>
+      <div class="toolbar">
+        <select style="min-width:220px"><option selected>App: seo-optimize</option><option>radary</option><option>vox</option><option>flowkit</option><option>tri-thuc</option><option>data-analytics</option></select>
+      </div>
+      <table>
+        <tr><th>API</th><th>Khóa được cấp</th><th class="num">Trần lượt/ngày (tùy chọn)</th><th></th></tr>
+        <tr><td>YouTube Data v3</td><td><span class="chip">••••7f2a ×</span><span class="chip">••••c9d1 ×</span> <button class="nut phu" style="padding:2px 8px">+ khóa</button></td>
+            <td class="num"><input type="number" value="9000" style="width:90px"></td>
+            <td><button class="nut phu" style="padding:2px 8px">Lưu</button></td></tr>
+        <tr><td>LLM</td><td><span class="chip">theo vai (AI Models)</span></td><td class="num">—</td><td></td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="pane" id="p-log">
+    <div class="khoi"><span class="ma-o">K5</span>
+      <h2>Quota log</h2>
+      <div class="toolbar">
+        <input type="date" value="2026-08-16">
+        <select><option>API: All</option><option>YouTube Data v3</option><option>Flow/Veo</option><option>LLM</option></select>
+        <select><option>Khóa: All</option><option>••••7f2a</option><option>••••c9d1</option></select>
+        <select><option>App: All</option><option>seo-optimize</option><option>radary</option></select>
+        <span style="flex:1"></span><button class="nut phu">⇩ Export CSV</button>
+      </div>
+      <table>
+        <tr><th>Thời gian</th><th>API</th><th>Khóa</th><th>App</th><th>Việc</th><th class="num">Lượt</th><th class="num">Quota tiêu</th><th class="num">Còn lại (ước)</th></tr>
+        <tr><td>16/08 14:32</td><td>YouTube v3</td><td class="chip">••••7f2a</td><td>seo-optimize</td><td>channel_video_ids</td><td class="num">120</td><td class="num">360</td><td class="num">1 590</td></tr>
+        <tr><td>16/08 14:05</td><td>YouTube v3</td><td class="chip">••••b3e8</td><td>radary</td><td>harvest scan</td><td class="num">2 400</td><td class="num">2 400</td><td class="num">2 610</td></tr>
+        <tr><td>16/08 13:58</td><td>Flow/Veo</td><td class="chip">••••f0a3</td><td>vox</td><td>scene render ×8</td><td class="num">8</td><td class="num">8</td><td class="num">—</td></tr>
+        <tr><td>16/08 13:41</td><td>LLM</td><td class="chip">••••9k2f</td><td>tri-thuc</td><td>writer trả lời</td><td class="num">14</td><td class="num">—</td><td class="num">—</td></tr>
+        <tr><td>16/08 12:10</td><td>YouTube v3</td><td class="chip">••••7f2a</td><td>seo-optimize</td><td>extract format</td><td class="num">4 080</td><td class="num">7 900</td><td class="num">2 100</td></tr>
+      </table>
+    </div>
   </div>
 </div>
+
+<script>
+function mo(t, nut){
+  document.querySelectorAll('.pane').forEach(p=>p.classList.remove('show'));
+  document.getElementById('p-'+t).classList.add('show');
+  document.querySelectorAll('.tabs button').forEach(b=>b.classList.remove('active'));
+  nut.classList.add('active');
+}
+</script>
 </body></html>

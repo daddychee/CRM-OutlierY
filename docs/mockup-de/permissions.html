@@ -5,7 +5,6 @@
 
 <div class="sidebar">
   <div class="brand"><span class="bars">▎▍▌▋█</span> OUTLIERY</div>
-  <div class="sb-note">Sidebar rút gọn cho mockup.</div>
   <div class="nav">
     <div class="lbl">Mockup khối đế</div>
     <a href="channels.html">Channels</a>
@@ -27,10 +26,7 @@
     <a class="dis">Audit Log</a><a class="dis">Applications</a>
   </div>
 
-  <div class="mock-banner"><b>MOCKUP — chưa có logic.</b> Trang Permissions mở rộng: thêm khối
-  <b>GIỎ CHỨC NĂNG</b> (P2 — thể hiện ca <b>Kế toán là bộ phận riêng, HCNS kiêm nhiệm</b>, Owner chốt 16/08)
-  và khối <b>PHẠM VI THỰC THỂ</b> (P4 — Đ3). Chỉ Owner vào (giỏ tuyệt đối, như hiện hành).
-  Ghi chú theo mã ô P1…P5.</div>
+  <div class="mock-banner"><b>MOCKUP — chưa có logic · phản hồi theo mã ô P1… · URL dự kiến: /general/permissions</b></div>
 
   <div class="khoi"><span class="ma-o">P1</span>
     <h2>Chọn người</h2>
@@ -48,7 +44,7 @@
   </div>
 
   <div class="khoi"><span class="ma-o">P2</span>
-    <h2>Giỏ chức năng <span class="phu">— quyền theo MẢNG nghiệp vụ; mặc định theo BỘ PHẬN, tick lẻ đè (có vết)</span></h2>
+    <h2>Giỏ chức năng</h2>
     <table>
       <tr><th>Giỏ</th><th>Mở được</th><th>Mặc định của bộ phận</th><th>Với lethic (HCNS · L3)</th><th>Nguồn quyền</th></tr>
       <tr><td><b>nhan_su</b></td><td>HR Hub: hồ sơ · duyệt · chấm công · KPI review · phép</td>
@@ -60,13 +56,10 @@
           <td><select><option>— Kế thừa (không có)</option><option selected>✓ Cho (tick)</option><option>✗ Chặn (tick)</option></select></td>
           <td><span class="badge b-warn">KIÊM NHIỆM — tick 16/08 · owner</span></td></tr>
     </table>
-    <p class="ghi-chu"><b>Ca Owner chốt:</b> Kế toán là BỘ PHẬN RIÊNG trong danh mục (chưa có nhân sự chuyên trách);
-    người HCNS kiêm nhiệm nhận giỏ <b>ke_toan</b> qua TICK — hiện badge "kiêm nhiệm" ở mọi nơi liên quan.
-    Khi tuyển kế toán chuyên trách: tạo hồ sơ bộ phận Kế toán → giỏ tự có theo mặc định, gỡ tick người kiêm nhiệm là xong — không sửa luật.</p>
   </div>
 
   <div class="khoi"><span class="ma-o">P3</span>
-    <h2>Quyền vào app + hành động con <span class="phu">— như bảng hiện hành, thêm được hàng hành động tinh (trả nợ "gate trong app")</span></h2>
+    <h2>Quyền vào app + hành động con</h2>
     <table>
       <tr><th>App / hành động</th><th>Luật mặc định</th><th>Với lethic</th></tr>
       <tr><td>Knowledge — vào</td><td>L1+</td><td><select><option selected>— Kế thừa (✓)</option><option>✗ Chặn</option></select></td></tr>
@@ -77,18 +70,17 @@
   </div>
 
   <div class="khoi"><span class="ma-o">P4</span>
-    <h2>Phạm vi thực thể <span class="phu">— Đ3: giới hạn NHÌN THẤY theo kênh/ngách (thay RADARY_SSO_MAP + scopes SEO khi thay thế app phụ)</span></h2>
+    <h2>Phạm vi thực thể</h2>
     <div class="form-grid">
       <div><label>Chế độ</label>
         <select><option selected>Không giới hạn (theo luật app — mặc định)</option><option>Chỉ các ngách được chọn</option><option>Chỉ các kênh được chọn</option></select></div>
       <div><label>Ngách được giao (khi bật)</label><span class="chip">N-LIFEIN ×</span> <input type="text" style="width:110px" placeholder="+ ngách"></div>
       <div><label>Kênh được giao (khi bật)</label><span class="chip">K-OUTLAND ×</span><span class="chip">K-OUTLAND-KR ×</span> <input type="text" style="width:110px" placeholder="+ kênh"></div>
     </div>
-    <p class="ghi-chu">Giới hạn áp ở TẦNG ĐẾ (một nguồn sự thật) — app đọc qua claims, hết cảnh mỗi app một sổ giới hạn riêng chết lặng lẽ khi đổi danh tính.</p>
   </div>
 
   <div class="khoi"><span class="ma-o">P5</span>
-    <h2>Bảng mặc định giỏ ↔ bộ phận <span class="phu">— luật ngoài code (phan_quyen.json), sửa ở đây có vết</span></h2>
+    <h2>Bảng mặc định giỏ ↔ bộ phận</h2>
     <table>
       <tr><th>Bộ phận (danh mục — MỚI thêm Kế toán)</th><th>nhan_su</th><th>ke_toan</th></tr>
       <tr><td>Ban quản trị (Owner)</td><td><span class="badge b-ok">✓ luôn</span></td><td><span class="badge b-ok">✓ luôn</span></td></tr>
@@ -97,7 +89,6 @@
       <tr><td>Kinh doanh</td><td><span class="badge b-mut">—</span></td><td><span class="badge b-mut">—</span></td></tr>
       <tr><td>Vận hành - Sản xuất</td><td><span class="badge b-mut">—</span></td><td><span class="badge b-mut">—</span></td></tr>
     </table>
-    <p class="ghi-chu">Ngưỡng "✓ từ L2/L3" là đề xuất — anh chỉnh trực tiếp. Bộ phận cũ không đổi gì.</p>
   </div>
 </div>
 </body></html>
