@@ -40,14 +40,15 @@
 {% for loai, ten in ten_loai.items() %}
 <h2>{{ ten }} <span class="badge {% if theo_loai[loai] %}ok{% endif %}">{{ theo_loai[loai] | length }} key{{ 's' if theo_loai[loai] | length != 1 }}</span></h2>
 <table class="gon">
-  <tr>{% if loai == 'llm' %}<th>Provider</th>{% else %}<th>#</th>{% endif %}
+  <tr>{% if loai in nha_por_loai %}<th>Provider</th>{% else %}<th>#</th>{% endif %}
     <th>Key (tail)</th>{% if loai != 'youtube' %}<th>Model</th>{% endif %}
     <th>Calls today</th>{% if loai == 'youtube' %}<th>Usage</th>{% endif %}
     <th>Status</th><th>Added</th><th></th></tr>
-  {% if loai == 'llm' %}
-    {% for nha in nha_llm %}
-      {% for k in theo_loai['llm'] if k.nha == nha %}
-      <tr><td>{{ nha_info[nha].ten }}</td>
+  {% if loai in nha_por_loai %}
+    {% set nha_tuple, nha_info_cuc = nha_por_loai[loai] %}
+    {% for nha in nha_tuple %}
+      {% for k in theo_loai[loai] if k.nha == nha %}
+      <tr><td>{{ nha_info_cuc[nha].ten }}</td>
         <td><span class="chip-o">{{ khoa_ngan(k.dau, k.duoi) }}</span></td>
         <td>
           <form class="dong" method="post" action="/general/api-keys/model">
@@ -69,8 +70,8 @@
             <button class="nguy" style="padding:3px 10px">Revoke</button>
           </form></td></tr>
       {% endfor %}
-      {% if theo_loai['llm'] | selectattr('nha', 'equalto', nha) | list | length == 0 %}
-      <tr><td>{{ nha_info[nha].ten }}</td><td><span class="badge">no key yet</span></td>
+      {% if theo_loai[loai] | selectattr('nha', 'equalto', nha) | list | length == 0 %}
+      <tr><td>{{ nha_info_cuc[nha].ten }}</td><td><span class="badge">no key yet</span></td>
         <td>—</td><td>—</td><td>—</td><td>—</td><td></td></tr>
       {% endif %}
     {% endfor %}
@@ -124,9 +125,9 @@
           <option value="llm:gemini">LLM — Gemini</option>
           <option value="llm:chatgpt">LLM — ChatGPT</option>
           <option value="llm:deepseek">LLM — Deepseek</option>
-          <option value="veo">VEO</option>
-          <option value="seedream">Seedream</option>
-          <option value="transcript">Transcript API</option>
+          <option value="generate:veo">Generate — VEO</option>
+          <option value="generate:seedream">Generate — Seedream</option>
+          <option value="transcript">YouTube Transcript</option>
         </select></div>
         <div><label>Key (never shown again)</label><input name="khoa" type="password" required></div>
         <div><label>Default model</label><input name="model"></div>

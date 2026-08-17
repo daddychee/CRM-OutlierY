@@ -80,6 +80,36 @@ def test_api_key_them_liet_ke_chi_duoi(conn):
         ket.them_api_key(conn, "loai-la", "sk-x")
 
 
+def test_generate_la_mot_loai_chon_nha_khong_phai_2_loai_rieng(conn):
+    """Owner chốt 17/08: VEO + Seedream là HAI NHÀ của MỘT loại 'generate' (khuôn
+    y hệt llm) — không còn là 2 loại cố định riêng trong LOAI_API."""
+    assert "generate" in ket.LOAI_API
+    assert "veo" not in ket.LOAI_API and "seedream" not in ket.LOAI_API
+    assert ket.NHA_GEN == ("veo", "seedream")
+
+    kid = ket.them_api_key(conn, "generate", "flow-key-abcd", nha="veo",
+                           model="veo-3.1")
+    ds = ket.liet_ke_api_keys(conn)
+    assert ds[0]["loai"] == "generate" and ds[0]["nha"] == "veo"
+    assert ds[0]["id"] == kid
+
+    ket.them_api_key(conn, "generate", "seed-key-wxyz", nha="seedream")
+    ds = ket.liet_ke_api_keys(conn)
+    assert {k["nha"] for k in ds} == {"veo", "seedream"}
+
+    with pytest.raises(ValueError):                    # generate thiếu/sai nhà
+        ket.them_api_key(conn, "generate", "flow-key-2")
+    with pytest.raises(ValueError):
+        ket.them_api_key(conn, "generate", "flow-key-3", nha="glm")   # nhà LLM lạc chỗ
+
+    # loại KHÔNG có khái niệm nhà vẫn bị bỏ nha dù người gọi lỡ truyền vào
+    kid_yt = ket.them_api_key(conn, "youtube", "AIza-du-nha", nha="glm")
+    kid_tr = ket.them_api_key(conn, "transcript", "tr-du-nha", nha="veo")
+    ds = ket.liet_ke_api_keys(conn)
+    assert next(k for k in ds if k["id"] == kid_yt)["nha"] == ""
+    assert next(k for k in ds if k["id"] == kid_tr)["nha"] == ""
+
+
 def test_api_key_thu_hoi_go_khoi_cap_phat(conn):
     k1 = ket.them_api_key(conn, "youtube", "AIza-mot-1111")
     k2 = ket.them_api_key(conn, "youtube", "AIza-hai-2222")

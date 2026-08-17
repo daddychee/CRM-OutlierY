@@ -120,7 +120,7 @@ def test_ui_a2_a3_modal_va_badge(client):
     _login(client)
     b = client.get("/general/api-keys").text
     assert 'class="modal-bg" id="md-key"' in b and 'data-mo="md-key"' in b
-    assert "Transcript API" in b                        # loại thứ 5 hết vô hình
+    assert "YouTube Transcript" in b                    # loại thứ 4 hết vô hình (Owner chốt 17/08 đổi nhãn)
     assert 'value="transcript"' in b                    # thêm được khóa transcript từ UI
     b = client.get("/general/permissions?ten=nhanvien").text
     assert "0 overrides" in b                           # badge chuẩn trên summary

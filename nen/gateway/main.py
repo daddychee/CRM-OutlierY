@@ -862,13 +862,16 @@ def _render_phan_quyen(request: Request, user: dict, ten: str = "",
     nhan_hd |= {("*", hd): _NHAN_GIO.get(hd, hd) for hd in luat.get("gio_uy_quyen", [])}
     ho_ten_cua = {t["ten"]: (nguoi.get(t.get("nguoi_ma") or "", {}) or {}).get("ho_ten", "")
                   for t in tai_khoan}
+    # KHÔNG BAO GIỜ cache: trang sửa liên tục (Owner nghi cache trình duyệt khi
+    # thấy UI cũ) — no-store cho MỌI đường render (GET lẫn POST-lỗi trực tiếp).
     return templates.TemplateResponse(
         request, "nen_phan_quyen.html",
         {"user": user, "trang": "phan-quyen", "loi": loi, "bao": bao,
          "tai_khoan": tai_khoan, "ho_ten_cua": ho_ten_cua,
          "ten_chon": ten if chon else "", "chon": chon, "acting": acting,
          "apps_p2": apps_p2, "khoi_p4": khoi_p4, "p5": p5,
-         "ten_app": ten_app, "nhan_hd": nhan_hd, "ten_level": _TEN_LEVEL})
+         "ten_app": ten_app, "nhan_hd": nhan_hd, "ten_level": _TEN_LEVEL},
+        headers={"Cache-Control": "no-store"})
 
 
 @app.get("/general/permissions", response_class=HTMLResponse)
@@ -1029,6 +1032,14 @@ def _render_api_keys(request: Request, user: dict, bao: str = "",
     # hiển thị đồng bộ; khóa đã thu hồi thì không tra được, hiện đuôi trơn (đúng
     # — bí mật đã xóa hẳn khỏi két, không còn nguồn nào tính lại đầu).
     dau_theo_duoi = {k["duoi"]: k["dau"] for k in keys}
+    # Loại API có NHIỀU NHÀ cung cấp (Owner chốt 17/08 — chọn nhà, không tự ấn
+    # định): llm (claude/glm/gemini/chatgpt/deepseek) + generate (veo/seedream).
+    # Template lặp {% for loai, ten in ten_loai.items() %} tra dict này để biết
+    # loại nào cần nhóm theo nhà — thêm loại có nhà mới chỉ cần thêm một mục ở đây.
+    nha_por_loai = {"llm": (ket.NHA_LLM, ket.NHA_LLM_INFO),
+                    "generate": (ket.NHA_GEN, ket.NHA_GEN_INFO)}
+    # KHÔNG BAO GIỜ cache: trang sửa liên tục (Owner nghi cache trình duyệt khi
+    # thấy UI cũ) — no-store cho MỌI đường render.
     return templates.TemplateResponse(request, "nen_api_keys.html", {
         "user": user, "trang": "api-keys", "tab": tab, "bao": bao, "loi": loi,
         "keys": keys, "theo_loai": theo_loai, "dang_dung": dang_dung,
@@ -1036,9 +1047,10 @@ def _render_api_keys(request: Request, user: dict, bao: str = "",
         "luot": quota_log.luot_hom_nay(), "cap_phat": cap_phat,
         "viec_api": viec_api, "app_chon": app_chon,
         "nha_llm": ket.NHA_LLM, "nha_info": ket.NHA_LLM_INFO,
+        "nha_por_loai": nha_por_loai,
         "ten_loai": ket.TEN_LOAI_API, "model_goi_y": ket.MODEL_GOI_Y,
         "log_rows": log_rows, "ngay": ngay or _date.today().isoformat(),
-        "loc": loc})
+        "loc": loc}, headers={"Cache-Control": "no-store"})
 
 
 @app.get("/general/api-keys", response_class=HTMLResponse)

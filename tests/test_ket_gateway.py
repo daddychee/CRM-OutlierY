@@ -154,6 +154,49 @@ def test_assigned_keys_cot_doc_dau_duoi_va_show_more_wiring(client):
     assert "'Show more ('" in js and "an-di" in js
 
 
+def test_api_keys_va_permissions_khong_cache(client):
+    """Owner nghi cache trình duyệt khi thấy UI cũ ở 2 trang sửa liên tục —
+    no-store cho mọi đường render (GET lẫn POST-lỗi trực tiếp của Permissions)."""
+    _login(client, "owner-test", "mk-test")
+    assert client.get("/general/api-keys").headers["cache-control"] == "no-store"
+    assert client.get("/general/permissions").headers["cache-control"] == "no-store"
+    r = client.post("/general/permissions/grant", data={           # nhánh lỗi render trực tiếp
+        "ten": "owner-test", "app_slug": "*", "hanh_dong": "vault", "gia_tri": "cho"})
+    assert r.headers["cache-control"] == "no-store"
+
+
+def test_tab1_generate_nhom_theo_nha_va_modal_2_option(client):
+    """Owner chốt 17/08: VEO + Seedream lên MỘT khối 'Generate Video/Image API'
+    nhóm theo nhà (giống LLM) — không còn 2 khối cố định riêng; modal Add API
+    key có 2 option generate:veo/generate:seedream; nhãn Transcript đổi tên."""
+    _login(client, "owner-test", "mk-test")
+    conn = ket.ket_noi()
+    ket.them_api_key(conn, "generate", "flow-that-1234", nha="veo", model="veo-3.1")
+    ket.them_api_key(conn, "generate", "seed-that-5678", nha="seedream")
+    conn.close()
+
+    trang = client.get("/general/api-keys").text
+    assert "Generate Video/Image API" in trang          # đúng 4 khối: youtube/llm/generate/transcript
+    assert "VEO (Google Flow)" in trang and "Seedream" in trang   # nhóm theo nhà, khuôn LLM
+    assert "flo···1234" in trang and "see···5678" in trang
+    assert "YouTube Transcript" in trang
+    assert "VEO (Google Flow) (Google Flow)" not in trang          # không lặp nhãn cũ
+
+    assert 'value="generate:veo">Generate — VEO<' in trang
+    assert 'value="generate:seedream">Generate — Seedream<' in trang
+    assert 'value="transcript">YouTube Transcript<' in trang
+    assert 'value="veo">VEO<' not in trang and 'value="seedream">Seedream<' not in trang
+
+    r = client.post("/general/api-keys/add", data={
+        "loai_chon": "generate:veo", "khoa": "flow-them-qua-ui"})
+    assert r.status_code == 303 and "bao=" in r.headers["location"]
+    conn = ket.ket_noi()
+    ds = ket.liet_ke_api_keys(conn)
+    conn.close()
+    muc = next(k for k in ds if k["dau"] == "flo" and k["duoi"] == "a-ui")
+    assert muc["loai"] == "generate" and muc["nha"] == "veo"     # partition(":") sinh generic ăn luôn
+
+
 def test_api_loopback_tra_du_va_chan_khong_loopback(he):
     conn = ket.ket_noi()
     ket.dat_cau_hinh(conn, "llm.writer.model", "glm-4.5-air")

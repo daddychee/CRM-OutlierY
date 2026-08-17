@@ -140,7 +140,10 @@ def backfill_dau_khoa(conn: sqlite3.Connection) -> int:
 
 # transcript: dich vu transcriptapi.com (Content Ultimate S1b) — them loai khi
 # app that can, dung tinh than DE.md 3b "dich_vu.<ten>" (khong de khoa ngoai ket).
-LOAI_API = ("youtube", "llm", "veo", "seedream", "transcript")
+# generate: Owner chot 17/08 — VEO + Seedream la HAI NHA cua CUNG MOT loai
+# "generate" (sinh video/anh), dung khuon nha nhu llm — KHONG phai 2 loai rieng
+# co dinh (bai hoc: tu an dinh loai la sai, phai de chon nha nhu llm).
+LOAI_API = ("youtube", "llm", "generate", "transcript")
 NHA_LLM = ("claude", "glm", "gemini", "chatgpt", "deepseek")
 # provider/base_url suy từ NHÀ khi khóa không mang override riêng (migration giữ
 # nguyên giá trị cũ per-khóa nên hệ đang chạy resolve ra ĐÚNG như trước).
@@ -155,9 +158,12 @@ NHA_LLM_INFO = {
     "deepseek": {"ten": "Deepseek", "provider": "openai_compatible",
                  "base_url": "https://api.deepseek.com"},
 }
+NHA_GEN = ("veo", "seedream")
+# generate KHÔNG đi qua factory LLM (không provider/base_url — chỉ nhãn hiển thị).
+NHA_GEN_INFO = {"veo": {"ten": "VEO (Google Flow)"}, "seedream": {"ten": "Seedream"}}
 TEN_LOAI_API = {"youtube": "YouTube Data API v3", "llm": "LLM",
-                "veo": "VEO (Google Flow)", "seedream": "Seedream",
-                "transcript": "Transcript API (transcriptapi.com)"}
+                "generate": "Generate Video/Image API",
+                "transcript": "YouTube Transcript"}
 # Model gợi ý cho dropdown (mockup K2-K3) — gợi ý thôi, giá trị hiện hành luôn giữ.
 MODEL_GOI_Y = {
     "claude": ["claude-fable-5", "claude-sonnet-5", "claude-haiku-4-5"],
@@ -179,7 +185,9 @@ def them_api_key(conn: sqlite3.Connection, loai: str, khoa: str,
         raise ValueError("Loại API phải là: " + " / ".join(LOAI_API))
     if loai == "llm" and nha not in NHA_LLM:
         raise ValueError("Nhà LLM phải là: " + " / ".join(NHA_LLM))
-    if loai != "llm":
+    if loai == "generate" and nha not in NHA_GEN:
+        raise ValueError("Nhà Generate phải là: " + " / ".join(NHA_GEN))
+    if loai not in ("llm", "generate"):
         nha = ""
     if not khoa.strip():
         raise ValueError("Thiếu khóa.")
