@@ -48,6 +48,24 @@ def test_open_radary_khung_du_sidebar_va_iframe(client):
     assert "<title>RadarY — OUTLIERY</title>" in b
 
 
+def test_open_khoi_quan_ly_nam_gon_trong_popup(client):
+    """Owner phê 17/08 'không đưa khối dưới sidebar ra ngoài': HR/Finance/General/
+    Profile/Log out phải nằm GỌN TRONG popup sb-mgmt ghim đáy (y cấu trúc base.html
+    các app) — pane bên trên CHỈ còn Home + Tools; Home trỏ '/' (vị trí AI Agent)."""
+    _login(client)
+    b = client.get("/open/radary").text
+    assert 'id="sb-mgmt"' in b and 'id="sb-mgmt-nut"' in b and 'id="sb-mgmt-muc"' in b
+    truoc, sau = b.split('id="sb-mgmt"', 1)               # pane vs khối popup đáy
+    for duong in ('href="/hr"', 'href="/finance"', 'href="/general"',
+                  'href="/profile"', 'href="/logout"', 'href="/tracking"',
+                  'href="/vault"'):
+        assert duong not in truoc, duong                  # không còn link phẳng ở pane
+        # các mục theo quyền Owner đều có mặt TRONG popup
+        assert duong in sau, duong
+    assert 'class="nav-item" href="/"' in truoc           # Home = chỗ của AI Agent
+    assert "mgmt-mui" in sau                              # nút chip + mũi tên popup
+
+
 def test_open_gate_y_het_cua_vao_app(client):
     # content-ultimate: chỉ VH L2+ — nhanvien KD bị chặn y luật proxy
     _login(client, "nhanvien", "mk-nv-6")

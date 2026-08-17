@@ -116,7 +116,10 @@ Hạng mục đề xuất, xếp theo "Owner nhìn thấy nhiều nhất" (chố
    to-chuc (KHÔNG chép vào base.html app — chỉ hr.html cần, template tự nạp
    lại không phải restart).
 
-**B. Nhất quán vỏ** — **XONG 17/08**: nen_khung_app.html đã khớp 3 base.html —
+**B. Nhất quán vỏ** — **XONG 17/08** (+ sửa theo phê Owner 17/08 "không đưa
+khối dưới sidebar ra ngoài": khung /open giờ Y CẤU TRÚC base.html app — pane chỉ
+Home + Tools, HR/Finance/General/Profile/Log out nằm GỌN TRONG popup sb-mgmt ghim
+đáy, markup/ID/JS y bản chuẩn DA; Home trỏ "/" = vị trí AI Agent hỏi–đáp): nen_khung_app.html đã khớp 3 base.html —
 token 2 theme diff = GIỐNG HỆT (đo bằng diff chuỗi :root), topbar về đúng khuôn
 app (52px · padding 0 22px · nền --bg · h1 15px/600/--th-c2cbd9 · ngày
 --th-9aa5b5), thêm favicon SVG như các app. Đổi brand/token sau này phải sửa
