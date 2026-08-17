@@ -11,6 +11,7 @@
         vertical-align:middle;overflow:hidden}
   .usage i{display:block;height:100%;background:var(--accent)}
   .usage i.cao{background:var(--loi)}
+  .khoa-list{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 </style>
 
 <div class="toolbar" style="margin-top:2px">
@@ -148,6 +149,7 @@
   {% set ids = muc.get('khoa', []) %}
   <tr><td>{{ v.ten }}</td><td>{{ ten_loai.get(v.loai, v.loai) }}</td>
     <td>
+      <div class="khoa-list">
       {% for kid in ids %}
         {% for k in keys if k.id == kid %}
         <form class="dong" method="post" action="/general/api-keys/cap-phat">
@@ -173,6 +175,7 @@
           <svg class="ic" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> key</button>
       </form>
       {% elif not ids %}<span class="badge bad">no key of this type — add in tab 1</span>{% endif %}
+      </div>
     </td>
     <td>{% if ids | length > 1 %}<span class="badge warn">{{ {'xoay_vong': 'rotate', 'du_phong': 'failover'}.get(muc.get('che_do'), 'rotate') }} · {{ ids | length }} keys</span>
         {% elif ids %}<span class="badge">single key</span>{% else %}—{% endif %}</td>

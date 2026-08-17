@@ -40,7 +40,8 @@
   .tb-cong-cu{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:.2rem 0 .7rem}
   .tb-cong-cu .day{flex:1}
   .khoi-tk{display:flex;flex-direction:column;gap:.35rem;margin-top:.4rem}
-  .khoi-tk .f-dong{margin:0}
+  .khoi-tk form{display:flex;gap:.4rem;align-items:center;margin:0}
+  .khoi-tk form .o{flex:1;min-width:0}
   .nut.nguy{background:var(--th-d97c6c)}
   .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:70;align-items:center;justify-content:center}
   .modal-bg.show{display:flex}
@@ -87,7 +88,7 @@
     <input type="hidden" name="ve" value="hr">
     <input type="hidden" name="ten" value="{{ tk.ten }}">
     <input type="hidden" name="hanh_dong" value="reset_mk">
-    <input class="o" type="text" name="gia_tri" placeholder="Temporary password" style="width:170px">
+    <input class="o" type="text" name="gia_tri" placeholder="Temporary password">
     <button type="submit" class="nut phu" style="padding:2px 10px;font-size:.8rem">Reset password</button>
   </form>
   <form method="post" action="/general/accounts/update" class="f-dong">
@@ -115,7 +116,7 @@
     <input type="hidden" name="ve" value="hr">
     <input type="hidden" name="ten" value="{{ tk.ten }}">
     <input type="hidden" name="hanh_dong" value="xoa">
-    <input class="o" name="gia_tri" placeholder="retype {{ tk.ten }}" style="width:150px">
+    <input class="o" name="gia_tri" placeholder="retype {{ tk.ten }}">
     <button type="submit" class="nut nguy" style="padding:2px 10px;font-size:.8rem">Delete account</button>
   </form>
   {% endif %}
