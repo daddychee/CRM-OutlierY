@@ -156,6 +156,41 @@ def test_hr_gop_mot_dong_mot_nguoi():
     assert 'name="username"' in b and 'name="mat_khau"' in b
 
 
+def test_hr_khoi_account_4_box_rieng_khong_con_dropdown():
+    """Owner chốt 17/08: KHÔNG set biến qua 1 dropdown hành động + 1 ô value
+    chung — mỗi biến MỘT box riêng. 4 form nhỏ (reset_mk/level/khoa/xoa) đều POST
+    /general/accounts/update với field ten/hanh_dong/gia_tri GIỮ NGUYÊN; dropdown
+    đa-hành-động + ô "value" chung đã biến mất."""
+    from nen.iam import iam
+    ma = _iam_seed()
+    conn = iam.ket_noi()
+    ow = iam.claims_cua(iam.tao_tai_khoan(
+        conn, None, "chu-he2", "mk-6-ky-tu", "Ban quản trị", 5, phai_doi_mk=False))
+    iam.tao_tai_khoan(conn, ow, "acc-nv", "mk-6-ky-tu", "Kinh doanh", 2,
+                      nguoi_ma=ma, phai_doi_mk=False)
+    conn.close()
+    c = _client(apps="to-chuc,hr,accounts", ten="chu-he2", level=5)
+    b = c.get("/hr?tab=accounts").text
+
+    assert 'name="hanh_dong" value="reset_mk"' in b
+    assert 'name="hanh_dong" value="level"' in b
+    assert 'name="hanh_dong" value="khoa"' in b
+    assert 'name="hanh_dong" value="xoa"' in b
+    assert 'name="ten" value="acc-nv"' in b               # trỏ đúng tài khoản
+
+    # dropdown đa-hành-động + ô value chung đã bị bỏ
+    assert '<select class="o" name="hanh_dong">' not in b
+    assert 'placeholder="value"' not in b
+    assert 'reset password =' not in b and 'lock (1) / unlock (0) =' not in b
+
+    # 4 nút riêng, nhãn EN đúng chốt Owner
+    assert ">Reset password<" in b
+    assert ">Set level<" in b
+    assert (">Lock account<" in b) != (">Unlock account<" in b)   # đúng 1 trong 2, theo trạng thái
+    assert ">Delete account<" in b                        # user hiện là Owner → thấy nút xóa
+    assert 'placeholder="retype acc-nv"' in b
+
+
 # ---------- Attendance: bảng công tháng + chốt chỉ-thêm ----------
 
 def _tin_hieu(ten, ngay_gio_vao, ngay_gio_ra):

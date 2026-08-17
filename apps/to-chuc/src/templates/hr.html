@@ -39,6 +39,9 @@
   tr.ns-dong{cursor:pointer}
   .tb-cong-cu{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:.2rem 0 .7rem}
   .tb-cong-cu .day{flex:1}
+  .khoi-tk{display:flex;flex-direction:column;gap:.35rem;margin-top:.4rem}
+  .khoi-tk .f-dong{margin:0}
+  .nut.nguy{background:var(--th-d97c6c)}
   .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:70;align-items:center;justify-content:center}
   .modal-bg.show{display:flex}
   .modal{background:var(--chip);border:1px solid var(--chip-line);border-radius:14px;padding:18px 20px;max-width:760px;width:92%;max-height:88vh;overflow:auto}
@@ -75,6 +78,49 @@
 {% set nhan_cb = {'intern': 'Intern', 'staff': 'Staff', 'leader': 'Leader', 'manager': 'Manager'} %}
 {% set nhan_tl = {'cccd': 'ID card (CCCD)', 'syll': 'Curriculum vitae', 'khac': 'Other'} %}
 {% set ten_csv = ds_chuc_danh | map(attribute='chuc_danh') | list %}
+{% macro khoi_account(tk) %}
+{# Owner chốt 17/08: KHÔNG set biến qua 1 dropdown hành động + 1 ô value chung —
+   mỗi biến MỘT box riêng. 4 form nhỏ POST cùng /general/accounts/update, field
+   ten/hanh_dong/gia_tri GIỮ NGUYÊN (backend không đổi một byte). #}
+<div class="khoi-tk">
+  <form method="post" action="/general/accounts/update" class="f-dong">
+    <input type="hidden" name="ve" value="hr">
+    <input type="hidden" name="ten" value="{{ tk.ten }}">
+    <input type="hidden" name="hanh_dong" value="reset_mk">
+    <input class="o" type="text" name="gia_tri" placeholder="Temporary password" style="width:170px">
+    <button type="submit" class="nut phu" style="padding:2px 10px;font-size:.8rem">Reset password</button>
+  </form>
+  <form method="post" action="/general/accounts/update" class="f-dong">
+    <input type="hidden" name="ve" value="hr">
+    <input type="hidden" name="ten" value="{{ tk.ten }}">
+    <input type="hidden" name="hanh_dong" value="level">
+    <select class="o" name="gia_tri">
+      <option value="1"{% if tk.level == 1 %} selected{% endif %}>L1 Intern</option>
+      <option value="2"{% if tk.level == 2 %} selected{% endif %}>L2 Staff</option>
+      <option value="3"{% if tk.level == 3 %} selected{% endif %}>L3 Leader</option>
+      <option value="4"{% if tk.level == 4 %} selected{% endif %}>L4 Manager</option>
+      {% if user.level >= 5 %}<option value="5"{% if tk.level == 5 %} selected{% endif %}>L5 Owner</option>{% endif %}
+    </select>
+    <button type="submit" class="nut phu" style="padding:2px 10px;font-size:.8rem">Set level</button>
+  </form>
+  <form method="post" action="/general/accounts/update" class="f-dong">
+    <input type="hidden" name="ve" value="hr">
+    <input type="hidden" name="ten" value="{{ tk.ten }}">
+    <input type="hidden" name="hanh_dong" value="khoa">
+    <input type="hidden" name="gia_tri" value="{% if tk.khoa %}0{% else %}1{% endif %}">
+    <button type="submit" class="nut phu" style="padding:2px 10px;font-size:.8rem">{% if tk.khoa %}Unlock account{% else %}Lock account{% endif %}</button>
+  </form>
+  {% if user.level >= 5 %}
+  <form method="post" action="/general/accounts/update" class="f-dong">
+    <input type="hidden" name="ve" value="hr">
+    <input type="hidden" name="ten" value="{{ tk.ten }}">
+    <input type="hidden" name="hanh_dong" value="xoa">
+    <input class="o" name="gia_tri" placeholder="retype {{ tk.ten }}" style="width:150px">
+    <button type="submit" class="nut nguy" style="padding:2px 10px;font-size:.8rem">Delete account</button>
+  </form>
+  {% endif %}
+</div>
+{% endmacro %}
 <h3 class="hub-tieu">
   <svg class="ic" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M15.5 4.6a3.5 3.5 0 0 1 0 6.8"/><path d="M17 13.4a6.5 6.5 0 0 1 4.5 6.6"/></svg>
   Accounts
@@ -194,18 +240,7 @@
     {% if tk.khoa %}<span class="badge"><svg class="ic" style="width:11px;height:11px" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Locked</span>{% endif %}
     {% if tk.phai_doi_mk %}<span class="badge">must change pw</span>{% endif %}
   </div>
-  <form method="post" action="/general/accounts/update" class="f-dong">
-    <input type="hidden" name="ve" value="hr">
-    <input type="hidden" name="ten" value="{{ tk.ten }}">
-    <select class="o" name="hanh_dong">
-      <option value="reset_mk">reset password =</option>
-      <option value="level">set level =</option>
-      <option value="khoa">lock (1) / unlock (0) =</option>
-      {% if user.level >= 5 %}<option value="xoa">DELETE (retype username) =</option>{% endif %}
-    </select>
-    <input class="o" name="gia_tri" placeholder="value" style="width:120px">
-    <button type="submit" class="nut phu" style="padding:2px 10px;font-size:.8rem">Apply</button>
-  </form>
+  {{ khoi_account(tk) }}
   {% else %}
   <form method="post" action="/general/accounts/grant" class="f-dong">
     <input type="hidden" name="ve" value="hr">
@@ -237,18 +272,7 @@
     {% if tk.khoa %}<span class="badge"><svg class="ic" style="width:11px;height:11px" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Locked</span>{% endif %}
     {% if tk.phai_doi_mk %}<span class="badge">must change pw</span>{% endif %}
   </div>
-  <form method="post" action="/general/accounts/update" class="f-dong">
-    <input type="hidden" name="ve" value="hr">
-    <input type="hidden" name="ten" value="{{ tk.ten }}">
-    <select class="o" name="hanh_dong">
-      <option value="reset_mk">reset password =</option>
-      <option value="level">set level =</option>
-      <option value="khoa">lock (1) / unlock (0) =</option>
-      {% if user.level >= 5 %}<option value="xoa">DELETE (retype username) =</option>{% endif %}
-    </select>
-    <input class="o" name="gia_tri" placeholder="value" style="width:120px">
-    <button type="submit" class="nut phu" style="padding:2px 10px;font-size:.8rem">Apply</button>
-  </form>
+  {{ khoi_account(tk) }}
 </div>
 {% endfor %}
 {% endif %}
