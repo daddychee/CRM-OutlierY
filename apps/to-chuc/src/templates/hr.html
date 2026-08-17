@@ -37,6 +37,14 @@
   details.sua svg.ic{width:13px;height:13px}
   .f-sua{display:flex;gap:5px;align-items:center;flex-wrap:wrap;margin-top:.45rem}
   tr.ns-dong{cursor:pointer}
+  .tb-cong-cu{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:.2rem 0 .7rem}
+  .tb-cong-cu .day{flex:1}
+  .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:70;align-items:center;justify-content:center}
+  .modal-bg.show{display:flex}
+  .modal{background:var(--chip);border:1px solid var(--chip-line);border-radius:14px;padding:18px 20px;max-width:760px;width:92%;max-height:88vh;overflow:auto}
+  .modal h3.hub-tieu{margin:.1rem 0 .7rem}
+  .modal .dong-x{margin-left:auto;background:none;border:0;color:var(--muted);cursor:pointer;font-size:15px;line-height:1;padding:2px 6px}
+  .modal .dong-x:hover{color:var(--ink)}
   .h1b{border:1px solid var(--line);border-radius:12px;padding:.9rem 1.1rem;margin:.9rem 0;background:var(--chip)}
   .fg{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:.6rem .8rem;margin:.4rem 0 .7rem}
   .fg label{display:block;font-size:.74rem;color:var(--muted);margin-bottom:2px}
@@ -71,6 +79,12 @@
   <svg class="ic" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M15.5 4.6a3.5 3.5 0 0 1 0 6.8"/><path d="M17 13.4a6.5 6.5 0 0 1 4.5 6.6"/></svg>
   Accounts
 </h3>
+<div class="tb-cong-cu">
+  <input class="o" id="q-nguoi" type="search" placeholder="Search name / code / username" style="min-width:230px">
+  <span class="day"></span>
+  <button type="button" class="nut" id="nut-nguoi-moi" style="padding:.35rem .9rem;font-size:.84rem">
+    <svg class="ic" style="width:14px;height:14px" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> New person</button>
+</div>
 {% if iam_loi %}<div class="canh">{{ iam_loi }}</div>{% endif %}
 {% if tk_loi %}<div class="canh">{{ tk_loi }}</div>{% endif %}
 {% if ho_so or tk_mo_coi %}
@@ -80,7 +94,7 @@
     <th>Level</th><th>Status</th><th>Created</th></tr>
   {% for h in ho_so %}
   {% set tk = tk_cua.get(h.ma) %}
-  <tr class="ns-dong" data-ma="{{ h.ma }}">
+  <tr class="ns-dong" data-ma="{{ h.ma }}" data-tim="{{ (h.ma ~ ' ' ~ h.ho_ten ~ ' ' ~ (tk.ten if tk else '') ~ ' ' ~ h.bo_phan) | lower }}">
     <td>{{ h.ho_ten }}</td>
     <td class="tk">{% if tk %}{{ tk.ten }}{% else %}—{% endif %}</td>
     <td>{{ h.bo_phan }}</td>
@@ -90,7 +104,7 @@
     <td>{{ (h.tao_luc or '')[:10] or '—' }}</td></tr>
   {% endfor %}
   {% for tk in tk_mo_coi %}
-  <tr class="ns-dong" data-ma="tk-{{ tk.ten }}">
+  <tr class="ns-dong" data-ma="tk-{{ tk.ten }}" data-tim="{{ (tk.ten ~ ' ' ~ (tk.bo_phan or '')) | lower }}">
     <td>—</td>
     <td class="tk">{{ tk.ten }}</td>
     <td>{{ tk.bo_phan or '—' }}</td>
@@ -242,11 +256,14 @@
 <div class="canh">No profiles in the IAM registry yet.</div>
 {% endif %}
 
+{% set bp0 = ds_bo_phan[0] if ds_bo_phan else '' %}
+<div class="modal-bg" id="md-nguoi">
+<div class="modal">
 <h3 class="hub-tieu">
   <svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg>
   New person
+  <button type="button" class="dong-x" id="dong-nguoi-moi" aria-label="Close">✕</button>
 </h3>
-{% set bp0 = ds_bo_phan[0] if ds_bo_phan else '' %}
 <form method="post" action="/general/accounts/create-full" class="js-ho-so">
   <input type="hidden" name="ve" value="hr">
   <div class="fg">
@@ -280,6 +297,8 @@
   </div>
   <button type="submit" class="nut" style="padding:.35rem .9rem;font-size:.84rem">Create</button>
 </form>
+</div>
+</div>
 
 <script>
 (function(){
@@ -311,6 +330,28 @@
   });
   document.querySelectorAll(".dong-h1b").forEach(function(b){
     b.addEventListener("click", function(){ b.closest(".h1b").hidden = true; });
+  });
+  var mdNguoi = document.getElementById("md-nguoi");
+  document.getElementById("nut-nguoi-moi").addEventListener("click", function(){
+    mdNguoi.classList.add("show");
+  });
+  document.getElementById("dong-nguoi-moi").addEventListener("click", function(){
+    mdNguoi.classList.remove("show");
+  });
+  (function(){  // đóng khi bấm NỀN: mousedown VÀ click cùng trên nền — chống bay dữ liệu
+    var tuNen = false;
+    mdNguoi.addEventListener("mousedown", function(e){ tuNen = (e.target === mdNguoi); });
+    mdNguoi.addEventListener("click", function(e){ if (tuNen && e.target === mdNguoi) mdNguoi.classList.remove("show"); });
+  })();
+  document.addEventListener("keydown", function(e){
+    if (e.key === "Escape") mdNguoi.classList.remove("show");
+  });
+  var qNguoi = document.getElementById("q-nguoi");
+  qNguoi.addEventListener("input", function(){
+    var t = (qNguoi.value || "").trim().toLowerCase();
+    document.querySelectorAll("tr.ns-dong[data-tim]").forEach(function(tr){
+      tr.hidden = !!t && tr.dataset.tim.indexOf(t) < 0;
+    });
   });
   document.querySelectorAll(".xem-cccd").forEach(function(b){
     b.addEventListener("click", function(){

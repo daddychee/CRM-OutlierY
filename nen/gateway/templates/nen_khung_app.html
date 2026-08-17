@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{{ app.ten }} — OUTLIERY</title>
 <link rel="stylesheet" href="/static/fonts/fonts.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='5' fill='%23121826'/%3E%3Crect x='3.5' y='13' width='3' height='7' rx='1' fill='%23E8EDF4'/%3E%3Crect x='8.5' y='11' width='3' height='9' rx='1' fill='%23E8EDF4'/%3E%3Crect x='13.5' y='9' width='3' height='11' rx='1' fill='%23E8EDF4'/%3E%3Crect x='18.5' y='3' width='3' height='17' rx='1' fill='%234C8FE0'/%3E%3C/svg%3E">
 <script>(function(){var d=document.documentElement,t=null;try{t=new URLSearchParams(location.search).get("theme")||localStorage.getItem("outliery_theme")}catch(e){}if(t!=="light"&&t!=="dark"){t=(window.matchMedia&&matchMedia("(prefers-color-scheme: light)").matches)?"light":"dark"}d.setAttribute("data-theme",t)})()</script>
 <style>
   {# Khung MỞ APP GIỮ SIDEBAR (Owner 16/08) — shell OUTLIERY rút gọn theo đúng
@@ -31,10 +32,11 @@
   .sb-chip{flex:0 0 auto;border-top:1px solid var(--line);padding:10px 12px;display:flex;align-items:center;gap:9px;font-size:13.5px;color:var(--muted)}
   .sb-chip b{color:var(--ink);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .main{flex:1;display:flex;flex-direction:column;min-width:0}
-  .topbar{display:flex;align-items:center;gap:10px;padding:10px 18px;border-bottom:1px solid var(--line);background:var(--sidebar)}
-  .topbar h1{font-size:15.5px;font-weight:650;margin:0;display:flex;align-items:center;gap:9px}
+  .topbar{height:52px;flex:0 0 52px;display:flex;align-items:center;gap:10px;
+    padding:0 22px;border-bottom:1px solid var(--line);background:var(--bg)}
+  .topbar h1{font-size:15px;font-weight:600;margin:0;display:flex;align-items:center;gap:8px;color:var(--th-c2cbd9)}
   .topbar .spacer{flex:1}
-  .topbar .ngay{font-size:13px;color:var(--muted)}
+  .topbar .ngay{font-size:13px;color:var(--th-9aa5b5)}
   iframe.khung-app{flex:1;width:100%;border:0;background:var(--bg)}
 </style>
 </head>

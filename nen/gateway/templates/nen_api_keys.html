@@ -1,47 +1,45 @@
 {% extends "nen_base.html" %}
 {% block tieu_de %}API Keys{% endblock %}
 {% block noi_dung %}
-{# Trang theo mockup ĐÃ DUYỆT docs/mockup-de/api-keys.html (K1-K8): hiển thị THEO
-   API, cấu hình theo app sinh từ viec_api hợp đồng, quota log P4. Ô khóa
-   WRITE-ONLY — không bao giờ render lại giá trị. #}
-<nav class="muc" style="padding:8px 0;border-bottom:0">
-  <a href="/general/api-keys?tab=api" class="{% if tab == 'api' %}active{% endif %}">1 · Add API</a>
-  <a href="/general/api-keys?tab=app" class="{% if tab == 'app' %}active{% endif %}">2 · Per-app config</a>
-  <a href="/general/api-keys?tab=log" class="{% if tab == 'log' %}active{% endif %}">3 · Quota log</a>
-</nav>
+{# Bám mockup ĐÃ DUYỆT docs/mockup-de/api-keys.html (K1-K8) + chuẩn UI A1
+   (toolbar · chip-o · badge · modal chống-bay-dữ-liệu · steps). Route, tên field,
+   gate GIỮ NGUYÊN 100% — chỉ đổi lớp trình bày. Khối khóa hiển thị THEO MỌI LOẠI
+   trong ten_loai (bản cũ hardcode 4 loại — khóa transcript bị vô hình). #}
+<style>
+  table.gon th, table.gon td{padding:5px 11px}
+  .usage{display:inline-block;width:86px;height:7px;border-radius:999px;background:var(--vien);
+        vertical-align:middle;overflow:hidden}
+  .usage i{display:block;height:100%;background:var(--accent)}
+  .usage i.cao{background:var(--loi)}
+</style>
+
+<div class="toolbar" style="margin-top:2px">
+  <span class="steps">
+    <a class="s {% if tab == 'api' %}on{% endif %}" href="/general/api-keys?tab=api">1 · Add API</a>
+    <a class="s {% if tab == 'app' %}on{% endif %}" href="/general/api-keys?tab=app">2 · Per-app config</a>
+    <a class="s {% if tab == 'log' %}on{% endif %}" href="/general/api-keys?tab=log">3 · Quota log</a>
+  </span>
+  <span class="day"></span>
+  {% if tab == 'api' %}
+  <span class="badge">{{ keys | length }} key{{ 's' if keys | length != 1 }}</span>
+  <button type="button" data-mo="md-key">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> Add API key</button>
+  {% endif %}
+</div>
 
 {% if tab == 'api' %}
-<details class="khoi" style="margin:12px 0">
-  <summary style="cursor:pointer;font-weight:600">+ Add API key</summary>
-  <form class="dong" method="post" action="/general/api-keys/add"
-        style="flex-wrap:wrap;margin-top:10px">
-    <select name="loai_chon">
-      <option value="youtube">YouTube Data v3</option>
-      <option value="llm:claude">LLM — Claude</option>
-      <option value="llm:glm">LLM — GLM</option>
-      <option value="llm:gemini">LLM — Gemini</option>
-      <option value="llm:chatgpt">LLM — ChatGPT</option>
-      <option value="llm:deepseek">LLM — Deepseek</option>
-      <option value="veo">VEO</option>
-      <option value="seedream">Seedream</option>
-    </select>
-    <input name="khoa" type="password" placeholder="key (never shown again)" size="26" required>
-    <input name="model" placeholder="default model" size="16">
-    <button>Save key</button>
-  </form>
-</details>
-
-{% for loai in ['youtube', 'llm', 'veo', 'seedream'] %}
-<h2>{{ ten_loai[loai] }} <span class="chip">{{ theo_loai[loai] | length }} key{{ 's' if theo_loai[loai] | length != 1 }}</span></h2>
-<table>
+{% for loai, ten in ten_loai.items() %}
+<h2>{{ ten }} <span class="badge {% if theo_loai[loai] %}ok{% endif %}">{{ theo_loai[loai] | length }} key{{ 's' if theo_loai[loai] | length != 1 }}</span></h2>
+<table class="gon">
   <tr>{% if loai == 'llm' %}<th>Provider</th>{% else %}<th>#</th>{% endif %}
     <th>Key (tail)</th>{% if loai != 'youtube' %}<th>Model</th>{% endif %}
-    <th>Calls today</th><th>Status</th><th>Added</th><th></th></tr>
+    <th>Calls today</th>{% if loai == 'youtube' %}<th>Usage</th>{% endif %}
+    <th>Status</th><th>Added</th><th></th></tr>
   {% if loai == 'llm' %}
     {% for nha in nha_llm %}
       {% for k in theo_loai['llm'] if k.nha == nha %}
       <tr><td>{{ nha_info[nha].ten }}</td>
-        <td><span class="chip">••••{{ k.duoi }}</span></td>
+        <td><span class="chip-o">••••{{ k.duoi }}</span></td>
         <td>
           <form class="dong" method="post" action="/general/api-keys/model">
             <input type="hidden" name="id" value="{{ k.id }}">
@@ -53,24 +51,24 @@
             </select>
           </form></td>
         <td>{{ luot.get(k.duoi, 0) }}</td>
-        <td>{% if k.id in dang_dung %}<span class="chip">in use</span>{% else %}<span class="chip phu">idle</span>{% endif %}</td>
-        <td>{{ k.ngay or '—' }}</td>
+        <td>{% if k.id in dang_dung %}<span class="badge ok">in use</span>{% else %}<span class="badge">idle</span>{% endif %}</td>
+        <td class="phu">{{ k.ngay or '—' }}</td>
         <td>
           <form class="dong" method="post" action="/general/api-keys/revoke">
             <input type="hidden" name="id" value="{{ k.id }}">
             <input name="go_lai" size="5" placeholder="tail">
-            <button style="background:var(--loi)">Revoke</button>
+            <button class="nguy" style="padding:3px 10px">Revoke</button>
           </form></td></tr>
       {% endfor %}
       {% if theo_loai['llm'] | selectattr('nha', 'equalto', nha) | list | length == 0 %}
-      <tr><td>{{ nha_info[nha].ten }}</td><td><span class="chip phu">no key yet</span></td>
+      <tr><td>{{ nha_info[nha].ten }}</td><td><span class="badge">no key yet</span></td>
         <td>—</td><td>—</td><td>—</td><td>—</td><td></td></tr>
       {% endif %}
     {% endfor %}
   {% else %}
     {% for k in theo_loai[loai] %}
     <tr><td>{{ loop.index }}</td>
-      <td><span class="chip">••••{{ k.duoi }}</span></td>
+      <td><span class="chip-o">••••{{ k.duoi }}</span></td>
       {% if loai != 'youtube' %}
       <td>
         <form class="dong" method="post" action="/general/api-keys/model">
@@ -84,25 +82,56 @@
         </form></td>
       {% endif %}
       <td>{{ luot.get(k.duoi, 0) }}</td>
-      <td>{% if k.id in dang_dung %}<span class="chip">in use</span>{% else %}<span class="chip phu">idle</span>{% endif %}</td>
-      <td>{{ k.ngay or '—' }}</td>
+      {% if loai == 'youtube' %}
+      {% set pct = ((luot.get(k.duoi, 0) * 100 / 10000) | round | int) %}
+      <td><span class="usage"><i class="{% if pct >= 80 %}cao{% endif %}" style="width:{{ [pct, 100] | min }}%"></i></span></td>
+      {% endif %}
+      <td>{% if k.id in dang_dung %}<span class="badge ok">in use</span>{% else %}<span class="badge">idle</span>{% endif %}</td>
+      <td class="phu">{{ k.ngay or '—' }}</td>
       <td>
         <form class="dong" method="post" action="/general/api-keys/revoke">
           <input type="hidden" name="id" value="{{ k.id }}">
           <input name="go_lai" size="5" placeholder="tail">
-          <button style="background:var(--loi)">Revoke</button>
+          <button class="nguy" style="padding:3px 10px">Revoke</button>
         </form></td></tr>
     {% else %}
-    <tr><td colspan="{{ 6 if loai == 'youtube' else 7 }}" class="phu">No key yet.</td></tr>
+    <tr><td colspan="{{ 8 if loai == 'youtube' else 7 }}" class="phu">No key yet.</td></tr>
     {% endfor %}
   {% endif %}
 </table>
 {% endfor %}
 
+{# ===== MODAL Add API key (field y nguyên POST /general/api-keys/add) ===== #}
+<div class="modal-bg" id="md-key">
+  <div class="modal">
+    <h3>Add API key
+      <button type="button" class="dong-x" data-dong="md-key" aria-label="Close">✕</button></h3>
+    <form method="post" action="/general/api-keys/add">
+      <div class="form-grid">
+        <div><label>API type</label><select name="loai_chon">
+          <option value="youtube">YouTube Data v3</option>
+          <option value="llm:claude">LLM — Claude</option>
+          <option value="llm:glm">LLM — GLM</option>
+          <option value="llm:gemini">LLM — Gemini</option>
+          <option value="llm:chatgpt">LLM — ChatGPT</option>
+          <option value="llm:deepseek">LLM — Deepseek</option>
+          <option value="veo">VEO</option>
+          <option value="seedream">Seedream</option>
+          <option value="transcript">Transcript API</option>
+        </select></div>
+        <div><label>Key (never shown again)</label><input name="khoa" type="password" required></div>
+        <div><label>Default model</label><input name="model"></div>
+      </div>
+      <div style="margin-top:14px"><button>Save key</button>
+        <button type="button" class="phu" data-dong="md-key">Cancel</button></div>
+    </form>
+  </div>
+</div>
+
 {% elif tab == 'app' %}
 <h2>Per-app configuration</h2>
 {% if viec_api %}
-<form class="dong" method="get" action="/general/api-keys" style="margin-bottom:10px">
+<form class="toolbar" method="get" action="/general/api-keys">
   <input type="hidden" name="tab" value="app">
   <select name="app" onchange="this.form.submit()">
     {% for slug, muc in viec_api.items() %}
@@ -111,7 +140,7 @@
   </select>
 </form>
 {% set cap_app = cap_phat.get(app_chon, {}) %}
-<table>
+<table class="gon">
   <tr><th>App task (from contract)</th><th>API type</th><th>Assigned keys</th>
     <th>Mode</th><th>Model</th><th>Configured</th><th></th></tr>
   {% for v in viec_api[app_chon].viec %}
@@ -125,8 +154,8 @@
           <input type="hidden" name="app_slug" value="{{ app_chon }}">
           <input type="hidden" name="viec" value="{{ v.ma }}">
           <input type="hidden" name="go" value="{{ kid }}">
-          <span class="chip">{% if k.nha %}{{ k.nha }} {% endif %}••••{{ k.duoi }}</span>
-          <button style="padding:2px 7px" title="Remove">×</button>
+          <span class="chip-o">{% if k.nha %}{{ k.nha }} {% endif %}••••{{ k.duoi }}</span>
+          <button class="phu" style="padding:1px 7px" title="Remove">✕</button>
         </form>
         {% endfor %}
       {% endfor %}
@@ -140,14 +169,15 @@
           <option value="{{ k.id }}">{% if k.nha %}{{ k.nha }} {% endif %}••••{{ k.duoi }}</option>
           {% endfor %}
         </select>
-        <button style="padding:2px 8px">+ key</button>
+        <button class="phu" style="padding:3px 9px">
+          <svg class="ic" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> key</button>
       </form>
-      {% elif not ids %}<span class="chip phu">no key of this type — add in tab 1</span>{% endif %}
+      {% elif not ids %}<span class="badge bad">no key of this type — add in tab 1</span>{% endif %}
     </td>
-    <td>{% if ids | length > 1 %}<span class="chip">{{ {'xoay_vong': 'rotate', 'du_phong': 'failover'}.get(muc.get('che_do'), 'rotate') }} · {{ ids | length }} keys</span>
-        {% elif ids %}<span class="chip phu">single key</span>{% else %}—{% endif %}</td>
+    <td>{% if ids | length > 1 %}<span class="badge warn">{{ {'xoay_vong': 'rotate', 'du_phong': 'failover'}.get(muc.get('che_do'), 'rotate') }} · {{ ids | length }} keys</span>
+        {% elif ids %}<span class="badge">single key</span>{% else %}—{% endif %}</td>
     <td>{{ muc.get('model') or '—' }}</td>
-    <td>{{ muc.get('ngay') or '—' }}</td>
+    <td class="phu">{{ muc.get('ngay') or '—' }}</td>
     <td>
       <form class="dong" method="post" action="/general/api-keys/cap-phat">
         <input type="hidden" name="app_slug" value="{{ app_chon }}">
@@ -161,7 +191,7 @@
         {% if v.loai != 'youtube' %}
         <input name="model" size="13" placeholder="model" value="{{ muc.get('model', '') }}">
         {% endif %}
-        <button style="padding:2px 10px">Save</button>
+        <button style="padding:3px 12px">Save</button>
       </form></td></tr>
   {% endfor %}
 </table>
@@ -171,7 +201,7 @@
 
 {% elif tab == 'log' %}
 <h2>Quota log</h2>
-<form class="dong" method="get" action="/general/api-keys" style="margin-bottom:10px;flex-wrap:wrap">
+<form class="toolbar" method="get" action="/general/api-keys">
   <input type="hidden" name="tab" value="log">
   <input type="date" name="ngay" value="{{ ngay }}">
   <select name="loc_api">
@@ -187,15 +217,17 @@
     {% endfor %}
   </select>
   <input name="loc_app" size="12" placeholder="App" value="{{ loc.app }}">
-  <button>Filter</button>
-  <a class="chip" href="/general/api-keys/export?ngay={{ ngay }}&loc_api={{ loc.api }}&loc_khoa={{ loc.khoa }}&loc_app={{ loc.app }}">Export CSV</a>
+  <button class="phu">Filter</button>
+  <span class="day"></span>
+  <a class="chip-o" style="padding:6px 11px" href="/general/api-keys/export?ngay={{ ngay }}&loc_api={{ loc.api }}&loc_khoa={{ loc.khoa }}&loc_app={{ loc.app }}">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 11l5 5 5-5"/><path d="M5 21h14"/></svg> Export CSV</a>
 </form>
-<table>
+<table class="gon">
   <tr><th>Time</th><th>API</th><th>Key</th><th>App</th><th>Task</th>
     <th>Calls</th><th>Quota used</th></tr>
   {% for d in log_rows %}
-  <tr><td>{{ d.luc }}</td><td>{{ ten_loai.get(d.api, d.api) }}</td>
-    <td><span class="chip">••••{{ d.khoa_duoi }}</span></td>
+  <tr><td class="phu">{{ d.luc }}</td><td>{{ ten_loai.get(d.api, d.api) }}</td>
+    <td><span class="chip-o">••••{{ d.khoa_duoi }}</span></td>
     <td>{{ d.app }}</td><td>{{ d.viec }}</td>
     <td>{{ d.luot }}</td><td>{{ d.quota_tieu or '—' }}</td></tr>
   {% else %}
@@ -203,4 +235,29 @@
   {% endfor %}
 </table>
 {% endif %}
+
+<script>
+// JS THUẦN — modal chuẩn A1 (mousedown+click cùng trên nền mới đóng, Esc, ✕).
+(function () {
+  document.querySelectorAll('[data-mo]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      document.getElementById(b.dataset.mo).classList.add('show');
+    });
+  });
+  document.querySelectorAll('[data-dong]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      document.getElementById(b.dataset.dong).classList.remove('show');
+    });
+  });
+  document.querySelectorAll('.modal-bg').forEach(function (bg) {
+    var tuNen = false;
+    bg.addEventListener('mousedown', function (e) { tuNen = (e.target === bg); });
+    bg.addEventListener('click', function (e) { if (tuNen && e.target === bg) bg.classList.remove('show'); });
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') document.querySelectorAll('.modal-bg.show').forEach(
+      function (bg) { bg.classList.remove('show'); });
+  });
+})();
+</script>
 {% endblock %}

@@ -94,3 +94,16 @@ def test_proxy_cat_header_khung_va_wiring(client, monkeypatch):
     assert bat["khung"] is True
     client.get("/app/app-mau/")
     assert bat["khung"] is False
+
+
+def test_ui_a2_a3_modal_va_badge(client):
+    """UI A2/A3 theo chuẩn A1: API Keys có modal Add key + khối transcript hiện
+    (bug loop 4 loại cũ); Permissions dùng badge overrides — logic/field y nguyên."""
+    _login(client)
+    b = client.get("/general/api-keys").text
+    assert 'class="modal-bg" id="md-key"' in b and 'data-mo="md-key"' in b
+    assert "Transcript API" in b                        # loại thứ 5 hết vô hình
+    assert 'value="transcript"' in b                    # thêm được khóa transcript từ UI
+    b = client.get("/general/permissions?ten=nhanvien").text
+    assert "0 overrides" in b                           # badge chuẩn trên summary
+    assert 'class="badge ok">yes' in b                  # P2 badge thay chip

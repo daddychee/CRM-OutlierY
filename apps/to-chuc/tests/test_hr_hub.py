@@ -271,3 +271,15 @@ def test_leaves_doc_plan_that():
     b = _client().get("/hr?tab=leaves").text
     assert "ngoc-vh" in b
     assert ">1<" in b                                         # 1 ngày nghỉ trong kỳ
+
+
+def test_hr_accounts_toolbar_va_modal_nguoi_moi():
+    """UI A4 (chuẩn A1): tab Accounts có toolbar search + nút New person mở MODAL
+    (form create-full nằm TRONG modal, field y nguyên); H1b giữ inline."""
+    _iam_seed()
+    b = _client().get("/hr?tab=accounts").text
+    assert 'id="q-nguoi"' in b and 'id="nut-nguoi-moi"' in b      # toolbar
+    assert 'class="modal-bg" id="md-nguoi"' in b                  # modal
+    assert 'action="/general/accounts/create-full"' in b          # form không đổi
+    assert 'data-tim=' in b                                       # dữ liệu lọc client
+    assert 'id="h1b-' in b and "<summary" not in b                # H1b inline, hết details

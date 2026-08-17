@@ -102,13 +102,25 @@ Hạng mục đề xuất, xếp theo "Owner nhìn thấy nhiều nhất" (chố
    Logic/route/field/quyền giữ 100%. Bẫy modal V2 đã chặn: chỉ đóng khi mousedown
    VÀ click cùng trên nền (bôi đen kéo chuột ra ngoài không mất dữ liệu đang gõ);
    Esc + ✕ đóng; không alert/confirm.
-2. **API Keys** — dựng theo K1-K8 nhưng chưa soi mắt: bảng khóa, thanh usage,
-   badge trạng thái, modal Add key.
-3. **Permissions P1-P5** — khối `<details>` per app + badge N overrides mới dựng.
-4. **HR Hub tab Accounts gộp** — bảng + H1b chi tiết (double-click) + Documents.
+2. ~~**API Keys**~~ — **XONG 17/08**: tab bar .steps, modal Add key chuẩn A1,
+   badge/chip-o, thanh usage YouTube (token, fill --accent / ≥80% --loi), bảng
+   gọn (.gon) cho 19 khóa; FIX kèm: khối `transcript` trước bị VÔ HÌNH (loop
+   hardcode 4 loại) — giờ loop theo ten_loai + option thêm khóa transcript.
+3. ~~**Permissions P1-P5**~~ — **XONG 17/08**: P1/P3 thành .toolbar, mọi chip
+   trạng thái → .badge(.ok/.warn/.bad), summary badge 'N overrides', ô lệch
+   giữ viền accent (.le), nút Remove → .nguy. Form/field/route y nguyên.
+4. ~~**HR Hub tab Accounts**~~ — **XONG 17/08**: toolbar search (lọc client
+   data-tim) + nút New person mở MODAL (form create-full y nguyên trong modal);
+   **H1b GIỮ INLINE** (khối chi tiết dài, double-click + mọi ID JS giữ nguyên).
+   CSS: lớp modal/toolbar đặt CỤC BỘ trong style_them của hr.html theo token
+   to-chuc (KHÔNG chép vào base.html app — chỉ hr.html cần, template tự nạp
+   lại không phải restart).
 
-**B. Nhất quán vỏ** — khung `/open/<slug>` mới (nen_khung_app.html viết ĐỘC LẬP,
-không extends) phải cùng token/spacing với 3 base.html; kiểm 2 theme sáng/tối.
+**B. Nhất quán vỏ** — **XONG 17/08**: nen_khung_app.html đã khớp 3 base.html —
+token 2 theme diff = GIỐNG HỆT (đo bằng diff chuỗi :root), topbar về đúng khuôn
+app (52px · padding 0 22px · nền --bg · h1 15px/600/--th-c2cbd9 · ngày
+--th-9aa5b5), thêm favicon SVG như các app. Đổi brand/token sau này phải sửa
+cả file này (đã ghi comment trong template).
 
 **C. Nợ cũ còn treo** (mục "Việc treo UI" ở trên): phá đóng băng hoi_dap.html
 (dịch 5 khối script + emoji→SVG), emoji trong chuỗi JS trang khác, nhãn server

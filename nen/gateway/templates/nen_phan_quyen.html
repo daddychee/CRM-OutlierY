@@ -5,24 +5,27 @@
    DE.md mục 14): mặc định đi theo tài khoản (chỉ đọc), trang đi sâu NGOẠI LỆ,
    ưu tiên OVERRIDE > ACTING LEVEL > default. #}
 <style>
-  details.app{border:1px solid var(--vien);border-radius:10px;margin:8px 0;padding:0 12px;background:var(--the)}
-  details.app summary{cursor:pointer;padding:10px 0;font-weight:600;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  details.app{border:1px solid var(--vien);border-radius:12px;margin:8px 0;padding:0 14px;background:var(--the)}
+  details.app summary{cursor:pointer;padding:11px 0;font-weight:600;display:flex;gap:8px;align-items:center;flex-wrap:wrap;list-style:none}
+  details.app summary::-webkit-details-marker{display:none}
   details.app[open] summary{border-bottom:1px solid var(--vien)}
+  details.app table{border:0}
   .le td{outline:2px solid var(--accent);outline-offset:-2px}
   .uu-tien{font-size:12px;color:var(--phu)}
 </style>
 
 <h2>Person</h2>
 <div class="khoi">
-  <form class="dong" method="get" action="/general/permissions" style="flex-wrap:wrap">
+  <form class="toolbar" method="get" action="/general/permissions" style="margin-bottom:0">
     <select name="ten" style="min-width:300px" onchange="this.form.submit()">
       <option value="">— select a person —</option>
       {% for t in tai_khoan %}
       <option value="{{ t.ten }}"{% if t.ten == ten_chon %} selected{% endif %}>{{ t.ten }}{% if ho_ten_cua.get(t.ten) %} · {{ ho_ten_cua.get(t.ten) }}{% endif %} — {{ t.bo_phan }} · L{{ t.level }} {{ ten_level.get(t.level, '') }}</option>
       {% endfor %}
     </select>
-    {% if ten_chon %}<span class="chip">viewing: {{ ten_chon }}</span>{% endif %}
-    <span class="uu-tien" style="margin-left:auto">Priority: OVERRIDE &gt; ACTING LEVEL &gt; default</span>
+    {% if ten_chon %}<span class="badge warn">viewing: {{ ten_chon }}</span>{% endif %}
+    <span class="day"></span>
+    <span class="uu-tien">Priority: OVERRIDE &gt; ACTING LEVEL &gt; default</span>
   </form>
   {% if chon %}
   <form class="dong" method="post" action="/general/permissions/delegate" style="margin-top:8px">
@@ -43,7 +46,7 @@
   <tr><th>App / Hub</th><th>Can enter?</th><th>Role in app</th><th>Why</th></tr>
   {% for a in apps_p2 %}
   <tr><td>{{ a.ten }}</td>
-    <td>{% if a.vao %}<span class="chip" style="color:var(--ok)">yes</span>{% else %}<span class="chip">no</span>{% endif %}</td>
+    <td>{% if a.vao %}<span class="badge ok">yes</span>{% else %}<span class="badge">no</span>{% endif %}</td>
     <td>{{ a.vai }}</td><td class="phu">{{ a.vi_sao }}</td></tr>
   {% endfor %}
 </table>
@@ -51,7 +54,7 @@
 
 <h2>Acting level</h2>
 <div class="khoi">
-  <form class="dong" method="post" action="/general/permissions/acting" style="flex-wrap:wrap">
+  <form class="toolbar" method="post" action="/general/permissions/acting" style="margin-bottom:0">
     <input type="hidden" name="ten" value="{{ ten_chon }}">
     <span>{{ ten_chon }} accesses as level:</span>
     <select name="cap">
@@ -63,9 +66,10 @@
     <input name="ly_do" placeholder="reason" size="24"{% if acting %} value="{{ acting.ly_do }}"{% endif %}>
     <button>Save</button>
     {% if acting %}
-    <span class="chip" style="color:var(--accent)">acting: L{{ chon.level }} → L{{ acting.cap }}</span>
+    <span class="badge warn">acting: L{{ chon.level }} → L{{ acting.cap }}</span>
     {% endif %}
-    <span class="uu-tien" style="margin-left:auto">Real level unchanged · a real Owner (L5) is never lowered</span>
+    <span class="day"></span>
+    <span class="uu-tien">Real level unchanged · a real Owner (L5) is never lowered</span>
   </form>
 </div>
 
@@ -75,8 +79,8 @@
   {% for k in khoi_p4 %}
   <details class="app"{% if k.so_le %} open{% endif %}>
     <summary>{{ k.ten }}
-      {% if k.so_le %}<span class="chip" style="color:var(--accent)">{{ k.so_le }} override{{ 's' if k.so_le != 1 }}</span>
-      {% else %}<span class="chip">0 overrides</span>{% endif %}
+      {% if k.so_le %}<span class="badge warn">{{ k.so_le }} override{{ 's' if k.so_le != 1 }}</span>
+      {% else %}<span class="badge">0 overrides</span>{% endif %}
       {% if k.slug != '*' %}<span class="uu-tien" style="font-weight:400">roles: viewer &lt; leader &lt; manager &lt; admin</span>{% endif %}
     </summary>
     <table style="border:0">
@@ -85,11 +89,11 @@
       <tr{% if h.nguon == 'override' %} class="le"{% endif %}>
         <td>{{ h.nhan }}</td><td class="phu">{{ h.mo_ta }}</td>
         <td class="phu">{{ h.mac_dinh }}</td>
-        <td>{% if h.hieu_luc %}<span class="chip" style="color:var(--ok)">YES{% if h.nguon != 'default' %} ({{ h.nguon }}){% endif %}</span>
-            {% else %}<span class="chip">NO{% if h.nguon != 'default' %} ({{ h.nguon }}){% endif %}</span>{% endif %}</td>
+        <td>{% if h.hieu_luc %}<span class="badge ok">YES{% if h.nguon != 'default' %} ({{ h.nguon }}){% endif %}</span>
+            {% else %}<span class="badge">NO{% if h.nguon != 'default' %} ({{ h.nguon }}){% endif %}</span>{% endif %}</td>
         <td>
           {% if chon.level >= 5 %}
-          <span class="chip">Owner — locked</span>
+          <span class="badge">Owner — locked</span>
           {% else %}
           <select name="dat__{{ k.slug }}__{{ h.ma }}">
             <option value="ke_thua"{% if h.dat == 'ke_thua' %} selected{% endif %}>inherit</option>
@@ -120,7 +124,7 @@
   <tr><td class="tk">{{ r.ten_tai_khoan }}{% if ho_ten_cua.get(r.ten_tai_khoan) %} · {{ ho_ten_cua.get(r.ten_tai_khoan) }}{% endif %}</td>
     <td>{{ ten_app.get(r.app_slug, r.app_slug) }}</td>
     <td>{{ nhan_hd.get((r.app_slug, r.hanh_dong), r.hanh_dong) }}</td>
-    <td>{% if r.cho_phep %}<span class="chip" style="color:var(--ok)">allow</span>{% else %}<span class="chip" style="color:var(--loi)">deny</span>{% endif %}</td>
+    <td>{% if r.cho_phep %}<span class="badge ok">allow</span>{% else %}<span class="badge bad">deny</span>{% endif %}</td>
     <td class="phu">{{ r.ly_do or '—' }}</td>
     <td class="phu">{{ (r.luc or '')[:10] or '—' }}{% if r.ai_gan %} · {{ r.ai_gan }}{% endif %}</td>
     <td>
@@ -129,7 +133,7 @@
         <input type="hidden" name="app_slug" value="{{ r.app_slug }}">
         <input type="hidden" name="hanh_dong" value="{{ r.hanh_dong }}">
         <input type="hidden" name="gia_tri" value="ke_thua">
-        <button style="background:var(--loi)">Remove</button>
+        <button class="nguy">Remove</button>
       </form>
     </td></tr>
   {% else %}
