@@ -87,10 +87,10 @@ def dat_bi_mat(conn: sqlite3.Connection, khoa: str, gia_tri: str) -> None:
     ma = _fernet().encrypt(gia_tri.encode("utf-8")).decode("ascii")
     with conn:
         conn.execute(
-            "INSERT INTO bi_mat (khoa, gia_tri_ma, duoi, sua_luc) VALUES (?,?,?,?) "
+            "INSERT INTO bi_mat (khoa, gia_tri_ma, duoi, dau, sua_luc) VALUES (?,?,?,?,?) "
             "ON CONFLICT(khoa) DO UPDATE SET gia_tri_ma=excluded.gia_tri_ma, "
-            "duoi=excluded.duoi, sua_luc=excluded.sua_luc",
-            (khoa, ma, gia_tri[-4:], _gio()))
+            "duoi=excluded.duoi, dau=excluded.dau, sua_luc=excluded.sua_luc",
+            (khoa, ma, gia_tri[-4:], gia_tri[:3], _gio()))
 
 
 def lay_bi_mat(conn: sqlite3.Connection, khoa: str) -> str | None:
@@ -101,13 +101,37 @@ def lay_bi_mat(conn: sqlite3.Connection, khoa: str) -> str | None:
 
 
 def liet_ke(conn: sqlite3.Connection) -> dict:
-    """Cho UI: cau_hinh đầy đủ; bi_mat CHỈ khóa + đuôi (không bao giờ trả plaintext)."""
+    """Cho UI: cau_hinh đầy đủ; bi_mat CHỈ khóa + đầu/đuôi (không bao giờ trả plaintext)."""
     return {
         "cau_hinh": [dict(r) for r in
                      conn.execute("SELECT * FROM cau_hinh ORDER BY khoa").fetchall()],
-        "bi_mat": [{"khoa": r["khoa"], "duoi": r["duoi"], "sua_luc": r["sua_luc"]}
+        "bi_mat": [{"khoa": r["khoa"], "dau": r["dau"], "duoi": r["duoi"],
+                    "sua_luc": r["sua_luc"]}
                    for r in conn.execute("SELECT * FROM bi_mat ORDER BY khoa").fetchall()],
     }
+
+
+def backfill_dau_khoa(conn: sqlite3.Connection) -> int:
+    """Backfill MỘT LẦN cột 'dau' cho khóa nạp TRƯỚC migration 002 (dau rỗng).
+    Idempotent: chỉ xử lý dòng dau='' → lần sau SELECT rỗng, không giải mã lại.
+    Giải mã CHỈ để cắt 3 ký tự đầu — TUYỆT ĐỐI không log/in giá trị đầy đủ ở bất
+    cứ đâu; KHÔNG đụng gia_tri_ma/sua_luc. Gọi mỗi lần mở trang API Keys (khuôn
+    di_tru_llm_cu — rẻ vì hàng đã có dau bị SELECT loại ngay, không decrypt lại)."""
+    rows = conn.execute("SELECT khoa, gia_tri_ma FROM bi_mat WHERE dau=''").fetchall()
+    if not rows:
+        return 0
+    f = _fernet()
+    so = 0
+    with conn:
+        for r in rows:
+            try:
+                plaintext = f.decrypt(r["gia_tri_ma"].encode("ascii")).decode("utf-8")
+            except Exception:
+                continue   # khóa hỏng/không giải mã được — bỏ qua, không chết cả đợt
+            conn.execute("UPDATE bi_mat SET dau=? WHERE khoa=?",
+                        (plaintext[:3], r["khoa"]))
+            so += 1
+    return so
 
 
 # ---------- API KEYS theo LOẠI (trang /general/api-keys — DE.md mục 12.3, K1-K8) ----------
@@ -174,18 +198,18 @@ def them_api_key(conn: sqlite3.Connection, loai: str, khoa: str,
 
 
 def liet_ke_api_keys(conn: sqlite3.Connection) -> list[dict]:
-    """Cho UI: id + loại/nhà/model/ngày + ĐUÔI 4 — không bao giờ trả plaintext."""
+    """Cho UI: id + loại/nhà/model/ngày + ĐẦU 3/ĐUÔI 4 — không bao giờ trả plaintext."""
     ra = []
     for r in conn.execute("SELECT khoa, gia_tri FROM cau_hinh "
                           "WHERE khoa LIKE 'api.api-%.loai' ORDER BY khoa"):
         kid = r["khoa"].split(".")[1]
-        b = conn.execute("SELECT duoi FROM bi_mat WHERE khoa=?",
+        b = conn.execute("SELECT dau, duoi FROM bi_mat WHERE khoa=?",
                          (f"api.{kid}.key",)).fetchone()
         ra.append({"id": kid, "loai": r["gia_tri"],
                    "nha": lay_cau_hinh(conn, f"api.{kid}.nha"),
                    "model": lay_cau_hinh(conn, f"api.{kid}.model"),
                    "ngay": lay_cau_hinh(conn, f"api.{kid}.ngay"),
-                   "duoi": b["duoi"] if b else ""})
+                   "dau": b["dau"] if b else "", "duoi": b["duoi"] if b else ""})
     return ra
 
 

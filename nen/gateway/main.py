@@ -996,6 +996,7 @@ def _render_api_keys(request: Request, user: dict, bao: str = "",
     conn = ket.ket_noi()
     try:
         di_tru = ket.di_tru_llm_cu(conn)   # idempotent — mục cũ giữ làm fallback
+        ket.backfill_dau_khoa(conn)        # idempotent — khóa cũ chưa có 'dau'
         keys = ket.liet_ke_api_keys(conn)
         cap_phat = ket.doc_cap_phat(conn)
     finally:
@@ -1024,9 +1025,14 @@ def _render_api_keys(request: Request, user: dict, bao: str = "",
     log_rows = quota_log.doc(ngay, loc["api"], loc["khoa"], loc["app"]) \
         if tab == "log" else []
     from datetime import date as _date
+    # Quota log chỉ ghi ĐUÔI (khuôn P4 cũ, không đổi schema log) — tra 'dau' để
+    # hiển thị đồng bộ; khóa đã thu hồi thì không tra được, hiện đuôi trơn (đúng
+    # — bí mật đã xóa hẳn khỏi két, không còn nguồn nào tính lại đầu).
+    dau_theo_duoi = {k["duoi"]: k["dau"] for k in keys}
     return templates.TemplateResponse(request, "nen_api_keys.html", {
         "user": user, "trang": "api-keys", "tab": tab, "bao": bao, "loi": loi,
         "keys": keys, "theo_loai": theo_loai, "dang_dung": dang_dung,
+        "dau_theo_duoi": dau_theo_duoi,
         "luot": quota_log.luot_hom_nay(), "cap_phat": cap_phat,
         "viec_api": viec_api, "app_chon": app_chon,
         "nha_llm": ket.NHA_LLM, "nha_info": ket.NHA_LLM_INFO,

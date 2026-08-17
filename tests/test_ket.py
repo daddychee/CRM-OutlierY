@@ -135,6 +135,54 @@ def test_cau_hinh_llm_resolve_tu_cap_phat_moi(conn):
     assert ket.cau_hinh_llm(conn, "critic")["provider"] == ""
 
 
+def _bi_mat_theo_khoa(conn, khoa):
+    return next(r for r in ket.liet_ke(conn)["bi_mat"] if r["khoa"] == khoa)
+
+
+def test_dau_khoa_luu_dung_3_ky_tu(conn):
+    """Owner chốt 17/08: hiển thị khóa 'dau···duoi' — dat_bi_mat lưu 3 ký tự đầu
+    ngang hàng đuôi 4; liet_ke() + liet_ke_api_keys() đều trả 'dau', không trả
+    plaintext ở bất cứ trường nào."""
+    ket.dat_bi_mat(conn, "llm.writer.api_key", "sk-9999xyza")
+    r = _bi_mat_theo_khoa(conn, "llm.writer.api_key")
+    assert r["dau"] == "sk-" and r["duoi"] == "xyza"
+    assert not any("sk-9999xyza" in str(v) for v in r.values())
+
+    kid = ket.them_api_key(conn, "youtube", "AIzaSyABCDEF1234567890")
+    muc = next(k for k in ket.liet_ke_api_keys(conn) if k["id"] == kid)
+    assert muc["dau"] == "AIz" and muc["duoi"] == "7890"
+    assert not any("AIzaSyABCDEF1234567890" in str(v) for v in muc.values())
+
+    # ghi đè cùng khóa (ON CONFLICT) → dau/duoi cập nhật theo giá trị mới
+    ket.dat_bi_mat(conn, "llm.writer.api_key", "zz-khac-han-0000")
+    r2 = _bi_mat_theo_khoa(conn, "llm.writer.api_key")
+    assert r2["dau"] == "zz-" and r2["duoi"] == "0000"
+
+
+def test_backfill_dau_khoa_idempotent(conn):
+    """Khóa nạp TRƯỚC migration 002 (dau rỗng) → backfill tính đúng từ bản mã;
+    KHÔNG đụng gia_tri_ma/sua_luc; gọi lần 2 không đổi gì (idempotent)."""
+    ket.dat_bi_mat(conn, "llm.writer.api_key", "sk-that-1234")
+    # mô phỏng dòng cũ trước migration: xóa dau về rỗng như DEFAULT của cột mới
+    with conn:
+        conn.execute("UPDATE bi_mat SET dau='' WHERE khoa='llm.writer.api_key'")
+    truoc = dict(conn.execute(
+        "SELECT gia_tri_ma, sua_luc FROM bi_mat WHERE khoa='llm.writer.api_key'"
+    ).fetchone())
+
+    so = ket.backfill_dau_khoa(conn)
+    assert so == 1
+    r = conn.execute(
+        "SELECT dau, gia_tri_ma, sua_luc FROM bi_mat WHERE khoa='llm.writer.api_key'"
+    ).fetchone()
+    assert r["dau"] == "sk-"
+    assert r["gia_tri_ma"] == truoc["gia_tri_ma"]   # không ghi lại bản mã
+    assert r["sua_luc"] == truoc["sua_luc"]         # không đụng mốc sửa
+
+    assert ket.backfill_dau_khoa(conn) == 0         # lần 2: không còn dòng dau='' → idempotent
+    assert ket.lay_bi_mat(conn, "llm.writer.api_key") == "sk-that-1234"  # giải mã vẫn đúng
+
+
 def test_di_tru_llm_cu_idempotent_giu_base_url(conn):
     ket.dat_cau_hinh(conn, "llm.writer.provider", "openai_compatible")
     ket.dat_cau_hinh(conn, "llm.writer.model", "glm-4.5-air")

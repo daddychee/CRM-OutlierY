@@ -5,14 +5,22 @@
    (toolbar · chip-o · badge · modal chống-bay-dữ-liệu · steps). Route, tên field,
    gate GIỮ NGUYÊN 100% — chỉ đổi lớp trình bày. Khối khóa hiển thị THEO MỌI LOẠI
    trong ten_loai (bản cũ hardcode 4 loại — khóa transcript bị vô hình). #}
+{# Owner chốt 17/08 (ảnh chip xếp lưới "không có giá trị gì cả"): Assigned keys
+   (tab 2) đổi từ chip-wrap sang MỘT KHÓA MỘT DÒNG, tối đa 5 dòng + nút Show more
+   (.khoa-list/.khoa-dong/.an-di dưới đây). Chuỗi hiển thị khóa đổi từ ••••duoi
+   sang dau···duoi qua macro khoa_ngan (đủ nhận diện hơn chỉ-đuôi). #}
 <style>
   table.gon th, table.gon td{padding:5px 11px}
   .usage{display:inline-block;width:86px;height:7px;border-radius:999px;background:var(--vien);
         vertical-align:middle;overflow:hidden}
   .usage i{display:block;height:100%;background:var(--accent)}
   .usage i.cao{background:var(--loi)}
-  .khoa-list{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+  .khoa-list{display:flex;flex-direction:column;gap:4px}
+  .khoa-list form.khoa-dong{display:flex;justify-content:space-between;align-items:center;gap:8px}
+  .khoa-list .an-di{display:none}
 </style>
+
+{% macro khoa_ngan(dau, duoi) %}{{ dau }}···{{ duoi }}{% endmacro %}
 
 <div class="toolbar" style="margin-top:2px">
   <span class="steps">
@@ -40,7 +48,7 @@
     {% for nha in nha_llm %}
       {% for k in theo_loai['llm'] if k.nha == nha %}
       <tr><td>{{ nha_info[nha].ten }}</td>
-        <td><span class="chip-o">••••{{ k.duoi }}</span></td>
+        <td><span class="chip-o">{{ khoa_ngan(k.dau, k.duoi) }}</span></td>
         <td>
           <form class="dong" method="post" action="/general/api-keys/model">
             <input type="hidden" name="id" value="{{ k.id }}">
@@ -69,7 +77,7 @@
   {% else %}
     {% for k in theo_loai[loai] %}
     <tr><td>{{ loop.index }}</td>
-      <td><span class="chip-o">••••{{ k.duoi }}</span></td>
+      <td><span class="chip-o">{{ khoa_ngan(k.dau, k.duoi) }}</span></td>
       {% if loai != 'youtube' %}
       <td>
         <form class="dong" method="post" action="/general/api-keys/model">
@@ -152,11 +160,11 @@
       <div class="khoa-list">
       {% for kid in ids %}
         {% for k in keys if k.id == kid %}
-        <form class="dong" method="post" action="/general/api-keys/cap-phat">
+        <form class="khoa-dong" method="post" action="/general/api-keys/cap-phat">
           <input type="hidden" name="app_slug" value="{{ app_chon }}">
           <input type="hidden" name="viec" value="{{ v.ma }}">
           <input type="hidden" name="go" value="{{ kid }}">
-          <span class="chip-o">{% if k.nha %}{{ k.nha }} {% endif %}••••{{ k.duoi }}</span>
+          <span class="chip-o">{% if k.nha %}{{ k.nha }} {% endif %}{{ khoa_ngan(k.dau, k.duoi) }}</span>
           <button class="phu" style="padding:1px 7px" title="Remove">✕</button>
         </form>
         {% endfor %}
@@ -168,7 +176,7 @@
         <input type="hidden" name="viec" value="{{ v.ma }}">
         <select name="them">
           {% for k in con_lai %}
-          <option value="{{ k.id }}">{% if k.nha %}{{ k.nha }} {% endif %}••••{{ k.duoi }}</option>
+          <option value="{{ k.id }}">{% if k.nha %}{{ k.nha }} {% endif %}{{ khoa_ngan(k.dau, k.duoi) }}</option>
           {% endfor %}
         </select>
         <button class="phu" style="padding:3px 9px">
@@ -216,7 +224,7 @@
   <select name="loc_khoa">
     <option value="">Key: All</option>
     {% for k in keys %}
-    <option value="{{ k.duoi }}"{% if loc.khoa == k.duoi %} selected{% endif %}>••••{{ k.duoi }}</option>
+    <option value="{{ k.duoi }}"{% if loc.khoa == k.duoi %} selected{% endif %}>{{ khoa_ngan(k.dau, k.duoi) }}</option>
     {% endfor %}
   </select>
   <input name="loc_app" size="12" placeholder="App" value="{{ loc.app }}">
@@ -230,7 +238,7 @@
     <th>Calls</th><th>Quota used</th></tr>
   {% for d in log_rows %}
   <tr><td class="phu">{{ d.luc }}</td><td>{{ ten_loai.get(d.api, d.api) }}</td>
-    <td><span class="chip-o">••••{{ d.khoa_duoi }}</span></td>
+    <td><span class="chip-o">{{ khoa_ngan(dau_theo_duoi.get(d.khoa_duoi, ''), d.khoa_duoi) }}</span></td>
     <td>{{ d.app }}</td><td>{{ d.viec }}</td>
     <td>{{ d.luot }}</td><td>{{ d.quota_tieu or '—' }}</td></tr>
   {% else %}
@@ -260,6 +268,27 @@
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape') document.querySelectorAll('.modal-bg.show').forEach(
       function (bg) { bg.classList.remove('show'); });
+  });
+
+  // Assigned keys (tab 2): tối đa 5 dòng, phần dư ẩn + nút "Show more" —
+  // JS thuần, an toàn HTTP LAN. Mỗi .khoa-list (một ô "Assigned keys") tự tính
+  // riêng, không đụng ô khác.
+  document.querySelectorAll('.khoa-list').forEach(function (kl) {
+    var hang = Array.prototype.slice.call(kl.querySelectorAll('form.khoa-dong'));
+    if (hang.length <= 5) return;
+    var an = hang.slice(5);
+    an.forEach(function (h) { h.classList.add('an-di'); });
+    var nut = document.createElement('button');
+    nut.type = 'button';
+    nut.className = 'phu';
+    nut.style.padding = '1px 9px';
+    nut.style.fontSize = '.8rem';
+    nut.textContent = 'Show more (' + an.length + ')';
+    nut.addEventListener('click', function () {
+      an.forEach(function (h) { h.classList.remove('an-di'); });
+      nut.remove();
+    });
+    kl.appendChild(nut);
   });
 })();
 </script>

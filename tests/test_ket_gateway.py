@@ -66,7 +66,7 @@ def test_owner_luu_vai_llm_va_key_write_only(client):
     assert r.status_code == 303
     trang = client.get("/general/api-keys").text     # migration chạy lúc mở trang
     assert "glm-4.5-air" in trang
-    assert "••••9999" in trang            # chỉ đuôi
+    assert "sk-···9999" in trang          # dau···duoi (Owner chốt 17/08)
     assert "sk-that-9999" not in trang    # KHÔNG bao giờ hiện lại key
     conn = ket.ket_noi()
     assert len(ket.liet_ke_api_keys(conn)) == 1      # mục cũ → 1 khóa LLM
@@ -94,7 +94,7 @@ def test_trang_api_keys_them_thu_hoi_cap_phat(client):
         "loai_chon": "llm:glm", "khoa": "sk-ui-2468", "model": "glm-4.5-air"})
     assert r.status_code == 303 and "bao=" in r.headers["location"]
     trang = client.get("/general/api-keys").text
-    assert "••••2468" in trang and "sk-ui-2468" not in trang
+    assert "sk-···2468" in trang and "sk-ui-2468" not in trang
 
     r = client.post("/general/api-keys/cap-phat", data={     # cấp cho việc hợp đồng
         "app_slug": "ai-agent", "viec": "writer", "them": "api-001"})
@@ -123,6 +123,35 @@ def test_trang_api_keys_them_thu_hoi_cap_phat(client):
     nk = iam.ket_noi()
     assert not any("sk-ui-2468" in d["chi_tiet"] for d in iam.doc_nhat_ky(nk, 20))
     nk.close()                                               # audit không chứa key
+
+
+def test_assigned_keys_cot_doc_dau_duoi_va_show_more_wiring(client):
+    """Owner chốt 17/08 (ảnh chip xếp lưới 'không có giá trị gì cả'): tab 2
+    'Per-app config' — Assigned keys hiện MỘT KHÓA MỘT DÒNG dạng dau···duoi
+    (không còn chip-wrap ngang ••••duoi); wiring JS 'tối đa 5 dòng + Show more'
+    có mặt (đếm/ẩn thật là hành vi runtime trình duyệt — kiểm markup+script tĩnh)."""
+    _login(client, "owner-test", "mk-test")
+    conn = ket.ket_noi()
+    ids = [ket.them_api_key(conn, "youtube", f"AIzaKhoaThu{i:02d}xxxxx")
+           for i in range(6)]                     # 6 khóa > 5 để chạm ngưỡng Show more
+    ket.luu_cap_phat_viec(conn, "radary", "harvest", ids, "xoay_vong")
+    conn.close()
+
+    trang = client.get("/general/api-keys?tab=app&app=radary").text
+    assert 'class="khoa-list"' in trang
+    assert trang.count('class="khoa-dong"') == 6      # mỗi khóa MỘT form riêng, đủ 6
+    assert "AIz···" in trang                           # dau···duoi, không phải ••••duoi
+    assert "••••" not in trang                         # chip-wrap kiểu cũ đã hết dấu chấm
+
+    # CSS: cột dọc (không còn flex-wrap ngang cho danh sách khóa) — trang có 2
+    # khối <style> (nen_base.html + cục bộ trang này), tìm đúng luật cần
+    assert ".khoa-list{display:flex;flex-direction:column;gap:4px}" in trang
+    assert ".khoa-list .an-di{display:none}" in trang
+
+    # JS: cơ chế tối đa 5 dòng + nút Show more đúng số dòng ẩn
+    js = trang.rsplit("<script>", 1)[1]
+    assert "form.khoa-dong" in js and "hang.length <= 5" in js
+    assert "'Show more ('" in js and "an-di" in js
 
 
 def test_api_loopback_tra_du_va_chan_khong_loopback(he):
