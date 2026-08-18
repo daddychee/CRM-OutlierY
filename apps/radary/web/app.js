@@ -459,7 +459,7 @@ function LineChart({ title, pts, bands, markers, yfmt, height, xfmt, xstep, xtip
           <line x1=${L} x2=${W-R} y1=${y(v)} y2=${y(v)} stroke="var(--viz-grid)" stroke-width="1" stroke-dasharray="2 4"/>
           <text x=${L-6} y=${y(v)+4} text-anchor="end" font-size="10" fill="var(--muted)">${yfmt(v)}</text>`)}
         ${xticks.map(h => html`
-          <text x=${x(h)} y=${H-8} text-anchor="middle" font-size="10" fill="var(--muted)">${h/24}d</text>`)}
+          <text x=${x(h)} y=${H-8} text-anchor="middle" font-size="10" fill="var(--muted)">${xfmt ? xfmt(h) : Math.round(h/24*10)/10 + 'd'}</text>`)}
         ${bands.length > 0 && html`
           <path d="${pathOf(bands.map(b => [x(b.age_h), y(b.p75)])) + ' ' +
                     bands.slice().reverse().map(b => 'L' + x(b.age_h).toFixed(1) + ',' + y(b.p25).toFixed(1)).join(' ') + ' Z'}"
@@ -1600,7 +1600,9 @@ function NicheVolume({ ma, ten }) {
       .then(x => { setD(x); setErr(''); }).catch(e => setErr(String(e.message)));
   }, [ma, days]);
   const pts = d ? d.pts : [];
-  const xf = i => { const p = pts[Math.round(i)]; return p ? p.ngay.slice(8) + '/' + p.ngay.slice(5, 7) : ''; };
+  // LineChart nói thang GIỜ (trục ép sàn 24): mỗi NGÀY = 24 đơn vị, nhãn trục
+  // hoành = NGÀY dd/mm (không còn '0.1666d' — bug user bắt 19/08)
+  const xf = h => { const p = pts[Math.round(h / 24)]; return p ? p.ngay.slice(8) + '/' + p.ngay.slice(5, 7) : ''; };
   return html`
     <div class="panel">
       <h2>Volume cả ngách — ${ten} <small>· cộng mọi pool thị trường trong phạm vi của bạn · số đo thật từ nhịp quét</small></h2>
@@ -1612,9 +1614,9 @@ function NicheVolume({ ma, ten }) {
       ${!d && !err ? html`<div class="note" style="margin-top:8px"><span class="spin"></span> Đang tải…</div>`
         : d && pts.length < 2 ? html`<div class="note" style="margin-top:8px">Chưa đủ dữ liệu nhịp trong khoảng này —
             volume dày lên theo thời gian quét; pool mới tách tích từ lúc tách.</div>`
-        : d && html`<${LineChart} title="Sóng views cả ngách — views cộng thêm mỗi ngày (mọi pool)" height=${200}
-            pts=${pts.map((p, i) => [i, p.dviews])} bands=${[]} markers=${[]}
-            yfmt=${kfmt} xfmt=${xf} xstep=${Math.max(1, Math.ceil(pts.length / 8))} xtipfmt=${xf}/>`}
+        : d && html`<${LineChart} title="Sóng views cả ngách — trục ngang: NGÀY (dd/mm) · trục dọc: views CỘNG THÊM trong ngày, gộp mọi pool thị trường" height=${200}
+            pts=${pts.map((p, i) => [i * 24, p.dviews])} bands=${[]} markers=${[]}
+            yfmt=${kfmt} xfmt=${xf} xstep=${24 * Math.max(1, Math.ceil(pts.length / 8))} xtipfmt=${xf}/>`}
       ${d && html`
         <div class="tablewrap" style="margin-top:10px"><table>
           <tr><th>Thị trường</th><th class="num">Kênh</th><th class="num">Video</th>
