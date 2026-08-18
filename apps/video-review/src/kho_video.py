@@ -203,3 +203,60 @@ def mo_lai_binh_luan(bl_id: int, nguoi: str, la_duyet: bool) -> None:
 
 def xoa_binh_luan(bl_id: int, nguoi: str, la_duyet: bool) -> None:
     _sua_binh_luan(bl_id, nguoi, la_duyet, "DELETE FROM binh_luan WHERE id=?")
+
+
+# ---------- phụ đề (file .srt/.vtt nằm CẠNH video trong kho — quy ước tên,
+# không cần migration; mỗi video tối đa MỘT phụ đề) ----------
+
+DUOI_PHU_DE = (".srt", ".vtt")
+
+
+def duong_phu_de(video: dict) -> Path | None:
+    goc = kho_dir() / video["duong"]
+    for duoi in DUOI_PHU_DE:
+        p = goc.with_name(goc.name + duoi)
+        if p.is_file():
+            return p
+    return None
+
+
+def doc_phu_de_bytes(b: bytes) -> str:
+    """SRT ngoài đời đủ kiểu encoding (CapCut/Premiere UTF-8, tool cũ UTF-16) —
+    thử lần lượt, bí quá thay ký tự hỏng chứ không nổ."""
+    for enc in ("utf-8-sig", "utf-16"):
+        try:
+            return b.decode(enc)
+        except UnicodeDecodeError:
+            pass
+    return b.decode("utf-8", errors="replace")
+
+
+def srt_sang_vtt(chu: str) -> str:
+    """SRT → WebVTT (thứ DUY NHẤT <track> trình duyệt chịu đọc): thêm header +
+    đổi dấu phẩy mili-giây thành chấm. Dòng số thứ tự SRT giữ nguyên — VTT coi
+    là cue identifier hợp lệ. File đã là VTT → trả nguyên."""
+    chu = chu.lstrip("﻿")
+    if chu.lstrip().upper().startswith("WEBVTT"):
+        return chu
+    chu = re.sub(r"(\d{2}:\d{2}:\d{2}),(\d{3})", r"\1.\2", chu)
+    return "WEBVTT\n\n" + chu
+
+
+def ghi_phu_de(video: dict, chu: str, duoi: str) -> Path:
+    """Ghi phụ đề cạnh video (nguyên tử); gắn bản mới thì gỡ bản cũ khác đuôi."""
+    goc = kho_dir() / video["duong"]
+    for d in DUOI_PHU_DE:
+        cu = goc.with_name(goc.name + d)
+        if d != duoi and cu.is_file():
+            cu.unlink()
+    dich = goc.with_name(goc.name + duoi)
+    tam = dich.with_name(dich.name + ".tam")
+    tam.write_text(chu, encoding="utf-8", newline="")
+    os.replace(tam, dich)
+    return dich
+
+
+def xoa_phu_de(video: dict) -> None:
+    p = duong_phu_de(video)
+    if p is not None:
+        p.unlink()

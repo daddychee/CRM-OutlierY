@@ -64,6 +64,18 @@
   01/08); dữ liệu server nhúng qua `|tojson`; confirm 2-bấm thay hộp thoại
   trình duyệt.
 
+- 18/08/2026 — **PHỤ ĐỀ .SRT XEM CÙNG VIDEO** (user chốt giữa chừng: CHỈ NGƯỜI UP
+  VIDEO được up phụ đề — bỏ nhánh Leader+ định làm). `<track>` trình duyệt chỉ ăn
+  WebVTT → server chuyển SRT→VTT ngầm khi phát (`srt_sang_vtt`: header + phẩy
+  mili-giây→chấm; số thứ tự SRT giữ nguyên = cue id hợp lệ); file phụ đề lưu
+  CẠNH video trong kho theo quy ước tên (`<file video>.srt` — không migration
+  DB). BA đường gắn, đều là người up video: (1) ô .srt tùy chọn trong form
+  upload — phụ đề rác 422 NGAY TẠI CỬA trước khi ghi sổ video; (2) nút
+  +Subtitles/Replace/Remove trên trang xem (chỉ chính chủ thấy, server kiểm);
+  (3) đường NAS TỰ NHẶT file .srt cùng tên cạnh video (best-effort, không giết
+  tác vụ nạp). Đọc phụ đề = ai xem được video; encoding SRT thử utf-8-sig →
+  utf-16 → thay ký tự hỏng (không nổ). 39 test pass (6 test phụ đề).
+
 ## Thực tế vận hành (user báo 18/08)
 
 - Video team upload: **2-10GB, codec H.264** — trình duyệt phát native (mp4/m4v

@@ -67,13 +67,24 @@
   {% if user.co_xoa %}
   <button class="nut nho nguy" id="nut-go">Remove</button>
   {% endif %}
+  {% if user.ten == video.nguoi_tao %}
+  <input type="file" id="o-pd" accept=".srt,.vtt" style="display:none">
+  <button class="nut nho phu" id="nut-pd">{% if co_phu_de %}Replace subs{% else %}+ Subtitles{% endif %}</button>
+  {% if co_phu_de %}<button class="nut nho nguy" id="nut-pd-xoa">Remove subs</button>{% endif %}
+  {% endif %}
   <a class="nut nho phu" href="/danh-sach">← All videos</a>
+  <span id="pd-loi" style="color:var(--th-d97c6c);font-size:12.5px;display:none;flex-basis:100%"></span>
 </div>
 
 <div class="vr-grid">
   <div>
     <div class="vid-wrap" id="vid-wrap">
-      <video id="vid" src="/media/{{ video.ma }}" controls preload="metadata"></video>
+      <video id="vid" src="/media/{{ video.ma }}" controls preload="metadata">
+        {#- track cùng origin qua gateway — cookie đi kèm mặc định, không cần crossorigin #}
+        {%- if co_phu_de %}
+        <track kind="subtitles" srclang="vi" label="Subtitles" src="/api-vr/phu-de/{{ video.ma }}" default>
+        {%- endif %}
+      </video>
       <canvas id="lop-ve"></canvas>
     </div>
     <div class="moc-bar" id="moc-bar" title="Comment markers — click a dot to jump"></div>
@@ -311,6 +322,36 @@
       });
     });
   });
+  // ===== phụ đề — nút chỉ render cho CHÍNH CHỦ video (server quyết) =====
+  var nutPd = document.getElementById("nut-pd");
+  if (nutPd) {
+    var oPd = document.getElementById("o-pd");
+    var pdLoi = document.getElementById("pd-loi");
+    nutPd.addEventListener("click", function () { oPd.click(); });
+    oPd.addEventListener("change", function () {
+      var f = oPd.files[0];
+      if (!f) return;
+      nutPd.disabled = true; nutPd.textContent = "Uploading…";
+      var fd = new FormData(); fd.append("file", f);
+      fetch("/api-vr/phu-de/" + VIDEO_MA, { method: "POST", body: fd })
+        .then(function (r) {
+          if (!r.ok) return r.json().then(function (j) { throw j.detail; });
+          location.reload();
+        })
+        .catch(function (loi) {
+          nutPd.disabled = false; nutPd.textContent = "+ Subtitles"; oPd.value = "";
+          pdLoi.textContent = typeof loi === "string" ? loi : "Could not attach subtitles.";
+          pdLoi.style.display = "block";
+        });
+    });
+    var nutPdXoa = document.getElementById("nut-pd-xoa");
+    if (nutPdXoa) nutPdXoa.addEventListener("click", function () {
+      if (!nutPdXoa.dataset.chac) { nutPdXoa.dataset.chac = "1"; nutPdXoa.textContent = "Remove subs — sure?"; return; }
+      fetch("/api-vr/phu-de/" + VIDEO_MA + "/xoa", { method: "POST" })
+        .then(function () { location.reload(); });
+    });
+  }
+
   var nutGo = document.getElementById("nut-go");
   if (nutGo) nutGo.addEventListener("click", function () {
     if (!nutGo.dataset.chac) { nutGo.dataset.chac = "1"; nutGo.textContent = "Remove — sure?"; return; }

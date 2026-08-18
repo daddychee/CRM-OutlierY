@@ -168,7 +168,8 @@ def _luu_file_tai_len(f: UploadFile, dich: Path, tran_bytes: int) -> int:
 
 @app.post("/upload-video")
 async def upload_video(request: Request, file: UploadFile,
-                       ten: str = Form(""), user: dict = Depends(khu_cua_toi)):
+                       ten: str = Form(""), phu_de: UploadFile | None = None,
+                       user: dict = Depends(khu_cua_toi)):
     """Đường form MỘT PHÁT — chỉ còn là fallback khi JS chết. Trần RIÊNG
     VR_MAX_FORM_MB (2GB): cả file đi một request nên proxy buffer trọn vào RAM —
     file lớn phải đi đường chunked /api-vr/upload-* (JS tự dùng)."""
@@ -178,6 +179,14 @@ async def upload_video(request: Request, file: UploadFile,
         raise HTTPException(422, "Chỉ nhận video mp4 / webm / mov / m4v.")
     ten = (ten or "").strip() or Path(file.filename or "video").stem
     tran = int(os.environ.get("VR_MAX_FORM_MB", "2048")) * 1024 * 1024
+    # phụ đề tùy chọn: kiểm TRƯỚC khi ghi sổ video — file hỏng thì 422 ngay,
+    # không để lại video thiếu phụ đề mà user tưởng đã gắn
+    chu_phu_de, duoi_phu_de = None, None
+    if phu_de is not None and phu_de.filename:
+        duoi_phu_de = Path(phu_de.filename).suffix.lower()
+        if duoi_phu_de not in kho_video.DUOI_PHU_DE:
+            raise HTTPException(422, "Chỉ nhận phụ đề .srt / .vtt.")
+        chu_phu_de = _kiem_phu_de(await phu_de.read())
     ban_ghi = kho_video.them_video(ten, duoi, user["ten"], user["bo_phan"], 0)
     tong = await run_in_threadpool(_luu_file_tai_len, file,
                                    ban_ghi["duong_tuyet_doi"], tran)
@@ -188,19 +197,72 @@ async def upload_video(request: Request, file: UploadFile,
         conn.commit()
     finally:
         conn.close()
+    if chu_phu_de is not None:
+        kho_video.ghi_phu_de({"duong": ban_ghi["duong"]}, chu_phu_de, duoi_phu_de)
     return RedirectResponse(f"/xem/{ban_ghi['ma']}", status_code=303)
 
 
 # ---------- trang review ----------
 
-@app.get("/xem/{ma}", response_class=HTMLResponse)
-async def xem(request: Request, ma: str, user: dict = Depends(khu_cua_toi)):
+def _video_song(ma: str) -> dict:
     video = kho_video.lay_video(ma)
     if video is None or video["trang_thai"] == "da_xoa":
         raise HTTPException(404, "Không có video này.")
+    return video
+
+
+@app.get("/xem/{ma}", response_class=HTMLResponse)
+async def xem(request: Request, ma: str, user: dict = Depends(khu_cua_toi)):
+    video = _video_song(ma)
     return templates.TemplateResponse(request, "xem.html", {
         "video": video, "user": user,
+        "co_phu_de": kho_video.duong_phu_de(video) is not None,
         "cac_bl": kho_video.ds_binh_luan(ma)})   # nhúng vào JS qua |tojson (script-safe)
+
+
+# ---------- phụ đề (.srt/.vtt — CHỈ CHÍNH CHỦ video gắn/gỡ, user chốt 18/08;
+# ai xem được video thì đọc được phụ đề) ----------
+
+def _kiem_phu_de(du_lieu: bytes) -> str:
+    if len(du_lieu) > 2 * 1024 * 1024:
+        raise HTTPException(413, "File phụ đề quá 2MB.")
+    chu = kho_video.doc_phu_de_bytes(du_lieu)
+    if "-->" not in chu:
+        raise HTTPException(422, "File không giống phụ đề SRT/VTT (thiếu mốc thời gian).")
+    return chu
+
+
+@app.post("/api-vr/phu-de/{ma}")
+async def api_phu_de_gan(ma: str, file: UploadFile, user: dict = Depends(lay_user)):
+    video = _video_song(ma)
+    if user["ten"] != video["nguoi_tao"]:
+        raise HTTPException(403, "Chỉ người đăng video được gắn phụ đề.")
+    duoi = Path(file.filename or "").suffix.lower()
+    if duoi not in kho_video.DUOI_PHU_DE:
+        raise HTTPException(422, "Chỉ nhận phụ đề .srt / .vtt.")
+    chu = _kiem_phu_de(await file.read())
+    kho_video.ghi_phu_de(video, chu, duoi)
+    return {"ok": True}
+
+
+@app.post("/api-vr/phu-de/{ma}/xoa")
+async def api_phu_de_xoa(ma: str, user: dict = Depends(lay_user)):
+    video = _video_song(ma)
+    if user["ten"] != video["nguoi_tao"]:
+        raise HTTPException(403, "Chỉ người đăng video được gỡ phụ đề.")
+    kho_video.xoa_phu_de(video)
+    return {"ok": True}
+
+
+@app.get("/api-vr/phu-de/{ma}")
+async def api_phu_de_doc(ma: str, user: dict = Depends(lay_user)):
+    """Trả WebVTT cho <track> — .srt được chuyển ngầm, .vtt trả nguyên."""
+    video = _video_song(ma)
+    p = kho_video.duong_phu_de(video)
+    if p is None:
+        raise HTTPException(404, "Video này chưa có phụ đề.")
+    chu = kho_video.srt_sang_vtt(kho_video.doc_phu_de_bytes(p.read_bytes()))
+    return Response(chu, media_type="text/vtt; charset=utf-8")
 
 
 # ---------- phát video (Range từng khúc — xem ghi chú đầu file) ----------

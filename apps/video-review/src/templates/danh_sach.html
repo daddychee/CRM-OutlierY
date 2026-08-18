@@ -24,6 +24,8 @@
   .tha-chinh span{color:var(--muted)}
   .tha-phu{font-size:12.5px;color:var(--muted)}
   #form-up.js #o-file{display:none}
+  .pd-hang{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+  #form-up.js #o-srt{display:none}
   table.vr{width:100%;border-collapse:collapse;font-size:14px}
   table.vr th{text-align:left;font-size:12px;color:var(--muted);text-transform:uppercase;
     letter-spacing:.04em;padding:8px 10px;border-bottom:1px solid var(--line)}
@@ -78,6 +80,11 @@
       <div class="tha-phu" id="tha-phu">mp4 / webm / m4v / mov · up to {{ max_gb }}GB</div>
     </label>
     <input type="file" name="file" id="o-file" accept=".mp4,.m4v,.webm,.mov,video/*" required>
+    <div class="pd-hang">
+      <input type="file" name="phu_de" id="o-srt" accept=".srt,.vtt">
+      <button class="nut phu" type="button" id="nut-srt" hidden>+ Subtitles (.srt · optional)</button>
+      <span class="vr-hint" id="srt-ten" style="margin-top:0"></span>
+    </div>
     <div class="vr-up">
       <input type="text" name="ten" id="o-ten" placeholder="Video name (optional — file name used if empty)" maxlength="120">
       <button class="nut" type="submit" id="nut-up">Upload</button>
@@ -197,6 +204,20 @@
   form.classList.add("js");
   var oFile = document.getElementById("o-file");
   oFile.removeAttribute("required");   // input đã giấu — để required là Chrome chặn submit "not focusable"
+  // phụ đề .srt tùy chọn (chỉ chính chủ video — chính là người đang upload)
+  var oSrt = document.getElementById("o-srt");
+  var nutSrt = document.getElementById("nut-srt");
+  var srtTen = document.getElementById("srt-ten");
+  nutSrt.hidden = false;
+  nutSrt.addEventListener("click", function () { oSrt.click(); });
+  oSrt.addEventListener("change", function () {
+    var f = oSrt.files[0];
+    if (!f) return;
+    if (!/\.(srt|vtt)$/i.test(f.name)) { baoLoi("Subtitles must be .srt or .vtt."); oSrt.value = ""; return; }
+    srtTen.textContent = f.name;
+    nutSrt.textContent = "Replace subtitles";
+    baoLoi("");
+  });
   var vung = document.getElementById("tha-vung");
   var chinh = document.getElementById("tha-chinh");
   var phu = document.getElementById("tha-phu");
@@ -284,6 +305,15 @@
         nut.textContent = "Finalizing…";
         return fetch("/api-vr/upload-xong/" + phien, { method: "POST" })
           .then(function (r) { if (!r.ok) return r.json().then(function (j) { throw j.detail; }); return r.json(); });
+      })
+      .then(function (du) {
+        // gắn phụ đề nếu có chọn — hỏng cũng KHÔNG chặn (gắn lại được ở trang review)
+        if (!oSrt.files[0]) return du;
+        nut.textContent = "Attaching subtitles…";
+        var fdS = new FormData();
+        fdS.append("file", oSrt.files[0]);
+        return fetch("/api-vr/phu-de/" + du.ma, { method: "POST", body: fdS })
+          .then(function () { return du; }, function () { return du; });
       })
       .then(function (du) { location.href = "/xem/" + du.ma; })
       .catch(function (loi) {

@@ -112,6 +112,17 @@ def chay_nap(tid: str) -> None:
                                        tv["bo_phan"], tv["tong"])
         ban_ghi["duong_tuyet_doi"].parent.mkdir(parents=True, exist_ok=True)
         os.replace(tam, ban_ghi["duong_tuyet_doi"])
+        # người up để file .srt CÙNG TÊN cạnh video trên NAS → tự nhặt theo
+        # (user chốt 18/08: phụ đề do người up video lo). Best-effort — phụ đề
+        # hỏng không được giết tác vụ nạp video.
+        try:
+            srt = tv["nguon"].with_suffix(".srt")
+            if srt.is_file():
+                chu = kho_video.doc_phu_de_bytes(srt.read_bytes())
+                if "-->" in chu:
+                    kho_video.ghi_phu_de({"duong": ban_ghi["duong"]}, chu, ".srt")
+        except OSError:
+            pass
         tv["ma"] = ban_ghi["ma"]
         tv["trang_thai"] = "xong"
     except Exception as e:              # lỗi nền chỉ ghi vào tác vụ, không nổ tiến trình
