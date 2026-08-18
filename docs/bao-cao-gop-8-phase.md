@@ -336,3 +336,25 @@ thích không ghi cứng, đưa chuột vào mới hiện". Làm:
 Suite 102 pass; kiểm HTML thật: đúng 4 tab, 3 anchor, 1 title Pipeline, 0 đoạn in cứng.
 CÒN TREO mạch này: khi có 19_build_bao_cao.py + bao_cao_writer (NGHĨA vào JSON) thì
 Audience/WF/Positioning đổi từ iframe sang render native + Run tự build báo cáo HTML.
+
+## 18/08 (tiếp 5) — 3 tab NGHĨA diễn giải lại NATIVE (hết nhúng iframe)
+
+User bác cách nhúng: "Audience/WF/Positioning phải diễn giải như tab Overview chứ
+không phải show trong báo cáo — cắt ra, diễn giải lại". Làm bản native trọn:
+- **Winning Format** — 100% từ analysis.json: bảng câu mở đầu title thắng (openers,
+  hover = ví dụ title thật) · khuôn title (templates) · chip từ CAPS (emphasis) ·
+  bảng từ/cụm/tag LIFT cao gộp 3 nguồn, sig FDR xếp trước có dấu ✓.
+- **Positioning** — decision2 (BEACHHEAD CHỌN + reason) + bets.json (bảng bets kèm
+  verdict STRONG accent, hover = excess/tập trung/tuổi) + các card Phương án A/B/C +
+  Anti-positioning CẮT từ báo cáo gộp.
+- **Audience** — Audience Profile Canvas CẮT từ báo cáo (bảng 3 nhóm × 6 hàng, giữ
+  nhãn GIẢ ĐỊNH) + bảng demand evidence + câu hỏi like cao + theme.
+- Cơ chế cắt: `niche_bridge.trich_nghia()` — parser KHOAN DUNG trên HTML báo cáo do
+  chính mình build (anchor p0..p8 ổn định): canvas = bảng đầu sau tiêu đề; phương án
+  = các card <h4> trong #p3, cắt trước layer gate. Khối nào không cắt được → bỏ khối
+  đó + ghi chú "sinh khi build báo cáo" (test ghim cả fallback không-HTML: tab vẫn
+  sống bằng artifact, chỉ vắng tầng NGHĨA). bao_cao_writer ra đời thì trich_nghia
+  nghỉ hưu — đọc NGHĨA từ JSON.
+- Mỗi khối NGHĨA kèm link nhỏ "đọc trong báo cáo ↗" (#p1/#p4/#p3, tab mới).
+Suite 103 pass (agent_api ca thiếu-artifact dời sang subniche — mục duy nhất seed
+không ghi). Kiểm HTML thật: 0 iframe, canvas/WF/PA/bets đủ, 3 link báo cáo.

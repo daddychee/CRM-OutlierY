@@ -186,8 +186,10 @@ def trang_niche(request: Request, user: dict = Depends(_lay_user),
         chon = [tt] if tt in ten_tt else thu_tu   # pill chọn 1; rỗng/lạ = All
         for tt_ma in chon:
             project = mapping.get(tt_ma)
+            nghia = {}
             if project:
                 tom_tat = niche_bridge.tom_tat_overall(project, ngay)
+                nghia = niche_bridge.trich_nghia(project, ngay)
                 from src import gates as gates_mod
                 gates = gates_mod.trang_thai(ngach_hien["ma"], tt_ma,
                                              tom_tat.get("co_bao_cao", False),
@@ -199,7 +201,7 @@ def trang_niche(request: Request, user: dict = Depends(_lay_user),
                                     "đối thủ để tạo bản đầu tiên."}
                 gates = []
             thi_truong.append({"ma": tt_ma, "ten": ten_tt.get(tt_ma, tt_ma),
-                               "project": project, "so": tom_tat,
+                               "project": project, "so": tom_tat, "nghia": nghia,
                                "bang_chung": _bang_chung(tom_tat),
                                "radar": _radar_points(tom_tat.get("tru_diem") or {}),
                                "scatter": _scatter_beachhead(tom_tat.get("beachhead") or []),

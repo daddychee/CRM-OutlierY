@@ -358,10 +358,8 @@
       <div class="sec-tabs">
         <button type="button" class="sec-tab on" onclick="secTab(this, 'tq')">Overview</button>
         <button type="button" class="sec-tab" onclick="secTab(this, 'aud')">Audience</button>
-        {% if nsf.html %}
         <button type="button" class="sec-tab" onclick="secTab(this, 'wf')">Winning Format</button>
         <button type="button" class="sec-tab" onclick="secTab(this, 'pos')">Positioning</button>
-        {% endif %}
       </div>
       <div class="sec-pane" data-pane="tq">
 
@@ -504,17 +502,23 @@
       {% endif %}
       </div><!-- /pane Overview -->
 
-      <!-- pane AUDIENCE — Audience Profile Canvas + evidence, nhúng ĐÚNG MỤC Phase 1
-           của báo cáo gộp (tầng NGHĨA sống trong báo cáo, không chép lại); snapshot
-           không có báo cáo HTML → rơi về bảng gaps/demand thật -->
+      <!-- pane AUDIENCE — diễn giải lại kiểu dashboard (user chốt 18/08, không nhúng
+           báo cáo): canvas cắt từ báo cáo gộp + bảng gaps/demand thật -->
       <div class="sec-pane" data-pane="aud" style="display:none">
-        {% if nsf.html %}
-        <iframe data-src="/niche/tai/{{ tt.project }}/{{ so.snapshot }}/{{ nsf.html }}?inline=1#p1"
-                title="Audience" style="width:100%;height:78vh;border:0;display:block;background:var(--th-121826)"></iframe>
-        {% else %}
         <div class="nd-bw" style="padding:12px 16px 16px">
+          {% if tt.nghia.canvas %}
+          <div class="tieu-nho">Audience Profile Canvas — {{ tt.nghia.canvas.cot | length }} nhóm, xếp theo ưu tiên
+            {% if nsf.html %}<a href="/niche/tai/{{ tt.project }}/{{ so.snapshot }}/{{ nsf.html }}?inline=1#p1" target="_blank" style="color:var(--accent);text-transform:none;letter-spacing:0;margin-left:8px">đọc trong báo cáo ↗</a>{% endif %}</div>
+          <div style="overflow-x:auto"><table>
+            <tr><th></th>{% for c in tt.nghia.canvas.cot %}<th>{{ c }}</th>{% endfor %}</tr>
+            {% for h in tt.nghia.canvas.hang %}
+            <tr><td style="color:var(--muted);white-space:nowrap">{{ h.ten }}</td>
+                {% for o in h.o %}<td>{{ o }}</td>{% endfor %}</tr>
+            {% endfor %}
+          </table></div>
+          {% endif %}
           {% if tt.bang_chung %}
-          <div class="tieu-nho">Số liệu — demand evidence</div>
+          <div class="tieu-nho" {% if tt.nghia.canvas %}style="margin-top:16px"{% endif %}>Số liệu — demand evidence</div>
           <div style="overflow-x:auto"><table>
             <tr><th>Bằng chứng</th><th style="text-align:right">Số</th><th>Đọc ra điều gì</th><th>Nguồn</th></tr>
             {% for r in tt.bang_chung %}
@@ -546,23 +550,114 @@
             {% endfor %}
           </table></div>
           {% endif %}
-          <div class="nd-trong" style="padding-top:14px">Snapshot này chưa có báo cáo gộp HTML —
-            Audience Profile Canvas (tầng NGHĨA) sinh khi build báo cáo; trên đây là dữ liệu khán giả thật từ gaps.json.</div>
+          {% if not tt.nghia.canvas %}
+          <div class="nd-trong" style="padding-top:14px">Audience Profile Canvas (tầng NGHĨA) sinh khi build báo cáo gộp — snapshot này chưa có; trên đây là dữ liệu khán giả thật từ gaps/demand.</div>
+          {% endif %}
         </div>
-        {% endif %}
       </div>
 
-      <!-- pane WINNING FORMAT + POSITIONING — nhúng đúng mục #p4 / #p3 của báo cáo gộp -->
-      {% if nsf.html %}
+      <!-- pane WINNING FORMAT — khuôn thắng từ analysis.json, diễn giải kiểu dashboard -->
       <div class="sec-pane" data-pane="wf" style="display:none">
-        <iframe data-src="/niche/tai/{{ tt.project }}/{{ so.snapshot }}/{{ nsf.html }}?inline=1#p4"
-                title="Winning Format" style="width:100%;height:78vh;border:0;display:block;background:var(--th-121826)"></iframe>
+        <div class="nd-bw" style="padding:12px 16px 16px">
+          {% set wf = so.wf or {} %}
+          {% if wf.openers or wf.templates %}
+          <div class="nd-duoi" style="padding:0;grid-template-columns:1fr 1fr">
+            {% if wf.openers %}
+            <div>
+              <div class="tieu-nho">Câu mở đầu title thắng {% if nsf.html %}<a href="/niche/tai/{{ tt.project }}/{{ so.snapshot }}/{{ nsf.html }}?inline=1#p4" target="_blank" style="color:var(--accent);text-transform:none;letter-spacing:0;margin-left:8px">đọc trong báo cáo ↗</a>{% endif %}</div>
+              <div style="overflow-x:auto"><table>
+                <tr><th>Mở đầu</th><th style="text-align:right">Lần</th><th style="text-align:right">Kênh</th></tr>
+                {% for m in wf.openers %}
+                <tr class="co-tip" {% if m.vi_du %}title="VD: {{ m.vi_du }}"{% endif %}>
+                    <td><b>{{ m.key }}</b></td>
+                    <td style="text-align:right;font-variant-numeric:tabular-nums">{{ m.freq }}</td>
+                    <td style="text-align:right;color:var(--muted)">{{ m.channels }}</td></tr>
+                {% endfor %}
+              </table></div>
+            </div>
+            {% endif %}
+            {% if wf.templates %}
+            <div>
+              <div class="tieu-nho">Khuôn title phổ biến</div>
+              <div style="overflow-x:auto"><table>
+                <tr><th>Khuôn</th><th style="text-align:right">Lần</th></tr>
+                {% for m in wf.templates %}
+                <tr class="co-tip" {% if m.vi_du %}title="VD: {{ m.vi_du }}"{% endif %}>
+                    <td><code style="font-size:.72rem">{{ m.key }}</code></td>
+                    <td style="text-align:right;font-variant-numeric:tabular-nums">{{ m.freq }}</td></tr>
+                {% endfor %}
+              </table></div>
+              {% if wf.emphasis %}
+              <div class="tieu-nho" style="margin-top:14px">Từ CAPS nhấn mạnh</div>
+              <div style="display:flex;gap:6px;flex-wrap:wrap">
+                {% for m in wf.emphasis %}
+                <span class="chip-file co-tip" title="{{ m.freq }} lần">{{ m.key }}</span>
+                {% endfor %}
+              </div>
+              {% endif %}
+            </div>
+            {% endif %}
+          </div>
+          {% endif %}
+          {% if wf.lift %}
+          <div class="tieu-nho" style="margin-top:16px">Từ / cụm / tag LIFT cao — xuất hiện ở video thắng nhiều hơn video thường</div>
+          <div style="overflow-x:auto"><table>
+            <tr><th>Từ khóa</th><th>Loại</th><th style="text-align:right">Lift</th><th>Kiểm định</th><th style="text-align:right">Kênh</th></tr>
+            {% for m in wf.lift %}
+            <tr><td><b>{{ m.key }}</b></td><td style="color:var(--muted)">{{ m.loai }}</td>
+                <td style="text-align:right;font-variant-numeric:tabular-nums">{{ ('%.1f' % m.lift).replace('.', ',') if m.lift is not none else '—' }}×</td>
+                <td>{% if m.sig %}<span style="color:var(--th-4c8fe0);font-weight:700">✓ FDR</span>{% else %}<span style="color:var(--muted)">·</span>{% endif %}</td>
+                <td style="text-align:right;color:var(--muted)">{{ m.channels }}</td></tr>
+            {% endfor %}
+          </table></div>
+          {% endif %}
+          {% if not wf.openers and not wf.lift %}
+          <div class="nd-trong">Snapshot này chưa có analysis.json — chạy lại phân tích để có tầng khuôn thắng.</div>
+          {% endif %}
+        </div>
       </div>
+
+      <!-- pane POSITIONING — beachhead chọn + phương án (cắt từ báo cáo) + bets -->
       <div class="sec-pane" data-pane="pos" style="display:none">
-        <iframe data-src="/niche/tai/{{ tt.project }}/{{ so.snapshot }}/{{ nsf.html }}?inline=1#p3"
-                title="Positioning" style="width:100%;height:78vh;border:0;display:block;background:var(--th-121826)"></iframe>
+        <div class="nd-bw" style="padding:12px 16px 16px">
+          {% if so.pos_chon %}
+          <div class="nd-ban" style="border:1px solid var(--line);border-radius:11px;padding:12px 14px;margin-bottom:12px">
+            <span class="chip">BEACHHEAD CHỌN — {{ so.pos_chon }}</span>
+            <p style="font-size:.78rem">{{ so.pos_ly_do }}</p>
+          </div>
+          {% endif %}
+          {% if tt.nghia.phuong_an %}
+          <div class="tieu-nho">Phương án positioning {% if nsf.html %}<a href="/niche/tai/{{ tt.project }}/{{ so.snapshot }}/{{ nsf.html }}?inline=1#p3" target="_blank" style="color:var(--accent);text-transform:none;letter-spacing:0;margin-left:8px">đọc trong báo cáo ↗</a>{% endif %}</div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px;margin-bottom:14px">
+            {% for pa in tt.nghia.phuong_an %}
+            <div class="nd-tile">
+              <div class="t">{{ pa.ten }}</div>
+              {% for nd in pa.noi_dung %}
+              <div class="s" style="margin-top:5px">{{ nd }}</div>
+              {% endfor %}
+            </div>
+            {% endfor %}
+          </div>
+          {% endif %}
+          {% if so.bets %}
+          <div class="tieu-nho">Bets — mũi nhọn đặt cược (kèm bằng chứng)</div>
+          <div style="overflow-x:auto"><table>
+            <tr><th>Term</th><th>Verdict</th><th style="text-align:right">Lift</th><th style="text-align:right">Kênh</th><th style="text-align:right">Outlier</th></tr>
+            {% for b in so.bets %}
+            <tr class="co-tip" title="excess {{ '{:,}'.format(b.excess).replace(',', '.') if b.excess else '—' }} view · tập trung {{ ('%.2f' % b.tap_trung).replace('.', ',') if b.tap_trung is not none else '—' }} · tuổi trung vị {{ b.tuoi_ngay or '—' }} ngày">
+                <td><b>{{ b.term }}</b> <span style="color:var(--muted);font-size:.7rem">{{ b.kind }}</span></td>
+                <td>{% if b.verdict == 'STRONG' %}<span style="color:var(--th-4c8fe0);font-weight:700">{{ b.verdict }}</span>{% else %}<span style="color:var(--muted)">{{ b.verdict }}</span>{% endif %}</td>
+                <td style="text-align:right;font-variant-numeric:tabular-nums">{{ ('%.1f' % b.lift).replace('.', ',') if b.lift is not none else '—' }}×</td>
+                <td style="text-align:right;color:var(--muted)">{{ b.kenh }}</td>
+                <td style="text-align:right;color:var(--muted)">{{ b.outlier }}</td></tr>
+            {% endfor %}
+          </table></div>
+          {% endif %}
+          {% if not so.pos_chon and not so.bets and not tt.nghia.phuong_an %}
+          <div class="nd-trong">Snapshot này chưa có decision2/bets — chạy lại phân tích để có tầng positioning.</div>
+          {% endif %}
+        </div>
       </div>
-      {% endif %}
       {% endif %}
     </section>
     {% endfor %}

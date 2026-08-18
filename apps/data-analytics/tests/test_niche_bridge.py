@@ -20,7 +20,9 @@ def _seed(tmp_path, project="TestNiche_US", ngay="2026-08-18"):
         "newcomer_rate": 0.333, "verdict": "OPEN"}), encoding="utf-8")
     (snap / "monetization.json").write_text(json.dumps({
         "rpm_band_usd": [3, 10]}), encoding="utf-8")
-    (snap / "decision2.json").write_text(json.dumps({"ranked": [
+    (snap / "decision2.json").write_text(json.dumps({
+        "decision": "hidden", "reason": "top beachhead 'hidden' score=114.1",
+        "ranked": [
         {"anchor": "hidden", "beachhead_score": 114.1, "competition": 0.305,
          "size": 125, "n_channels": 33},
         {"anchor": "laos", "beachhead_score": 111.4, "competition": 0.128,
@@ -30,7 +32,18 @@ def _seed(tmp_path, project="TestNiche_US", ngay="2026-08-18"):
         {"anchor": "iraq", "beachhead_score": 21.9, "competition": 0.997, "size": 9, "n_channels": 4},
     ]}), encoding="utf-8")
     (snap / "analysis.json").write_text(json.dumps({
-        "total_videos": 3815, "n_winners": 648, "n_early_confirmed": 104}), encoding="utf-8")
+        "total_videos": 3815, "n_winners": 648, "n_early_confirmed": 104,
+        "openers": [{"key": "real life in", "freq": 789, "channels": 40,
+                     "examples": ["Real Life in BANGLADESH"]}],
+        "templates": [{"key": "{NUM} Facts About {NAME}", "freq": 71,
+                       "channels": 12, "examples": ["15 Facts About Burundi"]}],
+        "emphasis": [{"key": "BEAUTIFUL", "freq": 530}],
+        "lift_tags": [{"key": "hidden cultures", "lift": 17.23, "sig": True,
+                       "channels": 4}]}), encoding="utf-8")
+    (snap / "bets.json").write_text(json.dumps({"bets": [
+        {"term": "talks", "kind": "word", "builder_verdict": "STRONG", "lift": 6.27,
+         "n_channels": 8, "n_outliers": 20, "sum_excess": 1463094,
+         "concentration": 0.55, "median_age_days": 134}]}), encoding="utf-8")
     (snap / "gaps.json").write_text(json.dumps({
         "total_comments": 12869, "total_questions": 1081,
         "top_questions": [{"q": "Which legendary place next?", "like": 191,
@@ -38,12 +51,20 @@ def _seed(tmp_path, project="TestNiche_US", ngay="2026-08-18"):
         "themes": [{"theme": "surprised most", "count": 20, "pct": 1.9}]}), encoding="utf-8")
     (snap / "channels.json").write_text(json.dumps(
         {f"UC{i}": {} for i in range(75)}), encoding="utf-8")
-    (snap / "BAO-CAO-8-PHASE.html").write_text("<title>x</title>", encoding="utf-8")
+    (snap / "BAO-CAO-8-PHASE.html").write_text(
+        '<title>x</title>\n'
+        '<div class="card"><h4>Audience Profile Canvas <span>3 nhóm</span></h4>\n'
+        '<table><tr><th></th><th>① Armchair explorer</th></tr>\n'
+        '<tr><td>Là ai</td><td>Người Mỹ 25–55 xem documentary buổi tối</td></tr></table></div>\n'
+        '<div id="p3"><div class="card"><h4>Phương án A — "Honest" Khuyến nghị</h4>\n'
+        '<ul><li>Statement: Đối với người Mỹ tò mò</li></ul></div>\n'
+        '<div class="layer l-gate">Cổng quyết định</div></div><div id="p4"></div>',
+        encoding="utf-8")
     (tmp_path / project / "snapshots" / "index.json").write_text(json.dumps([{
         "id": ngay, "tao_luc": ngay + "T00:00:00",
         "artifacts": ["decision1.json", "demand.json", "crackability.json",
                        "monetization.json", "decision2.json", "analysis.json",
-                       "gaps.json", "channels.json"],
+                       "gaps.json", "channels.json", "bets.json"],
         "bao_cao": ["BAO-CAO-8-PHASE.html"]}]), encoding="utf-8")
     return project
 
@@ -80,6 +101,25 @@ def test_pipeline_va_so_dan_xuat(tmp_path):
     (tmp_path / project / "snapshots" / "2026-08-18" / "gaps.json").unlink()
     p2 = niche_bridge.tom_tat_overall(project)["pipeline"]
     assert p2["comment"] is None and p2["video_quet"] == 3815
+
+
+def test_wf_bets_va_trich_nghia(tmp_path):
+    """Tab WF/Positioning native (user chốt 18/08): khuôn thắng + bets từ artifact,
+    canvas + phương án CẮT từ báo cáo gộp — hỏng đâu bỏ khối đó."""
+    project = _seed(tmp_path)
+    t = niche_bridge.tom_tat_overall(project)
+    assert t["wf"]["openers"][0]["key"] == "real life in"
+    assert t["wf"]["lift"][0]["sig"] is True and t["wf"]["lift"][0]["loai"] == "tag"
+    assert t["bets"][0]["verdict"] == "STRONG" and t["bets"][0]["kenh"] == 8
+    assert t["pos_chon"] == "hidden"
+    n = niche_bridge.trich_nghia(project)
+    assert n["canvas"]["cot"] == ["① Armchair explorer"]
+    assert n["canvas"]["hang"][0]["ten"] == "Là ai"
+    assert n["phuong_an"][0]["ten"].startswith("Phương án A")
+    assert "Cổng quyết định" not in str(n["phuong_an"])   # cắt đúng trước layer gate
+    # báo cáo HTML biến mất → trich_nghia trả rỗng, không ném
+    (tmp_path / project / "snapshots" / "2026-08-18" / "BAO-CAO-8-PHASE.html").unlink()
+    assert niche_bridge.trich_nghia(project) == {}
 
 
 def test_chua_co_bao_cao_khong_so_gia(tmp_path):

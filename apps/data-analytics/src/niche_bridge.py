@@ -72,6 +72,72 @@ def duong_bao_cao(project: str, snap_id: str, ten_file: str) -> Path | None:
     return p if p.is_file() else None
 
 
+# ---------- trích tầng NGHĨA từ báo cáo gộp (user chốt 18/08: tab phải DIỄN GIẢI
+# LẠI kiểu dashboard, không nhúng nguyên báo cáo) ----------
+
+import re as _re
+
+
+def _bo_the(t: str) -> str:
+    return _re.sub(r"\s+", " ", _re.sub(r"<[^>]+>", " ", t)).strip()
+
+
+def trich_nghia(project: str, snap_id: str = "latest") -> dict:
+    """Cắt 2 khối NGHĨA từ báo cáo gộp HTML (file do chính pipeline/phiên này build,
+    cấu trúc ổn định id p0..p8): Audience Profile Canvas (bảng 3 nhóm) + các Phương
+    án Positioning. Parser KHOAN DUNG: khối nào không cắt được thì bỏ khối đó (UI
+    fallback), tuyệt đối không bịa. Có bao_cao_writer sinh NGHĨA vào JSON thì hàm
+    này nghỉ hưu — đọc JSON thay."""
+    ban_ghi = chon_snapshot(project, snap_id)
+    if ban_ghi is None:
+        return {}
+    html = next((f for f in ban_ghi.get("bao_cao", []) if f.endswith(".html")), None)
+    if not html:
+        return {}
+    p = _projects_dir() / project / "snapshots" / ban_ghi["id"] / html
+    try:
+        s = p.read_text(encoding="utf-8")
+    except OSError:
+        return {}
+    out: dict = {}
+
+    # 1) Audience Profile Canvas — bảng đầu tiên sau tiêu đề
+    i = s.find("Audience Profile Canvas")
+    if i != -1:
+        m = _re.search(r"<table>(.*?)</table>", s[i:i + 20000], _re.S)
+        if m:
+            hang = [[_bo_the(c) for c in _re.findall(r"<t[hd][^>]*>(.*?)</t[hd]>", h, _re.S)]
+                    for h in _re.findall(r"<tr>(.*?)</tr>", m.group(1), _re.S)]
+            if len(hang) >= 2 and len(hang[0]) >= 2:
+                out["canvas"] = {"cot": hang[0][1:],
+                                 "hang": [{"ten": h[0], "o": h[1:]}
+                                          for h in hang[1:] if len(h) >= 2]}
+
+    # 2) Phương án Positioning — các card <h4> trong mục id="p3"
+    i3, i4 = s.find('id="p3"'), s.find('id="p4"')
+    if i3 != -1:
+        p3 = s[i3:i4] if i4 > i3 else s[i3:]
+        pa = []
+        for c in _re.split(r'<div class="card">', p3)[1:]:
+            cut = c.find('<div class="layer')
+            if cut != -1:
+                c = c[:cut]
+            mh = _re.search(r"<h4[^>]*>(.*?)</h4>", c, _re.S)
+            if not mh:
+                continue
+            ten = _bo_the(mh.group(1))
+            if not (ten.startswith("Phương án") or ten.startswith("Anti-positioning")):
+                continue
+            than = c[mh.end():]
+            muc = [_bo_the(x) for x in _re.findall(r"<li[^>]*>(.*?)</li>", than, _re.S)]
+            noi_dung = [x for x in muc if x] or ([_bo_the(than)[:700]] if _bo_the(than) else [])
+            if noi_dung:
+                pa.append({"ten": ten, "noi_dung": noi_dung})
+        if pa:
+            out["phuong_an"] = pa
+    return out
+
+
 # ---------- tóm tắt cho dashboard (chỉ NHẶT số đã tính sẵn, không tính lại) ----------
 
 def tom_tat_overall(project: str, snap_id: str = "latest") -> dict:
@@ -92,6 +158,27 @@ def tom_tat_overall(project: str, snap_id: str = "latest") -> dict:
     analysis = doc_artifact(project, ban_ghi["id"], "analysis.json") or {}
     gaps = doc_artifact(project, ban_ghi["id"], "gaps.json") or {}
     channels = doc_artifact(project, ban_ghi["id"], "channels.json")
+    bets_raw = (doc_artifact(project, ban_ghi["id"], "bets.json") or {}).get("bets") or []
+
+    def _mau(ds, n, truong):
+        """Top-n một bảng analysis, chỉ giữ trường cần render (kèm 1 ví dụ thật)."""
+        out = []
+        for m in (ds or [])[:n]:
+            muc = {t: m.get(t) for t in truong}
+            vi_du = (m.get("examples") or [None])[0]
+            if vi_du:
+                muc["vi_du"] = vi_du
+            out.append(muc)
+        return out
+
+    # từ/cụm/tag lift cao gộp một bảng — có kiểm định (sig) xếp trước, lift giảm dần
+    lift_gop = []
+    for loai, khoa in (("tag", "lift_tags"), ("cụm", "lift_bigrams"), ("từ", "lift_unigrams")):
+        for m in (analysis.get(khoa) or []):
+            lift_gop.append({"key": m.get("key"), "lift": m.get("lift"),
+                             "sig": bool(m.get("sig")), "channels": m.get("channels"),
+                             "loai": loai})
+    lift_gop.sort(key=lambda m: (not m["sig"], -(m["lift"] or 0)))
 
     ranked = d2.get("ranked") or []
     rpm = money.get("rpm_band_usd")
@@ -144,6 +231,25 @@ def tom_tat_overall(project: str, snap_id: str = "latest") -> dict:
         "theme_top": [
             {"theme": t.get("theme"), "count": t.get("count"), "pct": t.get("pct")}
             for t in (gaps.get("themes") or [])[:6]
+        ],
+        # tab WINNING FORMAT — khuôn thắng từ analysis.json (câu mở đầu / khuôn
+        # title / từ CAPS / lift), tab POSITIONING — beachhead chọn + bets có
+        # falsifier. Tất cả nhặt nguyên từ artifact, chỉ cắt top-n.
+        "wf": {
+            "openers": _mau(analysis.get("openers"), 8, ("key", "freq", "channels")),
+            "templates": _mau(analysis.get("templates"), 6, ("key", "freq", "channels")),
+            "emphasis": _mau(analysis.get("emphasis"), 10, ("key", "freq")),
+            "lift": lift_gop[:12],
+        },
+        "pos_chon": d2.get("decision"),
+        "pos_ly_do": d2.get("reason"),
+        "bets": [
+            {"term": b.get("term"), "kind": b.get("kind"),
+             "verdict": b.get("builder_verdict"), "lift": b.get("lift"),
+             "kenh": b.get("n_channels"), "outlier": b.get("n_outliers"),
+             "excess": b.get("sum_excess"), "tap_trung": b.get("concentration"),
+             "tuoi_ngay": b.get("median_age_days")}
+            for b in bets_raw[:8]
         ],
         # beachhead: top 2 accent + toàn bộ toạ độ cho scatter (PY đã tính sẵn)
         "beachhead": [
