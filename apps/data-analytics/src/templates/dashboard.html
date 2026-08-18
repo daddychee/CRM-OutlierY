@@ -16,13 +16,42 @@
   .nd-tab.on{background:var(--th-182233);color:var(--accent);font-weight:600}
   .nd-tab:hover{color:var(--ink)}
   .nd-top-act{margin-left:auto;display:flex;gap:8px;align-items:center}
-  /* pane nội dung — trần 1120px giữa trang cho cân tỉ lệ màn rộng */
-  .nd-main{flex:1;overflow-y:auto;min-width:0;
-    padding:16px max(22px, calc((100% - 1120px) / 2)) 26px}
+  /* pane nội dung — FULL bề ngang như RadarY/Content (user chê hẹp 18/08) */
+  .nd-main{flex:1;overflow-y:auto;min-width:0;padding:16px 24px 26px}
   .nd-band{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
-  .nd-band h1{font-size:1.2rem;margin:0}
+  .nd-band h1{font-size:1.25rem;margin:0}
   .nd-band select{background:var(--th-182233);color:var(--ink);border:1px solid var(--line);
     border-radius:999px;padding:4px 12px;font:inherit;font-size:.85rem;margin-left:auto}
+  /* pill thị trường All | US | … (mockup đã duyệt) */
+  .nd-pill{border:1px solid var(--line);border-radius:999px;padding:4px 14px;font-size:.82rem;
+    font-weight:600;color:var(--muted);text-decoration:none;white-space:nowrap}
+  .nd-pill.on{background:var(--accent);border-color:var(--accent);color:var(--th-090c12)}
+  .nd-pill:hover{color:var(--ink);border-color:var(--accent)}
+  /* banner PHÁN QUYẾT — nội dung báo cáo gộp kéo ra overview (user chốt 18/08) */
+  .nd-ban{padding:14px 16px 15px;border-bottom:1px solid var(--line)}
+  .nd-ban .chip{display:inline-block;font-size:.68rem;font-weight:700;letter-spacing:.07em;
+    border:1px solid var(--th-c2cbd9);color:var(--th-c2cbd9);border-radius:7px;padding:2px 10px;margin-bottom:8px}
+  .nd-ban .chip.go{border-color:var(--th-4c8fe0);color:var(--th-4c8fe0)}
+  .nd-ban .chip.nogo{border-color:var(--th-d97c6c);color:var(--th-d97c6c)}
+  .nd-ban h2{margin:0 0 6px;font-size:1.18rem;line-height:1.4}
+  .nd-ban p{margin:0;font-size:.87rem;color:var(--muted);line-height:1.6;max-width:70rem}
+  .nd-ban p b{color:var(--ink)}
+  /* lưới tile 3 cột + bản đồ beachhead cột phải cao 2 hàng (mockup) */
+  .nd-grid{display:grid;grid-template-columns:repeat(3,1fr) 1.45fr;gap:10px;padding:12px}
+  .nd-grid .nd-map{grid-column:4;grid-row:1/3;display:flex;flex-direction:column}
+  .nd-duoi{display:grid;grid-template-columns:1fr 2fr;gap:10px;padding:0 12px 12px}
+  @media (max-width:1150px){
+    .nd-grid{grid-template-columns:repeat(2,1fr)}
+    .nd-grid .nd-map{grid-column:1/-1;grid-row:auto}
+    .nd-duoi{grid-template-columns:1fr}}
+  /* dải TỔNG QUAN SỐ CỦA PIPELINE cuối khối */
+  .nd-strip{padding:0 12px 14px}
+  .nd-strip .tieu{font-size:.66rem;letter-spacing:.12em;color:var(--muted);text-transform:uppercase;
+    border-top:1px solid var(--line);padding:10px 2px 6px}
+  .nd-strip table{width:100%;border-collapse:collapse;font-size:.86rem;font-variant-numeric:tabular-nums}
+  .nd-strip th{font-size:.64rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);
+    text-align:right;padding:4px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+  .nd-strip td{text-align:right;padding:6px 8px;font-weight:700}
   .nd-tt{border:1px solid var(--line);border-radius:14px;margin-bottom:16px;overflow:hidden}
   .nd-tt-h{display:flex;align-items:center;gap:10px;padding:11px 16px;background:var(--th-121826);
     border-bottom:1px solid var(--line);flex-wrap:wrap}
@@ -40,10 +69,11 @@
   .nd-btn:hover{border-color:var(--accent)}
   .nd-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:9px;padding:12px}
   .nd-tile{background:var(--th-121826);border:1px solid var(--line);border-radius:11px;
-    padding:11px 12px;text-align:center}
-  .nd-tile .k{font-size:.62rem;letter-spacing:.12em;color:var(--muted);text-transform:uppercase}
-  .nd-tile .v{font-size:1.35rem;font-weight:700;margin:2px 0}
-  .nd-tile .s{font-size:.72rem;color:var(--muted)}
+    padding:12px 14px;text-align:left}
+  .nd-tile .t{font-size:.86rem;font-weight:600;margin-bottom:2px}
+  .nd-tile .k{font-size:.6rem;letter-spacing:.12em;color:var(--muted);text-transform:uppercase}
+  .nd-tile .v{font-size:1.7rem;font-weight:700;margin:2px 0;font-variant-numeric:tabular-nums}
+  .nd-tile .s{font-size:.74rem;color:var(--muted);line-height:1.45}
   .nd-bw{padding:0 12px 12px}
   .nd-bw table{width:100%;border-collapse:collapse;font-size:.84rem}
   .nd-bw th{font-size:.66rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);
@@ -244,9 +274,17 @@
       <div class="nd-trong">Chưa có niche trong danh bạ — tạo ở cổng OUTLIERY (Niches) trước.</div>
     {% else %}
     <div class="nd-band">
-      <h1>{{ ngach.ten_chuan }} — Báo cáo ngách</h1>
+      <h1>{{ ngach.ten_chuan }} — Niche Report</h1>
+      {% if pills %}
+      <span style="display:flex;gap:6px;flex-wrap:wrap;margin-left:8px">
+        <a class="nd-pill {% if not tt_chon %}on{% endif %}" href="/niche?ngach={{ ngach.ma }}">All</a>
+        {% for p in pills %}
+        <a class="nd-pill {% if tt_chon == p.ma %}on{% endif %}" href="/niche?ngach={{ ngach.ma }}&tt={{ p.ma }}">{{ p.ten }}</a>
+        {% endfor %}
+      </span>
+      {% endif %}
       {% if ds_ngay %}
-      <select onchange="location='/niche?ngach={{ ngach.ma }}&ngay='+this.value" aria-label="Report date">
+      <select onchange="location='/niche?ngach={{ ngach.ma }}&tt={{ tt_chon }}&ngay='+this.value" aria-label="Report date">
         <option value="latest">🗓 Mới nhất</option>
         {% for d in ds_ngay | reverse %}
         <option value="{{ d }}" {% if d == ngay_chon %}selected{% endif %}>{{ d }}</option>
@@ -299,25 +337,103 @@
         {% endif %}
       </div>
       {% if tt.so.co_bao_cao %}
-      <div class="nd-tiles">
-        <div class="nd-tile"><div class="k">score /100</div>
-          <div class="v">{{ tt.so.diem_hap_dan if tt.so.diem_hap_dan is not none else '—' }}</div>
-          <div class="s">điểm hấp dẫn ngách</div></div>
-        <div class="nd-tile"><div class="k">median</div>
-          <div class="v">{{ '{:,}'.format(tt.so.view_trung_vi).replace(',', '.') if tt.so.view_trung_vi else '—' }}</div>
-          <div class="s">view trung vị ngách</div></div>
-        <div class="nd-tile"><div class="k">p90</div>
-          <div class="v">{{ '{:,}'.format(tt.so.moc_trung).replace(',', '.') if tt.so.moc_trung else '—' }}</div>
-          <div class="s">mốc video "trúng"</div></div>
-        <div class="nd-tile"><div class="k">count / tháng</div>
-          <div class="v">{{ tt.so.cung_thang | round | int if tt.so.cung_thang else '—' }}</div>
-          <div class="s">nguồn cung · trend {{ tt.so.trend or '—' }}</div></div>
-        <div class="nd-tile"><div class="k">rate</div>
-          <div class="v">{{ (tt.so.cua_vao_rate * 100) | round | int ~ '%' if tt.so.cua_vao_rate else '—' }}</div>
-          <div class="s">cửa vào · {{ tt.so.cua_vao_verdict or '—' }}</div></div>
-        <div class="nd-tile"><div class="k">band · heuristic</div>
-          <div class="v">{{ tt.so.rpm_band or '—' }}</div>
-          <div class="s">RPM ước tính{% if not tt.so.rpm_band %} — nguồn thiếu{% endif %}</div></div>
+      {% set so = tt.so %}
+
+      <!-- banner PHÁN QUYẾT — nội dung báo cáo gộp kéo ra overview; headline theo
+           enum phán quyết (copy cố định của phương pháp), số + lý do từ pipeline -->
+      <div class="nd-ban">
+        <span class="chip {% if so.phan_quyet == 'GO' %}go{% elif so.phan_quyet == 'NO-GO' %}nogo{% endif %}">
+          PHÁN QUYẾT — {{ {'GO':'VÀO','CONDITIONAL':'VÀO CÓ ĐIỀU KIỆN','NO-GO':'KHÔNG VÀO'}.get(so.phan_quyet, so.phan_quyet) }}{% if so.diem_hap_dan is not none %} · {{ so.diem_hap_dan }}/100{% endif %}</span>
+        <h2>{% if so.phan_quyet == 'GO' %}Vào — ngách đạt chuẩn theo trọng số 5 trụ.{% elif so.phan_quyet == 'CONDITIONAL' %}Vào có điều kiện — vào bằng một mũi nhọn, không dàn hàng ngang.{% elif so.phan_quyet == 'NO-GO' %}Không vào — điểm dưới ngưỡng theo trọng số 5 trụ.{% else %}{{ so.phan_quyet }}{% endif %}</h2>
+        <p>{% if so.ly_do_gate %}Pipeline: <b>{{ so.ly_do_gate }}</b>.{% endif %}
+          {% if so.cum_tot %} Mũi nhọn dẫn đầu: <b>{{ so.cum_tot[0].anchor }}</b> · điểm beachhead {{ so.cum_tot[0].beachhead_score | round | int }}.{% endif %}
+          {% if so.phan_quyet == 'CONDITIONAL' %} Điều kiện: chốt Positioning (gate P3) trước khi sản xuất hàng loạt.{% endif %}</p>
+      </div>
+
+      <!-- lưới tile 3×2 + bản đồ beachhead cột phải (mockup đã duyệt) -->
+      <div class="nd-grid">
+        <div class="nd-tile"><div class="t">Điểm hấp dẫn</div><div class="k">score /100</div>
+          <div class="v">{{ so.diem_hap_dan if so.diem_hap_dan is not none else '—' }}</div>
+          <div class="s"><span class="nd-verdict {% if so.phan_quyet == 'GO' %}v-ok{% endif %}">{{ {'GO':'VÀO','CONDITIONAL':'VÀO CÓ ĐIỀU KIỆN','NO-GO':'KHÔNG VÀO'}.get(so.phan_quyet, so.phan_quyet) }}</span></div></div>
+        <div class="nd-tile"><div class="t">View trung vị ngách</div><div class="k">median</div>
+          <div class="v">{{ '{:,}'.format(so.view_trung_vi).replace(',', '.') if so.view_trung_vi else '—' }}</div>
+          <div class="s">video trưởng thành 30 ngày{% if so.pipeline and so.pipeline.video_truong_thanh %} (n={{ '{:,}'.format(so.pipeline.video_truong_thanh).replace(',', '.') }}){% endif %}</div></div>
+        <div class="nd-tile"><div class="t">Mốc video “trúng”</div><div class="k">p90</div>
+          <div class="v">{{ '{:,}'.format(so.moc_trung).replace(',', '.') if so.moc_trung else '—' }}</div>
+          <div class="s">{% if so.moc_trung_x %}chênh {{ so.moc_trung_x }}× trung vị → ngách ăn theo cú trúng{% else %}mốc video "trúng"{% endif %}</div></div>
+        <div class="nd-tile"><div class="t">Nguồn cung</div><div class="k">count / tháng</div>
+          <div class="v">{{ so.cung_thang | round | int if so.cung_thang else '—' }}</div>
+          <div class="s">video mới mỗi tháng · trend {{ so.trend or '—' }}</div></div>
+        <div class="nd-tile"><div class="t">Cửa vào</div><div class="k">rate</div>
+          <div class="v">{{ (so.cua_vao_rate * 100) | round | int ~ '%' if so.cua_vao_rate else '—' }}</div>
+          <div class="s">video thắng thuộc kênh{% if so.cua_vao_thang %} &lt;{{ so.cua_vao_thang }} tháng{% endif %} · {{ so.cua_vao_verdict or '—' }}</div></div>
+        <div class="nd-tile"><div class="t">RPM ước tính</div><div class="k">band · heuristic</div>
+          <div class="v">{{ so.rpm_band or '—' }}</div>
+          <div class="s">{% if so.rpm_band %}{{ so.rpm_nhan or '' }} — heuristic, chưa phải doanh thu đo{% else %}nguồn thiếu{% endif %}</div></div>
+        {% if tt.scatter %}
+        <div class="nd-tile nd-map">
+          <div class="t" style="text-align:center">Bản đồ beachhead — {{ tt.scatter | length }} cụm</div>
+          <div class="k" style="text-align:center">cỡ = số video · điểm ↑ · cạnh tranh →</div>
+          <svg width="100%" viewBox="0 0 270 150" style="flex:1;min-height:150px;max-height:230px">
+            <line x1="10" y1="135" x2="260" y2="135" stroke="var(--line)"/>
+            <line x1="10" y1="135" x2="10" y2="10" stroke="var(--line)"/>
+            <line x1="135" y1="135" x2="135" y2="10" stroke="var(--line)" stroke-dasharray="3,4"/>
+            {% for c in tt.scatter %}{% if not c.accent %}
+            <circle cx="{{ c.x }}" cy="{{ c.y }}" r="{{ c.r }}" fill="var(--muted)" opacity=".45"><title>{{ c.anchor }} · {{ c.diem }}</title></circle>
+            {% endif %}{% endfor %}
+            {% for c in tt.scatter %}{% if c.accent %}
+            <circle cx="{{ c.x }}" cy="{{ c.y }}" r="{{ c.r }}" fill="var(--accent)" opacity=".92"><title>{{ c.anchor }} · {{ c.diem }}</title></circle>
+            <text x="{{ c.x + c.r + 3 }}" y="{{ c.y - 3 }}" font-size="9" fill="var(--ink)" font-weight="600">{{ c.anchor }} · {{ c.diem | round | int }}</text>
+            {% endif %}{% endfor %}
+          </svg>
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- 5 trụ điểm + Best & Worst có cột "vì sao" từ số thật -->
+      <div class="nd-duoi">
+        {% if tt.radar %}
+        <div class="nd-tile">
+          <div class="t" style="text-align:center">5 trụ điểm</div>
+          <svg width="100%" viewBox="0 0 120 118" style="max-height:230px">
+            <g stroke="var(--line)" fill="none">
+              <polygon points="60,12 105.7,45.2 88.2,98.8 31.8,98.8 14.3,45.2"/>
+              <line x1="60" y1="60" x2="60" y2="12"/><line x1="60" y1="60" x2="105.7" y2="45.2"/>
+              <line x1="60" y1="60" x2="88.2" y2="98.8"/><line x1="60" y1="60" x2="31.8" y2="98.8"/><line x1="60" y1="60" x2="14.3" y2="45.2"/>
+            </g>
+            <polygon points="{{ tt.radar }}" fill="var(--th-16263f)" stroke="var(--accent)" stroke-width="1.6"/>
+            <g fill="var(--muted)" font-size="8">
+              <text x="60" y="8" text-anchor="middle">nhu cầu</text><text x="112" y="42" text-anchor="middle">$</text>
+              <text x="91" y="110" text-anchor="middle">cửa vào</text><text x="27" y="110" text-anchor="middle">phân mảnh</text>
+              <text x="9" y="42" text-anchor="middle">trend</text>
+            </g>
+          </svg>
+        </div>
+        {% endif %}
+        {% if so.cum_tot %}
+        <div class="nd-tile">
+          <div class="t" style="text-align:center">Best &amp; Worst — cụm sub-niche theo điểm beachhead</div>
+          <table style="width:100%;border-collapse:collapse;font-size:.85rem;margin-top:6px">
+            <tr><th style="font-size:.64rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);text-align:right;padding:4px 8px;border-bottom:1px solid var(--line)">Điểm</th>
+                <th style="font-size:.64rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);text-align:left;padding:4px 8px;border-bottom:1px solid var(--line)">Cụm</th>
+                <th style="font-size:.64rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);text-align:left;padding:4px 8px;border-bottom:1px solid var(--line)">Vì sao</th></tr>
+            {% for c in so.cum_tot %}
+            <tr><td class="bw-g" style="padding:5px 8px">{{ c.beachhead_score | round | int }}</td>
+                <td style="padding:5px 8px"><b>{{ c.anchor }}</b></td>
+                <td style="padding:5px 8px;color:var(--muted)">{% if c.competition is not none %}cạnh tranh {{ ('%.2f' % c.competition).replace('.', ',') }}{% endif %}{% if c.n_channels %} · {{ c.n_channels }} kênh{% endif %}{% if c.size %} · {{ c.size }} video{% endif %}</td></tr>
+            {% endfor %}
+            {% if so.diem_cum_tb is not none %}
+            <tr><td style="text-align:right;padding:5px 8px;color:var(--muted)">{{ so.diem_cum_tb }}</td>
+                <td colspan="2" style="padding:5px 8px;color:var(--muted)">trung bình {{ so.so_cum }} cụm</td></tr>
+            {% endif %}
+            {% for c in so.cum_xau %}
+            <tr><td class="bw-r" style="padding:5px 8px">{{ c.beachhead_score | round | int }}</td>
+                <td style="padding:5px 8px">{{ c.anchor }}</td>
+                <td style="padding:5px 8px;color:var(--muted)">{% if c.competition is not none %}cạnh tranh {{ ('%.2f' % c.competition).replace('.', ',') }}{% endif %}{% if c.n_channels %} · {{ c.n_channels }} kênh{% endif %}{% if c.size %} · {{ c.size }} video{% endif %}</td></tr>
+            {% endfor %}
+          </table>
+        </div>
+        {% endif %}
       </div>
       {% if tt.gates %}
       <div class="nd-bw" style="padding-top:10px">
@@ -340,57 +456,26 @@
         <div class="s" style="color:var(--muted);font-size:.7rem;margin-top:4px">Gate sống qua các lần chạy lại — ký ghi tên + thời điểm. Chưa ký P3 + P5 thì chưa sản xuất hàng loạt (luật phương pháp).</div>
       </div>
       {% endif %}
-      {% if tt.radar or tt.scatter %}
-      <div class="nd-bw" style="display:grid;grid-template-columns:1fr 1.9fr;gap:10px">
-        {% if tt.radar %}
-        <div style="border:1px solid var(--th-182233);border-radius:10px;padding:8px">
-          <div style="font-size:.66rem;letter-spacing:.1em;color:var(--muted);text-transform:uppercase;text-align:center;margin-bottom:2px">5 trụ điểm</div>
-          <svg width="100%" viewBox="0 0 120 118" style="max-height:150px">
-            <g stroke="var(--line)" fill="none">
-              <polygon points="60,12 105.7,45.2 88.2,98.8 31.8,98.8 14.3,45.2"/>
-              <line x1="60" y1="60" x2="60" y2="12"/><line x1="60" y1="60" x2="105.7" y2="45.2"/>
-              <line x1="60" y1="60" x2="88.2" y2="98.8"/><line x1="60" y1="60" x2="31.8" y2="98.8"/><line x1="60" y1="60" x2="14.3" y2="45.2"/>
-            </g>
-            <polygon points="{{ tt.radar }}" fill="var(--th-16263f)" stroke="var(--accent)" stroke-width="1.6"/>
-            <g fill="var(--muted)" font-size="8">
-              <text x="60" y="8" text-anchor="middle">nhu cầu</text><text x="112" y="42" text-anchor="middle">$</text>
-              <text x="91" y="110" text-anchor="middle">cửa vào</text><text x="27" y="110" text-anchor="middle">phân mảnh</text>
-              <text x="9" y="42" text-anchor="middle">trend</text>
-            </g>
-          </svg>
-        </div>
-        {% endif %}
-        {% if tt.scatter %}
-        <div style="border:1px solid var(--th-182233);border-radius:10px;padding:8px">
-          <div style="font-size:.66rem;letter-spacing:.1em;color:var(--muted);text-transform:uppercase;text-align:center;margin-bottom:2px">Bản đồ beachhead — {{ tt.scatter | length }} cụm · cỡ = số video</div>
-          <svg width="100%" viewBox="0 0 270 150" style="max-height:170px">
-            <line x1="10" y1="135" x2="260" y2="135" stroke="var(--line)"/>
-            <line x1="10" y1="135" x2="10" y2="10" stroke="var(--line)"/>
-            <line x1="135" y1="135" x2="135" y2="10" stroke="var(--line)" stroke-dasharray="3,4"/>
-            {% for c in tt.scatter %}{% if not c.accent %}
-            <circle cx="{{ c.x }}" cy="{{ c.y }}" r="{{ c.r }}" fill="var(--muted)" opacity=".45"><title>{{ c.anchor }} · {{ c.diem }}</title></circle>
-            {% endif %}{% endfor %}
-            {% for c in tt.scatter %}{% if c.accent %}
-            <circle cx="{{ c.x }}" cy="{{ c.y }}" r="{{ c.r }}" fill="var(--accent)" opacity=".92"><title>{{ c.anchor }} · {{ c.diem }}</title></circle>
-            <text x="{{ c.x + c.r + 3 }}" y="{{ c.y - 3 }}" font-size="9" fill="var(--ink)" font-weight="600">{{ c.anchor }} · {{ c.diem | round | int }}</text>
-            {% endif %}{% endfor %}
-            <text x="12" y="9" font-size="8.5" fill="var(--muted)">điểm ↑</text>
-            <text x="198" y="146" font-size="8.5" fill="var(--muted)">cạnh tranh →</text>
-          </svg>
-        </div>
-        {% endif %}
+      {% if so.pipeline %}
+      <div class="nd-strip">
+        <div class="tieu">Tổng quan số của pipeline</div>
+        {% set p = so.pipeline %}
+        <div style="overflow-x:auto"><table>
+          <tr><th>Kênh</th><th>Video quét</th><th>Trưởng thành</th><th>Outlier (thắng)</th>
+              <th>Tín hiệu sớm</th><th>Comment</th><th>Câu hỏi</th><th>HHI</th><th>Cung/tháng</th></tr>
+          <tr>
+            <td>{{ p.kenh_resolve if p.kenh_resolve is not none else '—' }}</td>
+            <td>{{ '{:,}'.format(p.video_quet).replace(',', '.') if p.video_quet is not none else '—' }}</td>
+            <td>{{ '{:,}'.format(p.video_truong_thanh).replace(',', '.') if p.video_truong_thanh is not none else '—' }}</td>
+            <td>{{ '{:,}'.format(p.outlier).replace(',', '.') if p.outlier is not none else '—' }}</td>
+            <td>{{ '{:,}'.format(p.tin_hieu_som).replace(',', '.') if p.tin_hieu_som is not none else '—' }}</td>
+            <td>{{ '{:,}'.format(p.comment).replace(',', '.') if p.comment is not none else '—' }}</td>
+            <td>{{ '{:,}'.format(p.cau_hoi).replace(',', '.') if p.cau_hoi is not none else '—' }}</td>
+            <td>{{ ('%.3f' % p.hhi).replace('.', ',') if p.hhi is not none else '—' }}</td>
+            <td>{{ p.cung_thang | round | int if p.cung_thang is not none else '—' }}</td>
+          </tr>
+        </table></div>
       </div>
-      {% endif %}
-      {% if tt.so.cum_tot %}
-      <div class="nd-bw"><table>
-        <tr><th style="text-align:right">Điểm</th><th>Cụm sub-niche</th><th>Cạnh tranh</th></tr>
-        {% for c in tt.so.cum_tot %}
-        <tr><td class="bw-g">{{ c.beachhead_score }}</td><td><b>{{ c.anchor }}</b></td><td>{{ c.competition }}</td></tr>
-        {% endfor %}
-        {% for c in tt.so.cum_xau %}
-        <tr><td class="bw-r">{{ c.beachhead_score }}</td><td>{{ c.anchor }}</td><td>{{ c.competition }}</td></tr>
-        {% endfor %}
-      </table></div>
       {% endif %}
       {% endif %}
     </section>

@@ -270,3 +270,34 @@ Suite 97 pass. Restart :9102 — LƯU Ý khuôn start: cwd = GỐC repo + `--app
 apps/data-analytics` (start-all.ps1); cwd = thư mục app là chết import `nen.common`.
 Kiểm sống: :9102/chan-doan 200 ra dashboard (nd-top, không nd-rail, tab Overall active,
 niche LIFE IN từ danh bạ), gateway /data-analytics 303 login (route tồn tại, hết 404).
+
+## 18/08 (tiếp 2) — Overall dựng lại theo mockup + kéo báo cáo gộp ra overview
+
+User kiểm mắt tiếp: (1) vẫn hẹp hơn RadarY/Content → BỎ trần 1120px, full bề ngang
+(padding 24px); (2) "đưa nội dung báo cáo tổng hợp ra làm overview như hình" + chê
+dashboard xấu hơn mockup đã duyệt → dựng lại trọn pane Overall:
+- BANNER PHÁN QUYẾT trên cùng mỗi thị trường: chip "PHÁN QUYẾT — VÀO CÓ ĐIỀU KIỆN ·
+  58/100" + headline CỐ ĐỊNH THEO ENUM phán quyết (copy phương pháp, không bịa) + thân:
+  gate_reason pipeline nguyên văn + mũi nhọn dẫn đầu (top beachhead) + dòng điều kiện
+  gate P3 khi CONDITIONAL.
+- LƯỚI TILE 3×2 + BẢN ĐỒ BEACHHEAD cột phải cao 2 hàng (đúng mockup): tile có tiêu đề
+  + chú giải từ SỐ THẬT — "chênh 42× trung vị" (moc_trung_x = p90/median PY tính),
+  "video trưởng thành (n=2.412)", "video thắng thuộc kênh <24 tháng · OPEN"
+  (young_months), "travel — heuristic, chưa phải doanh thu đo" (category + copy cố định).
+- 5 TRỤ + BEST&WORST: cột "Vì sao" deterministic từ ranked (cạnh tranh 0,30 · 33 kênh ·
+  125 video) + hàng giữa "65 — trung bình 20 cụm" (diem_cum_tb/so_cum PY tính).
+- DẢI "TỔNG QUAN SỐ CỦA PIPELINE" cuối khối: 9 ô từ analysis/demand/gaps/channels/
+  decision1 (75 kênh · 3.815 video · 2.412 trưởng thành · 648 outlier · 104 tín hiệu
+  sớm · 12.869 comment · 1.081 câu hỏi · HHI 0,073 · 264 cung/tháng) — ô thiếu nguồn
+  = "—" (test ghim video_truong_thanh None khi demand giả thiếu n_matured).
+- PILL THỊ TRƯỜNG All | US | SPAIN trên band (mockup); ?tt= lọc server; gán thêm
+  TT-SPAIN → LifeIn_ES vào niche_projects.json (chưa snapshot → khối "Chưa có báo cáo
+  + Run analysis" — Run là chạy được, key từ KÉT). LƯU Ý: hình mockup có "1.193 đủ
+  điều kiện đánh giá" — KHÔNG tái lập được từ artifact nào → không hiển thị, dùng
+  n_matured 2.412 (demand) làm cột "Trưởng thành".
+- Sửa bug _ten_thi_truong: danh bạ trả ten=None → .get(ten, ma) vẫn ra None → in
+  "None" lên UI; giờ fallback mã bỏ tiền tố TT- ("US"/"SPAIN"/"KOREA").
+- test_agent_api ca thiếu-artifact đổi analysis → bets (seed giờ có analysis.json thật).
+Bridge thêm: pipeline{9 khóa} + moc_trung_x + cua_vao_thang + rpm_nhan + so_cum +
+diem_cum_tb — TẤT CẢ nhặt/chia từ artifact, không tính lại chỉ số. Suite 99 pass;
+kiểm HTML thật :9102 đủ banner/pills/strip/vì-sao, 0 chữ "None".

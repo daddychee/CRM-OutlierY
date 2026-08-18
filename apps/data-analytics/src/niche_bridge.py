@@ -89,9 +89,15 @@ def tom_tat_overall(project: str, snap_id: str = "latest") -> dict:
     crack = doc_artifact(project, ban_ghi["id"], "crackability.json") or {}
     money = doc_artifact(project, ban_ghi["id"], "monetization.json") or {}
     d2 = doc_artifact(project, ban_ghi["id"], "decision2.json") or {}
+    analysis = doc_artifact(project, ban_ghi["id"], "analysis.json") or {}
+    gaps = doc_artifact(project, ban_ghi["id"], "gaps.json") or {}
+    channels = doc_artifact(project, ban_ghi["id"], "channels.json")
 
     ranked = d2.get("ranked") or []
     rpm = money.get("rpm_band_usd")
+    med, p90 = demand.get("demand_median_views"), demand.get("reach_p90_views")
+    diem_cum = [r.get("beachhead_score") for r in ranked
+                if isinstance(r.get("beachhead_score"), (int, float))]
     return {
         "co_bao_cao": True,
         "snapshot": ban_ghi["id"],
@@ -109,6 +115,25 @@ def tom_tat_overall(project: str, snap_id: str = "latest") -> dict:
         "cua_vao_rate": crack.get("newcomer_rate"),
         "cua_vao_verdict": crack.get("verdict"),
         "rpm_band": f"${rpm[0]}–{rpm[1]}" if isinstance(rpm, list) and len(rpm) == 2 else None,
+        # chú giải tile + banner — số DẪN XUẤT từ artifact (PY tính, template chỉ in)
+        "moc_trung_x": round(p90 / med) if med and p90 else None,
+        "cua_vao_thang": crack.get("young_months"),
+        "rpm_nhan": money.get("category"),
+        "so_cum": len(ranked) or None,
+        "diem_cum_tb": round(sum(diem_cum) / len(diem_cum)) if diem_cum else None,
+        # TỔNG QUAN SỐ CỦA PIPELINE (kéo từ báo cáo gộp ra overview — user chốt 18/08):
+        # mỗi ô thiếu nguồn = None, template in "—" (van chống bịa, không 0 giả)
+        "pipeline": {
+            "kenh_resolve": len(channels) if isinstance(channels, dict) and channels else None,
+            "video_quet": analysis.get("total_videos"),
+            "video_truong_thanh": demand.get("n_matured"),
+            "outlier": analysis.get("n_winners"),
+            "tin_hieu_som": analysis.get("n_early_confirmed"),
+            "comment": gaps.get("total_comments"),
+            "cau_hoi": gaps.get("total_questions"),
+            "hhi": d1.get("competition_hhi"),
+            "cung_thang": demand.get("supply_per_month"),
+        },
         # beachhead: top 2 accent + toàn bộ toạ độ cho scatter (PY đã tính sẵn)
         "beachhead": [
             {"anchor": r.get("anchor"), "diem": r.get("beachhead_score"),

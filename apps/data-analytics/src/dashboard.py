@@ -64,7 +64,9 @@ def _ds_kenh(ngach_ma: str) -> list[dict]:
 def _ten_thi_truong() -> dict[str, str]:
     try:
         from nen.common import danh_ba
-        return {t["ma"]: t.get("ten", t["ma"]) for t in danh_ba.liet_ke("thi_truong")}
+        # Danh bạ có thể trả ten=None → fallback mã bỏ tiền tố TT- (hết in "None")
+        return {t["ma"]: (t.get("ten") or t["ma"].removeprefix("TT-"))
+                for t in danh_ba.liet_ke("thi_truong")}
     except Exception:
         return {}
 
@@ -120,7 +122,7 @@ def _scatter_beachhead(beachhead: list[dict]) -> list[dict]:
 
 @router.get("/niche", response_class=HTMLResponse)
 def trang_niche(request: Request, user: dict = Depends(_lay_user),
-                ngach: str = "", ngay: str = "latest"):
+                ngach: str = "", ngay: str = "latest", tt: str = ""):
     from src.main import templates   # main đã khởi tạo Jinja (import lúc gọi, tránh vòng)
     ds_ngach = _ds_ngach()
     ngach_hien = next((n for n in ds_ngach if n["ma"] == ngach), ds_ngach[0] if ds_ngach else None)
@@ -128,8 +130,12 @@ def trang_niche(request: Request, user: dict = Depends(_lay_user),
     ten_tt = _ten_thi_truong()
     thi_truong = []
     ds_ngay: list[str] = []
+    pills: list[dict] = []      # pill thị trường (All | US | …) theo mọi market đã gán
     if ngach_hien:
         mapping = _map_projects().get(ngach_hien["ma"], {})
+        pills = [{"ma": m, "ten": ten_tt.get(m, m)} for m in mapping]
+        if tt and tt in mapping:              # pill chọn 1 thị trường; rỗng/lạ = All
+            mapping = {tt: mapping[tt]}
         for tt_ma, project in mapping.items():
             tom_tat = niche_bridge.tom_tat_overall(project, ngay)
             from src import gates as gates_mod
@@ -149,6 +155,7 @@ def trang_niche(request: Request, user: dict = Depends(_lay_user),
         "user": user, "ds_ngach": ds_ngach, "ngach": ngach_hien,
         "thi_truong": thi_truong, "ds_kenh": _ds_kenh(ngach_hien["ma"]) if ngach_hien else [],
         "ds_ngay": ds_ngay, "ngay_chon": ngay,
+        "pills": pills, "tt_chon": tt,
         "ds_thi_truong": sorted(_ten_thi_truong().items(), key=lambda x: x[1]),
     })
 

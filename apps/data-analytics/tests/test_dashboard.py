@@ -43,6 +43,19 @@ def test_overall_hien_tile_va_kenh(client):
     assert "hidden" in body and "iraq" in body               # Best & Worst cụm
 
 
+def test_overall_banner_pills_strip(client):
+    """Nội dung báo cáo gộp kéo ra overview (user chốt 18/08): banner phán quyết +
+    pill thị trường + dải tổng quan số pipeline."""
+    body = client.get("/niche", headers=CLAIMS).text
+    assert "PHÁN QUYẾT" in body and "Vào có điều kiện" in body
+    assert "Tổng quan số của pipeline" in body and "3.815" in body and "12.869" in body
+    assert 'class="nd-pill on"' in body            # pill All active mặc định
+    assert "chênh 42× trung vị" in body            # số dẫn xuất PY tính
+    b2 = client.get("/niche", headers=CLAIMS,
+                    params={"ngach": "N-TEST", "tt": "TT-US"})
+    assert b2.status_code == 200 and "TEST NICHE" in b2.text
+
+
 def test_xem_lai_ngay_cu(client):
     r = client.get("/niche", headers=CLAIMS, params={"ngach": "N-TEST", "ngay": "2026-08-18"})
     assert r.status_code == 200 and "snapshot 2026-08-18" in r.text

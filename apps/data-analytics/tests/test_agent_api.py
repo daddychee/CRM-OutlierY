@@ -60,9 +60,10 @@ def test_van_chong_bia_muc_va_project(client):
     assert r.status_code == 400 and "Hợp lệ" in r.json()["detail"]
     assert client.get("/api/agent/bao-cao/KhongCo", headers=CLAIMS).status_code == 404
     # snapshot có nhưng thiếu artifact của mục đó → 404 nói rõ
+    # (dùng 'bets' — _seed KHÔNG ghi bets.json; analysis đã có thật từ 18/08)
     r2 = client.get("/api/agent/bao-cao/TestNiche_US", headers=CLAIMS,
-                    params={"muc": "analysis"})
-    assert r2.status_code == 404 and "không có mục analysis" in r2.json()["detail"]
+                    params={"muc": "bets"})
+    assert r2.status_code == 404 and "không có mục bets" in r2.json()["detail"]
 
 
 def test_kenh_report_theo_id(client):
