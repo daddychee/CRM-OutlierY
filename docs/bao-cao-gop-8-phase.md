@@ -138,6 +138,83 @@ bar median-vs-p90 (P1) · gantt roadmap (P6) · line snapshot theo quý (P7, khi
 tiến trình cha + PYTHONUTF8/encoding utf-8 cho stage con) — hết họ lỗi Σ/✓ chết cp1252;
 verify `status` chạy sạch.
 
+## Trạng thái code Đợt 1 (18/08, 3 commit: cba6591 · 16f646b · b8605ef)
+
+- ✅ `niche-research/scripts/snapshot.py` — đóng băng lần chạy theo ngày; LifeIn_US có
+  snapshot 2026-08-18 (10 artifact + BAO-CAO-8-PHASE.html + xlsx). Vá UTF-8 orchestrator 2 tầng.
+- ✅ `data-analytics/src/niche_bridge.py` — đọc snapshot (bậc 1 đĩa, env NICHE_PROJECTS_DIR),
+  tile + beachhead + Best&Worst, van chống bịa từng ô; download chỉ file trong sổ index.
+- ✅ **Trang `/niche`** (src/dashboard.py + templates/dashboard.html, extends base app):
+  rail = dropdown niche (danh bạ nền) + kênh + New report (tạm trỏ /chan-doan — nhánh
+  Niche run nối sau); pane = mỗi thị trường 1 section: verdict VN + 6 tile + Best&Worst
+  cụm + 🗓 chọn snapshot + Read report (mở HTML inline) + Download HTML/Excel.
+  Ánh xạ ngách×TT→project: `data/data-analytics/niche_projects.json` (đã seed
+  N-LIFE-IN/TT-US→LifeIn_US; env NICHE_PROJECTS_MAP cho test). Suite 75 pass.
+  ⚠ Test xanh ≠ chạy đúng: CẦN KIỂM MẮT qua cổng thật (/data-analytics/niche) —
+  token --th-* đến từ khung gateway, màu ok/warn tạm dùng accent/d97c6c (ponytail token).
+
+## Trạng thái Đợt 1b (18/08 tiếp — commit 30c0598 + bec7594, suite 84 pass)
+
+- ✅ **Pane KÊNH** `/niche/kenh/{ma}`: tile metrics_chinh (views/giờ xem/CTR/retention/
+  doanh thu-van-chống-bịa/tầng vỡ) + ô 🗓 chọn report + dải so-ngách (benchmark từ snapshot
+  niche đúng thị trường kênh) + Best&Worst video + line views (dựng từ FILE GỐC, guarded,
+  không LLM) + nút Full analysis → trang lịch sử sẵn có. Nối kênh danh bạ ↔ report bằng
+  chuan_hoa_ten + bí danh trên trường ten_kenh.
+- ✅ **Run + tự cập nhật** (tính năng 2): nút Run (L3+) → POST /api/resume service :9113
+  (NICHE-RESEARCH ĐÃ LÀ SERVICE V3, PORTS.md :9113, key YouTube service tự lấy từ KÉT —
+  hết cần dán key vào competitors.txt) → JS poll 3s → xong thì data-analytics tự ĐÓNG BĂNG
+  snapshot (gọi scripts/snapshot.py CLI, chống đúp bằng registry+lock; ponytail: chuyển
+  thành /api/snapshot của niche server khi restart kèm code mới) → location.reload().
+- ✅ **DỜI NHÀ projects**: LifeIn_US/ES/VN + _pool-gop từ apps/niche-research/projects →
+  `data/niche-research/projects` (nhà V3, service :9113 đọc ở đây); bridge default đổi theo.
+  Thư mục LifeIn_US cũ bên apps/ còn lại vì user đang mở Excel (~$ lock) — MOVED.txt ghi chú,
+  xóa tay sau.
+
+## Trạng thái CUỐI 18/08 — module code XONG phần lõi (9 commit, suite 94 pass)
+
+Thêm 4 slice cuối (c77be8b · dc034e9 · 83c0435 · fc03169+e3f2c5e):
+- ✅ Radar 5 trụ + bản đồ beachhead SVG trong Overall (PY tính toạ độ, accent 2 cụm đầu).
+- ✅ Modal New report 2 nhánh: Niche = chọn/tạo project (sinh tên từ ngách+TT, ghi
+  niche_projects.json nguyên tử) + pool CỘNG DỒN không trùng + chạy /api/run service
+  (key từ KÉT) + poll tự cập nhật; Channel = trỏ form nạp report sẵn có.
+- ✅ Gate ký 8 phase (`src/gates.py` + sổ data/data-analytics/gates/): business L4+ /
+  production L3+ / auto theo báo cáo; chip rail + Sign + phương án P3; chữ ký sống qua
+  các lần chạy lại.
+- ✅ API cầu nối AI Agent (`src/agent_api.py`): /api/agent/registry ·
+  /api/agent/bao-cao/{project}?muc=&ngay= (11 mục whitelist, lát JSON nguyên cấu trúc,
+  mục lạ 400 "Hợp lệ: …") · /api/agent/kenh-report/{id}. HỢP ĐỒNG cho app ai-agent làm
+  retriever nguồn "📊 Báo cáo" (phần tích hợp hỏi–đáp nằm BÊN app ai-agent — mạch riêng).
+- Bài học trong ngày: pipe `| tail` nuốt exit code pytest → commit lọt test đỏ 1 lần
+  (fc03169, sửa ngay e3f2c5e) — từ giờ `set -o pipefail` khi test-trước-commit; import
+  hàm trực-tiếp giữa module làm monkeypatch không ăn → gọi qua module.
+
+## CÒN LẠI (các mạch sau)
+
+1. App ai-agent: retriever nguồn "📊 Báo cáo" theo hợp đồng /api/agent (Đợt 3 phần còn lại).
+2. Đợt 4: benchmark ngách vào engine 4 trục (baseline thứ ba) — đụng diagnosis_engine,
+   đọc docs/analytic_methodology.md trước.
+3. Kiểm mắt qua cổng thật /data-analytics/niche (test xanh ≠ chạy đúng) + token ok/warn
+   cho khung app (ponytail trong dashboard.html).
+4. Tay user: rotate 2 key YouTube lộ trong git repo cũ (daddychee/niche-research) +
+   đóng Excel để xóa thư mục LifeIn_US cũ bên apps/ (MOVED.txt).
+5. Chạy ES/VN khi pool sẵn sàng (ES chạy được ngay qua nút Run — key từ KÉT).
+
+## Việc còn Đợt 1b→4
+
+1. Pane KÊNH (tile kỳ + line views + Best&Worst video theo OX baseline kênh + dải so-ngách).
+   ĐÃ KHẢO SÁT (18/08, trước /compact): bản ghi bao-cao-lich-su CÓ SẴN `ten_kenh` +
+   `loai_kenh` + `kenh{tang_vo, so_video, metrics_chinh{ctr,retention,views,watchtime,
+   revenue}, luat_khop}` + `ky_bat_dau/ky_ket_thuc` → nối kênh danh bạ ↔ report bằng
+   `ten_kenh` (so qua danh_ba.chuan_hoa_ten + bí danh); tile lấy từ metrics_chinh;
+   line chart dùng `doc_chart_data` (diagnosis_engine, đọc file gốc); Best&Worst video
+   tái dùng `chan_doan_toan_bo` từ file gốc như trang lịch sử (rẻ, không LLM);
+   danh sách report của kênh: `doc_bao_cao_moi_nguoi()` lọc theo ten_kenh.
+2. Modal New report 2 nhánh thật (Niche run: cầu chạy pipeline niche-research + progress
+   inline + poll tự cập nhật khi xong — tính năng 2 user yêu cầu).
+3. SVG radar + scatter beachhead vào pane Overall (diagram-design grammar).
+4. Gates ký (gates.json + API) trong Read report · benchmark ngách vào engine 4 trục (Đợt 4).
+5. Đợt 3: cầu AI Agent (phương án 2 đã duyệt).
+
 ## Việc còn (sau khi UI được duyệt)
 
 1. `19_build_bao_cao.py` [PY]: render HTML gộp từ mọi JSON (khuôn = bản mẫu LifeIn_US;
