@@ -1038,6 +1038,20 @@ def _render_api_keys(request: Request, user: dict, bao: str = "",
     # loại nào cần nhóm theo nhà — thêm loại có nhà mới chỉ cần thêm một mục ở đây.
     nha_por_loai = {"llm": (ket.NHA_LLM, ket.NHA_LLM_INFO),
                     "generate": (ket.NHA_GEN, ket.NHA_GEN_INFO)}
+    # Show-more SERVER-SIDE (18/08): JS ẩn/hiện cũ Owner báo không tác dụng trên
+    # trình duyệt thật mà không tái hiện được — đổi sang server tự cắt danh sách
+    # (>5 khóa render 5 dòng + LINK GET thật), kiểm được 100% bằng TestClient.
+    # ?mo_rong=<ma1,ma2> = các việc đang yêu cầu hiện ĐỦ; URL mở/gọn tính sẵn ở
+    # Python từng việc (Jinja set-math rắc rối, không đáng).
+    mo_rong = {x for x in q.get("mo_rong", "").split(",") if x}
+    url_mo_rong = {}
+    if tab == "app" and app_chon in viec_api:
+        for v in viec_api[app_chon]["viec"]:
+            goc = f"/general/api-keys?tab=app&app={app_chon}"
+            bot = ",".join(sorted(mo_rong - {v["ma"]}))
+            url_mo_rong[v["ma"]] = {
+                "mo": goc + "&mo_rong=" + ",".join(sorted(mo_rong | {v["ma"]})),
+                "gon": goc + (f"&mo_rong={bot}" if bot else "")}
     # KHÔNG BAO GIỜ cache: trang sửa liên tục (Owner nghi cache trình duyệt khi
     # thấy UI cũ) — no-store cho MỌI đường render.
     return templates.TemplateResponse(request, "nen_api_keys.html", {
@@ -1048,6 +1062,7 @@ def _render_api_keys(request: Request, user: dict, bao: str = "",
         "viec_api": viec_api, "app_chon": app_chon,
         "nha_llm": ket.NHA_LLM, "nha_info": ket.NHA_LLM_INFO,
         "nha_por_loai": nha_por_loai,
+        "mo_rong": mo_rong, "url_mo_rong": url_mo_rong,
         "ten_loai": ket.TEN_LOAI_API, "model_goi_y": ket.MODEL_GOI_Y,
         "log_rows": log_rows, "ngay": ngay or _date.today().isoformat(),
         "loc": loc}, headers={"Cache-Control": "no-store"})
@@ -1615,9 +1630,11 @@ def quan_tri_cu():
 # ---------- két cấu hình (P3) ----------
 
 @app.get("/api/cau-hinh/llm/{vai}")
-def api_cau_hinh_llm(request: Request, vai: str):
-    """App phụ (bind loopback) đọc cấu hình LLM theo vai — key KHÔNG bao giờ nằm
-    trong file của app. CHỈ phục vụ loopback.
+def api_cau_hinh_llm(request: Request, vai: str, app: str = "ai-agent"):
+    """App phụ (bind loopback) đọc cấu hình LLM theo APP + VIỆC — key KHÔNG bao
+    giờ nằm trong file của app. CHỈ phục vụ loopback. Query ?app= (mặc định
+    ai-agent — tương thích ngược caller cũ quên truyền; 2 caller thật đều truyền
+    tường minh sau bug data-analytics mượn nhầm khóa Writer ai-agent 18/08).
 
     ponytail: trần bảo vệ = mọi tiến trình local đọc được (cùng trust model
     X-Remote-User hiện tại); nâng cấp khi tách nhiều máy: token nội bộ."""
@@ -1625,7 +1642,7 @@ def api_cau_hinh_llm(request: Request, vai: str):
         return JSONResponse({"loi": "chi loopback"}, status_code=403)
     conn = ket.ket_noi()
     try:
-        return ket.cau_hinh_llm(conn, vai)
+        return ket.cau_hinh_llm(conn, app, vai)
     finally:
         conn.close()
 

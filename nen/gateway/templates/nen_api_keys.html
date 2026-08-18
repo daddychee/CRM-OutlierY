@@ -6,9 +6,11 @@
    gate GIỮ NGUYÊN 100% — chỉ đổi lớp trình bày. Khối khóa hiển thị THEO MỌI LOẠI
    trong ten_loai (bản cũ hardcode 4 loại — khóa transcript bị vô hình). #}
 {# Owner chốt 17/08 (ảnh chip xếp lưới "không có giá trị gì cả"): Assigned keys
-   (tab 2) đổi từ chip-wrap sang MỘT KHÓA MỘT DÒNG, tối đa 5 dòng + nút Show more
-   (.khoa-list/.khoa-dong/.an-di dưới đây). Chuỗi hiển thị khóa đổi từ ••••duoi
-   sang dau···duoi qua macro khoa_ngan (đủ nhận diện hơn chỉ-đuôi). #}
+   (tab 2) đổi từ chip-wrap sang MỘT KHÓA MỘT DÒNG, tối đa 5 dòng + Show more.
+   18/08: Show more đổi sang SERVER-SIDE — server cắt danh sách trước khi gửi
+   HTML, Show more/less là LINK GET thật với ?mo_rong= (JS ẩn/hiện cũ Owner báo
+   không tác dụng trên trình duyệt thật, không tái hiện được). Chuỗi hiển thị
+   khóa dau···duoi qua macro khoa_ngan (đủ nhận diện hơn chỉ-đuôi). #}
 <style>
   table.gon th, table.gon td{padding:5px 11px}
   .usage{display:inline-block;width:86px;height:7px;border-radius:999px;background:var(--vien);
@@ -17,7 +19,6 @@
   .usage i.cao{background:var(--loi)}
   .khoa-list{display:flex;flex-direction:column;gap:4px}
   .khoa-list form.khoa-dong{display:flex;justify-content:space-between;align-items:center;gap:8px}
-  .khoa-list .an-di{display:none}
 </style>
 
 {% macro khoa_ngan(dau, duoi) %}{{ dau }}···{{ duoi }}{% endmacro %}
@@ -159,7 +160,8 @@
   <tr><td>{{ v.ten }}</td><td>{{ ten_loai.get(v.loai, v.loai) }}</td>
     <td>
       <div class="khoa-list">
-      {% for kid in ids %}
+      {% set day_du = v.ma in mo_rong or ids | length <= 5 %}
+      {% for kid in (ids if day_du else ids[:5]) %}
         {% for k in keys if k.id == kid %}
         <form class="khoa-dong" method="post" action="/general/api-keys/cap-phat">
           <input type="hidden" name="app_slug" value="{{ app_chon }}">
@@ -170,6 +172,11 @@
         </form>
         {% endfor %}
       {% endfor %}
+      {% if not day_du %}
+      <a class="phu" style="font-size:.8rem" href="{{ url_mo_rong[v.ma].mo }}">Show more ({{ ids | length - 5 }})</a>
+      {% elif v.ma in mo_rong and ids | length > 5 %}
+      <a class="phu" style="font-size:.8rem" href="{{ url_mo_rong[v.ma].gon }}">Show less</a>
+      {% endif %}
       {% set con_lai = keys | selectattr('loai', 'equalto', v.loai) | rejectattr('id', 'in', ids) | list %}
       {% if con_lai %}
       <form class="dong" method="post" action="/general/api-keys/cap-phat">
@@ -269,27 +276,6 @@
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape') document.querySelectorAll('.modal-bg.show').forEach(
       function (bg) { bg.classList.remove('show'); });
-  });
-
-  // Assigned keys (tab 2): tối đa 5 dòng, phần dư ẩn + nút "Show more" —
-  // JS thuần, an toàn HTTP LAN. Mỗi .khoa-list (một ô "Assigned keys") tự tính
-  // riêng, không đụng ô khác.
-  document.querySelectorAll('.khoa-list').forEach(function (kl) {
-    var hang = Array.prototype.slice.call(kl.querySelectorAll('form.khoa-dong'));
-    if (hang.length <= 5) return;
-    var an = hang.slice(5);
-    an.forEach(function (h) { h.classList.add('an-di'); });
-    var nut = document.createElement('button');
-    nut.type = 'button';
-    nut.className = 'phu';
-    nut.style.padding = '1px 9px';
-    nut.style.fontSize = '.8rem';
-    nut.textContent = 'Show more (' + an.length + ')';
-    nut.addEventListener('click', function () {
-      an.forEach(function (h) { h.classList.remove('an-di'); });
-      nut.remove();
-    });
-    kl.appendChild(nut);
   });
 })();
 </script>

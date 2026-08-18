@@ -168,7 +168,12 @@
    "viec_api": [
     {
      "ma": "dien_giai",
-     "ten": "Diễn giải kết quả",
+     "ten": "Diễn giải kết quả (Writer)",
+     "loai": "llm"
+    },
+    {
+     "ma": "phan_bien",
+     "ten": "Phản biện (Critic)",
      "loai": "llm"
     }
    ]

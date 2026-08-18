@@ -59,16 +59,26 @@ _writer = None
 _critics = None
 
 
+# Việc trong CONTRACT data-analytics (apps.json viec_api) → prefix env cục bộ
+# của factory hệ cũ (WRITER_*/CRITIC_* — khuôn nội bộ KHÔNG đổi). Bug đã sửa
+# 18/08: bản cũ gọi thẳng vai "writer"/"critic" TRÙNG TÊN việc của ai-agent →
+# gateway (hardcode ai-agent) trả nhầm khóa Writer ai-agent, bỏ qua cấp phát
+# data-analytics trên UI Per-app config.
+ANH_XA_VAI = {"dien_giai": "writer", "phan_bien": "critic"}
+
+
 def nap_cau_hinh_llm() -> None:
     """Nạp cấu hình writer/critic từ KÉT (gateway loopback) vào env đúng khuôn
-    factory hệ cũ. Vai chưa khai (provider rỗng) / gateway chết → env giữ nguyên."""
+    factory hệ cũ — xin theo APP data-analytics + việc trong contract (ANH_XA_VAI).
+    Việc chưa khai (provider rỗng) / gateway chết → env giữ nguyên."""
     try:
         with httpx.Client(timeout=3) as c:
-            for vai in ("writer", "critic"):
-                ch = c.get(f"{GATEWAY_URL}/api/cau-hinh/llm/{vai}").json()
+            for vai_gateway, env_prefix in ANH_XA_VAI.items():
+                ch = c.get(f"{GATEWAY_URL}/api/cau-hinh/llm/{vai_gateway}",
+                           params={"app": "data-analytics"}).json()
                 if not ch.get("provider"):
                     continue
-                v = vai.upper()
+                v = env_prefix.upper()
                 os.environ[f"{v}_PROVIDER"] = ch["provider"]
                 os.environ[f"{v}_MODEL"] = ch["model"]
                 os.environ[f"{v}_BASE_URL"] = ch["base_url"]

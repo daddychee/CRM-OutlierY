@@ -125,33 +125,50 @@ def test_trang_api_keys_them_thu_hoi_cap_phat(client):
     nk.close()                                               # audit không chứa key
 
 
-def test_assigned_keys_cot_doc_dau_duoi_va_show_more_wiring(client):
-    """Owner chốt 17/08 (ảnh chip xếp lưới 'không có giá trị gì cả'): tab 2
-    'Per-app config' — Assigned keys hiện MỘT KHÓA MỘT DÒNG dạng dau···duoi
-    (không còn chip-wrap ngang ••••duoi); wiring JS 'tối đa 5 dòng + Show more'
-    có mặt (đếm/ẩn thật là hành vi runtime trình duyệt — kiểm markup+script tĩnh)."""
+def test_assigned_keys_show_more_server_side(client):
+    """Owner phê lần 3 (18/08): Show more đổi sang SERVER-SIDE — server cắt danh
+    sách trước khi gửi HTML (JS ẩn/hiện cũ không tác dụng trên trình duyệt thật,
+    không tái hiện được). >5 khóa: mặc định đúng 5 dòng + LINK GET 'Show more (N)';
+    ?mo_rong=<ma> render đủ + link 'Show less'; ≤5 khóa: không link nào."""
     _login(client, "owner-test", "mk-test")
     conn = ket.ket_noi()
     ids = [ket.them_api_key(conn, "youtube", f"AIzaKhoaThu{i:02d}xxxxx")
-           for i in range(6)]                     # 6 khóa > 5 để chạm ngưỡng Show more
+           for i in range(7)]                     # 7 khóa > 5 để chạm ngưỡng
     ket.luu_cap_phat_viec(conn, "radary", "harvest", ids, "xoay_vong")
     conn.close()
 
+    # MẶC ĐỊNH (collapsed): server chỉ gửi 5 dòng — không phải gửi đủ rồi JS ẩn
     trang = client.get("/general/api-keys?tab=app&app=radary").text
     assert 'class="khoa-list"' in trang
-    assert trang.count('class="khoa-dong"') == 6      # mỗi khóa MỘT form riêng, đủ 6
-    assert "AIz···" in trang                           # dau···duoi, không phải ••••duoi
-    assert "••••" not in trang                         # chip-wrap kiểu cũ đã hết dấu chấm
-
-    # CSS: cột dọc (không còn flex-wrap ngang cho danh sách khóa) — trang có 2
-    # khối <style> (nen_base.html + cục bộ trang này), tìm đúng luật cần
+    assert trang.count('class="khoa-dong"') == 5
+    assert "AIz···" in trang                           # dau···duoi, không ••••duoi
+    assert "••••" not in trang
+    assert ">Show more (2)</a>" in trang
+    # Jinja escape & thành &amp; trong thuộc tính — trình duyệt đọc lại thành &
+    assert 'href="/general/api-keys?tab=app&amp;app=radary&amp;mo_rong=harvest"' in trang
+    assert "Show less" not in trang
     assert ".khoa-list{display:flex;flex-direction:column;gap:4px}" in trang
-    assert ".khoa-list .an-di{display:none}" in trang
+    assert "querySelectorAll('.khoa-list')" not in trang   # JS show-more cũ đã gỡ hẳn
 
-    # JS: cơ chế tối đa 5 dòng + nút Show more đúng số dòng ẩn
-    js = trang.rsplit("<script>", 1)[1]
-    assert "form.khoa-dong" in js and "hang.length <= 5" in js
-    assert "'Show more ('" in js and "an-di" in js
+    # MỞ RỘNG qua query param: đủ 7 dòng + Show less (bỏ ma khỏi mo_rong)
+    trang = client.get("/general/api-keys?tab=app&app=radary&mo_rong=harvest").text
+    assert trang.count('class="khoa-dong"') == 7
+    assert "Show more" not in trang
+    assert ">Show less</a>" in trang
+    assert 'href="/general/api-keys?tab=app&amp;app=radary"' in trang
+
+    # Form hành động không phụ thuộc mo_rong: gỡ khóa ✕ lúc ĐANG collapsed vẫn ăn
+    r = client.post("/general/api-keys/cap-phat", data={
+        "app_slug": "radary", "viec": "harvest", "go": ids[0]})
+    assert r.status_code == 303
+    conn = ket.ket_noi()
+    assert ket.doc_cap_phat(conn)["radary"]["harvest"]["khoa"] == ids[1:]
+    # ≤5 khóa: không còn link nào cả (hành vi cũ giữ nguyên)
+    ket.luu_cap_phat_viec(conn, "radary", "harvest", ids[:4], "xoay_vong")
+    conn.close()
+    trang = client.get("/general/api-keys?tab=app&app=radary").text
+    assert trang.count('class="khoa-dong"') == 4
+    assert "Show more" not in trang and "Show less" not in trang
 
 
 def test_api_keys_va_permissions_khong_cache(client):
@@ -216,3 +233,32 @@ def test_api_loopback_tra_du_va_chan_khong_loopback(he):
 
     r2 = asyncio.run(goi(("192.168.1.50", 50000)))  # máy LAN gọi thẳng → chặn
     assert r2.status_code == 403
+
+
+def test_api_loopback_theo_app_khong_muon_nham(he):
+    """Bug 18/08 (Owner phê lần 3): loopback nhận query ?app= — data-analytics
+    xin việc dien_giai ra ĐÚNG khóa của mình, không mượn khóa Writer ai-agent;
+    thiếu ?app= → mặc định ai-agent (tương thích ngược, không phá caller cũ)."""
+    conn = ket.ket_noi()
+    k_ai = ket.them_api_key(conn, "llm", "sk-ai-agent-1111", nha="glm")
+    k_da = ket.them_api_key(conn, "llm", "sk-data-analytics-2222", nha="claude")
+    ket.luu_cap_phat_viec(conn, "ai-agent", "writer", [k_ai])
+    ket.luu_cap_phat_viec(conn, "data-analytics", "dien_giai", [k_da])
+    conn.close()
+
+    async def goi(url):
+        transport = httpx.ASGITransport(app=gateway_app,
+                                        client=("127.0.0.1", 50000))
+        async with httpx.AsyncClient(transport=transport,
+                                     base_url="http://t") as c:
+            return await c.get(url)
+
+    r = asyncio.run(goi("/api/cau-hinh/llm/dien_giai?app=data-analytics"))
+    assert r.json()["api_key"] == "sk-data-analytics-2222"
+    r = asyncio.run(goi("/api/cau-hinh/llm/writer?app=ai-agent"))
+    assert r.json()["api_key"] == "sk-ai-agent-1111"
+    r = asyncio.run(goi("/api/cau-hinh/llm/writer"))     # thiếu app → mặc định ai-agent
+    assert r.json()["api_key"] == "sk-ai-agent-1111"
+    # DA xin vai trùng tên 'writer' CHƯA cấp cho DA → KHÔNG với sang ai-agent
+    r = asyncio.run(goi("/api/cau-hinh/llm/writer?app=data-analytics"))
+    assert r.json()["api_key"] == ""

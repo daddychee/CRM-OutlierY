@@ -45,12 +45,12 @@ def test_cau_hinh_llm_gop_du_va_mac_dinh_an_toan(conn):
     ket.dat_cau_hinh(conn, "llm.writer.model", "glm-4.5-air")
     ket.dat_cau_hinh(conn, "llm.writer.base_url", "https://api.z.ai/api/paas/v4")
     ket.dat_bi_mat(conn, "llm.writer.api_key", "sk-test-1234")
-    ch = ket.cau_hinh_llm(conn, "writer")
+    ch = ket.cau_hinh_llm(conn, "ai-agent", "writer")
     assert ch["model"] == "glm-4.5-air"
     assert ch["api_key"] == "sk-test-1234"
     assert ch["timeout"] == 60 and ch["retry"] == 0   # luật nền: bài học hệ cũ
     # vai chưa khai → rỗng, không bịa
-    assert ket.cau_hinh_llm(conn, "vai-la")["provider"] == ""
+    assert ket.cau_hinh_llm(conn, "ai-agent", "vai-la")["provider"] == ""
 
 
 def test_khoa_fernet_tu_sinh_va_tai_dung(conn, tmp_path):
@@ -143,17 +143,20 @@ def test_cau_hinh_llm_fallback_cu_byte_identical(conn):
     ket.dat_cau_hinh(conn, "llm.writer.model", "glm-4.5-air")
     ket.dat_cau_hinh(conn, "llm.writer.base_url", "https://api.z.ai/api/paas/v4")
     ket.dat_bi_mat(conn, "llm.writer.api_key", "sk-cu-1234")
-    assert ket.cau_hinh_llm(conn, "writer") == {
+    assert ket.cau_hinh_llm(conn, "ai-agent", "writer") == {
         "vai": "writer", "provider": "openai_compatible", "model": "glm-4.5-air",
         "base_url": "https://api.z.ai/api/paas/v4", "api_key": "sk-cu-1234",
         "timeout": 60, "retry": 0}
+    # fallback cũ là sổ chung KHÔNG theo app: app khác chưa cấp phát cũng đọc
+    # đúng sổ đó (ngữ nghĩa di sản), KHÔNG lẫn sang cấp phát app nào
+    assert ket.cau_hinh_llm(conn, "data-analytics", "writer")["api_key"] == "sk-cu-1234"
 
 
 def test_cau_hinh_llm_resolve_tu_cap_phat_moi(conn):
     kid = ket.them_api_key(conn, "llm", "sk-moi-8888", nha="glm",
                            model="glm-4.5-air")
     ket.luu_cap_phat_viec(conn, "ai-agent", "writer", [kid], model="glm-5")
-    ch = ket.cau_hinh_llm(conn, "writer")
+    ch = ket.cau_hinh_llm(conn, "ai-agent", "writer")
     assert ch["provider"] == "openai_compatible"                # suy từ nhà GLM
     assert ch["base_url"] == "https://api.z.ai/api/paas/v4"
     assert ch["model"] == "glm-5"                               # model CỦA VIỆC thắng
@@ -162,7 +165,30 @@ def test_cau_hinh_llm_resolve_tu_cap_phat_moi(conn):
     ket.dat_bi_mat(conn, "llm.critic.api_key", "sk-critic-cu")
     ket.dat_cau_hinh(conn, "llm.critic.provider", "openai_compatible")
     ket.luu_cap_phat_viec(conn, "ai-agent", "critic", [])
-    assert ket.cau_hinh_llm(conn, "critic")["provider"] == ""
+    assert ket.cau_hinh_llm(conn, "ai-agent", "critic")["provider"] == ""
+
+
+def test_cau_hinh_llm_theo_app_khong_muon_nham_khoa(conn):
+    """HỒI QUY QUAN TRỌNG NHẤT (bug Owner phê lần 3, 18/08): bản cũ hardcode
+    'ai-agent' → data-analytics xin cấu hình bị trả nhầm khóa Writer của
+    ai-agent. Giờ 2 app 2 cấp phát khác nhau PHẢI ra 2 khóa KHÁC NHAU."""
+    k_ai = ket.them_api_key(conn, "llm", "sk-cua-ai-agent-1111", nha="glm",
+                            model="glm-4.5-air")
+    k_da = ket.them_api_key(conn, "llm", "sk-cua-data-analytics-2222", nha="claude",
+                            model="claude-haiku-4-5")
+    ket.luu_cap_phat_viec(conn, "ai-agent", "writer", [k_ai])
+    ket.luu_cap_phat_viec(conn, "data-analytics", "dien_giai", [k_da])
+
+    ch_ai = ket.cau_hinh_llm(conn, "ai-agent", "writer")
+    ch_da = ket.cau_hinh_llm(conn, "data-analytics", "dien_giai")
+    assert ch_ai["api_key"] == "sk-cua-ai-agent-1111"
+    assert ch_da["api_key"] == "sk-cua-data-analytics-2222"
+    assert ch_ai["api_key"] != ch_da["api_key"]                 # hết mượn nhầm
+    assert ch_da["provider"] == "anthropic"                     # đúng nhà của khóa DA
+
+    # data-analytics xin việc TRÙNG TÊN với ai-agent nhưng CHƯA cấp phát cho DA
+    # → KHÔNG với sang cấp phát ai-agent; rơi về fallback sổ chung (ở đây rỗng)
+    assert ket.cau_hinh_llm(conn, "data-analytics", "writer")["api_key"] == ""
 
 
 def _bi_mat_theo_khoa(conn, khoa):
@@ -218,12 +244,12 @@ def test_di_tru_llm_cu_idempotent_giu_base_url(conn):
     ket.dat_cau_hinh(conn, "llm.writer.model", "glm-4.5-air")
     ket.dat_cau_hinh(conn, "llm.writer.base_url", "http://may-la.noi-bo:9999/v1")
     ket.dat_bi_mat(conn, "llm.writer.api_key", "sk-di-tru-4321")
-    truoc = ket.cau_hinh_llm(conn, "writer")
+    truoc = ket.cau_hinh_llm(conn, "ai-agent", "writer")
     ra = ket.di_tru_llm_cu(conn)
     assert [m["vai"] for m in ra] == ["writer"] and ra[0]["duoi"] == "4321"
     assert ket.di_tru_llm_cu(conn) == []                        # idempotent
     assert len(ket.liet_ke_api_keys(conn)) == 1                 # không nhân đôi
     # resolve SAU migration ra đúng giá trị CŨ kể cả base_url lạ (override per-khóa)
-    assert ket.cau_hinh_llm(conn, "writer") == truoc
+    assert ket.cau_hinh_llm(conn, "ai-agent", "writer") == truoc
     # mục cũ GIỮ nguyên làm fallback
     assert ket.lay_bi_mat(conn, "llm.writer.api_key") == "sk-di-tru-4321"

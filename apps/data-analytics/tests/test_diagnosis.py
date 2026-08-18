@@ -306,3 +306,57 @@ def test_route_chan_doan_video_rieng_le():
     r2 = tc.post("/chan-doan/video",
                  files={"file": ("report.csv", _report_yt_csv())}, data={"chi_muc": "99"})
     assert r2.status_code == 422
+
+
+def test_nap_cau_hinh_llm_xin_theo_app_va_map_env(monkeypatch):
+    """Bug 18/08 (Owner phê lần 3): DA từng xin thẳng vai writer/critic — TRÙNG
+    TÊN việc của ai-agent nên gateway (hardcode ai-agent) trả nhầm khóa Writer
+    ai-agent. Giờ PHẢI xin theo app=data-analytics + việc trong contract
+    (dien_giai/phan_bien), rồi map về env WRITER_*/CRITIC_* của factory nội bộ."""
+    from src import dien_giai as dg
+
+    # đăng ký khôi phục env (monkeypatch trả về giá trị gốc kể cả khi code dưới
+    # ghi đè trực tiếp os.environ) — không rò WRITER_MOCK_MODE=false sang test khác
+    for p in ("WRITER", "CRITIC"):
+        for s in ("PROVIDER", "MODEL", "BASE_URL", "API_KEY", "MOCK_MODE"):
+            monkeypatch.delenv(f"{p}_{s}", raising=False)
+    monkeypatch.delenv("LLM_TIMEOUT", raising=False)
+    monkeypatch.delenv("LLM_RETRY", raising=False)
+
+    goi = []
+
+    class _Resp:
+        def __init__(self, vai):
+            self._vai = vai
+
+        def json(self):
+            return {"provider": "openai_compatible", "model": f"m-{self._vai}",
+                    "base_url": "http://bu", "api_key": f"sk-{self._vai}",
+                    "timeout": 60, "retry": 0}
+
+    class _Client:
+        def __init__(self, timeout=None):
+            pass
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+        def get(self, url, params=None):
+            goi.append((url, params))
+            return _Resp(url.rsplit("/", 1)[-1])
+
+    monkeypatch.setattr(dg.httpx, "Client", _Client)
+    dg.nap_cau_hinh_llm()
+
+    assert goi == [
+        (f"{dg.GATEWAY_URL}/api/cau-hinh/llm/dien_giai", {"app": "data-analytics"}),
+        (f"{dg.GATEWAY_URL}/api/cau-hinh/llm/phan_bien", {"app": "data-analytics"}),
+    ]
+    # việc gateway → env prefix nội bộ: dien_giai→WRITER_*, phan_bien→CRITIC_*
+    assert os.environ["WRITER_API_KEY"] == "sk-dien_giai"
+    assert os.environ["WRITER_MODEL"] == "m-dien_giai"
+    assert os.environ["CRITIC_API_KEY"] == "sk-phan_bien"
+    assert os.environ["WRITER_MOCK_MODE"] == "false"

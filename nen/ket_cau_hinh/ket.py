@@ -332,23 +332,26 @@ def di_tru_llm_cu(conn: sqlite3.Connection) -> list[dict]:
 
 # ---------- LLM theo vai ----------
 
-def cau_hinh_llm(conn: sqlite3.Connection, vai: str) -> dict:
-    """Trả cấu hình LLM đủ dùng cho một vai. Vai chưa khai → provider rỗng
-    (app tự quyết mock/báo thiếu — KHÔNG bịa mặc định gọi nhầm nhà cung cấp).
+def cau_hinh_llm(conn: sqlite3.Connection, app_slug: str, vai: str) -> dict:
+    """Trả cấu hình LLM đủ dùng cho MỘT VIỆC của MỘT APP. Việc chưa khai →
+    provider rỗng (app tự quyết mock/báo thiếu — KHÔNG bịa mặc định gọi nhầm nhà).
 
-    CHỮ KÝ + NGỮ NGHĨA GIỮ NGUYÊN (ai-agent + data-analytics đọc qua loopback
-    /api/cau-hinh/llm/{vai}). Từ trang API Keys 16/08: ưu tiên CẤP PHÁT app
-    'ai-agent' việc <vai> — khóa đầu được cấp + model của việc; provider/base_url
-    ưu tiên override per-khóa (migration giữ nguyên giá trị cũ) rồi mới suy từ
-    NHÀ. Việc CHƯA có trong cấp phát → fallback đọc llm.<vai>.* cũ Y NGUYÊN (hệ
-    đang chạy không gãy); việc CÓ nhưng 0 khóa → provider rỗng (tắt tường minh,
-    không để fallback hồi sinh)."""
+    BUG ĐÃ SỬA 18/08 (Owner phê lần 3): bản cũ HARDCODE app 'ai-agent' — data-
+    analytics xin vai 'writer' (trùng tên việc của ai-agent) bị trả nhầm khóa
+    Writer của ai-agent, bỏ qua cấp phát data-analytics trên UI Per-app config.
+    app_slug giờ BẮT BUỘC (không default ngầm — tránh lặp lại bug); tra
+    cap_phat[app_slug][vai]. Ưu tiên CẤP PHÁT: khóa đầu được cấp + model của
+    việc; provider/base_url ưu tiên override per-khóa (migration giữ nguyên giá
+    trị cũ) rồi mới suy từ NHÀ. Việc CHƯA có trong cấp phát → fallback đọc
+    llm.<vai>.* cũ Y NGUYÊN (hệ đang chạy không gãy — fallback này là sổ chung
+    không theo app, đúng ngữ nghĩa di sản); việc CÓ nhưng 0 khóa → provider
+    rỗng (tắt tường minh, không để fallback hồi sinh)."""
     chung = {
         "vai": vai,
         "timeout": int(lay_cau_hinh(conn, "llm.timeout", str(TIMEOUT_MAC_DINH))),
         "retry": int(lay_cau_hinh(conn, "llm.retry", str(RETRY_MAC_DINH))),
     }
-    muc = doc_cap_phat(conn).get("ai-agent", {}).get(vai)
+    muc = doc_cap_phat(conn).get(app_slug, {}).get(vai)
     if muc is not None:
         ids = muc.get("khoa") or []
         if not ids:

@@ -21,7 +21,10 @@ def nap_cau_hinh_llm() -> bool:
     try:
         with httpx.Client(timeout=3) as c:
             for vai in ("writer", "critic"):
-                ch = c.get(f"{GATEWAY_URL}/api/cau-hinh/llm/{vai}").json()
+                # app=ai-agent TƯỜNG MINH (dù trùng mặc định gateway) — chống
+                # lệch ngầm khi có app thứ 3 dùng chung tên vai (bug 18/08).
+                ch = c.get(f"{GATEWAY_URL}/api/cau-hinh/llm/{vai}",
+                           params={"app": "ai-agent"}).json()
                 if not ch.get("provider"):
                     continue
                 v = vai.upper()
