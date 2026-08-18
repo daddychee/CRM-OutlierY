@@ -200,9 +200,14 @@ Quy ước từ 16/08/2026 (user chốt): mỗi mạch việc lớn có MỘT s�
   slug cũ (URL/fetch /app/tri-thuc không vỡ); alias Qdrant kho_tri_thuc GIỮ (tên
   kho dữ liệu, không phải tên app). 482 pass / 3 skip; nghiệm thu sống HTTPS.
 - 18/08/2026 — **APP MỚI video-review :9114 — feedback video kiểu Frame.io** (app V3
-  đầu tiên VIẾT MỚI, không di trú; Owner chốt hướng: V3 · MVP · quyền vao-L1/
-  duyet-L3/xoa-L4): bình luận gắn mốc thời gian + vẽ chú thích khung hình + trạng
-  thái duyệt + gỡ mềm + NẠP TỪ NAS chép nền (Owner chốt "chép vào kho") + upload
-  % tiến độ. 26 test app + 160 test nền pass; đăng ký đủ PORTS/apps.json/
-  phan_quyen/start-all, KHÔNG sửa gateway/proxy (video qua proxy = 206 từng khúc
-  8MB). Chi tiết + việc treo: apps/video-review/CLAUDE.md.
+  đầu tiên VIẾT MỚI, không di trú; Owner chốt hướng TỪNG BƯỚC: nằm ở V3 · phạm vi
+  MVP · quyền vao-L1/duyet-L3/xoa-L4 · NAS "chép vào kho" · KHÔNG nhóm dự án vì
+  review xong là xóa): bình luận gắn mốc thời gian (bấm là tua) + vẽ chú thích
+  khung hình + trạng thái duyệt + gỡ mềm; danh sách TAB "Awaiting review" — video
+  up lên chưa ai review nổi bật, mặc định mở khi còn video chờ, tìm không dấu +
+  Mine only; UPLOAD TỪNG KHÚC 64MB trần 20GB (video thật team 2-10GB H.264 phát
+  native — proxy không phình RAM, KHÔNG sửa proxy; /media trả 206 từng khúc 8MB)
+  + DROPZONE kéo-thả theo brand + NẠP TỪ NAS chép nền % thật. 33 test app +
+  160 test nền pass; đăng ký đủ PORTS/apps.json/phan_quyen/start-all; 5 commit
+  (97f4938→b46fb5d). Chi tiết + quyết định thiết kế + bẫy + việc treo:
+  apps/video-review/CLAUDE.md.
