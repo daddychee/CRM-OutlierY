@@ -168,6 +168,23 @@
   loại 0,15M. Script tổng quát hóa (argv ws_goc, kết quả JSON cạnh db) —
   dùng lại cho các niche khác + sau cutover.
 
+- 19/08/2026 — **VÒNG 7 — BACKUP-TRƯỚC-CHIA-SAU + CHIA 3 NICHE MỚI.** User hỏi
+  thứ tự backup: chốt **backup TRƯỚC** (thao tác ghi hàng loạt phải có đường
+  lùi; VACUUM INTO — đúng luật cấm copy trần db đang mở). Hai snapshot tại
+  `data/radary/snapshots/`: `radary-truoc-chia-space-storm-travel-20260819.db`
+  (82,3MB — sau LIFE IN, trước 3 niche) + `radary-sau-chia-4-niche-20260819.db`
+  (mốc sau chia — lùi được cả 2 chiều; Owner nghiệm thu xong thì dọn tùy ý).
+  User tạo N-SPACE (US+Spain) / N-STORM (chỉ US) / N-TRAVEL-DOCUMENTA
+  (US+Spain) ở General → chạy trọn quy trình (nối ngách tên theo General +
+  dựng pool + phân loại + move có vết): **SPACE** US 156 · Spain 24 · để lại
+  18 (8 nghi tiếng Bồ-Brazil, 2 Nga, 1 Hàn 우주 신호 — SPACE không khai Korea
+  nên đúng luật để lại, 1 Trung, còn lại ít title chấm được); **STORM** US 50
+  · để lại 8 (title kiểu cảnh báo thời tiết ít từ chức năng — tên kênh đọc
+  rõ là US, user chuyển tay nhanh); **TRAVEL DOCUMENTARY** US 38 · Spain 1 ·
+  để lại 1 (kênh CJK). Tổng toàn hệ giữ nguyên 606 kênh — không mất data.
+  4 pool còn lại (Investigation / Old Investigate / OLD Newbie / Health):
+  user chốt QUÁ BẨN, ĐỂ SAU — không đụng.
+
 ## PHƯƠNG ÁN PHÂN LOẠI LẠI KÊNH POOL BẨN (đã duyệt 19/08 — chạy thật cho LIFE IN, xem vòng 6)
 
 Bối cảnh: user không muốn phí data đã quét; V3 dừng quét 2 ngày (by design —
