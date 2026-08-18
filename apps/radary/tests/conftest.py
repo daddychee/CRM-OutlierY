@@ -68,10 +68,14 @@ def goi():
 
 
 @pytest.fixture()
-def mock_tt(monkeypatch):
-    """Danh mục thị trường giả từ đế — không chạm gateway thật."""
+def mock_de(monkeypatch):
+    """Danh mục đế giả (thị trường + ngách kèm tập thị trường của ngách) —
+    không chạm gateway thật."""
     from radary import thi_truong_v3
-    ds = [{"ma": "TT-US", "ten": "US", "ngon_ngu": "English"},
+    tt = [{"ma": "TT-US", "ten": "US", "ngon_ngu": "English"},
           {"ma": "TT-SPAIN", "ten": "Spain", "ngon_ngu": "Spanish"}]
-    monkeypatch.setattr(thi_truong_v3, "danh_sach", lambda lam_moi=False: ds)
-    return ds
+    ng = [{"ma": "N-LIFE-IN", "ten": "LIFE IN", "thi_truong": ["TT-US", "TT-SPAIN"]},
+          {"ma": "N-TRONG", "ten": "Chua khai", "thi_truong": []}]
+    monkeypatch.setattr(thi_truong_v3, "danh_sach", lambda lam_moi=False: tt)
+    monkeypatch.setattr(thi_truong_v3, "ds_ngach", lambda lam_moi=False: ng)
+    return {"tt": tt, "ng": ng}

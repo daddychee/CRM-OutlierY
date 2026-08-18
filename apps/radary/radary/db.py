@@ -33,7 +33,8 @@ CREATE TABLE IF NOT EXISTS workspaces (
   id INTEGER PRIMARY KEY, org_id INTEGER NOT NULL REFERENCES orgs(id),
   name TEXT NOT NULL, tz TEXT NOT NULL DEFAULT 'Asia/Ho_Chi_Minh',
   config TEXT NOT NULL DEFAULT '{}', created_ts REAL NOT NULL,
-  market TEXT NOT NULL DEFAULT '');                   -- mã thị trường TT-xx từ đế ('' = pool cũ chưa gán)
+  market TEXT NOT NULL DEFAULT '',                    -- mã thị trường TT-xx từ đế ('' = pool cũ chưa gán)
+  ngach TEXT NOT NULL DEFAULT '');                    -- mã ngách N-xxx từ đế — nhóm các pool thị trường cùng ngách
 CREATE TABLE IF NOT EXISTS channels (
   id INTEGER PRIMARY KEY, workspace_id INTEGER NOT NULL REFERENCES workspaces(id),
   yt_id TEXT NOT NULL, title TEXT DEFAULT '', uploads_playlist TEXT DEFAULT '',
@@ -202,6 +203,9 @@ def _migrate(conn):
     if 'market' not in cols:            # 18/08/2026: pool theo THỊ TRƯỜNG (RADARY_THI_TRUONG.md)
         conn.execute("ALTER TABLE workspaces ADD COLUMN market TEXT NOT NULL DEFAULT ''")
         conn.commit()
+    if 'ngach' not in cols:             # 18/08/2026: pool thuộc NGÁCH đế — tab nhỏ Pool theo thị trường của ngách
+        conn.execute("ALTER TABLE workspaces ADD COLUMN ngach TEXT NOT NULL DEFAULT ''")
+        conn.commit()
     # 23/07/2026: đổi tên vai editor → leader (idempotent — dữ liệu cũ tự nâng khi khởi động)
     conn.execute("UPDATE members SET role='leader' WHERE role='editor'")
     conn.execute("UPDATE invites SET role='leader' WHERE role='editor'")
@@ -220,12 +224,12 @@ def new_ntfy_topic():
     """Spec §6: topic ntfy = chuỗi dài ngẫu nhiên (topic công khai theo tên — đoán được là đọc được)."""
     return 'radar-' + ''.join(secrets.choice(string.ascii_lowercase + string.digits) for _ in range(16))
 
-def create_workspace(conn, org_id, name, cfg=None, tz='Asia/Ho_Chi_Minh', market=''):
+def create_workspace(conn, org_id, name, cfg=None, tz='Asia/Ho_Chi_Minh', market='', ngach=''):
     c = dict(DEFAULT_CFG); c.update(cfg or {})
     if not c.get('ntfy_topic'):
         c['ntfy_topic'] = new_ntfy_topic()      # sinh sẵn — user chỉ việc subscribe rồi bật
-    return conn.execute('INSERT INTO workspaces(org_id, name, tz, config, created_ts, market) VALUES(?,?,?,?,?,?)',
-                        (org_id, name, tz, json.dumps(c, ensure_ascii=False), time.time(), market)).lastrowid
+    return conn.execute('INSERT INTO workspaces(org_id, name, tz, config, created_ts, market, ngach) VALUES(?,?,?,?,?,?,?)',
+                        (org_id, name, tz, json.dumps(c, ensure_ascii=False), time.time(), market, ngach)).lastrowid
 
 def get_config(conn, ws):
     row = conn.execute('SELECT config FROM workspaces WHERE id=?', (ws,)).fetchone()

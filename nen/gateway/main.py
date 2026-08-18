@@ -1763,6 +1763,18 @@ def api_danh_ba_thi_truong(request: Request):
             for t in danh_ba.liet_ke("thi_truong")]
 
 
+@app.get("/api/danh-ba/ngach")
+def api_danh_ba_ngach(request: Request):
+    """App phụ (bind loopback) đọc NGÁCH + tập thị trường CỦA TỪNG NGÁCH (user
+    chọn ở General › Niches — ngach_thi_truong 18/08). RadarY dựng tab nhỏ Pool
+    theo thị trường của ngách từ đây (docs/RADARY_THI_TRUONG.md)."""
+    if request.client and request.client.host not in ("127.0.0.1", "::1"):
+        return JSONResponse({"loi": "chi loopback"}, status_code=403)
+    return [{"ma": t["ma"], "ten": t.get("ten_chuan", ""),
+             "thi_truong": t.get("thi_truong_cua", [])}
+            for t in danh_ba.liet_ke("ngach")]
+
+
 @app.get("/cai-dat")
 def cai_dat_cu():
     return RedirectResponse("/general/api-keys", status_code=303)

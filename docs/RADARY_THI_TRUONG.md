@@ -80,16 +80,39 @@
   (test_lam_gon import trước với env riêng); (c) 4 test ghim /open/<slug> vỡ
   sẵn từ PA3 4f37839 — sửa pin theo luật /<slug> đã commit, commit tách riêng.
 
-## Nghiệm thu còn chờ (user/Owner)
+- 18/08/2026 — **VÒNG 2 THEO PHẢN HỒI USER: TAB NHỎ POOL THEO THỊ TRƯỜNG CỦA
+  NGÁCH** ("Trong tab Pool có tab nhỏ theo thị trường của ngách được tạo ở
+  general. Kênh được chuyển từ pool này sang pool khác hoặc nhập mới hoàn
+  toàn"). Cơ chế: workspace thêm trục `ngach` (mã N-xxx từ đế — cùng khuôn
+  market, đúng hướng Đ4 workspace↔N-xxx, cấm map theo tên): gateway thêm
+  `GET /api/danh-ba/ngach` (ngách + tập thị trường của ngách từ
+  `ngach_thi_truong` — user chọn ở General, không mặc định);
+  `thi_truong_v3.ds_ngach()`; validation nâng thành CẶP `_kiem_de` (ngách tồn
+  tại + market THUỘC ngách; ngách 0 thị trường → 422 chỉ đường General);
+  `GET /api/ngach` join tên đẹp cho UI; PATCH market nhận cặp. UI Pool: dải
+  tab nhỏ = các thị trường của ngách — tab có pool hiện tên + số video (bấm
+  chuyển xem/quản pool đó ngay trong tab Pool), tab CHƯA có pool = nút ＋ tạo
+  pool (leader+, tên tự sinh `<ngách> — <thị trường>`); thêm kênh/gỡ/⭐/hồ sơ/
+  move đều chạy theo tab đang mở; pool chưa gán ngách → note chỉ sang Tuning,
+  Tuning giờ gán CẶP ngách+thị trường (2 dropdown lồng + nút Gán); NewNiche
+  đổi thành ngách → thị trường của ngách. Suite: radary app 16 + root 183
+  pass; nghiệm thu SỐNG: restart radary 9111 + gateway 9000 (SESSION_SECRET
+  trong .env nên phiên sống), /api/danh-ba/* trả 4 thị trường + 2 ngách thật
+  (LIFE IN: KR/ES/US · OLD: US — Owner đã khai ở General), /api/ngach join
+  tên chuẩn, Chrome headless render OK. Migration cột ngach tự áp db thật.
 
-1. Restart tác vụ radary V3 (API mới cần tiến trình mới; app.js thì không cần).
-2. Qua 9443: tạo pool mới → dropdown thị trường hiện đúng TT từ General;
-   thử bỏ trống → bị chặn; Tuning gán thị trường cho pool cũ.
-3. Data Pool (vai Manager/Owner): tích vài kênh → chuyển sang pool thị trường
-   mới → kiểm Board/Metrics pool đích có kênh + lịch sử nhịp kênh, pool nguồn
-   sạch; Alerts pool nguồn còn nguyên sổ cái.
-4. Tách thật pool trộn (Life in X…) làm trên V3 để nghiệm thu; SAU CUTOVER
-   chạy lại việc tách trên snapshot cuối bằng chính UI này (sổ đã ghi).
+## Nghiệm thu còn chờ (user/Owner) — cập nhật vòng 2
+
+1. ~~Restart~~ ĐÃ restart radary 9111 + gateway 9000 (18/08, phiên này) —
+   đăng nhập cũ vẫn sống.
+2. Qua 9443 vào RadarY: pool cũ chưa gán → Tuning gán CẶP ngách + thị trường
+   (vd Life in X → LIFE IN · US); quay lại tab Pool sẽ thấy dải tab nhỏ
+   US · Spain · Korea theo đúng khai báo General.
+3. Tab thị trường chưa có pool → bấm ＋ tạo; tích kênh → "Chuyển kênh đã
+   chọn" sang tab đích (vai Manager/Owner); nhập kênh mới = dán vào ô Thêm
+   kênh khi đang đứng ở tab thị trường đó.
+4. Tách thật pool trộn (Life in X…) trên V3 để nghiệm thu; SAU CUTOVER chạy
+   lại việc tách trên snapshot cuối bằng chính UI này (sổ đã ghi).
 
 ## Nợ đã thấy khi khảo sát (KHÔNG thuộc mạch này — ghi để khỏi quên)
 

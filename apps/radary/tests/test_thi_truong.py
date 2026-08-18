@@ -1,48 +1,64 @@
 # -*- coding: utf-8 -*-
-"""Pool theo THỊ TRƯỜNG (docs/RADARY_THI_TRUONG.md, user chốt 18/08/2026):
-pool gắn đúng MỘT thị trường từ danh mục đế (dropdown kiểm Ở SERVER), pool cũ
-gán bổ sung có vết, TÁCH POOL chuyển kênh GIỮ LỊCH SỬ (video/tick/nhịp kênh
-đi theo; events append-only ở lại; nhịp pool đích tính từ lúc chuyển)."""
+"""Pool theo THỊ TRƯỜNG của NGÁCH (docs/RADARY_THI_TRUONG.md, user chốt 18/08):
+pool gắn MỘT ngách + MỘT thị trường THUỘC ngách (danh mục đế, dropdown kiểm Ở
+SERVER), pool cũ gán bổ sung có vết, TÁCH POOL chuyển kênh GIỮ LỊCH SỬ
+(video/tick/nhịp kênh đi theo; events append-only ở lại; nhịp pool đích tính
+từ lúc chuyển). Tab nhỏ Pool theo thị trường của ngách dựng từ GET /api/ngach."""
 import time
 
 import pytest
 
 
-# ---------- tạo pool: thị trường bắt buộc + kiểm ở server ----------
+# ---------- tạo pool: cặp ngách × thị trường bắt buộc + kiểm ở server ----------
 
-def test_tao_pool_bat_buoc_thi_truong_v3(org_moi, goi, mock_tt):
-    r = goi("POST", "/api/workspaces", json={"name": "Life in X — US"})
-    assert r.status_code == 422 and "THỊ TRƯỜNG" in r.json()["detail"]
-    r = goi("POST", "/api/workspaces", json={"name": "x", "market": "TT-LA-LAM"})
-    assert r.status_code == 422                       # giá trị ngoài danh mục đế — chặn ở server
+def test_tao_pool_bat_buoc_ngach_va_thi_truong_v3(org_moi, goi, mock_de):
+    r = goi("POST", "/api/workspaces", json={"name": "x", "market": "TT-US"})
+    assert r.status_code == 422 and "NGÁCH" in r.json()["detail"]         # thiếu ngách
     r = goi("POST", "/api/workspaces",
-            json={"name": "Life in X — US", "market": "TT-US"})
-    assert r.status_code == 201 and r.json()["market"] == "TT-US"
+            json={"name": "x", "ngach": "N-LA", "market": "TT-US"})
+    assert r.status_code == 422                                            # ngách ngoài đế
+    r = goi("POST", "/api/workspaces",
+            json={"name": "x", "ngach": "N-TRONG", "market": "TT-US"})
+    assert r.status_code == 422 and "chưa khai thị trường" in r.json()["detail"]
+    r = goi("POST", "/api/workspaces",
+            json={"name": "x", "ngach": "N-LIFE-IN", "market": "TT-XX"})
+    assert r.status_code == 422 and "thuộc ngách" in r.json()["detail"]    # market không thuộc ngách
+    r = goi("POST", "/api/workspaces",
+            json={"name": "Life in X — US", "ngach": "N-LIFE-IN", "market": "TT-US"})
+    assert r.status_code == 201
+    assert (r.json()["market"], r.json()["ngach"]) == ("TT-US", "N-LIFE-IN")
     ds = goi("GET", "/api/workspaces").json()
-    assert [(w["market"], w["market_ten"]) for w in ds] == [("TT-US", "US")]
+    assert [(w["ngach"], w["ngach_ten"], w["market"], w["market_ten"]) for w in ds] == \
+        [("N-LIFE-IN", "LIFE IN", "TT-US", "US")]
+
+
+def test_api_ngach_tra_ten_dep(org_moi, goi, mock_de):
+    ds = goi("GET", "/api/ngach").json()
+    assert [n["ma"] for n in ds] == ["N-LIFE-IN", "N-TRONG"]
+    assert ds[0]["thi_truong"] == [
+        {"ma": "TT-US", "ten": "US", "ngon_ngu": "English"},
+        {"ma": "TT-SPAIN", "ten": "Spain", "ngon_ngu": "Spanish"}]
+    assert ds[1]["thi_truong"] == []          # ngách mới 0 thị trường — không có mặc định
 
 
 def test_tao_pool_502_khi_gateway_chet(org_moi, goi, monkeypatch):
     from radary import thi_truong_v3
 
     def _chet(lam_moi=False):
-        raise RuntimeError("chưa lấy được danh mục thị trường từ OUTLIERY (URLError)")
+        raise RuntimeError("chưa lấy được danh mục từ OUTLIERY (URLError)")
+    monkeypatch.setattr(thi_truong_v3, "ds_ngach", _chet)
     monkeypatch.setattr(thi_truong_v3, "danh_sach", _chet)
-    r = goi("POST", "/api/workspaces", json={"name": "x", "market": "TT-US"})
+    r = goi("POST", "/api/workspaces",
+            json={"name": "x", "ngach": "N-LIFE-IN", "market": "TT-US"})
     assert r.status_code == 502 and "OUTLIERY" in r.json()["detail"]
-    r = goi("GET", "/api/thi-truong")
-    assert r.status_code == 502
+    assert goi("GET", "/api/ngach").status_code == 502
 
 
 def test_standalone_khong_doi_hanh_vi(org_moi, goi, monkeypatch):
-    """Hồi quy: ngoài V3 (không TRUST_PROXY) tạo pool không cần market như cũ.
-    (Route đọc env mỗi request nên monkeypatch per-test ăn ngay; auth SSO đã
-    chạy trước đó không liên quan — dùng session cookie thì không có, nên phải
-    giữ TRUST_PROXY cho auth và chỉ tắt trong _v3 của route: ở đây tắt cả —
-    dùng đường đăng nhập thường.)"""
+    """Hồi quy: ngoài V3 (không TRUST_PROXY) tạo pool không cần ngách/market như
+    cũ, /api/ngach trả [] — UI tự ẩn. Dùng đường đăng nhập thường (không SSO)."""
     from radary import auth as rauth, db
     monkeypatch.delenv("RADARY_TRUST_PROXY")
-    # không SSO → tạo user + session thật (đường V2)
     conn = db.connect()
     with conn:
         conn.execute("INSERT INTO users(email, name, password_hash, created_ts) "
@@ -64,29 +80,33 @@ def test_standalone_khong_doi_hanh_vi(org_moi, goi, monkeypatch):
         async with httpx.AsyncClient(transport=tr, base_url="http://t",
                                      cookies={rauth.COOKIE: token}) as cl:
             r1 = await cl.post("/api/workspaces", json={"name": "pool cu"})
-            r2 = await cl.get("/api/thi-truong")
+            r2 = await cl.get("/api/ngach")
             return r1, r2
     r1, r2 = asyncio.run(run())
-    assert r1.status_code == 201 and r1.json()["market"] == ""
-    assert r2.status_code == 200 and r2.json() == []   # standalone: danh mục rỗng, UI tự ẩn
+    assert r1.status_code == 201 and r1.json()["market"] == "" and r1.json()["ngach"] == ""
+    assert r2.status_code == 200 and r2.json() == []
 
 
-# ---------- gán thị trường cho pool có trước tính năng ----------
+# ---------- gán ngách + thị trường cho pool có trước tính năng ----------
 
-def test_gan_thi_truong_pool_cu_co_vet(org_moi, goi, mock_tt):
+def test_gan_ngach_thi_truong_pool_cu_co_vet(org_moi, goi, mock_de):
     from radary import db
     conn = db.connect()
     with conn:
-        ws = db.create_workspace(conn, org_moi, "Life in X")    # pool cũ — market ''
+        ws = db.create_workspace(conn, org_moi, "Life in X")    # pool cũ — chưa gán gì
     conn.close()
     r = goi("PATCH", f"/api/workspaces/{ws}/market", vai="viewer",
-            json={"market": "TT-SPAIN"})
+            json={"ngach": "N-LIFE-IN", "market": "TT-SPAIN"})
     assert r.status_code == 403                                  # viewer chỉ xem
     r = goi("PATCH", f"/api/workspaces/{ws}/market", json={"market": "TT-SPAIN"})
-    assert r.status_code == 200 and r.json()["market"] == "TT-SPAIN"
+    assert r.status_code == 422                                  # V3 phải đủ CẶP
+    r = goi("PATCH", f"/api/workspaces/{ws}/market",
+            json={"ngach": "N-LIFE-IN", "market": "TT-SPAIN"})
+    assert r.status_code == 200
+    assert (r.json()["market"], r.json()["ngach"]) == ("TT-SPAIN", "N-LIFE-IN")
     conn = db.connect()
-    assert conn.execute("SELECT market FROM workspaces WHERE id=?",
-                        (ws,)).fetchone()["market"] == "TT-SPAIN"
+    row = conn.execute("SELECT market, ngach FROM workspaces WHERE id=?", (ws,)).fetchone()
+    assert (row["market"], row["ngach"]) == ("TT-SPAIN", "N-LIFE-IN")
     ev = conn.execute("SELECT payload FROM events WHERE workspace_id=? "
                       "AND kind='config_change'", (ws,)).fetchall()
     conn.close()
@@ -96,12 +116,13 @@ def test_gan_thi_truong_pool_cu_co_vet(org_moi, goi, mock_tt):
 # ---------- tách pool: chuyển kênh giữ lịch sử ----------
 
 def _seed_hai_pool(org):
-    """ws1 có kênh UC-A (2 video, ticks, nhịp kênh, snap) + kênh UC-B; ws2 trống."""
+    """ws1 (US) có kênh UC-A (2 video, ticks, nhịp kênh, snap) + kênh UC-B;
+    ws2 (Spain) cùng ngách, trống."""
     from radary import db
     conn = db.connect()
     with conn:
-        w1 = db.create_workspace(conn, org, "Life in X", market="TT-US")
-        w2 = db.create_workspace(conn, org, "Life in X — ES", market="TT-SPAIN")
+        w1 = db.create_workspace(conn, org, "Life in X", market="TT-US", ngach="N-LIFE-IN")
+        w2 = db.create_workspace(conn, org, "Life in X — ES", market="TT-SPAIN", ngach="N-LIFE-IN")
         conn.execute("INSERT INTO channels(workspace_id, yt_id, title) VALUES(?,?,?)",
                      (w1, "UC-A", "Kenh A"))
         conn.execute("INSERT INTO channels(workspace_id, yt_id, title) VALUES(?,?,?)",
@@ -124,7 +145,7 @@ def _seed_hai_pool(org):
     return w1, w2
 
 
-def test_move_channels_giu_lich_su(org_moi, goi, mock_tt):
+def test_move_channels_giu_lich_su(org_moi, goi, mock_de):
     from radary import db
     w1, w2 = _seed_hai_pool(org_moi)
     body = {"to_ws": w2, "yt_ids": ["UC-A"], "confirm": True}
@@ -165,7 +186,7 @@ def test_move_channels_giu_lich_su(org_moi, goi, mock_tt):
     assert board["cohorts"][0]["size"] == 1 and board["allages"] == []
 
 
-def test_move_chan_ca_loi(org_moi, goi, mock_tt):
+def test_move_chan_ca_loi(org_moi, goi, mock_de):
     from radary import db
     w1, w2 = _seed_hai_pool(org_moi)
     g = lambda body: goi("POST", f"/api/workspaces/{w1}/channels/move",
