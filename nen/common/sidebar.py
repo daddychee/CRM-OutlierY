@@ -12,7 +12,9 @@ from urllib.parse import unquote
 TEN_LEVEL = {1: "Intern", 2: "Staff", 3: "Leader", 4: "Manager", 5: "Owner"}
 
 # App V3 đã có mục sidebar RIÊNG (hoặc app mẫu) — không lặp lại ở nhóm Tools.
-KHONG_LAP_TOOLS = {"ai-agent", "data-analytics", "to-chuc", "app-mau"}
+# niche-research: GỘP vào Data Analytics 18/08 (chốt Owner) — engine ẩn khỏi Tools,
+# trang gộp là /niche của data-analytics; engine vẫn proxy được qua URL trực tiếp.
+KHONG_LAP_TOOLS = {"ai-agent", "data-analytics", "to-chuc", "app-mau", "niche-research"}
 
 
 def sb_apps_tu_claims(apps_vao) -> list[dict]:
