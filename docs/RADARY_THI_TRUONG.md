@@ -288,3 +288,15 @@ quy trình 1-2-3 trên dữ liệu mới nhất — vì vậy làm thành TÍNH 
   28 · Korea 0 · Chưa phân loại 20 (= 6 kênh TIẾNG VIỆT — ngách chưa khai
   thị trường VN, chờ user quyết · Globe Cover Urdu (đúng bài học cũ) ·
   còn lại ít/0 video hoặc title không chấm được: b13ed, TRIBE EXPRORER…).
+
+- 19/08/2026 — **NẠP DANH SÁCH TRAVEL DOCUMENTARY (52 kênh CSV) + SPACE (48
+  kênh CSV) của user** — y quy trình LIFE IN (snapshot trước từng đợt).
+  TRAVEL: 20/52 đã đúng chỗ, nạp 32 mới (0 lỗi resolve, discover 46 units) →
+  +27 US · +3 Spain (2 kênh Bồ Passaporte Nomade/Viagens com Estilo gộp Spain
+  đúng luật) → US 65 · Spain 4 · chưa phân loại 3 (Dolphiler VN ít video ·
+  Hidden Rural China chữ Trung · Vitamina Cerebral lẫn EN/ES/PT).
+  SPACE: 35/48 đã đúng chỗ, danh sách user còn chứa Тихий Космос (Nga, đã gỡ)
+  → KHÔNG tái nhập theo luật; nạp 13 mới (22 units) → +9 US · +2 Spain
+  (ABISMO, Cosmic Observer) → US 165 · Spain 35 · chưa phân loại 7
+  (EVIL SPACE hệ chữ khác 20/20 · AstroHoryzont nghi Ba Lan · NASA Video lẫn
+  EN/ES · còn lại 0-ít video).
