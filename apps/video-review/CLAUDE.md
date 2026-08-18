@@ -30,6 +30,22 @@
   ký tự tổ hợp THÔ vào regex/script từng vỡ heredoc cp1252 ngay phiên này) +
   lọc Mine only. Lọc client-side trên bảng đã render. 27 test pass.
 
+- 18/08/2026 — **UPLOAD TỪNG KHÚC 20GB + DROPZONE KÉO-THẢ** (user: video thật
+  2-10GB, trần 2GB không dùng được; khối upload phải đẹp hơn). `src/upload_khuc.py`:
+  client cắt file bằng File.slice thành khúc `VR_KHUC_UP_MB` (64MB) gửi TUẦN TỰ —
+  mỗi request qua proxy chỉ nặng 1 khúc, hết bom RAM gateway, KHÔNG sửa proxy
+  (bật chunked transfer ở proxy sẽ vỡ app stdlib Content Ultimate). Phiên upload
+  registry bộ nhớ, offset phải khớp byte đã nhận (chống ghi lệch), ĐỦ byte mới
+  ghi sổ + os.replace; phiên bỏ dở >24h tự quét dọn kèm .tam mồ côi. Trần mới
+  `VR_MAX_MB` 20480 (đường chunked + hiển thị); đường form một phát còn là
+  fallback JS-chết với trần RIÊNG `VR_MAX_FORM_MB` 2048 (vẫn đi trọn qua proxy).
+  UI: dropzone kéo-thả theo token brand (dashed → accent khi hover/kéo/đã chọn,
+  icon SVG line theo luật icon minimalist — thay luôn 2 emoji 📁🎬 danh sách NAS
+  bằng SVG, tên file qua textNode chống XSS), chip tên file + dung lượng, % tiến
+  độ chảy trên nút. Chrome chặn submit khi input required bị display:none
+  ("not focusable") → JS phải removeAttribute('required') khi nâng cấp form.
+  33 test pass (6 test chunked mới).
+
 ## Quyết định thiết kế (đừng phá)
 
 - **Video qua proxy = 206 TỪNG KHÚC ≤ VR_KHUC_MB (8MB)**: proxy `nen/common/proxy.py`

@@ -10,6 +10,20 @@
     border-radius:9px;background:var(--th-182233);color:var(--ink);font-size:14px;font-family:inherit}
   .vr-up input[type=file]{font-size:13px;color:var(--muted);max-width:260px}
   .vr-hint{font-size:12.5px;color:var(--muted);margin-top:8px}
+  /* dropzone kéo-thả (JS thêm class .js vào form → giấu input file thô) */
+  .tha-vung{display:flex;flex-direction:column;align-items:center;gap:7px;
+    border:1.5px dashed var(--th-31425e);border-radius:14px;padding:26px 16px;cursor:pointer;
+    text-align:center;background:var(--th-141c2b);transition:border-color .15s,background .15s;
+    margin-bottom:12px}
+  .tha-vung:hover,.tha-vung.keo{border-color:var(--accent);background:var(--th-16263f)}
+  .tha-vung.co-file{border-style:solid;border-color:var(--accent)}
+  .tha-ic{width:34px;height:34px;stroke:var(--muted);stroke-width:1.6;fill:none;
+    stroke-linecap:round;stroke-linejoin:round;transition:stroke .15s}
+  .tha-vung:hover .tha-ic,.tha-vung.keo .tha-ic,.tha-vung.co-file .tha-ic{stroke:var(--accent)}
+  .tha-chinh{font-size:14.5px;overflow-wrap:anywhere}
+  .tha-chinh span{color:var(--muted)}
+  .tha-phu{font-size:12.5px;color:var(--muted)}
+  #form-up.js #o-file{display:none}
   table.vr{width:100%;border-collapse:collapse;font-size:14px}
   table.vr th{text-align:left;font-size:12px;color:var(--muted);text-transform:uppercase;
     letter-spacing:.04em;padding:8px 10px;border-bottom:1px solid var(--line)}
@@ -57,14 +71,21 @@
 {% block noi_dung %}
 <div class="vr-card">
   <h2>Upload a cut for review</h2>
-  <form class="vr-up" id="form-up" method="post" action="/upload-video" enctype="multipart/form-data">
-    <input type="file" name="file" accept=".mp4,.m4v,.webm,.mov,video/*" required>
-    <input type="text" name="ten" placeholder="Video name (optional — file name used if empty)" maxlength="120">
-    <button class="nut" type="submit">Upload</button>
+  <form id="form-up" method="post" action="/upload-video" enctype="multipart/form-data">
+    <label class="tha-vung" id="tha-vung" for="o-file">
+      <svg class="tha-ic" viewBox="0 0 24 24"><path d="M12 16V4"/><path d="m7 9 5-5 5 5"/><path d="M20 16v3a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-3"/></svg>
+      <div class="tha-chinh" id="tha-chinh"><b>Drop your video here</b> <span>or click to browse</span></div>
+      <div class="tha-phu" id="tha-phu">mp4 / webm / m4v / mov · up to {{ max_gb }}GB</div>
+    </label>
+    <input type="file" name="file" id="o-file" accept=".mp4,.m4v,.webm,.mov,video/*" required>
+    <div class="vr-up">
+      <input type="text" name="ten" id="o-ten" placeholder="Video name (optional — file name used if empty)" maxlength="120">
+      <button class="nut" type="submit" id="nut-up">Upload</button>
+    </div>
   </form>
-  <div class="vr-hint">mp4 / webm recommended (.mov plays only if the browser supports its codec) ·
-    max {{ max_mb }}MB · keep the tab open until the review page appears.
-    {% if nas_bat %}Big export? Use <b>Load from NAS</b> below instead.{% endif %}</div>
+  {% if nas_bat %}
+  <div class="vr-hint">Big export already sitting on NAS? <b>Load from NAS</b> below — the server copies it directly, no upload.</div>
+  {% endif %}
   <div class="nas-thanh" id="up-thanh" style="display:none"><div id="up-thanh-ruot"></div></div>
   <div id="up-loi" style="color:var(--th-d97c6c);font-size:13px;margin-top:8px;display:none"></div>
 </div>
@@ -167,44 +188,110 @@
 <script>
 (function () {
   "use strict";
-  // Upload có % tiến độ: XMLHttpRequest (fetch không đo được upload progress).
-  // JS chết → form thuần submit như cũ (fallback, lệ LAN-HTTP). Lưu ý: % đo chặng
-  // trình duyệt→gateway; gateway buffer rồi mới chuyển app nên 100% xong còn
-  // "Processing…" một nhịp là bình thường.
+  // Upload TỪNG KHÚC (file 2-10GB): cắt file bằng File.slice, gửi tuần tự từng
+  // khúc — mỗi request qua proxy chỉ nặng 1 khúc, không bom RAM gateway.
+  // JS chết → form thuần submit /upload-video (một phát, trần VR_MAX_FORM_MB).
+  // Không API secure-context-only (lệ LAN-HTTP).
   var form = document.getElementById("form-up");
   if (!form) return;
+  form.classList.add("js");
+  var oFile = document.getElementById("o-file");
+  oFile.removeAttribute("required");   // input đã giấu — để required là Chrome chặn submit "not focusable"
+  var vung = document.getElementById("tha-vung");
+  var chinh = document.getElementById("tha-chinh");
+  var phu = document.getElementById("tha-phu");
+  var oTen = document.getElementById("o-ten");
+  var nut = document.getElementById("nut-up");
   var thanh = document.getElementById("up-thanh");
   var ruot = document.getElementById("up-thanh-ruot");
   var loiEl = document.getElementById("up-loi");
-  var nut = form.querySelector("button[type=submit]");
-  function hong(chu) {
-    loiEl.textContent = chu; loiEl.style.display = "block";
-    thanh.style.display = "none"; nut.disabled = false; nut.textContent = "Upload";
+  var fileChon = null, dangGui = false;
+
+  function baoLoi(chu) { loiEl.textContent = chu; loiEl.style.display = chu ? "block" : "none"; }
+  function coDep(n) {
+    return n >= 1073741824 ? (n / 1073741824).toFixed(2) + "GB" : Math.round(n / 1048576) + "MB";
   }
+  function chon(f) {
+    if (!f) return;
+    if (!/\.(mp4|m4v|webm|mov)$/i.test(f.name)) { baoLoi("Only mp4 / webm / m4v / mov files."); return; }
+    fileChon = f;
+    vung.classList.add("co-file");
+    chinh.textContent = "";
+    var b = document.createElement("b"); b.textContent = f.name;
+    chinh.appendChild(b);
+    chinh.appendChild(document.createTextNode(" · " + coDep(f.size)));
+    phu.textContent = "Click to choose a different file";
+    if (!oTen.value) oTen.value = f.name.replace(/\.[^.]+$/, "");
+    baoLoi("");
+  }
+  oFile.addEventListener("change", function () { chon(oFile.files[0]); });
+  ["dragover", "dragenter"].forEach(function (t) {
+    vung.addEventListener(t, function (e) { e.preventDefault(); vung.classList.add("keo"); });
+  });
+  ["dragleave", "drop"].forEach(function (t) {
+    vung.addEventListener(t, function (e) { e.preventDefault(); vung.classList.remove("keo"); });
+  });
+  vung.addEventListener("drop", function (e) {
+    if (e.dataTransfer && e.dataTransfer.files.length) chon(e.dataTransfer.files[0]);
+  });
+
+  function guiKhuc(url, mieng, daXong, tong) {
+    return new Promise(function (ok, hong) {
+      var xhr = new XMLHttpRequest();
+      xhr.open("POST", url);
+      xhr.upload.addEventListener("progress", function (ev) {
+        var pt = Math.min(100, Math.round((daXong + ev.loaded) * 100 / tong));
+        ruot.style.width = pt + "%";
+        nut.textContent = "Uploading… " + pt + "%";
+      });
+      xhr.addEventListener("load", function () {
+        if (xhr.status >= 200 && xhr.status < 300) { ok(); return; }
+        var chu = "HTTP " + xhr.status;
+        try { chu = JSON.parse(xhr.responseText).detail || chu; } catch (er) {}
+        hong(chu);
+      });
+      xhr.addEventListener("error", function () { hong("Network error — try again."); });
+      xhr.send(mieng);
+    });
+  }
+
   form.addEventListener("submit", function (e) {
     e.preventDefault();
-    loiEl.style.display = "none";
-    var xhr = new XMLHttpRequest();
-    xhr.open("POST", form.action);
-    xhr.upload.addEventListener("progress", function (ev) {
-      if (!ev.lengthComputable) return;
-      var pt = Math.round(ev.loaded * 100 / ev.total);
-      ruot.style.width = pt + "%";
-      nut.textContent = pt < 100 ? "Uploading… " + pt + "%" : "Processing…";
-    });
-    xhr.addEventListener("load", function () {
-      if (xhr.status >= 200 && xhr.status < 400) {
-        location.href = xhr.responseURL || form.action.replace(/upload-video$/, "danh-sach");
-        return;
-      }
-      var chu = "Upload failed (" + xhr.status + ").";
-      try { chu = JSON.parse(xhr.responseText).detail || chu; } catch (er) {}
-      hong(chu);
-    });
-    xhr.addEventListener("error", function () { hong("Network error — try again."); });
+    if (dangGui) return;
+    if (!fileChon) { oFile.click(); return; }
+    dangGui = true; nut.disabled = true; baoLoi("");
     thanh.style.display = "block"; ruot.style.width = "0";
-    nut.disabled = true;
-    xhr.send(new FormData(form));
+    var fd = new FormData();
+    fd.append("ten_file", fileChon.name);
+    fd.append("kich_thuoc", fileChon.size);
+    fd.append("ten", oTen.value.trim());
+    var phien = "";
+    fetch("/api-vr/upload-bat-dau", { method: "POST", body: fd })
+      .then(function (r) { if (!r.ok) return r.json().then(function (j) { throw j.detail; }); return r.json(); })
+      .then(function (du) {
+        phien = du.phien;
+        var khuc = du.khuc_mb * 1048576, viTri = 0;
+        function tiep() {
+          if (viTri >= fileChon.size) return Promise.resolve();
+          var mieng = fileChon.slice(viTri, viTri + khuc);
+          return guiKhuc("/api-vr/upload-khuc/" + phien + "?offset=" + viTri,
+                         mieng, viTri, fileChon.size)
+            .then(function () { viTri += mieng.size; return tiep(); });
+        }
+        return tiep();
+      })
+      .then(function () {
+        nut.textContent = "Finalizing…";
+        return fetch("/api-vr/upload-xong/" + phien, { method: "POST" })
+          .then(function (r) { if (!r.ok) return r.json().then(function (j) { throw j.detail; }); return r.json(); });
+      })
+      .then(function (du) { location.href = "/xem/" + du.ma; })
+      .catch(function (loi) {
+        if (phien) fetch("/api-vr/upload-huy/" + phien, { method: "POST" });
+        dangGui = false; nut.disabled = false; nut.textContent = "Upload";
+        thanh.style.display = "none";
+        baoLoi(typeof loi === "string" ? loi : "Upload failed — try again.");
+      });
   });
 })();
 </script>
@@ -251,10 +338,14 @@
           var t = document.createElement("div"); t.className = "nas-trong";
           t.textContent = "No folders or video files here."; dsEl.appendChild(t); return;
         }
+        var SVG_TM = '<svg class="ic" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>';
+        var SVG_VID = '<svg class="ic" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m10 9 5 3-5 3z"/></svg>';
         du.muc.forEach(function (m) {
           var b = document.createElement("button");
           b.type = "button"; b.className = "nas-muc";
-          b.textContent = (m.loai === "thu_muc" ? "📁 " : "🎬 ") + m.ten;
+          // icon SVG tĩnh qua innerHTML (an toàn — chuỗi hằng), TÊN qua textNode (chống XSS)
+          b.innerHTML = m.loai === "thu_muc" ? SVG_TM : SVG_VID;
+          b.appendChild(document.createTextNode(m.ten));
           if (m.loai === "file") {
             var mb = document.createElement("span"); mb.className = "mb";
             mb.textContent = m.mb + "MB"; b.appendChild(mb);

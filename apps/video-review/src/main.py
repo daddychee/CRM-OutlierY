@@ -35,7 +35,7 @@ from fastapi import (BackgroundTasks, Depends, FastAPI, Form, Header, HTTPExcept
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from fastapi.templating import Jinja2Templates
 
-from src import kho_video, nap_nas
+from src import kho_video, nap_nas, upload_khuc
 
 _APP_DIR = Path(__file__).resolve().parents[1]
 PHIEN_BAN = "0.1.0"
@@ -135,7 +135,7 @@ async def danh_sach(request: Request, user: dict = Depends(khu_cua_toi)):
             v["hien_thi"] = v["trang_thai"]
     return templates.TemplateResponse(request, "danh_sach.html", {
         "cac_video": cac_video, "user": user,
-        "max_mb": int(os.environ.get("VR_MAX_MB", "2048")),
+        "max_gb": int(os.environ.get("VR_MAX_MB", "20480")) // 1024,
         "nas_bat": nap_nas.nas_dir() is not None,
         "nas_max_gb": int(os.environ.get("VR_NAS_MAX_MB", "20480")) // 1024})
 
@@ -169,12 +169,15 @@ def _luu_file_tai_len(f: UploadFile, dich: Path, tran_bytes: int) -> int:
 @app.post("/upload-video")
 async def upload_video(request: Request, file: UploadFile,
                        ten: str = Form(""), user: dict = Depends(khu_cua_toi)):
+    """Đường form MỘT PHÁT — chỉ còn là fallback khi JS chết. Trần RIÊNG
+    VR_MAX_FORM_MB (2GB): cả file đi một request nên proxy buffer trọn vào RAM —
+    file lớn phải đi đường chunked /api-vr/upload-* (JS tự dùng)."""
     from starlette.concurrency import run_in_threadpool
     duoi = Path(file.filename or "").suffix.lower()
     if duoi not in kho_video.DUOI_CHO_PHEP:
         raise HTTPException(422, "Chỉ nhận video mp4 / webm / mov / m4v.")
     ten = (ten or "").strip() or Path(file.filename or "video").stem
-    tran = int(os.environ.get("VR_MAX_MB", "2048")) * 1024 * 1024
+    tran = int(os.environ.get("VR_MAX_FORM_MB", "2048")) * 1024 * 1024
     ban_ghi = kho_video.them_video(ten, duoi, user["ten"], user["bo_phan"], 0)
     tong = await run_in_threadpool(_luu_file_tai_len, file,
                                    ban_ghi["duong_tuyet_doi"], tran)
@@ -235,6 +238,54 @@ async def media(ma: str, user: dict = Depends(lay_user), range: str = Header("")
     return Response(du_lieu, status_code=206, media_type=video["mime"],
                     headers={"Accept-Ranges": "bytes",
                              "Content-Range": f"bytes {dau}-{cuoi}/{size}"})
+
+
+# ---------- upload TỪNG KHÚC (file 2-10GB — xem src/upload_khuc.py) ----------
+
+@app.post("/api-vr/upload-bat-dau")
+async def api_up_bat_dau(ten_file: str = Form(...), kich_thuoc: int = Form(...),
+                         ten: str = Form(""), user: dict = Depends(khu_cua_toi)):
+    try:
+        pid = upload_khuc.bat_dau(ten_file, kich_thuoc, ten, user["ten"], user["bo_phan"])
+    except OverflowError as e:
+        raise HTTPException(413, str(e))
+    except ValueError as e:
+        raise HTTPException(422, str(e))
+    return {"phien": pid, "khuc_mb": int(os.environ.get("VR_KHUC_UP_MB", "64"))}
+
+
+@app.post("/api-vr/upload-khuc/{pid}")
+async def api_up_khuc(pid: str, request: Request, offset: int,
+                      user: dict = Depends(lay_user)):
+    from starlette.concurrency import run_in_threadpool
+    du_lieu = await request.body()
+    try:
+        da_nhan = await run_in_threadpool(upload_khuc.ghi_khuc, pid, user["ten"],
+                                          offset, du_lieu)
+    except KeyError:
+        raise HTTPException(404, "Không có phiên upload này.")
+    except OverflowError as e:
+        raise HTTPException(413, str(e))
+    except ValueError as e:
+        raise HTTPException(409, str(e))
+    return {"da_nhan": da_nhan}
+
+
+@app.post("/api-vr/upload-xong/{pid}")
+async def api_up_xong(pid: str, user: dict = Depends(lay_user)):
+    try:
+        ban_ghi = upload_khuc.hoan_tat(pid, user["ten"])
+    except KeyError:
+        raise HTTPException(404, "Không có phiên upload này.")
+    except ValueError as e:
+        raise HTTPException(409, str(e))
+    return {"ma": ban_ghi["ma"]}
+
+
+@app.post("/api-vr/upload-huy/{pid}")
+async def api_up_huy(pid: str, user: dict = Depends(lay_user)):
+    upload_khuc.huy(pid, user["ten"])
+    return {"ok": True}
 
 
 # ---------- nạp từ NAS (đường file lớn — xem src/nap_nas.py) ----------

@@ -50,7 +50,7 @@ def test_upload_ghi_kho_va_hien_danh_sach(client):
 
 def test_upload_chan_duoi_la_va_qua_tran(client, monkeypatch):
     assert _up(client, duoi=".exe").status_code == 422
-    monkeypatch.setenv("VR_MAX_MB", "1")
+    monkeypatch.setenv("VR_MAX_FORM_MB", "1")   # trần RIÊNG đường form một phát
     r = _up(client, noi_dung=b"x" * (1024 * 1024 + 1))
     assert r.status_code == 413
     # file tạm vượt trần phải được dọn — kho không còn file .tam nào
