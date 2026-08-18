@@ -277,9 +277,33 @@ def _sinh_ten_project(ten_ngach: str, ten_tt: str) -> str:
     return f"{dau}_{duoi}"
 
 
+@router.get("/niche/kiem-api")
+def niche_kiem_api(user: dict = Depends(_lay_user), llm: bool = False,
+                   deepdive: bool = False):
+    """Bước 1 sau Run analysis (user chốt 19/08): kiểm khóa API khả dụng — xong
+    mới sang trạng thái Researching. Chỉ trả boolean, không lộ key."""
+    from src import niche_run
+    try:
+        return niche_run.kiem_khoa(llm=llm, deepdive=deepdive)
+    except Exception as e:
+        raise HTTPException(502, f"Không đọc được KÉT qua gateway: {e}")
+
+
+@router.get("/niche/pool")
+def niche_pool(user: dict = Depends(_lay_user), ngach: str = "", tt: str = ""):
+    """Pool sẵn có cho modal New Research (phương án 2 user chốt 19/08):
+    Data Pool RadarY đã gắn đúng ngách × thị trường."""
+    from src import radary_bridge
+    try:
+        return {"pools": radary_bridge.ds_pool(user, ngach, tt)}
+    except Exception as e:
+        raise HTTPException(502, f"RadarY không phản hồi: {e}")
+
+
 @router.post("/niche/tao-report")
 def tao_report_niche(user: dict = Depends(_lay_user), ngach_ma: str = Form(...),
                      thi_truong_ma: str = Form(...), pool: str = Form(""),
+                     pool_ws: int = Form(0),
                      skip_comments: bool = Form(False), force: bool = Form(False),
                      deepdive: bool = Form(False), llm: bool = Form(True)):
     from src import niche_run
@@ -294,6 +318,18 @@ def tao_report_niche(user: dict = Depends(_lay_user), ngach_ma: str = Form(...),
     if thi_truong_ma not in (ngach.get("thi_truong_cua") or []):
         raise HTTPException(400, f"Thị trường {ten_tt} chưa thuộc niche này — "
                                  "chọn ở General → Niches (Edit → Markets) trước.")
+
+    # Phương án 2 (user chốt 19/08): UI chạy từ POOL SẴN CÓ RadarY (pool_ws);
+    # `pool` text giữ làm đường API/script — hai đường cùng đổ vào luật cộng dồn.
+    if pool_ws:
+        from src import radary_bridge
+        try:
+            dong_pool = radary_bridge.kenh_cua_pool(user, pool_ws)
+        except Exception as e:
+            raise HTTPException(502, f"Không đọc được pool RadarY: {e}")
+        if not dong_pool:
+            raise HTTPException(400, "Pool RadarY này không có kênh active nào.")
+        pool = "\n".join(dong_pool)
 
     mapping = _map_projects()
     project = mapping.get(ngach_ma, {}).get(thi_truong_ma)

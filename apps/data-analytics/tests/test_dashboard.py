@@ -42,6 +42,8 @@ def test_overall_hien_tile_va_kenh(client):
     assert "VÀO CÓ ĐIỀU KIỆN" in body                        # verdict tiếng Việt
     assert "Read report" in body and "New Research" in body  # button tiếng Anh
     assert 'id="nr-llm"' in body and 'id="nr-deepdive"' in body   # 4 tùy chọn pipeline
+    # phương án 2 (19/08): chọn pool sẵn có RadarY, hết ô dán tay
+    assert 'id="nr-pool-ws"' in body and 'id="nr-pool"' not in body
     assert "hidden" in body and "iraq" in body               # Best & Worst cụm
 
 

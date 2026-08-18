@@ -151,10 +151,10 @@
       </div>
       <div id="nr-niche">
         <div style="display:flex;gap:8px;margin-bottom:10px">
-          <select id="nr-ngach" style="flex:1;background:var(--th-182233);color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:7px 9px;font:inherit">
+          <select id="nr-ngach" onchange="napPool()" style="flex:1;background:var(--th-182233);color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:7px 9px;font:inherit">
             {% for n in ds_ngach %}<option value="{{ n.ma }}" {% if ngach and n.ma == ngach.ma %}selected{% endif %}>{{ n.ten_chuan }}</option>{% endfor %}
           </select>
-          <select id="nr-tt" style="flex:1;background:var(--th-182233);color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:7px 9px;font:inherit">
+          <select id="nr-tt" onchange="napPool()" style="flex:1;background:var(--th-182233);color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:7px 9px;font:inherit">
           </select>
         </div>
         <script>
@@ -183,8 +183,17 @@
           capNhat();
         })();
         </script>
-        <textarea id="nr-pool" rows="5" placeholder="Dán kênh đối thủ — mỗi dòng 1 kênh (URL /channel/UC… hoặc @handle). Cộng dồn vào pool cũ; key YouTube lấy từ KÉT."
-          style="width:100%;background:var(--th-182233);color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:8px 10px;font:inherit;font-size:.85rem"></textarea>
+        {# PHƯƠNG ÁN 2 (user chốt 19/08): research chạy từ POOL SẴN CÓ — Data Pool
+           RadarY đã gắn đúng ngách × thị trường; pool sống ở RadarY, hết dán tay #}
+        <div style="display:flex;gap:8px;align-items:center">
+          <select id="nr-pool-ws" style="flex:1;background:var(--th-182233);color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:7px 9px;font:inherit">
+            <option value="">— đang tải pool… —</option>
+          </select>
+          <a class="nd-btn" href="/radary" target="_blank"
+             title="Pool sống ở RadarY (Data Pool) — thêm/bớt kênh đối thủ bên đó">Manage pools</a>
+        </div>
+        <p id="nr-pool-note" style="font-size:.72rem;color:var(--muted);margin:.5rem 0 0">
+          Kênh active của pool được cộng dồn vào dự án rồi chạy — làm mới pool trong RadarY trước khi tạo research.</p>
         {# 4 tùy chọn = TOÀN BỘ đầu vào còn lại của pipeline (kiểm /api/run + orchestrator
            18/08 theo yêu cầu user): ngoài pool không cần nhập liệu dữ liệu nào khác —
            niche/thị trường lấy từ danh bạ, key YouTube/LLM lấy từ KÉT #}
@@ -760,7 +769,7 @@ function theoDoiNiche(project){
     fetch('/niche/chay/' + project + '/trang-thai')
       .then(function(r){ return r.json(); })
       .then(function(st){
-        if (el) el.textContent = 'Đang chạy… ' + Math.round((Date.now() - t0) / 1000) + 's';
+        if (el) el.textContent = 'Researching… ' + Math.round((Date.now() - t0) / 1000) + 's';
         if (!st.running){ clearInterval(iv); location.reload(); }
       })
       .catch(function(){ /* mạng chớp — poll tiếp */ });
@@ -848,14 +857,58 @@ function nrTab(t){
   document.getElementById('nr-kenh').style.display = (t === 'kenh') ? '' : 'none';
   var tieu = document.getElementById('nr-title');
   if (tieu) tieu.textContent = (t === 'kenh') ? 'New channel report' : 'New Research';
+  if (t === 'niche') napPool();
+}
+// Phương án 2 (19/08): nạp danh sách POOL SẴN CÓ (RadarY) theo ngách × thị trường
+function napPool(){
+  var s = document.getElementById('nr-pool-ws');
+  if (!s) return;
+  s.innerHTML = '<option value="">— đang tải pool… —</option>';
+  var q = '?ngach=' + encodeURIComponent(document.getElementById('nr-ngach').value)
+        + '&tt=' + encodeURIComponent(document.getElementById('nr-tt').value);
+  fetch('/niche/pool' + q)
+    .then(function(r){ return r.json().then(function(d){ return {ok: r.ok, d: d}; }); })
+    .then(function(x){
+      if (!x.ok) throw new Error(x.d.detail || 'Lỗi');
+      var ds = x.d.pools || [];
+      if (!ds.length){
+        s.innerHTML = '<option value="">— chưa có pool cho ngách × thị trường này —</option>';
+        return;
+      }
+      s.innerHTML = '';
+      ds.forEach(function(p){
+        var o = document.createElement('option');
+        o.value = p.id; o.textContent = p.name + ' · ' + p.channels + ' kênh';
+        s.appendChild(o);
+      });
+    })
+    .catch(function(e){ s.innerHTML = '<option value="">— ' + e.message + ' —</option>'; });
 }
 function nrChay(){
   var nut = document.getElementById('nr-run'), st = document.getElementById('nr-status');
-  nut.disabled = true; st.textContent = 'Đang gửi…';
+  var ws = document.getElementById('nr-pool-ws').value;
+  if (!ws){ st.textContent = 'Chọn pool trước — pool tạo/quản trong RadarY.'; return; }
+  nut.disabled = true;
+  // BƯỚC 1 (user chốt 19/08): kiểm API khả dụng trước, xong mới Researching
+  st.textContent = 'Đang kiểm tra API…';
+  var coLLM = document.getElementById('nr-llm').checked;
+  var coDD = document.getElementById('nr-deepdive').checked;
+  fetch('/niche/kiem-api?llm=' + coLLM + '&deepdive=' + coDD)
+    .then(function(r){ return r.json().then(function(d){ return {ok: r.ok, d: d}; }); })
+    .then(function(x){
+      if (!x.ok) throw new Error(x.d.detail || 'Không kiểm được API');
+      if (!x.d.ok) throw new Error('Thiếu khóa API: ' + x.d.thieu.join(', ') +
+                                   ' — cấp ở General › API Keys rồi chạy lại.');
+      nrGui(nut, st);
+    })
+    .catch(function(e){ nut.disabled = false; st.textContent = e.message; });
+}
+function nrGui(nut, st){
+  st.textContent = 'API sẵn sàng — Researching…';
   var fd = new FormData();
   fd.append('ngach_ma', document.getElementById('nr-ngach').value);
   fd.append('thi_truong_ma', document.getElementById('nr-tt').value);
-  fd.append('pool', document.getElementById('nr-pool').value);
+  fd.append('pool_ws', ws);
   // 4 tùy chọn pipeline — gửi tường minh true/false (server Form(bool) tự đọc)
   fd.append('skip_comments', document.getElementById('nr-comments').checked ? 'false' : 'true');
   fd.append('llm', document.getElementById('nr-llm').checked ? 'true' : 'false');
@@ -866,7 +919,7 @@ function nrChay(){
     .then(function(x){
       if (!x.ok) throw new Error(x.d.detail || 'Lỗi');
       st.id = 'run-' + x.d.project;          // theoDoiNiche ghi tiến độ vào đây
-      st.textContent = 'Đã khởi động (' + (x.d.them_kenh || 0) + ' kênh mới) — chạy nền, trang tự cập nhật khi xong.';
+      st.textContent = 'Researching (' + (x.d.them_kenh || 0) + ' kênh mới) — chạy nền, trang tự cập nhật khi xong.';
       theoDoiNiche(x.d.project);
     })
     .catch(function(e){ nut.disabled = false; st.textContent = e.message; });

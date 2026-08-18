@@ -154,6 +154,29 @@ def test_tao_report_pool_trong_400_va_quyen(client, monkeypatch):
     assert r.status_code == 400 and "pool đang trống" in r.json()["detail"]
 
 
+def test_kiem_api_truoc_researching(client, monkeypatch):
+    """Bước 1 sau Run analysis (user chốt 19/08): check khóa KÉT khả dụng — đủ thì
+    ok, thiếu thì liệt kê việc thiếu; response TUYỆT ĐỐI không lộ key."""
+    cap = {"quet_kenh": {"khoa": [{"key": "AIza-bi-mat"}]}, "phan_tich": {"khoa": []}}
+    monkeypatch.setattr(niche_run.requests, "get", lambda url, **kw: _Resp(cap))
+    r = client.get("/niche/kiem-api", headers=CLAIMS_L3, params={"llm": "true"})
+    assert r.status_code == 200
+    d = r.json()
+    assert d["ok"] is False and d["thieu"] == ["llm"]
+    assert d["chi_tiet"]["youtube"] is True
+    r2 = client.get("/niche/kiem-api", headers=CLAIMS_L3)      # không bật llm → đủ
+    assert r2.json()["ok"] is True and r2.json()["thieu"] == []
+    assert "AIza" not in r.text and "AIza" not in r2.text      # không lộ key
+
+
+def test_kiem_api_gateway_chet_502(client, monkeypatch):
+    def _no(url, **kw):
+        raise niche_run.requests.ConnectionError("refused")
+    monkeypatch.setattr(niche_run.requests, "get", _no)
+    r = client.get("/niche/kiem-api", headers=CLAIMS_L3)
+    assert r.status_code == 502 and "KÉT" in r.json()["detail"]
+
+
 def test_service_chet_502(client, monkeypatch):
     def _no(url, **kw):
         raise niche_run.requests.ConnectionError("refused")

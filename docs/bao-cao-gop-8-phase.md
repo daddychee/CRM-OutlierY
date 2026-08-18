@@ -471,3 +471,27 @@ xem". Suite 106 pass; kiểm sống kênh OUTLAND thật. LƯU Ý PHIÊN SONG SO
 này CHỈ gồm dashboard.html + sổ — dashboard.py/test_* đang mang luật mới
 "thị trường thuộc từng ngách (thi_truong_cua)" của phiên kia chưa commit; assert
 report-list tôi thêm trong test_dashboard.py sẽ đi cùng commit của phiên đó.
+
+## 19/08 — NEW RESEARCH PHƯƠNG ÁN 2 (pool sẵn có RadarY) + BƯỚC CHECK API
+
+User chốt 2 việc: (1) tạo research CHỈ chạy từ POOL SẴN CÓ theo ngách × thị trường
+(bỏ dán tay — user "thiên về chỉ làm phương án 2"); (2) sau Run analysis → bước 1
+"kiểm tra API khả dụng" → xong mới báo Researching.
+• POOL SẴN CÓ: RadarY V3 là nhà của pool — workspace (Data Pool) đã gắn ngach/market
+  theo MÃ DANH BẠ + API /api/workspaces (đếm kênh) + /workspaces/{id}/channels.
+  Cầu mới src/radary_bridge.py (đọc loopback kèm claims, lệ không-import-chéo):
+  ds_pool lọc đúng ngách×thị trường, kenh_cua_pool dựng dòng 'Title | URL' từ kênh
+  ACTIVE. Modal: select pool (tự nạp theo GET /niche/pool khi mở tab/đổi niche-tt)
+  + nút Manage pools → /radary; POST tao-report nhận pool_ws → server lấy kênh từ
+  RadarY đổ vào luật cộng dồn sẵn có (`pool` text GIỮ làm đường API/script — UI
+  không lộ). Kiểm sống thật: N-LIFE-IN × TT-US → pool "LIFE IN — US · 63 kênh".
+• CHECK API: niche_run.kiem_khoa đọc cấp phát KÉT qua gateway loopback
+  /api/cau-hinh/api-khoa/niche-research — ĐÚNG nguồn khoa_v3 của service sẽ dùng
+  lúc chạy; CHỈ trả boolean theo việc (quet_kenh luôn, phan_tich khi bật LLM,
+  lay_transcript khi deepdive), không lộ key (test ghim). JS: Run analysis →
+  "Đang kiểm tra API…" → thiếu thì dừng + chỉ chỗ cấp (General › API Keys) →
+  đủ thì "API sẵn sàng — Researching…" + poll "Researching… Xs".
+• PHÁT HIỆN VẬN HÀNH nhờ preflight: cấp phát niche-research trong KÉT đang RỖNG
+  cả 3 việc (curl gateway thật xác nhận khoa=[]) — bấm Run lúc này là 503; Owner
+  cần cấp khóa YouTube (Quét kênh) + LLM (Agent phân tích) ở General › API Keys.
+Suite 113 pass (test_radary_bridge mới 5 + kiem-api 2).

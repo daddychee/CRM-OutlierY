@@ -40,6 +40,27 @@ def _headers(user: dict) -> dict:
             "X-Remote-Role": user.get("vai", "")}
 
 
+def kiem_khoa(llm: bool = False, deepdive: bool = False) -> dict:
+    """Bước 'check API' TRƯỚC Researching (user chốt 19/08): đọc cấp phát KÉT của
+    niche-research qua gateway loopback — đúng nguồn service sẽ dùng lúc chạy
+    (khoa_v3), CHỈ trả boolean từng việc, tuyệt đối không lộ key ra response."""
+    goc = os.environ.get("GATEWAY_URL", "http://127.0.0.1:9000").rstrip("/")
+    r = requests.get(f"{goc}/api/cau-hinh/api-khoa/niche-research", timeout=5)
+    r.raise_for_status()
+    cap = r.json() or {}
+
+    def _co(viec: str) -> bool:
+        return any(k.get("key") for k in (cap.get(viec) or {}).get("khoa", []))
+
+    kq = {"youtube": _co("quet_kenh")}
+    if llm:
+        kq["llm"] = _co("phan_tich")
+    if deepdive:
+        kq["transcript"] = _co("lay_transcript")
+    return {"ok": all(kq.values()), "chi_tiet": kq,
+            "thieu": [v for v, ok in kq.items() if not ok]}
+
+
 def chay_lai(project: str, user: dict) -> dict:
     """Resume/chạy lại project đã có pool — service tự lo key từ KÉT."""
     r = requests.post(f"{_api()}/api/resume/{project}", headers=_headers(user), timeout=15)
