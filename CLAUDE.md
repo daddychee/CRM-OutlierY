@@ -211,6 +211,11 @@ Quy ước từ 16/08/2026 (user chốt): mỗi mạch việc lớn có MỘT s�
   160 test nền pass; đăng ký đủ PORTS/apps.json/phan_quyen/start-all; 5 commit
   (97f4938→b46fb5d). Chi tiết + quyết định thiết kế + bẫy + việc treo:
   apps/video-review/CLAUDE.md.
+- 18/08/2026 — **RADARY POOL THEO THỊ TRƯỜNG** (user chốt: pool = 1 thị trường,
+  danh mục từ đế, ngưỡng/alert riêng tự có theo pool): gateway phát danh mục
+  loopback + market trên workspace + tách pool chuyển kênh GIỮ LỊCH SỬ + UI 4
+  chỗ; root 182 + radary 14 pass. Chi tiết + nghiệm thu chờ Owner:
+  [docs/RADARY_THI_TRUONG.md](docs/RADARY_THI_TRUONG.md).
 - 18/08/2026 — **NAS TRỌN VÀO V2 (mảnh tầng nền)**: `nen/common/nas_sync.py` mới
   (đồng bộ tài khoản Windows theo mật khẩu OUTLIERY, DI TRÚ từ hệ cũ, KHÔNG đụng
   file nào trong C:\OutlierY) — gateway gọi lúc đăng nhập/tự đổi mật khẩu (3 chỗ:

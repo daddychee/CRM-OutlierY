@@ -1751,6 +1751,18 @@ def api_cau_hinh_api_khoa(request: Request, app_slug: str):
         conn.close()
 
 
+@app.get("/api/danh-ba/thi-truong")
+def api_danh_ba_thi_truong(request: Request):
+    """App phụ (bind loopback) đọc DANH MỤC THỊ TRƯỜNG từ danh bạ — trục phân
+    loại của đế, app không tự đẻ sổ (DE.md luật 2; RadarY pool-theo-thị-trường
+    18/08 — docs/RADARY_THI_TRUONG.md). CHỈ loopback (khuôn api-khoa)."""
+    if request.client and request.client.host not in ("127.0.0.1", "::1"):
+        return JSONResponse({"loi": "chi loopback"}, status_code=403)
+    return [{"ma": t["ma"], "ten": t.get("ten_chuan", ""),
+             "ngon_ngu": t.get("ngon_ngu", "")}
+            for t in danh_ba.liet_ke("thi_truong")]
+
+
 @app.get("/cai-dat")
 def cai_dat_cu():
     return RedirectResponse("/general/api-keys", status_code=303)

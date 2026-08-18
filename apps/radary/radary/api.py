@@ -507,24 +507,64 @@ class WorkspaceIn(BaseModel):
     name: str
     tz: str = 'Asia/Ho_Chi_Minh'
     org_id: int = 0          # 0 = org đầu tiên của user
+    market: str = ''         # mã thị trường TT-xx từ đế — BẮT BUỘC khi chạy trong V3 (18/08)
+
+# ---- Pool theo THỊ TRƯỜNG (18/08/2026 — docs/RADARY_THI_TRUONG.md) ----
+def _v3() -> bool:
+    return os.environ.get('RADARY_TRUST_PROXY') == '1'
+
+def _kiem_market(market: str) -> str:
+    """Validation dropdown Ở SERVER: mã phải có trong danh mục đế. Chỉ ép khi V3;
+    standalone giữ hành vi cũ (market tùy chọn, không gọi gateway)."""
+    market = (market or '').strip()
+    if not _v3():
+        return market
+    from . import thi_truong_v3
+    try:
+        if not market or not thi_truong_v3.hop_le(market):
+            raise HTTPException(422, 'phải chọn THỊ TRƯỜNG từ danh mục OUTLIERY '
+                                     '(thiếu thì Owner thêm ở General › Niches) — mỗi pool gắn đúng một thị trường')
+    except RuntimeError as e:
+        raise HTTPException(502, str(e))
+    return market
+
+@app.get('/api/thi-truong')
+def thi_truong_list(request: Request):
+    """Danh mục thị trường từ đế cho dropdown UI. Ngoài V3 → [] (UI tự ẩn)."""
+    with get_conn() as c:
+        auth.require_user(c, request)
+    if not _v3():
+        return []
+    from . import thi_truong_v3
+    try:
+        return thi_truong_v3.danh_sach()
+    except RuntimeError as e:
+        raise HTTPException(502, str(e))
 
 @app.get('/api/workspaces')
 def list_workspaces(request: Request):
     with get_conn() as c:
         u = auth.require_user(c, request)
+        ten_tt = {}
+        if _v3():                        # nhãn thị trường — best-effort, gateway chết KHÔNG giết list
+            from . import thi_truong_v3
+            try: ten_tt = {t['ma']: t.get('ten') or t['ma'] for t in thi_truong_v3.danh_sach()}
+            except RuntimeError: pass
         out = []
-        for w in c.execute('SELECT w.id, w.name, w.tz, w.org_id FROM workspaces w '
+        for w in c.execute('SELECT w.id, w.name, w.tz, w.org_id, w.market FROM workspaces w '
                            'JOIN members m ON m.org_id=w.org_id WHERE m.user_id=? '
                            'AND (m.workspace_id IS NULL OR m.workspace_id=w.id) ORDER BY w.id', (u['id'],)):
             tiers = {str(r['tier']): r['n'] for r in c.execute(
                 'SELECT tier, COUNT(*) n FROM videos WHERE workspace_id=? AND dead=0 GROUP BY tier', (w['id'],))}
             out.append({'id': w['id'], 'name': w['name'], 'tz': w['tz'], 'org_id': w['org_id'],
+                        'market': w['market'], 'market_ten': ten_tt.get(w['market'], w['market']),
                         'videos': sum(tiers.values()), 'tiers': tiers,
                         'heartbeat_ts': db.kv_get(c, w['id'], 'heartbeat', 0)})
         return out
 
 @app.post('/api/workspaces', status_code=201)
 def create_workspace(body: WorkspaceIn, request: Request):
+    market = _kiem_market(body.market)              # kiểm TRƯỚC khi tạo gì (V3: bắt buộc)
     with get_conn() as c:
         u = auth.require_user(c, request)
         my_orgs = auth.user_orgs(c, u['id'])
@@ -533,10 +573,27 @@ def create_workspace(body: WorkspaceIn, request: Request):
         auth.require_role(c, u['id'], org, 'leader')
         auth.require_org_wide(c, u['id'], org)      # bị giới hạn 1 niche → không tạo niche mới
         with c:
-            ws = db.create_workspace(c, org, body.name.strip(), tz=body.tz)
+            ws = db.create_workspace(c, org, body.name.strip(), tz=body.tz, market=market)
             db.set_jobs(c, ws, {'discover': 0, 'hot': 0, 't1': 0, 'd01': 0, 'd26': 0, 'allages': 0,
                                 'weekly': scan.next_sunday_8am(core.tzinfo(body.tz))})
-        return {'id': ws, 'name': body.name.strip(), 'org_id': org}
+        return {'id': ws, 'name': body.name.strip(), 'org_id': org, 'market': market}
+
+class MarketIn(BaseModel):
+    market: str
+
+@app.patch('/api/workspaces/{ws}/market')
+def set_workspace_market(ws: int, body: MarketIn, request: Request):
+    """Gán/đổi thị trường cho pool có TRƯỚC tính năng (leader trở lên) —
+    ghi event config_change để có vết như mọi thay đổi cấu hình."""
+    market = _kiem_market(body.market)
+    with get_conn() as c:
+        u = auth.require_user(c, request)
+        auth.ws_for_user(c, ws, u['id'], 'leader')
+        with c:
+            c.execute('UPDATE workspaces SET market=? WHERE id=?', (market, ws))
+            db.append_events(c, ws, [{'ts': time.time(), 'kind': 'config_change',
+                                      'payload': {'market': market, 'by': u['email']}}])
+        return {'id': ws, 'market': market}
 
 @app.get('/api/workspaces/{ws}/status')
 def ws_status(ws: int, request: Request):
@@ -942,6 +999,72 @@ def remove_channel(ws: int, yt_id: str, request: Request):
                                           'purged_videos': purged, 'by': u['email']}])
         if not n: raise HTTPException(404, 'kênh không có trong pool')
         return {'removed': yt_id, 'purged_videos': purged, 'note': 'board đã được dọn ngay'}
+
+class MoveIn(BaseModel):
+    to_ws: int
+    yt_ids: list[str]
+    confirm: bool = False
+
+@app.post('/api/workspaces/{ws}/channels/move')
+def move_channels(ws: int, body: MoveIn, request: Request):
+    """TÁCH POOL THEO THỊ TRƯỜNG (18/08 — docs/RADARY_THI_TRUONG.md): chuyển kênh
+    sang pool khác cùng org, GIỮ LỊCH SỬ — channels/videos đổi workspace_id
+    (ticks/title_hist/thumb_hist bám video_id nên nguyên vẹn), channel_stats cộng
+    dồn sang đích theo tên kênh, channel_snap chuyển theo ch_yt_id. events ở lại
+    (append-only, sử liệu) + ghi pool_change cả 2 bên. pool_stats KHÔNG tách —
+    nhịp pool đích chỉ tích từ lúc chuyển (trung thực, không bịa quá khứ).
+    manager trở lên (thao tác dữ liệu lớn, cùng nấc xóa workspace)."""
+    ids = [s.strip() for s in body.yt_ids if s.strip()]
+    if not ids: raise HTTPException(400, 'yt_ids rỗng')
+    if body.to_ws == ws: raise HTTPException(422, 'pool đích trùng pool nguồn')
+    if not body.confirm: raise HTTPException(422, 'cần confirm=true — chuyển kênh dời cả lịch sử theo dõi sang pool đích')
+    with get_conn() as c:
+        u = auth.require_user(c, request)
+        w_from = auth.ws_for_user(c, ws, u['id'], 'manager')
+        w_to = auth.ws_for_user(c, body.to_ws, u['id'], 'manager')
+        if w_from['org_id'] != w_to['org_id']:
+            raise HTTPException(422, 'hai pool không cùng org')
+        rows = c.execute(f'SELECT id, yt_id, title FROM channels WHERE workspace_id=? '
+                         f'AND yt_id IN ({",".join("?"*len(ids))})', (ws, *ids)).fetchall()
+        thieu = set(ids) - {r['yt_id'] for r in rows}
+        if thieu: raise HTTPException(404, f'kênh không có trong pool nguồn: {", ".join(sorted(thieu))}')
+        trung = [r['title'] or r['yt_id'] for r in c.execute(
+            f'SELECT yt_id, title FROM channels WHERE workspace_id=? '
+            f'AND yt_id IN ({",".join("?"*len(ids))})', (body.to_ws, *ids))]
+        if trung: raise HTTPException(409, f'pool đích đã có kênh: {", ".join(trung)}')
+        moved_videos = 0
+        gone = {r2['yt_id'] for r2 in c.execute(       # video yt_id của các kênh sắp chuyển — dọn board nguồn (khuôn remove_channel)
+            f'SELECT yt_id FROM videos WHERE workspace_id=? '
+            f'AND channel_yt_id IN ({",".join("?"*len(ids))})', (ws, *ids))}
+        with c:
+            for r in rows:
+                c.execute('UPDATE channels SET workspace_id=? WHERE id=?', (body.to_ws, r['id']))
+                moved_videos += c.execute('UPDATE videos SET workspace_id=? WHERE workspace_id=? '
+                                          'AND channel_yt_id=?', (body.to_ws, ws, r['yt_id'])).rowcount
+                # nhịp kênh (giữ vĩnh viễn) đi theo kênh — trùng bucket ở đích (trùng tên kênh) thì cộng dồn
+                c.execute('INSERT INTO channel_stats(workspace_id, bucket_ts, ch, dviews) '
+                          'SELECT ?, bucket_ts, ch, dviews FROM channel_stats WHERE workspace_id=? AND ch=? '
+                          'ON CONFLICT(workspace_id, bucket_ts, ch) DO UPDATE SET dviews=dviews+excluded.dviews',
+                          (body.to_ws, ws, r['title']))
+                c.execute('DELETE FROM channel_stats WHERE workspace_id=? AND ch=?', (ws, r['title']))
+                c.execute('INSERT INTO channel_snap(workspace_id, day, ch_yt_id, subs, total_views, video_count, ts) '
+                          'SELECT ?, day, ch_yt_id, subs, total_views, video_count, ts FROM channel_snap '
+                          'WHERE workspace_id=? AND ch_yt_id=? ON CONFLICT DO NOTHING',
+                          (body.to_ws, ws, r['yt_id']))
+                c.execute('DELETE FROM channel_snap WHERE workspace_id=? AND ch_yt_id=?', (ws, r['yt_id']))
+            board = db.kv_get(c, ws, 'board', None)
+            if board and gone:          # dọn board nguồn NGAY (khuôn remove_channel); board đích tự có ở chu kỳ kế
+                for co in board.get('cohorts', []):
+                    co['videos'] = [v for v in co['videos'] if v['yt_id'] not in gone]
+                    co['size'] = len(co['videos'])
+                board['allages'] = [v for v in board.get('allages', []) if v['yt_id'] not in gone]
+                db.kv_set(c, ws, 'board', board)
+            ke = {'ts': time.time(), 'kind': 'pool_change', 'by': u['email'],
+                  'moved_channels': ids, 'moved_videos': moved_videos}
+            db.append_events(c, ws, [{**ke, 'moved_to': body.to_ws}])
+            db.append_events(c, body.to_ws, [{**ke, 'moved_from': ws}])
+        return {'moved': ids, 'moved_videos': moved_videos, 'to_ws': body.to_ws,
+                'note': 'lịch sử kênh/video đi theo; nhịp pool đích tích từ giờ trở đi'}
 
 # ---------------- config ----------------
 CONFIG_EDITABLE = {'T1_vph', 'T2_vph', 'T3_vph', 'T4_vph', 'T1_frac', 'T2_rank', 'T2_daily_cap',

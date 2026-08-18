@@ -1186,14 +1186,32 @@ function ChannelModal({ ws, ytId, onClose }) {
 }
 
 // ---------- Pool ----------
-function Pool({ ws, canEdit }) {
+function Pool({ ws, canEdit, role, wss, onMoved }) {
   const [chans, setChans] = useState([]);
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState(null);
   const [sel, setSel] = useState(null);       // kênh đang mở hồ sơ — bấm lại là đóng
+  const [picked, setPicked] = useState({});   // tách pool theo thị trường (18/08): yt_id -> true
+  const [dest, setDest] = useState('');
   const load = useCallback(() => api('GET', `/workspaces/${ws}/channels`).then(setChans), [ws]);
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { load(); setPicked({}); setDest(''); }, [load]);
+  const canMove = role === 'manager' || role === 'owner';   // dời dữ liệu lớn — cùng nấc xóa workspace
+  const others = (wss || []).filter(w => w.id !== ws);
+  const nPicked = Object.values(picked).filter(Boolean).length;
+  const move = async () => {
+    const ids = Object.keys(picked).filter(k => picked[k]);
+    const dw = others.find(w => w.id === Number(dest));
+    if (!ids.length || !dw) return;
+    if (!confirm(`Chuyển ${ids.length} kênh sang pool "${dw.name}"?\n\nLịch sử video/tick/nhịp kênh đi theo kênh; nhịp POOL của pool đích chỉ tính từ giờ trở đi. Alerts cũ ở lại pool nguồn (sổ cái).`)) return;
+    setMsg(null);
+    try {
+      const r = await api('POST', `/workspaces/${ws}/channels/move`,
+                          { to_ws: Number(dest), yt_ids: ids, confirm: true });
+      setMsg({ ok: 1, t: `Đã chuyển ${r.moved.length} kênh (${r.moved_videos} video) sang "${dw.name}".` });
+      setPicked({}); setDest(''); load(); onMoved && onMoved();
+    } catch (e) { setMsg({ ok: 0, t: String(e.message) }); }
+  };
   const add = async () => {
     const items = text.split('\n').map(s => s.trim()).filter(Boolean);
     if (!items.length) return;
@@ -1245,10 +1263,20 @@ function Pool({ ws, canEdit }) {
           ${active.length > 0 && html`<button class="btn small ghost" style="margin-left:auto"
             onClick=${download}>⬇ Tải danh sách (.csv)</button>`}
         </div>
+        ${canMove && others.length > 0 && html`<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
+          <span class="note">Tách pool theo thị trường — tích chọn kênh rồi:</span>
+          <select value=${dest} onChange=${e => setDest(e.target.value)}>
+            <option value="">— pool đích —</option>
+            ${others.map(w => html`<option value=${w.id}>${w.name}${w.market_ten ? ' · ' + w.market_ten : ''}</option>`)}
+          </select>
+          <button class="btn small" disabled=${!dest || !nPicked} onClick=${move}>Chuyển ${nPicked || ''} kênh đã chọn</button>
+        </div>`}
         <div class="tablewrap"><table>
           ${active.map(c => html`<tr class="clickable" title="Bấm để xem hồ sơ kênh"
-              onClick=${e => { if (e.target.tagName !== 'A' && e.target.tagName !== 'BUTTON')
+              onClick=${e => { if (e.target.tagName !== 'A' && e.target.tagName !== 'BUTTON' && e.target.tagName !== 'INPUT')
                 setSel(cur => cur === c.yt_id ? null : c.yt_id); }}>
+            ${canMove && others.length > 0 && html`<td style="width:22px"><input type="checkbox" checked=${!!picked[c.yt_id]}
+              onChange=${e => setPicked(p => ({ ...p, [c.yt_id]: e.target.checked }))}/></td>`}
             <td style="width:26px"><button class=${'starbtn' + (c.favorite ? ' on' : '')}
               title=${c.favorite ? 'Bỏ yêu thích' : 'Đánh dấu yêu thích'} disabled=${!canEdit}
               onClick=${() => canEdit && toggleFav(c)}>${c.favorite ? '★' : '☆'}</button></td>
@@ -1275,15 +1303,23 @@ const NUMS = [['T1_vph', 'Sàn VPH — T1 Quan sát'], ['T2_vph', 'Sàn VPH — 
               ['T3_vph', 'Sàn VPH — T3 Sóng (xác nhận rồi push)'], ['T4_vph', 'Sàn VPH — T4 Bùng nổ (push tức thì)'],
               ['T2_daily_cap', 'Trần push T2 / ngày'], ['allages_vpd_floor', 'Sàn VPD bảng mọi-tuổi'],
               ['min_duration_s', 'Video tối thiểu (giây, lọc Shorts)']];
-function Settings({ ws, role, orgId }) {
+function Settings({ ws, role, orgId, market, onMarket }) {
   const vw = role === 'viewer';
   const [cfg, setCfg] = useState(null);
   const [cal, setCal] = useState(null);
   const [msg, setMsg] = useState(null);
+  const [tts, setTts] = useState([]);          // danh mục thị trường từ đế (18/08) — rỗng = standalone, chỉ hiện mã
   useEffect(() => {
     api('GET', `/workspaces/${ws}/config`).then(setCfg);
     api('GET', `/workspaces/${ws}/calibration`).then(setCal).catch(() => setCal(null));
+    api('GET', '/thi-truong').then(setTts).catch(() => setTts([]));
   }, [ws]);
+  const saveMarket = async v => {
+    setMsg(null);
+    try { await api('PATCH', `/workspaces/${ws}/market`, { market: v });
+          setMsg({ ok:1, t:'Đã gán thị trường — có ghi vết trong Alerts.' }); onMarket && onMarket(); }
+    catch (e) { setMsg({ ok:0, t:String(e.message) }); }
+  };
   const save = async patch => {
     setMsg(null);
     try { setCfg(await api('PUT', `/workspaces/${ws}/config`, patch)); setMsg({ ok:1, t:'Đã lưu — có ghi vết trong Alerts.' }); }
@@ -1305,6 +1341,11 @@ function Settings({ ws, role, orgId }) {
         <h2>Ngưỡng bậc T1-T4 <small>· chỉnh theo dữ liệu, không theo cảm giác</small></h2>
         ${NUMS.map(([k, label]) => html`
           <div class="formrow"><label>${label}</label><input type="number" id=${'f_' + k} value=${cfg[k]} disabled=${vw}/></div>`)}
+        ${tts.length > 0 && html`<div class="formrow"><label>Thị trường của pool</label>
+          <select value=${market || ''} disabled=${vw} onChange=${e => saveMarket(e.target.value)}>
+            ${!market && html`<option value="">— chưa gán —</option>`}
+            ${tts.map(t => html`<option value=${t.ma}>${t.ten}${t.ngon_ngu ? ' (' + t.ngon_ngu + ')' : ''}</option>`)}
+          </select></div>`}
         <div class="formrow"><label>ntfy topic (bí mật)</label><input type="text" id="f_topic" value=${cfg.ntfy_topic} disabled=${vw}/></div>
         <div class="formrow"><label>Push điện thoại (ntfy)</label>
           <span><input type="checkbox" id="f_ntfy" checked=${cfg.ntfy_enabled} disabled=${vw}/> bật</span></div>
@@ -1348,13 +1389,17 @@ function NewNiche({ onCreated, role }) {
   const [keyBk, setKeyBk] = useState('');
   const [step, setStep] = useState('');
   const [err, setErr] = useState('');
+  const [tts, setTts] = useState([]);          // danh mục thị trường từ đế (18/08) — rỗng = standalone, ẩn dropdown
+  const [market, setMarket] = useState('');
+  useEffect(() => { api('GET', '/thi-truong').then(setTts).catch(() => setTts([])); }, []);
   const create = async () => {
     const items = chans.split('\n').map(s => s.trim()).filter(Boolean);
     if (!name.trim() || !items.length) { setErr('Cần tên niche và ít nhất 1 kênh.'); return; }
+    if (tts.length && !market) { setErr('Chọn THỊ TRƯỜNG cho pool — mỗi pool gắn đúng một thị trường.'); return; }
     setErr('');
     try {
       setStep('Tạo workspace…');
-      const w = await api('POST', '/workspaces', { name: name.trim() });
+      const w = await api('POST', '/workspaces', { name: name.trim(), market });
       if (role !== 'viewer' && keyMain.trim().length >= 20) {
         setStep('Gắn key cho niche…');
         await api('POST', `/orgs/${w.org_id}/keys`, { key: keyMain.trim(), workspace_id: w.id });
@@ -1373,6 +1418,11 @@ function NewNiche({ onCreated, role }) {
       <h2>Niche mới — dán pool kênh đối thủ là chạy</h2>
       <div class="formrow"><label>Tên niche</label>
         <input type="text" placeholder="vd: Xe điện Việt Nam" value=${name} onInput=${e => setName(e.target.value)}/></div>
+      ${tts.length > 0 && html`<div class="formrow"><label>Thị trường</label>
+        <select value=${market} onChange=${e => setMarket(e.target.value)}>
+          <option value="">— chọn thị trường —</option>
+          ${tts.map(t => html`<option value=${t.ma}>${t.ten}${t.ngon_ngu ? ' (' + t.ngon_ngu + ')' : ''}</option>`)}
+        </select></div>`}
       ${role !== 'viewer' && html`
         <div class="formrow"><label>Key chính của niche</label>
           <input type="text" placeholder="AIza… (bỏ trống nếu dùng key toàn org)" value=${keyMain}
@@ -1621,7 +1671,7 @@ function App() {
       <nav class="tabs">${tabs.map(([k, label]) => html`
         <button class=${tab === k ? 'on' : ''} onClick=${() => setTab(k)}>${label}</button>`)}</nav>
       <select class="ws" value=${ws} onChange=${e => { setWs(Number(e.target.value)); if (tab === 'new') setTab('board'); }}>
-        ${wss.map(w => html`<option value=${w.id}>${w.name} (${w.videos})</option>`)}
+        ${wss.map(w => html`<option value=${w.id}>${w.name}${w.market_ten ? ' · ' + w.market_ten : ''} (${w.videos})</option>`)}
       </select>
       ${me.sso ? '' : html`
         <span class="note" title=${me.email}>${me.email.split('@')[0]}${role !== 'owner' ? html` · <span class="rolechip ${role}">${role}</span>` : ''}</span>
@@ -1641,8 +1691,10 @@ function App() {
       : tab === 'board' ? html`<${Board} ws=${ws} canEdit=${canEdit}/>`
       : tab === 'alerts' ? html`<${Alerts} ws=${ws} canEdit=${canEdit}/>`
       : tab === 'reports' ? html`<${Reports} ws=${ws} canEdit=${canEdit}/>`
-      : tab === 'pool' ? html`<${Pool} ws=${ws} canEdit=${canEdit}/>`
-      : html`<${Settings} ws=${ws} role=${role} orgId=${orgId}/>`}
+      : tab === 'pool' ? html`<${Pool} ws=${ws} canEdit=${canEdit} role=${role}
+          wss=${wss.filter(w => w.org_id === orgId)} onMoved=${() => loadWs(true)}/>`
+      : html`<${Settings} ws=${ws} role=${role} orgId=${orgId} market=${cur.market}
+          onMarket=${() => loadWs(true)}/>`}
   `;
 }
 render(html`<${App}/>`, document.getElementById('app'));

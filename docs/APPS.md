@@ -62,6 +62,9 @@
 
 ## Nhật ký
 
+- 18/08/2026 — RadarY thêm trục POOL THEO THỊ TRƯỜNG (sổ riêng:
+  [RADARY_THI_TRUONG.md](RADARY_THI_TRUONG.md) — pool gắn 1 thị trường từ đế,
+  tách pool giữ lịch sử, chờ Owner nghiệm thu qua 9443).
 - 16/08/2026 — Mở sổ; Owner chốt 2 quyết định; bắt đầu RadarY (cổng 9111).
 - 16/08/2026 — **RadarY tích hợp xong bước 1-4+6** (chạy thật 9111, hợp đồng +
   luật Permissions v2, SSO adapter Actions→vai nội bộ, smoke từng vai đạt trên
