@@ -11,9 +11,11 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException
 
+# Gọi qua module (không bind hàm lúc import) — monkeypatch/test và mọi override
+# về sau đều ăn; _lay_user là dependency nên bind trực tiếp được.
+from src import dashboard as _db
 from src import niche_bridge
-from src.dashboard import (_bao_cao_cua_kenh, _ds_kenh, _ds_ngach, _lay_user,
-                           _map_projects, _ten_thi_truong)
+from src.dashboard import _lay_user
 
 router = APIRouter(prefix="/api/agent")
 
@@ -26,20 +28,20 @@ MUC_NGACH = {"tom_tat", "decision1", "decision2", "bets", "gaps", "demand",
 def registry(user: dict = Depends(_lay_user)):
     """Mục lục sống: niche → thị trường (project + các ngày có snapshot) + kênh
     (+ các report đã nạp). Agent đọc cái này trước để biết hỏi được gì."""
-    ten_tt = _ten_thi_truong()
-    mapping = _map_projects()
+    ten_tt = _db._ten_thi_truong()
+    mapping = _db._map_projects()
     out = []
-    for n in _ds_ngach():
+    for n in _db._ds_ngach():
         markets = []
         for tt_ma, project in mapping.get(n["ma"], {}).items():
             markets.append({"thi_truong_ma": tt_ma, "ten": ten_tt.get(tt_ma, tt_ma),
                             "project": project,
                             "snapshots": [b["id"] for b in niche_bridge.ds_snapshot(project)]})
         channels = []
-        for k in _ds_kenh(n["ma"]):
+        for k in _db._ds_kenh(n["ma"]):
             reports = [{"id": r.get("id"), "ngay": (r.get("thoi_gian") or "")[:10],
                         "ten_bao_cao": r.get("ten_bao_cao"), "nguoi_chay": r.get("nguoi_chay")}
-                       for r in _bao_cao_cua_kenh(k)]
+                       for r in _db._bao_cao_cua_kenh(k)]
             channels.append({"ma": k["ma"], "ten": k.get("ten_chuan"),
                              "thi_truong_ma": k.get("thi_truong_ma"), "reports": reports})
         out.append({"ma": n["ma"], "ten": n.get("ten_chuan"),
