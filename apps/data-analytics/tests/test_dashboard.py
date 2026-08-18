@@ -37,7 +37,8 @@ def test_overall_hien_tile_va_kenh(client):
     r = client.get("/niche", headers=CLAIMS)
     assert r.status_code == 200
     body = r.text
-    assert "TEST NICHE" in body and "KENH A" in body        # rail: niche + kênh
+    assert "TEST NICHE" in body                              # niche đang chọn
+    # (kênh sống hẳn bên Channel Research từ 19/08 — trang Niche không còn KENH A)
     assert "58" in body and "3.071" in body                  # tile số thật từ snapshot
     assert "VÀO CÓ ĐIỀU KIỆN" in body                        # verdict tiếng Việt
     assert "Read report" in body and "New Research" in body  # button tiếng Anh
@@ -212,10 +213,18 @@ def test_channel_research_home(client):
     assert 'href="/niche/kenh/K-A"' in r.text
 
 
-def test_modal_co_form_kenh_tu_danh_ba(client):
-    body = client.get("/niche", headers=CLAIMS).text
-    assert 'id="nrk-kenh"' in body and "KENH A" in body       # select kênh từ danh bạ
-    assert 'id="nrk-file"' in body and "Diagnose" in body     # form nạp trong modal
+def test_modal_theo_module_khong_dinh_nhau(client):
+    """User bắt 19/08: modal New Research dính cả nhánh Channel (và ngược lại) —
+    mỗi module chỉ render ĐÚNG nhánh form của mình, hết tab chuyển trong modal."""
+    ben_niche = client.get("/niche", headers=CLAIMS).text
+    assert 'id="nr-niche"' in ben_niche and 'id="nr-kenh"' not in ben_niche
+    assert ">New Research<" in ben_niche
+    ben_kenh = client.get("/niche/kenh", headers=CLAIMS).text
+    assert 'id="nr-kenh"' in ben_kenh and 'id="nr-niche"' not in ben_kenh
+    assert ">New channel report<" in ben_kenh
+    # form kênh vẫn đủ: select từ danh bạ + file + Diagnose
+    assert 'id="nrk-kenh"' in ben_kenh and "KENH A" in ben_kenh
+    assert 'id="nrk-file"' in ben_kenh and "Diagnose" in ben_kenh
 
 
 def test_dieu_huong_tren_dau_khong_con_rail(client):

@@ -118,7 +118,7 @@
     {% endif %}
     <span class="nd-top-act">
       {% if che_do == 'kenh' %}
-      <button class="nd-btn chinh" onclick="moModal('kenh')">
+      <button class="nd-btn chinh" onclick="moModal()">
         <svg class="ic" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> New report</button>
       {% else %}
       {# snapshot đang xem dời LÊN ĐÂY (user chốt 18/08 — không để trong khối) #}
@@ -141,14 +141,15 @@
   <!-- modal New report — 2 nhánh (mockup v7 đã duyệt) -->
   <div id="nr-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:60;align-items:center;justify-content:center">
     <div style="background:var(--th-121826);border:1px solid var(--line);border-radius:14px;width:min(480px,92vw);padding:18px 20px">
+      {# modal theo MODULE (user bắt 19/08 "dính cả channel"): mỗi trang chỉ có
+         ĐÚNG một nhánh form — hết tab Niche/Channel trong modal #}
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
-        <b id="nr-title">New Research</b>
-        <span style="margin-left:auto;display:flex;gap:6px">
-          <button type="button" class="nd-btn" id="nr-tab-niche" onclick="nrTab('niche')">Niche</button>
-          <button type="button" class="nd-btn" id="nr-tab-kenh" onclick="nrTab('kenh')">Channel</button>
+        <b id="nr-title">{{ 'New channel report' if che_do == 'kenh' else 'New Research' }}</b>
+        <span style="margin-left:auto">
           <button type="button" class="nd-btn" onclick="dongModal()" aria-label="Close">✕</button>
         </span>
       </div>
+      {% if che_do != 'kenh' %}
       <div id="nr-niche">
         <div style="display:flex;gap:8px;margin-bottom:10px">
           <select id="nr-ngach" onchange="napPool()" style="flex:1;background:var(--th-182233);color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:7px 9px;font:inherit">
@@ -209,7 +210,8 @@
           <span id="nr-status" style="font-size:.8rem;color:var(--muted)"></span>
         </div>
       </div>
-      <div id="nr-kenh" style="display:none">
+      {% else %}
+      <div id="nr-kenh">
         {% if ds_kenh %}
         <div style="display:flex;gap:8px;margin-bottom:10px">
           <select id="nrk-kenh" style="flex:1.2;background:var(--th-182233);color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:7px 9px;font:inherit"
@@ -241,6 +243,7 @@
         <p style="font-size:.85rem;color:var(--muted)">Niche này chưa có kênh trong danh bạ — tạo kênh ở <a href="/general/niches" style="color:var(--accent)">tab General</a> trước.</p>
         {% endif %}
       </div>
+      {% endif %}
     </div>
   </div>
 
@@ -845,20 +848,16 @@ function secTab(btn, t){
 }
 
 // ===== modal New report =====
-function moModal(t){ var m = document.getElementById('nr-modal'); m.style.display = 'flex'; nrTab(t || 'niche'); }
-function moNicheModal(ttMa){ moModal('niche');
-  var s = document.getElementById('nr-tt'); if (s && ttMa) s.value = ttMa; }
-function moKenhModal(ten){ moModal(); nrTab('kenh');
+// modal theo MODULE: mỗi trang chỉ render đúng MỘT nhánh form (19/08) —
+// mở là dùng, không còn tab chuyển; nhánh niche thì nạp pool ngay.
+function moModal(){ document.getElementById('nr-modal').style.display = 'flex';
+  if (document.getElementById('nr-niche')) napPool(); }
+function moNicheModal(ttMa){ moModal();
+  var s = document.getElementById('nr-tt'); if (s && ttMa) s.value = ttMa; napPool(); }
+function moKenhModal(ten){ moModal();
   var s = document.getElementById('nrk-kenh'); if (s && ten) s.value = ten; }
 function dongModal(){ document.getElementById('nr-modal').style.display = 'none'; }
 document.addEventListener('keydown', function(e){ if (e.key === 'Escape') dongModal(); });
-function nrTab(t){
-  document.getElementById('nr-niche').style.display = (t === 'niche') ? '' : 'none';
-  document.getElementById('nr-kenh').style.display = (t === 'kenh') ? '' : 'none';
-  var tieu = document.getElementById('nr-title');
-  if (tieu) tieu.textContent = (t === 'kenh') ? 'New channel report' : 'New Research';
-  if (t === 'niche') napPool();
-}
 // Phương án 2 (19/08): nạp danh sách POOL SẴN CÓ (RadarY) theo ngách × thị trường
 function napPool(){
   var s = document.getElementById('nr-pool-ws');

@@ -495,3 +495,12 @@ User chốt 2 việc: (1) tạo research CHỈ chạy từ POOL SẴN CÓ theo n
   cả 3 việc (curl gateway thật xác nhận khoa=[]) — bấm Run lúc này là 503; Owner
   cần cấp khóa YouTube (Quét kênh) + LLM (Agent phân tích) ở General › API Keys.
 Suite 113 pass (test_radary_bridge mới 5 + kiem-api 2).
+
+## 19/08 (tiếp) — modal theo MODULE (user bắt "New Research dính cả Channel")
+
+Sau khi tách 2 khối, modal vẫn là bản chung 2 tab Niche/Channel → đứng Niche Research
+thấy form Channel và ngược lại. Sửa: MỖI MODULE CHỈ RENDER ĐÚNG NHÁNH FORM CỦA MÌNH
+theo che_do (Niche → nr-niche + tiêu đề New Research; Channel → nr-kenh + New channel
+report), bỏ hẳn tab chuyển trong modal + hàm nrTab; moModal mở là dùng, nhánh niche
+tự nạp pool. Test đổi theo: exclusivity 2 trang (nr-niche ↔ nr-kenh không lẫn) +
+trang Niche hết chứa tên kênh. Suite 113 pass; kiểm sống cả 2 trang.
