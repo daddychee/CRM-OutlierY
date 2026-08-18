@@ -31,3 +31,6 @@ tools/caddy/caddy.exe
 
 # Du lieu mau la bao cao THAT cua cong ty - o dia cho test, khong vao git
 apps/*/tests/du-lieu-mau/
+
+# Repo tham khao (clone ngoai, khong commit)
+_references/

@@ -1,0 +1,151 @@
+# Sổ: Báo cáo GỘP 8 phase — nâng cấp tool Niche Research
+
+> Mạch việc bắt đầu 18/08/2026. Nguồn sự thật là code; sổ này ghi QUYẾT ĐỊNH + trạng thái.
+> Bản mẫu sống: `apps/niche-research/projects/LifeIn_US/Report/BAO-CAO-8-PHASE.html`.
+
+## Mục tiêu
+
+Tool hiện trả **báo cáo thuần số** (xlsx 15 sheet + SUMMARY) — team đọc không rõ mục tiêu để
+hành động. User gửi **"Phương pháp luận Niche Research & Content Go-To-Market v1.0"** (8 phase,
+Decision Gate, phân vai Business/Production — file `Methodology Niche Research.txt`, sẽ nạp kho
+tri thức). Yêu cầu: **GỘP** số liệu pipeline và khung marketing thành MỘT báo cáo, rồi code vào
+tool để mọi lần chạy tự ra bản gộp.
+
+## Quyết định đã chốt (user chọn 18/08, cả 3 theo khuyến nghị)
+
+1. **8 phase làm xương sống** — mỗi phase 3 tầng theo thứ tự:
+   - `[SỐ LIỆU]` — bảng phân tích đầy đủ của pipeline nhúng thẳng (KHÔNG trỏ ra Excel);
+   - `[DIỄN GIẢI]` — ngôn ngữ marketing, ra đúng **output bắt buộc** của phase (Canvas /
+     Competitor 5 lớp / Gap Map 4 loại / Scorecard 4 tiêu chí / Statement + Thesis +
+     Anti-positioning + kiểm 3 câu / Format Hypothesis + skeleton / Packaging Guidelines 5 phần
+     + checklist / Launch Roadmap pillar + 8–12 video / KPI + Tracking + Learning Log);
+   - `[GATE]` — ĐẠT / CHƯA ĐẠT / ⏸ CHỜ NGƯỜI QUYẾT + điều kiện. Gate cần người (ký P0, chọn
+     positioning, duyệt 3 mẫu thumbnail) là checklist chờ người — **máy không tự phán ĐẠT**.
+2. **HTML một trang là định dạng chính**; Excel hạ vai phụ lục dữ liệu thô.
+3. **Nhúng toàn bộ số liệu, thu gọn bằng `<details>`** (mặc định 5–8 dòng, bấm xổ đủ).
+
+Mapping sheet cũ → phase: Niche Analytics/Summary → trang phán quyết · Questions → P1 ·
+Channels + Go-NoGo + Beachhead + Videos → P2 · Title Templates/Patterns/Vocabulary/Topic Lift
+→ P4+P5 · Recommended(bets)/Execution Plan → P6 · Early Signals → P7 · Disagreements → mục
+trung thực. **Không sheet nào mất nhà.**
+
+## Nguyên tắc giữ nguyên khi code
+
+- **Nguyên tắc vàng PY/LLM** (NICHE-TOOL-ARCHITECTURE.md §0): PY render mọi bảng [SỐ] tất định
+  từ JSON; LLM chỉ viết tầng [NGHĨA] qua agent spec + JSON schema, KHÔNG tính lại số.
+- Nhãn **GIẢ ĐỊNH** cho nội dung chưa có input người (P0 nháp, năng lực team, North Star).
+- Van trung thực: residuals R-1/R-A/R-3, RPM heuristic, cảnh báo pool bẩn — in thẳng vào báo cáo.
+- Mỗi kết luận marketing phải **neo ≥1 con số + file nguồn** (bài học memory
+  `bao-cao-phai-du-sau-methodology`: sơ sài = gắn nhãn phase không ra output bắt buộc).
+
+## Trạng thái
+
+- ✅ Pool 2 file RadarY gộp 153→112 kênh, tách US 77 / ES 22 / VN 4 (VN dưới chuẩn 8–12;
+  9 kênh chờ xác nhận trong `projects/_pool-gop/CAN-XAC-NHAN.md`; nghi kênh nhà: Outland,
+  satra globe es nanaa).
+- ✅ Chạy end-to-end US thật: CONDITIONAL 58 · crackability OPEN · beachhead hidden 114/laos 111
+  · bet STRONG "no one talks about" (lift 6,3). Key lấy từ bản cũ theo lệnh user.
+- ✅ Bản mẫu báo cáo gộp soạn TAY: `LifeIn_US/Report/BAO-CAO-8-PHASE.html` (95KB, artifact
+  e636d2ba) — đây là SPEC SỐNG cho tầng render mới.
+- ⚠ Đã biết: pool US nhiễm kênh Urdu (Globe Cover + video Urdu/Hindi cụm yemen/iraq) — cần lọc
+  ngôn ngữ sau scan; 2 key YouTube thật trong .env.example+README repo cũ đã push GitHub —
+  chờ user rotate; S9 in `Σ` chết cp1252 → chạy orchestrator kèm `PYTHONUTF8=1` (nên vá gốc:
+  orchestrator tự set PYTHONIOENCODING cho subprocess).
+- ⏳ UI: user chê UI hiện tại "vô nghĩa" (console pipeline + kệ file) → **đề xuất UI trước,
+  duyệt rồi mới code** (mockup 18/08). Hướng: UI = quy trình ra quyết định — portfolio ngách,
+  hồ sơ ngách render báo cáo gộp + gate tương tác có ký tên, pipeline lùi về hậu trường.
+
+## GỘP MODULE DATA ANALYTICS (chốt chiều 18/08)
+
+User chốt tầm nhìn: báo cáo ngách là one-off → gộp Niche Research + Data Analytics (phân tích
+kênh) thành MỘT module Data Analytics, **UI tổ chức theo Niche**: vào Niche → báo cáo nhanh
+từng thị trường + nút đọc full/tải về + Ô THỜI GIAN lật báo cáo cũ; trong thị trường → tab
+Phân tích kênh (kênh nhà); AI Agent được truy cập báo cáo để hỏi đáp. Mockup v2: artifact
+50400e2f. Ba quyết định (AskUserQuestion):
+
+1. **Vỏ UI chung, giữ 2 engine** ✓ — không viết lại pipeline niche lẫn engine 4 trục.
+   **Host = `apps/data-analytics`** (giữ tên module, có claims-gateway + 64 test); UI cây
+   Niche→Thị trường sống ở đây, gọi niche-research (:8780) qua API như engine con — đúng
+   khuôn V3 "cầu nối API, KHÔNG import chéo" (đã ghi trong CLAUDE.md data-analytics).
+2. **AI Agent truy cập: phương án NẠP KHO BỊ BÁC** (user: "report rất nhiều bảng biểu" —
+   bảng cắt chunk vào vector là mất cấu trúc). **Phương án 2 "truy vấn có cấu trúc" —
+   USER ĐÃ DUYỆT 18/08** ("Đồng ý với phương án này"). UI: user yêu cầu đề xuất UI hoàn
+   chỉnh TRƯỚC khi gộp → mockup v3 (artifact 50400e2f, nhãn v3-ban-duyet-truoc-gop):
+   bản đồ màn hình M1–M6 + ngăn "Chưa phân loại" (di trú báo cáo kênh cũ, không mất
+   lịch sử) + bảng quyền (ký gate Business = Manager+ chủ quản; Production = Leader+;
+   quản trị module = Owner). CHỜ USER DUYỆT MOCKUP V3 rồi mới code gộp. Thiết kế: trang Hỏi–đáp thêm nguồn "📊 Báo cáo phân tích"; khi câu
+   hỏi thuộc phạm vi báo cáo, bước TÌM đổi retriever — (a) `GET /api/agent/registry`
+   (danh mục niche/thị trường/kênh + ngày báo cáo), (b) bước "chọn mục cần đọc" (LLM nhỏ
+   map câu hỏi → mục trong mục lục báo cáo, cùng họ bước viết-lại-câu-hỏi sẵn có),
+   (c) `GET /api/agent/bao-cao/{niche}/{market}?muc=...&ngay=latest` trả đúng LÁT JSON
+   (bảng ở dạng cấu trúc, số nguyên văn, kèm ngày). Writer nhận JSON làm bằng chứng, trích
+   nguồn `[NICHE-LIFEIN-US 18/08 · decision2]`; vòng phản biện giữ nguyên + tiêu chí mới
+   "số phải khớp JSON"; ngoài mục lục → "báo cáo chưa có mục này" (van chống bịa). RBAC:
+   API kiểm claims như mọi cầu nối V3. KHÔNG cần dạy tầng LLM function-calling.
+3. **Gate ký làm từ Đợt 1** ✓ — trạng thái sống cấp niche×thị trường (`gates.json`),
+   không mất khi chạy lại pipeline.
+
+**CHỐT IA CUỐI (mockup v5, nhãn v5-menu-2-cap):** user chê v4 vẫn rối → menu đúng 2 cấp
+kiểu tab General: **dropdown chọn Niche → danh sách [Overall | Kênh 1..N]**. "Thị trường"
+KHÔNG còn là cấp điều hướng — chỉ là lá cờ thuộc tính trên dòng. Overall = mỗi market một
+DÒNG (phán quyết · Đọc báo cáo/⬇/↻; đang chạy → dòng thành progress bar + log xổ tại chỗ);
+Kênh = màn Data Analytics hiện có (4 trục + Analyze + ô ngày lịch sử) thêm dải so-với-ngách;
+⚙ = pool/key/gán kênh↔market. Mockup v4 (nhiều màn, tab) NGHỈ — v5 là bản chốt IA.
+
+**UI ĐÃ DUYỆT 18/08 — quy ước cuối (lời user):** minimalist icon (line-SVG, hạn chế emoji) ·
+BUTTON/MENU tiếng ANH (Overall · New report · Download · Settings…) · NỘI DUNG báo cáo +
+dashboard tiếng VIỆT. 2 tính năng bắt buộc: (1) xem lại báo cáo cũ (ô 🗓) + DOWNLOAD full
+báo cáo; (2) báo cáo mới sinh ra TỰ CẬP NHẬT dashboard (poll trạng thái tác vụ nền → refresh
+tile/row, đúng khuôn task-poll của Data Analytics). → BẮT ĐẦU CODE GỘP.
+
+**BẢN CHỐT UI (artifact 02a5a49f "Bản chốt UI Data Analytics"):** sidebar bản-dropdown-đã-duyệt
+(Life In ▾ · Overall · kênh 1..N có chấm đỏ khi trễ report tuần · ＋ Tạo report · ⚙) bên TRÁI
++ dashboard Shopify bên PHẢI (Overall = tiles niche + beachhead + radar + Best&Worst cụm;
+Kênh = tiles kỳ + line views + phán quyết + Best&Worst video). BÀI HỌC QUY TRÌNH: user bắt
+lỗi tôi GHI ĐÈ mockup đã duyệt (v5 mất khi lên v6/v7) — từ giờ MỖI VÒNG DUYỆT MỘT FILE/LINK
+RIÊNG; v5 đã khôi phục ở artifact f3dedd1e, v7 dashboard+modal ở 50400e2f. ĐÂY LÀ SPEC UI
+ĐỂ CODE.
+
+**TẠO REPORT MỚI (mockup v7, nhãn v7-them-tao-report):** user duyệt v6, chỉ thiếu cửa tạo
+report → nút **＋ Report mới** cố định trên band, modal 2 nhánh: 📊 Niche (chọn/tạo niche +
+chip thị trường + dán pool đối thủ + key dùng-lại) · 📺 Kênh (chọn/tạo kênh gắn cờ thị trường
++ kéo-thả file Studio + tên tự gợi ý "Kênh — tuần N"). Submit → về dashboard, dòng tương ứng
+thành tiến độ inline. Niche/kênh mới tạo NGAY trong modal, không có màn quản trị riêng.
+
+**QUICK VIEW KIỂU SHOPIFY (mockup v6, nhãn v6-dashboard-shopify) — user duyệt IA v5 rồi
+gửi ảnh Shopify Sales Report làm mẫu quick view.** Dashboard = hàng TILE số → biểu đồ chính
+→ khối Best&Worst xanh/đỏ. OVERALL tiles: Điểm hấp dẫn /100 + verdict · View trung vị ·
+Mốc trúng p90 · Cung/tháng · Cửa vào (%kênh mới, OPEN/CLOSED) · RPM band (nhãn heuristic);
+chart: bản đồ beachhead + radar 5 trụ; Best&Worst = top/bottom CỤM theo điểm beachhead;
+lọc thị trường bằng chip All/🇺🇸/🇪🇸/🇻🇳 (thay cấp menu). KÊNH tiles: Views kỳ · Giờ xem ·
+Retention trung vị · Video "sống" vs ngách (benchmark từ báo cáo niche) · 4 trục · Doanh thu
+(— khi chưa monetize, van chống bịa lên tile); chart: line views theo ngày + mốc sống ngách;
+bar phán quyết; Best&Worst = top/bottom VIDEO theo OX so baseline kênh + chip phán quyết.
+Cách làm: PY tính hết, template đổ tile + SVG tĩnh (không lib JS ngoài), 2 theme.
+
+**Góp ý UI 18/08 (mockup v4, nhãn v4-toi-gian-bieu-do):** user chê v3 "rối, nhiều chữ" +
+2 điểm: (1) bỏ tab log — CHẠY INLINE trong thẻ thị trường (bấm ▶ → thẻ thành progress bar
++ log xổ tại chỗ; pool/key sau nút ⚙); (2) Hỏi đáp KHÔNG phải màn của module — là tích hợp
+bên app AI Agent (Đợt 3). Nhắc nguyên tắc MINIMALIST ICON. **Tích hợp diagram-design theo
+lệnh user:** clone `daddychee/diagram-design` → `_references/diagram-design` (đã gitignore),
+cài skill vào `.claude/skills/diagram-design` CẢ 2 repo (token đổi sang brand OUTLIERY:
+paper #F7F8FA / ink #16181C / accent #2C6FC4 trong references/style-guide.md). Ngữ pháp áp
+dụng: mật độ 4/10, accent chỉ 1–2 điểm nhìn trước. Báo cáo gộp sẽ thêm biểu đồ: radar 5 trụ
+(phán quyết) · scatter beachhead cạnh-tranh×điểm cỡ=reach (P2) · quadrant subs×nhịp (P2) ·
+bar median-vs-p90 (P1) · gantt roadmap (P6) · line snapshot theo quý (P7, khi ≥2 kỳ).
+
+Đã code (mở màn Đợt 1): vá UTF-8 hai tầng trong `orchestrator.py` (reconfigure stdout
+tiến trình cha + PYTHONUTF8/encoding utf-8 cho stage con) — hết họ lỗi Σ/✓ chết cp1252;
+verify `status` chạy sạch.
+
+## Việc còn (sau khi UI được duyệt)
+
+1. `19_build_bao_cao.py` [PY]: render HTML gộp từ mọi JSON (khuôn = bản mẫu LifeIn_US;
+   tầng [SỐ] + khung, chừa slot [NGHĨA]).
+2. `agents/bao_cao_writer.md` [LLM]: viết tầng [NGHĨA] từng phase → JSON theo schema
+   (`contracts/bao_cao.schema.json`), neo số bắt buộc, không đụng bảng.
+3. Trạng thái gate per-project (`niche-data/gates.json`): ai ký, lúc nào, phương án chọn —
+   ghi nguyên tử; UI đọc/ghi qua API.
+4. UI mới trên server.py :8780 theo mockup đã duyệt.
+5. Nạp methodology vào kho tri thức (kiểm encoding file gốc — bản đính kèm chat bị mojibake).
+6. Dọn pool: loại kênh Urdu, xác nhận 9 kênh treo, bổ sung kênh VN, chạy ES.
