@@ -370,3 +370,27 @@ vào trang chẩn đoán). GET /chan-doan = landing (đích alias gateway — b�
 New report mở đúng nhánh modal theo chế độ (moModal(t)). Suite 104 pass; kiểm sống 3
 trang thật. Ghi chú: trang chọn module là NƠI DUY NHẤT thêm module thứ 3 sau này
 (thẻ card mới), không đụng 2 dashboard.
+
+## 18/08 (tiếp 7) — thanh trên tinh gọn theo 3 ảnh + sidebar 2 nấc + đồng nhất URL
+
+Theo 3 ảnh user đánh dấu: (Ảnh 1) thanh trên CHỈ còn: tên module "Niche Research" +
+dropdown niche + DROPDOWN THỊ TRƯỜNG + dropdown ngày báo cáo — bỏ crumb Data
+Analytics, bỏ New report, bỏ General. (Ảnh 2) xóa nguyên dòng band (h1 + pill) —
+KHÔNG còn "All": luôn đúng MỘT thị trường (mặc định = market đầu đã gán dự án),
+đổi qua dropdown. (Ảnh 3) download gộp còn 1 HTML + 1 Excel (hết Excel đúp); nút
+Run NGHỈ HƯU — pool làm mới mỗi lần báo cáo nên nút đúng là "+ New report" mở modal
+nhánh Niche CHỌN SẴN thị trường (moNicheModal); market chưa gán cũng vậy.
+SIDEBAR 2 NẤC (yêu cầu hệ thống): Data Analytics bấm là xổ 2 dòng con Niche
+Research / Channel Research; Content Ultimate xổ 3 dòng Outline Board / Author
+Extract / Writing — <details> thuần không JS, áp 5 khuôn (4 base.html + khung
+gateway); khung /open nhận ?duong=<đường con> để iframe mở thẳng module (sửa
+TEMPLATE nen_khung_app, không đụng main.py gateway đang dở phiên song song).
+ĐỒNG NHẤT URL (user bắt 18/08 "cùng nút mà URL khác"): một nút = MỘT URL ở mọi
+sidebar vì cùng một luật ở 2 nguồn (sidebar.py sb_apps_tu_claims + ds_tools gateway):
+app native → /app/<slug>, app khung → /open/<slug>, DA → /data-analytics; 3 HỌ URL
+này là thiết kế (native/iframe/alias) — gom về một họ URL đẹp cần bảng _ALIAS
+gateway (PA3, chờ gateway sạch). Lệch thấy trên máy là TIẾN TRÌNH CŨ: đã restart
+ai-agent + video-review (ăn KHONG_LAP_TOOLS niche-research + sidebar mới); to-chuc
+chờ phiên song song tự restart. BẪY UNICODE mới: chuỗi tiếng Việt trong test vs
+code lệch tổ hợp dấu NFC/NFD → assert in thất bại dù mắt thấy giống — so sánh phải
+normalize NFC 2 vế (test_dropdown ghim). Suite 104 pass.

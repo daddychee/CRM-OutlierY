@@ -183,8 +183,10 @@ def trang_niche(request: Request, user: dict = Depends(_lay_user),
         # (New report nhánh Niche tự tạo pool + tự gán map), không được giấu.
         thu_tu = sorted(ten_tt, key=lambda m: (m not in mapping, ten_tt[m]))
         pills = [{"ma": m, "ten": ten_tt[m]} for m in thu_tu]
-        chon = [tt] if tt in ten_tt else thu_tu   # pill chọn 1; rỗng/lạ = All
-        for tt_ma in chon:
+        # User chốt 18/08 (ảnh 2): KHÔNG có "All" — luôn đúng MỘT thị trường đang
+        # chọn (mặc định = thị trường đầu đã gán dự án), đổi qua dropdown thanh trên.
+        tt = tt if tt in ten_tt else (thu_tu[0] if thu_tu else "")
+        for tt_ma in ([tt] if tt else []):
             project = mapping.get(tt_ma)
             nghia = {}
             if project:

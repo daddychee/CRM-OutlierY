@@ -42,6 +42,12 @@
     background:none;border:0;font-family:inherit;text-align:left;width:100%}
   .nav-item:hover{background:var(--th-182233)}
   .nav-item.active{background:var(--th-223050);font-weight:600;color:var(--ink)}
+  /* nhóm xổ 2 nấc trong sidebar (user chốt 18/08): DA + Content Ultimate */
+  details.nav-nhom summary{list-style:none}
+  details.nav-nhom summary::-webkit-details-marker{display:none}
+  details.nav-nhom .mui-nhom{margin-left:auto;width:14px;height:14px;transition:transform .15s}
+  details.nav-nhom[open] .mui-nhom{transform:rotate(90deg)}
+  .nav-con{padding:7px 12px 7px 40px;font-size:13px}
   .nav-item.new{border:1px solid var(--chip-line);background:var(--th-182233);font-weight:600;margin-bottom:6px;color:var(--accent)}
   .nav-item.soon{opacity:.45;cursor:default;pointer-events:none}
   .nav-item .soon-tag{margin-left:auto;font-size:10.5px;background:var(--th-1d2840);color:var(--th-7b8698);
@@ -155,12 +161,28 @@
          mọi app trước, rồi DA, rồi niche. #}
       <div class="sb-label">Tools</div>
       {% for a in sb_apps if a.slug != 'niche' %}
+      {% if a.slug == 'content-ultimate' %}
+      {# nhóm xổ 2 nấc (user chốt 18/08): bấm app là xổ dòng con — <details> thuần, không JS #}
+      <details class="nav-nhom">
+        <summary class="nav-item">{% include "_icon_app.html" %} {{ a.ten }}
+          <svg class="ic mui-nhom" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></summary>
+        <a class="nav-item nav-con" href="/open/content-ultimate?duong=outline">Outline Board</a>
+        <a class="nav-item nav-con" href="/open/content-ultimate?duong=author">Author Extract</a>
+        <a class="nav-item nav-con" href="/open/content-ultimate?duong=write">Writing</a>
+      </details>
+      {% else %}
       <a class="nav-item{% if request.url.path == '/app/' + a.slug %} active{% endif %}" href="{{ a.href }}">
         {% include "_icon_app.html" %} {{ a.ten }}</a>
+      {% endif %}
       {% endfor %}
       {% if sb_da %}
-      <a class="nav-item{% if request.url.path.startswith('/niche') or request.url.path == '/chan-doan' or request.url.path.startswith('/bao-cao-lich-su') %} active{% endif %}" href="/data-analytics">
-        <svg class="ic" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15l3-4 3 3 4-6"/></svg> Data Analytics</a>
+      <details class="nav-nhom"{% if request.url.path.startswith('/niche') or request.url.path == '/chan-doan' or request.url.path.startswith('/bao-cao-lich-su') %} open{% endif %}>
+        <summary class="nav-item{% if request.url.path == '/chan-doan' %} active{% endif %}">
+          <svg class="ic" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15l3-4 3 3 4-6"/></svg> Data Analytics
+          <svg class="ic mui-nhom" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></summary>
+        <a class="nav-item nav-con{% if request.url.path.startswith('/niche') and not request.url.path.startswith('/niche/kenh') %} active{% endif %}" href="/app/data-analytics/niche">Niche Research</a>
+        <a class="nav-item nav-con{% if request.url.path.startswith('/niche/kenh') or request.url.path.startswith('/bao-cao-lich-su') %} active{% endif %}" href="/app/data-analytics/niche/kenh">Channel Research</a>
+      </details>
       {% endif %}
       {% for a in sb_apps if a.slug == 'niche' %}
       <a class="nav-item{% if request.url.path == '/app/' + a.slug %} active{% endif %}" href="{{ a.href }}">

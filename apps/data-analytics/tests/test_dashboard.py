@@ -43,13 +43,13 @@ def test_overall_hien_tile_va_kenh(client):
     assert "hidden" in body and "iraq" in body               # Best & Worst cụm
 
 
-def test_overall_banner_pills_strip(client):
+def test_overall_banner_va_strip(client):
     """Nội dung báo cáo gộp kéo ra overview (user chốt 18/08): banner phán quyết +
-    pill thị trường + dải tổng quan số pipeline."""
+    dải tổng quan số pipeline; MỘT thị trường mặc định (không All — ảnh 2)."""
     body = client.get("/niche", headers=CLAIMS).text
     assert "PHÁN QUYẾT" in body and "Vào có điều kiện" in body
     assert "Tổng quan số của pipeline" in body and "3.815" in body and "12.869" in body
-    assert 'class="nd-pill on"' in body            # pill All active mặc định
+    assert ">All<" not in body                     # hết nút All
     assert "chênh 42× trung vị" in body            # số dẫn xuất PY tính
     b2 = client.get("/niche", headers=CLAIMS,
                     params={"ngach": "N-TEST", "tt": "TT-US"})
@@ -91,15 +91,23 @@ def test_audience_fallback_khi_thieu_bao_cao_html(client, tmp_path):
     assert "đọc trong báo cáo ↗" not in body
 
 
-def test_pill_du_moi_thi_truong_danh_ba(client, monkeypatch):
-    """User bắt lỗi 18/08: General có 3 thị trường, dashboard chỉ hiện 2 — market
-    chưa gán dự án phải hiện pill + khối hướng dẫn, KHÔNG được giấu."""
+def test_dropdown_du_moi_thi_truong_danh_ba(client, monkeypatch):
+    """General có 3 thị trường thì dropdown phải đủ 3; mặc định = thị trường ĐÃ GÁN
+    đầu tiên; chọn market chưa gán → khối hướng dẫn New report, không giấu."""
     monkeypatch.setattr(dashboard, "_ten_thi_truong",
                         lambda: {"TT-US": "US", "TT-KOREA": "Korea"})
     body = client.get("/niche", headers=CLAIMS).text
-    assert ">Korea<" in body                              # pill + khối thị trường
-    assert "Chưa gán dự án nghiên cứu" in body            # hướng dẫn thay vì giấu
-    assert "chayNiche('None'" not in body                 # không nút Run mồ côi
+    assert ">Korea<" in body                              # option trong dropdown
+    assert "PHÁN QUYẾT" in body                           # mặc định = US (đã gán)
+    import unicodedata as _u0
+    assert _u0.normalize("NFC", "Chưa gán dự án nghiên cứu") not in _u0.normalize("NFC", body)
+    # nút tạo report chỉ L3+ → vế nút kiểm bằng claims L5
+    b2 = client.get("/niche", headers={"X-Remote-User": "t5", "X-Remote-Level": "5"},
+                    params={"tt": "TT-KOREA"}).text
+    # so sánh qua NFC — chuỗi tiếng Việt trong code/test có thể lệch tổ hợp dấu
+    import unicodedata as _u
+    assert _u.normalize("NFC", "Chưa gán dự án nghiên cứu") in _u.normalize("NFC", b2)
+    assert "moNicheModal('TT-KOREA')" in b2
 
 
 def test_xem_lai_ngay_cu(client):
@@ -199,12 +207,13 @@ def test_modal_co_form_kenh_tu_danh_ba(client):
 
 
 def test_dieu_huong_tren_dau_khong_con_rail(client):
-    # User chốt 18/08: điều hướng TRÊN ĐẦU + crumb về trang chọn module; trang
-    # Niche Research KHÔNG còn tab kênh (kênh sống bên Channel Research).
+    # User chốt 18/08 (ảnh 1): thanh trên chỉ TÊN MODULE + dropdown niche + dropdown
+    # thị trường + ngày — hết crumb/New report/General; kênh sống bên Channel Research.
     body = client.get("/niche", headers=CLAIMS).text
     assert 'class="nd-top"' in body and "nd-rail" not in body
-    assert 'href="/chan-doan"' in body                         # crumb Data Analytics
-    assert ">Niche Research</a>" in body
+    assert '<b class="nd-mod">Niche Research</b>' in body
+    assert "nd-crumb" not in body                              # hết crumb
+    assert 'aria-label="Market"' in body                       # dropdown thị trường
     assert 'href="/niche/kenh/K-A"' not in body                # hết tab kênh ở đây
 
 

@@ -16,20 +16,13 @@
   .nd-tab.on{background:var(--th-182233);color:var(--accent);font-weight:600}
   .nd-tab:hover{color:var(--ink)}
   .nd-top-act{margin-left:auto;display:flex;gap:8px;align-items:center}
-  .nd-crumb{color:var(--muted);text-decoration:none;font-size:.8rem;white-space:nowrap}
-  .nd-crumb:hover{color:var(--ink)}
-  .nd-crumb.dam{color:var(--ink);font-weight:700;font-size:.86rem}
+  .nd-mod{font-size:.9rem;white-space:nowrap}
   /* pane nội dung — FULL bề ngang như RadarY/Content (user chê hẹp 18/08) */
   .nd-main{flex:1;overflow-y:auto;min-width:0;padding:16px 24px 26px}
   .nd-band{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
   .nd-band h1{font-size:1.02rem;margin:0}
   .nd-band select{background:var(--th-182233);color:var(--ink);border:1px solid var(--line);
     border-radius:999px;padding:3px 11px;font:inherit;font-size:.78rem;margin-left:auto}
-  /* pill thị trường All | US | … (mockup đã duyệt) */
-  .nd-pill{border:1px solid var(--line);border-radius:999px;padding:3px 13px;font-size:.76rem;
-    font-weight:600;color:var(--muted);text-decoration:none;white-space:nowrap}
-  .nd-pill.on{background:var(--accent);border-color:var(--accent);color:var(--th-090c12)}
-  .nd-pill:hover{color:var(--ink);border-color:var(--accent)}
   /* banner PHÁN QUYẾT — nội dung báo cáo gộp kéo ra overview (user chốt 18/08) */
   .nd-ban{padding:14px 16px 15px;border-bottom:1px solid var(--line)}
   .nd-ban .chip{display:inline-block;font-size:.63rem;font-weight:700;letter-spacing:.07em;
@@ -99,18 +92,23 @@
 
 {% block noi_dung %}
 <div class="nd-wrap">
-  {# thanh trên theo CHẾ ĐỘ (user chốt 18/08 — 2 khối kiểu Content Ultimate):
-     crumb về trang chọn module; tab kênh CHỈ ở Channel Research #}
+  {# thanh trên (user chốt 18/08 ảnh 1): TÊN MODULE + dropdown niche + dropdown thị
+     trường + ngày tạo báo cáo — hết crumb / New report / General ở chế độ niche #}
   <div class="nd-top">
-    <a class="nd-crumb" href="/chan-doan">Data Analytics</a>
-    <span style="color:var(--muted)">/</span>
-    <a class="nd-crumb dam" href="{{ '/niche/kenh' if che_do == 'kenh' else '/niche' }}">{{ 'Channel Research' if che_do == 'kenh' else 'Niche Research' }}</a>
+    <b class="nd-mod">{{ 'Channel Research' if che_do == 'kenh' else 'Niche Research' }}</b>
     <select onchange="location='{{ '/niche/kenh' if che_do == 'kenh' else '/niche' }}?ngach='+this.value" aria-label="Niche">
       {% for n in ds_ngach %}
       <option value="{{ n.ma }}" {% if ngach and n.ma == ngach.ma %}selected{% endif %}>{{ n.ten_chuan }}</option>
       {% endfor %}
       {% if not ds_ngach %}<option>— chưa có niche —</option>{% endif %}
     </select>
+    {% if che_do != 'kenh' and pills %}
+    <select onchange="location='/niche?ngach={{ ngach.ma }}&tt='+this.value" aria-label="Market">
+      {% for p in pills %}
+      <option value="{{ p.ma }}" {% if tt_chon == p.ma %}selected{% endif %}>{{ p.ten }}</option>
+      {% endfor %}
+    </select>
+    {% endif %}
     {% if che_do == 'kenh' %}
     <nav class="nd-tabs" aria-label="Kênh">
       {% for k in ds_kenh %}
@@ -119,12 +117,18 @@
     </nav>
     {% endif %}
     <span class="nd-top-act">
-      <button class="nd-btn chinh" onclick="moModal('{{ 'kenh' if che_do == 'kenh' else 'niche' }}')">
+      {% if che_do == 'kenh' %}
+      <button class="nd-btn chinh" onclick="moModal('kenh')">
         <svg class="ic" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> New report</button>
-      <a class="nd-btn" href="/general/niches"
-         title="Niche/Kênh SINH ở tab General (danh bạ nền) — module này chỉ đọc, không tạo mới.">
-        <svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.6-2-3.4-2.4 1a7 7 0 0 0-2-1.2L14 3h-4l-.5 2.6a7 7 0 0 0-2 1.2l-2.4-1-2 3.4 2 1.6A7 7 0 0 0 5 12a7 7 0 0 0 .1 1.2l-2 1.6 2 3.4 2.4-1a7 7 0 0 0 2 1.2L10 21h4l.5-2.6a7 7 0 0 0 2-1.2l2.4 1 2-3.4-2-1.6A7 7 0 0 0 19 12z"/></svg>
-        General</a>
+      {% elif ds_ngay %}
+      <select onchange="location='/niche?ngach={{ ngach.ma }}&tt={{ tt_chon }}&ngay='+this.value"
+              aria-label="Report date" style="border-radius:999px;font-size:.78rem;padding:3px 11px;background:var(--th-182233);color:var(--ink);border:1px solid var(--line);font-family:inherit">
+        <option value="latest">🗓 Mới nhất</option>
+        {% for d in ds_ngay | reverse %}
+        <option value="{{ d }}" {% if d == ngay_chon %}selected{% endif %}>{{ d }}</option>
+        {% endfor %}
+      </select>
+      {% endif %}
     </span>
   </div>
 
@@ -309,26 +313,6 @@
     {% elif not ngach %}
       <div class="nd-trong">Chưa có niche trong danh bạ — tạo ở cổng OUTLIERY (Niches) trước.</div>
     {% else %}
-    <div class="nd-band">
-      <h1>{{ ngach.ten_chuan }} — Niche Report</h1>
-      {% if pills %}
-      <span style="display:flex;gap:6px;flex-wrap:wrap;margin-left:8px">
-        <a class="nd-pill {% if not tt_chon %}on{% endif %}" href="/niche?ngach={{ ngach.ma }}">All</a>
-        {% for p in pills %}
-        <a class="nd-pill {% if tt_chon == p.ma %}on{% endif %}" href="/niche?ngach={{ ngach.ma }}&tt={{ p.ma }}">{{ p.ten }}</a>
-        {% endfor %}
-      </span>
-      {% endif %}
-      {% if ds_ngay %}
-      <select onchange="location='/niche?ngach={{ ngach.ma }}&tt={{ tt_chon }}&ngay='+this.value" aria-label="Report date">
-        <option value="latest">🗓 Mới nhất</option>
-        {% for d in ds_ngay | reverse %}
-        <option value="{{ d }}" {% if d == ngay_chon %}selected{% endif %}>{{ d }}</option>
-        {% endfor %}
-      </select>
-      {% endif %}
-    </div>
-
     {% if not thi_truong %}
       <div class="nd-trong">Niche này chưa gán dự án Niche Research nào —
         gán trong <code>data/data-analytics/niche_projects.json</code> (⚙ Settings ở đợt sau).</div>
@@ -344,35 +328,36 @@
             {% if tt.so.diem_hap_dan is not none %}· {{ tt.so.diem_hap_dan }}{% endif %}</span>
           <span class="s" style="color:var(--muted);font-size:.78rem">snapshot {{ tt.so.snapshot }}</span>
           <span class="nd-act">
-            {% set ns = namespace(html=None) %}
-            {% for f in tt.so.bao_cao_files %}{% if f.endswith('.html') and not ns.html %}{% set ns.html = f %}{% endif %}{% endfor %}
+            {# một nút mỗi loại file (user 18/08: Excel bị đúp); Run nghỉ — pool làm
+               mới mỗi lần báo cáo nên nút đúng là TẠO REPORT (mở modal đúng thị trường) #}
+            {% set ns = namespace(html=None, xlsx=None) %}
+            {% for f in tt.so.bao_cao_files %}
+              {% if f.endswith('.html') and not ns.html %}{% set ns.html = f %}{% endif %}
+              {% if f.endswith('.xlsx') and not ns.xlsx %}{% set ns.xlsx = f %}{% endif %}
+            {% endfor %}
             {% if ns.html %}
             <a class="nd-btn chinh" href="/niche/tai/{{ tt.project }}/{{ tt.so.snapshot }}/{{ ns.html }}?inline=1" target="_blank">
               <svg class="ic" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg> Read report</a>
+            <a class="nd-btn" href="/niche/tai/{{ tt.project }}/{{ tt.so.snapshot }}/{{ ns.html }}" title="{{ ns.html }}">
+              <svg class="ic" viewBox="0 0 24 24"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 21h16"/></svg> HTML</a>
             {% endif %}
-            {% for f in tt.so.bao_cao_files %}
-            <a class="nd-btn" href="/niche/tai/{{ tt.project }}/{{ tt.so.snapshot }}/{{ f }}" title="{{ f }}">
-              <svg class="ic" viewBox="0 0 24 24"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 21h16"/></svg>
-              {{ 'HTML' if f.endswith('.html') else ('Excel' if f.endswith('.xlsx') else f) }}</a>
-            {% endfor %}
+            {% if ns.xlsx %}
+            <a class="nd-btn" href="/niche/tai/{{ tt.project }}/{{ tt.so.snapshot }}/{{ ns.xlsx }}" title="{{ ns.xlsx }}">
+              <svg class="ic" viewBox="0 0 24 24"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 21h16"/></svg> Excel</a>
+            {% endif %}
             {% if user.level >= 3 %}
-            <button class="nd-btn" onclick="chayNiche('{{ tt.project }}', this)" title="Chạy lại phân tích — snapshot mới, dashboard tự cập nhật">
-              <svg class="ic" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7M21 3v6h-6"/></svg> Run</button>
+            <button class="nd-btn" onclick="moNicheModal('{{ tt.ma }}')" title="Tạo report mới — dán pool kênh mới cho thị trường này">
+              <svg class="ic" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> New report</button>
             {% endif %}
             <span class="s" id="run-{{ tt.project }}" style="color:var(--muted);font-size:.78rem"></span>
           </span>
         {% else %}
           <span class="s" style="color:var(--muted)">{{ tt.so.ly_do }}</span>
-          {% if user.level >= 3 and tt.project %}
+          {% if user.level >= 3 %}
           <span class="nd-act">
-            <button class="nd-btn chinh" onclick="chayNiche('{{ tt.project }}', this)">
-              <svg class="ic" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg> Run analysis</button>
-            <span class="s" id="run-{{ tt.project }}" style="color:var(--muted);font-size:.78rem"></span>
-          </span>
-          {% elif user.level >= 3 %}
-          <span class="nd-act">
-            <button class="nd-btn chinh" onclick="moModal()">
+            <button class="nd-btn chinh" onclick="moNicheModal('{{ tt.ma }}')">
               <svg class="ic" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> New report</button>
+            {% if tt.project %}<span class="s" id="run-{{ tt.project }}" style="color:var(--muted);font-size:.78rem"></span>{% endif %}
           </span>
           {% endif %}
         {% endif %}
@@ -694,16 +679,10 @@
 
 {% block script %}
 <script>
-// Chạy pipeline ngách + poll — báo cáo mới xong là trang tự nạp lại (tính năng 2).
+// Poll pipeline ngách — báo cáo mới xong là trang tự nạp lại (tính năng 2).
 // LAN HTTP: chỉ fetch/timer, không API secure-context (bài học 01/08).
-function chayNiche(project, nut){
-  nut.disabled = true;
-  fetch('/niche/chay/' + project, {method: 'POST'})
-    .then(function(r){ if(!r.ok) throw new Error(r.status); theoDoiNiche(project); })
-    .catch(function(){ nut.disabled = false;
-      var el = document.getElementById('run-' + project);
-      if (el) el.textContent = 'Không gọi được service — thử lại.'; });
-}
+// (Nút Run đứng riêng đã nghỉ 18/08 — pool làm mới mỗi lần báo cáo, tạo report
+// đi qua modal New report; poll này phục vụ nrChay của modal.)
 function theoDoiNiche(project){
   var t0 = Date.now(), el = document.getElementById('run-' + project);
   var iv = setInterval(function(){
@@ -787,6 +766,8 @@ function secTab(btn, t){
 
 // ===== modal New report =====
 function moModal(t){ var m = document.getElementById('nr-modal'); m.style.display = 'flex'; nrTab(t || 'niche'); }
+function moNicheModal(ttMa){ moModal('niche');
+  var s = document.getElementById('nr-tt'); if (s && ttMa) s.value = ttMa; }
 function moKenhModal(ten){ moModal(); nrTab('kenh');
   var s = document.getElementById('nrk-kenh'); if (s && ten) s.value = ten; }
 function dongModal(){ document.getElementById('nr-modal').style.display = 'none'; }
