@@ -277,3 +277,14 @@ quy trình 1-2-3 trên dữ liệu mới nhất — vì vậy làm thành TÍNH 
   SPACE US 56M v7d · STORM US 23,7M · LIFE IN Spain 3,0M / US 2,5M · TRAVEL US
   5,0M. Script: scratchpad dong_bo_v2_sang_v3.py (idempotent OR-IGNORE — cần
   đồng bộ lại trước cutover thì chạy lại với backup mới).
+
+- 19/08/2026 — **NẠP DANH SÁCH 81 KÊNH LIFE IN của user (từ ảnh) + phân bổ.**
+  Snapshot trước nạp: `radary-truoc-nap-81-kenh-lifein-20260819.db`. Check
+  trùng: 0 trùng nội bộ; 40/81 ĐÃ CÓ trong LIFE IN (đúng pool từ đợt chia);
+  39 nạp mới vào Chưa phân loại (resolve 2 units); 2 ID không resolve (chép
+  từ ảnh có thể sai ký tự — chờ user dán text). Quét discover 54 units → chấm
+  ngôn ngữ (script thêm nhận diện HÀN — LIFE IN có khai Korea) → chuyển
+  +18 US (338 video) · +8 Spain (147 video). KẾT QUẢ LIFE IN: US 63 · Spain
+  28 · Korea 0 · Chưa phân loại 20 (= 6 kênh TIẾNG VIỆT — ngách chưa khai
+  thị trường VN, chờ user quyết · Globe Cover Urdu (đúng bài học cũ) ·
+  còn lại ít/0 video hoặc title không chấm được: b13ed, TRIBE EXPRORER…).

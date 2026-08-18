@@ -53,9 +53,13 @@ def bo_dau(s):
                    if not unicodedata.combining(c))
 
 
+def la_han(t):
+    """Hangul \u2014 LIFE IN khai th\u1ecb tr\u01b0\u1eddng Korea n\u00ean ti\u1ebfng H\u00e0n l\u00e0 NH\u00c3N ri\u00eang (19/08)."""
+    return sum(1 for c in t if '\uac00' <= c <= '\ud7af' or '\u1100' <= c <= '\u11ff') >= 2
+
+
 def he_chu_khac(t):
-    return any(('\uac00' <= c <= '\ud7af') or ('\u1100' <= c <= '\u11ff')
-               or ('\u4e00' <= c <= '\u9fff') or ('\u3040' <= c <= '\u30ff')
+    return any(('\u4e00' <= c <= '\u9fff') or ('\u3040' <= c <= '\u30ff')
                or ('\u0600' <= c <= '\u06ff') or ('\u0400' <= c <= '\u04ff')
                or ('\u0900' <= c <= '\u097f') or ('\u0e00' <= c <= '\u0e7f')
                for c in t)
@@ -63,6 +67,8 @@ def he_chu_khac(t):
 
 def cham_title(t):
     tl = t.lower()
+    if la_han(tl):
+        return 'ko'
     if he_chu_khac(tl):
         return 'khac'
     if sum(1 for c in tl if c in VI_CHU) >= 2:
@@ -89,7 +95,7 @@ for c in kenh:
     ts = [r['title'] for r in conn.execute(
         'SELECT title FROM videos WHERE workspace_id=? AND channel_yt_id=?',
         (WS_GOC, c['yt_id']))]
-    d = {'en': 0, 'es': 0, 'vi': 0, 'pt': 0, 'khac': 0, 'none': 0}
+    d = {'en': 0, 'es': 0, 'vi': 0, 'pt': 0, 'ko': 0, 'khac': 0, 'none': 0}
     for t in ts:
         v = cham_title(t or '')
         d[v or 'none'] += 1
@@ -101,7 +107,7 @@ for c in kenh:
         try: country = (json.loads(info['payload']) or {}).get('country') or ''
         except Exception: pass
     cham = d['en'] + d['es']
-    cham = cham + d['pt']                 # PT gộp Spain (luật 19/08) — vẫn đếm riêng để báo cáo
+    cham = cham + d['pt'] + d['ko']       # PT gộp Spain (luật 19/08); Hàn = thị trường Korea
     es_hop = d['es'] + d['pt']
     if tong == 0 or cham < 5:
         kq = 'DE_LAI (it du lieu)'
@@ -109,6 +115,8 @@ for c in kenh:
         kq = 'DE_LAI (lan he chu khac)'
     elif d['vi'] / tong > 0.20:
         kq = 'DE_LAI (tieng Viet)'
+    elif d['ko'] / cham >= 0.80:
+        kq = 'KOREA'
     elif es_hop / cham >= 0.80:
         kq = 'SPAIN'
     elif d['en'] / cham >= 0.80:
@@ -117,12 +125,13 @@ for c in kenh:
         kq = 'DE_LAI (lan EN/ES)'
     ket_qua.append({'yt_id': c['yt_id'], 'ten': c['title'], 'video': tong,
                     'en': d['en'], 'es': d['es'], 'vi': d['vi'], 'pt': d['pt'],
-                    'khac': d['khac'], 'country': country, 'kq': kq})
+                    'ko': d['ko'], 'khac': d['khac'], 'country': country, 'kq': kq})
 conn.close()
 
 for r in ket_qua:
     print(f"{r['kq']:<26} {r['ten'][:38]:<40} vid={r['video']:<4} en={r['en']:<4} "
-          f"es={r['es']:<4} pt={r['pt']:<4} vi={r['vi']:<3} khac={r['khac']:<3} {r['country']}")
+          f"es={r['es']:<4} pt={r['pt']:<4} ko={r['ko']:<4} vi={r['vi']:<3} "
+          f"khac={r['khac']:<3} {r['country']}")
 tk = {}
 for r in ket_qua:
     k = r['kq'].split(' ')[0]
