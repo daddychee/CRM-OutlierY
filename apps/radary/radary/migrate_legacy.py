@@ -16,7 +16,7 @@ COMPETITORS = os.path.join(BASE, 'radar_state', 'competitors.txt')
 
 def jload(name, default):
     try:
-        with open(os.path.join(LEGACY, name)) as f: return json.load(f)
+        with open(os.path.join(LEGACY, name), encoding='utf-8') as f: return json.load(f)
     except Exception: return default
 
 def legacy_keys():

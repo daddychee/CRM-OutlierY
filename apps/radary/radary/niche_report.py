@@ -46,7 +46,7 @@ def _run(ws):
         for f in os.listdir(work):     # báo cáo định kỳ = chụp mới toàn bộ, không incremental
             os.remove(os.path.join(work, f))
         comp = os.path.join(work, 'competitors.txt')
-        open(comp, 'w').write('\n'.join(keys) + '\n' + '\n'.join(chans) + '\n')
+        open(comp, 'w', encoding='utf-8').write('\n'.join(keys) + '\n' + '\n'.join(chans) + '\n')
         os.chmod(comp, 0o600)
 
         def step(script, args, label):
@@ -65,8 +65,8 @@ def _run(ws):
             if 'DONE' in out: break
         else:
             raise RuntimeError('quét không xong sau 40 lượt — pool quá lớn hoặc mạng/quota kẹt')
-        videos = json.load(open(os.path.join(work, 'videos.json')))
-        chinfo = json.load(open(os.path.join(work, 'channels.json')))
+        videos = json.load(open(os.path.join(work, 'videos.json'), encoding='utf-8'))
+        chinfo = json.load(open(os.path.join(work, 'channels.json'), encoding='utf-8'))
         if not videos:
             raise RuntimeError(f'quét được 0 video ({len(chinfo)} kênh resolve được) — kiểm tra API key/quota')
         step('2_keywords.py', [work], 'phân tích keyword + outlier LIFT')
@@ -104,10 +104,10 @@ def render_md(work, ws_name):
     hạng mục chưa làm được in rõ trong 'Giới hạn dữ liệu' — không overclaim."""
     from .niche._common import compute_outliers
     P = lambda f: os.path.join(work, f)
-    videos = json.load(open(P('videos.json')))
-    chinfo = json.load(open(P('channels.json')))
-    ana = json.load(open(P('analysis.json')))
-    bets = json.load(open(P('bets.json')))
+    videos = json.load(open(P('videos.json'), encoding='utf-8'))
+    chinfo = json.load(open(P('channels.json'), encoding='utf-8'))
+    ana = json.load(open(P('analysis.json'), encoding='utf-8'))
+    bets = json.load(open(P('bets.json'), encoding='utf-8'))
     now = datetime.now(timezone.utc)
     compute_outliers(videos, now)
     cell = lambda s: (s or '').replace('|', '∣')   # title/kênh không được phá bảng md

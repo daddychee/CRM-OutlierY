@@ -14,6 +14,12 @@ function Test-Cong($port) {
 
 $py = Join-Path $root '.venv\Scripts\python.exe'
 
+# 19/08: PYTHONUTF8=1 cho MOI dich vu — open() khong khai encoding tren Windows
+# mac dinh cp1252, ghi tieng Viet la chet (dinh that: radary render_board 500
+# khi Quet ngay; V2 chay VPS Linux nen chua tung lo). Code da va encoding='utf-8'
+# nhung day la luoi do cho code vendored/port sau nay.
+$env:PYTHONUTF8 = '1'
+
 # RadarY (APPS.md app 1/6): du lieu tro data/radary (RADARY_DATA_DIR);
 # SCHEDULER TAT o V3 — he that C:\ van tu quet theo lich, V3 cung quet la
 # doi quota YouTube + lech du lieu snapshot (nghiem thu thi POST /run tay).

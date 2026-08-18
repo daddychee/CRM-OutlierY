@@ -79,12 +79,12 @@ def board_data(V, cfg, metrics, jobs, api_used, pushes_today, now):
 def render_board(conn, ws, V, cfg, metrics, jobs, api_used, pushes_today, now):
     tz = core.tzinfo(conn.execute('SELECT tz FROM workspaces WHERE id=?', (ws,)).fetchone()['tz'])
     L = board_lines(V, cfg, metrics, jobs, api_used, pushes_today, now, tz)
-    open(os.path.join(report_dir(ws), 'radar_board.md'), 'w').write('\n'.join(L))
+    open(os.path.join(report_dir(ws), 'radar_board.md'), 'w', encoding='utf-8').write('\n'.join(L))
 
 def append_alerts(ws, events, tz=None):
     if not events: return
     tz = tz or core.tzinfo()
-    with open(os.path.join(report_dir(ws), 'alerts.log'), 'a') as f:
+    with open(os.path.join(report_dir(ws), 'alerts.log'), 'a', encoding='utf-8') as f:
         for e in events:
             f.write(f"{fmt_ts(e['ts'], tz)} | T{e['from']}→T{e['to']} | VPH {e['vph']:,} | VPD {e['vpd']:,} | views {e['views']:,} | "
                     f"{e['age_h']/24:.1f}d | rank{e['rank']}/D{e['cohort']} | {e['ch'][:20]} | {e['title'][:60]} | "
@@ -284,7 +284,7 @@ def render_weekly(conn, ws, V, cfg, tz):
     L += ['', '*Giới hạn: "kết cục" dựa trên snapshot views lúc chốt; radar báo sóng — thẩm định và quyết định thuộc về người.*']
     wk = os.path.join(report_dir(ws), 'weekly'); os.makedirs(wk, exist_ok=True)
     path = os.path.join(wk, datetime.now(tz).strftime('%Y-%m-%d') + '.md')
-    open(path, 'w').write('\n'.join(L))
+    open(path, 'w', encoding='utf-8').write('\n'.join(L))
     return path
 
 def spawn_weekly_narrative(ws, path):
@@ -301,7 +301,7 @@ def _weekly_narrative(ws, path):
         lcfg = llm.org_llm(conn, org)
         conn.close()
         if not lcfg: return
-        md = open(path).read()
+        md = open(path, encoding='utf-8').read()
         if '## Nhận định AI' in md: return
         user = (md[:20000] + '\n\nDựa DUY NHẤT trên báo cáo trên, viết mục "Nhận định AI" gồm: '
                 '(a) **Diễn biến tuần qua** — 3-5 gạch đầu dòng: nhịp sóng so tuần trước, kênh/chủ đề nổi bật, '
@@ -313,7 +313,7 @@ def _weekly_narrative(ws, path):
         i = next((k for k, ln in enumerate(L) if ln.startswith('## ')), len(L))
         L[i:i] = ['## Nhận định AI', f"*(AI {lcfg['provider']}/{lcfg['model']} — chỉ diễn giải số trong báo cáo)*",
                   '', text, '']
-        open(path, 'w').write('\n'.join(L))
+        open(path, 'w', encoding='utf-8').write('\n'.join(L))
     except Exception:
         pass
 
@@ -340,5 +340,5 @@ def read_report(conn, ws, rid):
     if WEEKLY_ID.match(rid):
         p = os.path.join(report_dir(ws), 'weekly', rid + '.md')
         if os.path.isfile(p):
-            return {'id': rid, 'kind': 'weekly', 'md': open(p).read()}
+            return {'id': rid, 'kind': 'weekly', 'md': open(p, encoding='utf-8').read()}
     return None

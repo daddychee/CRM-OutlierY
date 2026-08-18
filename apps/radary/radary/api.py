@@ -738,7 +738,7 @@ def board_md(ws: int, request: Request):
         auth.ws_for_user(c, ws, u['id'])
     path = os.path.join(report.report_dir(ws), 'radar_board.md')
     if not os.path.exists(path): raise HTTPException(404, 'chưa có board — chưa chu kỳ nào chạy')
-    return open(path).read()
+    return open(path, encoding='utf-8').read()
 
 # ---------------- alerts / events + vòng tự chấm ----------------
 # ---------------- nhịp pool (Phase 3.13) ----------------
