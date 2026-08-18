@@ -149,7 +149,26 @@
   3,74M views 7d · 21,2M views 28d; 3 pool thị trường Korea/Spain/US đã dựng
   (0 kênh — chờ phân loại theo phương án mục dưới).
 
-## PHƯƠNG ÁN PHÂN LOẠI LẠI KÊNH POOL BẨN (đề xuất — CHỜ USER DUYỆT)
+- 19/08/2026 — **VÒNG 6 — 4 CHỐT VẬN HÀNH + CHIA THẬT LIFE IN.** User chốt:
+  (1) switcher CHỈ ngách (pool thị trường vào bằng dải tab — switcher lọc
+  `!market`, đứng ở pool thị trường thì switcher hiện ngách mẹ); (2) BỎ tab
+  "Chưa phân loại" khỏi Board — đổi pool chỉ ở Data Pool (Board của ngách
+  mặc định = Σ Cả ngách; "Chưa phân loại" chỉ còn trên dải tab của Data Pool);
+  (3) user DUYỆT phương án phân loại và giao máy TỰ CHIA LIFE IN (chưa chắc
+  → để lại); (4) khi xong mọi niche sẽ BỎ tính năng "Chưa phân loại" (ghi
+  việc treo — chỉ ẨN UI, pool gốc giữ làm sử liệu nhịp thời kỳ trộn).
+  **ĐÃ CHIA THẬT LIFE IN** bằng script `scripts/phan_loai_thi_truong_radary.py`
+  (0 quota — chấm ngôn ngữ TOÀN BỘ tiêu đề video đã quét; ngưỡng bảo thủ ≥5
+  title + ≥80%; van hệ-chữ-khác/tiếng Việt; **van NGHI TIẾNG BỒ** bắt 3 kênh
+  BR suýt chấm nhầm sang Spain — Minuto Em Foco/FEITO GEO/Explore World Docs,
+  đúng họ bài học Globe Cover) + áp qua API move (vết claude-phan-loai):
+  **US 45 kênh (3.186 video) · Spain 17 kênh (1.540 video) · để lại 10 kênh**
+  (7 ít dữ liệu/0 video · 3 nghi PT; tổng vẫn 72 kênh/4.922 video — không mất
+  data). Kiểm volume sau chia: US 1,79M views 7d · Spain 1,61M · chưa phân
+  loại 0,15M. Script tổng quát hóa (argv ws_goc, kết quả JSON cạnh db) —
+  dùng lại cho các niche khác + sau cutover.
+
+## PHƯƠNG ÁN PHÂN LOẠI LẠI KÊNH POOL BẨN (đã duyệt 19/08 — chạy thật cho LIFE IN, xem vòng 6)
 
 Bối cảnh: user không muốn phí data đã quét; V3 dừng quét 2 ngày (by design —
 scheduler tắt), V2 vẫn chạy để đối chiếu. Nguyên tắc: cơ chế move đã GIỮ TRỌN

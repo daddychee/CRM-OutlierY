@@ -1769,8 +1769,10 @@ function App() {
       <h1>📡 RADAR<span>Y</span></h1>
       <nav class="tabs">${tabs.map(([k, label]) => html`
         <button class=${tab === k ? 'on' : ''} onClick=${() => setTab(k)}>${label}</button>`)}</nav>
-      <select class="ws" value=${ws} onChange=${e => { setWs(Number(e.target.value)); if (tab === 'new') setTab('board'); }}>
-        ${wss.map(w => html`<option value=${w.id}>${w.name}${w.market_ten ? ' · ' + w.market_ten : ''} (${w.videos})</option>`)}
+      <select class="ws" value=${cur && cur.market ? ((wss.find(x => x.ngach === cur.ngach && !x.market) || cur).id) : ws}
+        onChange=${e => { const w = wss.find(x => x.id === Number(e.target.value)); if (!w) return;
+          setWs(w.id); setNicheView(!!w.ngach); if (tab === 'new') setTab('board'); }}>
+        ${wss.filter(w => !w.market).map(w => html`<option value=${w.id}>${w.name}</option>`)}
       </select>
       ${me.sso ? '' : html`
         <span class="note" title=${me.email}>${me.email.split('@')[0]}${role !== 'owner' ? html` · <span class="rolechip ${role}">${role}</span>` : ''}</span>
@@ -1779,10 +1781,10 @@ function App() {
     ${niche && !['new', 'harvest', 'admin'].includes(tab) && html`
       <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin:0 0 12px">
         <span class="note">${niche.ten}:</span>
-        ${tab === 'board' && html`<button class=${'btn small' + (nicheView ? '' : ' ghost')}
+        ${tab === 'board' && html`<button class=${'btn small' + (nicheView || !(cur && cur.market) ? '' : ' ghost')}
           title="Volume cộng gộp mọi pool thị trường của ngách"
           onClick=${() => setNicheView(true)}>Σ Cả ngách</button>`}
-        ${goc && html`<button class=${'btn small' + (!nicheView && ws === goc.id ? '' : ' ghost')}
+        ${goc && tab === 'pool' && html`<button class=${'btn small' + (ws === goc.id ? '' : ' ghost')}
           onClick=${() => { setNicheView(false); setWs(goc.id); }}>Chưa phân loại <small>· ${goc.channels} kênh</small></button>`}
         ${dai.map(s => s.w
           ? html`<button class=${'btn small' + (!nicheView && ws === s.w.id ? '' : ' ghost')}
@@ -1803,7 +1805,7 @@ function App() {
       : tab === 'harvest' ? html`<${Harvest} orgId=${orgId} canEdit=${canEdit}/>`
       : !cur ? html`<div class="panel">${canEdit ? 'Chưa có workspace nào — bấm "+ New Niche". Nhớ thêm YouTube API key trong tab Setting trước.'
                                                  : 'Org chưa có workspace nào — chờ owner/leader tạo.'}</div>`
-      : tab === 'board' && nicheView && niche ? html`<${NicheVolume} ma=${niche.ma} ten=${niche.ten}/>`
+      : tab === 'board' && niche && (nicheView || !(cur && cur.market)) ? html`<${NicheVolume} ma=${niche.ma} ten=${niche.ten}/>`
       : tab === 'board' ? html`<${Board} ws=${ws} canEdit=${canEdit}/>`
       : tab === 'alerts' ? html`<${Alerts} ws=${ws} canEdit=${canEdit}/>`
       : tab === 'reports' ? html`<${Reports} ws=${ws} canEdit=${canEdit}/>`
