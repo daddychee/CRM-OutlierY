@@ -460,3 +460,14 @@ BUG BẮT ĐƯỢC KHI KIỂM SỐNG: mặc định thị trường rơi vào SP
 đứng trước US theo alphabet) → trang mặc định TRỐNG TRƠN — sửa _uu_tien: thị trường
 CÓ BÁO CÁO xếp trước. Suite 105 pass; kiểm HTML thật: banner về, US selected, chip
 snapshot trên thanh, 4 checkbox đủ.
+
+## 18/08 (tiếp 12) — REPORT LIST cuối mỗi kênh (Channel Research)
+
+User chốt: cuối trang mỗi kênh cần danh sách báo cáo để đọc full + xem bản cũ.
+Thêm khối "Reports" dưới thẻ chẩn đoán: mọi bản ghi của kênh (ngày · tên · kỳ ·
+người chạy), bấm dòng = xem lại ngay trên dashboard (?id=), nút Full analysis từng
+bản mở trọn bảng phán quyết (/bao-cao-lich-su/<id>), bản đang mở đánh dấu "đang
+xem". Suite 106 pass; kiểm sống kênh OUTLAND thật. LƯU Ý PHIÊN SONG SONG: commit
+này CHỈ gồm dashboard.html + sổ — dashboard.py/test_* đang mang luật mới
+"thị trường thuộc từng ngách (thi_truong_cua)" của phiên kia chưa commit; assert
+report-list tôi thêm trong test_dashboard.py sẽ đi cùng commit của phiên đó.

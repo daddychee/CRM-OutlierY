@@ -350,6 +350,31 @@
     </section>
     {% endif %}
 
+    {# REPORT LIST cuối mỗi kênh (user chốt 18/08): mọi báo cáo của kênh —
+       bấm dòng = xem lại trên dashboard, Full analysis = đọc trọn bảng phán quyết #}
+    {% if kp.ds_bao_cao %}
+    <section class="nd-tt">
+      <div class="nd-tt-h"><b>Reports</b>
+        <span style="color:var(--muted);font-size:.75rem">{{ kp.ds_bao_cao | length }} bản — bấm dòng để xem lại trên dashboard</span></div>
+      <div class="nd-bw" style="padding:10px 12px 12px">
+        <div style="overflow-x:auto"><table>
+          <tr><th>Ngày</th><th>Tên báo cáo</th><th>Kỳ</th><th>Người chạy</th><th></th></tr>
+          {% for r in kp.ds_bao_cao %}
+          <tr{% if kp.rec and r.id == kp.rec.id %} style="background:var(--th-182233)"{% endif %}>
+            <td style="white-space:nowrap"><a href="/niche/kenh/{{ kp.kenh.ma }}?id={{ r.id }}" style="color:var(--ink)">🗓 {{ r.thoi_gian[:10] }}</a></td>
+            <td><a href="/niche/kenh/{{ kp.kenh.ma }}?id={{ r.id }}" style="color:var(--ink);font-weight:600">{{ r.ten_bao_cao or r.ten_file_goc }}</a>
+              {% if kp.rec and r.id == kp.rec.id %}<span style="color:var(--accent);font-size:.7rem;margin-left:6px">đang xem</span>{% endif %}</td>
+            <td style="color:var(--muted);white-space:nowrap">{{ r.ky_bat_dau or '?' }} → {{ r.ky_ket_thuc or '?' }}</td>
+            <td style="color:var(--muted)">{{ r.nguoi_chay }}</td>
+            <td style="text-align:right"><a class="nd-btn" href="/bao-cao-lich-su/{{ r.id }}?nguoi={{ r.nguoi_chay }}">
+              <svg class="ic" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg> Full analysis</a></td>
+          </tr>
+          {% endfor %}
+        </table></div>
+      </div>
+    </section>
+    {% endif %}
+
     {% elif not ngach %}
       <div class="nd-trong">Chưa có niche trong danh bạ — tạo ở cổng OUTLIERY (Niches) trước.</div>
     {% else %}
