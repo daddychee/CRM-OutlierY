@@ -429,3 +429,15 @@ GIT: commit main.py bằng cách TÁCH HUNK (backup file đầy đủ → restor
 của phiên song song vẫn nguyên ngoài stage. LƯU Ý: to-chuc chưa restart (phiên kia
 giữ) → sidebar trang to-chuc còn URL họ cũ tới lần restart kế; test_gateway.py đang
 dở tay phiên kia — test alias khung bổ sung sau.
+
+## 18/08 (tiếp 10) — trang khung nhận sidebar ĐẦY ĐỦ (user bắt: RadarY/CU mất khối Database)
+
+Sau khi URL về /<slug>, RadarY + Content Ultimate đi qua trang khung gateway
+(nen_khung_app.html) — sidebar khung là bản RÚT GỌN từ đầu (chỉ Home + Tools +
+Management), thiếu cặp tab Home/Database, New chat, Search, Recents mà mọi app
+native có qua base.html. Vá MỘT khuôn phủ cả 3 app khung: chép nguyên cấu trúc
+sidebar base.html sang khung — tabs Home/Database (Database chỉ Manager+ như luật
+can_upload), pane Home (New chat / + Tools giữ nguyên + Search disabled + Recents
+"No chats yet" + View all history → /history — phiên chat thuộc ai-agent, trang
+khung không truy chéo, y hệt các app khác), pane Database (Input/Library/Gap),
+JS chuyển tab y khuôn. Template gateway nạp nóng — không cần restart.

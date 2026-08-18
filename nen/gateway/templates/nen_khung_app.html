@@ -25,7 +25,24 @@
   svg.ic{width:17px;height:17px;stroke:currentColor;stroke-width:1.8;fill:none;stroke-linecap:round;stroke-linejoin:round;flex:0 0 auto}
   .sidebar{width:264px;flex:0 0 264px;background:var(--sidebar);border-right:1px solid var(--line);display:flex;flex-direction:column;height:100%}
   .brand{padding:16px 16px 10px;font-size:17px;font-weight:700;letter-spacing:-.035em;font-family:'Space Grotesk',sans-serif;color:var(--th-e8edf4);display:flex;align-items:center;gap:8px}
-  .pane{flex:1;overflow-y:auto;padding:8px 8px 10px;display:flex;flex-direction:column}
+  /* sidebar ĐẦY ĐỦ như base.html các app (user bắt 18/08: trang khung mất khối
+     Database/New chat/Recents) — tabs + 2 pane + search, chép khuôn từ base.html */
+  .tabs{display:flex;padding:2px 10px 4px;gap:6px}
+  .tab{flex:1;text-align:center;padding:8px 6px;border-radius:9px;font-size:13.5px;font-weight:600;
+    color:var(--th-9aa5b5);cursor:pointer;border:1px solid transparent;background:none;font-family:inherit;
+    display:flex;align-items:center;justify-content:center;gap:6px}
+  .tab.active{background:var(--th-182233);border-color:var(--chip-line);color:var(--ink)}
+  .tab:not(.active):hover{background:var(--th-182233)}
+  .pane{flex:1;overflow-y:auto;padding:8px 8px 10px;display:none}
+  .pane.show{display:flex;flex-direction:column}
+  .nav-item.new{border:1px solid var(--chip-line);background:var(--th-182233);font-weight:600;margin-bottom:6px;color:var(--accent)}
+  .sb-search{display:flex;align-items:center;gap:8px;margin:8px 10px 2px;padding:7px 10px;
+    border:1px solid var(--chip-line);border-radius:9px;background:var(--th-182233);color:var(--muted);font-size:13px}
+  .sb-search input{border:0;outline:0;background:transparent;flex:1;font-size:13px;color:var(--ink)}
+  .rec-item{display:flex;align-items:center;gap:9px;padding:8px 12px;border-radius:8px;cursor:pointer;
+    font-size:13.5px;color:var(--th-c2cbd9);text-decoration:none}
+  .rec-item:hover{background:var(--th-182233)}
+  .tb-trong{font-size:13px;color:var(--muted);padding:6px 12px}
   .sb-label{padding:10px 14px 5px;font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
   .nav-item{display:flex;align-items:center;gap:11px;padding:9px 12px;border-radius:9px;
     font-size:14px;color:var(--th-c2cbd9);cursor:pointer;margin:1px 0;text-decoration:none;
@@ -61,9 +78,19 @@
       <svg style="width:20px;height:20px;flex:0 0 auto" viewBox="0 0 24 24" aria-hidden="true"><rect x="0.5" y="15" width="3" height="6" rx="1" style="fill:var(--th-bar1)" opacity=".9"/><rect x="5.5" y="13" width="3" height="8" rx="1" style="fill:var(--th-bar2)" opacity=".9"/><rect x="10.5" y="11" width="3" height="10" rx="1" style="fill:var(--th-bar3)" opacity=".9"/><rect x="15.5" y="8" width="3" height="13" rx="1" style="fill:var(--th-bar4)" opacity=".9"/><rect x="20.5" y="1" width="3" height="20" rx="1" style="fill:var(--th-bar5)"/></svg>
       OUTLIERY
     </a></div>
-    <div class="pane">
-      <a class="nav-item" href="/">
-        <svg class="ic" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg> Home</a>
+    {% set can_upload = user.level >= 4 %}
+    <div class="tabs">
+      <button type="button" class="tab active" data-pane="home">
+        <svg class="ic" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg> Home</button>
+      {% if can_upload %}
+      <button type="button" class="tab" data-pane="mon">
+        <svg class="ic" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.7 4 3 9 3s9-1.3 9-3V5"/><path d="M3 12c0 1.7 4 3 9 3s9-1.3 9-3"/></svg> Database</button>
+      {% endif %}
+    </div>
+
+    <div class="pane show" id="pane-home">
+      <a class="nav-item new" href="/">
+        <svg class="ic" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> New chat</a>
       <div class="sb-label">Tools</div>
       {# niche-research GỘP vào Data Analytics 18/08 (chốt Owner) — engine ẩn khỏi menu,
          vẫn proxy được qua URL trực tiếp; trang gộp = /niche của data-analytics #}
@@ -87,7 +114,29 @@
         <svg class="ic" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15l3-4 3 3 4-6"/></svg> Data Analytics
         <svg class="ic mui-nhom" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></a>
       {% endif %}
+
+      <div class="sb-sep"></div>
+      <div class="sb-search">
+        <svg class="ic" style="width:15px;height:15px" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+        <input placeholder="Search your history…" disabled title="Coming soon"></div>
+      <div class="sb-label">Recents</div>
+      {# phiên chat thuộc ai-agent — trang khung không truy chéo (Luật 4), như các app khác #}
+      <div class="tb-trong">No chats yet.</div>
+      <a class="rec-item" href="/history" style="color:var(--muted)">
+        <svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg> View all history →</a>
     </div>
+
+    {% if can_upload %}
+    <div class="pane" id="pane-mon">
+      <div class="sb-label">Manager+</div>
+      <a class="nav-item" href="/input">
+        <svg class="ic" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg> Input</a>
+      <a class="nav-item" href="/library">
+        <svg class="ic" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg> Library</a>
+      <a class="nav-item" href="/gap">
+        <svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg> Gap</a>
+    </div>
+    {% endif %}
 
     <div class="sb-mgmt" id="sb-mgmt">
       <div id="sb-mgmt-muc">
@@ -149,6 +198,16 @@
     });
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape') dat(false); });
   }
+  // Chuyển tab Home/Database — y khuôn base.html các app.
+  document.querySelectorAll('.tab').forEach(function (tab) {
+    tab.addEventListener('click', function () {
+      document.querySelectorAll('.pane').forEach(function (p) { p.classList.remove('show'); });
+      var pane = document.getElementById('pane-' + tab.getAttribute('data-pane'));
+      if (pane) pane.classList.add('show');
+      document.querySelectorAll('.tab').forEach(function (t) { t.classList.remove('active'); });
+      tab.classList.add('active');
+    });
+  });
 })();
 </script>
 </body>
