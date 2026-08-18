@@ -142,3 +142,9 @@
   dụng) · /app/* không auth 401 trần là chuẩn chung nền. 5 suite xanh
   124+3+308/3+64+58. CÒN CHỜ OWNER: soi UI RadarY qua 9443 (SPA/Console),
   tick thử ở Permissions, POST /run tay 1 pool giờ thấp điểm (đốt quota thật).
+- 18/08/2026 — Owner hỏi "tại sao Niche Research chưa được config (API Keys)":
+  vì app CHƯA ĐƯỢC ĐƯA VÀO V3 — không nằm trong danh sách 6 app Owner chốt 16/08
+  (RadarY/Content/SEO/DA/PlannerY/SpeakY). Per-app config chỉ hiện app có hợp
+  đồng + viec_api. GHI HÀNG ĐỢI: **Niche Research = ứng viên app #7** (KD L2 xem
+  · L3+ tạo · manager xóa · quan_tri Owner — thang V2 sẵn), vào mạch sau
+  SEO/PlannerY/SpeakY hoặc sớm hơn nếu Owner xếp — chờ Owner chốt thứ tự.
