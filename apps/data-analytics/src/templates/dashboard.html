@@ -899,11 +899,11 @@ function nrChay(){
       if (!x.ok) throw new Error(x.d.detail || 'Không kiểm được API');
       if (!x.d.ok) throw new Error('Thiếu khóa API: ' + x.d.thieu.join(', ') +
                                    ' — cấp ở General › API Keys rồi chạy lại.');
-      nrGui(nut, st);
+      nrGui(nut, st, ws);
     })
     .catch(function(e){ nut.disabled = false; st.textContent = e.message; });
 }
-function nrGui(nut, st){
+function nrGui(nut, st, ws){
   st.textContent = 'API sẵn sàng — Researching…';
   var fd = new FormData();
   fd.append('ngach_ma', document.getElementById('nr-ngach').value);
