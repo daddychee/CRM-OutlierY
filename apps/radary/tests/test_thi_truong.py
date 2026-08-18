@@ -139,6 +139,7 @@ def test_volume_ca_ngach(org_moi, goi, mock_de):
     assert [p["nhan"] for p in d["pools"]] == ["US", "Chưa phân loại"]
     assert len(d["pts"]) == 1 and d["pts"][0]["dviews"] == 150
     assert abs(d["pts"][0]["vph_avg"] - 40 / 3) < 1e-6   # TB trọng số theo n_young
+    assert d["pts"][0]["dang_do"] is True    # bucket hôm nay = ngày CHƯA TRỌN — UI không vẽ lên đường
     assert goi("GET", "/api/ngach/N-LA/volume").status_code == 404
 
 

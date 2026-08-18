@@ -328,3 +328,12 @@ quy trình 1-2-3 trên dữ liệu mới nhất — vì vậy làm thành TÍNH 
   két ăn ngay), discover 157 units, chia **US 107 kênh (2.118 video)** · để
   lại 3 (AshyyyMC/SideTripLife/World According To Briggs — title ít chữ chấm
   được, user tick tay); Spain 0 (pool thuần Mỹ). Suite 17 pass, headless OK.
+
+- 19/08/2026 — **FIX "đồ thị cả ngách cắm đầu" (user hỏi có logic sai không).**
+  ĐO TRƯỚC: SPACE 15-18/08 mỗi ngày 12 bucket 6h (7,3M→11,3M views/ngày);
+  19/08 lúc 02:10 mới 3 bucket = 749K → điểm NGÀY-DỞ cạnh ngày-trọn nhìn như
+  sụt. KHÔNG có logic cộng sai — lỗi TRÌNH BÀY kỳ-chưa-trọn kinh điển (số thị
+  trường user thấy "vẫn tăng" là cửa sổ trượt 7d/lũy kế — khác bản chất).
+  Sửa: volume gắn cờ `dang_do` cho ngày hôm nay; UI KHÔNG vẽ điểm đó lên
+  đường, hiện ghi chú "Hôm nay đang tích: X views — ngày chưa trọn". Test ghim
+  cờ. Suite 17 pass, restart 9111.

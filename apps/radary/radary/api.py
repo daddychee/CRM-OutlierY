@@ -589,8 +589,12 @@ def ngach_volume(ma: str, request: Request, days: int = 30):
             g['dviews'] += r['dviews']
             g['vs'] += r['vph_avg'] * r['n_young']
             g['n'] += r['n_young']
+        hom_nay = time.strftime('%Y-%m-%d', time.localtime(now))
+        # dang_do: ngày CHƯA TRỌN (hôm nay) — UI không vẽ lên đường (điểm ngày-dở
+        # cạnh ngày-trọn nhìn như "cắm đầu" — user bắt 19/08), chỉ hiện ghi chú
         pts = [{'ngay': k, 'dviews': v['dviews'], 'n': v['n'],
-                'vph_avg': (v['vs'] / v['n']) if v['n'] else 0}
+                'vph_avg': (v['vs'] / v['n']) if v['n'] else 0,
+                'dang_do': k == hom_nay}
                for k, v in sorted(ngay.items())]
         ten_tt = {}
         if _v3():

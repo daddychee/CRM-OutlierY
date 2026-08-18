@@ -1599,7 +1599,11 @@ function NicheVolume({ ma, ten }) {
     api('GET', `/ngach/${ma}/volume?days=${days}`)
       .then(x => { setD(x); setErr(''); }).catch(e => setErr(String(e.message)));
   }, [ma, days]);
-  const pts = d ? d.pts : [];
+  // ngày ĐANG DỞ (hôm nay) không vẽ lên đường — điểm ngày-dở cạnh ngày-trọn
+  // nhìn như "cắm đầu" (user bắt 19/08); hiện thành ghi chú số đang tích
+  const ptsTron = d ? d.pts.filter(p => !p.dang_do) : [];
+  const homNay = d ? d.pts.find(p => p.dang_do) : null;
+  const pts = ptsTron;
   // LineChart nói thang GIỜ (trục ép sàn 24): mỗi NGÀY = 24 đơn vị, nhãn trục
   // hoành = NGÀY dd/mm (không còn '0.1666d' — bug user bắt 19/08)
   const xf = h => { const p = pts[Math.round(h / 24)]; return p ? p.ngay.slice(8) + '/' + p.ngay.slice(5, 7) : ''; };
@@ -1614,9 +1618,11 @@ function NicheVolume({ ma, ten }) {
       ${!d && !err ? html`<div class="note" style="margin-top:8px"><span class="spin"></span> Đang tải…</div>`
         : d && pts.length < 2 ? html`<div class="note" style="margin-top:8px">Chưa đủ dữ liệu nhịp trong khoảng này —
             volume dày lên theo thời gian quét; pool mới tách tích từ lúc tách.</div>`
-        : d && html`<${LineChart} title="Sóng views cả ngách — trục ngang: NGÀY (dd/mm) · trục dọc: views CỘNG THÊM trong ngày, gộp mọi pool thị trường" height=${200}
+        : d && html`<${LineChart} title="Sóng views cả ngách — trục ngang: NGÀY (dd/mm) · trục dọc: views CỘNG THÊM trong ngày TRỌN, gộp mọi pool thị trường" height=${200}
             pts=${pts.map((p, i) => [i * 24, p.dviews])} bands=${[]} markers=${[]}
             yfmt=${kfmt} xfmt=${xf} xstep=${24 * Math.max(1, Math.ceil(pts.length / 8))} xtipfmt=${xf}/>`}
+      ${homNay && html`<div class="note" style="margin-top:4px">Hôm nay (${homNay.ngay.slice(8)}/${homNay.ngay.slice(5, 7)}) đang tích:
+        <b>${kfmt(homNay.dviews)}</b> views — ngày chưa trọn nên không vẽ lên đường (tránh đọc nhầm thành sụt).</div>`}
       ${d && html`
         <div class="tablewrap" style="margin-top:10px"><table>
           <tr><th>Thị trường</th><th class="num">Kênh</th><th class="num">Video</th>
