@@ -1078,6 +1078,19 @@ def _strip_ansi(s: str) -> str:
     return re.sub(r"\033\[[0-9;]*m", "", s)
 
 
+class _GiuCho:
+    """Giữ chỗ trong _procs NGAY TRONG LOCK lúc kiểm tra — vá đua TOCTOU 19/08:
+    kiểm-trong-lock nhưng spawn+đăng-ký ngoài lock nên 2 POST /api/run cùng lúc
+    đều thấy 'chưa chạy' → LifeIn_ES bị chạy ĐÚP (2 orchestrator cùng giây, đốt
+    đôi quota). poll() None để status coi là đang chạy trong cửa sổ spawn."""
+
+    def poll(self):
+        return None
+
+    def terminate(self):
+        pass
+
+
 def _spawn(key: str, proj_dir: Path, argv: list[str],
            env_extra: dict[str, str] | None = None) -> None:
     """Spawn orchestrator subprocess; relay stdout → niche-data/stdout.log.
@@ -1086,20 +1099,26 @@ def _spawn(key: str, proj_dir: Path, argv: list[str],
     with _lock:
         existing = _procs.get(key)
         if existing and existing.poll() is None:
-            return   # đang chạy rồi, bỏ qua
+            return   # đang chạy rồi (hoặc đang giữ chỗ), bỏ qua
+        _procs[key] = _GiuCho()   # RESERVE ngay trong lock — chặn request song song
 
-    nd = proj_dir / DATA_DIR
-    nd.mkdir(exist_ok=True)
-    log_file = nd / "stdout.log"
+    try:
+        nd = proj_dir / DATA_DIR
+        nd.mkdir(exist_ok=True)
+        log_file = nd / "stdout.log"
 
-    env = {**os.environ, "PYTHONUNBUFFERED": "1", **(env_extra or {})}
-    proc = subprocess.Popen(
-        argv,
-        cwd=str(HERE),
-        env=env,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-    )
+        env = {**os.environ, "PYTHONUNBUFFERED": "1", **(env_extra or {})}
+        proc = subprocess.Popen(
+            argv,
+            cwd=str(HERE),
+            env=env,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+        )
+    except Exception:
+        with _lock:                     # spawn hỏng → trả chỗ, không kẹt 'running'
+            _procs.pop(key, None)
+        raise
 
     def _relay():
         with open(log_file, "ab") as lf:

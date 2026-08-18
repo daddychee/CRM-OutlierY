@@ -504,3 +504,20 @@ theo che_do (Niche → nr-niche + tiêu đề New Research; Channel → nr-kenh 
 report), bỏ hẳn tab chuyển trong modal + hàm nrTab; moModal mở là dùng, nhánh niche
 tự nạp pool. Test đổi theo: exclusivity 2 trang (nr-niche ↔ nr-kenh không lẫn) +
 trang Niche hết chứa tên kênh. Suite 113 pass; kiểm sống cả 2 trang.
+
+## 19/08 (tiếp 2) — SỰ CỐ CHẠY ĐÚP LifeIn_ES + VÁ ĐUA _spawn
+
+User hỏi "có phải tôi đang tạo báo cáo 2 lần cho Life In Spain?" — soi tiến trình:
+ĐÚNG, 2 orchestrator giống hệt (run LifeIn_ES --force --deepdive --llm) sinh CÙNG
+GIÂY 01:58:35. GỐC BỆNH: guard chống chạy đúp trong _spawn của service niche-research
+bị đua TOCTOU — kiểm _procs TRONG lock nhưng Popen + đăng ký NGOÀI lock → 2 POST
+/api/run cùng lúc đều thấy "chưa chạy", cả hai spawn, bản ghi sau đè bản trước nên
+service chỉ biết 1 con (con kia mồ côi, /api/stop không với tới). (Nguồn 2 POST cùng
+giây phía client chưa tái hiện được — guard server giờ chặn tuyệt đối nên vô hại.)
+KẾT CỤC MAY: cả 2 chạy XONG trót lọt trước khi kịp can thiệp; vì cùng ghi MỘT bộ
+file (mỗi stage ghi trọn file, bản sau đè) nên đĩa còn đúng MỘT bản lành — "giữ 1
+bỏ 1" tự đạt; thiệt hại = đốt đôi quota YouTube/LLM một lần. VÁ: _GiuCho giữ chỗ
+trong _procs NGAY TRONG LOCK lúc kiểm (poll()=None để status coi là đang chạy trong
+cửa sổ spawn) + Popen lỗi thì trả chỗ (không kẹt 'running'); restart :9113 lúc rảnh.
+Snapshot ES đóng băng qua bridge (done_moi=true); dashboard TT-SPAIN sống: PHÁN
+QUYẾT VÀO · 62/100, verdict pipeline "GO — enter via Vida real y tradiciones…".
