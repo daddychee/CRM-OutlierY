@@ -203,6 +203,16 @@
   leader trở lên; tốn quota thật — nên giờ thấp điểm). Chuyển vai quét sang
   V3 = quyết định cutover sau này.
 
+- 19/08/2026 — **FIX 500 "Quét ngay"** (user báo): `report.render_board` ghi
+  radar_board.md bằng `open(...,'w')` TRẦN → Windows mặc định cp1252 chết dấu
+  tiếng Việt ('ầ') → 500 MỌI lượt quét trên V3 (V2 chạy VPS Linux nên chưa
+  từng lộ — đúng họ bẫy UTF-8 trong memory). Vá gốc 15 chỗ open() text thiếu
+  encoding (report/api/niche_report/migrate_legacy) + lưới `PYTHONUTF8=1`
+  toàn dịch vụ trong start-all. Nghiệm thu sống: /run pool nhỏ tag DONE đủ
+  6 job, 6 units. KÈM: tiến trình 9111 giờ ghi log ra
+  `data/logs/radary-9111.log` (trước chạy ẩn không giữ log — mò bệnh phải
+  tái hiện; giữ redirect này về sau).
+
 ## PHƯƠNG ÁN PHÂN LOẠI LẠI KÊNH POOL BẨN (đã duyệt 19/08 — chạy thật cho LIFE IN, xem vòng 6)
 
 Bối cảnh: user không muốn phí data đã quét; V3 dừng quét 2 ngày (by design —
