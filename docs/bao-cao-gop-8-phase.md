@@ -317,3 +317,22 @@ mà dashboard chỉ hiện 2 → pills liệt kê ĐỦ danh bạ (mapped trư�
 án hiện khối "Chưa gán dự án nghiên cứu — bấm New report" + nút New report (KHÔNG nút
 Run mồ côi project None — test ghim). Suite 101 pass; kiểm HTML thật: 4 pill
 All/US/SPAIN/KOREA, 3 tab, câu hỏi thật 750 like, iframe data-src đúng.
+
+## 18/08 (tiếp 4) — 4 tab chuẩn + diễn giải hover
+
+User chốt bộ tab cuối: **Overview / Audience / Winning Format / Positioning** + "giải
+thích không ghi cứng, đưa chuột vào mới hiện". Làm:
+- 3 tab NGHĨA nhúng ĐÚNG MỤC báo cáo gộp qua anchor sẵn có trong HTML (id p0..p8):
+  Audience → #p1 (evidence + Audience Profile Canvas đều nằm Phase 1), Winning Format
+  → #p4, Positioning → #p3; iframe nạp LƯỜI khi mở tab (secTab hết khóa cứng 'full').
+  Tầng NGHĨA sống trong báo cáo — dashboard KHÔNG chép lại (một nguồn sự thật).
+- Fallback: snapshot không có báo cáo gộp HTML (Run mới chỉ sinh artifact JSON) → tab
+  Audience rơi về bảng gaps/demand thật (câu hỏi + theme + bảng bằng chứng), 2 tab
+  NGHĨA ẨN + ghi chú "canvas sinh khi build báo cáo" — test ghim.
+- DIỄN GIẢI → HOVER (title + class co-tip cursor:help): banner chỉ còn chip + headline
+  + ⓘ (đoạn Pipeline/mũi nhọn/điều kiện vào title); 5 tile bỏ dòng chú giải (vào
+  title); Best&Worst bỏ cột "Vì sao" (vào title từng hàng). Tab Evidence/Full report
+  nghỉ (nội dung đã nằm trong Audience #p1 + nút Read report ở header).
+Suite 102 pass; kiểm HTML thật: đúng 4 tab, 3 anchor, 1 title Pipeline, 0 đoạn in cứng.
+CÒN TREO mạch này: khi có 19_build_bao_cao.py + bao_cao_writer (NGHĨA vào JSON) thì
+Audience/WF/Positioning đổi từ iframe sang render native + Run tự build báo cáo HTML.

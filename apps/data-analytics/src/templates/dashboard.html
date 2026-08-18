@@ -91,6 +91,7 @@
   .sec-tab:hover{color:var(--ink)}
   .tieu-nho{font-size:.64rem;letter-spacing:.12em;color:var(--muted);text-transform:uppercase;margin:0 0 6px}
   .chip-file{font-size:.66rem;border:1px solid var(--line);border-radius:6px;padding:1px 7px;color:var(--muted)}
+  .co-tip{cursor:help}
 {% endblock %}
 
 {% block noi_dung %}
@@ -356,8 +357,11 @@
       {% for f in so.bao_cao_files %}{% if f.endswith('.html') and not nsf.html %}{% set nsf.html = f %}{% endif %}{% endfor %}
       <div class="sec-tabs">
         <button type="button" class="sec-tab on" onclick="secTab(this, 'tq')">Overview</button>
-        <button type="button" class="sec-tab" onclick="secTab(this, 'bc')">Evidence</button>
-        {% if nsf.html %}<button type="button" class="sec-tab" onclick="secTab(this, 'full')">Full report</button>{% endif %}
+        <button type="button" class="sec-tab" onclick="secTab(this, 'aud')">Audience</button>
+        {% if nsf.html %}
+        <button type="button" class="sec-tab" onclick="secTab(this, 'wf')">Winning Format</button>
+        <button type="button" class="sec-tab" onclick="secTab(this, 'pos')">Positioning</button>
+        {% endif %}
       </div>
       <div class="sec-pane" data-pane="tq">
 
@@ -366,32 +370,31 @@
       <div class="nd-ban">
         <span class="chip {% if so.phan_quyet == 'GO' %}go{% elif so.phan_quyet == 'NO-GO' %}nogo{% endif %}">
           PHÁN QUYẾT — {{ {'GO':'VÀO','CONDITIONAL':'VÀO CÓ ĐIỀU KIỆN','NO-GO':'KHÔNG VÀO'}.get(so.phan_quyet, so.phan_quyet) }}{% if so.diem_hap_dan is not none %} · {{ so.diem_hap_dan }}/100{% endif %}</span>
-        <h2>{% if so.phan_quyet == 'GO' %}Vào — ngách đạt chuẩn theo trọng số 5 trụ.{% elif so.phan_quyet == 'CONDITIONAL' %}Vào có điều kiện — vào bằng một mũi nhọn, không dàn hàng ngang.{% elif so.phan_quyet == 'NO-GO' %}Không vào — điểm dưới ngưỡng theo trọng số 5 trụ.{% else %}{{ so.phan_quyet }}{% endif %}</h2>
-        <p>{% if so.ly_do_gate %}Pipeline: <b>{{ so.ly_do_gate }}</b>.{% endif %}
-          {% if so.cum_tot %} Mũi nhọn dẫn đầu: <b>{{ so.cum_tot[0].anchor }}</b> · điểm beachhead {{ so.cum_tot[0].beachhead_score | round | int }}.{% endif %}
-          {% if so.phan_quyet == 'CONDITIONAL' %} Điều kiện: chốt Positioning (gate P3) trước khi sản xuất hàng loạt.{% endif %}</p>
+        {# diễn giải KHÔNG in cứng — hover mới hiện (user chốt 18/08, đỡ rối) #}
+        <h2 class="co-tip" title="{% if so.ly_do_gate %}Pipeline: {{ so.ly_do_gate }}. {% endif %}{% if so.cum_tot %}Mũi nhọn dẫn đầu: {{ so.cum_tot[0].anchor }} · điểm beachhead {{ so.cum_tot[0].beachhead_score | round | int }}. {% endif %}{% if so.phan_quyet == 'CONDITIONAL' %}Điều kiện: chốt Positioning (gate P3) trước khi sản xuất hàng loạt.{% endif %}">{% if so.phan_quyet == 'GO' %}Vào — ngách đạt chuẩn theo trọng số 5 trụ.{% elif so.phan_quyet == 'CONDITIONAL' %}Vào có điều kiện — vào bằng một mũi nhọn, không dàn hàng ngang.{% elif so.phan_quyet == 'NO-GO' %}Không vào — điểm dưới ngưỡng theo trọng số 5 trụ.{% else %}{{ so.phan_quyet }}{% endif %} <span style="opacity:.5;font-size:.78em">ⓘ</span></h2>
       </div>
 
       <!-- lưới tile 3×2 + bản đồ beachhead cột phải (mockup đã duyệt) -->
       <div class="nd-grid">
+        {# chú giải tile = tooltip hover, không in cứng (user chốt 18/08) #}
         <div class="nd-tile"><div class="t">Điểm hấp dẫn</div><div class="k">score /100</div>
           <div class="v">{{ so.diem_hap_dan if so.diem_hap_dan is not none else '—' }}</div>
           <div class="s"><span class="nd-verdict {% if so.phan_quyet == 'GO' %}v-ok{% endif %}">{{ {'GO':'VÀO','CONDITIONAL':'VÀO CÓ ĐIỀU KIỆN','NO-GO':'KHÔNG VÀO'}.get(so.phan_quyet, so.phan_quyet) }}</span></div></div>
-        <div class="nd-tile"><div class="t">View trung vị ngách</div><div class="k">median</div>
-          <div class="v">{{ '{:,}'.format(so.view_trung_vi).replace(',', '.') if so.view_trung_vi else '—' }}</div>
-          <div class="s">video trưởng thành 30 ngày{% if so.pipeline and so.pipeline.video_truong_thanh %} (n={{ '{:,}'.format(so.pipeline.video_truong_thanh).replace(',', '.') }}){% endif %}</div></div>
-        <div class="nd-tile"><div class="t">Mốc video “trúng”</div><div class="k">p90</div>
-          <div class="v">{{ '{:,}'.format(so.moc_trung).replace(',', '.') if so.moc_trung else '—' }}</div>
-          <div class="s">{% if so.moc_trung_x %}chênh {{ so.moc_trung_x }}× trung vị → ngách ăn theo cú trúng{% else %}mốc video "trúng"{% endif %}</div></div>
-        <div class="nd-tile"><div class="t">Nguồn cung</div><div class="k">count / tháng</div>
-          <div class="v">{{ so.cung_thang | round | int if so.cung_thang else '—' }}</div>
-          <div class="s">video mới mỗi tháng · trend {{ so.trend or '—' }}</div></div>
-        <div class="nd-tile"><div class="t">Cửa vào</div><div class="k">rate</div>
-          <div class="v">{{ (so.cua_vao_rate * 100) | round | int ~ '%' if so.cua_vao_rate else '—' }}</div>
-          <div class="s">video thắng thuộc kênh{% if so.cua_vao_thang %} &lt;{{ so.cua_vao_thang }} tháng{% endif %} · {{ so.cua_vao_verdict or '—' }}</div></div>
-        <div class="nd-tile"><div class="t">RPM ước tính</div><div class="k">band · heuristic</div>
-          <div class="v">{{ so.rpm_band or '—' }}</div>
-          <div class="s">{% if so.rpm_band %}{{ so.rpm_nhan or '' }} — heuristic, chưa phải doanh thu đo{% else %}nguồn thiếu{% endif %}</div></div>
+        <div class="nd-tile co-tip" title="Mức nền của ngách — video trưởng thành 30 ngày{% if so.pipeline and so.pipeline.video_truong_thanh %} (n={{ '{:,}'.format(so.pipeline.video_truong_thanh).replace(',', '.') }}){% endif %}">
+          <div class="t">View trung vị ngách</div><div class="k">median</div>
+          <div class="v">{{ '{:,}'.format(so.view_trung_vi).replace(',', '.') if so.view_trung_vi else '—' }}</div></div>
+        <div class="nd-tile co-tip" title="{% if so.moc_trung_x %}chênh {{ so.moc_trung_x }}× trung vị → ngách ăn theo cú trúng{% else %}mốc video 'trúng' (top 10%){% endif %}">
+          <div class="t">Mốc video “trúng”</div><div class="k">p90</div>
+          <div class="v">{{ '{:,}'.format(so.moc_trung).replace(',', '.') if so.moc_trung else '—' }}</div></div>
+        <div class="nd-tile co-tip" title="video mới mỗi tháng · trend {{ so.trend or '—' }}">
+          <div class="t">Nguồn cung</div><div class="k">count / tháng</div>
+          <div class="v">{{ so.cung_thang | round | int if so.cung_thang else '—' }}</div></div>
+        <div class="nd-tile co-tip" title="video thắng thuộc kênh{% if so.cua_vao_thang %} dưới {{ so.cua_vao_thang }} tháng{% endif %} · {{ so.cua_vao_verdict or '—' }}">
+          <div class="t">Cửa vào</div><div class="k">rate</div>
+          <div class="v">{{ (so.cua_vao_rate * 100) | round | int ~ '%' if so.cua_vao_rate else '—' }}</div></div>
+        <div class="nd-tile co-tip" title="{% if so.rpm_band %}{{ so.rpm_nhan or '' }} — heuristic, chưa phải doanh thu đo{% else %}nguồn thiếu{% endif %}">
+          <div class="t">RPM ước tính</div><div class="k">band · heuristic</div>
+          <div class="v">{{ so.rpm_band or '—' }}</div></div>
         {% if tt.scatter %}
         <div class="nd-tile nd-map">
           <div class="t" style="text-align:center">Bản đồ beachhead — {{ tt.scatter | length }} cụm</div>
@@ -435,23 +438,23 @@
         {% if so.cum_tot %}
         <div class="nd-tile">
           <div class="t" style="text-align:center">Best &amp; Worst — cụm sub-niche theo điểm beachhead</div>
+          {# "vì sao" = tooltip hover trên hàng, không in cứng (user chốt 18/08) #}
           <table style="width:100%;border-collapse:collapse;font-size:.78rem;margin-top:6px">
             <tr><th style="font-size:.64rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);text-align:right;padding:4px 8px;border-bottom:1px solid var(--line)">Điểm</th>
-                <th style="font-size:.64rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);text-align:left;padding:4px 8px;border-bottom:1px solid var(--line)">Cụm</th>
-                <th style="font-size:.64rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);text-align:left;padding:4px 8px;border-bottom:1px solid var(--line)">Vì sao</th></tr>
+                <th style="font-size:.64rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);text-align:left;padding:4px 8px;border-bottom:1px solid var(--line)">Cụm</th></tr>
             {% for c in so.cum_tot %}
-            <tr><td class="bw-g" style="padding:5px 8px">{{ c.beachhead_score | round | int }}</td>
-                <td style="padding:5px 8px"><b>{{ c.anchor }}</b></td>
-                <td style="padding:5px 8px;color:var(--muted)">{% if c.competition is not none %}cạnh tranh {{ ('%.2f' % c.competition).replace('.', ',') }}{% endif %}{% if c.n_channels %} · {{ c.n_channels }} kênh{% endif %}{% if c.size %} · {{ c.size }} video{% endif %}</td></tr>
+            <tr class="co-tip" title="{% if c.competition is not none %}cạnh tranh {{ ('%.2f' % c.competition).replace('.', ',') }}{% endif %}{% if c.n_channels %} · {{ c.n_channels }} kênh{% endif %}{% if c.size %} · {{ c.size }} video{% endif %}">
+                <td class="bw-g" style="padding:5px 8px">{{ c.beachhead_score | round | int }}</td>
+                <td style="padding:5px 8px"><b>{{ c.anchor }}</b></td></tr>
             {% endfor %}
             {% if so.diem_cum_tb is not none %}
             <tr><td style="text-align:right;padding:5px 8px;color:var(--muted)">{{ so.diem_cum_tb }}</td>
-                <td colspan="2" style="padding:5px 8px;color:var(--muted)">trung bình {{ so.so_cum }} cụm</td></tr>
+                <td style="padding:5px 8px;color:var(--muted)">trung bình {{ so.so_cum }} cụm</td></tr>
             {% endif %}
             {% for c in so.cum_xau %}
-            <tr><td class="bw-r" style="padding:5px 8px">{{ c.beachhead_score | round | int }}</td>
-                <td style="padding:5px 8px">{{ c.anchor }}</td>
-                <td style="padding:5px 8px;color:var(--muted)">{% if c.competition is not none %}cạnh tranh {{ ('%.2f' % c.competition).replace('.', ',') }}{% endif %}{% if c.n_channels %} · {{ c.n_channels }} kênh{% endif %}{% if c.size %} · {{ c.size }} video{% endif %}</td></tr>
+            <tr class="co-tip" title="{% if c.competition is not none %}cạnh tranh {{ ('%.2f' % c.competition).replace('.', ',') }}{% endif %}{% if c.n_channels %} · {{ c.n_channels }} kênh{% endif %}{% if c.size %} · {{ c.size }} video{% endif %}">
+                <td class="bw-r" style="padding:5px 8px">{{ c.beachhead_score | round | int }}</td>
+                <td style="padding:5px 8px">{{ c.anchor }}</td></tr>
             {% endfor %}
           </table>
         </div>
@@ -501,8 +504,14 @@
       {% endif %}
       </div><!-- /pane Overview -->
 
-      <!-- pane EVIDENCE — bảng bằng chứng + câu hỏi khán giả + theme (gaps/demand thật) -->
-      <div class="sec-pane" data-pane="bc" style="display:none">
+      <!-- pane AUDIENCE — Audience Profile Canvas + evidence, nhúng ĐÚNG MỤC Phase 1
+           của báo cáo gộp (tầng NGHĨA sống trong báo cáo, không chép lại); snapshot
+           không có báo cáo HTML → rơi về bảng gaps/demand thật -->
+      <div class="sec-pane" data-pane="aud" style="display:none">
+        {% if nsf.html %}
+        <iframe data-src="/niche/tai/{{ tt.project }}/{{ so.snapshot }}/{{ nsf.html }}?inline=1#p1"
+                title="Audience" style="width:100%;height:78vh;border:0;display:block;background:var(--th-121826)"></iframe>
+        {% else %}
         <div class="nd-bw" style="padding:12px 16px 16px">
           {% if tt.bang_chung %}
           <div class="tieu-nho">Số liệu — demand evidence</div>
@@ -537,17 +546,21 @@
             {% endfor %}
           </table></div>
           {% endif %}
-          {% if not tt.bang_chung and not so.cau_hoi_top %}
-          <div class="nd-trong">Snapshot này chưa có demand.json / gaps.json — chạy lại phân tích để có tầng bằng chứng.</div>
-          {% endif %}
+          <div class="nd-trong" style="padding-top:14px">Snapshot này chưa có báo cáo gộp HTML —
+            Audience Profile Canvas (tầng NGHĨA) sinh khi build báo cáo; trên đây là dữ liệu khán giả thật từ gaps.json.</div>
         </div>
+        {% endif %}
       </div>
 
-      <!-- pane FULL REPORT — nhúng báo cáo gộp 8 phase (nạp lười khi mở tab) -->
+      <!-- pane WINNING FORMAT + POSITIONING — nhúng đúng mục #p4 / #p3 của báo cáo gộp -->
       {% if nsf.html %}
-      <div class="sec-pane" data-pane="full" style="display:none">
-        <iframe data-src="/niche/tai/{{ tt.project }}/{{ so.snapshot }}/{{ nsf.html }}?inline=1"
-                title="Full report" style="width:100%;height:78vh;border:0;display:block;background:var(--th-121826)"></iframe>
+      <div class="sec-pane" data-pane="wf" style="display:none">
+        <iframe data-src="/niche/tai/{{ tt.project }}/{{ so.snapshot }}/{{ nsf.html }}?inline=1#p4"
+                title="Winning Format" style="width:100%;height:78vh;border:0;display:block;background:var(--th-121826)"></iframe>
+      </div>
+      <div class="sec-pane" data-pane="pos" style="display:none">
+        <iframe data-src="/niche/tai/{{ tt.project }}/{{ so.snapshot }}/{{ nsf.html }}?inline=1#p3"
+                title="Positioning" style="width:100%;height:78vh;border:0;display:block;background:var(--th-121826)"></iframe>
       </div>
       {% endif %}
       {% endif %}
@@ -644,7 +657,7 @@ function secTab(btn, t){
   sec.querySelectorAll('.sec-pane').forEach(function(pn){
     var mo = pn.getAttribute('data-pane') === t;
     pn.style.display = mo ? '' : 'none';
-    if (mo && t === 'full'){          // báo cáo đầy đủ nạp LƯỜI khi mở tab lần đầu
+    if (mo){                          // pane nhúng báo cáo nạp LƯỜI khi mở lần đầu
       var f = pn.querySelector('iframe');
       if (f && !f.src) f.src = f.getAttribute('data-src');
     }

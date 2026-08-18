@@ -56,14 +56,33 @@ def test_overall_banner_pills_strip(client):
     assert b2.status_code == 200 and "TEST NICHE" in b2.text
 
 
-def test_tab_evidence_va_full_report(client):
-    """3 nội dung show bằng tab (user 18/08): Overview / Evidence / Full report."""
+def test_bon_tab_va_dien_giai_hover(client):
+    """4 tab user chốt 18/08: Overview / Audience / Winning Format / Positioning.
+    Diễn giải KHÔNG in cứng — nằm trong title (hover mới hiện)."""
     body = client.get("/niche", headers=CLAIMS).text
-    assert ">Overview<" in body and ">Evidence<" in body and ">Full report<" in body
-    assert "demand evidence" in body                     # bảng bằng chứng
-    assert "Which legendary place next?" in body and "191" in body   # câu hỏi khán giả
-    assert "surprised most" in body                      # theme comment
-    assert 'data-src="/niche/tai/TestNiche_US/2026-08-18/BAO-CAO-8-PHASE.html?inline=1"' in body
+    assert ">Overview<" in body and ">Audience<" in body
+    assert ">Winning Format<" in body and ">Positioning<" in body
+    # 3 tab NGHĨA nhúng đúng mục báo cáo gộp qua anchor
+    assert "BAO-CAO-8-PHASE.html?inline=1#p1" in body    # Audience = Phase 1 (canvas)
+    assert "BAO-CAO-8-PHASE.html?inline=1#p4" in body    # Winning Format
+    assert "BAO-CAO-8-PHASE.html?inline=1#p3" in body    # Positioning
+    # diễn giải chuyển vào tooltip: chuỗi nằm trong title="...", không còn thẻ <p> banner
+    assert 'title="Pipeline: borderline' in body.replace("  ", " ")
+    assert "chênh 42× trung vị" in body                  # vẫn trong title tile
+
+
+def test_audience_fallback_khi_thieu_bao_cao_html(client, tmp_path):
+    """Snapshot không có báo cáo gộp HTML → tab Audience rơi về bảng gaps thật,
+    2 tab NGHĨA (WF/Positioning) ẩn — không nhúng thứ không tồn tại."""
+    import json as _j
+    idx = tmp_path / "TestNiche_US" / "snapshots" / "index.json"
+    d = _j.loads(idx.read_text(encoding="utf-8"))
+    d[0]["bao_cao"] = []
+    idx.write_text(_j.dumps(d), encoding="utf-8")
+    body = client.get("/niche", headers=CLAIMS).text
+    assert "Which legendary place next?" in body and "surprised most" in body
+    assert "demand evidence" in body
+    assert ">Winning Format<" not in body and ">Positioning<" not in body
 
 
 def test_pill_du_moi_thi_truong_danh_ba(client, monkeypatch):
