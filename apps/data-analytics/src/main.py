@@ -89,11 +89,15 @@ async def goc():
 # ---------- các hàm phụ (chuyển thể nguyên từ app.py cũ) ----------
 
 @app.get("/chan-doan", response_class=HTMLResponse)
-def chan_doan_trang(request: Request, user: dict = Depends(yeu_cau_data_analytics)):
-    # PA2 (chốt user 18/08): MỘT mặt tiền /niche — form nạp report kênh sống trong
-    # modal New report. GET trang cũ chỉ còn redirect; POST /chan-doan + trang-thai
-    # + mọi route con GIỮ NGUYÊN (backend của modal + pane Kênh).
-    return RedirectResponse("/niche", status_code=303)
+def chan_doan_trang(request: Request, user: dict = Depends(yeu_cau_data_analytics),
+                    ngach: str = "", ngay: str = "latest"):
+    # PA2 (chốt user 18/08): MỘT mặt tiền — form nạp report kênh sống trong modal
+    # New report; POST /chan-doan + trang-thai + mọi route con GIỮ NGUYÊN (backend).
+    # GET phục vụ THẲNG dashboard gộp (không redirect): alias cấp-1 của gateway
+    # /data-analytics trỏ 'chan-doan', còn /niche KHÔNG tồn tại ở cấp gốc gateway
+    # (_ALIAS nen/gateway/main.py) — redirect là 404 với người vào qua cổng.
+    from src.dashboard import trang_niche
+    return trang_niche(request, user=user, ngach=ngach, ngay=ngay)
 
 
 async def _doc_report_upload(file: UploadFile):

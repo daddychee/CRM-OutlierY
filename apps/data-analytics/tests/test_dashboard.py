@@ -114,11 +114,14 @@ def test_kenh_khong_ton_tai_404(client, monkeypatch):
     assert client.get("/niche/kenh/K-XYZ", headers=CLAIMS).status_code == 404
 
 
-# ---------- PA2: một mặt tiền /niche ----------
+# ---------- PA2: một mặt tiền ----------
 
-def test_chan_doan_redirect_ve_niche(client):
-    r = client.get("/chan-doan", headers=CLAIMS, follow_redirects=False)
-    assert r.status_code == 303 and r.headers["location"] == "/niche"
+def test_chan_doan_phuc_vu_thang_dashboard(client):
+    # Alias cấp-1 của gateway /data-analytics trỏ 'chan-doan' — /niche KHÔNG tồn tại
+    # ở cấp gốc gateway, nên GET /chan-doan phải phục vụ THẲNG dashboard (không 303).
+    r = client.get("/chan-doan", headers=CLAIMS)
+    assert r.status_code == 200
+    assert 'id="nrk-kenh"' in r.text and "TEST NICHE" in r.text
 
 
 def test_modal_co_form_kenh_tu_danh_ba(client):
@@ -126,6 +129,13 @@ def test_modal_co_form_kenh_tu_danh_ba(client):
     assert 'id="nrk-kenh"' in body and "KENH A" in body       # select kênh từ danh bạ
     assert 'id="nrk-file"' in body and "Diagnose" in body     # form nạp trong modal
     assert 'href="/chan-doan"' not in body                     # hết link sang trang cũ
+
+
+def test_dieu_huong_tren_dau_khong_con_rail(client):
+    # User chốt 18/08: bỏ rail trong, điều hướng để TRÊN ĐẦU như tab General.
+    body = client.get("/niche", headers=CLAIMS).text
+    assert 'class="nd-top"' in body and "nd-rail" not in body
+    assert 'class="nd-tab on"' in body                         # tab Overall đang active
 
 
 def test_niche_chua_gan_project(client, tmp_path, monkeypatch):

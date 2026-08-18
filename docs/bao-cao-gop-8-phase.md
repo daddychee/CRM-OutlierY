@@ -188,6 +188,20 @@ Thêm 4 slice cuối (c77be8b · dc034e9 · 83c0435 · fc03169+e3f2c5e):
   (fc03169, sửa ngay e3f2c5e) — từ giờ `set -o pipefail` khi test-trước-commit; import
   hàm trực-tiếp giữa module làm monkeypatch không ăn → gọi qua module.
 
+## PA2 — MỘT MẶT TIỀN (user chốt 18/08 tối, commit f2fe347 + 7ef4e15, suite 96 pass)
+
+User bác trạng thái nửa vời (trang cũ làm mặt tiền + nút "Niche dashboard" chắp vá) → bàn 3
+phương án, chốt PA2 gộp triệt để: (1) sidebar 4 app + khung gateway đều ẩn "Niche Research"
+(nen/common/sidebar.py KHONG_LAP_TOOLS — restart ai-agent + data-analytics; to-chuc/
+video-review ăn theo lần restart kế vì to-chuc đang dở tay phiên song song) và trỏ
+"Data Analytics" → /niche; (2) form nạp report kênh VÀO modal New report tab Channel —
+**chọn kênh từ DANH BẠ (hết ô gõ tay)**, đủ file/loại kênh/ngày/kỳ, POST /chan-doan sẵn có,
+chạy nền + poll, xong tự mở /niche/kenh/<ma>; (3) GET /chan-doan chỉ còn redirect /niche
+(POST + trang-thai + bao-cao-lich-su + mọi route con GIỮ NGUYÊN — backend của modal +
+pane Kênh; chan_doan.html thành template legacy không render). Bài học: hai lần sửa nhầm
+khung sidebar — hệ có NHIỀU nơi vẽ sidebar (khung gateway + base.html từng app, nguồn
+danh sách = nen/common/sidebar.py), sửa sidebar phải grep đủ cả họ.
+
 ## CÒN LẠI (các mạch sau)
 
 1. App ai-agent: retriever nguồn "📊 Báo cáo" theo hợp đồng /api/agent (Đợt 3 phần còn lại).
@@ -226,3 +240,33 @@ Thêm 4 slice cuối (c77be8b · dc034e9 · 83c0435 · fc03169+e3f2c5e):
 4. UI mới trên server.py :8780 theo mockup đã duyệt.
 5. Nạp methodology vào kho tri thức (kiểm encoding file gốc — bản đính kèm chat bị mojibake).
 6. Dọn pool: loại kênh Urdu, xác nhận 9 kênh treo, bổ sung kênh VN, chạy ES.
+
+## 18/08 (tiếp) — PA2b: sửa "link hỏng" qua cổng + điều hướng lên đầu trang
+
+User kiểm mắt `localhost:9443/niche` → `{"detail":"Not Found"}` + chê tỉ lệ, yêu cầu
+bỏ rail trong, đưa điều hướng lên đầu như tab General.
+
+**Gốc bệnh link hỏng:** gateway V3 route URL đẹp cấp gốc bằng bảng `_ALIAS` cứng trong
+`nen/gateway/main.py` (đăng ký route lúc import) — `tien_to` trong apps.json CHỈ là bảng
+viết-lại đường dẫn của proxy, KHÔNG phải bảng route. Thêm `/niche` vào apps.json (hôm qua)
+là sửa nhầm tầng. `/niche` không có alias → 404 ngay tại gateway; sidebar `href="/niche"`
+trong HTML app khác cũng không được proxy viết lại (không nằm trong tien_to app đó) → bấm
+là chết. BÀI HỌC: URL đẹp cấp-1 = `_ALIAS` gateway; `tien_to` = viết lại nội dung/Location.
+
+**Sửa KHÔNG đụng gateway** (main.py gateway đang dở tay phiên song song NAS — không sửa,
+không restart): (a) `GET /chan-doan` (data-analytics) phục vụ THẲNG dashboard — ủy quyền
+sang `dashboard.trang_niche`, vì alias sẵn có `/data-analytics` → `('data-analytics',
+'chan-doan')`; hết redirect /niche (redirect qua cổng là 404). (b) sidebar 5 khuôn đổi
+`href="/data-analytics"` (alias nằm trong `bo_qua` nên không bị viết lại, sống từ mọi app).
+(c) PA3 (alias `/niche` đẹp hơn) vẫn treo chờ gateway sạch.
+
+**UI theo lệnh user:** bỏ hẳn `.nd-rail` — thanh `.nd-top` trên đầu: [select niche]
+[tab Overall | từng kênh — pill như nav.muc của General, cuộn ngang khi nhiều kênh]
+[New report + nút General bên phải]; pane nội dung trần 1120px căn giữa (cân tỉ lệ màn
+rộng). Empty-state pane Kênh hết link `/chan-doan` — nút mở modal chọn sẵn đúng kênh
+(`moKenhModal`). `trang_kenh` bổ sung `ds_thi_truong` vào context (modal nhánh Niche cần).
+
+Suite 97 pass. Restart :9102 — LƯU Ý khuôn start: cwd = GỐC repo + `--app-dir
+apps/data-analytics` (start-all.ps1); cwd = thư mục app là chết import `nen.common`.
+Kiểm sống: :9102/chan-doan 200 ra dashboard (nd-top, không nd-rail, tab Overall active,
+niche LIFE IN từ danh bạ), gateway /data-analytics 303 login (route tồn tại, hết 404).
