@@ -175,26 +175,37 @@ def test_kenh_khong_ton_tai_404(client, monkeypatch):
 
 # ---------- PA2: một mặt tiền ----------
 
-def test_chan_doan_phuc_vu_thang_dashboard(client):
-    # Alias cấp-1 của gateway /data-analytics trỏ 'chan-doan' — /niche KHÔNG tồn tại
-    # ở cấp gốc gateway, nên GET /chan-doan phải phục vụ THẲNG dashboard (không 303).
+def test_chan_doan_trang_chon_2_khoi(client):
+    # User chốt 18/08 (khuôn Content Ultimate): /chan-doan (đích alias gateway
+    # /data-analytics) = trang CHỌN 2 KHỐI Niche Research · Channel Research.
     r = client.get("/chan-doan", headers=CLAIMS)
     assert r.status_code == 200
-    assert 'id="nrk-kenh"' in r.text and "TEST NICHE" in r.text
+    assert "Niche Research" in r.text and "Channel Research" in r.text
+    assert 'href="/niche"' in r.text and 'href="/niche/kenh"' in r.text
+
+
+def test_channel_research_home(client):
+    # Khối ②: danh sách kênh danh bạ theo niche, bấm vào là trang chẩn đoán.
+    r = client.get("/niche/kenh", headers=CLAIMS)
+    assert r.status_code == 200
+    assert "Channel Research" in r.text and "KENH A" in r.text
+    assert 'href="/niche/kenh/K-A"' in r.text
 
 
 def test_modal_co_form_kenh_tu_danh_ba(client):
     body = client.get("/niche", headers=CLAIMS).text
     assert 'id="nrk-kenh"' in body and "KENH A" in body       # select kênh từ danh bạ
     assert 'id="nrk-file"' in body and "Diagnose" in body     # form nạp trong modal
-    assert 'href="/chan-doan"' not in body                     # hết link sang trang cũ
 
 
 def test_dieu_huong_tren_dau_khong_con_rail(client):
-    # User chốt 18/08: bỏ rail trong, điều hướng để TRÊN ĐẦU như tab General.
+    # User chốt 18/08: điều hướng TRÊN ĐẦU + crumb về trang chọn module; trang
+    # Niche Research KHÔNG còn tab kênh (kênh sống bên Channel Research).
     body = client.get("/niche", headers=CLAIMS).text
     assert 'class="nd-top"' in body and "nd-rail" not in body
-    assert 'class="nd-tab on"' in body                         # tab Overall đang active
+    assert 'href="/chan-doan"' in body                         # crumb Data Analytics
+    assert ">Niche Research</a>" in body
+    assert 'href="/niche/kenh/K-A"' not in body                # hết tab kênh ở đây
 
 
 def test_niche_chua_gan_project(client, tmp_path, monkeypatch):

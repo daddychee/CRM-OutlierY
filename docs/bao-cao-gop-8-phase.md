@@ -358,3 +358,15 @@ không phải show trong báo cáo — cắt ra, diễn giải lại". Làm bả
 - Mỗi khối NGHĨA kèm link nhỏ "đọc trong báo cáo ↗" (#p1/#p4/#p3, tab mới).
 Suite 103 pass (agent_api ca thiếu-artifact dời sang subniche — mục duy nhất seed
 không ghi). Kiểm HTML thật: 0 iframe, canvas/WF/PA/bets đủ, 3 link báo cáo.
+
+## 18/08 (tiếp 6) — TÁCH 2 KHỐI kiểu Content Ultimate (user chốt: "UI vẫn quá rối")
+
+Bấm Data Analytics → trang CHỌN MODULE 2 khối (chon_module.html, đúng khuôn landing
+Content Ultimate: eyebrow + h1 accent + a.card): ① Niche Research (/niche) ·
+② Channel Research (/niche/kenh — route MỚI: lưới thẻ kênh danh bạ theo niche, bấm
+vào trang chẩn đoán). GET /chan-doan = landing (đích alias gateway — bài học PA2b);
+":9102/" → /chan-doan. Thanh trên tách theo CHẾ ĐỘ: crumb "Data Analytics / <module>"
++ select niche; tab kênh CHỈ còn ở Channel Research (trang Niche hết lẫn kênh); nút
+New report mở đúng nhánh modal theo chế độ (moModal(t)). Suite 104 pass; kiểm sống 3
+trang thật. Ghi chú: trang chọn module là NƠI DUY NHẤT thêm module thứ 3 sau này
+(thẻ card mới), không đụng 2 dashboard.

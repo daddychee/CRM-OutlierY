@@ -215,8 +215,26 @@ def trang_niche(request: Request, user: dict = Depends(_lay_user),
         "user": user, "ds_ngach": ds_ngach, "ngach": ngach_hien,
         "thi_truong": thi_truong, "ds_kenh": _ds_kenh(ngach_hien["ma"]) if ngach_hien else [],
         "ds_ngay": ds_ngay, "ngay_chon": ngay,
-        "pills": pills, "tt_chon": tt,
+        "pills": pills, "tt_chon": tt, "che_do": "ngach",
         "ds_thi_truong": sorted(_ten_thi_truong().items(), key=lambda x: x[1]),
+    })
+
+
+@router.get("/niche/kenh", response_class=HTMLResponse)
+def trang_kenh_home(request: Request, user: dict = Depends(_lay_user), ngach: str = ""):
+    """Channel Research — khối ② của trang chọn module (user chốt 18/08): danh sách
+    kênh trong danh bạ theo niche, bấm vào là trang chẩn đoán kênh."""
+    from src.main import templates
+    ds_ngach = _ds_ngach()
+    ngach_hien = next((n for n in ds_ngach if n["ma"] == ngach), ds_ngach[0] if ds_ngach else None)
+    ten_tt = _ten_thi_truong()
+    ds_kenh = [dict(k, tt_ten=ten_tt.get(k.get("thi_truong_ma", ""), ""))
+               for k in (_ds_kenh(ngach_hien["ma"]) if ngach_hien else [])]
+    return templates.TemplateResponse(request, "dashboard.html", {
+        "user": user, "ds_ngach": ds_ngach, "ngach": ngach_hien,
+        "thi_truong": [], "ds_kenh": ds_kenh, "ds_ngay": [], "ngay_chon": "latest",
+        "kenh_home": True, "che_do": "kenh",
+        "ds_thi_truong": sorted(ten_tt.items(), key=lambda x: x[1]),
     })
 
 
@@ -434,6 +452,7 @@ def trang_kenh(kenh_ma: str, request: Request, user: dict = Depends(_lay_user),
         "kenh_pane": {"kenh": kenh, "ten_tt": _ten_thi_truong().get(kenh.get("thi_truong_ma", ""), ""),
                       "ds_bao_cao": ds_bao_cao, "rec": rec,
                       "benchmark": benchmark, "chi_tiet": chi_tiet},
+        "che_do": "kenh",
     })
 
 

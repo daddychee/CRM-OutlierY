@@ -16,6 +16,9 @@
   .nd-tab.on{background:var(--th-182233);color:var(--accent);font-weight:600}
   .nd-tab:hover{color:var(--ink)}
   .nd-top-act{margin-left:auto;display:flex;gap:8px;align-items:center}
+  .nd-crumb{color:var(--muted);text-decoration:none;font-size:.8rem;white-space:nowrap}
+  .nd-crumb:hover{color:var(--ink)}
+  .nd-crumb.dam{color:var(--ink);font-weight:700;font-size:.86rem}
   /* pane nội dung — FULL bề ngang như RadarY/Content (user chê hẹp 18/08) */
   .nd-main{flex:1;overflow-y:auto;min-width:0;padding:16px 24px 26px}
   .nd-band{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
@@ -96,21 +99,27 @@
 
 {% block noi_dung %}
 <div class="nd-wrap">
+  {# thanh trên theo CHẾ ĐỘ (user chốt 18/08 — 2 khối kiểu Content Ultimate):
+     crumb về trang chọn module; tab kênh CHỈ ở Channel Research #}
   <div class="nd-top">
-    <select onchange="location='/niche?ngach='+this.value" aria-label="Niche">
+    <a class="nd-crumb" href="/chan-doan">Data Analytics</a>
+    <span style="color:var(--muted)">/</span>
+    <a class="nd-crumb dam" href="{{ '/niche/kenh' if che_do == 'kenh' else '/niche' }}">{{ 'Channel Research' if che_do == 'kenh' else 'Niche Research' }}</a>
+    <select onchange="location='{{ '/niche/kenh' if che_do == 'kenh' else '/niche' }}?ngach='+this.value" aria-label="Niche">
       {% for n in ds_ngach %}
       <option value="{{ n.ma }}" {% if ngach and n.ma == ngach.ma %}selected{% endif %}>{{ n.ten_chuan }}</option>
       {% endfor %}
       {% if not ds_ngach %}<option>— chưa có niche —</option>{% endif %}
     </select>
-    <nav class="nd-tabs" aria-label="Overall / kênh">
-      <a class="nd-tab {% if not kenh_pane %}on{% endif %}" href="/niche{% if ngach %}?ngach={{ ngach.ma }}{% endif %}">Overall</a>
+    {% if che_do == 'kenh' %}
+    <nav class="nd-tabs" aria-label="Kênh">
       {% for k in ds_kenh %}
       <a class="nd-tab {% if kenh_pane and kenh_pane.kenh.ma == k.ma %}on{% endif %}" href="/niche/kenh/{{ k.ma }}" title="{{ k.ten_chuan }}">{{ k.ten_chuan }}</a>
       {% endfor %}
     </nav>
+    {% endif %}
     <span class="nd-top-act">
-      <button class="nd-btn chinh" onclick="moModal()">
+      <button class="nd-btn chinh" onclick="moModal('{{ 'kenh' if che_do == 'kenh' else 'niche' }}')">
         <svg class="ic" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> New report</button>
       <a class="nd-btn" href="/general/niches"
          title="Niche/Kênh SINH ở tab General (danh bạ nền) — module này chỉ đọc, không tạo mới.">
@@ -183,7 +192,24 @@
   </div>
 
   <div class="nd-main">
-    {% if kenh_pane %}
+    {% if kenh_home %}
+    <div class="nd-band"><h1>Channel Research{% if ngach %} — {{ ngach.ten_chuan }}{% endif %}</h1></div>
+    {% if ds_kenh %}
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px">
+      {% for k in ds_kenh %}
+      <a class="nd-tile" href="/niche/kenh/{{ k.ma }}" style="text-decoration:none;color:inherit">
+        <div class="t">{{ k.ten_chuan }}</div>
+        <div class="k">{{ k.tt_ten or k.thi_truong_ma or '' }}</div>
+        <div class="s" style="margin-top:6px;color:var(--accent)">Mở chẩn đoán →</div>
+      </a>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="nd-trong">Niche này chưa có kênh trong danh bạ —
+      tạo kênh ở <a href="/general/niches" style="color:var(--accent)">tab General</a> rồi quay lại.</div>
+    {% endif %}
+
+    {% elif kenh_pane %}
     {% set kp = kenh_pane %}
     {% set nhan_pq = {'nhan_ban':'Nhân bản','giu':'Giữ','sua_bao_bi':'Sửa bao bì','sua_noi_dung':'Sửa nội dung',
                       'doi_ngach_vi_tien':'Đổi ngách vì tiền','bo':'Bỏ','chua_du_du_lieu':'Chưa đủ dữ liệu'} %}
@@ -760,7 +786,7 @@ function secTab(btn, t){
 }
 
 // ===== modal New report =====
-function moModal(){ var m = document.getElementById('nr-modal'); m.style.display = 'flex'; nrTab('niche'); }
+function moModal(t){ var m = document.getElementById('nr-modal'); m.style.display = 'flex'; nrTab(t || 'niche'); }
 function moKenhModal(ten){ moModal(); nrTab('kenh');
   var s = document.getElementById('nrk-kenh'); if (s && ten) s.value = ten; }
 function dongModal(){ document.getElementById('nr-modal').style.display = 'none'; }

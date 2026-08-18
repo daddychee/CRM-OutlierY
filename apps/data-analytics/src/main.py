@@ -82,22 +82,20 @@ async def health():
 
 @app.get("/", response_class=HTMLResponse)
 async def goc():
-    # Trang gộp Niche là mặt tiền module (chốt 18/08); /chan-doan vẫn nguyên đường cũ.
-    return RedirectResponse("/niche", status_code=303)
+    # Mặt tiền = trang chọn module 2 khối (user chốt 18/08).
+    return RedirectResponse("/chan-doan", status_code=303)
 
 
 # ---------- các hàm phụ (chuyển thể nguyên từ app.py cũ) ----------
 
 @app.get("/chan-doan", response_class=HTMLResponse)
-def chan_doan_trang(request: Request, user: dict = Depends(yeu_cau_data_analytics),
-                    ngach: str = "", ngay: str = "latest"):
-    # PA2 (chốt user 18/08): MỘT mặt tiền — form nạp report kênh sống trong modal
-    # New report; POST /chan-doan + trang-thai + mọi route con GIỮ NGUYÊN (backend).
-    # GET phục vụ THẲNG dashboard gộp (không redirect): alias cấp-1 của gateway
-    # /data-analytics trỏ 'chan-doan', còn /niche KHÔNG tồn tại ở cấp gốc gateway
-    # (_ALIAS nen/gateway/main.py) — redirect là 404 với người vào qua cổng.
-    from src.dashboard import trang_niche
-    return trang_niche(request, user=user, ngach=ngach, ngay=ngay)
+def chan_doan_trang(request: Request, user: dict = Depends(yeu_cau_data_analytics)):
+    # Mặt tiền module (user chốt 18/08, khuôn Content Ultimate): trang CHỌN 2 KHỐI
+    # Niche Research (/niche) · Channel Research (/niche/kenh). Alias cấp-1 của
+    # gateway /data-analytics trỏ 'chan-doan' nên landing phải phục vụ TẠI ĐÂY
+    # (redirect /niche là 404 với người vào qua cổng — bài học PA2b).
+    # POST /chan-doan + trang-thai + mọi route con GIỮ NGUYÊN (backend modal).
+    return templates.TemplateResponse(request, "chon_module.html", {"user": user})
 
 
 async def _doc_report_upload(file: UploadFile):
