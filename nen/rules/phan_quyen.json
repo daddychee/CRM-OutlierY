@@ -162,6 +162,21 @@
         "min_level": 5
       },
       "vai_xoa": "manager"
+    },
+    "video-review": {
+      "vao": {
+        "min_level": 1
+      },
+      "duyet": {
+        "nhan": "Duyệt video",
+        "mo_ta": "Đổi trạng thái review (Approve / Request changes) + giải-mở-xóa bình luận của người khác",
+        "min_level": 3
+      },
+      "xoa": {
+        "nhan": "Gỡ video",
+        "mo_ta": "Gỡ video khỏi danh sách (GỠ MỀM — file giữ nguyên trong kho)",
+        "min_level": 4
+      }
     }
   }
 }

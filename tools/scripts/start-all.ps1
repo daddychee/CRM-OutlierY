@@ -55,6 +55,9 @@ $dichVu = @(
     @{ Ten = 'to-chuc'; Cong = 9103; Exe = $py
        Args = '-m uvicorn src.main:app --app-dir "apps/to-chuc" --host 127.0.0.1 --port 9103'
        Wd = $root }
+    @{ Ten = 'video-review'; Cong = 9114; Exe = $py
+       Args = '-m uvicorn src.main:app --app-dir "apps/video-review" --host 127.0.0.1 --port 9114'
+       Wd = $root }
     @{ Ten = 'radary'; Cong = 9111; Exe = $py
        Args = '-m uvicorn radary.api:app --app-dir "apps/radary" --host 127.0.0.1 --port 9111'
        Wd = $root }

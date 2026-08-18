@@ -256,6 +256,46 @@
    ]
   },
   {
+   "slug": "video-review",
+   "ten": "Video Review",
+   "mo_ta": "Feedback video kiểu Frame.io: upload bản dựng → bình luận gắn mốc thời gian + vẽ chú thích trên khung hình → trạng thái duyệt (In review / Changes requested / Approved). App V3 mới 18/08.",
+   "cong": 9114,
+   "tien_to": [
+    "/danh-sach",
+    "/xem",
+    "/media",
+    "/upload-video",
+    "/api-vr"
+   ],
+   "health": "/health",
+   "phien_ban": "0.1.0",
+   "chay": {
+    "kieu": "uvicorn",
+    "app_dir": "apps/video-review",
+    "module": "src.main:app"
+   },
+   "du_lieu": [
+    {
+     "ten": "video-goc",
+     "loai": "kho-file",
+     "duong": "data/video-review/kho",
+     "muc_quy": "vang",
+     "backup": "copy",
+     "giu": "vinh-vien",
+     "ghi_chu": "Video bản dựng team upload, kho năm/tháng (Luật 5) — file lớn; xóa trên UI là GỠ MỀM, file giữ nguyên"
+    },
+    {
+     "ten": "video-review-db",
+     "loai": "sqlite",
+     "duong": "data/video-review/db/video_review.db",
+     "muc_quy": "vang",
+     "backup": "sqlite-snapshot",
+     "giu": "vinh-vien",
+     "ghi_chu": "Sổ video + bình luận mốc thời gian + nét vẽ chú thích (schema_version, migrations/)"
+    }
+   ]
+  },
+  {
    "slug": "app-mau",
    "ten": "Sample App",
    "mo_ta": "App 50 dòng chứng minh hợp đồng app: nhận claims, /health, proxy.",

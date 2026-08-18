@@ -199,3 +199,10 @@ Quy ước từ 16/08/2026 (user chốt): mỗi mạch việc lớn có MỘT s�
   hợp đồng (ten "AI Agent") + data/ai-agent + 86 tham chiếu toàn repo; gateway đỡ
   slug cũ (URL/fetch /app/tri-thuc không vỡ); alias Qdrant kho_tri_thuc GIỮ (tên
   kho dữ liệu, không phải tên app). 482 pass / 3 skip; nghiệm thu sống HTTPS.
+- 18/08/2026 — **APP MỚI video-review :9114 — feedback video kiểu Frame.io** (app V3
+  đầu tiên VIẾT MỚI, không di trú; Owner chốt hướng: V3 · MVP · quyền vao-L1/
+  duyet-L3/xoa-L4): bình luận gắn mốc thời gian + vẽ chú thích khung hình + trạng
+  thái duyệt + gỡ mềm + NẠP TỪ NAS chép nền (Owner chốt "chép vào kho") + upload
+  % tiến độ. 26 test app + 160 test nền pass; đăng ký đủ PORTS/apps.json/
+  phan_quyen/start-all, KHÔNG sửa gateway/proxy (video qua proxy = 206 từng khúc
+  8MB). Chi tiết + việc treo: apps/video-review/CLAUDE.md.

@@ -52,6 +52,8 @@
 | data-analytics | bao-cao-lich-su / bao-cao-goc | data\data-analytics\{db,kho} | 🥇 | copy |
 | to-chuc | chấm công | data\to-chuc\db\cham-cong | 🥇 | copy |
 | to-chuc | vault (CHỈ bản mã) | data\vault | 🥇 | copy |
+| video-review | video bản dựng (kho năm/tháng, file lớn) | data\video-review\kho | 🥇 | copy |
+| video-review | sổ video + bình luận mốc thời gian | data\video-review\db\video_review.db | 🥇 | sqlite-snapshot |
 
 ## Trạng thái bản v2 (cập nhật khi mỗi phase xong)
 

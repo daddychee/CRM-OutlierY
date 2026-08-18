@@ -1,0 +1,6 @@
+# Dùng chung venv gốc (.venv của platform) — app này không cần gói ngoài
+# fastapi + uvicorn + jinja2 + python-multipart đã có sẵn trong requirements gốc.
+fastapi
+uvicorn
+jinja2
+python-multipart

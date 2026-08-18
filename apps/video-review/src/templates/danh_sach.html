@@ -1,0 +1,242 @@
+{% extends "base.html" %}
+{% block title %}Video Review — OUTLIERY{% endblock %}
+{% block topbar_ten %}Video Review{% endblock %}
+
+{% block style_them %}
+  .vr-card{background:var(--sidebar);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin-bottom:18px}
+  .vr-card h2{margin:0 0 10px;font-size:15.5px}
+  .vr-up{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  .vr-up input[type=text]{flex:1;min-width:180px;padding:8px 12px;border:1px solid var(--chip-line);
+    border-radius:9px;background:var(--th-182233);color:var(--ink);font-size:14px;font-family:inherit}
+  .vr-up input[type=file]{font-size:13px;color:var(--muted);max-width:260px}
+  .vr-hint{font-size:12.5px;color:var(--muted);margin-top:8px}
+  table.vr{width:100%;border-collapse:collapse;font-size:14px}
+  table.vr th{text-align:left;font-size:12px;color:var(--muted);text-transform:uppercase;
+    letter-spacing:.04em;padding:8px 10px;border-bottom:1px solid var(--line)}
+  table.vr td{padding:10px;border-bottom:1px solid var(--line);vertical-align:middle}
+  table.vr tr:hover td{background:var(--th-141c2b)}
+  .chip{display:inline-block;font-size:12px;font-weight:600;border-radius:999px;padding:2px 10px;white-space:nowrap}
+  .chip.dang_duyet{background:var(--th-16263f);color:var(--accent)}
+  .chip.can_sua{background:rgba(217,124,108,.14);color:var(--th-d97c6c)}
+  .chip.da_duyet{background:rgba(90,170,120,.16);color:#5aaa78}
+  html[data-theme="light"] .chip.da_duyet{color:#2e7d4f}
+  .vr-bl{font-size:12.5px;color:var(--muted)}
+  /* khối Nạp từ NAS */
+  .nas-vet{font-size:12.5px;color:var(--muted);margin-bottom:6px;display:flex;gap:4px;flex-wrap:wrap}
+  .nas-vet button{background:none;border:0;color:var(--accent);cursor:pointer;font-size:12.5px;
+    font-family:inherit;padding:0}
+  .nas-ds{border:1px solid var(--chip-line);border-radius:10px;max-height:220px;overflow-y:auto;margin-bottom:10px}
+  .nas-muc{display:flex;align-items:center;gap:9px;width:100%;padding:7px 12px;font-size:13.5px;
+    background:none;border:0;border-bottom:1px solid var(--line);color:var(--ink);cursor:pointer;
+    font-family:inherit;text-align:left}
+  .nas-muc:last-child{border-bottom:0}
+  .nas-muc:hover{background:var(--th-141c2b)}
+  .nas-muc.chon{background:var(--th-223050);font-weight:600}
+  .nas-muc .mb{margin-left:auto;color:var(--muted);font-size:12px}
+  .nas-trong{padding:10px 12px;font-size:13px;color:var(--muted)}
+  .nas-thanh{height:10px;border-radius:6px;background:var(--th-182233);border:1px solid var(--chip-line);
+    overflow:hidden;margin-top:10px}
+  .nas-thanh div{height:100%;width:0;background:var(--accent);transition:width .4s}
+  #nas-loi{color:var(--th-d97c6c);font-size:13px;margin-top:8px;display:none}
+{% endblock %}
+
+{% block noi_dung %}
+<div class="vr-card">
+  <h2>Upload a cut for review</h2>
+  <form class="vr-up" id="form-up" method="post" action="/upload-video" enctype="multipart/form-data">
+    <input type="file" name="file" accept=".mp4,.m4v,.webm,.mov,video/*" required>
+    <input type="text" name="ten" placeholder="Video name (optional — file name used if empty)" maxlength="120">
+    <button class="nut" type="submit">Upload</button>
+  </form>
+  <div class="vr-hint">mp4 / webm recommended (.mov plays only if the browser supports its codec) ·
+    max {{ max_mb }}MB · keep the tab open until the review page appears.
+    {% if nas_bat %}Big export? Use <b>Load from NAS</b> below instead.{% endif %}</div>
+  <div class="nas-thanh" id="up-thanh" style="display:none"><div id="up-thanh-ruot"></div></div>
+  <div id="up-loi" style="color:var(--th-d97c6c);font-size:13px;margin-top:8px;display:none"></div>
+</div>
+
+{% if nas_bat %}
+<div class="vr-card">
+  <h2>Load from NAS <span style="font-weight:400;font-size:12.5px;color:var(--muted)">
+    — for big exports (up to {{ nas_max_gb }}GB): pick the file, the server copies it directly, no browser upload</span></h2>
+  <div class="nas-vet" id="nas-vet"></div>
+  <div class="nas-ds" id="nas-ds"><div class="nas-trong">Loading…</div></div>
+  <div class="vr-up">
+    <input type="text" id="nas-ten" placeholder="Video name (optional — file name used if empty)" maxlength="120">
+    <button class="nut" type="button" id="nas-nut" disabled>Load selected file</button>
+  </div>
+  <div class="nas-thanh" id="nas-thanh" style="display:none"><div id="nas-thanh-ruot"></div></div>
+  <div id="nas-loi"></div>
+</div>
+{% endif %}
+
+{% if cac_video %}
+<table class="vr">
+  <thead><tr><th>Video</th><th>Status</th><th>Owner</th><th>Uploaded</th><th>Size</th><th>Open notes</th></tr></thead>
+  <tbody>
+  {% for v in cac_video %}
+    <tr>
+      <td><a href="/xem/{{ v.ma }}"><b>{{ v.ten }}</b></a>
+        <span class="vr-bl">· {{ v.ma }}</span></td>
+      <td><span class="chip {{ v.trang_thai }}">{{ NHAN_TRANG_THAI.get(v.trang_thai, v.trang_thai) }}</span></td>
+      <td>{{ v.nguoi_tao }}</td>
+      <td class="vr-bl">{{ v.tao_luc[:10] }}</td>
+      <td class="vr-bl">{{ (v.kich_thuoc / 1048576) | round(1) }}MB</td>
+      <td class="vr-bl">{{ v.so_mo }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p style="color:var(--muted)">No videos yet — upload the first cut above.</p>
+{% endif %}
+{% endblock %}
+
+{% block script %}
+<script>
+(function () {
+  "use strict";
+  // Upload có % tiến độ: XMLHttpRequest (fetch không đo được upload progress).
+  // JS chết → form thuần submit như cũ (fallback, lệ LAN-HTTP). Lưu ý: % đo chặng
+  // trình duyệt→gateway; gateway buffer rồi mới chuyển app nên 100% xong còn
+  // "Processing…" một nhịp là bình thường.
+  var form = document.getElementById("form-up");
+  if (!form) return;
+  var thanh = document.getElementById("up-thanh");
+  var ruot = document.getElementById("up-thanh-ruot");
+  var loiEl = document.getElementById("up-loi");
+  var nut = form.querySelector("button[type=submit]");
+  function hong(chu) {
+    loiEl.textContent = chu; loiEl.style.display = "block";
+    thanh.style.display = "none"; nut.disabled = false; nut.textContent = "Upload";
+  }
+  form.addEventListener("submit", function (e) {
+    e.preventDefault();
+    loiEl.style.display = "none";
+    var xhr = new XMLHttpRequest();
+    xhr.open("POST", form.action);
+    xhr.upload.addEventListener("progress", function (ev) {
+      if (!ev.lengthComputable) return;
+      var pt = Math.round(ev.loaded * 100 / ev.total);
+      ruot.style.width = pt + "%";
+      nut.textContent = pt < 100 ? "Uploading… " + pt + "%" : "Processing…";
+    });
+    xhr.addEventListener("load", function () {
+      if (xhr.status >= 200 && xhr.status < 400) {
+        location.href = xhr.responseURL || form.action.replace(/upload-video$/, "danh-sach");
+        return;
+      }
+      var chu = "Upload failed (" + xhr.status + ").";
+      try { chu = JSON.parse(xhr.responseText).detail || chu; } catch (er) {}
+      hong(chu);
+    });
+    xhr.addEventListener("error", function () { hong("Network error — try again."); });
+    thanh.style.display = "block"; ruot.style.width = "0";
+    nut.disabled = true;
+    xhr.send(new FormData(form));
+  });
+})();
+</script>
+{% if nas_bat %}
+<script>
+(function () {
+  "use strict";
+  // Duyệt NAS server-side: client chỉ gửi ĐƯỜNG TƯƠNG ĐỐI, server kiểm nằm-trong-root.
+  // Không dùng API secure-context-only (HTTP LAN — bài học 01/08).
+  var dsEl = document.getElementById("nas-ds");
+  var vetEl = document.getElementById("nas-vet");
+  var nut = document.getElementById("nas-nut");
+  var loiEl = document.getElementById("nas-loi");
+  var duongHien = "", fileChon = null;
+
+  function loi(chu) { loiEl.textContent = chu; loiEl.style.display = chu ? "block" : "none"; }
+
+  function veVet(duong) {
+    vetEl.textContent = "";
+    var them = function (nhan, d) {
+      var b = document.createElement("button");
+      b.type = "button"; b.textContent = nhan;
+      b.addEventListener("click", function () { mo(d); });
+      vetEl.appendChild(b);
+    };
+    them("NAS", "");
+    var gop = "";
+    (duong ? duong.split("/") : []).forEach(function (p) {
+      var s = document.createElement("span"); s.textContent = "/"; vetEl.appendChild(s);
+      gop = gop ? gop + "/" + p : p;
+      them(p, gop);
+    });
+  }
+
+  function mo(duong) {
+    fileChon = null; nut.disabled = true; loi("");
+    fetch("/api-vr/nas?duong=" + encodeURIComponent(duong))
+      .then(function (r) { if (!r.ok) throw 0; return r.json(); })
+      .then(function (du) {
+        duongHien = du.duong || "";
+        veVet(duongHien);
+        dsEl.textContent = "";
+        if (!du.muc.length) {
+          var t = document.createElement("div"); t.className = "nas-trong";
+          t.textContent = "No folders or video files here."; dsEl.appendChild(t); return;
+        }
+        du.muc.forEach(function (m) {
+          var b = document.createElement("button");
+          b.type = "button"; b.className = "nas-muc";
+          b.textContent = (m.loai === "thu_muc" ? "📁 " : "🎬 ") + m.ten;
+          if (m.loai === "file") {
+            var mb = document.createElement("span"); mb.className = "mb";
+            mb.textContent = m.mb + "MB"; b.appendChild(mb);
+            b.addEventListener("click", function () {
+              dsEl.querySelectorAll(".nas-muc").forEach(function (x) { x.classList.remove("chon"); });
+              b.classList.add("chon"); fileChon = m; nut.disabled = false;
+              var o = document.getElementById("nas-ten");
+              if (!o.value) o.value = m.ten.replace(/\.[^.]+$/, "");
+            });
+          } else {
+            b.addEventListener("click", function () { mo(m.duong); });
+          }
+          dsEl.appendChild(b);
+        });
+      })
+      .catch(function () {
+        dsEl.textContent = ""; loi("Could not read the NAS folder — check VR_NAS_DIR on the server.");
+      });
+  }
+
+  nut.addEventListener("click", function () {
+    if (!fileChon) return;
+    nut.disabled = true; loi("");
+    var fd = new FormData();
+    fd.append("duong", fileChon.duong);
+    fd.append("ten", document.getElementById("nas-ten").value.trim());
+    fetch("/api-vr/nas-nap", { method: "POST", body: fd })
+      .then(function (r) { if (!r.ok) return r.json().then(function (j) { throw j; }); return r.json(); })
+      .then(function (du) { theoDoi(du.task_id); })
+      .catch(function (j) { nut.disabled = false; loi((j && j.detail) || "Could not start the copy."); });
+  });
+
+  function theoDoi(tid) {
+    var thanh = document.getElementById("nas-thanh");
+    var ruot = document.getElementById("nas-thanh-ruot");
+    thanh.style.display = "block";
+    var lap = setInterval(function () {
+      fetch("/api-vr/nas-tien-do/" + tid)
+        .then(function (r) { if (!r.ok) throw 0; return r.json(); })
+        .then(function (tt) {
+          ruot.style.width = tt.phan_tram + "%";
+          if (tt.trang_thai === "xong") { clearInterval(lap); location.href = "/xem/" + tt.ma; }
+          if (tt.trang_thai === "loi") {
+            clearInterval(lap); thanh.style.display = "none"; nut.disabled = false;
+            loi("Copy failed: " + (tt.loi || "unknown error"));
+          }
+        })
+        .catch(function () { clearInterval(lap); nut.disabled = false; loi("Lost track of the copy task."); });
+    }, 900);
+  }
+
+  mo("");
+})();
+</script>
+{% endif %}
+{% endblock %}

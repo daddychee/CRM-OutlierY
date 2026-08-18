@@ -1,0 +1,327 @@
+{% extends "base.html" %}
+{% block title %}{{ video.ten }} — Video Review{% endblock %}
+{% block topbar_ten %}Video Review{% endblock %}
+
+{% block style_them %}
+  .noi-dung{max-width:1240px}
+  .vr-head{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+  .vr-head h2{margin:0;font-size:17px;flex:1;min-width:200px}
+  .chip{display:inline-block;font-size:12px;font-weight:600;border-radius:999px;padding:3px 11px;white-space:nowrap}
+  .chip.dang_duyet{background:var(--th-16263f);color:var(--accent)}
+  .chip.can_sua{background:rgba(217,124,108,.14);color:var(--th-d97c6c)}
+  .chip.da_duyet{background:rgba(90,170,120,.16);color:#5aaa78}
+  html[data-theme="light"] .chip.da_duyet{color:#2e7d4f}
+  .nut.nho{padding:5px 11px;font-size:13px;border-radius:8px}
+  .nut.nguy{background:transparent;color:var(--th-d97c6c);border:1px solid var(--chip-line)}
+
+  .vr-grid{display:grid;grid-template-columns:minmax(0,1fr) 370px;gap:18px;align-items:start}
+  @media (max-width:1100px){.vr-grid{grid-template-columns:1fr}}
+
+  .vid-wrap{position:relative;background:#000;border-radius:12px;overflow:hidden;border:1px solid var(--line)}
+  .vid-wrap video{width:100%;max-height:68vh;display:block}
+  #lop-ve{position:absolute;inset:0;pointer-events:none}
+  .vid-wrap.che-do-ve #lop-ve{pointer-events:auto;cursor:crosshair}
+  .vid-wrap.che-do-ve{outline:2px solid var(--accent)}
+
+  .moc-bar{position:relative;height:16px;background:var(--th-182233);border:1px solid var(--chip-line);
+    border-radius:9px;margin-top:12px;cursor:pointer}
+  .moc-cham{position:absolute;top:2px;width:11px;height:11px;border-radius:50%;background:var(--accent);
+    transform:translateX(-50%);border:2px solid var(--bg);cursor:pointer}
+  .moc-cham.da-giai{opacity:.35}
+
+  .bl-panel{background:var(--sidebar);border:1px solid var(--line);border-radius:14px;padding:14px;
+    display:flex;flex-direction:column;gap:12px;max-height:calc(100dvh - 170px);overflow:hidden}
+  .bl-soan textarea{width:100%;min-height:64px;resize:vertical;padding:9px 12px;border:1px solid var(--chip-line);
+    border-radius:9px;background:var(--th-182233);color:var(--ink);font-size:14px;font-family:inherit}
+  .bl-hang{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:8px;font-size:13px;color:var(--muted)}
+  .bl-hang label{display:flex;align-items:center;gap:6px;cursor:pointer}
+  .mau-chon{display:none;gap:6px;align-items:center}  /* JS bật/tắt theo chế độ vẽ */
+  .mau{width:18px;height:18px;border-radius:50%;border:2px solid transparent;cursor:pointer;padding:0}
+  .mau.chon{border-color:var(--ink)}
+  .bl-ds{overflow-y:auto;display:flex;flex-direction:column;gap:8px;min-height:60px}
+  .bl-item{border:1px solid var(--line);border-radius:11px;padding:9px 12px;font-size:13.5px;cursor:pointer}
+  .bl-item:hover{background:var(--th-141c2b)}
+  .bl-item.da-giai{opacity:.55}
+  .bl-item .ai{font-weight:600;font-size:12.5px}
+  .bl-item .moc{color:var(--accent);font-weight:600;font-size:12px;background:var(--th-16263f);
+    border-radius:6px;padding:1px 7px;margin-right:6px}
+  .bl-item .luc{color:var(--muted);font-size:11.5px;float:right}
+  .bl-item p{margin:5px 0 6px;white-space:pre-wrap}
+  .bl-item .nut-day{display:flex;gap:8px}
+  .bl-item .nut-bl{background:none;border:0;color:var(--muted);font-size:12px;cursor:pointer;
+    padding:2px 6px;border-radius:6px;font-family:inherit}
+  .bl-item .nut-bl:hover{background:var(--th-182233);color:var(--ink)}
+  .co-ve{font-size:11.5px;color:var(--accent)}
+  .bl-trong{color:var(--muted);font-size:13px;text-align:center;padding:14px 0}
+{% endblock %}
+
+{% block noi_dung %}
+<div class="vr-head">
+  <h2>{{ video.ten }} <span style="color:var(--muted);font-size:12.5px;font-weight:400">
+    {{ video.ma }} · {{ video.nguoi_tao }} · {{ video.tao_luc[:10] }}</span></h2>
+  <span class="chip {{ video.trang_thai }}" id="chip-tt">{{ NHAN_TRANG_THAI.get(video.trang_thai, video.trang_thai) }}</span>
+  {% if user.co_duyet %}
+  <button class="nut nho phu" data-tt="can_sua">Request changes</button>
+  <button class="nut nho" data-tt="da_duyet">Approve</button>
+  {% endif %}
+  {% if user.co_xoa %}
+  <button class="nut nho nguy" id="nut-go">Remove</button>
+  {% endif %}
+  <a class="nut nho phu" href="/danh-sach">← All videos</a>
+</div>
+
+<div class="vr-grid">
+  <div>
+    <div class="vid-wrap" id="vid-wrap">
+      <video id="vid" src="/media/{{ video.ma }}" controls preload="metadata"></video>
+      <canvas id="lop-ve"></canvas>
+    </div>
+    <div class="moc-bar" id="moc-bar" title="Comment markers — click a dot to jump"></div>
+    <p id="loi-phat" style="display:none;color:var(--th-d97c6c);font-size:13px">
+      This browser can’t play the file (codec). Re-export as mp4 (H.264) and upload again.</p>
+  </div>
+
+  <div class="bl-panel">
+    <div class="bl-soan">
+      <textarea id="o-bl" placeholder="Leave a note… (it lands at the current timestamp)"></textarea>
+      <div class="bl-hang">
+        <label><input type="checkbox" id="gan-moc" checked> at <b id="moc-hien">00:00</b></label>
+        <button class="nut nho phu" type="button" id="nut-ve">✎ Draw</button>
+        <span class="mau-chon" id="mau-chon">
+          <button class="mau chon" style="background:#ff5f56" data-mau="#ff5f56" type="button" title="Red"></button>
+          <button class="mau" style="background:#f5c451" data-mau="#f5c451" type="button" title="Yellow"></button>
+          <button class="mau" style="background:#4c8fe0" data-mau="#4c8fe0" type="button" title="Blue"></button>
+          <button class="nut-bl" type="button" id="nut-hoan" style="color:var(--muted)">Undo</button>
+        </span>
+        <span style="flex:1"></span>
+        <button class="nut nho" type="button" id="nut-gui">Send</button>
+      </div>
+    </div>
+    <div class="bl-ds" id="bl-ds"></div>
+  </div>
+</div>
+{% endblock %}
+
+{% block script %}
+<script>
+(function () {
+  "use strict";
+  // Dữ liệu server nhúng qua |tojson (script-safe). KHÔNG dùng API secure-context-only
+  // (app chạy HTTP LAN — bài học crypto.randomUUID 01/08/2026).
+  var VIDEO_MA = {{ video.ma | tojson }};
+  var TOI = {{ user.ten | tojson }};
+  var CO_DUYET = {{ user.co_duyet | tojson }};
+  var BL = {{ cac_bl | tojson }};
+
+  var vid = document.getElementById("vid");
+  var wrap = document.getElementById("vid-wrap");
+  var canvas = document.getElementById("lop-ve");
+  var nen = canvas.getContext("2d");
+  var mocBar = document.getElementById("moc-bar");
+  var dsEl = document.getElementById("bl-ds");
+  var oBl = document.getElementById("o-bl");
+  var ganMoc = document.getElementById("gan-moc");
+  var mocHien = document.getElementById("moc-hien");
+
+  function mmss(s) { s = Math.floor(s || 0); return String(Math.floor(s / 60)).padStart(2, "0") + ":" + String(s % 60).padStart(2, "0"); }
+
+  // ===== canvas phủ khít video (tọa độ nét vẽ chuẩn hóa 0..1 — vẽ lại mọi cỡ màn) =====
+  function canChinhCanvas() {
+    canvas.width = vid.clientWidth || 1;
+    canvas.height = vid.clientHeight || 1;
+  }
+  function xoaLop() { nen.clearRect(0, 0, canvas.width, canvas.height); }
+  function veNet(ve) {
+    xoaLop();
+    if (!ve || !ve.net) return;
+    ve.net.forEach(function (n) {
+      if (!n.diem || n.diem.length < 2) return;
+      nen.strokeStyle = n.mau || "#ff5f56";
+      nen.lineWidth = 3; nen.lineCap = "round"; nen.lineJoin = "round";
+      nen.beginPath();
+      n.diem.forEach(function (d, i) {
+        var x = d[0] * canvas.width, y = d[1] * canvas.height;
+        if (i === 0) nen.moveTo(x, y); else nen.lineTo(x, y);
+      });
+      nen.stroke();
+    });
+  }
+  window.addEventListener("resize", function () { canChinhCanvas(); veNet(netDangXem); });
+  vid.addEventListener("loadedmetadata", function () { canChinhCanvas(); renderMoc(); });
+  vid.addEventListener("error", function () {
+    document.getElementById("loi-phat").style.display = "block";
+  });
+  vid.addEventListener("play", function () { netDangXem = null; xoaLop(); });
+  vid.addEventListener("timeupdate", function () { mocHien.textContent = mmss(vid.currentTime); });
+
+  // ===== chế độ vẽ chú thích =====
+  var dangVe = false, mauHien = "#ff5f56", netMoi = [], netDangXem = null, netTay = null;
+  var nutVe = document.getElementById("nut-ve");
+  nutVe.addEventListener("click", function () {
+    dangVe = !dangVe;
+    wrap.classList.toggle("che-do-ve", dangVe);
+    document.getElementById("mau-chon").style.display = dangVe ? "flex" : "none";
+    nutVe.textContent = dangVe ? "✎ Drawing…" : "✎ Draw";
+    if (dangVe) { vid.pause(); ganMoc.checked = true; canChinhCanvas(); veTatCa(); }
+  });
+  document.querySelectorAll(".mau[data-mau]").forEach(function (b) {
+    b.addEventListener("click", function () {
+      mauHien = b.dataset.mau;
+      document.querySelectorAll(".mau").forEach(function (x) { x.classList.remove("chon"); });
+      b.classList.add("chon");
+    });
+  });
+  document.getElementById("nut-hoan").addEventListener("click", function () {
+    netMoi.pop(); veTatCa();
+  });
+  function veTatCa() { veNet({ net: netMoi }); }
+  canvas.addEventListener("pointerdown", function (e) {
+    if (!dangVe) return;
+    netTay = { mau: mauHien, diem: [toaDo(e)] };
+    netMoi.push(netTay);
+    canvas.setPointerCapture(e.pointerId);
+  });
+  canvas.addEventListener("pointermove", function (e) {
+    if (!dangVe || !netTay) return;
+    netTay.diem.push(toaDo(e));
+    veTatCa();
+  });
+  canvas.addEventListener("pointerup", function () { netTay = null; });
+  function toaDo(e) {
+    var r = canvas.getBoundingClientRect();
+    return [Math.min(1, Math.max(0, (e.clientX - r.left) / r.width)),
+            Math.min(1, Math.max(0, (e.clientY - r.top) / r.height))];
+  }
+
+  // ===== markers trên thanh mốc =====
+  function renderMoc() {
+    mocBar.querySelectorAll(".moc-cham").forEach(function (c) { c.remove(); });
+    if (!vid.duration) return;
+    BL.forEach(function (b) {
+      if (b.ts_giay == null) return;
+      var c = document.createElement("button");
+      c.type = "button";
+      c.className = "moc-cham" + (b.trang_thai === "da_giai" ? " da-giai" : "");
+      c.style.left = Math.min(100, b.ts_giay / vid.duration * 100) + "%";
+      c.title = mmss(b.ts_giay) + " — " + b.nguoi;
+      c.addEventListener("click", function (e) { e.stopPropagation(); nhayToi(b); });
+      mocBar.appendChild(c);
+    });
+  }
+  mocBar.addEventListener("click", function (e) {
+    if (!vid.duration) return;
+    var r = mocBar.getBoundingClientRect();
+    vid.currentTime = (e.clientX - r.left) / r.width * vid.duration;
+  });
+
+  function nhayToi(b) {
+    if (b.ts_giay != null) { vid.currentTime = b.ts_giay; vid.pause(); }
+    if (b.ve_json) {
+      netDangXem = JSON.parse(b.ve_json);
+      // vẽ sau khi khung hình đã tua tới (seeked) — vẽ ngay sẽ bị khung cũ đè
+      var mot = function () { canChinhCanvas(); veNet(netDangXem); vid.removeEventListener("seeked", mot); };
+      vid.addEventListener("seeked", mot);
+      canChinhCanvas(); veNet(netDangXem);
+    } else { netDangXem = null; xoaLop(); }
+  }
+
+  // ===== danh sách bình luận =====
+  function renderDS() {
+    dsEl.textContent = "";
+    if (!BL.length) {
+      var t = document.createElement("div");
+      t.className = "bl-trong"; t.textContent = "No notes yet — be the first.";
+      dsEl.appendChild(t); return;
+    }
+    BL.forEach(function (b) {
+      var d = document.createElement("div");
+      d.className = "bl-item" + (b.trang_thai === "da_giai" ? " da-giai" : "");
+      var dau = document.createElement("div");
+      if (b.ts_giay != null) {
+        var m = document.createElement("span"); m.className = "moc"; m.textContent = mmss(b.ts_giay);
+        dau.appendChild(m);
+      }
+      var ai = document.createElement("span"); ai.className = "ai"; ai.textContent = b.nguoi;
+      dau.appendChild(ai);
+      if (b.ve_json) {
+        var v = document.createElement("span"); v.className = "co-ve"; v.textContent = " · ✎ annotated";
+        dau.appendChild(v);
+      }
+      var luc = document.createElement("span"); luc.className = "luc"; luc.textContent = (b.tao_luc || "").slice(5, 16);
+      dau.appendChild(luc);
+      var p = document.createElement("p"); p.textContent = b.noi_dung;
+      d.appendChild(dau); d.appendChild(p);
+
+      var day = document.createElement("div"); day.className = "nut-day";
+      if (b.nguoi === TOI || CO_DUYET) {
+        var g = document.createElement("button"); g.className = "nut-bl";
+        g.textContent = b.trang_thai === "da_giai" ? "Reopen" : "✓ Resolve";
+        g.addEventListener("click", function (e) {
+          e.stopPropagation();
+          goiApi("/api-vr/binh-luan/" + b.id + (b.trang_thai === "da_giai" ? "/mo-lai" : "/giai"));
+        });
+        var x = document.createElement("button"); x.className = "nut-bl"; x.textContent = "Delete";
+        x.addEventListener("click", function (e) {
+          e.stopPropagation();
+          if (x.dataset.chac) { goiApi("/api-vr/binh-luan/" + b.id + "/xoa"); }
+          else { x.dataset.chac = "1"; x.textContent = "Delete — sure?"; }
+        });
+        day.appendChild(g); day.appendChild(x);
+      }
+      d.appendChild(day);
+      d.addEventListener("click", function () { nhayToi(b); });
+      dsEl.appendChild(d);
+    });
+  }
+
+  function napLai() {
+    fetch("/api-vr/binh-luan/" + VIDEO_MA).then(function (r) { return r.json(); })
+      .then(function (du) { BL = du; renderDS(); renderMoc(); });
+  }
+  function goiApi(duong) { fetch(duong, { method: "POST" }).then(napLai); }
+
+  // ===== gửi bình luận =====
+  document.getElementById("nut-gui").addEventListener("click", function () {
+    var chu = oBl.value.trim();
+    if (!chu) { oBl.focus(); return; }
+    var than = { video_ma: VIDEO_MA, noi_dung: chu };
+    if (ganMoc.checked) than.ts_giay = vid.currentTime || 0;
+    if (netMoi.length) { than.ve = { w: 1, h: 1, net: netMoi }; than.ts_giay = vid.currentTime || 0; }
+    fetch("/api-vr/binh-luan", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(than)
+    }).then(function (r) {
+      if (!r.ok) throw 0;
+      oBl.value = ""; netMoi = []; netTay = null;
+      if (dangVe) nutVe.click();
+      xoaLop(); napLai();
+    }).catch(function () { oBl.placeholder = "Could not send — try again."; });
+  });
+
+  // ===== trạng thái duyệt + gỡ video =====
+  document.querySelectorAll("[data-tt]").forEach(function (b) {
+    b.addEventListener("click", function () {
+      var fd = new FormData();
+      fd.append("ma", VIDEO_MA); fd.append("trang_thai", b.dataset.tt);
+      fetch("/api-vr/trang-thai", { method: "POST", body: fd }).then(function (r) {
+        if (!r.ok) return;
+        var chip = document.getElementById("chip-tt");
+        chip.className = "chip " + b.dataset.tt;
+        chip.textContent = { can_sua: "Changes requested", da_duyet: "Approved", dang_duyet: "In review" }[b.dataset.tt];
+      });
+    });
+  });
+  var nutGo = document.getElementById("nut-go");
+  if (nutGo) nutGo.addEventListener("click", function () {
+    if (!nutGo.dataset.chac) { nutGo.dataset.chac = "1"; nutGo.textContent = "Remove — sure?"; return; }
+    var fd = new FormData(); fd.append("ma", VIDEO_MA);
+    fetch("/api-vr/xoa-video", { method: "POST", body: fd }).then(function (r) {
+      if (r.ok) location.href = "/danh-sach";
+    });
+  });
+
+  renderDS();
+  if (vid.readyState >= 1) { canChinhCanvas(); renderMoc(); }
+})();
+</script>
+{% endblock %}
