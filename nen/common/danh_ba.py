@@ -109,11 +109,18 @@ def _nap(duong: Path | str | None) -> list[dict]:
         lk: dict[str, dict[str, str]] = {}
         for r in conn.execute("SELECT thuc_the_ma, app_slug, khoa FROM lien_ket_app"):
             lk.setdefault(r["thuc_the_ma"], {})[r["app_slug"]] = r["khoa"]
+        # Thị trường CỦA TỪNG NGÁCH — user chọn, không có mặc định (002, 18/08/2026)
+        tt_ngach: dict[str, list[str]] = {}
+        for r in conn.execute(
+                "SELECT ngach_ma, thi_truong_ma FROM ngach_thi_truong "
+                "ORDER BY tao_luc, thi_truong_ma"):
+            tt_ngach.setdefault(r["ngach_ma"], []).append(r["thi_truong_ma"])
         for r in conn.execute("SELECT * FROM ngach ORDER BY tao_luc, ma"):
             t = dict(r)
             t["loai"] = "ngach"
             t["bi_danh"] = ";".join(alias.get(t["ma"], []))
             t["lien_ket"] = lk.get(t["ma"], {})
+            t["thi_truong_cua"] = tt_ngach.get(t["ma"], [])
             ket_qua.append(t)
         for r in conn.execute("SELECT * FROM kenh ORDER BY tao_luc, ma"):
             t = dict(r)
@@ -208,6 +215,24 @@ def them_thi_truong(conn, ten: str, ngon_ngu: str = "", ghi_chu: str = "") -> st
         conn.execute("INSERT INTO thi_truong VALUES (?,?,?,?,?)",
                      (ma, ten.strip(), ngon_ngu.strip(), ghi_chu.strip(), _luc()))
     return ma
+
+
+def dat_thi_truong_ngach(conn, ngach_ma: str, ds_thi_truong: list[str]) -> None:
+    """Đặt tập thị trường của MỘT ngách — thay cả tập (gỡ hết chọn lại).
+    Luật Owner 18/08/2026: thị trường là DO USER CHỌN, ngách mới = 0 thị trường;
+    không hàm nào được tự gán mặc định. Mã lạ / ngách lạ → ValueError."""
+    if not conn.execute("SELECT 1 FROM ngach WHERE ma=?", (ngach_ma,)).fetchone():
+        raise ValueError("ngách không tồn tại")
+    co = {r["ma"] for r in conn.execute("SELECT ma FROM thi_truong")}
+    ds = [t for t in dict.fromkeys(ds_thi_truong) if t]   # bỏ rỗng + dedup giữ thứ tự
+    la = [t for t in ds if t not in co]
+    if la:
+        raise ValueError("thị trường không tồn tại: " + ", ".join(la))
+    with conn:
+        conn.execute("DELETE FROM ngach_thi_truong WHERE ngach_ma=?", (ngach_ma,))
+        conn.executemany(
+            "INSERT INTO ngach_thi_truong (ngach_ma, thi_truong_ma, tao_luc) "
+            "VALUES (?,?,?)", [(ngach_ma, t, _luc()) for t in ds])
 
 
 def them_ngach(conn, ten_chuan: str, trang_thai: str = "thu", ghi_chu: str = "") -> str:

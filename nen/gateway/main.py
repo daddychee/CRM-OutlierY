@@ -1391,10 +1391,12 @@ def _render_niches(request, user, bao="", loi=""):
     for k in kenh:
         if k.get("thi_truong_ma"):
             so_kenh_tt[k["thi_truong_ma"]] = so_kenh_tt.get(k["thi_truong_ma"], 0) + 1
+    ds_tt = [t for t in ds if t["loai"] == "thi_truong"]
     return templates.TemplateResponse(request, "nen_niches.html", {
         "user": user, "trang": "niches", "la_owner": user["level"] >= 5,
-        "ds_ngach": ngach, "ds_tt": [t for t in ds if t["loai"] == "thi_truong"],
-        "so_kenh_tt": so_kenh_tt,
+        "ds_ngach": ngach, "ds_tt": ds_tt, "so_kenh_tt": so_kenh_tt,
+        # tên thị trường theo mã — cột Markets của từng ngách (chip)
+        "ten_tt": {t["ma"]: t["ten_chuan"] for t in ds_tt},
         "tt_ngach": danh_ba.TRANG_THAI_NGACH, "bao": bao, "loi": loi})
 
 
@@ -1408,24 +1410,29 @@ def nen_niches(request: Request, bao: str = "", loi: str = ""):
 
 @app.post("/general/niches/create")
 def nen_niches_tao(request: Request, ten_chuan: str = Form(...),
-                   trang_thai: str = Form("thu"), ghi_chu: str = Form("")):
+                   trang_thai: str = Form("thu"), ghi_chu: str = Form(""),
+                   thi_truong: list[str] = Form([])):
     user = _gate_danh_ba(request)
     if not isinstance(user, dict):
         return user
     conn = danh_ba.ket_noi()
     try:
+        # Thị trường của ngách = USER CHỌN lúc tạo (Owner chốt 18/08) — không tick
+        # gì thì ngách 0 thị trường, KHÔNG còn mặc định cả danh mục.
         ma = danh_ba.them_ngach(conn, ten_chuan, trang_thai, ghi_chu)
+        danh_ba.dat_thi_truong_ngach(conn, ma, thi_truong)
     except ValueError as e:
         return _ve_danh_ba("niches", loi=str(e))
     finally:
         conn.close()
-    _audit_danh_ba(user, f"tao ngach {ma} ({ten_chuan})")
+    _audit_danh_ba(user, f"tao ngach {ma} ({ten_chuan}) tt={','.join(thi_truong) or '-'}")
     return _ve_danh_ba("niches", bao=f"Created niche {ma}.")
 
 
 @app.post("/general/niches/update")
 def nen_niches_sua(request: Request, ma: str = Form(...), ten_chuan: str = Form(...),
-                   trang_thai: str = Form("thu"), ghi_chu: str = Form("")):
+                   trang_thai: str = Form("thu"), ghi_chu: str = Form(""),
+                   thi_truong: list[str] = Form([])):
     user = _gate_danh_ba(request)
     if not isinstance(user, dict):
         return user
@@ -1433,11 +1440,12 @@ def nen_niches_sua(request: Request, ma: str = Form(...), ten_chuan: str = Form(
     try:
         danh_ba.sua_thuc_the(conn, "ngach", ma, ten_chuan=ten_chuan,
                              trang_thai=trang_thai, ghi_chu=ghi_chu)
+        danh_ba.dat_thi_truong_ngach(conn, ma, thi_truong)
     except ValueError as e:
         return _ve_danh_ba("niches", loi=str(e))
     finally:
         conn.close()
-    _audit_danh_ba(user, f"sua ngach {ma}")
+    _audit_danh_ba(user, f"sua ngach {ma} tt={','.join(thi_truong) or '-'}")
     return _ve_danh_ba("niches", bao=f"Saved {ma}.")
 
 

@@ -175,19 +175,22 @@ def trang_niche(request: Request, user: dict = Depends(_lay_user),
     ten_tt = _ten_thi_truong()
     thi_truong = []
     ds_ngay: list[str] = []
-    pills: list[dict] = []      # pill thị trường = MỌI market trong danh bạ
+    pills: list[dict] = []      # pill = thị trường CỦA NGÁCH đang chọn
     if ngach_hien:
         mapping = _map_projects().get(ngach_hien["ma"], {})
-        # User bắt lỗi 18/08: General có 3 thị trường mà dashboard chỉ hiện 2 —
-        # pills phải liệt kê ĐỦ danh bạ; market chưa gán dự án hiện khối hướng dẫn
-        # (New report nhánh Niche tự tạo pool + tự gán map), không được giấu.
+        # LUẬT MỚI Owner 18/08 (thay lệnh "pills liệt kê đủ danh bạ" cùng ngày):
+        # thị trường THUỘC TỪNG NGÁCH, user chọn ở General → Niches (bảng
+        # ngach_thi_truong danh bạ) — hết cảnh mọi niche "mặc định" cả 3 thị
+        # trường. Ngách chưa chọn gì → pills rỗng + khối hướng dẫn sang General.
+        tt_cua_ngach = [m for m in ngach_hien.get("thi_truong_cua", []) if m in ten_tt]
+
         def _uu_tien(m):
             # Mặc định phải là thị trường CÓ BÁO CÁO (bug 18/08: SPAIN mapped-chưa-
             # snapshot đứng trước US theo alphabet → trang mặc định trống trơn).
             p = mapping.get(m)
             co_bao_cao = bool(p and niche_bridge.chon_snapshot(p))
             return (not co_bao_cao, m not in mapping, ten_tt[m])
-        thu_tu = sorted(ten_tt, key=_uu_tien)
+        thu_tu = sorted(tt_cua_ngach, key=_uu_tien)
         pills = [{"ma": m, "ten": ten_tt[m]} for m in thu_tu]
         # User chốt 18/08 (ảnh 2): KHÔNG có "All" — luôn đúng MỘT thị trường đang
         # chọn (mặc định = thị trường đầu có báo cáo), đổi qua dropdown thanh trên.
@@ -224,7 +227,13 @@ def trang_niche(request: Request, user: dict = Depends(_lay_user),
         "thi_truong": thi_truong, "ds_kenh": _ds_kenh(ngach_hien["ma"]) if ngach_hien else [],
         "ds_ngay": ds_ngay, "ngay_chon": ngay,
         "pills": pills, "tt_chon": tt, "che_do": "ngach",
+        # Ngách chưa CHỌN thị trường nào (luật 18/08) → template hiện hướng dẫn
+        # sang General → Niches thay vì thông điệp gán-dự-án gây hiểu nhầm.
+        "chua_chon_tt": bool(ngach_hien) and not pills,
         "ds_thi_truong": sorted(_ten_thi_truong().items(), key=lambda x: x[1]),
+        # Modal New report: nr-tt lọc theo thị trường CỦA ngách đang chọn (JS đọc map này)
+        "tt_cua_ngach_map": {n["ma"]: (n.get("thi_truong_cua") or []) for n in ds_ngach},
+        "ten_tt_map": ten_tt,
     })
 
 
@@ -280,6 +289,11 @@ def tao_report_niche(user: dict = Depends(_lay_user), ngach_ma: str = Form(...),
     ten_tt = _ten_thi_truong().get(thi_truong_ma)
     if ngach is None or ten_tt is None:
         raise HTTPException(404, "Niche/thị trường không có trong danh bạ.")
+    # Luật 18/08: thị trường phải THUỘC ngách (user chọn ở General → Niches).
+    # DA không tự ghi danh bạ hộ — chọn thị trường là việc của khối nền.
+    if thi_truong_ma not in (ngach.get("thi_truong_cua") or []):
+        raise HTTPException(400, f"Thị trường {ten_tt} chưa thuộc niche này — "
+                                 "chọn ở General → Niches (Edit → Markets) trước.")
 
     mapping = _map_projects()
     project = mapping.get(ngach_ma, {}).get(thi_truong_ma)

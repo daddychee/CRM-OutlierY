@@ -20,7 +20,8 @@ def client(tmp_path, monkeypatch):
     map_path.write_text(json.dumps({"N-TEST": {"TT-US": project}}), encoding="utf-8")
     monkeypatch.setenv("NICHE_PROJECTS_MAP", str(map_path))
     monkeypatch.setattr(dashboard, "_ds_ngach",
-                        lambda: [{"ma": "N-TEST", "ten_chuan": "TEST NICHE"}])
+                        lambda: [{"ma": "N-TEST", "ten_chuan": "TEST NICHE",
+                                  "thi_truong_cua": ["TT-US"]}])
     monkeypatch.setattr(dashboard, "_ds_kenh",
                         lambda ma: [{"ma": "K-A", "ten_chuan": "KENH A",
                                      "ngach_ma": ma, "thi_truong_ma": "TT-US"}])
@@ -93,10 +94,14 @@ def test_audience_fallback_khi_thieu_bao_cao_html(client, tmp_path):
 
 
 def test_dropdown_du_moi_thi_truong_danh_ba(client, monkeypatch):
-    """General có 3 thị trường thì dropdown phải đủ 3; mặc định = thị trường ĐÃ GÁN
-    đầu tiên; chọn market chưa gán → khối hướng dẫn New report, không giấu."""
+    """LUẬT MỚI 18/08 (thay lệnh sáng cùng ngày): dropdown = thị trường ngách ĐÃ
+    CHỌN (General → Niches), không phải cả danh bạ; mặc định = thị trường ĐÃ GÁN
+    đầu tiên; market đã chọn nhưng chưa gán dự án → khối hướng dẫn New report."""
     monkeypatch.setattr(dashboard, "_ten_thi_truong",
                         lambda: {"TT-US": "US", "TT-KOREA": "Korea"})
+    monkeypatch.setattr(dashboard, "_ds_ngach",
+                        lambda: [{"ma": "N-TEST", "ten_chuan": "TEST NICHE",
+                                  "thi_truong_cua": ["TT-US", "TT-KOREA"]}])
     body = client.get("/niche", headers=CLAIMS).text
     assert ">Korea<" in body                              # option trong dropdown
     assert "PHÁN QUYẾT" in body                           # mặc định = US (đã gán)
@@ -220,8 +225,23 @@ def test_dieu_huong_tren_dau_khong_con_rail(client):
 
 def test_niche_chua_gan_project(client, tmp_path, monkeypatch):
     monkeypatch.setattr(dashboard, "_ds_ngach",
-                        lambda: [{"ma": "N-KHAC", "ten_chuan": "NICHE TRỐNG"}])
+                        lambda: [{"ma": "N-KHAC", "ten_chuan": "NICHE TRỐNG",
+                                  "thi_truong_cua": ["TT-US"]}])
     r = client.get("/niche", headers=CLAIMS, params={"ngach": "N-KHAC"})
     # Từ 18/08 mọi thị trường danh bạ đều có khối riêng — niche chưa gán dự án
     # hiện hướng dẫn New report per-market thay vì một dòng chung.
     assert r.status_code == 200 and "Chưa gán dự án nghiên cứu" in r.text
+
+
+def test_ngach_chua_chon_thi_truong_hien_huong_dan(client, monkeypatch):
+    """Luật 18/08: ngách 0 thị trường (user chưa tick ở General → Niches) →
+    hướng dẫn sang General, KHÔNG hiện thông điệp gán-dự-án gây lạc đường."""
+    monkeypatch.setattr(dashboard, "_ds_ngach",
+                        lambda: [{"ma": "N-MOI", "ten_chuan": "NICHE MOI",
+                                  "thi_truong_cua": []}])
+    r = client.get("/niche", headers=CLAIMS, params={"ngach": "N-MOI"})
+    import unicodedata as _u
+    body = _u.normalize("NFC", r.text)
+    assert r.status_code == 200
+    assert _u.normalize("NFC", "chưa chọn thị trường nào") in body
+    assert _u.normalize("NFC", "Chưa gán dự án nghiên cứu") not in body

@@ -155,9 +155,34 @@
             {% for n in ds_ngach %}<option value="{{ n.ma }}" {% if ngach and n.ma == ngach.ma %}selected{% endif %}>{{ n.ten_chuan }}</option>{% endfor %}
           </select>
           <select id="nr-tt" style="flex:1;background:var(--th-182233);color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:7px 9px;font:inherit">
-            {% for ma, ten in ds_thi_truong %}<option value="{{ ma }}">{{ ten }}</option>{% endfor %}
           </select>
         </div>
+        <script>
+        // Luật 18/08: nr-tt CHỈ liệt kê thị trường CỦA ngách (user chọn ở General →
+        // Niches) — đổi ngách là danh sách đổi theo; ngách 0 thị trường → khóa chọn.
+        (function () {
+          var TT_NGACH = {{ (tt_cua_ngach_map or {}) | tojson }};
+          var TEN_TT = {{ (ten_tt_map or {}) | tojson }};
+          var ng = document.getElementById('nr-ngach'), tt = document.getElementById('nr-tt');
+          if (!ng || !tt) return;
+          function capNhat() {
+            var ds = TT_NGACH[ng.value] || [];
+            tt.innerHTML = '';
+            if (!ds.length) {
+              var o = document.createElement('option');
+              o.value = ''; o.textContent = '— niche chưa chọn thị trường (General → Niches) —';
+              tt.appendChild(o); tt.disabled = true; return;
+            }
+            tt.disabled = false;
+            ds.forEach(function (m) {
+              var o = document.createElement('option');
+              o.value = m; o.textContent = TEN_TT[m] || m; tt.appendChild(o);
+            });
+          }
+          ng.addEventListener('change', capNhat);
+          capNhat();
+        })();
+        </script>
         <textarea id="nr-pool" rows="5" placeholder="Dán kênh đối thủ — mỗi dòng 1 kênh (URL /channel/UC… hoặc @handle). Cộng dồn vào pool cũ; key YouTube lấy từ KÉT."
           style="width:100%;background:var(--th-182233);color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:8px 10px;font:inherit;font-size:.85rem"></textarea>
         {# 4 tùy chọn = TOÀN BỘ đầu vào còn lại của pipeline (kiểm /api/run + orchestrator
@@ -329,8 +354,14 @@
       <div class="nd-trong">Chưa có niche trong danh bạ — tạo ở cổng OUTLIERY (Niches) trước.</div>
     {% else %}
     {% if not thi_truong %}
+      {% if chua_chon_tt %}
+      <div class="nd-trong">Niche này chưa chọn thị trường nào — thị trường do bạn chọn
+        cho từng niche (không có mặc định): vào <b>General → Niches</b>, bấm Edit và tick
+        Markets, rồi quay lại đây.</div>
+      {% else %}
       <div class="nd-trong">Niche này chưa gán dự án Niche Research nào —
         gán trong <code>data/data-analytics/niche_projects.json</code> (⚙ Settings ở đợt sau).</div>
+      {% endif %}
     {% endif %}
 
     {% for tt in thi_truong %}

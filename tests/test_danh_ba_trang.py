@@ -212,3 +212,32 @@ def test_nhan_en_va_khong_ghi_chu_man_hinh(he):
     assert "Retire channel" not in b
     ow = _login("owner-t", "mk-test").get("/general/channels?ma=K-OUTLAND").text
     assert "Retire channel" in ow and 'placeholder="retype K-OUTLAND"' in ow
+
+
+def test_niche_thi_truong_user_chon_khong_mac_dinh(he):
+    """Owner chốt 18/08: thị trường THUỘC TỪNG NGÁCH do user tick — ngách tạo
+    không tick gì = 'none chosen', tick rồi sửa là thay cả tập."""
+    c = _login("quanly", "mk-ql-6")
+    c.post("/general/markets/create", data={"ten": "US", "ngon_ngu": "English"})
+    c.post("/general/markets/create", data={"ten": "Korea", "ngon_ngu": "Korean"})
+    # tạo KHÔNG tick → 0 thị trường (không còn mặc định cả danh mục)
+    r = c.post("/general/niches/create", data={"ten_chuan": "Space"})
+    assert "none chosen" in r.text
+    # tạo CÓ tick 2 thị trường
+    r = c.post("/general/niches/create", data={
+        "ten_chuan": "Life In", "thi_truong": ["TT-US", "TT-KOREA"]})
+    assert r.text.count("N-LIFE-IN") >= 1 and "US" in r.text and "Korea" in r.text
+    from nen.common import danh_ba
+    n = next(t for t in danh_ba.liet_ke("ngach") if t["ma"] == "N-LIFE-IN")
+    assert sorted(n["thi_truong_cua"]) == ["TT-KOREA", "TT-US"]
+    # update thay cả tập: chỉ còn Korea
+    c.post("/general/niches/update", data={
+        "ma": "N-LIFE-IN", "ten_chuan": "Life In", "trang_thai": "thu",
+        "thi_truong": ["TT-KOREA"]})
+    n = next(t for t in danh_ba.liet_ke("ngach") if t["ma"] == "N-LIFE-IN")
+    assert n["thi_truong_cua"] == ["TT-KOREA"]
+    # mã thị trường lạ → lỗi hiện trên trang, không 500
+    r = c.post("/general/niches/update", data={
+        "ma": "N-LIFE-IN", "ten_chuan": "Life In", "trang_thai": "thu",
+        "thi_truong": ["TT-LA"]})
+    assert r.status_code == 200 and "không tồn tại" in r.text

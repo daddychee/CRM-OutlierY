@@ -148,3 +148,53 @@ def test_xuat_csv_du_cot_ngay_tao(db):
     _seed(db)
     ra = danh_ba.xuat_csv()
     assert "K-OUTLAND" in ra and "ten_chuan" in ra and "tao_luc" in ra
+
+
+# ---------- thị trường CỦA NGÁCH (002 — Owner chốt 18/08/2026) ----------
+
+def test_ngach_moi_khong_co_thi_truong_mac_dinh(db):
+    """Luật 18/08: hết cảnh mọi niche 'mặc định' cả danh mục thị trường —
+    ngách mới tạo phải 0 thị trường tới khi user chọn."""
+    _seed(db)
+    ng2 = danh_ba.them_ngach(db, "Space")
+    n = next(t for t in danh_ba.liet_ke("ngach") if t["ma"] == ng2)
+    assert n["thi_truong_cua"] == []
+
+
+def test_dat_thi_truong_ngach_thay_ca_tap_va_chan_ma_la(db):
+    tt_us, ng, _ = _seed(db)
+    tt_kr = danh_ba.them_thi_truong(db, "Korea", "Korean")
+    danh_ba.dat_thi_truong_ngach(db, ng, [tt_us, tt_kr, tt_us])   # dedup
+    n = next(t for t in danh_ba.liet_ke("ngach") if t["ma"] == ng)
+    assert sorted(n["thi_truong_cua"]) == sorted([tt_us, tt_kr])
+    danh_ba.dat_thi_truong_ngach(db, ng, [tt_kr])                 # thay cả tập
+    n = next(t for t in danh_ba.liet_ke("ngach") if t["ma"] == ng)
+    assert n["thi_truong_cua"] == [tt_kr]
+    import pytest as _pt
+    with _pt.raises(ValueError):
+        danh_ba.dat_thi_truong_ngach(db, ng, ["TT-LA"])           # mã lạ chặn từ cửa
+    with _pt.raises(ValueError):
+        danh_ba.dat_thi_truong_ngach(db, "N-LA", [tt_kr])         # ngách lạ chặn
+
+
+def test_backfill_002_tu_kenh_dang_dung(tmp_path, monkeypatch):
+    """Backfill migration: ngách nhận thị trường mà KÊNH của nó đang đứng —
+    dựng DB bằng schema 001 rồi mở lại cho 002 chạy đè."""
+    import sqlite3
+    from pathlib import Path
+    duong = tmp_path / "cu.db"
+    conn = sqlite3.connect(duong)
+    sql_001 = (Path(danh_ba.MIGRATIONS) / "001_khoi_tao.sql").read_text(encoding="utf-8-sig")
+    conn.executescript(sql_001)
+    conn.executescript(
+        "CREATE TABLE IF NOT EXISTS schema_version (phien_ban INTEGER);"
+        "DELETE FROM schema_version; INSERT INTO schema_version VALUES (1);"
+        "INSERT INTO thi_truong VALUES ('TT-US','US','English','','2026-01-01');"
+        "INSERT INTO ngach VALUES ('N-LIFE','Life In','thu','','2026-01-01');"
+        "INSERT INTO kenh VALUES ('K-OUT','Outland',NULL,'N-LIFE','TT-US','','uom_mam',NULL,'','','','2026-01-01','');")
+    conn.commit(); conn.close()
+    monkeypatch.setenv("DANH_BA_DB", str(duong))
+    conn = danh_ba.ket_noi()          # migrate chạy 002 → backfill
+    conn.close()
+    n = next(t for t in danh_ba.liet_ke("ngach") if t["ma"] == "N-LIFE")
+    assert n["thi_truong_cua"] == ["TT-US"]

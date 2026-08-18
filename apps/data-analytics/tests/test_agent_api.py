@@ -20,7 +20,8 @@ def client(tmp_path, monkeypatch):
     map_path.write_text(json.dumps({"N-TEST": {"TT-US": project}}), encoding="utf-8")
     monkeypatch.setenv("NICHE_PROJECTS_MAP", str(map_path))
     monkeypatch.setattr(dashboard, "_ds_ngach",
-                        lambda: [{"ma": "N-TEST", "ten_chuan": "TEST NICHE"}])
+                        lambda: [{"ma": "N-TEST", "ten_chuan": "TEST NICHE",
+                                  "thi_truong_cua": ["TT-US"]}])
     monkeypatch.setattr(dashboard, "_ds_kenh",
                         lambda ma: [{"ma": "K-A", "ten_chuan": "KENH A", "bi_danh": "",
                                      "ngach_ma": ma, "thi_truong_ma": "TT-US"}])

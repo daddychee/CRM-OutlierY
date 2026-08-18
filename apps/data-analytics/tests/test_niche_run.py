@@ -74,7 +74,8 @@ def test_chay_lai_mo_cua_snapshot_moi(client, monkeypatch):
 
 def _mock_danh_ba(monkeypatch):
     monkeypatch.setattr(dashboard, "_ds_ngach",
-                        lambda: [{"ma": "N-TEST", "ten_chuan": "LIFE IN"}])
+                        lambda: [{"ma": "N-TEST", "ten_chuan": "LIFE IN",
+                                  "thi_truong_cua": ["TT-ES"]}])
     monkeypatch.setattr(dashboard, "_ten_thi_truong", lambda: {"TT-ES": "Spain"})
 
 
