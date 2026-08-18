@@ -46,7 +46,7 @@
 | 3 | Niche Research | 9113 | data\niche-research\ (projects VÀNG + data/invites di sản) | KD L2 xem · tao KD L3 leader · toan_quyen KD L4 manager · quan_tri Owner | **ĐANG LÀM** (18/08 — Owner chen lên trước SEO; chờ nghiệm thu + cấp khóa) |
 | 4 | SEO Optimize | 9115 | data\seo-optimize\ (~15M: profiles/episodes/formats/niches/runs + users.json di sản + audit) | KD L2 van_hanh (vai seo) · sua L3 · toan_quyen L4 manager · quan_tri Owner | **XONG** (19/08 — chờ Owner chạy migration khóa + soi UI qua 9443) |
 | — | Data Analytics | 9102 | data\data-analytics\ | đã trong V3 từ đầu | XONG (còn Đ2.2 nối danh bạ) |
-| 5 | PlannerY | 91xx | data\plannery\ | mọi BP L1 · them_kenh_video KD L2 seo · sua L3 · quan_tri Owner + VÁ bẫy users.json thắng header | chờ |
+| 5 | PlannerY | 9116 | data\plannery\ (plan.json BẢN SAO 19/08 — V2 :8123 vẫn là nguồn thật tới cutover) | mọi BP L1 xem · khai_kenh_video KD L2 (vai seo — đổi tên từ them_kenh_video vì bẫy substring vai_cho_app) · sua L3 leader · toan_quyen L4 manager · quan_tri Owner + ĐÃ VÁ bẫy users.json thắng header | **XONG** (19/08 — chờ restart gateway lấy URL đẹp /plannery) |
 | 6 | SpeakY | 91xx | data\speaky\ | VH L2, quyền ở cửa vào; model dùng chung HF cache máy | chờ |
 | — | NAS | — | — | nút đáy sidebar, trang chỉ đường | chờ |
 
@@ -61,6 +61,36 @@
 - App chết không được giết cổng 9000 (van an toàn kiểu Qdrant hệ cũ).
 
 ## Nhật ký
+
+- 19/08/2026 — **PLANNERY XONG (app 5/6)** — cổng 9116 (`python server.py
+  --no-browser`, stdlib ThreadingHTTPServer; Wd = apps/plannery), giao diện khung,
+  `tien_to ["/api"]` (SPA fetch đường tuyệt đối — proxy viết lại byte như V2).
+  (1) **PLANNER_DATA_DIR** mới: dữ liệu tách về data/plannery (bản sao plan.json
+  hệ thật 19/08, _rev 908, 9 người/6 dự án — V2 :8123 vẫn là NGUỒN THẬT tới
+  cutover, kế hoạch 2 hệ sẽ lệch dần, cutover chép lại file là xong).
+  (2) **SSO adapter Actions-first** (`server._vai_tu_actions`): quan_tri→admin ·
+  toan_quyen→manager · sua→leader · **khai_kenh_video→seo** (ĐỔI TÊN từ
+  them_kenh_video V2 — "them" dính bẫy substring vai_cho_app tự thăng leader);
+  fallback X-Remote-Role (nhận cả 'owner' V2 → admin). Thang quyền: mọi BP L1
+  xem · KD L2 vai seo · L3 leader · **L4 manager MỚI** (V2 chỉ có leader vì
+  thiếu nấc — luật 04-05/08 "Manager toàn quyền VẬN HÀNH": vai manager của app
+  sửa full data, tài khoản nội bộ vẫn admin/Owner) · L5 admin; vai_xoa=manager.
+  (3) **VÁ BẪY users.json thắng header** (DE.md:462): SSO bật → identity() đi
+  ĐƯỜNG HEADER TRƯỚC users.json/ADMIN_USERS; sổ riêng chỉ còn nghĩa standalone.
+  Vá luôn lỗ V2: X-Remote-* giờ CHỈ nhận từ loopback (trước đây nhánh
+  ADMIN_USERS đứng TRƯỚC kiểm loopback — bind 0.0.0.0 là thành admin tự phong);
+  tự động hóa loopback (khuôn plannery_sync V2 gửi mỗi X-Remote-User=admin)
+  phải gửi kèm `X-Remote-Role: admin`. (4) **Đóng cửa nội bộ khi SSO** (khuôn
+  _chot_quan_tri niche): /api/users · /api/register · /api/role · /invite ·
+  /logout → 404 vô điều kiện, kể cả admin. (5) Test: tests/test_sso.py 5 test
+  (Actions-first, vá-bẫy sổ riêng, standalone giữ nguyên, header ngoài loopback
+  bị bỏ, đóng cửa qua HTTP thật); 3 fail test_engine.py là BASELINE V2 có sẵn
+  (đối chứng chạy trên C:\ nguyên bản — engine đi trước test từ hồi V2, không
+  thuộc mạch này). Nghiệm thu sống :9116 5 vai + đối chiếu iam.cac_hanh_dong 6
+  tài khoản thật khớp từng cờ. CHỜ: restart gateway để ăn `_ALIAS_KHUNG` có
+  'plannery' (URL đẹp /plannery + link sidebar — dòng sửa main.py đi cùng đợt
+  NAS/SEO của phiên song song; /app/plannery đã sống nóng không cần restart);
+  to-chuc muốn nối KPI thì trỏ PLANNERY_PLAN=data/plannery/plan.json.
 
 - 19/08/2026 — **SEO OPTIMIZE XONG (app 4/6)** — đúng khuôn 6 bước, cổng 9115
   (`python -m seo.server`, stdlib thuần — KHÔNG uvicorn; Wd = apps/seo-optimize,

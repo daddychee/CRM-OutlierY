@@ -667,6 +667,34 @@
      "loai": "llm"
     }
    ]
+  },
+  {
+   "slug": "plannery",
+   "ten": "PlannerY",
+   "mo_ta": "Điều phối sản xuất video: dự án → kênh → video, phân công người theo khâu (content/editor), lịch tuần + cảnh báo trễ/thiếu người. Đưa vào V3 từ hệ cũ 19/08 (APPS.md app 5/6); SPA vanilla stdlib, ghi qua /api/plan CAS _rev + backup 2 lớp.",
+   "cong": 9116,
+   "tien_to": [
+    "/api"
+   ],
+   "health": "/api/me",
+   "phien_ban": "3.0-v3",
+   "chay": {
+    "kieu": "python-script",
+    "app_dir": "apps/plannery",
+    "module": "server.py"
+   },
+   "du_lieu": [
+    {
+     "ten": "plannery-plan",
+     "loai": "json",
+     "duong": "data/plannery/plan.json",
+     "muc_quy": "vang",
+     "backup": "copy",
+     "giu": "vinh-vien",
+     "ghi_chu": "Kế hoạch sản xuất (people/projects/assignments, CAS _rev). BẢN SAO plan.json hệ thật 19/08 — V2 cổng 8123 vẫn là nguồn thật tới cutover; app tự giữ plan.backup.json + backups/ 40 bản cạnh file."
+    }
+   ],
+   "giao_dien": "khung"
   }
  ]
 }

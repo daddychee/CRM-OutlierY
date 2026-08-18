@@ -1,0 +1,1907 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PlannerY — Điều phối sản xuất video</title>
+<script>(function(){var d=document.documentElement,t=null;try{t=new URLSearchParams(location.search).get("theme")||localStorage.getItem("outliery_theme")}catch(e){}if(t!=="light"&&t!=="dark"){t=(window.matchMedia&&matchMedia("(prefers-color-scheme: light)").matches)?"light":"dark"}d.setAttribute("data-theme",t)})()</script>
+<link rel="stylesheet" href="/static/fonts/fonts.css">
+<style>
+  :root{
+    color-scheme:dark;
+    --bg:#090C12;--panel:#121826;--raised:#182233;--border:#243149;--border-soft:#1F2A3E;
+    --text:#E8EDF4;--muted:#8B96A8;--faint:#66738A;--accent:#4C8FE0;--accent-ink:#0B1220;
+    --accent-soft:rgba(76,143,224,.14);--link:#6BA4E8;--danger:#D97C6C;--danger-soft:rgba(217,124,108,.13);--ok:#83A96F;
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;--disp:'Inter',"Segoe UI",system-ui,sans-serif;
+  }
+  :root[data-theme="light"]{color-scheme:light;--bg:#F5F5F5;--panel:#FFFFFF;--raised:#FFFFFF;--border:#E0E0E0;
+    --border-soft:#EAEAEA;--text:#16181C;--muted:#6C6C72;--faint:#9A9A9F;--accent:#2C6FC4;--accent-ink:#FFFFFF;
+    --accent-soft:#E8F0FB;--link:#2C6FC4;--danger:#B14A3C;--danger-soft:rgba(177,74,60,.10);--ok:#4F7A3C;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 var(--disp)}
+  button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;padding:0}
+  button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
+  input,select{background:var(--raised);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:5px 8px;font:12.5px var(--disp)}
+  .cdot{display:inline-block;width:9px;height:9px;border-radius:50%;flex:none}
+  .swatch-wrap{position:relative;display:inline-flex;flex:none}
+  .swatch{width:22px;height:22px;border-radius:6px;border:1px solid var(--border);cursor:pointer;flex:none}
+  .swatch-menu{position:absolute;top:26px;left:0;background:var(--raised);border:1px solid var(--border);border-radius:8px;
+    padding:7px;display:grid;grid-template-columns:repeat(5,22px);gap:6px;z-index:40;box-shadow:0 6px 20px rgba(0,0,0,.35)}
+  /* display:grid (author) thắng UA [hidden]{display:none} — phải tự ẩn lại */
+  .swatch-menu[hidden]{display:none}
+  .swatch-menu .sw{width:22px;height:22px;border-radius:6px;cursor:pointer;border:1px solid rgba(0,0,0,.25)}
+  .v-prio{font-size:14px;color:var(--faint);padding:0 2px}
+  .v-prio.on{color:var(--accent)}
+  .v-prio:hover{color:var(--accent)}
+  .ch-name{font:inherit;color:inherit}
+  .ch-name:hover{color:var(--accent);text-decoration:underline}
+  input[type="number"]{width:64px;font-family:var(--mono);font-size:12px}
+  input[type="date"]{font-family:var(--mono);font-size:11.5px}
+  .app{max-width:1460px;margin:0 auto;padding:18px 20px 60px;display:flex;flex-direction:column;gap:14px}
+  header{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;border-bottom:1px solid var(--border);padding-bottom:12px}
+  .eyebrow{font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  .brand{font-weight:700;font-size:17px}.brand em{color:var(--accent);font-style:normal}
+  .newbtn{font-size:12px;font-weight:600;color:var(--accent);border:1px solid var(--accent);border-radius:6px;padding:4px 11px}
+  .newbtn:hover{background:var(--accent);color:var(--accent-ink)}
+  .save-state{margin-left:auto;font-family:var(--mono);font-size:11.5px;color:var(--ok);display:flex;gap:6px;align-items:center}
+  .save-state::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--ok)}
+  .save-state.dirty{color:var(--muted)}.save-state.dirty::before{background:var(--muted)}
+  .tabs{display:flex;gap:2px}
+  .tab{padding:7px 14px;font-size:12.5px;font-weight:600;color:var(--muted);border:1px solid transparent;border-radius:7px 7px 0 0;letter-spacing:.06em}
+  .tab[aria-selected="true"]{background:var(--panel);border-color:var(--border);border-bottom-color:var(--panel);color:var(--text)}
+
+  #warnings{display:flex;flex-direction:column;gap:6px}
+  .warn{padding:7px 12px;border-radius:6px;font-size:12.5px;border:1px solid var(--border);background:var(--panel);color:var(--muted)}
+  .warn.late{background:var(--danger-soft);border-color:var(--danger);color:var(--danger)}
+  .warn.under_standard{background:var(--accent-soft);border-color:var(--accent);color:var(--text)}
+  .warn.bottleneck{background:var(--accent-soft);border-color:var(--accent);color:var(--text)}
+
+  .cols{display:grid;grid-template-columns:300px minmax(0,1fr);gap:14px;align-items:start}
+  @media (max-width:1000px){.cols{grid-template-columns:1fr}}
+  .panel{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:14px}
+  .panel h2{margin:0 0 4px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  .hint{font-size:12.5px;color:var(--faint);line-height:1.5}
+  .num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+
+  .person{background:var(--raised);border:1px solid var(--border);border-radius:7px;padding:9px 10px;margin-top:9px}
+  .person-top{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+  .person-top .p-min{margin-left:auto}
+  .drag-handle{cursor:grab;color:var(--faint);user-select:none;font-size:15px}
+  /* 01/08/2026: tên KHÔNG được bóp cụt ("Trần Hồng N") — giữ tối thiểu 130px,
+     chật thì chip vai + nút tự xuống dòng dưới (person-top flex-wrap) */
+  .p-name{flex:1 1 130px;min-width:130px;font-weight:600;border-color:transparent;background:none;padding:2px 4px}
+  .p-name:hover,.p-name:focus{border-color:var(--border);background:var(--raised)}
+  .role-tag{font-family:var(--mono);font-size:11px;padding:1px 7px;border-radius:4px;border:1px solid var(--border);color:var(--muted)}
+  .role-tag.editor{color:var(--link);border-color:var(--link)}
+  .role-tag.content{color:var(--ok);border-color:var(--ok)}
+  .role-tag.clone{color:var(--accent);border-color:var(--accent)}
+  .p-del{color:var(--faint);font-size:14px;padding:0 4px}.p-del:hover{color:var(--danger)}
+  .p-min{color:var(--faint);font-size:12px;padding:0 4px}.p-min:hover{color:var(--accent)}
+  .person.min{padding:6px 10px}
+  .p-rates{display:flex;gap:10px;align-items:center;margin-top:7px;font-size:11.5px;color:var(--muted);flex-wrap:wrap}
+  .p-rates .num{color:var(--text)}
+  .tq-bar{height:5px;background:var(--border-soft);border-radius:99px;margin-top:7px;overflow:hidden}
+  .tq-bar i{display:block;height:100%;background:var(--ok);border-radius:99px}
+  .tq-bar i.low{background:var(--danger)}
+  .rolechip{display:inline-block;font-size:10.5px;font-weight:700;padding:1px 9px;border-radius:99px;
+    background:var(--accent-soft);color:var(--accent);text-transform:uppercase;letter-spacing:.05em}
+  .rolechip.viewer{background:var(--raised);color:var(--muted);border:1px solid var(--border)}
+  .inv-code{font-family:var(--mono);font-size:12px;color:var(--accent)}
+  #view-admin .panel{max-width:760px}
+  #view-admin h2 small{font-weight:400;color:var(--faint);text-transform:none;letter-spacing:0;font-size:11px}
+  .p-flag{margin-top:5px;font-size:11px;color:var(--danger);font-weight:600}
+  .p-note{margin-top:5px;font-size:11px;color:var(--faint)}
+  #add-person{display:flex;flex-direction:column;gap:7px;margin-top:12px;border-top:1px solid var(--border-soft);padding-top:12px}
+  #add-person .row{display:flex;gap:7px}
+
+  .project{background:var(--panel);border:1px solid var(--border);border-left:4px solid var(--pc,var(--accent));border-radius:8px;padding:14px;margin-bottom:14px}
+  .project-head{display:flex;gap:9px;align-items:center;flex-wrap:wrap}
+  .pr-name{font-weight:700;font-size:14.5px;border-color:transparent;background:none;min-width:130px}
+  .pr-name:hover,.pr-name:focus{border-color:var(--border);background:var(--raised)}
+  .pr-channel{color:var(--muted);min-width:120px}
+  .pr-del{margin-left:auto;color:var(--faint)}.pr-del:hover{color:var(--danger)}
+  .project-row{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px;font-size:12px;color:var(--muted);align-items:center}
+  .project-row label{display:flex;align-items:center;gap:5px}
+  details.cfg{margin-top:9px;font-size:12px}
+  details.cfg summary{cursor:pointer;color:var(--muted);font-size:11px;letter-spacing:.1em;text-transform:uppercase}
+  .stage-table{border-collapse:collapse;margin-top:7px}
+  .stage-table th{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);text-align:left;padding:3px 12px 3px 0;font-weight:600}
+  .stage-table td{padding:3px 12px 3px 0;color:var(--muted)}
+  .bp-line{margin-top:10px;font-size:12px;color:var(--muted);display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+  .bp-line b{color:var(--accent);font-family:var(--mono);font-weight:600}
+  .bp-edit{color:var(--faint)}.bp-edit:hover{color:var(--accent)}
+  .bp-note{margin-top:5px;font-size:11.5px;color:var(--link);background:var(--raised);border:1px solid var(--border-soft);border-radius:6px;padding:5px 9px}
+  .bp-form{display:flex;gap:7px;align-items:center;margin-top:7px;flex-wrap:wrap;font-size:12px}
+
+  .ch-tabs{display:flex;gap:2px;margin-top:12px;flex-wrap:wrap}
+  .ch-tab{padding:4px 13px;font-size:11.5px;font-weight:600;color:var(--muted);border:1px solid var(--border);border-bottom:none;border-radius:7px 7px 0 0;background:none}
+  .ch-tab[aria-selected="true"]{background:var(--raised);color:var(--text)}
+  .ch-tab .n{font-family:var(--mono);font-size:10px;color:var(--faint);margin-left:5px}
+  .ch-board{background:var(--raised);border:1px solid var(--border);border-radius:0 8px 8px 8px;padding:2px 10px 10px}
+  .ch-board .vtable{margin-top:4px}
+  .vtable{border-collapse:collapse;width:100%;margin-top:10px}
+  .vtable th{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);text-align:left;padding:5px 8px;border-bottom:1px solid var(--border);font-weight:600;white-space:nowrap}
+  .vtable td{padding:5px 8px;border-bottom:1px solid var(--border-soft);font-size:13.5px;vertical-align:middle}
+  .vtable .t-title{width:38%}
+  .vtable input.vtitle{width:100%}
+  .vtable .v-del{color:var(--faint)}.vtable .v-del:hover{color:var(--danger)}
+  .badge{font-family:var(--mono);font-size:10.5px;padding:1px 7px;border-radius:4px;border:1px solid var(--border);white-space:nowrap}
+  .badge.ok{color:var(--ok);border-color:var(--ok)}
+  .badge.late{color:var(--danger);border-color:var(--danger);background:var(--danger-soft)}
+  .badge.na{color:var(--faint)}
+  .vgen{display:flex;gap:7px;align-items:center;margin-top:9px;font-size:12px;color:var(--muted);flex-wrap:wrap}
+  .minibtn{font-size:11.5px;font-weight:600;color:var(--accent);border:1px solid var(--accent);border-radius:5px;padding:2px 9px}
+  .minibtn:hover{background:var(--accent);color:var(--accent-ink)}
+
+  .dropzone{margin-top:11px;min-height:40px;border:1.5px dashed var(--border);border-radius:7px;padding:7px 8px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+  .dropzone.over{border-color:var(--accent);background:var(--accent-soft)}
+  .chip{display:inline-flex;align-items:center;gap:6px;background:var(--raised);border:1px solid var(--border);border-radius:99px;padding:3px 7px 3px 11px;font-size:12.5px}
+  .chip .x{color:var(--faint);font-size:12px}.chip .x:hover{color:var(--danger)}
+  .person.insert{box-shadow:0 -2px 0 var(--accent)}
+  .chip.insert{box-shadow:-2px 0 0 var(--accent)}
+
+  /* lịch tuần */
+  .cal-nav{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .cal-nav b{font-size:14.5px}
+  .navbtn{border:1px solid var(--border);border-radius:6px;padding:3px 11px;color:var(--muted)}
+  .navbtn:hover{color:var(--text);border-color:var(--muted)}
+  .cal{display:grid;grid-template-columns:150px repeat(7,1fr);gap:1px;background:var(--border-soft);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-top:10px}
+  .cal>div{background:var(--panel);padding:6px 8px;min-height:52px}
+  .cal .head{background:var(--raised);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600;min-height:0;padding:8px}
+  .cal .head.today{color:var(--accent)}
+  .cal .head.sun{color:var(--danger)}
+  .cal .who{background:var(--raised);font-weight:600;font-size:12.5px;display:flex;flex-direction:column;justify-content:center;gap:2px}
+  .cal .who small{font-weight:400;color:var(--faint);font-family:var(--mono);font-size:10px}
+  .cal .pubcell{background:var(--panel);min-height:38px}
+  .blk{border-radius:5px;padding:2px 7px;font-size:12px;font-weight:600;margin:2px 0;color:#10131A;background:var(--bc,#4C8FE0);transition:opacity .15s}
+  .blk.rev{filter:brightness(.82)}
+  .blk.idle{background:none;border:1px dashed var(--border);color:var(--faint);font-weight:400}
+  .pub{display:inline-block;border-radius:99px;padding:2px 9px;font-size:11.5px;font-weight:700;color:#10131A;background:var(--bc,#4C8FE0);cursor:pointer;margin:1px 2px 1px 0;white-space:nowrap}
+  .pub.latep{box-shadow:0 0 0 2px var(--danger)}
+  .dim{opacity:.16}.glow{outline:2.5px solid var(--accent);outline-offset:1px}
+  .vdetail{background:var(--panel);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:8px;padding:11px 14px;margin-top:10px}
+  .vdetail .vd-head{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .vdetail .row{margin-top:5px;font-size:12.5px;color:var(--muted)}
+  .vdetail .row b{color:var(--text)}
+  .legend{display:flex;flex-wrap:wrap;gap:12px;margin-top:9px;font-size:11px;color:var(--faint);align-items:center}
+  .legend .blk,.legend .pub{margin:0;cursor:default}
+
+  /* overlay tổng kết tuần */
+  .overlay{position:fixed;inset:0;background:rgba(8,10,14,.72);display:flex;align-items:center;justify-content:center;padding:24px;z-index:50}
+  .overlay[hidden]{display:none}
+  .sheet{background:var(--panel);border:1px solid var(--border);border-radius:12px;width:min(760px,100%);padding:20px 22px;max-height:90vh;overflow:auto}
+  .sheet h2{margin:0 0 2px;font-size:16px}
+  .sheet .s-sub{font-size:12px;color:var(--muted);margin:0 0 14px}
+  .rv-row{background:var(--raised);border:1px solid var(--border-soft);border-radius:7px;padding:9px 12px;margin-bottom:8px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;font-size:12.5px}
+  .rv-row .rv-name{flex:1;min-width:200px}
+  .rv-row .rv-name b{display:block}
+  .rv-row .rv-name small{color:var(--faint);font-family:var(--mono);font-size:10.5px}
+  .rv-row label{display:flex;gap:4px;align-items:center;color:var(--muted);cursor:pointer}
+  .rv-row input[type=radio]{accent-color:var(--accent)}
+  .rv-row select{display:none}
+  .rv-row.notdone select{display:inline-block}
+  .sug-item{background:var(--raised);border:1px dashed var(--border);border-radius:7px;padding:8px 11px;margin-top:7px;font-size:13px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .sheet-actions{display:flex;gap:10px;margin-top:14px;align-items:center}
+  .btn-primary{background:var(--accent);color:var(--accent-ink);font-weight:700;border-radius:7px;padding:8px 16px}
+  .btn-ghost{color:var(--muted);font-size:13px}
+
+  .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(8px);background:var(--raised);border:1px solid var(--border);
+    color:var(--text);font-size:12.5px;padding:9px 16px;border-radius:7px;box-shadow:0 6px 24px rgba(0,0,0,.35);opacity:0;pointer-events:none;transition:opacity .18s,transform .18s;z-index:60;max-width:90vw}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div>
+      <div class="eyebrow">Điều phối sản xuất video · data/plan.json tự ghi</div>
+      <div class="brand">PLANNER<em>Y</em></div>
+    </div>
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" aria-selected="true" data-view="plan">KẾ HOẠCH</button>
+      <button class="tab" role="tab" aria-selected="false" data-view="cal">LỊCH TUẦN</button>
+      <button class="tab" role="tab" aria-selected="false" data-view="admin" id="tab-admin" style="display:none">QUẢN TRỊ</button>
+    </div>
+    <button class="newbtn" id="btn-backup" title="Tải bản sao toàn bộ dữ liệu về máy">⬇ Sao lưu</button>
+    <button class="newbtn" id="btn-role">👤 <span id="role-label"></span></button>
+    <button class="newbtn" id="btn-logout" style="display:none" title="Đăng xuất / đổi tài khoản">Đổi tài khoản</button>
+    <div class="save-state" id="saveState">đang tải…</div>
+  </header>
+
+  <div id="warnings"></div>
+
+  <div class="cols" id="view-plan">
+    <aside class="panel">
+      <h2>Nhân sự</h2>
+      <p class="hint">Kéo ⠿ thả vào dự án — máy chia <b>unit nguyên</b> (1 kịch bản / 1 video)
+        theo ngày đăng gần nhất. Đơn vị: content <b>kịch bản/ngày</b>, editor <b>phút video/ngày</b>.
+        Lịch phân phối tuân theo <b>CHUẨN (KPI)</b>; số <b>tuần trước</b> (từ Tổng kết tuần)
+        chỉ để cảnh báo ai dưới chuẩn.</p>
+      <div id="people-list"></div>
+      <form id="add-person">
+        <input id="np-name" placeholder="Tên (vd: Editor 3)" required>
+        <div class="row">
+          <select id="np-role"><option value="content">Content</option><option value="editor">Editor</option><option value="clone">Clone</option></select>
+          <input id="np-std" type="number" min="1" step="1" placeholder="chuẩn" required style="flex:1">
+          <span class="hint" id="np-unit" style="align-self:center;white-space:nowrap">KB/ngày</span>
+        </div>
+        <button class="minibtn">＋ Thêm nhân sự</button>
+      </form>
+    </aside>
+    <section>
+      <div style="display:flex;justify-content:flex-end;margin-bottom:10px">
+        <button class="newbtn" id="btn-add-project">＋ Thêm dự án</button>
+      </div>
+      <div id="projects-list"></div>
+    </section>
+  </div>
+
+  <div id="view-admin" hidden>
+    <div class="panel">
+      <h2>Thành viên & mã mời <small>· Quản lý toàn quyền · Leader dự án · HR nhân sự · SEO thêm video · Xem chỉ đọc</small></h2>
+      <table class="vtable" id="users-table"></table>
+
+      <div style="margin-top:18px">
+        <h2>Mời người mới</h2>
+        <p class="hint">Tạo mã mời theo vai trò → gửi mã cho người đó → họ vào <b>/invite</b> tự đặt tên đăng nhập &amp; mật khẩu.</p>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <select id="inv-role">
+            <option value="manager">Quản lý — xem full, chỉnh full</option>
+            <option value="seo" selected>SEO — thêm video từng tuần</option>
+            <option value="leader">Leader — dự án/kênh</option>
+            <option value="hr">HR — nhân sự</option>
+            <option value="viewer">Xem — chỉ đọc</option>
+          </select>
+          <button class="minibtn" id="inv-make">＋ Tạo mã mời</button>
+        </div>
+        <table class="vtable" id="invites-table"></table>
+      </div>
+      <p class="hint" id="u-note" style="margin-top:12px"></p>
+    </div>
+  </div>
+
+  <div id="view-cal" hidden>
+    <div class="cal-nav">
+      <button class="navbtn" id="cal-prev">◀</button>
+      <b id="cal-title"></b>
+      <button class="navbtn" id="cal-next">▶</button>
+      <span style="margin-left:6px;font-size:12px;color:var(--muted)">Xem theo:</span>
+      <button class="navbtn" id="cal-by-person">Người</button>
+      <button class="navbtn" id="cal-by-channel">Kênh</button>
+      <button class="newbtn" id="btn-distribute">⚡ Tự phân phối lịch</button>
+      <button class="newbtn" id="btn-daily">✅ Chốt ngày</button>
+      <button class="newbtn" id="btn-review">🗓 Tổng kết tuần</button>
+      <button class="newbtn" id="btn-report">📊 Báo cáo tuần</button>
+      <span class="hint">Hàng đầu là ngày đăng — bấm một video để xem ai viết, ai dựng, sửa tên/ngày.</span>
+    </div>
+    <div id="vdetail"></div>
+    <div class="cal" id="cal-grid"></div>
+    <div class="legend" id="cal-legend"></div>
+  </div>
+</div>
+
+<div class="overlay" id="review-overlay" hidden>
+  <div class="sheet">
+    <h2>🗓 Tổng kết tuần <span class="num" id="rv-week"></span></h2>
+    <p class="s-sub">Chỉ đánh dấu video <b>CHƯA hoàn thành</b> và chọn nguyên nhân — còn lại
+      mặc định coi là xong và rời khỏi kế hoạch. Lỗi khâu nào trừ khâu đó, khâu kia không
+      bị ảnh hưởng. Ghi nhận xong tool tự sinh <b>Báo cáo tuần</b> để theo dõi chất lượng nhân sự.</p>
+    <div id="rv-list"></div>
+    <div class="sheet-actions">
+      <button class="btn-primary" id="rv-apply">Ghi nhận tổng kết</button>
+      <button class="btn-ghost" id="rv-cancel">Huỷ</button>
+      <span class="hint" style="margin-left:auto">Video ✗ do editor: kịch bản đã xong — cân nhắc tăng "kho kịch bản sẵn".</span>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="report-overlay" hidden>
+  <div class="sheet">
+    <h2>📊 Báo cáo tuần — chất lượng nhân sự</h2>
+    <p class="s-sub" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <select id="rp-pick"></select>
+      <button class="minibtn" id="rp-copy">Copy báo cáo</button>
+      <span class="hint">Kết quả = số thực tế từ Tổng kết tuần; KPI = chuẩn tuyển dụng.</span>
+    </p>
+    <div id="rp-body"></div>
+    <div class="sheet-actions"><button class="btn-ghost" id="rp-close">Đóng</button></div>
+  </div>
+</div>
+
+<div class="overlay" id="daily-overlay" hidden>
+  <div class="sheet">
+    <h2>✅ Chốt ngày <select id="dd-day" style="margin-left:6px"></select></h2>
+    <p class="s-sub">Cuối ngày, leader xác nhận từng người đã xong phần việc trong ngày chưa.
+      Có người ✗ chưa xong → tool gợi ý phương án (thêm người / giảm khối lượng / giảm chất
+      lượng edit) để vẫn <b>đủ video kinh doanh</b>. Tool gợi ý — anh quyết.</p>
+    <div id="dd-list"></div>
+    <div id="dd-sugs"></div>
+    <div class="sheet-actions">
+      <button class="btn-primary" id="dd-apply">Xác nhận cuối ngày</button>
+      <button class="btn-ghost" id="dd-close">Đóng</button>
+      <span class="hint" style="margin-left:auto">Điều chỉnh xong nhớ bấm ⚡ Tự phân phối lịch.</span>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+/* Bảng 6 màu đã qua validator dataviz (CVD + tương phản) trên nền tối #121826/#090C12
+   lẫn nền sáng #FFFFFF/#F5F5F5 — thứ tự CỐ ĐỊNH, không xáo. */
+const PROJECT_COLORS = ["#4C8FE0", "#D95926", "#199E70", "#8E7BE0", "#C98500", "#C9679E"];
+// bảng màu cố định — không tuỳ biến mã màu để tránh loạn (yêu cầu 13/07)
+const PALETTE = ["#4C8FE0", "#D95926", "#199E70", "#8E7BE0", "#C98500",
+                 "#C9679E", "#2FA3A8", "#66738C", "#B07A3E", "#A86464"];
+const VERB = { content: "viết KB", editor: "dựng" };
+const cap = s => s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
+
+// ================= PHÂN QUYỀN =================
+// Enforcement thật sẽ nằm ở server khi lên VPS (auth reverse proxy — xem CLAUDE.md);
+// bản local này gate ở UI bằng mã vai trò để test đúng luồng quyền.
+const ROLE_LABEL = { viewer: "Xem", member: "Nhân sự", seo: "SEO", leader: "Leader", hr: "HR", manager: "Quản lý", admin: "Quản trị" };
+// Mã vai trò KHÔNG nằm trong mã nguồn — server giữ trong data/roles.json;
+// client chỉ nhớ mã đã nhập (localStorage) và gửi kèm mỗi lần lưu.
+let role = localStorage.getItem("pp_role") || "viewer";
+
+function can(what) {
+  if (role === "admin") return true;                       // Quản trị: tất cả + quản lý người dùng
+  if (role === "manager") return what !== "users";         // Quản lý: sửa full, không quản lý người dùng
+  switch (what) {
+    case "people":   return role === "hr";                  // HR: thêm/bớt/sửa nhân sự
+    case "project":  return role === "leader";              // Leader: dự án/kênh/khâu/kỷ lục/phân công/xoá
+    case "video":    return ["leader", "member", "seo"].includes(role); // SEO/Nhân sự: thêm/sửa/xoá video, ngày đăng, tên tập, thời lượng
+    case "channel_add": return ["leader", "member", "seo"].includes(role); // 31/07: SEO (KD L2 qua SSO) thêm KÊNH MỚI — cấu hình/xoá kênh cũ vẫn của Leader
+    case "assign":   return role === "leader" || role === "hr"; // phân công người ↔ dự án (Leader + HR)
+    case "review":   return role === "leader" || role === "hr"; // Tổng kết tuần + Báo cáo (Leader + HR)
+    case "calendar": return role === "leader";              // Leader: lịch tuần
+    case "users":    return false;                          // chỉ admin
+    default: return false;
+  }
+}
+function deny() { toast(`Vai trò "${ROLE_LABEL[role]}" không có quyền thao tác này — bấm 👤 để đổi vai trò.`); }
+function setRole(r) { role = r; localStorage.setItem("pp_role", r); updateRoleUI(); toast(`Vai trò hiện tại: ${ROLE_LABEL[r]}.`); }
+function updateRoleUI() {
+  const rl = $("#role-label"); if (rl) rl.textContent = ROLE_LABEL[role];  // có thể đã bị thay ở chế độ production
+  $("#add-person").style.display = can("people") ? "" : "none";
+  $("#btn-add-project").style.display = can("project") ? "" : "none";
+  for (const id of ["#btn-distribute", "#btn-daily"])
+    $(id).style.display = can("calendar") ? "" : "none";
+  $("#btn-review").style.display = can("review") ? "" : "none";
+  $("#btn-report").style.display = (can("review") || can("calendar")) ? "" : "none";
+  $("#tab-admin").style.display = can("users") ? "" : "none";
+  if (!can("users") && $("#tab-admin").getAttribute("aria-selected") === "true") showView("plan");
+}
+// chốt chặn tập trung: chạy ở pha capture, chặn trước khi handler thật mutate state
+function guardArea(el, checker) {
+  if (!el) return;
+  for (const type of ["click", "change", "submit", "dragstart"])
+    el.addEventListener(type, e => {
+      const need = checker(e.target);
+      if (need && !can(need)) {
+        e.stopPropagation();
+        e.preventDefault();
+        if (type !== "change") deny();
+      }
+    }, true);
+}
+function initGuards() {
+  guardArea($("#people-list"), t => {
+    if (t.closest(".p-min")) return null;                         // thu gọn/mở = xem
+    if (t.closest(".p-leave")) return (can("people") || can("project")) ? null : "people";  // nghỉ: HR + Leader
+    if (t.closest(".p-home")) return "project";
+    if (t.closest(".drag-handle")) return (can("assign") || can("people")) ? null : "assign"; // kéo để phân công/sắp xếp
+    if (t.closest("input,button,select")) return "people";
+    return null;
+  });
+  guardArea($("#add-person"), () => "people");
+  guardArea($("#projects-list"), t => {
+    if (t.closest(".ch-tab")) return null;                        // chuyển tab = xem
+    if (t.closest(".dz-add") || t.closest(".chip[data-person]")) return "assign";  // Leader+HR: phân công
+    if (t.closest(".drag-handle")) return "project";
+    if (t.closest(".vtitle,.vdate,.v-add,.ch-min,.vkb,.v-del")) return "video";  // SEO sửa + xoá video
+    if (t.closest(".ch-new")) return "channel_add";               // 31/07: SEO thêm kênh mới
+    if (t.closest("input,button,select")) return "project";
+    return null;
+  });
+  guardArea($("#btn-add-project"), () => "project");
+  for (const id of ["#btn-distribute", "#btn-daily"]) guardArea($(id), () => "calendar");
+  guardArea($("#btn-review"), () => "review");
+  guardArea($("#btn-report"), () => (can("review") || can("calendar")) ? null : "review");
+  guardArea($("#vdetail"), t => {
+    if (t.closest(".vd-close")) return null;
+    if (t.closest("input,button,select")) return "calendar";
+    return null;
+  });
+  guardArea($("#review-overlay"), () => "review");
+  guardArea($("#daily-overlay"), () => "calendar");
+}
+
+function confirmDelete(msg) {
+  // quyền xoá đã gate theo vai trò; vẫn xác nhận trước khi xoá thật
+  return confirm(`${msg}\n\nXoá không hoàn tác được trong app (bản cũ còn trong data/backups).`);
+}
+function swatchHTML(cls, current) {
+  return `<span class="swatch-wrap"><button class="swatch ${cls}" style="background:${current}" title="Chọn màu"></button>
+    <div class="swatch-menu" hidden>${PALETTE.map(c =>
+      `<button class="sw" data-c="${c}" style="background:${c}"></button>`).join("")}</div></span>`;
+}
+function wireSwatch(root, cls, onPick) {
+  const btn = root.querySelector(`.swatch.${cls}`);
+  if (!btn) return;
+  const menu = btn.parentElement.querySelector(".swatch-menu");
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".swatch-menu").forEach(m => { if (m !== menu) m.hidden = true; });
+    menu.hidden = !menu.hidden;
+  });
+  menu.querySelectorAll(".sw").forEach(b => b.addEventListener("click", () => onPick(b.dataset.c)));
+}
+// đổi ngày đăng → thứ tự tập sắp xếp lại theo ngày (video không ngày xếp cuối)
+// số ngày làm việc (bỏ CN) từ mốc a tới b, tối thiểu 1
+function workdaysBetween(aISO, bISO) {
+  let d = new Date(aISO + "T00:00:00"), end = new Date(bISO + "T00:00:00"), n = 0;
+  while (d <= end) { if (d.getDay() !== 0) n++; d = addDays(d, 1); }
+  return Math.max(1, n);
+}
+// đề xuất số editor cho video gấp: thêm editor nhanh nhất tới khi kịp hạn
+function proposeUrgent(pr, ch, deadlineISO, hasScript) {
+  const busyLeave = p => {           // nghỉ chồng lên khung chạy nước rút → loại
+    for (let d = new Date(); iso(d) <= deadlineISO; d = addDays(d, 1))
+      if (onLeave(p, iso(d))) return true;
+    return false;
+  };
+  const eds = state.assignments.filter(a => a.project_id === pr.id)
+    .map(a => personById(a.person_id)).filter(p => p && p.role === "editor" && !busyLeave(p))
+    .sort((x, y) => (y.standard_rate) - (x.standard_rate));
+  const startISO = iso(mondayOf(new Date()) < new Date(ch.start_date + "T00:00:00")
+    ? new Date(ch.start_date + "T00:00:00") : new Date());
+  // hạn bàn giao = ngày đăng − 2 ngày làm việc (quy tắc 15/07)
+  let D = Math.max(1, workdaysBetween(startISO, deadlineISO) - 2);
+  if (!hasScript) D = Math.max(1, D - 1);  // trừ ~1 ngày viết kịch bản (không chia được)
+  const chosen = [];
+  let sumRate = 0;
+  for (const e of eds) {
+    if (sumRate * D >= ch.video_minutes) break;
+    chosen.push(e); sumRate += e.standard_rate;
+  }
+  const kip = sumRate * D >= ch.video_minutes;
+  const finishDays = sumRate ? Math.ceil(ch.video_minutes / sumRate * 10) / 10 : Infinity;
+  return { eds, chosen, sumRate, D, kip, finishDays, minutes: ch.video_minutes };
+}
+
+function renumberVideos(ch) {
+  const sorted = [...ch.videos].sort((a, b) => {
+    const da = a.publish_date || "9999-99-99", db = b.publish_date || "9999-99-99";
+    return da < db ? -1 : da > db ? 1 : a.index - b.index;
+  });
+  sorted.forEach((v, i) => { v.index = i + 1; });
+  ch.videos = sorted;
+}
+
+let state = { people: [], projects: [], assignments: [] };
+let schedule = { anchor: null, projects: [], warnings: [] };
+let selVideo = null;          // "projectId#index" đang chọn trên lịch
+let calGroupBy = localStorage.getItem("pp_calgroup") || "person";  // "person" | "channel"
+let weekStart = mondayOf(new Date());
+let bpEditing = null;         // project id đang mở form sửa kỷ lục
+const chanTab = {};           // project id → kênh đang mở (mỗi kênh một lịch đăng riêng)
+const cfgOpen = new Set();    // kênh nào đang mở bảng vòng feedback — giữ qua các lần render
+const collapsedPeople = new Set(JSON.parse(localStorage.getItem("pp_collapsed") || "[]"));
+const saveCollapsed = () => localStorage.setItem("pp_collapsed", JSON.stringify([...collapsedPeople]));
+
+// ---------- tiện ích ngày ----------
+function mondayOf(d) { const x = new Date(d); x.setHours(0,0,0,0); x.setDate(x.getDate() - (x.getDay() + 6) % 7); return x; }
+function addDays(d, n) { const x = new Date(d); x.setDate(x.getDate() + n); return x; }
+function iso(d) { return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; }
+function fmtD(isoStr) { if (!isoStr) return "—"; const [y,m,d] = isoStr.split("-"); return `${d}/${m}`; }
+function fmtDY(isoStr) { if (!isoStr) return "—"; const [y,m,d] = isoStr.split("-"); return `${d}/${m}/${y}`; }
+const fmtT = t => String(Math.round(t * 100) / 100);  // ngày công, tối đa 2 số lẻ
+function nextWorkday(d) { let x = addDays(d, 1); if (x.getDay() === 0) x = addDays(x, 1); return x; }
+// ngày đăng mặc định: video k sau k × (6/lịch-up) ngày làm việc kể từ start (bỏ CN) — khớp planner.default_videos
+function defaultPublishDates(startIso, n, perWeek) {
+  const out = []; const start = new Date(startIso + "T00:00:00");
+  for (let k = 1; k <= n; k++) {
+    let units = Math.ceil(k * 6 / perWeek - 1e-9); let d = new Date(start); let count = d.getDay() === 0 ? 0 : 1;
+    while (count < units) { d = nextWorkday(d); count++; }
+    out.push(iso(d));
+  }
+  return out;
+}
+
+// ---------- API ----------
+let saveTimer = null;
+function changed() { renderAll(); $("#saveState").textContent = "đang tính…"; $("#saveState").classList.add("dirty");
+  clearTimeout(saveTimer); saveTimer = setTimeout(saveCompute, 350); }
+async function saveCompute() {
+  try {
+    const r = await fetch("/api/plan", { method: "POST",
+      headers: { "Content-Type": "application/json", "X-Role-Code": localStorage.getItem("pp_code") || "" },
+      body: JSON.stringify(state) });
+    const data = await r.json();
+    if (!r.ok) {
+      $("#saveState").textContent = r.status === 403 ? "không có quyền"
+        : r.status === 409 ? "xung đột dữ liệu" : "lỗi input";
+      renderError(data.error || "Lỗi không rõ");
+      if (r.status === 403) toast("Bấm 👤 nhập mã vai trò rồi thao tác lại — thay đổi vừa rồi chưa được lưu.");
+      if (r.status === 409) setTimeout(() => location.reload(), 1800);  // tải bản mới nhất
+      return;
+    }
+    schedule = data.schedule;
+    if (data._rev !== undefined) state._rev = data._rev;
+    const now = new Date();
+    $("#saveState").textContent = `đã lưu & tính ${String(now.getHours()).padStart(2,"0")}:${String(now.getMinutes()).padStart(2,"0")}`;
+    $("#saveState").classList.remove("dirty");
+    renderAll();
+  } catch (e) { $("#saveState").textContent = "mất kết nối"; renderError("Không kết nối được server: " + e.message); }
+}
+function renderError(msg) { $("#warnings").innerHTML = `<div class="warn late">${esc(msg)}</div>`; }
+
+// ---------- tra cứu ----------
+const personById = id => state.people.find(p => p.id === id);
+const projColor = pr => pr.color || PROJECT_COLORS[state.projects.indexOf(pr) % PROJECT_COLORS.length];
+const personColor = p => (p && p.color) || "#8B96A8";
+// nghỉ phép: [{from,to}] trọn ngày — so chuỗi ISO là đủ
+const onLeave = (p, dISO) => (p.leaves || []).some(L => L.from <= dISO && dISO <= L.to);
+// KÊNH là dây sản xuất — engine nhận mỗi kênh thành một project id = "duAn::kenh"
+const chColor = (pr, ch) => ch.color || PALETTE[Math.max(0, pr.channels.indexOf(ch)) % PALETTE.length];
+// Danh sách clone của kênh: [{id, v?, title, lang, translated, done}] — nhập tay,
+// hoặc sinh từ tick ⧉ ở bảng video (v = số tập nguồn, tiêu đề bám theo tập đó).
+const channelClones = ch => (ch.clones ||= []);
+const cloneTitle = (ch, c) => c.v != null
+  ? ((ch.videos.find(v => v.index === c.v) || {}).title || `Tập #${c.v}`)
+  : (c.title || "");
+const engId = (pr, ch) => pr.id + "::" + ch.id;
+function chanById(engineId) {
+  const [pid, cid] = String(engineId).split("::");
+  const pr = state.projects.find(x => x.id === pid);
+  const ch = pr && (pr.channels || []).find(c => c.id === cid);
+  return pr && ch ? { pr, ch } : null;
+}
+function schedVideo(projectId, index) {
+  const ps = schedule.projects.find(x => x.project_id === projectId);
+  return ps ? ps.videos.find(v => v.index === index) : null;
+}
+let seq = 0;
+const uid = p => p + "_" + Date.now().toString(36) + (seq++);
+function toast(msg) { const t = $("#toast"); t.textContent = msg; t.classList.add("show");
+  clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove("show"), 3000); }
+
+// ---------- NHÂN SỰ ----------
+function renderPeople() {
+  const el = $("#people-list");
+  el.innerHTML = state.people.length ? "" : `<p class="hint" style="margin-top:10px">Chưa có nhân sự.</p>`;
+  for (const p of state.people) {
+    const hasLast = p.last_week_rate !== null && p.last_week_rate !== undefined;
+    const pct = hasLast ? Math.round(p.last_week_rate / p.standard_rate * 100) : null;
+    const div = document.createElement("div");
+    div.className = "person";
+    if (collapsedPeople.has(p.id)) {
+      div.classList.add("min");
+      div.innerHTML = `<div class="person-top">
+        <span class="drag-handle" draggable="true" title="Kéo để phân công / sắp xếp">⠿</span>
+        <span class="cdot" style="background:${personColor(p)}"></span>
+        <b style="flex:1;min-width:0">${esc(p.name)}</b>
+        <span class="role-tag ${p.role}">${cap(p.role)}</span>
+        ${(p.role === "editor" || p.role === "content") && p.clone_rate ? `<span class="role-tag clone">Clone</span>` : ""}
+        <button class="p-min" title="Mở rộng để cấu hình">▸</button>
+      </div>`;
+      div.querySelector(".drag-handle").addEventListener("dragstart", e => {
+        e.dataTransfer.setData("text/plain", p.id);
+        e.dataTransfer.setDragImage(div, 20, 20);
+      });
+      div.addEventListener("dragover", e => {
+        if (!(can("people") || can("project"))) return;
+        e.preventDefault();
+        div.classList.add("insert");
+      });
+      div.addEventListener("dragleave", () => div.classList.remove("insert"));
+      div.addEventListener("drop", e => {
+        e.preventDefault();
+        div.classList.remove("insert");
+        if (!(can("people") || can("project"))) { deny(); return; }
+        const pid = e.dataTransfer.getData("text/plain");
+        if (!pid || pid === p.id) return;
+        const from = state.people.findIndex(x => x.id === pid);
+        if (from < 0) return;
+        const [moved] = state.people.splice(from, 1);
+        state.people.splice(state.people.findIndex(x => x.id === p.id), 0, moved);
+        changed();
+      });
+      div.querySelector(".p-min").addEventListener("click", () => {
+        collapsedPeople.delete(p.id);
+        saveCollapsed();
+        renderPeople();
+      });
+      el.appendChild(div);
+      continue;
+    }
+    const homeOptions = state.projects.map(pr =>
+      `<option value="${pr.id}" ${p.home_project_id === pr.id ? "selected" : ""}>${esc(pr.name)}</option>`).join("");
+    div.innerHTML = `
+      <div class="person-top">
+        <span class="drag-handle" draggable="true" title="Kéo để phân công">⠿</span>
+        ${swatchHTML("p-color", p.color || "#8B96A8")}
+        <input class="p-name" value="${esc(p.name)}" title="${esc(p.name)}">
+        <span class="role-tag ${p.role}">${cap(p.role)}</span>
+        ${(p.role === "editor" || p.role === "content") && p.clone_rate ? `<span class="role-tag clone" title="Nhận việc clone ${p.clone_rate}/ngày (ưu tiên việc dự án trước)">Clone</span>` : ""}
+        <button class="p-min" title="Thu gọn — chỉ hiện tên và role">▾</button>
+        <button class="p-del" title="Xoá nhân sự">×</button>
+      </div>
+      ${p.role === "editor" ? `<div class="p-rates"><span>đang làm
+        <select class="p-home">
+          <option value="">— tự do —</option>${homeOptions}
+        </select></span>
+        <span class="hint" title="Máy ưu tiên giao việc dự án này, không nhảy dự án khi còn việc">ưu tiên giữ ở dự án này</span></div>` : ""}
+      <div class="p-rates">
+        <span>chuẩn <input class="p-std num" type="number" min="1" step="1" value="${p.standard_rate}">
+          ${({content: "KB/ngày", editor: "phút/ngày", clone: "video/ngày"})[p.role] || "phút/ngày"}</span>
+        <span>tuần trước <b class="num">${hasLast ? p.last_week_rate : "—"}</b></span>
+        ${(p.role === "editor" || p.role === "content") ? `<span title="Năng suất clone — để trống nếu không nhận việc clone">clone
+          <input class="p-clone num" type="number" min="1" step="1" value="${p.clone_rate ?? ""}" placeholder="—"> ${p.role === "content" ? "KB/ngày" : "video/ngày"}</span>` : ""}
+      </div>
+      <div class="p-rates">nghỉ:
+        ${(p.leaves || []).map((L, i) => `<span class="chip p-leave">${fmtD(L.from)}–${fmtD(L.to)}
+          <button class="x p-leave-del" data-i="${i}" title="Bỏ kỳ nghỉ">×</button></span>`).join("")
+          || `<span class="hint">—</span>`}
+        <button class="minibtn p-leave p-leave-add">＋ nghỉ</button>
+        <span class="p-leave lv-form" hidden>từ <input type="date" class="lv-from">
+          đến <input type="date" class="lv-to">
+          <button class="minibtn lv-ok">✓ Thêm</button></span></div>
+      ${hasLast ? `<div class="tq-bar" title="Tuần trước đạt ${pct}% chuẩn tuyển dụng">
+          <i class="${pct < 100 ? "low" : ""}" style="width:${Math.min(100, pct)}%"></i></div>` : ""}
+      ${hasLast && pct < 100 ? `<div class="p-flag">▼ đạt ${pct}% chuẩn — giảm ${100 - pct}%</div>` : ""}
+      ${!hasLast ? `<div class="p-note">chưa có tổng kết tuần — chưa có số thực tế để so với KPI</div>` : ""}`;
+    div.querySelector(".drag-handle").addEventListener("dragstart", e => {
+      e.dataTransfer.setData("text/plain", p.id);
+      e.dataTransfer.setDragImage(div, 20, 20);
+    });
+    // kéo chèn để sắp xếp thứ tự danh sách (thứ tự cũng là tie-break khi máy chia việc)
+    div.addEventListener("dragover", e => {
+      if (!(can("people") || can("project"))) return;
+      e.preventDefault();
+      div.classList.add("insert");
+    });
+    div.addEventListener("dragleave", () => div.classList.remove("insert"));
+    div.addEventListener("drop", e => {
+      e.preventDefault();
+      div.classList.remove("insert");
+      if (!(can("people") || can("project"))) { deny(); return; }
+      const pid = e.dataTransfer.getData("text/plain");
+      if (!pid || pid === p.id) return;
+      const from = state.people.findIndex(x => x.id === pid);
+      if (from < 0) return;
+      const [moved] = state.people.splice(from, 1);
+      state.people.splice(state.people.findIndex(x => x.id === p.id), 0, moved);
+      changed();
+    });
+    div.querySelector(".p-name").addEventListener("change", e => { p.name = e.target.value.trim() || p.name; changed(); });
+    wireSwatch(div, "p-color", c => { p.color = c; changed(); });
+    const homeSel = div.querySelector(".p-home");
+    if (homeSel) homeSel.addEventListener("change", e => {
+      p.home_project_id = e.target.value || null;
+      // chọn "đang làm" mà chưa thuộc dự án đó → hỏi thêm vào luôn (user quyết)
+      if (p.home_project_id
+          && !state.assignments.some(a => a.person_id === p.id && a.project_id === p.home_project_id)) {
+        const pr = state.projects.find(x => x.id === p.home_project_id);
+        if (pr && confirm(`${p.name} chưa thuộc dự án "${pr.name}" — thêm vào dự án luôn để máy chia việc?`))
+          state.assignments.push({ person_id: p.id, project_id: pr.id });
+      }
+      changed();
+    });
+    // chọn kỳ nghỉ bằng lịch của trình duyệt (input type=date) — bấm ngày, không gõ
+    const lvForm = div.querySelector(".lv-form");
+    const lvFrom = div.querySelector(".lv-from"), lvTo = div.querySelector(".lv-to");
+    div.querySelector(".p-leave-add").addEventListener("click", () => {
+      lvForm.hidden = false;
+      if (!lvFrom.value) lvFrom.value = iso(new Date());
+      lvTo.min = lvFrom.value;
+      lvFrom.focus(); lvFrom.showPicker?.();
+    });
+    lvFrom.addEventListener("change", () => {
+      lvTo.min = lvFrom.value;
+      if (!lvTo.value || lvTo.value < lvFrom.value) lvTo.value = lvFrom.value;
+      lvTo.showPicker?.();   // chọn xong ngày đầu → mở luôn lịch ngày cuối
+    });
+    div.querySelector(".lv-ok").addEventListener("click", () => {
+      const from = lvFrom.value, to = lvTo.value || from;
+      if (!from || to < from) { toast("Chọn ngày bắt đầu (và ngày kết thúc không được trước đó)."); return; }
+      (p.leaves ||= []).push({ from, to });
+      toast(`${p.name} nghỉ ${fmtD(from)}–${fmtD(to)} — lịch tự né những ngày này.`);
+      changed();
+    });
+    div.querySelectorAll(".p-leave-del").forEach(b => b.addEventListener("click", () => {
+      p.leaves.splice(+b.dataset.i, 1); changed();
+    }));
+    const cloneInp = div.querySelector(".p-clone");
+    if (cloneInp) cloneInp.addEventListener("change", e => {
+      const val = Math.round(parseFloat(e.target.value));
+      p.clone_rate = val >= 1 ? val : null;
+      if (!(val >= 1)) e.target.value = "";
+      changed();
+    });
+    // không có kịch bản lẻ / phút lẻ — chuẩn tuyển dụng là số nguyên, bước 1
+    div.querySelector(".p-std").addEventListener("change", e => {
+      p.standard_rate = Math.max(1, Math.round(parseFloat(e.target.value) || p.standard_rate));
+      changed();
+    });
+    div.querySelector(".p-min").addEventListener("click", () => {
+      collapsedPeople.add(p.id);
+      saveCollapsed();
+      renderPeople();
+    });
+    div.querySelector(".p-del").addEventListener("click", () => {
+      if (!confirmDelete(`Xoá nhân sự "${p.name}"? Phân công bị gỡ; kỷ lục Best Performance trên dự án vẫn giữ.`)) return;
+      state.people = state.people.filter(x => x.id !== p.id);
+      state.assignments = state.assignments.filter(a => a.person_id !== p.id);
+      changed();
+    });
+    el.appendChild(div);
+  }
+}
+
+// ---------- DỰ ÁN (nhóm) + KÊNH (dây sản xuất) ----------
+function renderProjects() {
+  const el = $("#projects-list");
+  el.innerHTML = state.projects.length ? "" :
+    `<p class="hint">Chưa có dự án — bấm "＋ Thêm dự án".</p>`;
+  for (const pr of state.projects) {
+    const card = document.createElement("div");
+    card.className = "project";
+    card.style.setProperty("--pc", pr.channels.length ? chColor(pr, pr.channels[0]) : "#66738A");
+
+    let active = chanTab[pr.id];
+    if (!pr.channels.some(c => c.id === active)) active = pr.channels.length ? pr.channels[0].id : null;
+    chanTab[pr.id] = active;
+    const ch = pr.channels.find(c => c.id === active) || null;
+
+    const chips = state.assignments.filter(a => a.project_id === pr.id).map(a => {
+      const p = personById(a.person_id);
+      const home = p && p.home_project_id === pr.id ? ` <span title="đang làm dự án này">📌</span>` : "";
+      return `<span class="chip" data-person="${a.person_id}">
+        <span class="cdot" style="background:${personColor(p)}"></span>${esc(p ? p.name : "?")}${home}
+        <button class="x" title="Rút khỏi dự án">×</button></span>`;
+    }).join("");
+
+    const tabsHTML = pr.channels.length
+      ? `<div class="ch-tabs">${pr.channels.map(c =>
+          `<button class="ch-tab" aria-selected="${c.id === active}" data-key="${c.id}">
+            <span class="cdot" style="background:${chColor(pr, c)}"></span> ${(c.clones || []).length ? "⧉ " : ""}${esc(c.name)}<span class="n">${c.videos.length}</span></button>`).join("")}</div>`
+      : "";
+
+    let chBoard = `<p class="hint" style="margin-top:10px">Chưa có kênh — thêm kênh để cấu hình sản xuất và lịch đăng.</p>`;
+    if (ch) {
+      const eid = engId(pr, ch);
+      const bp = ch.best_performance;
+      const editors = state.assignments.filter(a => a.project_id === pr.id)
+        .map(a => personById(a.person_id)).filter(p => p && p.role === "editor");
+      const beat = bp ? editors.map(p => ({ p, t: ch.video_minutes / p.standard_rate }))
+        .filter(x => x.t < bp.days_per_video) : [];
+      const videoRows = [...ch.videos].sort((a, b) => a.index - b.index).map(v => {
+        const sv = schedVideo(eid, v.index);
+        const badge = !sv ? `<span class="badge na">chưa tính</span>`
+          : !v.publish_date ? `<span class="badge na">không so</span>`
+          : sv.late_workdays > 0 ? `<span class="badge late">TRỄ ${sv.late_workdays} ngày LV</span>`
+          : `<span class="badge ok">kịp ✓</span>`;
+        return `<tr data-vi="${v.index}"${v.urgent ? ' style="background:var(--danger-soft)"' : ""}>
+          <td class="num"><button class="v-prio ${v.priority ? "on" : ""}"
+            title="★ Ưu tiên: sản xuất sớm nhất có thể">${v.priority ? "★" : "☆"}</button> ${v.urgent ? "⚡" : ""}#${v.index}</td>
+          <td><input type="checkbox" class="vkb" ${v.has_script ? "checked" : ""}
+            title="✓ đã có kịch bản — bỏ qua khâu Content, editor làm được ngay"></td>
+          <td><input type="checkbox" class="vclone" ${channelClones(ch).some(c => c.v === v.index) ? "checked" : ""}
+            title="⧉ Clone tập này — thêm dòng vào danh sách CLONE bên dưới"></td>
+          <td class="t-title"><input class="vtitle" placeholder="(leader đặt tên tập)" value="${esc(v.title)}">${v.urgent && v.assigned_editors ? `<div class="hint">⚡ gấp · chia ${v.assigned_editors.length} editor</div>` : ""}</td>
+          <td><input class="vdate" type="date" value="${v.publish_date || ""}"></td>
+          <td class="num">${sv ? fmtD(sv.handoff_date) : "—"}</td>
+          <td>${badge}</td>
+          <td><button class="v-del" title="Xoá video">×</button></td>
+        </tr>`;
+      }).join("");
+      chBoard = `${tabsHTML}
+      <div class="ch-board">
+        <div class="project-row">
+          <label>Bắt đầu <input class="ch-start" type="date" value="${ch.start_date}"></label>
+          <label>Thời lượng video <input class="ch-min" type="number" min="1" value="${ch.video_minutes}"> phút</label>
+        </div>
+
+        <details class="cfg"${cfgOpen.has(ch.id) ? " open" : ""}><summary>Vòng feedback từng khâu</summary>
+          <table class="stage-table">
+            <tr><th>Khâu</th><th>Số vòng</th><th>Chờ (ngày)</th><th>Sửa (ngày)</th></tr>
+            ${ch.stages.map((st, i) => `<tr data-si="${i}">
+              <td>${cap(esc(st.role))}</td>
+              <td><input class="st-rounds" type="number" min="0" value="${st.feedback_rounds}"></td>
+              <td><input class="st-wait" type="number" min="0" step="0.5" value="${st.feedback_wait_days}"></td>
+              <td><input class="st-rev" type="number" min="0" step="0.5" value="${st.revision_days}"></td>
+            </tr>`).join("")}
+          </table>
+        </details>
+        <div class="bp-line">🏆 Best Performance (editor): ${bp
+            ? `<b>${Math.round(bp.days_per_video * 100) / 100} ngày/video</b> — ${esc(bp.editor_name)} <span class="hint">· ghi nhận ${fmtDY(bp.recorded_on)}</span>`
+            : `<span class="hint">chưa có kỷ lục — nhập từ số thực tế của tool tracking</span>`}
+          <button class="bp-edit" title="Cập nhật kỷ lục (số thực tế)">✏️</button></div>
+        ${bpEditing === eid ? `<div class="bp-form">
+            <input class="bp-days" type="number" min="0.1" step="0.1" placeholder="ngày/video">
+            <select class="bp-name">
+              ${state.people.filter(p => p.role === "editor")
+                .map(p => `<option value="${esc(p.name)}">${esc(p.name)}</option>`).join("")}
+            </select>
+            <button class="minibtn bp-save">Lưu</button>
+            <button class="btn-ghost bp-cancel">huỷ</button>
+            <span class="hint">chọn editor trong team · chỉ nhận khi TỐT HƠN kỷ lục hiện tại</span>
+          </div>` : ""}
+        ${beat.length ? `<div class="bp-note">💡 ${esc(beat[0].p.name)} theo chuẩn KPI đạt
+          ${Math.round(beat[0].t * 100) / 100} ngày/video — tốt hơn kỷ lục ${bp.days_per_video}.
+          Có số thực tế thì bấm ✏️ cập nhật.</div>` : ""}
+        <table class="vtable">
+          <tr><th>#</th><th title="Đã có kịch bản (team viết từ tuần trước) — bỏ qua khâu Content">KB✓</th><th title="Tick để đưa tập này xuống danh sách clone (tiêu đề bám theo tập)">⧉</th><th>Tên tập</th><th>Ngày đăng</th><th>Bàn giao</th><th>Trạng thái</th><th></th></tr>
+          ${videoRows || `<tr><td colspan="8" class="hint">Kênh chưa có tập nào.</td></tr>`}
+        </table>
+        <div class="vgen">
+          <button class="minibtn v-add">＋ video</button>
+          <button class="minibtn v-urgent" style="border-color:var(--danger);color:var(--danger)" title="Video cần làm gấp — tool đề xuất chia mấy editor để kịp hạn">⚡ Video gấp</button>
+          <span>hoặc sinh lịch cho <b>${esc(ch.name)}</b>:</span>
+          <input class="vg-n" type="number" min="1" value="4"> video ·
+          <input class="vg-f" type="number" min="0.5" step="0.5" value="2"> video/tuần
+          <button class="minibtn vg-go">Sinh ngày đăng mặc định</button>
+        </div>
+        <hr style="border:none;border-top:1px solid var(--border);margin:14px 0 10px">
+        <h2 style="margin-bottom:6px">⧉ Clone <small style="font-weight:400;color:var(--faint);text-transform:none;letter-spacing:0">
+          · ${channelClones(ch).length} bản · dịch → dựng lại, không có lịch đăng</small></h2>
+        <table class="vtable">
+          <tr><th>#</th><th>Tên tập</th><th>Ngôn ngữ</th><th></th></tr>
+          ${channelClones(ch).map((c, i) => `<tr data-ci="${i}">
+            <td class="num">${i + 1}${c.v != null ? " ⧉" : ""}</td>
+            <td class="t-title">${c.v != null
+              ? `<span title="Bám theo tập #${c.v} ở bảng trên">${esc(cloneTitle(ch, c))}</span>`
+              : `<input class="cl-title" placeholder="(tên tập cần clone)" value="${esc(c.title || "")}">`}</td>
+            <td><input class="cl-lang" placeholder="vd EN, Hàn" value="${esc(c.lang || "")}" style="width:110px"></td>
+            <td><button class="v-del cl-row-del" title="Xoá dòng clone">×</button></td>
+          </tr>`).join("") || `<tr><td colspan="4" class="hint">Chưa có bản clone nào — bấm ＋ clone hoặc tick ⧉ ở bảng video trên.</td></tr>`}
+        </table>
+        <div class="vgen"><button class="minibtn cl-add">＋ clone</button>
+          <span class="hint">Mỗi dòng = 1 bản clone (1 tập × 1 ngôn ngữ). Lịch làm xem khối CLONE cuối Lịch tuần.</span></div>
+      </div>`;
+    }
+
+    card.innerHTML = `
+      <div class="project-head">
+        <input class="pr-name" value="${esc(pr.name)}">
+        <button class="pr-del" title="Xoá dự án">×</button>
+      </div>
+      <div class="project-row">
+        <span>Kênh:</span>
+        ${pr.channels.map((c, i) => `<span class="chip ch-chip" data-ch="${c.id}">
+          <span class="drag-handle" draggable="true" style="font-size:12px" title="Kéo để sắp xếp thứ tự kênh">⠿</span>
+          ${swatchHTML(`ch-color-${i}`, chColor(pr, c))}
+          <button class="ch-name" data-i="${i}" title="Bấm để sửa tên kênh">${esc(c.name)}</button>
+          <button class="x ch-del" data-i="${i}" title="Xoá kênh">×</button></span>`).join("")}
+        <input class="ch-new" placeholder="＋ kênh mới, Enter" style="width:130px">
+      </div>
+      ${chBoard}
+      <div class="dropzone">${chips}
+        <button class="minibtn dz-add" title="Thêm nhân sự vào dự án (khỏi cần kéo thả)">＋ nhân sự</button>
+        ${chips ? "" : `<span class="hint">Kéo thả hoặc bấm ＋ — người thuộc dự án làm được mọi kênh trong đó</span>`}</div>`;
+
+    // ------ wiring: dự án ------
+    card.querySelector(".pr-name").addEventListener("change", e => { pr.name = e.target.value.trim() || pr.name; changed(); });
+    card.querySelector(".pr-del").addEventListener("click", () => {
+      if (!confirmDelete(`Xoá dự án "${pr.name}" cùng toàn bộ kênh, video và phân công?`)) return;
+      state.projects = state.projects.filter(x => x.id !== pr.id);
+      state.assignments = state.assignments.filter(a => a.project_id !== pr.id);
+      state.people.forEach(p => { if (p.home_project_id === pr.id) p.home_project_id = null; });
+      changed();
+    });
+    pr.channels.forEach((c, i) =>
+      wireSwatch(card, `ch-color-${i}`, col => { c.color = col; changed(); }));
+    card.querySelector(".ch-new").addEventListener("change", e => {
+      const name = e.target.value.trim();
+      if (!name || pr.channels.some(c => c.name === name)) { e.target.value = ""; return; }
+      if (!confirm(`Thêm kênh "${name}" vào dự án "${pr.name}"?`)) { e.target.value = ""; return; }
+      const c = { id: uid("ch"), name, color: null, start_date: iso(mondayOf(new Date())),
+        video_minutes: 15, script_stock: 0,
+        stages: [
+          { role: "content", feedback_rounds: 1, feedback_wait_days: 1, revision_days: 0.5 },
+          { role: "editor", feedback_rounds: 1, feedback_wait_days: 1, revision_days: 0.5 },
+        ],
+        best_performance: null, videos: [] };
+      pr.channels.push(c);
+      chanTab[pr.id] = c.id;
+      changed();
+    });
+    card.querySelectorAll(".ch-chip").forEach(chip => {
+      const cid = chip.dataset.ch;
+      chip.querySelector(".drag-handle").addEventListener("dragstart", e => {
+        e.dataTransfer.setData("text/plain", `chan|${pr.id}|${cid}`);
+        e.dataTransfer.setDragImage(chip, 10, 10);
+      });
+      chip.addEventListener("dragover", e => { if (can("project")) { e.preventDefault(); chip.classList.add("insert"); } });
+      chip.addEventListener("dragleave", () => chip.classList.remove("insert"));
+      chip.addEventListener("drop", e => {
+        e.preventDefault();
+        chip.classList.remove("insert");
+        const parts = (e.dataTransfer.getData("text/plain") || "").split("|");
+        if (parts[0] !== "chan" || parts[1] !== pr.id) return;
+        if (!can("project")) { deny(); return; }
+        const from = pr.channels.findIndex(c => c.id === parts[2]);
+        if (from < 0 || parts[2] === cid) return;
+        const [moved] = pr.channels.splice(from, 1);
+        pr.channels.splice(pr.channels.findIndex(c => c.id === cid), 0, moved);
+        changed();
+      });
+    });
+    card.querySelectorAll(".ch-name").forEach(btn => btn.addEventListener("click", () => {
+      const c = pr.channels[+btn.dataset.i];
+      const name = (prompt("Sửa tên kênh:", c.name) || "").trim();
+      if (!name || name === c.name) return;
+      if (pr.channels.some(x => x.name === name)) { toast("Tên kênh đã tồn tại trong dự án."); return; }
+      if (!confirm(`Đổi tên kênh "${c.name}" → "${name}"?`)) return;
+      c.name = name;
+      changed();
+    }));
+    card.querySelectorAll(".ch-del").forEach(btn => btn.addEventListener("click", () => {
+      const c = pr.channels[+btn.dataset.i];
+      if (!confirmDelete(`Xoá kênh "${c.name}" cùng ${c.videos.length} video của nó?`)) return;
+      pr.channels.splice(+btn.dataset.i, 1);
+      changed();
+    }));
+    card.querySelectorAll(".ch-tab").forEach(t =>
+      t.addEventListener("click", () => { chanTab[pr.id] = t.dataset.key; renderProjects(); }));
+
+    // ------ wiring: kênh đang mở ------
+    if (ch) {
+      const eid = engId(pr, ch);
+      card.querySelector(".cfg").addEventListener("toggle", e => {
+        if (e.target.open) cfgOpen.add(ch.id); else cfgOpen.delete(ch.id);
+      });
+      card.querySelector(".ch-start").addEventListener("change", e => { if (e.target.value) { ch.start_date = e.target.value; changed(); } });
+      const chMin = card.querySelector(".ch-min");
+      if (chMin) chMin.addEventListener("change", e => { ch.video_minutes = Math.max(1, parseFloat(e.target.value) || ch.video_minutes); changed(); });
+      card.querySelectorAll(".stage-table tr[data-si]").forEach(row => {
+        const st = ch.stages[+row.dataset.si];
+        row.querySelector(".st-rounds").addEventListener("change", e => { st.feedback_rounds = Math.max(0, parseInt(e.target.value) || 0); changed(); });
+        row.querySelector(".st-wait").addEventListener("change", e => { st.feedback_wait_days = Math.max(0, parseFloat(e.target.value) || 0); changed(); });
+        row.querySelector(".st-rev").addEventListener("change", e => { st.revision_days = Math.max(0, parseFloat(e.target.value) || 0); changed(); });
+      });
+      card.querySelector(".bp-edit").addEventListener("click", () => { bpEditing = bpEditing === eid ? null : eid; renderProjects(); });
+      if (bpEditing === eid) {
+        card.querySelector(".bp-save").addEventListener("click", () => {
+          const days = parseFloat(card.querySelector(".bp-days").value);
+          const name = (card.querySelector(".bp-name").value || "").trim();
+          if (!(days > 0) || !name) { toast("Cần số ngày/video và chọn editor trong danh sách."); return; }
+          if (ch.best_performance && days >= ch.best_performance.days_per_video) {
+            toast("Không tốt hơn kỷ lục hiện tại — giữ nguyên."); return;
+          }
+          ch.best_performance = { days_per_video: days, editor_name: name, recorded_on: iso(new Date()) };
+          bpEditing = null;
+          toast(`Kỷ lục mới của ${ch.name}: ${days} ngày/video — ${name}.`);
+          changed();
+        });
+        card.querySelector(".bp-cancel").addEventListener("click", () => { bpEditing = null; renderProjects(); });
+      }
+      card.querySelectorAll(".vtable tr[data-vi]").forEach(row => {
+        const v = ch.videos.find(x => x.index === +row.dataset.vi);
+        row.querySelector(".vtitle").addEventListener("change", e => { v.title = e.target.value.trim(); changed(); });
+        row.querySelector(".vkb").addEventListener("change", e => { v.has_script = e.target.checked; changed(); });
+        row.querySelector(".vclone").addEventListener("change", e => {
+          const cs = channelClones(ch);
+          if (e.target.checked) cs.push({ id: uid("cl"), v: v.index, lang: "" });
+          else ch.clones = cs.filter(c => c.v !== v.index);
+          changed();
+        });
+        row.querySelector(".v-prio").addEventListener("click", () => {
+          v.priority = !v.priority;
+          toast(v.priority
+            ? `★ ${ch.name} · tập #${v.index} được ưu tiên sản xuất sớm nhất.`
+            : `Đã bỏ ưu tiên tập #${v.index}.`);
+          changed();
+        });
+        row.querySelector(".vdate").addEventListener("change", e => {
+          v.publish_date = e.target.value || null;
+          renumberVideos(ch);  // thứ tự tập sắp lại theo ngày đăng
+          changed();
+        });
+        row.querySelector(".v-del").addEventListener("click", () => {
+          if (!confirmDelete(`Xoá tập #${v.index}${v.title ? " «" + v.title + "»" : ""} của ${ch.name}?`)) return;
+          ch.videos = ch.videos.filter(x => x !== v);
+          renumberVideos(ch);
+          changed();
+        });
+      });
+      card.querySelector(".v-add").addEventListener("click", () => {
+        const next = ch.videos.reduce((m, v) => Math.max(m, v.index), 0) + 1;
+        ch.videos.push({ index: next, title: "", publish_date: null });
+        renumberVideos(ch);
+        changed();
+      });
+      card.querySelector(".cl-add").addEventListener("click", () => {
+        channelClones(ch).push({ id: uid("cl"), title: "", lang: "" });
+        changed();
+      });
+      card.querySelectorAll(".vtable tr[data-ci]").forEach(row => {
+        const c = channelClones(ch)[+row.dataset.ci];
+        const t = row.querySelector(".cl-title");
+        if (t) t.addEventListener("change", e => { c.title = e.target.value.trim(); changed(); });
+        row.querySelector(".cl-lang").addEventListener("change", e => { c.lang = e.target.value.trim(); changed(); });
+        row.querySelector(".cl-row-del").addEventListener("click", () => {
+          if (!confirmDelete(`Xoá bản clone "${cloneTitle(ch, c)}${c.lang ? " · " + c.lang : ""}"?`)) return;
+          ch.clones = channelClones(ch).filter(x => x !== c);
+          changed();
+        });
+      });
+      card.querySelector(".v-urgent").addEventListener("click", () => {
+        const title = (prompt("⚡ VIDEO GẤP — tên tập:") || "").trim();
+        if (title === null) return;
+        const dl = prompt("Ngày cần đăng (YYYY-MM-DD):", iso(addDays(new Date(), 2)));
+        if (!dl || !/^\d{4}-\d{2}-\d{2}$/.test(dl)) { if (dl) toast("Ngày không hợp lệ (YYYY-MM-DD)."); return; }
+        const hasScript = confirm("Đã có kịch bản chưa? OK = đã có (bỏ khâu content, dựng ngay).\nCancel = chưa có (content viết trước).");
+        const pp = proposeUrgent(pr, ch, dl, hasScript);
+        if (!pp.eds.length) { toast("Kênh chưa có editor nào trong dự án — kéo editor vào trước."); return; }
+        const names = pp.chosen.map(e => e.name).join(", ");
+        const msg = `⚡ Đề xuất cho "${title}" (${pp.minutes} phút, đăng ${fmtDY(dl)}):\n\n`
+          + `• Chia cho ${pp.chosen.length} editor: ${names}\n`
+          + `• Σ năng suất ${pp.sumRate} phút/ngày → dựng ~${pp.finishDays} ngày làm việc\n`
+          + `• ${pp.kip ? "✓ Dự kiến KỊP hạn" : "⚠ VẪN TRỄ dù dùng hết editor — cân nhắc dời hạn / thêm người / ✓KB"}\n\n`
+          + `OK để thêm video gấp (engine sẽ tính lịch thật, ưu tiên cao nhất — đẩy việc khác lùi).`;
+        if (!confirm(msg)) return;
+        const next = ch.videos.reduce((m, v) => Math.max(m, v.index), 0) + 1;
+        ch.videos.push({ index: next, title, publish_date: dl, urgent: true,
+          has_script: hasScript, assigned_editors: pp.chosen.map(e => e.id) });
+        renumberVideos(ch);
+        toast(`Đã thêm video gấp "${title}" — chia ${pp.chosen.length} editor, ưu tiên cao nhất.`);
+        changed();
+      });
+      card.querySelector(".vg-go").addEventListener("click", () => {
+        const n = Math.max(1, parseInt(card.querySelector(".vg-n").value) || 1);
+        const f = Math.max(0.5, parseFloat(card.querySelector(".vg-f").value) || 1);
+        if (ch.videos.length && !confirm(`Thay ${ch.videos.length} tập của ${ch.name} bằng lịch mới? Kênh khác giữ nguyên.`)) return;
+        const dates = defaultPublishDates(ch.start_date, n, f);
+        ch.videos = dates.map((d, i) => ({ index: i + 1, title: "", publish_date: d }));
+        changed();
+      });
+    }
+
+    card.querySelector(".dz-add").addEventListener("click", () => {
+      const avail = state.people.filter(p => p.role !== "clone"
+        && !state.assignments.some(a => a.person_id === p.id && a.project_id === pr.id));
+      if (!avail.length) { toast("Không còn ai để thêm — mọi người đã thuộc dự án (role Clone không cần gán)."); return; }
+      const pick = prompt(`Thêm ai vào "${pr.name}"?\n${avail.map((p, i) => `${i + 1}. ${p.name} (${cap(p.role)})`).join("\n")}\nNhập số:`);
+      if (pick === null) return;
+      const p = avail[parseInt(pick) - 1];
+      if (!p) { toast("Số không hợp lệ."); return; }
+      state.assignments.push({ person_id: p.id, project_id: pr.id });
+      changed();
+    });
+    const dz = card.querySelector(".dropzone");
+    dz.addEventListener("dragover", e => { e.preventDefault(); dz.classList.add("over"); });
+    dz.addEventListener("dragleave", () => dz.classList.remove("over"));
+    dz.addEventListener("drop", e => {
+      e.preventDefault(); dz.classList.remove("over");
+      const pid = e.dataTransfer.getData("text/plain");
+      if (!pid || !personById(pid)) return;
+      if (!can("assign")) { deny(); return; }
+      if (state.assignments.some(a => a.person_id === pid && a.project_id === pr.id)) return;
+      state.assignments.push({ person_id: pid, project_id: pr.id });
+      changed();
+    });
+    card.querySelectorAll(".chip[data-person] .x").forEach(x =>
+      x.addEventListener("click", () => {
+        const pid = x.closest(".chip").dataset.person;
+        state.assignments = state.assignments.filter(a => !(a.person_id === pid && a.project_id === pr.id));
+        changed();
+      }));
+    el.appendChild(card);
+  }
+}
+
+// ---------- CẢNH BÁO ----------
+function renderWarnings() {
+  // người chưa thuộc dự án nào = máy không thể chia việc cho họ — phải nói rõ
+  const unassigned = state.people.filter(p => p.role !== "clone" && !state.assignments.some(a => a.person_id === p.id));
+  const extra = unassigned.map(p =>
+    `<div class="warn unstaffed">Chưa phân công: <b>${esc(p.name)}</b> (${cap(p.role)}) chưa thuộc dự án nào
+      — kéo ⠿ thả vào dự án ở tab Kế hoạch thì máy mới chia việc được.</div>`).join("");
+  // bẫy cấu hình: có vòng chờ feedback nhưng thời gian sửa = 0 → chờ vô nghĩa, chỉ làm trễ
+  const oddCfg = [];
+  for (const pr of state.projects)
+    for (const ch of pr.channels || [])
+      for (const st of ch.stages || [])
+        if (st.feedback_rounds > 0 && st.feedback_wait_days > 0 && !st.revision_days)
+          oddCfg.push(`<div class="warn">⚙️ Cấu hình lạ: <b>${esc(ch.name)}</b> khâu ${cap(st.role)} có CHỜ feedback ${st.feedback_wait_days} ngày nhưng SỬA = 0 —
+            vòng chờ này chỉ giam sản phẩm thêm ${st.feedback_wait_days} ngày mà không có việc sửa nào. Đặt chờ = 0, hoặc thêm thời gian sửa.</div>`);
+  $("#warnings").innerHTML = extra + oddCfg.join("") + (schedule.warnings || [])
+    .map(w => `<div class="warn ${w.type}">${esc(w.message)}</div>`).join("");
+}
+
+// ---------- LỊCH TUẦN ----------
+function weekDays() { return [0, 1, 2, 3, 4, 5, 6].map(i => addDays(weekStart, i)); }  // đủ 7 ngày — lịch đăng có thể rơi CN
+
+function personBlocks() {
+  // person_id → { isoDate → [block] }; engine project = một kênh ("duAn::kenh")
+  const map = {};
+  for (const ps of schedule.projects) {
+    const found = chanById(ps.project_id);
+    if (!found) continue;
+    const { pr, ch } = found;
+    const color = chColor(pr, ch);
+    for (const v of ps.videos) {
+      const key = ps.project_id + "#" + v.index;
+      const sv = ch.videos.find(x => x.index === v.index);
+      for (const st of v.stages) {
+        for (const seg of st.segments) {
+          if (seg.kind === "wait") continue;
+          let d = new Date(seg.start_date + "T00:00:00");
+          const end = new Date(seg.end_date + "T00:00:00");
+          let wn = Math.floor(seg.start_t + 1e-9) + 1;  // ngày làm việc chứa điểm bắt đầu
+          while (d <= end) {
+            if (d.getDay() !== 0) {
+              // phần ngày công RIÊNG của ngày này (block vắt ngày chỉ chiếm một phần)
+              const share = Math.min(seg.end_t, wn) - Math.max(seg.start_t, wn - 1);
+              if (share > 1e-6) {
+                const ep = v.title || `Tập #${v.index}`;
+                const epShort = ep.length > 16 ? ep.slice(0, 15) + "…" : ep;
+                const verb = seg.kind === "revision" ? "sửa" : VERB[st.role] || st.role;
+                const ot = seg.overtime || 0;  // quá giờ: sửa nén để xong trong ngày
+                const label = `${epShort} · ${verb}${share < 0.999 ? ` · ${fmtT(share)}ng` : ""}`
+                  + (ot ? ` ⚡OT ${fmtT(ot)}` : "");
+                ((map[st.person_id] ||= {})[iso(d)] ||= []).push({
+                  label, key, color, rev: seg.kind === "revision",
+                  title: `${ch.name} · ${(sv && sv.title) || "Tập #" + v.index} — hôm nay ${fmtT(share)} ngày công`
+                    + ` (cả đoạn ${verb}: ${fmtT(seg.end_t - seg.start_t + ot)} ngày công`
+                    + (ot ? `, trong đó QUÁ GIỜ ${fmtT(ot)} để xong trong ngày` : "") + `)`,
+                });
+              }
+              wn++;
+            }
+            d = addDays(d, 1);
+          }
+        }
+      }
+    }
+  }
+  return map;
+}
+
+function renderCalendar() {
+  const days = weekDays();
+  $("#cal-title").textContent = `Tuần ${fmtD(iso(days[0]))} – ${fmtDY(iso(days[6]))}`;
+  const todayIso = iso(new Date());
+  const DOW = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"];
+  let html = `<div class="head"></div>` + days.map((d, i) =>
+    `<div class="head ${iso(d) === todayIso ? "today" : ""}${d.getDay() === 0 ? " sun" : ""}">${DOW[i]} ${fmtD(iso(d))}</div>`).join("");
+
+  // hàng ngày đăng — nhãn = Tên kênh · Tên tập
+  html += `<div class="who"><span>📤 Ngày đăng</span></div>`;
+  for (const d of days) {
+    const dIso = iso(d);
+    let cell = "";
+    for (const pr of state.projects) {
+      for (const ch of pr.channels) {
+        for (const v of ch.videos) {
+          if (v.publish_date !== dIso) continue;
+          const eid = engId(pr, ch);
+          const key = eid + "#" + v.index;
+          const sv = schedVideo(eid, v.index);
+          const late = !sv || sv.late_workdays > 0;
+          const epTitle = v.title || `Tập #${v.index}`;
+          const short = epTitle.length > 18 ? epTitle.slice(0, 17) + "…" : epTitle;
+          const cls = (late ? "latep " : "") + (selVideo === key ? "glow " : selVideo ? "dim " : "");
+          const tip = `${v.priority ? "★ ưu tiên · " : ""}${ch.name} · ${epTitle} (${pr.name})`;
+          cell += `<span class="pub ${cls}" style="--bc:${chColor(pr, ch)}" data-k="${key}"
+            title="${esc(tip)} — bấm xem chi tiết">${v.priority ? "★ " : ""}${esc(ch.name)} · ${esc(short)}</span>`;
+        }
+      }
+    }
+    html += `<div class="pubcell">${cell}</div>`;
+  }
+
+  // hàng một người — lọc theo kênh (filterEid) nếu ở chế độ xem theo Kênh
+  const blocks = personBlocks();
+  const dayCellLeave = (p, items) => days.map(d => d.getDay() !== 0 && onLeave(p, iso(d))
+    ? `<div><div class="blk idle" style="opacity:.6;border-style:solid">nghỉ phép</div></div>`
+    : `<div>` + (d.getDay() === 0
+      ? `<div class="blk idle" style="opacity:.45">nghỉ CN</div>`
+      : (items[iso(d)] || []).length ? (items[iso(d)]).map(b => {
+        const cls = (b.rev ? "rev " : "") + (selVideo && b.key === selVideo ? "glow " : selVideo && b.key !== selVideo ? "dim " : "");
+        return `<div class="blk ${cls}" style="--bc:${b.color}" title="${esc(b.title)}">${esc(b.label)}</div>`;
+      }).join("") : `<div class="blk idle ${selVideo ? "dim" : ""}">rảnh</div>`) + `</div>`).join("");
+  const dayCell = items => days.map(d => `<div>` + (d.getDay() === 0
+      ? `<div class="blk idle" style="opacity:.45">nghỉ CN</div>`
+      : (items[iso(d)] || []).length ? (items[iso(d)]).map(b => {
+        const cls = (b.rev ? "rev " : "") + (selVideo && b.key === selVideo ? "glow " : selVideo && b.key !== selVideo ? "dim " : "");
+        return `<div class="blk ${cls}" style="--bc:${b.color}" title="${esc(b.title)}">${esc(b.label)}</div>`;
+      }).join("") : `<div class="blk idle ${selVideo ? "dim" : ""}">rảnh</div>`) + `</div>`).join("");
+  const filterByCh = (mine, eid) => {
+    if (!eid) return mine;
+    const out = {};
+    for (const dISO in mine) { const f = mine[dISO].filter(b => b.key.startsWith(eid + "#")); if (f.length) out[dISO] = f; }
+    return out;
+  };
+  const personRow = (p, eid) => {
+    const mine = filterByCh(blocks[p.id] || {}, eid);
+    const busy = days.filter(d => d.getDay() !== 0 && !onLeave(p, iso(d)) && (mine[iso(d)] || []).length).length;
+    const off = days.filter(d => d.getDay() !== 0 && onLeave(p, iso(d))).length;
+    if (eid && !busy) return "";  // chế độ kênh: bỏ người không dính kênh này
+    return `<div class="who"><span><span class="cdot" style="background:${personColor(p)}"></span> ${esc(p.name)}</span>
+      <small>${p.role} · bận ${busy}/${6 - off} ngày${off ? ` · nghỉ ${off}` : ""}</small></div>`
+      + dayCellLeave(p, mine);
+  };
+
+  if (calGroupBy === "channel") {
+    // gom theo KÊNH: mỗi kênh một khối, chỉ người có việc kênh đó
+    for (const pr of state.projects) for (const ch of pr.channels) {
+      const eid = engId(pr, ch);
+      const rows = state.people.filter(p => p.role !== "clone").map(p => personRow(p, eid)).join("");
+      if (!rows) continue;
+      html += `<div class="who" style="box-shadow:inset 0 2px 0 var(--border)">
+        <span><span class="cdot" style="background:${chColor(pr, ch)}"></span> ${esc(ch.name)}</span>
+        <small>${esc(pr.name)}</small></div>`
+        + days.map(() => `<div style="box-shadow:inset 0 2px 0 var(--border)"></div>`).join("") + rows;
+    }
+  } else {
+    for (const p of state.people) { if (p.role === "clone") continue; html += personRow(p, null); }
+  }
+  html += renderCloneSection(days, blocks);
+  $("#cal-grid").innerHTML = html;
+  document.querySelectorAll(".pub[data-k]").forEach(el =>
+    el.addEventListener("click", () => { selVideo = selVideo === el.dataset.k ? null : el.dataset.k; renderCalendar(); }));
+
+  // chú giải
+  $("#cal-legend").innerHTML =
+    state.projects.flatMap(pr => pr.channels.map(c =>
+      `<span class="blk" style="--bc:${chColor(pr, c)}">${esc(c.name)}</span>`)).join("") +
+    `<span class="blk idle">rảnh</span>
+     <span>· block đậm hơn = vòng sửa · người rảnh nhận unit có ngày đăng gần nhất · hai người cùng rảnh → người giữ kỷ lục dự án</span>`;
+  renderVideoDetail();
+}
+
+function cloneTasksOf(pr, ch) {
+  // Mỗi DÒNG clone = một task (dịch → dựng lại). Bỏ dòng đã dựng xong.
+  return channelClones(ch).filter(c => !c.done).map(c => ({
+    pr, ch, row: c, taskId: c.id,
+    title: cloneTitle(ch, c), lang: c.lang || "—",
+    translated: !!c.translated,
+    v: c.v != null ? ch.videos.find(x => x.index === c.v) : null,
+  }));
+}
+
+function cloneAllocation(blocks) {
+  // Clone = 2 khâu: DỊCH (content, KB/ngày) → DỰNG LẠI (editor, video/ngày).
+  // Dựng một task chỉ sau khi bản dịch của nó xong. Phân từ HÔM NAY, xong sớm nhất.
+  let tasks = [];
+  for (const pr of state.projects)
+    for (const ch of pr.channels)
+      tasks.push(...cloneTasksOf(pr, ch));
+  // thứ tự: tập ★ trước, rồi theo ngày bàn giao của tập gốc (dòng nhập tay xếp sau)
+  tasks.forEach(t => {
+    const sv = t.v ? schedVideo(engId(t.pr, t.ch), t.v.index) : null;
+    t._h = sv ? sv.handoff_date : "9999-99-99";
+  });
+  tasks.sort((a, b) => {
+    const pa = a.v && a.v.priority ? 0 : 1, pb = b.v && b.v.priority ? 0 : 1;
+    if (pa !== pb) return pa - pb;
+    if (a._h !== b._h) return a._h < b._h ? -1 : 1;
+    return 0;
+  });
+  const projHasClone = pid => tasks.some(t => t.pr.id === pid);
+  const translators = state.people.filter(p => p.role === "content" && p.clone_rate
+    && state.assignments.some(a => a.person_id === p.id && projHasClone(a.project_id)));
+  const editors = state.people.filter(p => p.role === "clone"
+    || (p.role === "editor" && p.clone_rate && state.assignments.some(a => a.person_id === p.id && projHasClone(a.project_id))));
+  const eRate = w => w.role === "clone" ? w.standard_rate : w.clone_rate;
+
+  // Phân một khâu: pool + rate + danh sách task + điều kiện sẵn sàng theo ngày.
+  function schedule(pool, rateFn, list, readyOn) {
+    const alloc = {}, doneDay = {};
+    // dịch: chỉ task CHƯA dịch; dựng: mọi task (điều kiện sẵn sàng xét theo readyOn)
+    const q = readyOn ? [...list] : list.filter(t => !t.translated);
+    let d = new Date(); d.setHours(0, 0, 0, 0);
+    let guard = 0;
+    while (q.length && guard < 8 * 7 && pool.length) {
+      if (d.getDay() !== 0) {
+        const dISO = iso(d);
+        for (const w of pool) {
+          if (onLeave(w, dISO)) continue;                            // nghỉ phép
+          if (((blocks[w.id] || {})[dISO] || []).length) continue;   // bận việc dự án
+          let cap = rateFn(w);
+          for (let idx = 0; idx < q.length && cap > 0;) {
+            const t = q[idx];
+            const ready = !readyOn ? true : (t.translated || (readyOn[t.taskId] && readyOn[t.taskId] < dISO));
+            if (!ready) { idx++; continue; }
+            (alloc[`${w.id}|${dISO}`] ||= []).push(t);
+            doneDay[t.taskId] = dISO;
+            q.splice(idx, 1); cap--;
+          }
+        }
+      }
+      d = addDays(d, 1); guard++;
+    }
+    return { alloc, doneDay, leftover: q.length };
+  }
+
+  const tr = schedule(translators, w => w.clone_rate, tasks, null);   // dịch (task chưa dịch)
+  const ed = schedule(editors, eRate, tasks, tr.doneDay);             // dựng (sau khi dịch)
+  const doneCount = state.projects.flatMap(pr => pr.channels)
+    .reduce((sum, c) => sum + (c.clones || []).filter(x => x.done).length, 0);
+  return { tasks, translators, editors, eRate, tr, ed, doneCount,
+    leftover: Math.max(tr.leftover, ed.leftover) };
+}
+
+function renderCloneSection(days, blocks) {
+  const ca = cloneAllocation(blocks);
+  const { tasks, translators, editors, eRate, tr, ed, doneCount, leftover } = ca;
+  if (!tasks.length && !doneCount) return "";
+  const total = tasks.length;
+  const chNames = [...new Set(tasks.map(t => t.ch.name))];
+  const taskBlk = (t, color, verb) => {
+    const ep = t.title || "(chưa đặt tên)";
+    const epShort = ep.length > 12 ? ep.slice(0, 11) + "…" : ep;
+    const star = t.v && t.v.priority ? "★ " : "";
+    return `<div class="blk" style="--bc:${color}"
+      title="${esc(t.ch.name)} · ${esc(ep)} · ${esc(t.lang)}">${star}${esc(epShort)} · ${esc(t.lang)}${verb}</div>`;
+  };
+  let html = `<div class="who" style="box-shadow:inset 0 2px 0 var(--border)"><span>⧉ CLONE</span>
+    <small>${total} task chờ${doneCount ? ` · đã xong ${doneCount}` : ""}${chNames.length ? ` · ${chNames.map(esc).join(", ")}` : ""}${leftover
+      ? ` · <span style="color:var(--danger)">⚠ còn ${leftover} chưa xếp được</span>` : ""}</small></div>`;
+
+  // hàng tổng theo ngày (gộp cả dịch + dựng)
+  days.forEach(d => {
+    if (d.getDay() === 0) { html += `<div style="box-shadow:inset 0 2px 0 var(--border)"><div class="blk idle" style="opacity:.45">nghỉ CN</div></div>`; return; }
+    const nt = translators.reduce((a, w) => a + (tr.alloc[`${w.id}|${iso(d)}`] || []).length, 0);
+    const ne = editors.reduce((a, w) => a + (ed.alloc[`${w.id}|${iso(d)}`] || []).length, 0);
+    const parts = [];
+    if (nt) parts.push(`${nt} dịch`);
+    if (ne) parts.push(`${ne} dựng`);
+    html += `<div style="box-shadow:inset 0 2px 0 var(--border)">${parts.length
+      ? `<div class="blk" style="--bc:#8B96A8">${parts.join(" · ")}</div>` : `<div class="blk idle">—</div>`}</div>`;
+  });
+
+  const groupRows = (title, pool, alloc, verb, unit) => {
+    if (!pool.length) return "";
+    let h = `<div class="who" style="background:var(--raised)"><span style="font-size:11px;color:var(--muted)">— ${title} —</span></div>`
+      + days.map(() => `<div style="background:var(--raised)"></div>`).join("");
+    for (const w of pool) {
+      const rate = title.startsWith("Dịch") ? w.clone_rate : eRate(w);
+      h += `<div class="who"><span><span class="cdot" style="background:${personColor(w)}"></span> ${esc(w.name)}</span>
+        <small>${w.role === "clone" ? "Clone chuyên trách" : "clone · rảnh mới nhận"} · tối đa ${rate} ${unit}/ngày</small></div>`;
+      days.forEach(d => {
+        if (d.getDay() === 0) { h += `<div><div class="blk idle" style="opacity:.45">nghỉ CN</div></div>`; return; }
+        const mine = alloc[`${w.id}|${iso(d)}`] || [];
+        h += `<div>${mine.length ? mine.map(t => taskBlk(t, chColor(t.pr, t.ch), verb)).join("")
+          : onLeave(w, iso(d)) ? `<div class="blk idle" style="opacity:.6;border-style:solid">nghỉ phép</div>`
+          : ((blocks[w.id] || {})[iso(d)] || []).length ? `<div class="blk idle" style="opacity:.6">bận dự án</div>`
+          : `<div class="blk idle">rảnh clone</div>`}</div>`;
+      });
+    }
+    return h;
+  };
+  html += groupRows("Dịch kịch bản", translators, tr.alloc, " · dịch", "KB");
+  html += groupRows("Dựng lại", editors, ed.alloc, " · dựng", "tập");
+
+  if (!translators.length && total)
+    html += `<div class="who"><span style="color:var(--danger)">chưa có người DỊCH</span>
+      <small>nhập "clone __ KB/ngày" cho content + kéo vào dự án</small></div>`
+      + days.map(() => `<div><div class="blk idle">—</div></div>`).join("");
+  if (!editors.length && total)
+    html += `<div class="who"><span style="color:var(--danger)">chưa có người DỰNG</span>
+      <small>nhập "clone __ video/ngày" cho editor + kéo vào dự án</small></div>`
+      + days.map(() => `<div><div class="blk idle">—</div></div>`).join("");
+  return html;
+}
+
+function renderVideoDetail() {
+  const el = $("#vdetail");
+  if (!selVideo) { el.innerHTML = ""; return; }
+  const cut = selVideo.lastIndexOf("#");
+  const eid = selVideo.slice(0, cut);
+  const idx = +selVideo.slice(cut + 1);
+  const found = chanById(eid);
+  const v = found && found.ch.videos.find(x => x.index === idx);
+  if (!v) { selVideo = null; el.innerHTML = ""; return; }
+  const { pr, ch } = found;
+  const sv = schedVideo(eid, idx);
+  const badge = !sv ? `<span class="badge na">chưa tính được — xem cảnh báo</span>`
+    : !v.publish_date ? `<span class="badge na">chưa đặt ngày đăng</span>`
+    : sv.late_workdays > 0 ? `<span class="badge late">bàn giao ${fmtD(sv.handoff_date)} — TRỄ ${sv.late_workdays} ngày LV</span>`
+    : `<span class="badge ok">bàn giao ${fmtD(sv.handoff_date)} — kịp ✓</span>`;
+  const stageRows = sv ? sv.stages.map(st => {
+    const segs = st.segments.map(sg =>
+      `${sg.kind === "work" ? VERB[st.role] || "làm" : sg.kind === "wait" ? "chờ FB" : "sửa"} ${fmtD(sg.start_date)}→${fmtD(sg.end_date)}`).join(" · ");
+    return `<div class="row">${st.role === "content" ? "✍️" : "🎬"} ${cap(esc(st.role))}: <b>${esc(st.person_name)}</b>
+      <span class="hint">(${segs} — xong ${fmtD(st.done_date)})</span></div>`;
+  }).join("") : `<div class="row hint">Tập chưa có trong lịch tính — kiểm tra phân công đủ khâu.</div>`;
+  el.innerHTML = `<div class="vdetail">
+    <div class="vd-head">
+      <button class="v-prio ${v.priority ? "on" : ""}" id="vd-prio" title="★ Ưu tiên sản xuất sớm nhất">${v.priority ? "★" : "☆"}</button>
+      <b>📤 <span style="color:${chColor(pr, ch)}">${esc(ch.name)}</span> · tập #${v.index} <span class="hint">(${esc(pr.name)})</span></b>
+      <input class="vd-title" placeholder="(leader đặt tên tập)" value="${esc(v.title)}" style="flex:1;min-width:180px">
+      <label class="hint">đăng <input class="vd-date" type="date" value="${v.publish_date || ""}"></label>
+      ${badge}
+      <button class="btn-ghost vd-close">✕</button>
+    </div>
+    ${stageRows}
+    <div class="row hint">Các block của tập này đang tô sáng trên lịch. Đổi tên/ngày → engine tính lại ngay.</div>
+  </div>`;
+  el.querySelector("#vd-prio").addEventListener("click", () => { v.priority = !v.priority; changed(); });
+  el.querySelector(".vd-title").addEventListener("change", e => { v.title = e.target.value.trim(); changed(); });
+  el.querySelector(".vd-date").addEventListener("change", e => {
+    v.publish_date = e.target.value || null;
+    renumberVideos(ch);
+    selVideo = eid + "#" + v.index;
+    changed();
+  });
+  el.querySelector(".vd-close").addEventListener("click", () => { selVideo = null; renderCalendar(); });
+}
+
+// ---------- TỔNG KẾT TUẦN ----------
+let reviewTargets = {};
+function openReview() {
+  const days = weekDays().map(iso);
+  reviewTargets = {};
+  let rows = "";
+  for (const pr of state.projects) {
+    for (const ch of pr.channels) {
+    for (const v of ch.videos) {
+      if (!v.publish_date || !days.includes(v.publish_date)) continue;
+      const eid = engId(pr, ch);
+      const key = eid + "#" + v.index;
+      const sv = schedVideo(eid, v.index);
+      reviewTargets[key] = { pr, ch, v, sched: sv };
+      const who = sv ? sv.stages.map(st => `${cap(st.role)}: ${st.person_name}`).join(" · ") : "chưa tính được lịch";
+      rows += `<div class="rv-row" data-k="${key}">
+        <div class="rv-name"><b>${esc(ch.name)} #${v.index}${v.title ? " · " + esc(v.title) : ""}</b>
+          <small>đăng ${fmtDY(v.publish_date)} · ${esc(who)}</small></div>
+        <label><input type="checkbox" class="rv-miss"> ✗ chưa hoàn thành</label>
+        <select class="rv-fault">
+          <option value="content">do Content</option>
+          <option value="editor">do Editor</option>
+        </select>
+      </div>`;
+    }
+    }
+  }
+  $("#rv-list").innerHTML = rows ||
+    `<p class="hint">Không có video nào có lịch đăng trong tuần này. Chuyển tuần trên lịch rồi mở lại.</p>`;
+  $("#rv-week").textContent = `${fmtD(days[0])} – ${fmtDY(days[6])}`;
+  document.querySelectorAll(".rv-row").forEach(row => {
+    const cb = row.querySelector(".rv-miss");
+    if (cb) cb.addEventListener("change", () => row.classList.toggle("notdone", cb.checked));
+  });
+  $("#review-overlay").hidden = false;
+}
+
+function applyReview() {
+  const credited = {};
+  const involved = new Set();
+  const doneKeys = [];
+  const misses = [];
+  for (const [key, target] of Object.entries(reviewTargets)) {
+    if (!target.sched) continue;
+    const row = document.querySelector(`.rv-row[data-k="${key}"]`);
+    const miss = row.querySelector(".rv-miss").checked;
+    const fault = row.querySelector(".rv-fault").value;
+    const stages = Object.fromEntries(target.sched.stages.map(st => [st.role, st]));
+    for (const st of target.sched.stages) involved.add(st.person_id);
+    // Content tính theo kịch bản (1/unit), Editor theo phút video
+    const credit = st => { if (st) credited[st.person_id] =
+      (credited[st.person_id] || 0) + (st.role === "content" ? 1 : target.ch.video_minutes); };
+    if (!miss) { credit(stages.content); credit(stages.editor); doneKeys.push(key); }
+    else {
+      if (fault === "content") credit(stages.editor); else credit(stages.content);
+      misses.push({ label: `${target.ch.name} #${target.v.index}${target.v.title ? " «" + target.v.title + "»" : ""}`, fault });
+    }
+  }
+  // năng suất tuần = sản lượng ÷ số ngày THỰC đi làm (trừ ngày nghỉ) — không phạt người nghỉ phép
+  const wdays = weekDays().filter(d => d.getDay() !== 0);
+  for (const p of state.people)
+    if (involved.has(p.id)) {
+      const worked = wdays.filter(d => !onLeave(p, iso(d))).length || 1;
+      p.last_week_rate = Math.round((credited[p.id] || 0) / worked * 10) / 10;
+    }
+  const touched = new Set();
+  for (const key of doneKeys) {
+    const { ch, v } = reviewTargets[key];
+    ch.videos = ch.videos.filter(x => x.index !== v.index);
+    touched.add(ch);
+  }
+  touched.forEach(renumberVideos);
+  // sinh báo cáo tuần cho leader theo dõi chất lượng nhân sự
+  const days = weekDays().map(iso);
+  (state.reports ||= []).push({
+    week: `${fmtD(days[0])} – ${fmtDY(days[6])}`,
+    created: iso(new Date()),
+    rows: state.people.filter(p => involved.has(p.id)).map(p => ({
+      name: p.name, role: p.role, standard: p.standard_rate,
+      result: p.last_week_rate, pct: Math.round(p.last_week_rate / p.standard_rate * 100),
+    })),
+    misses,
+  });
+  $("#review-overlay").hidden = true;
+  changed();
+  openReport();
+}
+
+// ---------- BÁO CÁO TUẦN ----------
+function reportText(r) {
+  return [`BÁO CÁO TUẦN ${r.week}`,
+    ...r.rows.map(x => `- ${x.name} (${cap(x.role)}): ${x.result}/${x.standard} — đạt ${x.pct}%`),
+    r.misses.length ? "Video không hoàn thành:" : "Không có video trễ.",
+    ...r.misses.map(m => `  ✗ ${m.label} — do ${m.fault}`),
+  ].join("\n");
+}
+function openReport(idx) {
+  const reports = state.reports || [];
+  if (!reports.length) { toast("Chưa có báo cáo — chạy 🗓 Tổng kết tuần trước đã."); return; }
+  const i = idx === undefined ? reports.length - 1 : idx;
+  $("#rp-pick").innerHTML = reports.map((r, j) =>
+    `<option value="${j}" ${j === i ? "selected" : ""}>Tuần ${esc(r.week)}</option>`).join("");
+  const r = reports[i];
+  $("#rp-body").innerHTML = `
+    <table class="vtable">
+      <tr><th>Nhân sự</th><th>Khâu</th><th>KPI</th><th>Kết quả tuần</th><th>% đạt</th></tr>
+      ${r.rows.map(x => `<tr>
+        <td>${esc(x.name)}</td><td>${cap(x.role)}</td>
+        <td class="num">${x.standard}</td><td class="num">${x.result}</td>
+        <td>${x.pct >= 100
+          ? `<span class="badge ok">${x.pct}%</span>`
+          : `<span class="badge late">${x.pct}% · giảm ${100 - x.pct}%</span>`}</td>
+      </tr>`).join("")}
+    </table>
+    ${r.misses.length
+      ? `<p style="margin:12px 0 4px;font-size:13px"><b>Video không hoàn thành:</b></p>` +
+        r.misses.map(m => `<div class="hint">✗ ${esc(m.label)} — do ${cap(m.fault)}</div>`).join("")
+      : `<p class="hint" style="margin-top:10px">✓ Không có video nào bị trễ trong tuần.</p>`}`;
+  $("#report-overlay").hidden = false;
+}
+
+// ---------- CHỐT NGÀY ----------
+let dailyDay = null;
+function openDaily() {
+  const days = weekDays().filter(d => d.getDay() !== 0).map(iso);  // chốt ngày: chỉ ngày làm việc
+  const today = iso(new Date());
+  dailyDay = days.includes(today) ? today : days[0];
+  $("#dd-day").innerHTML = days.map(d =>
+    `<option value="${d}" ${d === dailyDay ? "selected" : ""}>${fmtDY(d)}</option>`).join("");
+  renderDailyList();
+  $("#dd-sugs").innerHTML = "";
+  $("#daily-overlay").hidden = false;
+}
+function renderDailyList() {
+  const blocks = personBlocks();
+  const saved = (state.daily || {})[dailyDay] || {};
+  let rows = "";
+  for (const p of state.people) {
+    if (onLeave(p, dailyDay)) continue;               // nghỉ phép → không phải chốt
+    const items = (blocks[p.id] || {})[dailyDay] || [];
+    if (!items.length) continue;
+    rows += `<div class="rv-row" data-p="${p.id}">
+      <div class="rv-name"><b>${esc(p.name)} <span class="hint">(${cap(p.role)})</span></b>
+        <small>${items.map(b => esc(b.label)).join(" · ")}</small></div>
+      <label><input type="checkbox" class="dd-miss" ${saved[p.id] === false ? "checked" : ""}> ✗ chưa xong</label>
+    </div>`;
+  }
+  // hàng CLONE: xác nhận trong ngày — dịch (content) và dựng (editor) tách riêng
+  const ca = cloneAllocation(blocks);
+  const cloneRow = (w, mine, stage) => {
+    if (!mine.length) return;
+    const k = `clone:${stage}:${w.id}`;
+    rows += `<div class="rv-row" data-p="${w.id}" data-clone="${stage}">
+      <div class="rv-name"><b>⧉ ${esc(w.name)} <span class="hint">(${stage === "tr" ? "Dịch" : "Dựng lại"})</span></b>
+        <small>${mine.map(t => esc(t.title + " · " + t.lang)).join(" · ")}</small></div>
+      <label><input type="checkbox" class="dd-miss" ${saved[k] === false ? "checked" : ""}> ✗ chưa xong</label>
+    </div>`;
+  };
+  for (const w of ca.translators) cloneRow(w, ca.tr.alloc[`${w.id}|${dailyDay}`] || [], "tr");
+  for (const w of ca.editors) cloneRow(w, ca.ed.alloc[`${w.id}|${dailyDay}`] || [], "ed");
+  $("#dd-list").innerHTML = rows || `<p class="hint">Không ai có việc được xếp trong ngày này.</p>`;
+}
+function applyDaily() {
+  const blocks = personBlocks();
+  const ca = cloneAllocation(blocks);
+  (state.daily ||= {})[dailyDay] = {};
+  const missed = [];
+  const cloneMissed = [];
+  document.querySelectorAll("#dd-list .rv-row").forEach(row => {
+    const pid = row.dataset.p;
+    const miss = row.querySelector(".dd-miss").checked;
+    if (row.dataset.clone) {
+      const stage = row.dataset.clone;  // "tr" (dịch) | "ed" (dựng)
+      state.daily[dailyDay][`clone:${stage}:${pid}`] = !miss;
+      const mine = (stage === "tr" ? ca.tr : ca.ed).alloc[`${pid}|${dailyDay}`] || [];
+      if (miss) { cloneMissed.push(personById(pid)); return; }
+      mine.forEach(t => { t.row[stage === "tr" ? "translated" : "done"] = true; });
+      return;
+    }
+    state.daily[dailyDay][pid] = !miss;
+    if (miss) missed.push(personById(pid));
+  });
+  if (cloneMissed.length)
+    toast(`Tập clone của ${cloneMissed.map(p => p.name).join(", ")} chưa xong — tự nằm lại hàng chờ, phân lại từ ngày kế.`);
+  if (!missed.length) {
+    $("#dd-sugs").innerHTML = `<p class="hint" style="margin-top:10px">✓ Cả team hoàn thành ngày ${fmtDY(dailyDay)}.</p>`;
+    toast("Đã chốt ngày — tất cả hoàn thành.");
+    changed();
+    return;
+  }
+  // gợi ý cứu tiến độ — mục tiêu cuối: đủ video kinh doanh
+  const sugs = [];
+  for (const p of missed) {
+    const engIds = [...new Set(((blocks[p.id] || {})[dailyDay] || []).map(b => {
+      const c = b.key.lastIndexOf("#");
+      return b.key.slice(0, c);
+    }))];
+    for (const eid of engIds) {
+      const found = chanById(eid);
+      if (!found) continue;
+      const { pr, ch } = found;
+      const idle = state.people.filter(q => q.role === p.role && q.id !== p.id
+        && !((blocks[q.id] || {})[dailyDay] || []).length);
+      if (idle.length) sugs.push({ text: `➕ Thêm người cho ${pr.name}: ${idle.map(q => q.name).join(", ")} `
+        + `(cùng khâu ${cap(p.role)}, đang rảnh ${fmtD(dailyDay)}) — kéo thả ở tab Kế hoạch.` });
+      const next = ch.videos.filter(v => v.publish_date && v.publish_date >= dailyDay)
+        .sort((a, b) => a.publish_date < b.publish_date ? -1 : 1)[0];
+      if (next) sugs.push({ text: `📉 Giảm khối lượng: dời ngày đăng tập #${next.index}`
+        + `${next.title ? " «" + next.title + "»" : ""} (${fmtDY(next.publish_date)}) của ${ch.name} — bấm tập trên lịch để sửa.` });
+      const ed = ch.stages.find(st => st.role === "editor");
+      if (ed && ed.feedback_rounds > 0) sugs.push({
+        text: `✂️ Giảm chất lượng edit: bớt 1 vòng feedback khâu Editor của ${ch.name} `
+          + `— tiết kiệm ~${ed.feedback_wait_days + ed.revision_days} ngày công/video.`,
+        apply: () => {
+          if (!confirm(`Bớt 1 vòng feedback khâu Editor của "${ch.name}"?`)) return;
+          ed.feedback_rounds -= 1;
+          changed();
+          toast("Đã bớt 1 vòng feedback — lịch tính lại.");
+        },
+      });
+    }
+  }
+  const uniq = [];
+  for (const s of sugs) if (!uniq.some(x => x.text === s.text)) uniq.push(s);
+  $("#dd-sugs").innerHTML = `<p style="margin:12px 0 2px;font-size:13px"><b>Gợi ý cứu tiến độ</b>
+      <span class="hint">— tool gợi ý, anh quyết. Điều chỉnh xong bấm ⚡ Tự phân phối lịch.</span></p>`
+    + uniq.map((s, i) => `<div class="sug-item">${esc(s.text)}${s.apply
+        ? `<button class="minibtn dd-ap" data-i="${i}">Áp dụng</button>` : ""}</div>`).join("");
+  document.querySelectorAll(".dd-ap").forEach(btn =>
+    btn.addEventListener("click", () => uniq[+btn.dataset.i].apply()));
+  toast(`Đã ghi nhận: ${missed.map(p => p.name).join(", ")} chưa xong ngày ${fmtDY(dailyDay)}.`);
+  changed();
+}
+
+// ---------- KHUNG ----------
+function renderAll() { renderPeople(); renderProjects(); renderWarnings(); renderCalendar(); }
+
+function showView(view) {
+  document.querySelectorAll(".tab").forEach(t => t.setAttribute("aria-selected", t.dataset.view === view));
+  $("#view-plan").hidden = view !== "plan";
+  $("#view-plan").style.display = view === "plan" ? "grid" : "none";
+  $("#view-cal").hidden = view !== "cal";
+  $("#view-admin").hidden = view !== "admin";
+  if (view === "admin") renderUsers();
+  localStorage.setItem("pp_view", view);   // giữ nguyên vị trí sau refresh
+}
+async function renderUsers() {
+  try {
+    const r = await fetch("/api/users", { headers: { "X-Role-Code": localStorage.getItem("pp_code") || "" } });
+    const d = await r.json();
+    if (!r.ok) { $("#u-note").textContent = d.error || ""; return; }
+    const rows = Object.entries(d.users || {}).map(([u, rec]) => `<tr>
+        <td class="num">${esc(u)}</td><td>${esc(rec.name || "")}</td><td>${esc(rec.email || "")}</td>
+        <td><select class="u-role" data-u="${esc(u)}">${
+          ["manager","leader","hr","seo","member","viewer"].map(rr =>
+            `<option value="${rr}" ${rec.role === rr ? "selected" : ""}>${ROLE_LABEL[rr]}</option>`).join("")}</select></td>
+        <td><button class="minibtn u-pass" data-u="${esc(u)}" title="Đổi mật khẩu">🔑</button>
+          <button class="v-del u-del" data-u="${esc(u)}" title="Gỡ người dùng">×</button></td></tr>`).join("");
+    $("#users-table").innerHTML = `<tr><th>Đăng nhập</th><th>Tên</th><th>Email</th><th>Role</th><th></th></tr>`
+      + `<tr><td class="num">admin</td><td>Quản trị gốc</td><td>—</td><td><span class="rolechip">Quản trị</span></td>
+          <td><button class="minibtn u-pass" data-u="admin" title="Đổi mật khẩu admin">🔑</button></td></tr>`
+      + (rows || `<tr><td colspan="5" class="hint">Chưa có thành viên nào — tạo mã mời bên dưới.</td></tr>`);
+    const inv = Object.entries(d.invites || {});
+    $("#invites-table").innerHTML = inv.length
+      ? `<tr><th>Mã mời</th><th>Vai trò</th><th>Link</th><th></th></tr>` + inv.map(([code, v]) => `<tr>
+          <td class="inv-code">${esc(code)}</td><td><span class="rolechip ${v.role === "viewer" ? "viewer" : ""}">${ROLE_LABEL[v.role]}</span></td>
+          <td><button class="minibtn inv-copy" data-c="${esc(code)}">Copy link</button></td>
+          <td><button class="v-del inv-revoke" data-c="${esc(code)}" title="Thu hồi mã">×</button></td></tr>`).join("")
+      : "";
+    $("#u-note").innerHTML = d.htpasswd
+      ? "Server bật tạo tài khoản: người dùng /invite là đăng nhập được ngay."
+      : "⚠️ Đang chạy local — /invite ghi nhận role nhưng đăng nhập thật chỉ có khi lên VPS (nginx).";
+    document.querySelectorAll(".u-role").forEach(sel => sel.addEventListener("change", () =>
+      userAction({ action: "setrole", username: sel.dataset.u, user_role: sel.value })));
+    document.querySelectorAll(".u-del").forEach(b => b.addEventListener("click", () => {
+      if (confirm(`Gỡ người dùng "${b.dataset.u}"? Họ mất quyền truy cập.`)) userAction({ action: "remove", username: b.dataset.u });
+    }));
+    document.querySelectorAll(".inv-revoke").forEach(b => b.addEventListener("click", () => {
+      if (confirm(`Thu hồi mã ${b.dataset.c}?`)) userAction({ action: "revoke_invite", code: b.dataset.c });
+    }));
+    document.querySelectorAll(".inv-copy").forEach(b => b.addEventListener("click", () => {
+      navigator.clipboard.writeText(`${location.origin}/invite?code=${b.dataset.c}`).then(() => toast("Đã copy link mời."));
+    }));
+    document.querySelectorAll(".u-pass").forEach(b => b.addEventListener("click", async () => {
+      const pw = prompt(`Mật khẩu MỚI cho "${b.dataset.u}" (tối thiểu 6 ký tự):`);
+      if (pw === null) return;
+      if (pw.length < 6) { toast("Mật khẩu tối thiểu 6 ký tự."); return; }
+      const r = await fetch("/api/users", { method: "POST",
+        headers: { "Content-Type": "application/json", "X-Role-Code": localStorage.getItem("pp_code") || "" },
+        body: JSON.stringify({ action: "setpass", username: b.dataset.u, password: pw }) });
+      const d = await r.json();
+      if (!r.ok) { toast(d.error || "Lỗi."); return; }
+      toast(d.htpasswd === false
+        ? `Đã ghi nhận (local: chưa có đăng nhập thật).`
+        : `Đã đổi mật khẩu cho "${b.dataset.u}". Báo người đó dùng mật khẩu mới.`);
+    }));
+  } catch { $("#u-note").textContent = "Không kết nối được server."; }
+}
+
+async function userAction(body) {
+  const r = await fetch("/api/users", { method: "POST",
+    headers: { "Content-Type": "application/json", "X-Role-Code": localStorage.getItem("pp_code") || "" },
+    body: JSON.stringify(body) });
+  const d = await r.json();
+  if (!r.ok) { toast(d.error || "Lỗi."); return; }
+  renderUsers();
+}
+document.querySelectorAll(".tab").forEach(tab =>
+  tab.addEventListener("click", () => showView(tab.dataset.view)));
+$("#cal-prev").addEventListener("click", () => { weekStart = addDays(weekStart, -7); localStorage.setItem("pp_week", iso(weekStart)); renderCalendar(); });
+$("#cal-next").addEventListener("click", () => { weekStart = addDays(weekStart, 7); localStorage.setItem("pp_week", iso(weekStart)); renderCalendar(); });
+function setCalGroup(g) {
+  calGroupBy = g; localStorage.setItem("pp_calgroup", g);
+  $("#cal-by-person").style.borderColor = g === "person" ? "var(--accent)" : "";
+  $("#cal-by-person").style.color = g === "person" ? "var(--accent)" : "";
+  $("#cal-by-channel").style.borderColor = g === "channel" ? "var(--accent)" : "";
+  $("#cal-by-channel").style.color = g === "channel" ? "var(--accent)" : "";
+  renderCalendar();
+}
+$("#cal-by-person").addEventListener("click", () => setCalGroup("person"));
+$("#cal-by-channel").addEventListener("click", () => setCalGroup("channel"));
+setCalGroup(calGroupBy);
+$("#btn-review").addEventListener("click", openReview);
+$("#btn-distribute").addEventListener("click", () => {
+  $("#saveState").textContent = "đang phân phối…";
+  saveCompute();
+  const un = state.people.filter(p => p.role !== "clone" && !state.assignments.some(a => a.person_id === p.id));
+  toast(un.length
+    ? `⚠️ ${un.map(p => p.name).join(", ")} chưa thuộc dự án nào nên KHÔNG được chia việc — kéo vào dự án trước. `
+      + "Phần còn lại đã phân phối: dự án đang làm → video ★ → ngày đăng gần nhất."
+    : "Đã phân phối unit: dự án đang làm → video ★ → ngày đăng gần nhất. "
+      + "Máy chỉ chia việc trong phân công hiện có — không tự thêm người vào dự án.");
+});
+$("#rv-apply").addEventListener("click", applyReview);
+$("#rv-cancel").addEventListener("click", () => { $("#review-overlay").hidden = true; });
+$("#btn-report").addEventListener("click", () => openReport());
+$("#rp-pick").addEventListener("change", e => openReport(+e.target.value));
+$("#rp-copy").addEventListener("click", () => {
+  const r = (state.reports || [])[+$("#rp-pick").value];
+  if (r) navigator.clipboard.writeText(reportText(r)).then(() => toast("Đã copy báo cáo tuần."));
+});
+$("#rp-close").addEventListener("click", () => { $("#report-overlay").hidden = true; });
+$("#inv-make").addEventListener("click", async () => {
+  const r = await fetch("/api/users", { method: "POST",
+    headers: { "Content-Type": "application/json", "X-Role-Code": localStorage.getItem("pp_code") || "" },
+    body: JSON.stringify({ action: "make_invite", user_role: $("#inv-role").value }) });
+  const d = await r.json();
+  if (!r.ok) { toast(d.error || "Lỗi."); return; }
+  renderUsers();
+  navigator.clipboard.writeText(`${location.origin}/invite?code=${d.invite.code}`)
+    .then(() => toast(`Đã tạo mã ${d.invite.code} — link đã copy, gửi cho người được mời.`));
+});
+$("#btn-daily").addEventListener("click", openDaily);
+$("#dd-apply").addEventListener("click", applyDaily);
+$("#dd-close").addEventListener("click", () => { $("#daily-overlay").hidden = true; });
+$("#dd-day").addEventListener("change", e => { dailyDay = e.target.value; renderDailyList(); $("#dd-sugs").innerHTML = ""; });
+const ROLE_UNIT = { content: "KB/ngày", editor: "phút/ngày", clone: "video/ngày" };
+$("#np-role").addEventListener("change", e => { $("#np-unit").textContent = ROLE_UNIT[e.target.value]; });
+$("#btn-logout").addEventListener("click", () => {
+  if (confirm("Đăng xuất khỏi PlannerY? (đăng nhập lại có thể bằng tài khoản khác)")) location.href = "/logout";
+});
+$("#btn-role").addEventListener("click", async () => {
+  const code = prompt("Nhập mã vai trò (Quản trị / HR / Leader / Nhân sự).\nĐể trống → chế độ Xem:");
+  if (code === null) return;
+  if (!code.trim()) { localStorage.removeItem("pp_code"); setRole("viewer"); return; }
+  try {
+    const r = await fetch("/api/role", { method: "POST",
+      headers: { "Content-Type": "application/json" }, body: JSON.stringify({ code }) });
+    const data = await r.json();
+    if (!r.ok) { toast(data.error || "Mã không đúng."); return; }
+    localStorage.setItem("pp_code", code.trim());
+    setRole(data.role);
+  } catch { toast("Không kết nối được server."); }
+});
+$("#btn-backup").addEventListener("click", () => {
+  const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `plan-backup-${iso(new Date())}.json`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  toast("Đã tải bản sao dữ liệu về máy — cất một nơi khác định kỳ.");
+});
+$("#add-person").addEventListener("submit", e => {
+  e.preventDefault();
+  const name = $("#np-name").value.trim();
+  const std = Math.round(parseFloat($("#np-std").value));  // số nguyên — không có unit lẻ
+  if (!name || !(std >= 1)) return;
+  state.people.push({ id: uid("ng"), name, role: $("#np-role").value, standard_rate: std, last_week_rate: null });
+  e.target.reset();
+  $("#np-unit").textContent = "KB/ngày";
+  changed();
+});
+$("#btn-add-project").addEventListener("click", () => {
+  state.projects.push({ id: uid("pr"), name: "Dự án mới", channels: [] });
+  changed();
+});
+
+(async function init() {
+  let loaded = false;
+  for (let i = 0; i < 3 && !loaded; i++) {
+    try {
+      state = await (await fetch("/api/state")).json();
+      loaded = true;
+    } catch (e) {
+      renderError("Chưa kết nối được server — đang thử lại… (dữ liệu vẫn an toàn trong data/)");
+      await new Promise(res => setTimeout(res, 1500));
+    }
+  }
+  if (!loaded) {
+    renderError("KHÔNG kết nối được server. Dữ liệu vẫn nằm nguyên trong data/plan.json — chạy Start.command rồi tải lại trang.");
+    return;
+  }
+  try {
+    const me = await (await fetch("/api/me")).json();
+    if (me.username) {                       // production: proxy đã xác thực
+      role = me.role;
+      if (me.sso) {
+        // SSO qua OUTLIERY: danh tính + vai đã hiện ở topbar OUTLIERY — giấu hẳn chip 👤
+        // và nút "Đổi tài khoản" (đổi người = đăng xuất ở OUTLIERY, /logout ở đây vô nghĩa).
+        $("#btn-role").style.display = "none";
+        $("#btn-logout").style.display = "none";
+      } else {
+        $("#btn-role").textContent = `👤 ${me.name || me.username} · ${ROLE_LABEL[role] || role}`;
+        $("#btn-role").disabled = true;      // đổi người = đổi đăng nhập nginx, không đổi ở đây
+        $("#btn-logout").style.display = ""; // production: cho đăng xuất/đổi tài khoản
+      }
+    } else if (role !== "viewer" && !localStorage.getItem("pp_code")) {
+      role = "viewer"; localStorage.setItem("pp_role", "viewer");
+      setTimeout(() => toast("Bảo mật nâng cấp: bấm 👤 nhập lại mã vai trò để chỉnh sửa."), 800);
+    }
+  } catch { /* server chưa sẵn sàng — vòng retry ở trên đã lo */ }
+  for (const pr of state.projects || []) {
+    if (!Array.isArray(pr.channels)) pr.channels = [];
+  }
+  initGuards();
+  updateRoleUI();
+  const savedWeek = localStorage.getItem("pp_week");
+  if (savedWeek) weekStart = mondayOf(new Date(savedWeek + "T00:00:00"));
+  showView(localStorage.getItem("pp_view") || "plan");
+  // dữ liệu kiểu cũ: "kho kịch bản sẵn" k tập đầu → tick ✓ đã có KB rồi bỏ kho
+  for (const pr of state.projects || [])
+    for (const ch of pr.channels || [])
+      if (ch.script_stock > 0) {
+        [...ch.videos].sort((a, b) => a.index - b.index)
+          .slice(0, ch.script_stock).forEach(v => { v.has_script = true; });
+        ch.script_stock = 0;
+      }
+  // dữ liệu kiểu cũ: kênh clone riêng → cờ has_clone trên kênh gốc
+  for (const pr of state.projects || []) {
+    for (const cl of pr.channels.filter(c => c.is_clone)) {
+      const src = pr.channels.find(c => c.id === cl.source_channel_id);
+      if (src) src.has_clone = true;
+    }
+    pr.channels = pr.channels.filter(c => !c.is_clone);
+  }
+  // clone kiểu cũ (has_clone / clone_langs / clone_done trên video) → xoá sạch
+  for (const pr of state.projects || [])
+    for (const ch of pr.channels || []) {
+      // clone kiểu cũ (has_clone / clone_langs) đã bỏ — xoá sạch, leader nhập lại danh sách
+      delete ch.has_clone; delete ch.clone_langs;
+      ch.clones ||= [];
+      for (const v of ch.videos || []) { delete v.clone_done; delete v.clone_translated; }
+    }
+  renderAll();
+  if (state.people.length || state.projects.length) { $("#saveState").textContent = "đang tính…"; saveCompute(); }
+  else $("#saveState").textContent = "sẵn sàng";
+})();
+</script>
+</body>
+</html>

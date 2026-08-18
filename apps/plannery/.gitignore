@@ -1,0 +1,13 @@
+# Dữ liệu thật của team (tên, năng suất, dự án, phân công) — không đưa lên git.
+# Xem CLAUDE.md nguyên tắc 6.
+data/
+
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.DS_Store
+.htpasswd
+logs/
+thu.log
+thu.err.log

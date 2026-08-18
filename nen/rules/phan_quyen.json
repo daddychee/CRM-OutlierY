@@ -74,6 +74,11 @@
         "nhan": "Quản trị",
         "mo_ta": "Cấu hình app tổ chức",
         "min_level": 5
+      },
+      "nas_cap_cao": {
+        "nhan": "NAS: sửa/xóa file",
+        "mo_ta": "Nhóm Windows NAS-ToanQuyen (đọc/ghi/sửa/xóa) — dưới ngưỡng chỉ NAS-ChiThem (đọc + thêm file mới, không sửa/xóa). LƯU Ý ĐẶT TÊN: khoá KHÔNG được chứa 'xoa'/'toan_quyen'/'sua'/'tao'/'them' — iam.vai_cho_app() dò substring các từ đó để tự suy X-Remote-Role gửi sang app, đặt trùng là vô tình đẩy vai app lên admin/leader (đã dính thật — test_iam.py::test_vai_dich_tu_hanh_dong_va_tick_quan_tri).",
+        "min_level": 3
       }
     },
     "radary": {
@@ -177,6 +182,35 @@
         "mo_ta": "Gỡ video khỏi danh sách (GỠ MỀM — file giữ nguyên trong kho)",
         "min_level": 4
       }
+    },
+    "plannery": {
+      "vao": {
+        "min_level": 1
+      },
+      "khai_kenh_video": {
+        "nhan": "Thêm kênh + video",
+        "mo_ta": "Vai seo — thêm KÊNH MỚI vào dự án có sẵn + thêm/sửa/xóa video & thời lượng kênh; KHÔNG đụng cấu hình kênh cũ/dự án/lịch. (Tên khóa cố ý tránh 'them/tao/sua' — bẫy đặt tên vai_cho_app, xem ghi chú nas_cap_cao.)",
+        "min_level": 2,
+        "bo_phan": [
+          "Kinh doanh"
+        ]
+      },
+      "sua": {
+        "nhan": "Sửa / phân lịch",
+        "mo_ta": "Vai leader — phân công người ↔ dự án, sửa lịch/cấu hình kênh, 'đang làm' + rate tuần + ngày nghỉ; hồ sơ nhân sự vẫn của HR (bên to-chuc/General).",
+        "min_level": 3
+      },
+      "toan_quyen": {
+        "nhan": "Toàn quyền vận hành",
+        "mo_ta": "Vai manager — sửa full dữ liệu kế hoạch (dự án/kênh/người/phân công) — KHÔNG gồm tài khoản nội bộ app (Manager không ngang Owner)",
+        "min_level": 4
+      },
+      "quan_tri": {
+        "nhan": "Quản trị",
+        "mo_ta": "Vai admin — toàn quyền + tài khoản/mã mời nội bộ app; cửa nội bộ ĐÃ ĐÓNG khi SSO (tài khoản quản ở General › Accounts / Permissions)",
+        "min_level": 5
+      },
+      "vai_xoa": "manager"
     },
     "seo-optimize": {
       "vao": {

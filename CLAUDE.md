@@ -247,3 +247,7 @@ Quy ước từ 16/08/2026 (user chốt): mỗi mạch việc lớn có MỘT s�
   sinh_metadata). Root 191 pass + app 13; nghiệm thu sống 5 vai qua 9115.
   Chi tiết + việc chờ Owner (migration khóa, restart gateway ăn alias):
   docs/APPS.md nhật ký 19/08 + apps/seo-optimize/CLAUDE.md.
+  ⚠️ Ghi chú lịch sử git: nội dung mạch SEO nằm trong commit `0c03c3c` (message
+  RadarY) — 2 phiên song song chung MỘT index, phiên kia commit đúng lúc phần SEO
+  đang stage. Bài học (nối bc97b8e): repo nhiều phiên thì stage xong phải commit
+  NGAY, không để index nóng.

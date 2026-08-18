@@ -1,0 +1,644 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BẢN MẪU — Điều phối sản xuất v2</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #f2f4f7; color: #1c2430;
+    font: 14px/1.45 -apple-system, "Segoe UI", Roboto, sans-serif; }
+  header { display: flex; align-items: center; gap: 12px; padding: 10px 20px;
+    background: #fff; border-bottom: 1px solid #e3e7ee; position: sticky; top: 0; z-index: 5; flex-wrap: wrap; }
+  h1 { font-size: 16px; margin: 0; }
+  .ribbon { background: #fef3c7; border: 1px solid #f0d9a8; color: #7a5b12;
+    font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 999px; }
+  .spacer { flex: 1; }
+  button { font: inherit; border: 1px solid #c9d2dd; background: #fff; color: #1c2430;
+    border-radius: 6px; padding: 5px 12px; cursor: pointer; }
+  button:hover { background: #eef2f7; }
+  button.primary { background: #2563eb; border-color: #2563eb; color: #fff; }
+  button.primary:hover { background: #1d4fd0; }
+  .tabs { display: inline-flex; background: #eef2f7; border-radius: 8px; padding: 3px; }
+  .tabs button { border: none; background: none; padding: 4px 14px; border-radius: 6px; color: #52606f; }
+  .tabs button.active { background: #fff; color: #1c2430; font-weight: 600; box-shadow: 0 1px 2px rgba(0,0,0,.08); }
+  h2 { font-size: 13px; margin: 0 0 8px; text-transform: uppercase; letter-spacing: .04em; color: #52606f; }
+  .hint { color: #8a97a8; font-size: 12.5px; }
+
+  #warnings { padding: 0 20px; }
+  .warn { margin-top: 10px; padding: 7px 12px; border-radius: 6px; font-size: 13px;
+    background: #fff7e6; border: 1px solid #f0d9a8; color: #7a5b12; }
+  .warn.late { background: #fdecec; border-color: #f2c1c1; color: #8f2020; }
+  .warn.unstaffed { background: #eef2f7; border-color: #d4dce6; color: #4a5a6d; }
+  .warn.good { background: #e6f4e6; border-color: #bfe3bf; color: #2f7d32; }
+
+  main { display: flex; gap: 16px; padding: 16px 20px; align-items: flex-start; }
+  #people-panel { flex: 0 0 265px; }
+  #board-panel { flex: 1; min-width: 0; }
+
+  .person { background: #fff; border: 1px solid #e3e7ee; border-radius: 8px; padding: 8px 10px; margin-bottom: 8px; }
+  .person-top { display: flex; align-items: center; gap: 6px; font-weight: 600; }
+  .drag-handle { cursor: grab; color: #93a0b0; user-select: none; }
+  .role-tag { font-size: 11px; font-weight: 600; padding: 1px 8px; border-radius: 999px; }
+  .role-content { background: #e0f2e9; color: #1b6e46; }
+  .role-editor { background: #e3ecfd; color: #2050b3; }
+  .rates { display: flex; gap: 10px; margin-top: 6px; font-size: 12.5px; color: #52606f; flex-wrap: wrap; }
+  .rates b { color: #1c2430; }
+  .tq-bar { height: 5px; background: #eef2f7; border-radius: 999px; margin-top: 6px; overflow: hidden; }
+  .tq-bar i { display: block; height: 100%; background: #10b981; border-radius: 999px; }
+  .tq-bar i.low { background: #ef4444; }
+  .hr-warn { margin-top: 4px; font-size: 12px; color: #c62828; font-weight: 600; }
+  .warn.hr { background: #fdf0e6; border-color: #f3cdaa; color: #9a4b0f; }
+  .p-load { margin-top: 6px; font-size: 12px; color: #2f7d32; }
+  .p-load.free { color: #b45309; font-weight: 600; }
+
+  .project { background: #fff; border: 1px solid #e3e7ee; border-radius: 10px; padding: 12px 14px; margin-bottom: 16px; border-top: 4px solid var(--pc, #2563eb); }
+  .project-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .project-head b { font-size: 15px; }
+  .project-row { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 8px; color: #52606f; font-size: 13px; }
+  .project-row label { display: flex; align-items: center; gap: 5px; }
+  .project-row input { font: inherit; border: 1px solid #c9d2dd; border-radius: 6px; padding: 3px 6px; width: 58px; }
+  .supply { margin-top: 10px; }
+  .supply-row { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: #52606f; margin-top: 4px; flex-wrap: wrap; }
+  .supply-row .bar { flex: 1; max-width: 220px; height: 8px; background: #eef2f7; border-radius: 999px; overflow: hidden; }
+  .supply-row .bar i { display: block; height: 100%; border-radius: 999px; background: #10b981; }
+  .supply-row.short .bar i { background: #ef4444; }
+  .supply-row.short .lack { color: #c62828; font-weight: 700; }
+  .shared-note { color: #b45309; font-size: 11.5px; }
+  .bestperf { margin-top: 10px; font-size: 12.5px; color: #52606f; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .bestperf b { color: #b45309; }
+  .bp-edit { border: none; background: none; padding: 0 2px; cursor: pointer; }
+  .bp-note { margin-top: 4px; font-size: 12px; color: #1d4fd0; background: #f0f6ff; border-radius: 6px; padding: 4px 8px; }
+
+  .dropzone { margin-top: 10px; min-height: 42px; border: 2px dashed #c9d2dd; border-radius: 8px;
+    padding: 6px 8px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; transition: .15s; }
+  .dropzone.over { background: #e8f0fe; border-color: #2563eb; }
+  .chip { display: inline-flex; align-items: center; gap: 5px; background: #eef2f7;
+    border: 1px solid #d4dce6; border-radius: 999px; padding: 3px 6px 3px 10px; font-size: 13px; }
+  .chip .x { border: none; background: none; color: #93a0b0; cursor: pointer; padding: 0 3px; }
+  .chip .x:hover { color: #d33; }
+  .chip.draft { border-style: dashed; border-color: #2563eb; background: #f0f6ff; }
+  .chip.draft .tag { font-size: 10.5px; font-weight: 700; color: #2563eb; }
+  .chip .ok { border: none; background: #2563eb; color: #fff; border-radius: 999px; width: 20px; height: 20px; cursor: pointer; line-height: 1; }
+  .chip.from-sug { box-shadow: 0 0 0 2px #dbeafe; }
+
+  #sug-panel { margin: 0 20px 4px; background: #fff; border: 1px solid #bfd3f7; border-radius: 10px; padding: 12px 16px; display: none; }
+  #sug-panel.show { display: block; }
+  .sug { border: 1px dashed #9db8e8; border-radius: 8px; padding: 10px 12px; margin-top: 10px; background: #f8fbff; }
+  .sug-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .sug-head b { color: #1d4fd0; }
+  .sug .why { margin-top: 6px; font-size: 12.5px; color: #52606f; }
+  .sug .effect { margin-top: 4px; font-size: 12.5px; color: #1b6e46; }
+  .sug.done { opacity: .55; border-style: solid; }
+  .sug.done .state { font-weight: 700; }
+
+  /* ---- lịch tuần ---- */
+  #calendar-panel { padding: 0 20px 20px; display: none; }
+  #calendar-panel.show { display: block; }
+  .cal-nav { display: flex; align-items: center; gap: 10px; margin: 4px 0 10px; flex-wrap: wrap; }
+  .cal-nav b { font-size: 15px; }
+  .cal { display: grid; grid-template-columns: 150px repeat(6, 1fr); gap: 1px; background: #e3e7ee;
+    border: 1px solid #e3e7ee; border-radius: 10px; overflow: hidden; }
+  .cal > div { background: #fff; padding: 6px 8px; min-height: 54px; }
+  .cal .head { background: #f7f9fc; font-weight: 600; font-size: 12px; color: #52606f; min-height: 0; }
+  .cal .who { background: #f7f9fc; font-weight: 600; font-size: 13px; display: flex; flex-direction: column; justify-content: center; }
+  .cal .who small { font-weight: 400; color: #8a97a8; }
+  .cal .pub-row { background: #fbfcfe; min-height: 40px; }
+  .cal .who.pub-row { color: #7a5b12; }
+  .blk { border-radius: 6px; padding: 2px 7px; font-size: 11.5px; font-weight: 600; margin: 2px 0; color: #fff; background: var(--bc, #2563eb); transition: opacity .15s; }
+  .blk.wait { background: repeating-linear-gradient(45deg, #cbd5e1, #cbd5e1 4px, #e2e8f0 4px, #e2e8f0 8px); color: #475569; }
+  .blk.idle { background: #fffbeb; border: 1px dashed #f0d9a8; color: #b45309; font-weight: 500; }
+  .pub { display: inline-block; border-radius: 999px; padding: 2px 9px; font-size: 11.5px; font-weight: 700;
+    color: #fff; background: var(--bc, #2563eb); cursor: pointer; margin: 1px 2px 1px 0; white-space: nowrap; transition: opacity .15s; }
+  .pub.late-pub { box-shadow: 0 0 0 2px #fecaca; }
+  .pub.late-pub::after { content: " !"; color: #fecaca; }
+  .dim { opacity: .18; }
+  .glow { outline: 3px solid #f59e0b; outline-offset: 1px; }
+
+  #video-detail { display: none; background: #fff; border: 1px solid #f0d9a8; border-left: 5px solid #f59e0b;
+    border-radius: 10px; padding: 10px 14px; margin-bottom: 10px; }
+  #video-detail.show { display: block; }
+  #video-detail .vd-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  #video-detail .vd-head b { font-size: 14.5px; }
+  #video-detail .row { margin-top: 4px; font-size: 13px; color: #40495a; }
+  #video-detail .row b { color: #1c2430; }
+  .badge { padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: 700; white-space: nowrap; }
+  .badge.ok { background: #e6f4e6; color: #2f7d32; }
+  .badge.late { background: #fdecec; color: #c62828; }
+  .badge.na { background: #eef2f7; color: #4a5a6d; }
+
+  .legend { display: flex; gap: 14px; margin-top: 10px; font-size: 12px; color: #52606f; flex-wrap: wrap; align-items: center; }
+  .legend .blk, .legend .pub { display: inline-block; margin: 0; cursor: default; }
+
+  #toast { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%);
+    background: #1c2430; color: #fff; padding: 8px 16px; border-radius: 8px; font-size: 13px;
+    opacity: 0; transition: opacity .25s; pointer-events: none; max-width: 90vw; }
+  #toast.show { opacity: .95; }
+</style>
+</head>
+<body>
+<header>
+  <h1>🎬 Điều phối sản xuất — v2</h1>
+  <span class="ribbon">BẢN MẪU UI · số liệu minh hoạ, chưa nối engine</span>
+  <span class="spacer"></span>
+  <div class="tabs">
+    <button id="tab-board">Bảng dự án</button>
+    <button id="tab-cal" class="active">Lịch tuần</button>
+  </div>
+  <button id="btn-suggest" class="primary">🔮 Đề xuất phân công</button>
+</header>
+
+<div id="warnings"></div>
+
+<div id="sug-panel">
+  <h2>Đề xuất phân công — bản nháp, chưa có hiệu lực cho tới khi bạn xác nhận ✓</h2>
+  <div id="sug-list"></div>
+  <p class="hint" style="margin:10px 0 2px">Mỗi người làm trọn từng unit (kịch bản / video); khi rảnh nhận unit có
+    <b>ngày đăng gần nhất</b>; hai người cùng rảnh → unit về tay người giữ <b>kỷ lục dự án</b>.
+    Ở bản thật: mỗi đề xuất kèm what-if chạy engine — xem lịch trước/sau rồi mới quyết.</p>
+</div>
+
+<main id="board-view" style="display:none">
+  <aside id="people-panel">
+    <h2>Nhân sự</h2>
+    <p class="hint">Kéo ⠿ thả vào dự án. Người thuộc dự án sẽ được máy chia <b>unit nguyên</b>
+      (1 kịch bản / 1 video) theo deadline đăng — không có % lẻ.
+      Chỉ số: <b>chuẩn tuyển dụng</b> (Leader + HR đặt khi tuyển) và <b>tuần trước</b>
+      (số thực tế nhập mỗi tuần) — lịch tính theo số tuần trước.</p>
+    <div id="people-list"></div>
+  </aside>
+  <section id="board-panel">
+    <h2>Dự án</h2>
+    <div id="projects-list"></div>
+  </section>
+</main>
+
+<div id="calendar-panel" class="show">
+  <div class="cal-nav">
+    <button id="cal-prev">◀</button>
+    <b id="cal-title"></b>
+    <button id="cal-next">▶</button>
+    <span class="hint">Hàng đầu là <b>ngày đăng kèm tên nội dung</b> (leader đặt) — bấm một video để xem
+      ai viết, ai dựng, kịp/trễ, và sửa tên hoặc ngày đăng.</span>
+  </div>
+  <div id="video-detail"></div>
+  <div class="cal" id="cal-grid"></div>
+  <div class="legend">
+    <span class="pub" style="--bc:#2563eb">X #1</span> ngày đăng (bấm được)
+    <span class="pub late-pub" style="--bc:#7c3aed">Y #1</span> đăng nhưng sẽ trễ
+    <span class="blk" style="--bc:#2563eb">Dự án X</span>
+    <span class="blk" style="--bc:#7c3aed">Dự án Y</span>
+    <span class="blk wait">chờ feedback</span>
+    <span class="blk idle">rảnh</span>
+    <span>· Mỗi block là một unit nguyên — người nhanh có thể xong 2 unit/ngày.</span>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const $ = s => document.querySelector(s);
+
+// ================= DỮ LIỆU MẪU (tên giả, số minh hoạ) =================
+// tq = chuẩn tuyển dụng (Leader + HR đặt khi tuyển)
+// last = năng suất TUẦN TRƯỚC, nhập tay từ số thực tế của tool tracking:
+//        Σ (video hoàn thành × thời lượng) ÷ số ngày làm việc
+const people = [
+  { id: "ca", name: "Content A", role: "content", last: 20, tq: 20, lastCalc: "= 8 KB × 15 phút ÷ 6 ngày" },
+  { id: "cb", name: "Content B", role: "content", last: 10, tq: 20, lastCalc: "= 2 KB × 30 phút ÷ 6 ngày" },
+  { id: "e1", name: "Editor 1",  role: "editor",  last: 30, tq: 30, lastCalc: "= 12 video × 15 phút ÷ 6 ngày" },
+  { id: "e2", name: "Editor 2",  role: "editor",  last: 10, tq: 30, lastCalc: "= 4 video × 15 phút ÷ 6 ngày" },
+];
+const projects = [
+  { id: "px", name: "Dự án X", channel: "Kênh A", color: "#2563eb",
+    videos: 6, minutes: 15, vpw: 5, stock: 2, demand: { content: 75, editor: 75 },
+    // kỷ lục thuộc về DỰ ÁN — Editor C đã nghỉ nhưng số liệu vẫn giữ
+    best: { days: 0.6, name: "Editor C", note: "đã nghỉ 06/2026", date: "20/06/2026" } },
+  { id: "py", name: "Dự án Y", channel: "Kênh B", color: "#7c3aed",
+    videos: 4, minutes: 30, vpw: 1, stock: 0, demand: { content: 30, editor: 30 },
+    best: null },
+];
+let assignments = [
+  { person: "ca", project: "px" },
+  { person: "e2", project: "px" },
+  { person: "cb", project: "py" },
+];
+const suggestions = [
+  { id: "s1", person: "e1", project: "py", state: "pending",
+    why: "Khâu editor Dự án Y chưa có ai — cầu 30 phút/tuần. Editor 1 (tuần trước đạt 30 phút/ngày, đúng chuẩn tuyển dụng) đang trống lịch: một video Y (30 phút) = đúng 1 ngày công, một unit nguyên.",
+    effect: "Y #1: chưa tính được → dựng trọn ngày 16/07, bàn giao 16/07 — KỊP lịch đăng 18/07 (minh hoạ)" },
+  { id: "s2", person: "e1", project: "px", state: "pending",
+    why: "Khâu editor Dự án X hụt công suất: cầu 75 phút/tuần (5 video × 15 phút), Editor 2 chỉ cung 60. Thêm Editor 1: mỗi video X (15 phút) = nửa ngày công; khi rảnh sẽ nhận video có ngày đăng gần nhất. Xếp hạng có xét kỷ lục dự án: best 0.6 ngày/video (Editor C — đã nghỉ); Editor 1 theo năng suất tuần trước đạt 0.5 — gần kỷ lục nhất trong team.",
+    effect: "Hết trễ toàn bộ Dự án X: #2 bàn giao 13/07 (đăng 15), #3 → 14/07 (đăng 16), #6 → 17/07 (đăng 21) (minh hoạ)" },
+];
+let suggested = false;
+const accepted = id => suggestions.find(s => s.id === id).state === "accepted";
+
+// ================= LỊCH TUẦN MẪU =================
+const WEEKS = [
+  { title: "Tuần 13/07 – 18/07/2026", days: ["T2 13", "T3 14", "T4 15", "T5 16", "T6 17", "T7 18"] },
+  { title: "Tuần 20/07 – 25/07/2026", days: ["T2 20", "T3 21", "T4 22", "T5 23", "T6 24", "T7 25"] },
+];
+function b(t, pid, v) { return { t, c: projects.find(p => p.id === pid).color, v }; }
+function w(t, v) { return { t, c: "wait", v }; }
+function idle() { return { t: "rảnh", c: "idle" }; }
+
+// blocks[person][tuần][thứ]; v = mã video để tô sáng khi bấm ngày đăng
+const baseBlocks = {
+  ca: [
+    [[b("X · KB #3", "px", "px3")], [b("X · KB #4", "px", "px4")], [b("X · KB #5", "px", "px5")], [b("X · KB #6", "px", "px6")], [idle()], [idle()]],
+    [[idle()], [idle()], [idle()], [idle()], [idle()], [idle()]],
+  ],
+  cb: [
+    [[b("Y · KB #1", "py", "py1")], [b("Y · KB #1", "py", "py1")], [b("Y · KB #1", "py", "py1")], [b("Y · KB #2", "py", "py2")], [b("Y · KB #2", "py", "py2")], [b("Y · KB #2", "py", "py2")]],
+    [[b("Y · KB #3", "py", "py3")], [b("Y · KB #3", "py", "py3")], [b("Y · KB #3", "py", "py3")], [b("Y · KB #4", "py", "py4")], [b("Y · KB #4", "py", "py4")], [b("Y · KB #4", "py", "py4")]],
+  ],
+  // Editor 2 khi gánh X một mình (chưa nhận đề xuất s2)
+  e2: [
+    [[b("X · dựng #1", "px", "px1")], [b("X · dựng #1", "px", "px1")], [b("X · dựng #2", "px", "px2")], [b("X · dựng #2", "px", "px2")], [b("X · dựng #3", "px", "px3")], [b("X · dựng #3", "px", "px3")]],
+    [[b("X · dựng #4", "px", "px4")], [b("X · dựng #4", "px", "px4")], [b("X · dựng #5", "px", "px5")], [b("X · dựng #5", "px", "px5")], [w("chờ FB #5", "px5")], [b("X · sửa #5", "px", "px5")]],
+  ],
+  e1: [
+    [[idle()], [idle()], [idle()], [idle()], [idle()], [idle()]],
+    [[idle()], [idle()], [idle()], [idle()], [idle()], [idle()]],
+  ],
+};
+// Editor 2 khi có Editor 1 cùng gánh X (s2 được nhận): chỉ còn #1 và #5
+const e2WithS2 = [
+  [[b("X · dựng #1", "px", "px1")], [b("X · dựng #1", "px", "px1")], [b("X · dựng #5", "px", "px5")], [b("X · dựng #5", "px", "px5")], [b("X · dựng #5 (xong)", "px", "px5")], [idle()]],
+  [[b("X · sửa vòng FB", "px")], [idle()], [idle()], [idle()], [idle()], [idle()]],
+];
+// block cộng thêm cho Editor 1 khi nhận đề xuất — mỗi block một unit nguyên
+const sugCalBlocks = {
+  s1: { person: "e1", weeks: [
+    [null, null, null, [b("Y · dựng #1", "py", "py1")], null, null],
+    [[b("Y · dựng #2", "py", "py2")], null, null, null, null, null],
+  ]},
+  s2: { person: "e1", weeks: [
+    [[b("X · dựng #2", "px", "px2")], [b("X · dựng #3", "px", "px3")], [b("X · dựng #4", "px", "px4")], null, [b("X · dựng #6", "px", "px6")], null],
+    [[b("X · sửa vòng FB", "px")], null, null, null, null, null],
+  ]},
+};
+
+// Mỗi video: TÊN NỘI DUNG (leader đặt) + ngày đăng cụ thể (w = tuần, d = thứ).
+// Lịch up chỉ sinh ngày mặc định — leader sửa từng video ở thẻ chi tiết.
+const VIDEOS = {
+  px1: { title: "Top 5 công cụ AI", w: 0, d: 1 },
+  px2: { title: "Review iPhone 17", w: 0, d: 2 },
+  px3: { title: "1 ngày làm freelancer", w: 0, d: 3 },
+  px4: { title: "Mẹo quay bằng điện thoại", w: 0, d: 4 },
+  px5: { title: "Setup phòng làm việc", w: 0, d: 5 },
+  px6: { title: "Hỏi nhanh đáp gọn #12", w: 1, d: 1 },
+  py1: { title: "Phỏng vấn: khởi nghiệp từ 0đ", w: 0, d: 5 },
+  py2: { title: "Tài chính cá nhân cho người mới", w: 1, d: 5 },
+};
+const pubAt = (wk, day) => Object.keys(VIDEOS).filter(k => VIDEOS[k].w === wk && VIDEOS[k].d === day);
+// chi tiết từng video — hàm, phản ánh trạng thái đề xuất hiện tại
+function detailFor(key) {
+  const D = {
+    px1: { name: "Dự án X · Video #1", pub: "T3 14/07", kb: "kho kịch bản sẵn (Content A viết trước dự án)", ed: "Editor 2 · dựng 13–14/07", giao: "14/07", late: 0 },
+    px2: accepted("s2")
+      ? { name: "Dự án X · Video #2", pub: "T4 15/07", kb: "kho kịch bản sẵn (Content A viết trước dự án)", ed: "Editor 1 · dựng trọn trong 13/07", giao: "13/07", late: 0 }
+      : { name: "Dự án X · Video #2", pub: "T4 15/07", kb: "kho kịch bản sẵn (Content A viết trước dự án)", ed: "Editor 2 · dựng 15–16/07", giao: "16/07", late: 1 },
+    px3: accepted("s2")
+      ? { name: "Dự án X · Video #3", pub: "T5 16/07", kb: "Content A · viết 13/07", ed: "Editor 1 · dựng trọn trong 14/07", giao: "14/07", late: 0 }
+      : { name: "Dự án X · Video #3", pub: "T5 16/07", kb: "Content A · viết 13/07", ed: "Editor 2 · dựng 17–18/07", giao: "18/07", late: 2 },
+    px4: accepted("s2")
+      ? { name: "Dự án X · Video #4", pub: "T6 17/07", kb: "Content A · viết 14/07", ed: "Editor 1 · dựng trọn trong 15/07", giao: "15/07", late: 0 }
+      : { name: "Dự án X · Video #4", pub: "T6 17/07", kb: "Content A · viết 14/07", ed: "Editor 2 · dựng 20–21/07", giao: "21/07", late: 3 },
+    px5: accepted("s2")
+      ? { name: "Dự án X · Video #5", pub: "T7 18/07", kb: "Content A · viết 15/07", ed: "Editor 2 · dựng 15–17/07", giao: "17/07", late: 0 }
+      : { name: "Dự án X · Video #5", pub: "T7 18/07", kb: "Content A · viết 15/07", ed: "Editor 2 · dựng 22–23/07, chờ feedback 24/07, sửa 25/07", giao: "25/07", late: 5 },
+    px6: accepted("s2")
+      ? { name: "Dự án X · Video #6", pub: "T3 21/07", kb: "Content A · viết 16/07", ed: "Editor 1 · dựng trọn trong 17/07", giao: "17/07", late: 0 }
+      : { name: "Dự án X · Video #6", pub: "T3 21/07", kb: "Content A · viết 16/07", ed: "Editor 2 · xếp sau video #5 → dựng 27–28/07", giao: "28/07", late: 5 },
+    py1: accepted("s1")
+      ? { name: "Dự án Y · Video #1", pub: "T7 18/07", kb: "Content B · viết 13–15/07", ed: "Editor 1 · dựng trọn trong 16/07 (unit 1 ngày công)", giao: "16/07", late: 0 }
+      : { name: "Dự án Y · Video #1", pub: "T7 18/07", kb: "Content B · viết 13–15/07", ed: "CHƯA CÓ EDITOR — kéo người vào hoặc nhận đề xuất", giao: null, late: null },
+    py2: accepted("s1")
+      ? { name: "Dự án Y · Video #2", pub: "T7 25/07", kb: "Content B · viết 16–18/07", ed: "Editor 1 · dựng trọn trong 20/07", giao: "20/07", late: 0 }
+      : { name: "Dự án Y · Video #2", pub: "T7 25/07", kb: "Content B · viết 16–18/07", ed: "CHƯA CÓ EDITOR — kéo người vào hoặc nhận đề xuất", giao: null, late: null },
+  };
+  return D[key];
+}
+
+// ================= HELPERS =================
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+function toast(msg) {
+  const t = $("#toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(t._h);
+  t._h = setTimeout(() => t.classList.remove("show"), 2600);
+}
+const personById = id => people.find(p => p.id === id);
+const projectsOf = pid => assignments.filter(a => a.person === pid).map(a => a.project);
+function supply(project, role) {
+  return assignments.filter(a => a.project === project.id && personById(a.person).role === role)
+    .reduce((s, a) => s + personById(a.person).last * 6, 0);
+}
+function cellBlocks(pid, wk, day) {
+  let blocks = (pid === "e2" && accepted("s2")) ? [...e2WithS2[wk][day]] : [...baseBlocks[pid][wk][day]];
+  for (const s of suggestions) {
+    if (s.state !== "accepted") continue;
+    const cfg = sugCalBlocks[s.id];
+    if (cfg.person !== pid) continue;
+    const add = cfg.weeks[wk][day];
+    if (add) {
+      blocks = blocks.filter(x => x.c !== "idle");
+      blocks.push(...add);
+    }
+  }
+  return blocks;
+}
+function busyDays(pid, wk) {
+  let n = 0;
+  for (let d = 0; d < 6; d++)
+    if (cellBlocks(pid, wk, d).some(x => x.c !== "idle" && x.c !== "wait")) n++;
+  return n;
+}
+
+// ================= BẢNG DỰ ÁN =================
+function renderPeople() {
+  $("#people-list").innerHTML = people.map(p => {
+    const busy = busyDays(p.id, 0);
+    const tqPct = Math.round(p.last / p.tq * 100);
+    return `<div class="person">
+      <div class="person-top">
+        <span class="drag-handle" draggable="true" data-id="${p.id}" title="Kéo để phân công">⠿</span>
+        ${esc(p.name)}
+        <span class="role-tag role-${p.role}">${p.role}</span>
+      </div>
+      <div class="rates">
+        <span>tuần trước <b>${p.last} phút/ngày</b></span>
+        <span>chuẩn tuyển dụng <b>${p.tq}</b></span>
+      </div>
+      <div class="hint" style="margin-top:2px">${esc(p.lastCalc)} — số thực tế, nhập mỗi tuần</div>
+      <div class="tq-bar" title="Tuần trước đạt ${tqPct}% chuẩn tuyển dụng"><i class="${tqPct < 80 ? "low" : ""}" style="width:${Math.min(100, tqPct)}%"></i></div>
+      ${tqPct < 80 ? `<div class="hr-warn">⚠️ Đạt ${tqPct}% chuẩn — cảnh báo sớm cho Leader/HR</div>` : ""}
+      <div class="p-load ${busy === 0 ? "free" : ""}">${busy === 0
+        ? "⚠️ Trống lịch tuần này — chưa có unit nào"
+        : `Tuần này: bận ${busy}/6 ngày`}</div>
+    </div>`;
+  }).join("");
+  document.querySelectorAll(".drag-handle").forEach(h =>
+    h.addEventListener("dragstart", e => e.dataTransfer.setData("text/plain", h.dataset.id)));
+}
+
+function chipHTML(a, draft, sug) {
+  const p = personById(a.person);
+  if (draft) return `<span class="chip draft" data-sug="${sug.id}">
+      <span class="tag">ĐỀ XUẤT</span> ${esc(p.name)}
+      <button class="ok" title="Chấp nhận">✓</button>
+      <button class="x" title="Bỏ đề xuất">✗</button></span>`;
+  return `<span class="chip ${a.fromSug ? "from-sug" : ""}" data-person="${a.person}" data-project="${a.project}">
+      ${esc(p.name)} <button class="x" title="Rút khỏi dự án">×</button></span>`;
+}
+
+function renderProjects() {
+  $("#projects-list").innerHTML = projects.map(pr => {
+    const rows = ["content", "editor"].map(role => {
+      const sup = Math.round(supply(pr, role));
+      const dem = pr.demand[role];
+      const short = sup < dem;
+      const width = Math.min(100, dem ? Math.round(sup / dem * 100) : 0);
+      const shared = assignments.some(a => a.project === pr.id
+        && personById(a.person).role === role && projectsOf(a.person).length > 1);
+      return `<div class="supply-row ${short ? "short" : ""}">
+        <span style="width:64px">${role}</span>
+        <span class="bar"><i style="width:${width}%"></i></span>
+        <span>cung <b>${sup}</b> / cầu <b>${dem}</b> phút/tuần</span>
+        ${short ? `<span class="lack">thiếu ${dem - sup}</span>` : "✓"}
+        ${shared ? `<span class="shared-note">· có người chia sẻ dự án khác — số chuẩn xem lịch tuần</span>` : ""}</div>`;
+    }).join("");
+    const fmt = n => String(Math.round(n * 100) / 100);
+    const poolEditors = assignments.filter(a => a.project === pr.id)
+      .map(a => personById(a.person)).filter(p => p.role === "editor");
+    const beat = pr.best
+      ? poolEditors.map(p => ({ p, t: pr.minutes / p.last })).filter(x => x.t < pr.best.days)
+      : [];
+    const bestHTML = `<div class="bestperf">🏆 Best Performance (editor): ${pr.best
+        ? `<b>${fmt(pr.best.days)} ngày/video</b> — ${esc(pr.best.name)}${pr.best.note ? ` <span class="hint">(${esc(pr.best.note)})</span>` : ""} <span class="hint">· ghi nhận ${pr.best.date}</span>`
+        : `<span class="hint">chưa có kỷ lục — nhập từ số thực tế của tool tracking</span>`}
+      <button class="bp-edit" title="Cập nhật kỷ lục (số thực tế)">✏️</button></div>
+      ${beat.length ? `<div class="bp-note">💡 ${esc(beat[0].p.name)} theo năng suất tuần trước đạt ${fmt(beat[0].t)} ngày/video — tốt hơn kỷ lục ${fmt(pr.best.days)}. Có số thực tế từ tool tracking thì bấm ✏️ để cập nhật.</div>` : ""}`;
+    const chips = assignments.filter(a => a.project === pr.id).map(a => chipHTML(a, false)).join("");
+    const draftChips = suggested
+      ? suggestions.filter(s => s.project === pr.id && s.state === "pending")
+          .map(s => chipHTML({ person: s.person }, true, s)).join("")
+      : "";
+    return `<div class="project" style="--pc:${pr.color}" data-id="${pr.id}">
+      <div class="project-head"><b>${esc(pr.name)}</b><span class="hint">kênh: ${esc(pr.channel)}</span></div>
+      <div class="project-row">
+        <label>Số video <input value="${pr.videos}"></label>
+        <label>Thời lượng <input value="${pr.minutes}"> phút</label>
+        <label>Lịch up <input value="${pr.vpw}"> video/tuần</label>
+        <label title="Content đi trước — k video đầu editor làm được ngay">Kho kịch bản sẵn <input value="${pr.stock}"></label>
+      </div>
+      <div class="supply">${rows}</div>
+      ${bestHTML}
+      <div class="dropzone" data-project="${pr.id}">
+        ${chips}${draftChips || ""}
+        ${!chips && !draftChips ? '<span class="hint">Kéo nhân sự thả vào đây</span>' : ""}
+      </div>
+    </div>`;
+  }).join("");
+
+  document.querySelectorAll(".dropzone").forEach(dz => {
+    dz.addEventListener("dragover", e => { e.preventDefault(); dz.classList.add("over"); });
+    dz.addEventListener("dragleave", () => dz.classList.remove("over"));
+    dz.addEventListener("drop", e => {
+      e.preventDefault(); dz.classList.remove("over");
+      const pid = e.dataTransfer.getData("text/plain");
+      const prj = dz.dataset.project;
+      if (!pid || assignments.some(a => a.person === pid && a.project === prj)) return;
+      assignments.push({ person: pid, project: prj });
+      toast("Bản mẫu: ở bản thật, engine chia unit và tính lại lịch ngay khi thả.");
+      renderAll();
+    });
+  });
+  document.querySelectorAll(".chip:not(.draft)").forEach(chip => {
+    chip.querySelector(".x").addEventListener("click", () => {
+      assignments = assignments.filter(x => !(x.person === chip.dataset.person && x.project === chip.dataset.project));
+      renderAll();
+    });
+  });
+  document.querySelectorAll(".chip.draft").forEach(chip => {
+    const s = suggestions.find(x => x.id === chip.dataset.sug);
+    chip.querySelector(".ok").addEventListener("click", () => acceptSug(s));
+    chip.querySelector(".x").addEventListener("click", () => rejectSug(s));
+  });
+  document.querySelectorAll(".bp-edit").forEach(btn => {
+    const pr = projects.find(x => x.id === btn.closest(".project").dataset.id);
+    btn.addEventListener("click", () => {
+      const v = parseFloat(prompt("Kỷ lục mới — ngày công/video (số THỰC TẾ từ tool tracking):", pr.best ? pr.best.days : ""));
+      if (!(v > 0)) return;
+      if (pr.best && v >= pr.best.days) { toast("Không tốt hơn kỷ lục hiện tại — giữ nguyên."); return; }
+      const name = (prompt("Tên editor đạt kỷ lục:") || "").trim();
+      if (!name) return;
+      pr.best = { days: v, name, date: "13/07/2026" };
+      toast(`Kỷ lục mới của ${pr.name}: ${v} ngày/video — ${name}.`);
+      renderAll();
+    });
+  });
+}
+
+function renderSuggestions() {
+  if (!suggested) return;
+  $("#sug-panel").classList.add("show");
+  $("#sug-list").innerHTML = suggestions.map(s => {
+    const p = personById(s.person);
+    const pr = projects.find(x => x.id === s.project);
+    if (s.state !== "pending")
+      return `<div class="sug done"><div class="sug-head">
+        <b>Thêm ${esc(p.name)} vào ${esc(pr.name)}</b>
+        <span class="state">${s.state === "accepted" ? "✓ Đã chấp nhận" : "✗ Đã bỏ"}</span></div></div>`;
+    return `<div class="sug" data-id="${s.id}">
+      <div class="sug-head">
+        <b>Thêm ${esc(p.name)} vào ${esc(pr.name)} (khâu ${personById(s.person).role})</b>
+        <span class="spacer"></span>
+        <button class="primary s-ok">✓ Chấp nhận</button>
+        <button class="s-no">✗ Bỏ</button>
+      </div>
+      <div class="why">Vì sao: ${esc(s.why)}</div>
+      <div class="effect">Tác động: ${esc(s.effect)}</div>
+    </div>`;
+  }).join("");
+  document.querySelectorAll(".sug[data-id]").forEach(el => {
+    const s = suggestions.find(x => x.id === el.dataset.id);
+    el.querySelector(".s-ok").addEventListener("click", () => acceptSug(s));
+    el.querySelector(".s-no").addEventListener("click", () => rejectSug(s));
+  });
+}
+
+function acceptSug(s) {
+  s.state = "accepted";
+  assignments.push({ person: s.person, project: s.project, fromSug: true });
+  toast(`Đã nhận: ${personById(s.person).name} vào ${projects.find(p => p.id === s.project).name} — máy chia lại unit theo ngày đăng.`);
+  renderAll();
+}
+function rejectSug(s) { s.state = "rejected"; renderAll(); }
+
+function renderWarnings() {
+  const list = [];
+  if (!accepted("s1"))
+    list.push(['unstaffed', "Chưa có người: Dự án Y khâu 'editor' chưa được phân công — video #1, #2 chưa tính được bàn giao."]);
+  if (!accepted("s2"))
+    list.push(['late', "Trễ (minh hoạ): Dự án X hụt công suất editor — video #2 đến #6 đều trễ lịch đăng, nặng nhất #5: bàn giao 25/07, cần 18/07."]);
+  if (accepted("s1") && accepted("s2"))
+    list.push(['good', "✅ Minh hoạ: sau khi nhận cả 2 đề xuất, toàn bộ video hai kênh kịp lịch đăng."]);
+  people.filter(p => p.last / p.tq < 0.8).forEach(p =>
+    list.push(['hr', `Cảnh báo nhân sự: ${p.name} tuần trước đạt ${Math.round(p.last / p.tq * 100)}% chuẩn tuyển dụng (${p.last}/${p.tq} phút/ngày).`]));
+  $("#warnings").innerHTML = list.map(([cls, m]) => `<div class="warn ${cls}">${cls === "good" ? "" : "⚠️ "}${esc(m)}</div>`).join("");
+}
+
+// ================= LỊCH TUẦN =================
+let week = 0;
+let sel = null;
+
+function renderCalendar() {
+  $("#cal-title").textContent = WEEKS[week].title;
+  let html = `<div class="head"></div>` + WEEKS[week].days.map(d => `<div class="head">${d}</div>`).join("");
+
+  html += `<div class="who pub-row">📤 Ngày đăng</div>`;
+  for (let d = 0; d < 6; d++) {
+    html += `<div class="pub-row">` + pubAt(week, d).map(key => {
+      const det = detailFor(key);
+      const v = VIDEOS[key];
+      const pr = projects.find(p => key.startsWith(p.id));
+      const late = det && (det.late === null || det.late > 0);
+      const cls = (late ? "late-pub " : "") + (sel === key ? "glow " : sel ? "dim " : "");
+      const short = v.title.length > 15 ? v.title.slice(0, 14) + "…" : v.title;
+      const label = pr.name.replace("Dự án ", "") + "#" + key.replace(/\D/g, "") + " · " + esc(short);
+      return `<span class="pub ${cls}" style="--bc:${pr.color}" data-k="${key}"
+        title="«${esc(v.title)}» — bấm xem ai viết, ai dựng, sửa tên/ngày">${label}</span>`;
+    }).join("") + `</div>`;
+  }
+
+  for (const p of people) {
+    const busy = busyDays(p.id, week);
+    html += `<div class="who">${esc(p.name)}<small>${p.role} · bận ${busy}/6 ngày</small></div>`;
+    for (let d = 0; d < 6; d++) {
+      html += `<div>` + cellBlocks(p.id, week, d).map(x => {
+        const cls = (sel && x.v === sel ? "glow " : sel && x.v !== sel ? "dim " : "");
+        const tt = x.v && VIDEOS[x.v] ? ` title="«${esc(VIDEOS[x.v].title)}»"` : "";
+        return x.c === "wait" ? `<div class="blk wait ${cls}"${tt}>${esc(x.t)}</div>`
+          : x.c === "idle" ? `<div class="blk idle ${sel ? "dim" : ""}">${esc(x.t)}</div>`
+          : `<div class="blk ${cls}" style="--bc:${x.c}"${tt}>${esc(x.t)}</div>`;
+      }).join("") + `</div>`;
+    }
+  }
+  $("#cal-grid").innerHTML = html;
+  document.querySelectorAll(".pub[data-k]").forEach(el =>
+    el.addEventListener("click", () => {
+      sel = sel === el.dataset.k ? null : el.dataset.k;
+      renderCalendar();
+    }));
+  renderVideoDetail();
+}
+
+function renderVideoDetail() {
+  const el = $("#video-detail");
+  if (!sel) { el.classList.remove("show"); return; }
+  const d = detailFor(sel);
+  if (!d) { el.classList.remove("show"); return; }
+  const v = VIDEOS[sel];
+  const pubStr = WEEKS[v.w].days[v.d] + "/07";
+  const badge = d.giao === null
+    ? `<span class="badge na">chưa tính được — thiếu editor</span>`
+    : d.late > 0
+      ? `<span class="badge late">bàn giao ${d.giao} — TRỄ ${d.late} ngày LV</span>`
+      : `<span class="badge ok">bàn giao ${d.giao} — Kịp ✓</span>`;
+  el.innerHTML = `<div class="vd-head">
+      <b>📤 ${esc(d.name)} — «${esc(v.title)}»</b> — đăng ${pubStr} ${badge}
+      <span class="spacer"></span>
+      <button id="vd-title">✏️ tên</button>
+      <button id="vd-date">📅 ngày đăng</button>
+      <button id="vd-close">✕</button>
+    </div>
+    <div class="row">✍️ Kịch bản: <b>${esc(d.kb)}</b></div>
+    <div class="row">🎬 Dựng: <b>${esc(d.ed)}</b></div>
+    <div class="row hint">Các block của video này đang được tô sáng trên lịch — "trước ngày đăng ai đang làm gì".
+      Bản thật: đổi ngày đăng → engine tính ngược lại toàn bộ lịch và kịp/trễ.</div>`;
+  el.classList.add("show");
+  $("#vd-close").addEventListener("click", () => { sel = null; renderCalendar(); });
+  $("#vd-title").addEventListener("click", () => {
+    const t = (prompt("Tên nội dung video (leader đặt):", v.title) || "").trim();
+    if (t) { v.title = t; toast("Đã đổi tên — content và editor thấy tên mới trên lịch."); renderAll(); }
+  });
+  $("#vd-date").addEventListener("click", () => {
+    const DAYS = { 13: [0, 0], 14: [0, 1], 15: [0, 2], 16: [0, 3], 17: [0, 4], 18: [0, 5],
+                   20: [1, 0], 21: [1, 1], 22: [1, 2], 23: [1, 3], 24: [1, 4], 25: [1, 5] };
+    const inp = parseInt(prompt("Ngày đăng mới trong tháng 7 (13–18 hoặc 20–25):", ""));
+    if (!DAYS[inp]) { if (!isNaN(inp)) toast("Bản mẫu chỉ có 2 tuần 13–18 và 20–25/07."); return; }
+    [v.w, v.d] = DAYS[inp];
+    week = v.w;
+    toast("Đã đổi ngày đăng — bản thật: engine tính ngược lại toàn bộ lịch nhân sự.");
+    renderAll();
+  });
+}
+
+function renderAll() { renderPeople(); renderProjects(); renderWarnings(); renderSuggestions(); renderCalendar(); }
+
+// ---- tabs & điều hướng ----
+$("#tab-board").addEventListener("click", () => switchTab(true));
+$("#tab-cal").addEventListener("click", () => switchTab(false));
+function switchTab(board) {
+  $("#board-view").style.display = board ? "flex" : "none";
+  $("#calendar-panel").classList.toggle("show", !board);
+  $("#tab-board").classList.toggle("active", board);
+  $("#tab-cal").classList.toggle("active", !board);
+}
+$("#cal-prev").addEventListener("click", () => { week = Math.max(0, week - 1); renderCalendar(); });
+$("#cal-next").addEventListener("click", () => { week = Math.min(WEEKS.length - 1, week + 1); renderCalendar(); });
+$("#btn-suggest").addEventListener("click", () => {
+  suggested = true;
+  renderAll();
+  toast("2 đề xuất — bản nháp nét đứt, bấm ✓ mới có hiệu lực.");
+  $("#sug-panel").scrollIntoView({ behavior: "smooth" });
+});
+
+renderAll();
+</script>
+</body>
+</html>

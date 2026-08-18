@@ -47,8 +47,28 @@ $env:NICHE_SCHEDULER = '0'
 # scheduler nen — sinh metadata/extract chi chay khi user bam.
 $env:SEO_DATA_DIR = (Join-Path $root 'data/seo-optimize')
 $env:SEO_TRUST_PROXY = '1'
+
+# PlannerY (APPS.md app 5/6, dua vao 19/08): du lieu tro data/plannery (BAN SAO
+# plan.json he that 19/08 - V2 cong 8123 van la nguon that toi cutover). SSO bat:
+# vai 100% theo header gateway (X-Remote-Actions truoc, X-Remote-Role fallback),
+# users.json noi bo KHONG con thang header (va bay DE.md:462); tu dong hoa goi
+# loopback phai gui X-Remote-Role: admin (nhanh ADMIN_USERS tat khi SSO).
+$env:PLANNER_DATA_DIR = (Join-Path $root 'data/plannery')
+$env:PLANNER_HOST = '127.0.0.1'
+$env:PLANNER_PORT = '9116'
+$env:PLANNER_TRUST_PROXY = '1'
 # Bay UTF-8 may Windows nay: app in tieng Viet ra stdout -> cp1252 chet luc khoi dong.
 $env:PYTHONIOENCODING = 'utf-8'
+
+# NAS (to-chuc doc nen/common/nas_sync.py; gateway goi dong_bo_nen luc dang nhap/
+# doi mat khau): app con KHONG tu goi load_dotenv() - chi nen/gateway/main.py doc
+# thang .env goc, moi app khac phai duoc bom bien qua day (cung khuon
+# RADARY_DATA_DIR/CU_DATA_DIR o tren). NAS_DONG_BO=true (18/08 - Owner xac nhan
+# muon kiem chung that): se TAO/DONG BO TAI KHOAN WINDOWS THAT tren may nay khi
+# dang nhap/doi mat khau qua gateway - dung dung TEN + MAT KHAU OUTLIERY.
+$env:NAS_DUONG_DAN = '\\192.168.1.250\NAS1;\\192.168.1.250\Video'
+$env:NAS_RIENG_MANAGER = 'NAS1'
+$env:NAS_DONG_BO = 'true'
 $dichVu = @(
     @{ Ten = 'qdrant-test'; Cong = 6343
        Exe = (Join-Path $root 'tools\qdrant\qdrant.exe')
@@ -84,6 +104,9 @@ $dichVu = @(
     @{ Ten = 'seo-optimize'; Cong = 9115; Exe = $py
        Args = '-m seo.server --host 127.0.0.1 --port 9115'
        Wd = (Join-Path $root 'apps/seo-optimize') }
+    @{ Ten = 'plannery'; Cong = 9116; Exe = $py
+       Args = 'server.py --no-browser'
+       Wd = (Join-Path $root 'apps/plannery') }
     @{ Ten = 'caddy-tls'; Cong = 9443
        Exe = (Join-Path $root 'tools\caddy\caddy.exe')
        Args = 'run --config "' + (Join-Path $root 'tools\caddy\Caddyfile') + '"'
