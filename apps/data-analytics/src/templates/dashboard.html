@@ -120,7 +120,12 @@
       {% if che_do == 'kenh' %}
       <button class="nd-btn chinh" onclick="moModal('kenh')">
         <svg class="ic" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> New report</button>
-      {% elif ds_ngay %}
+      {% else %}
+      {# snapshot đang xem dời LÊN ĐÂY (user chốt 18/08 — không để trong khối) #}
+      {% if thi_truong and thi_truong[0].so.co_bao_cao %}
+      <span style="color:var(--muted);font-size:.75rem;white-space:nowrap">snapshot {{ thi_truong[0].so.snapshot }}</span>
+      {% endif %}
+      {% if ds_ngay %}
       <select onchange="location='/niche?ngach={{ ngach.ma }}&tt={{ tt_chon }}&ngay='+this.value"
               aria-label="Report date" style="border-radius:999px;font-size:.78rem;padding:3px 11px;background:var(--th-182233);color:var(--ink);border:1px solid var(--line);font-family:inherit">
         <option value="latest">🗓 Mới nhất</option>
@@ -129,6 +134,7 @@
         {% endfor %}
       </select>
       {% endif %}
+      {% endif %}
     </span>
   </div>
 
@@ -136,7 +142,7 @@
   <div id="nr-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:60;align-items:center;justify-content:center">
     <div style="background:var(--th-121826);border:1px solid var(--line);border-radius:14px;width:min(480px,92vw);padding:18px 20px">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
-        <b>New report</b>
+        <b id="nr-title">New Research</b>
         <span style="margin-left:auto;display:flex;gap:6px">
           <button type="button" class="nd-btn" id="nr-tab-niche" onclick="nrTab('niche')">Niche</button>
           <button type="button" class="nd-btn" id="nr-tab-kenh" onclick="nrTab('kenh')">Channel</button>
@@ -154,6 +160,15 @@
         </div>
         <textarea id="nr-pool" rows="5" placeholder="Dán kênh đối thủ — mỗi dòng 1 kênh (URL /channel/UC… hoặc @handle). Cộng dồn vào pool cũ; key YouTube lấy từ KÉT."
           style="width:100%;background:var(--th-182233);color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:8px 10px;font:inherit;font-size:.85rem"></textarea>
+        {# 4 tùy chọn = TOÀN BỘ đầu vào còn lại của pipeline (kiểm /api/run + orchestrator
+           18/08 theo yêu cầu user): ngoài pool không cần nhập liệu dữ liệu nào khác —
+           niche/thị trường lấy từ danh bạ, key YouTube/LLM lấy từ KÉT #}
+        <div style="display:flex;gap:6px;flex-direction:column;margin-top:10px;font-size:.78rem;color:var(--muted)">
+          <label><input type="checkbox" id="nr-comments" checked> Quét comment khán giả (gaps · câu hỏi — Phase 1)</label>
+          <label><input type="checkbox" id="nr-llm" checked> Tầng LLM diễn giải (namer · auditor · plan · summary — key từ KÉT)</label>
+          <label><input type="checkbox" id="nr-deepdive"> Deepdive transcript cụm thắng (chậm hơn đáng kể)</label>
+          <label><input type="checkbox" id="nr-force"> Force — chạy lại mọi stage kể cả đã có kết quả</label>
+        </div>
         <div style="display:flex;gap:10px;align-items:center;margin-top:10px">
           <button type="button" class="nd-btn chinh" id="nr-run" onclick="nrChay()">
             <svg class="ic" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg> Run analysis</button>
@@ -326,7 +341,6 @@
           <span class="nd-verdict {% if tt.so.phan_quyet == 'GO' %}v-ok{% else %}v-warn{% endif %}">
             {{ {'GO':'VÀO','CONDITIONAL':'VÀO CÓ ĐIỀU KIỆN','NO-GO':'KHÔNG VÀO'}.get(tt.so.phan_quyet, tt.so.phan_quyet) }}
             {% if tt.so.diem_hap_dan is not none %}· {{ tt.so.diem_hap_dan }}{% endif %}</span>
-          <span class="s" style="color:var(--muted);font-size:.78rem">snapshot {{ tt.so.snapshot }}</span>
           <span class="nd-act">
             {# một nút mỗi loại file (user 18/08: Excel bị đúp); Run nghỉ — pool làm
                mới mỗi lần báo cáo nên nút đúng là TẠO REPORT (mở modal đúng thị trường) #}
@@ -336,7 +350,7 @@
               {% if f.endswith('.xlsx') and not ns.xlsx %}{% set ns.xlsx = f %}{% endif %}
             {% endfor %}
             {% if ns.html %}
-            <a class="nd-btn chinh" href="/niche/tai/{{ tt.project }}/{{ tt.so.snapshot }}/{{ ns.html }}?inline=1" target="_blank">
+            <a class="nd-btn" href="/niche/tai/{{ tt.project }}/{{ tt.so.snapshot }}/{{ ns.html }}?inline=1" target="_blank">
               <svg class="ic" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg> Read report</a>
             <a class="nd-btn" href="/niche/tai/{{ tt.project }}/{{ tt.so.snapshot }}/{{ ns.html }}" title="{{ ns.html }}">
               <svg class="ic" viewBox="0 0 24 24"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 21h16"/></svg> HTML</a>
@@ -346,8 +360,9 @@
               <svg class="ic" viewBox="0 0 24 24"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 21h16"/></svg> Excel</a>
             {% endif %}
             {% if user.level >= 3 %}
-            <button class="nd-btn" onclick="moNicheModal('{{ tt.ma }}')" title="Tạo report mới — dán pool kênh mới cho thị trường này">
-              <svg class="ic" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> New report</button>
+            {# NEW RESEARCH là hành động chính (user chốt 18/08 — nổi bật thay Read) #}
+            <button class="nd-btn chinh" onclick="moNicheModal('{{ tt.ma }}')" title="Tạo research mới — dán pool kênh mới cho thị trường này">
+              <svg class="ic" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> New Research</button>
             {% endif %}
             <span class="s" id="run-{{ tt.project }}" style="color:var(--muted);font-size:.78rem"></span>
           </span>
@@ -356,7 +371,7 @@
           {% if user.level >= 3 %}
           <span class="nd-act">
             <button class="nd-btn chinh" onclick="moNicheModal('{{ tt.ma }}')">
-              <svg class="ic" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> New report</button>
+              <svg class="ic" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> New Research</button>
             {% if tt.project %}<span class="s" id="run-{{ tt.project }}" style="color:var(--muted);font-size:.78rem"></span>{% endif %}
           </span>
           {% endif %}
@@ -775,6 +790,8 @@ document.addEventListener('keydown', function(e){ if (e.key === 'Escape') dongMo
 function nrTab(t){
   document.getElementById('nr-niche').style.display = (t === 'niche') ? '' : 'none';
   document.getElementById('nr-kenh').style.display = (t === 'kenh') ? '' : 'none';
+  var tieu = document.getElementById('nr-title');
+  if (tieu) tieu.textContent = (t === 'kenh') ? 'New channel report' : 'New Research';
 }
 function nrChay(){
   var nut = document.getElementById('nr-run'), st = document.getElementById('nr-status');
@@ -783,6 +800,11 @@ function nrChay(){
   fd.append('ngach_ma', document.getElementById('nr-ngach').value);
   fd.append('thi_truong_ma', document.getElementById('nr-tt').value);
   fd.append('pool', document.getElementById('nr-pool').value);
+  // 4 tùy chọn pipeline — gửi tường minh true/false (server Form(bool) tự đọc)
+  fd.append('skip_comments', document.getElementById('nr-comments').checked ? 'false' : 'true');
+  fd.append('llm', document.getElementById('nr-llm').checked ? 'true' : 'false');
+  fd.append('deepdive', document.getElementById('nr-deepdive').checked ? 'true' : 'false');
+  fd.append('force', document.getElementById('nr-force').checked ? 'true' : 'false');
   fetch('/niche/tao-report', {method: 'POST', body: fd})
     .then(function(r){ return r.json().then(function(d){ return {ok: r.ok, d: d}; }); })
     .then(function(x){

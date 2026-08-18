@@ -441,3 +441,22 @@ can_upload), pane Home (New chat / + Tools giữ nguyên + Search disabled + Rec
 "No chats yet" + View all history → /history — phiên chat thuộc ai-agent, trang
 khung không truy chéo, y hệt các app khác), pane Database (Input/Library/Gap),
 JS chuyển tab y khuôn. Template gateway nạp nóng — không cần restart.
+
+## 18/08 (tiếp 11) — New Research + snapshot lên thanh trên + KIỂM ĐẦU VÀO pipeline
+
+Ba yêu cầu user: (1) nút là NEW RESEARCH (không phải New report) và là hành động
+CHÍNH (chinh) — Read report về nút thường; tiêu đề modal đổi theo tab (New Research /
+New channel report). (2) chữ "snapshot <ngày>" DỜI lên thanh trên cạnh dropdown ngày,
+bỏ khỏi header khối. (3) "kiểm tra lại xem tạo research có cần nhập liệu ban đầu gì
+ngoài link đối thủ" — ĐÃ KIỂM /api/run service + argparse orchestrator: đầu vào DỮ
+LIỆU duy nhất = competitors.txt (niche/thị trường lấy từ danh bạ, key YouTube/LLM từ
+KÉT); NHƯNG có 4 TÙY CHỌN CHẠY bị UI giấu — nghĩa là các lần bấm nút trước chạy
+KHÔNG có tầng LLM (namer/auditor/plan/summary) và không deepdive. Form New Research
+giờ có 4 checkbox: Quét comment (mặc định BẬT) · Tầng LLM (mặc định BẬT) · Deepdive
+transcript (tắt) · Force (tắt); route + niche_run chuyển nguyên 4 cờ sang service
+(test ghim mặc định + tường minh). LƯU Ý: resume (pool trống) không nhận cờ — cờ áp
+cho lần chạy trọn.
+BUG BẮT ĐƯỢC KHI KIỂM SỐNG: mặc định thị trường rơi vào SPAIN (mapped chưa snapshot,
+đứng trước US theo alphabet) → trang mặc định TRỐNG TRƠN — sửa _uu_tien: thị trường
+CÓ BÁO CÁO xếp trước. Suite 105 pass; kiểm HTML thật: banner về, US selected, chip
+snapshot trên thanh, 4 checkbox đủ.

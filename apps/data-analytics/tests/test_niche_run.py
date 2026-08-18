@@ -103,6 +103,9 @@ def test_tao_report_moi_sinh_project_va_map(client, tmp_path, monkeypatch):
     assert d["project"] == "LifeIn_SPAIN" and d["them_kenh"] == 2
     assert goi["url"].endswith("/api/run") and goi["data"]["name"] == "LifeIn_SPAIN"
     assert "UCx2" in goi["pool"]
+    # 4 cờ pipeline mặc định (kiểm 18/08): comment BẬT, LLM BẬT, deepdive/force tắt
+    assert goi["data"]["skip_comments"] == "false" and goi["data"]["llm"] == "true"
+    assert goi["data"]["deepdive"] == "false" and goi["data"]["force"] == "false"
     # sổ ánh xạ đã có mục mới (fixture client trỏ NICHE_PROJECTS_MAP vào tmp)
     import json as _json
     mapping = _json.loads((tmp_path / ".." / "map.json").resolve().read_text(encoding="utf-8")) \
@@ -122,6 +125,22 @@ def test_tao_report_pool_cong_don_khong_trung(client, tmp_path, monkeypatch):
                           "pool": "A | https://youtube.com/channel/UCcu\nhttps://youtube.com/channel/UCmoi"})
     assert r.status_code == 200 and r.json()["them_kenh"] == 1        # dòng cũ không đếm lại
     assert goi["pool"].count("UCcu") == 1 and "UCmoi" in goi["pool"]  # cộng dồn, không nhân đôi
+
+
+def test_tao_report_chuyen_4_co_pipeline(client, tmp_path, monkeypatch):
+    """Form New Research gửi 4 tùy chọn — route phải chuyển NGUYÊN sang service
+    (user 18/08: ngoài pool, pipeline chỉ còn đúng 4 tùy chọn này)."""
+    _mock_danh_ba(monkeypatch)
+    monkeypatch.setenv("NICHE_PROJECTS_DIR", str(tmp_path / "projects"))
+    goi = _bat_post(monkeypatch)
+    r = client.post("/niche/tao-report", headers=CLAIMS_L3,
+                    data={"ngach_ma": "N-TEST", "thi_truong_ma": "TT-ES",
+                          "pool": "https://youtube.com/channel/UCx1",
+                          "skip_comments": "true", "llm": "false",
+                          "deepdive": "true", "force": "true"})
+    assert r.status_code == 200
+    assert goi["data"]["skip_comments"] == "true" and goi["data"]["llm"] == "false"
+    assert goi["data"]["deepdive"] == "true" and goi["data"]["force"] == "true"
 
 
 def test_tao_report_pool_trong_400_va_quyen(client, monkeypatch):

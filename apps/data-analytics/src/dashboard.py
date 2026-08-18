@@ -181,10 +181,16 @@ def trang_niche(request: Request, user: dict = Depends(_lay_user),
         # User bắt lỗi 18/08: General có 3 thị trường mà dashboard chỉ hiện 2 —
         # pills phải liệt kê ĐỦ danh bạ; market chưa gán dự án hiện khối hướng dẫn
         # (New report nhánh Niche tự tạo pool + tự gán map), không được giấu.
-        thu_tu = sorted(ten_tt, key=lambda m: (m not in mapping, ten_tt[m]))
+        def _uu_tien(m):
+            # Mặc định phải là thị trường CÓ BÁO CÁO (bug 18/08: SPAIN mapped-chưa-
+            # snapshot đứng trước US theo alphabet → trang mặc định trống trơn).
+            p = mapping.get(m)
+            co_bao_cao = bool(p and niche_bridge.chon_snapshot(p))
+            return (not co_bao_cao, m not in mapping, ten_tt[m])
+        thu_tu = sorted(ten_tt, key=_uu_tien)
         pills = [{"ma": m, "ten": ten_tt[m]} for m in thu_tu]
         # User chốt 18/08 (ảnh 2): KHÔNG có "All" — luôn đúng MỘT thị trường đang
-        # chọn (mặc định = thị trường đầu đã gán dự án), đổi qua dropdown thanh trên.
+        # chọn (mặc định = thị trường đầu có báo cáo), đổi qua dropdown thanh trên.
         tt = tt if tt in ten_tt else (thu_tu[0] if thu_tu else "")
         for tt_ma in ([tt] if tt else []):
             project = mapping.get(tt_ma)
@@ -264,7 +270,9 @@ def _sinh_ten_project(ten_ngach: str, ten_tt: str) -> str:
 
 @router.post("/niche/tao-report")
 def tao_report_niche(user: dict = Depends(_lay_user), ngach_ma: str = Form(...),
-                     thi_truong_ma: str = Form(...), pool: str = Form("")):
+                     thi_truong_ma: str = Form(...), pool: str = Form(""),
+                     skip_comments: bool = Form(False), force: bool = Form(False),
+                     deepdive: bool = Form(False), llm: bool = Form(True)):
     from src import niche_run
     if user["level"] < 3:
         raise HTTPException(403, "Chỉ Leader trở lên được tạo report ngách.")
@@ -292,7 +300,8 @@ def tao_report_niche(user: dict = Depends(_lay_user), ngach_ma: str = Form(...),
         raise HTTPException(400, "Dán danh sách kênh đối thủ (mỗi dòng 1 kênh) — pool đang trống.")
     noi_dung = (cu.rstrip("\n") + "\n" if cu.strip() else "") + "\n".join(dong_moi)
     try:
-        kq = niche_run.chay_moi(project, noi_dung, user)
+        kq = niche_run.chay_moi(project, noi_dung, user, skip_comments=skip_comments,
+                                force=force, deepdive=deepdive, llm=llm)
     except Exception as e:
         raise HTTPException(502, f"Niche service không phản hồi: {e}")
     return {"project": project, "them_kenh": len(dong_moi), **kq}

@@ -49,10 +49,17 @@ def chay_lai(project: str, user: dict) -> dict:
     return r.json()
 
 
-def chay_moi(project: str, competitors_text: str, user: dict) -> dict:
+def chay_moi(project: str, competitors_text: str, user: dict, *,
+             skip_comments: bool = False, force: bool = False,
+             deepdive: bool = False, llm: bool = False) -> dict:
     """Chạy project với pool (mới/cộng dồn) — upload competitors.txt cho service,
-    service tự lo key từ KÉT (thiếu key → service 503 rõ)."""
-    r = requests.post(f"{_api()}/api/run", data={"name": project},
+    service tự lo key từ KÉT (thiếu key → service 503 rõ). 4 cờ = TOÀN BỘ tùy chọn
+    /api/run của service (kiểm 18/08 theo yêu cầu user: pipeline không cần nhập
+    liệu dữ liệu nào khác ngoài pool — niche/thị trường lấy từ danh bạ)."""
+    data = {"name": project, "skip_comments": str(skip_comments).lower(),
+            "force": str(force).lower(), "deepdive": str(deepdive).lower(),
+            "llm": str(llm).lower()}
+    r = requests.post(f"{_api()}/api/run", data=data,
                       files={"competitors": ("competitors.txt", competitors_text.encode("utf-8"))},
                       headers=_headers(user), timeout=30)
     r.raise_for_status()

@@ -39,7 +39,8 @@ def test_overall_hien_tile_va_kenh(client):
     assert "TEST NICHE" in body and "KENH A" in body        # rail: niche + kênh
     assert "58" in body and "3.071" in body                  # tile số thật từ snapshot
     assert "VÀO CÓ ĐIỀU KIỆN" in body                        # verdict tiếng Việt
-    assert "Read report" in body and "New report" in body    # button tiếng Anh
+    assert "Read report" in body and "New Research" in body  # button tiếng Anh
+    assert 'id="nr-llm"' in body and 'id="nr-deepdive"' in body   # 4 tùy chọn pipeline
     assert "hidden" in body and "iraq" in body               # Best & Worst cụm
 
 
