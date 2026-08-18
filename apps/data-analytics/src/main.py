@@ -82,7 +82,8 @@ async def health():
 
 @app.get("/", response_class=HTMLResponse)
 async def goc():
-    return RedirectResponse("/chan-doan", status_code=303)
+    # Trang gộp Niche là mặt tiền module (chốt 18/08); /chan-doan vẫn nguyên đường cũ.
+    return RedirectResponse("/niche", status_code=303)
 
 
 # ---------- các hàm phụ (chuyển thể nguyên từ app.py cũ) ----------
