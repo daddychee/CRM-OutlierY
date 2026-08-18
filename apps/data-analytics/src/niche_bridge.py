@@ -21,8 +21,10 @@ _ROOT = _APP_DIR.parents[1]
 
 
 def _projects_dir() -> Path:
+    # Nhà V3 của dữ liệu ngách = data/niche-research/projects (cùng chỗ service :9113
+    # đọc — dời 18/08); env cho test/cách ly.
     return Path(os.environ.get("NICHE_PROJECTS_DIR")
-                or _ROOT / "apps" / "niche-research" / "projects")
+                or _ROOT / "data" / "niche-research" / "projects")
 
 
 def ds_snapshot(project: str) -> list[dict]:

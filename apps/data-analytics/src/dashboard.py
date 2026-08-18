@@ -109,6 +109,36 @@ def trang_niche(request: Request, user: dict = Depends(_lay_user),
     })
 
 
+# ---------- chạy pipeline ngách (tính năng 2: báo cáo mới tự cập nhật dashboard) ----------
+
+def _project_hop_le(project: str) -> bool:
+    return project in {p for tt in _map_projects().values() for p in tt.values()}
+
+
+@router.post("/niche/chay/{project}")
+def chay_niche(project: str, user: dict = Depends(_lay_user)):
+    from src import niche_run
+    if user["level"] < 3:
+        raise HTTPException(403, "Chỉ Leader trở lên được chạy phân tích ngách.")
+    if not _project_hop_le(project):
+        raise HTTPException(404)
+    try:
+        return niche_run.chay_lai(project, user)
+    except Exception as e:
+        raise HTTPException(502, f"Niche service không phản hồi: {e}")
+
+
+@router.get("/niche/chay/{project}/trang-thai")
+def chay_trang_thai(project: str, user: dict = Depends(_lay_user)):
+    from src import niche_run
+    if not _project_hop_le(project):
+        raise HTTPException(404)
+    try:
+        return niche_run.trang_thai(project, user)
+    except Exception as e:
+        raise HTTPException(502, f"Niche service không phản hồi: {e}")
+
+
 # ---------- pane KÊNH ----------
 
 def _kenh_theo_ma(kenh_ma: str) -> dict | None:
