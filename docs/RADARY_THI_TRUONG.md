@@ -261,3 +261,19 @@ quy trình 1-2-3 trên dữ liệu mới nhất — vì vậy làm thành TÍNH 
   còn đọc key từ bảng nội bộ `db.api_keys` (bảng đã tuyên bố NGHỈ ở mạch làm
   gọn 16/08; snapshot còn 19 key cũ nên vẫn chạy). Thuộc mạch migration khóa —
   chờ Owner chạy `scripts/di_tru_khoa_radary.py` rồi rà nốt các điểm đọc này.
+
+- 19/08/2026 — **ĐỒNG BỘ SỐ LIỆU V2 → V3 trước khi user quét** (user yêu cầu;
+  kèm phản hồi user "khuyên backup trước mà chia trước" → nhận lỗi LIFE IN chia
+  18/08 khi chưa có snapshot, đã ghi memory kỷ luật backup-trước-mặc-định).
+  Nguồn: backup gương đêm 18/08 22:59 (`D:\OUTLIERY-backup\HIEN-TAI\1-radary-so-lieu`
+  — đúng luật chỉ đọc backup, không đụng db sống hệ thật; integrity ok).
+  Snapshot V3 TRƯỚC đồng bộ: `radary-truoc-dong-bo-v2-20260819.db`. Kết quả:
+  +619 video mới · 21.498 video cập nhật trường mutable (chỉ khi V2 có tick mới
+  hơn — không giẫm lượt quét tay) · +88.436 tick · +64 bucket pool_stats ·
+  +4.161 channel_stats · +1.132 channel_snap; 0 kênh mới từ team; 33 kênh
+  inactive V3 (gỡ cũ + 4 Nga/Hàn) KHÔNG tái nhập; số liệu mới đổ ĐÚNG pool thị
+  trường hiện tại (map kênh theo gia đình ngách). events/kv/board KHÔNG chép
+  (sổ cái V2 ở lại V2, board V3 tự dựng lượt quét tới). Volume sau đồng bộ:
+  SPACE US 56M v7d · STORM US 23,7M · LIFE IN Spain 3,0M / US 2,5M · TRAVEL US
+  5,0M. Script: scratchpad dong_bo_v2_sang_v3.py (idempotent OR-IGNORE — cần
+  đồng bộ lại trước cutover thì chạy lại với backup mới).
