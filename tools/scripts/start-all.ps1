@@ -20,11 +20,13 @@ $py = Join-Path $root '.venv\Scripts\python.exe'
 # nhung day la luoi do cho code vendored/port sau nay.
 $env:PYTHONUTF8 = '1'
 
-# RadarY (APPS.md app 1/6): du lieu tro data/radary (RADARY_DATA_DIR);
-# SCHEDULER TAT o V3 — he that C:\ van tu quet theo lich, V3 cung quet la
-# doi quota YouTube + lech du lieu snapshot (nghiem thu thi POST /run tay).
+# RadarY (APPS.md app 1/6): du lieu tro data/radary (RADARY_DATA_DIR).
+# 19/08 USER CHOT: BAT SCHEDULER V3 chay SONG SONG V2 (user da can quota —
+# 'API hoan toan du'; pool da chia thi truong, so lieu da dong bo tu V2).
+# ntfy pool goc 1+2 da TAT tren V3 (ke thua V2 bat) — khong push trung topic;
+# pool thi truong moi mac dinh tat, Owner bat sau khi subscribe topic moi.
 $env:RADARY_DATA_DIR = (Join-Path $root 'data/radary')
-$env:RADARY_SCHEDULER = '0'
+$env:RADARY_SCHEDULER = '1'
 $env:RADARY_TRUST_PROXY = '1'
 
 # Content Ultimate (APPS.md app 2/6): du lieu tro data/content-ultimate; SSO bat.

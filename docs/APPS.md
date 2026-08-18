@@ -62,6 +62,11 @@
 
 ## Nhật ký
 
+- 19/08/2026 — **RadarY V3 BẬT SCHEDULER chạy SONG SONG V2** (user chốt: "API
+  hoàn toàn đủ" — đảo chốt tắt-cố-định 16/08). Điều kiện đi kèm: pool đã chia
+  thị trường + số liệu đã đồng bộ từ backup V2; **ntfy TẮT TOÀN V3** (user
+  lệnh — tránh push trùng V2, pool gốc 1+2 vốn kế thừa enabled từ V2 đã tắt
+  có vết); start-all RADARY_SCHEDULER=1. Chi tiết: RADARY_THI_TRUONG.md.
 - 18/08/2026 — RadarY thêm trục POOL THEO THỊ TRƯỜNG (sổ riêng:
   [RADARY_THI_TRUONG.md](RADARY_THI_TRUONG.md) — pool gắn 1 thị trường từ đế,
   tách pool giữ lịch sử, chờ Owner nghiệm thu qua 9443).

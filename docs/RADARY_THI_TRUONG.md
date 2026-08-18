@@ -300,3 +300,14 @@ quy trình 1-2-3 trên dữ liệu mới nhất — vì vậy làm thành TÍNH 
   (ABISMO, Cosmic Observer) → US 165 · Spain 35 · chưa phân loại 7
   (EVIL SPACE hệ chữ khác 20/20 · AstroHoryzont nghi Ba Lan · NASA Video lẫn
   EN/ES · còn lại 0-ít video).
+
+- 19/08/2026 — **BẬT SCHEDULER V3 CHẠY SONG SONG V2** (user đảo chốt: "API
+  hoàn toàn đủ để chạy song song cả V2 V3, kích hoạt radary V3 chạy luôn").
+  Làm: (1) TẮT ntfy TOÀN V3 theo lệnh user — pool gốc LIFE IN + SPACE vốn kế
+  thừa ntfy_enabled=True từ V2 (push trùng topic điện thoại nếu để) đã tắt
+  qua PUT /config có vết; 14 pool còn lại vốn False; pool mới mặc định False
+  — Owner bật từng pool thị trường + subscribe topic MỚI khi muốn nhận push
+  từ V3. (2) start-all RADARY_SCHEDULER=1 + restart 9111 scheduler ON.
+  V2 vẫn quét + vẫn là nguồn push của team tới cutover. Quota: 2 hệ cùng
+  tiêu 1 bó khóa — user đã cân; nếu quotaExceeded diện rộng thì V3 báo rõ
+  từng pool (scheduler cô lập lỗi), xử bằng tắt lại RADARY_SCHEDULER=0.
