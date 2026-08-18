@@ -197,9 +197,11 @@
   đủ (quet_dinh_ky 15 · harvest 14 · dien_giai 1, đọc từ két OK); V3 không
   quét vì `RADARY_SCHEDULER=0` CỐ ĐỊNH theo thiết kế song song (hệ thật V2
   cổng 8123 ĐANG quét bằng CÙNG bộ khóa — V3 quét song song = đốt đôi quota
-  10K/dự án/ngày, bài học quotaExceeded 10-11/07 hệ cũ). Chờ user chọn:
-  chuyển vai quét sang V3 (tắt quét V2) / giữ nguyên quét tay / bật song song
-  (không khuyến nghị).
+  10K/dự án/ngày, bài học quotaExceeded 10-11/07 hệ cũ). **USER CHỐT 19/08:
+  GIỮ NGUYÊN — V2 tiếp tục quét, V3 không tự quét, khi cần số mới thì quét
+  TAY từng pool** (nút "Quét ngay" trên Board của pool đó, hoặc POST /run;
+  leader trở lên; tốn quota thật — nên giờ thấp điểm). Chuyển vai quét sang
+  V3 = quyết định cutover sau này.
 
 ## PHƯƠNG ÁN PHÂN LOẠI LẠI KÊNH POOL BẨN (đã duyệt 19/08 — chạy thật cho LIFE IN, xem vòng 6)
 
