@@ -21,6 +21,15 @@ Python does everything measurable; the LLM does everything that must be understo
 covers the Python half + the render — exactly the split argued in the architecture doc §0.
 """
 import argparse, os, re, sys, shutil, subprocess, time, json, glob
+
+# Console Windows mặc định cp1252 — orchestrator in ✓/Σ/tiếng Việt sẽ chết
+# UnicodeEncodeError giữa chừng (dính thật 18/08). Ép UTF-8 cho chính tiến trình
+# này; tiến trình con đã có PYTHONUTF8=1 trong run_once.
+for _s in (sys.stdout, sys.stderr):
+    try:
+        _s.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
 from datetime import datetime
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -282,9 +291,13 @@ def run_once(st, num, total):
     log(bold(cyan(f"\n>>> [{num}/{total}] {st['id']}  {st['title']}")))
     log(dim("    " + " ".join(os.path.basename(a) for a in st["argv"])))
     sys.stdout.flush()
-    env = dict(os.environ, PYTHONUNBUFFERED="1")
+    # PYTHONUTF8: console Windows mặc định cp1252 — script in ký tự ngoài bảng mã
+    # (Σ, →, tiếng Việt) sẽ chết UnicodeEncodeError SAU khi đã ghi output (dính thật
+    # 18/08: S9 crash ở dòng print trang trí). Ép UTF-8 cho MỌI stage con.
+    env = dict(os.environ, PYTHONUNBUFFERED="1", PYTHONUTF8="1")
     proc = subprocess.Popen(st["argv"], cwd=SCRIPTS, env=env, stdout=subprocess.PIPE,
-                            stderr=subprocess.STDOUT, text=True, bufsize=1)
+                            stderr=subprocess.STDOUT, text=True, bufsize=1,
+                            encoding="utf-8", errors="replace")
     lines = []
     for line in proc.stdout:
         lines.append(line); log("    " + line.rstrip("\n"))
