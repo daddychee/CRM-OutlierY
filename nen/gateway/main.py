@@ -1809,6 +1809,9 @@ _ALIAS: dict[str, tuple[str, str]] = {
     "/history": ("ai-agent", "lich-su"),
     "/tracking": ("ai-agent", "giam-sat"),
     "/data-analytics": ("data-analytics", "chan-doan"),
+    # Đồng nhất URL 18/08 (Owner bắt "cùng nút sidebar mà URL khác họ"): mọi nút
+    # Tools = /<slug>. App native thêm alias ở đây; app KHUNG xem _ALIAS_KHUNG cuối file.
+    "/video-review": ("video-review", "danh-sach"),
     "/nas": ("to-chuc", "nas"),
     "/kpi": ("to-chuc", "kpi"),
     "/vault": ("to-chuc", "vault"),
@@ -1929,9 +1932,9 @@ def mo_app_khung(request: Request, slug: str):
     finally:
         conn.close()
     from nen.common.sidebar import KHONG_LAP_TOOLS
-    ds_tools = [{"slug": a["slug"], "ten": a["ten"],
-                 "href": (f"/open/{a['slug']}" if a.get("giao_dien") == "khung"
-                          else f"/app/{a['slug']}")}
+    # Đồng nhất URL 18/08: mọi nút Tools = /<slug> (native qua _ALIAS, khung qua
+    # _ALIAS_KHUNG) — một nút một URL ở MỌI sidebar, khớp nen/common/sidebar.py.
+    ds_tools = [{"slug": a["slug"], "ten": a["ten"], "href": f"/{a['slug']}"}
                 for a in doc_hop_dong()
                 if a["slug"] in duoc and a["slug"] not in KHONG_LAP_TOOLS]
     from datetime import datetime as _dt
@@ -1953,3 +1956,20 @@ def _lam_alias(slug: str, dd: str):
 for _duong, (_slug, _dd) in _ALIAS.items():
     app.add_api_route(_duong, _lam_alias(_slug, _dd), methods=["GET", "HEAD"],
                       name=f"alias_{_duong.strip('/')}")
+
+
+# --- URL đẹp cấp-1 cho app KHUNG (đồng nhất URL 18/08: mọi nút Tools = /<slug>) ---
+# Phục vụ CÙNG trang khung như /open/<slug> tại URL đẹp; /open/<slug> giữ nguyên
+# cho bookmark. Thêm app khung mới = thêm slug vào tuple này.
+_ALIAS_KHUNG = ("radary", "content-ultimate", "niche-research")
+
+
+def _lam_alias_khung(slug: str):
+    def _mo(request: Request):
+        return mo_app_khung(request, slug)
+    return _mo
+
+
+for _slug in _ALIAS_KHUNG:
+    app.add_api_route(f"/{_slug}", _lam_alias_khung(_slug), methods=["GET", "HEAD"],
+                      response_class=HTMLResponse, name=f"alias_khung_{_slug}")

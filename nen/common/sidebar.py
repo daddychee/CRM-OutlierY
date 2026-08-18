@@ -22,13 +22,13 @@ def sb_apps_tu_claims(apps_vao) -> list[dict]:
     sidebar tự ăn): giao giữa hợp đồng app và danh sách user được vào
     (X-Remote-Apps — gateway quyết). App chưa di trú không có trong hợp đồng nên
     tự ẩn (giữ chốt 16/08). Lỗi đọc hợp đồng → rỗng, không vỡ trang.
-    href (Owner 16/08 'mở app vẫn còn sidebar'): app khai giao_dien 'khung' mở
-    qua /open/<slug> (iframe trong khung OUTLIERY); app native giữ /app/<slug>."""
+    href — ĐỒNG NHẤT URL 18/08 (Owner bắt "cùng nút mà URL khác họ"): mọi nút
+    Tools = /<slug>, gateway phục vụ qua _ALIAS (app native) hoặc _ALIAS_KHUNG
+    (app khung, cùng trang với /open/<slug>). Thêm app mới = thêm alias bên
+    gateway, sidebar tự khớp."""
     try:
         from nen.common.hop_dong import doc_hop_dong
-        return [{"slug": a["slug"], "ten": a["ten"],
-                 "href": (f"/open/{a['slug']}" if a.get("giao_dien") == "khung"
-                          else f"/app/{a['slug']}")}
+        return [{"slug": a["slug"], "ten": a["ten"], "href": f"/{a['slug']}"}
                 for a in doc_hop_dong()
                 if a["slug"] in apps_vao and a["slug"] not in KHONG_LAP_TOOLS]
     except Exception:

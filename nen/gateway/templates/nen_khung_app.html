@@ -74,9 +74,9 @@
       <a class="nav-item{% if a.slug == app.slug %} active{% endif %}" href="{{ a.href }}">{% include "_icon_app_khung.html" %} {{ a.ten }}
         <svg class="ic mui-nhom{% if a.slug == app.slug %} mo{% endif %}" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></a>
       {% if a.slug == app.slug %}
-      <a class="nav-item nav-con{% if request.query_params.get('duong') == 'outline' %} active{% endif %}" href="/open/content-ultimate?duong=outline">Outline Board</a>
-      <a class="nav-item nav-con{% if request.query_params.get('duong') == 'author' %} active{% endif %}" href="/open/content-ultimate?duong=author">Author Extract</a>
-      <a class="nav-item nav-con{% if request.query_params.get('duong') == 'write' %} active{% endif %}" href="/open/content-ultimate?duong=write">Writing</a>
+      <a class="nav-item nav-con{% if request.query_params.get('duong') == 'outline' %} active{% endif %}" href="/content-ultimate?duong=outline">Outline Board</a>
+      <a class="nav-item nav-con{% if request.query_params.get('duong') == 'author' %} active{% endif %}" href="/content-ultimate?duong=author">Author Extract</a>
+      <a class="nav-item nav-con{% if request.query_params.get('duong') == 'write' %} active{% endif %}" href="/content-ultimate?duong=write">Writing</a>
       {% endif %}
       {% else %}
       <a class="nav-item{% if a.slug == app.slug %} active{% endif %}" href="{{ a.href }}">{% include "_icon_app_khung.html" %} {{ a.ten }}</a>

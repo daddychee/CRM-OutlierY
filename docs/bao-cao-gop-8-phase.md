@@ -408,3 +408,24 @@ Luồng chuẩn: bấm tên app → sang trang đầu app → dòng con tự x�
 :9102 đủ claims (bẫy harness: sidebar chỉ render khi có X-Remote-Dept — curl thiếu
 header này là tưởng sidebar biến mất). Suite 104 pass; template hot-reload, không
 cần restart thêm.
+
+## 18/08 (tiếp 9) — PA3 CHẠY THẬT: đồng nhất URL mọi nút Tools = /<slug>
+
+User truy tiếp "4 URL của 4 app vì sao không đồng nhất". GỐC BỆNH (điều tra): gateway
+có BA cơ chế route ra đời 3 thời điểm — (1) proxy generic /app/<slug>/... (app native),
+(2) khung /open/<slug> (app SPA, Owner 16/08), (3) bảng _ALIAS URL đẹp cấp-1 (11 mục
+chọn tay 16/08 — trong 4 nút Tools chỉ Data Analytics có). Sidebar sinh href THEO LOẠI
+APP → 3 họ URL lộ ra người dùng: /app/video-review/danh-sach · /open/radary ·
+/open/content-ultimate · /data-analytics.
+SỬA (PA3, làm luôn vì diff NAS của phiên song song chỉ nằm vùng login/profile — vùng
+alias tách bạch): (a) _ALIAS thêm /video-review → danh-sach; (b) _ALIAS_KHUNG mới
+(radary, content-ultimate, niche-research) — mỗi slug một route /<slug> phục vụ CÙNG
+trang khung với /open/<slug> (đường cũ giữ cho bookmark); (c) ds_tools (khung) +
+sb_apps_tu_claims (sidebar.py) về MỘT luật href = /<slug>; (d) link con CU đổi
+/content-ultimate?duong=... Kiểm sống 4 URL + /open cũ đều 303 login (tồn tại, hết
+404). SESSION_SECRET có trong .env → restart gateway không văng phiên.
+GIT: commit main.py bằng cách TÁCH HUNK (backup file đầy đủ → restore HEAD → áp lại
+đúng 3 sửa → git add → trả file đầy đủ về đĩa) — stage sạch phần mình, 5 hunk NAS
+của phiên song song vẫn nguyên ngoài stage. LƯU Ý: to-chuc chưa restart (phiên kia
+giữ) → sidebar trang to-chuc còn URL họ cũ tới lần restart kế; test_gateway.py đang
+dở tay phiên kia — test alias khung bổ sung sau.
