@@ -19,7 +19,7 @@ import json
 import os
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Request
+from fastapi import APIRouter, Depends, Form, Header, HTTPException, Request
 from fastapi.responses import FileResponse, HTMLResponse
 
 from src import niche_bridge
@@ -71,8 +71,7 @@ def _ten_thi_truong() -> dict[str, str]:
 
 def _map_projects() -> dict:
     """{ngach_ma: {thi_truong_ma: project_niche_research}} — sổ ánh xạ ngoài code."""
-    p = Path(os.environ.get("NICHE_PROJECTS_MAP")
-             or _ROOT / "data" / "data-analytics" / "niche_projects.json")
+    p = _duong_map()
     if not p.is_file():
         return {}
     try:
@@ -146,7 +145,66 @@ def trang_niche(request: Request, user: dict = Depends(_lay_user),
         "user": user, "ds_ngach": ds_ngach, "ngach": ngach_hien,
         "thi_truong": thi_truong, "ds_kenh": _ds_kenh(ngach_hien["ma"]) if ngach_hien else [],
         "ds_ngay": ds_ngay, "ngay_chon": ngay,
+        "ds_thi_truong": sorted(_ten_thi_truong().items(), key=lambda x: x[1]),
     })
+
+
+# ---------- New report nhánh Niche (modal — tạo/chạy project, pool cộng dồn) ----------
+
+def _duong_map() -> Path:
+    return Path(os.environ.get("NICHE_PROJECTS_MAP")
+                or _ROOT / "data" / "data-analytics" / "niche_projects.json")
+
+
+def _ghi_map(mapping: dict) -> None:
+    p = _duong_map()
+    p.parent.mkdir(parents=True, exist_ok=True)
+    tmp = p.with_suffix(".json.tmp")
+    tmp.write_text(json.dumps(mapping, ensure_ascii=False, indent=1), encoding="utf-8")
+    tmp.replace(p)
+
+
+def _sinh_ten_project(ten_ngach: str, ten_tt: str) -> str:
+    import re
+    dau = "".join(w.capitalize() for w in re.findall(r"[A-Za-z0-9]+", ten_ngach)) or "Niche"
+    duoi = re.sub(r"[^A-Za-z0-9]", "", ten_tt).upper()[:8] or "TT"
+    return f"{dau}_{duoi}"
+
+
+@router.post("/niche/tao-report")
+def tao_report_niche(user: dict = Depends(_lay_user), ngach_ma: str = Form(...),
+                     thi_truong_ma: str = Form(...), pool: str = Form("")):
+    from src import niche_run
+    if user["level"] < 3:
+        raise HTTPException(403, "Chỉ Leader trở lên được tạo report ngách.")
+    ngach = next((n for n in _ds_ngach() if n["ma"] == ngach_ma), None)
+    ten_tt = _ten_thi_truong().get(thi_truong_ma)
+    if ngach is None or ten_tt is None:
+        raise HTTPException(404, "Niche/thị trường không có trong danh bạ.")
+
+    mapping = _map_projects()
+    project = mapping.get(ngach_ma, {}).get(thi_truong_ma)
+    if project is None:
+        project = _sinh_ten_project(ngach["ten_chuan"], ten_tt)
+        mapping.setdefault(ngach_ma, {})[thi_truong_ma] = project
+        _ghi_map(mapping)
+
+    # pool CỘNG DỒN (chốt mockup v7): giữ dòng cũ, thêm dòng mới chưa có
+    cu = ""
+    comp = niche_bridge._projects_dir() / project / "competitors.txt"
+    if comp.is_file():
+        cu = comp.read_text(encoding="utf-8", errors="replace")
+    dong_cu = {d.strip() for d in cu.splitlines() if d.strip()}
+    dong_moi = [d.strip() for d in (pool or "").splitlines()
+                if d.strip() and d.strip() not in dong_cu]
+    if not dong_cu and not dong_moi:
+        raise HTTPException(400, "Dán danh sách kênh đối thủ (mỗi dòng 1 kênh) — pool đang trống.")
+    noi_dung = (cu.rstrip("\n") + "\n" if cu.strip() else "") + "\n".join(dong_moi)
+    try:
+        kq = niche_run.chay_moi(project, noi_dung, user)
+    except Exception as e:
+        raise HTTPException(502, f"Niche service không phản hồi: {e}")
+    return {"project": project, "them_kenh": len(dong_moi), **kq}
 
 
 # ---------- chạy pipeline ngách (tính năng 2: báo cáo mới tự cập nhật dashboard) ----------

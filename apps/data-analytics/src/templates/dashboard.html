@@ -67,9 +67,45 @@
     {% for k in ds_kenh %}
     <a class="nd-it {% if kenh_pane and kenh_pane.kenh.ma == k.ma %}on{% endif %}" href="/niche/kenh/{{ k.ma }}" title="{{ k.ten_chuan }}"><span class="nd-dot"></span>{{ k.ten_chuan }}</a>
     {% endfor %}
-    <a class="nd-it nd-new" href="/chan-doan" title="Channel report: nạp file YouTube Studio. Niche report: chạy từ tool Niche Research (nối ở đợt sau).">
-      <svg class="ic" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> New report</a>
+    <button class="nd-it nd-new" onclick="moModal()" style="border:none;cursor:pointer;font:inherit">
+      <svg class="ic" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> New report</button>
   </nav>
+
+  <!-- modal New report — 2 nhánh (mockup v7 đã duyệt) -->
+  <div id="nr-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:60;align-items:center;justify-content:center">
+    <div style="background:var(--th-121826);border:1px solid var(--line);border-radius:14px;width:min(480px,92vw);padding:18px 20px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+        <b>New report</b>
+        <span style="margin-left:auto;display:flex;gap:6px">
+          <button type="button" class="nd-btn" id="nr-tab-niche" onclick="nrTab('niche')">Niche</button>
+          <button type="button" class="nd-btn" id="nr-tab-kenh" onclick="nrTab('kenh')">Channel</button>
+          <button type="button" class="nd-btn" onclick="dongModal()" aria-label="Close">✕</button>
+        </span>
+      </div>
+      <div id="nr-niche">
+        <div style="display:flex;gap:8px;margin-bottom:10px">
+          <select id="nr-ngach" style="flex:1;background:var(--th-182233);color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:7px 9px;font:inherit">
+            {% for n in ds_ngach %}<option value="{{ n.ma }}" {% if ngach and n.ma == ngach.ma %}selected{% endif %}>{{ n.ten_chuan }}</option>{% endfor %}
+          </select>
+          <select id="nr-tt" style="flex:1;background:var(--th-182233);color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:7px 9px;font:inherit">
+            {% for ma, ten in ds_thi_truong %}<option value="{{ ma }}">{{ ten }}</option>{% endfor %}
+          </select>
+        </div>
+        <textarea id="nr-pool" rows="5" placeholder="Dán kênh đối thủ — mỗi dòng 1 kênh (URL /channel/UC… hoặc @handle). Cộng dồn vào pool cũ; key YouTube lấy từ KÉT."
+          style="width:100%;background:var(--th-182233);color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:8px 10px;font:inherit;font-size:.85rem"></textarea>
+        <div style="display:flex;gap:10px;align-items:center;margin-top:10px">
+          <button type="button" class="nd-btn chinh" id="nr-run" onclick="nrChay()">
+            <svg class="ic" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg> Run analysis</button>
+          <span id="nr-status" style="font-size:.8rem;color:var(--muted)"></span>
+        </div>
+      </div>
+      <div id="nr-kenh" style="display:none">
+        <p style="font-size:.88rem;color:var(--muted);margin:.2rem 0 1rem">Nạp file YouTube Studio của kênh nhà — chạy nền, tự vào lịch sử; nhớ điền ô "Tên kênh" đúng tên trong danh bạ.</p>
+        <a class="nd-btn chinh" href="/chan-doan">
+          <svg class="ic" viewBox="0 0 24 24"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 21h16"/></svg> Mở form nạp report kênh</a>
+      </div>
+    </div>
+  </div>
 
   <div class="nd-main">
     {% if kenh_pane %}
@@ -331,6 +367,32 @@ function theoDoiNiche(project){
       })
       .catch(function(){ /* mạng chớp — poll tiếp */ });
   }, 3000);
+}
+
+// ===== modal New report =====
+function moModal(){ var m = document.getElementById('nr-modal'); m.style.display = 'flex'; nrTab('niche'); }
+function dongModal(){ document.getElementById('nr-modal').style.display = 'none'; }
+document.addEventListener('keydown', function(e){ if (e.key === 'Escape') dongModal(); });
+function nrTab(t){
+  document.getElementById('nr-niche').style.display = (t === 'niche') ? '' : 'none';
+  document.getElementById('nr-kenh').style.display = (t === 'kenh') ? '' : 'none';
+}
+function nrChay(){
+  var nut = document.getElementById('nr-run'), st = document.getElementById('nr-status');
+  nut.disabled = true; st.textContent = 'Đang gửi…';
+  var fd = new FormData();
+  fd.append('ngach_ma', document.getElementById('nr-ngach').value);
+  fd.append('thi_truong_ma', document.getElementById('nr-tt').value);
+  fd.append('pool', document.getElementById('nr-pool').value);
+  fetch('/niche/tao-report', {method: 'POST', body: fd})
+    .then(function(r){ return r.json().then(function(d){ return {ok: r.ok, d: d}; }); })
+    .then(function(x){
+      if (!x.ok) throw new Error(x.d.detail || 'Lỗi');
+      st.id = 'run-' + x.d.project;          // theoDoiNiche ghi tiến độ vào đây
+      st.textContent = 'Đã khởi động (' + (x.d.them_kenh || 0) + ' kênh mới) — chạy nền, trang tự cập nhật khi xong.';
+      theoDoiNiche(x.d.project);
+    })
+    .catch(function(e){ nut.disabled = false; st.textContent = e.message; });
 }
 </script>
 {% endblock %}

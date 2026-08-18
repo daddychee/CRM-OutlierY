@@ -70,6 +70,70 @@ def test_chay_lai_mo_cua_snapshot_moi(client, monkeypatch):
     assert goi == ["Proj_US", "Proj_US"]
 
 
+# ---------- New report nhánh Niche ----------
+
+def _mock_danh_ba(monkeypatch):
+    monkeypatch.setattr(dashboard, "_ds_ngach",
+                        lambda: [{"ma": "N-TEST", "ten_chuan": "LIFE IN"}])
+    monkeypatch.setattr(dashboard, "_ten_thi_truong", lambda: {"TT-ES": "Spain"})
+
+
+def _bat_post(monkeypatch):
+    goi = {}
+    def _post(url, **kw):
+        goi["url"] = url
+        goi["data"] = kw.get("data")
+        files = kw.get("files") or {}
+        if "competitors" in files:
+            goi["pool"] = files["competitors"][1].decode("utf-8")
+        return _Resp({"status": "started"})
+    monkeypatch.setattr(niche_run.requests, "post", _post)
+    return goi
+
+
+def test_tao_report_moi_sinh_project_va_map(client, tmp_path, monkeypatch):
+    _mock_danh_ba(monkeypatch)
+    monkeypatch.setenv("NICHE_PROJECTS_DIR", str(tmp_path / "projects"))
+    goi = _bat_post(monkeypatch)
+    r = client.post("/niche/tao-report", headers=CLAIMS_L3,
+                    data={"ngach_ma": "N-TEST", "thi_truong_ma": "TT-ES",
+                          "pool": "https://youtube.com/channel/UCx1\nhttps://youtube.com/channel/UCx2"})
+    assert r.status_code == 200
+    d = r.json()
+    assert d["project"] == "LifeIn_SPAIN" and d["them_kenh"] == 2
+    assert goi["url"].endswith("/api/run") and goi["data"]["name"] == "LifeIn_SPAIN"
+    assert "UCx2" in goi["pool"]
+    # sổ ánh xạ đã có mục mới (fixture client trỏ NICHE_PROJECTS_MAP vào tmp)
+    import json as _json
+    mapping = _json.loads((tmp_path / ".." / "map.json").resolve().read_text(encoding="utf-8")) \
+        if False else _json.loads(open(dashboard._duong_map(), encoding="utf-8").read())
+    assert mapping["N-TEST"]["TT-ES"] == "LifeIn_SPAIN"
+
+
+def test_tao_report_pool_cong_don_khong_trung(client, tmp_path, monkeypatch):
+    _mock_danh_ba(monkeypatch)
+    pdir = tmp_path / "projects" / "LifeIn_SPAIN"
+    pdir.mkdir(parents=True)
+    (pdir / "competitors.txt").write_text("A | https://youtube.com/channel/UCcu\n", encoding="utf-8")
+    monkeypatch.setenv("NICHE_PROJECTS_DIR", str(tmp_path / "projects"))
+    goi = _bat_post(monkeypatch)
+    r = client.post("/niche/tao-report", headers=CLAIMS_L3,
+                    data={"ngach_ma": "N-TEST", "thi_truong_ma": "TT-ES",
+                          "pool": "A | https://youtube.com/channel/UCcu\nhttps://youtube.com/channel/UCmoi"})
+    assert r.status_code == 200 and r.json()["them_kenh"] == 1        # dòng cũ không đếm lại
+    assert goi["pool"].count("UCcu") == 1 and "UCmoi" in goi["pool"]  # cộng dồn, không nhân đôi
+
+
+def test_tao_report_pool_trong_400_va_quyen(client, monkeypatch):
+    _mock_danh_ba(monkeypatch)
+    assert client.post("/niche/tao-report", headers=CLAIMS_L2,
+                       data={"ngach_ma": "N-TEST", "thi_truong_ma": "TT-ES", "pool": "x"}
+                       ).status_code == 403
+    r = client.post("/niche/tao-report", headers=CLAIMS_L3,
+                    data={"ngach_ma": "N-TEST", "thi_truong_ma": "TT-ES", "pool": ""})
+    assert r.status_code == 400 and "pool đang trống" in r.json()["detail"]
+
+
 def test_service_chet_502(client, monkeypatch):
     def _no(url, **kw):
         raise niche_run.requests.ConnectionError("refused")

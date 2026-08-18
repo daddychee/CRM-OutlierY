@@ -49,6 +49,18 @@ def chay_lai(project: str, user: dict) -> dict:
     return r.json()
 
 
+def chay_moi(project: str, competitors_text: str, user: dict) -> dict:
+    """Chạy project với pool (mới/cộng dồn) — upload competitors.txt cho service,
+    service tự lo key từ KÉT (thiếu key → service 503 rõ)."""
+    r = requests.post(f"{_api()}/api/run", data={"name": project},
+                      files={"competitors": ("competitors.txt", competitors_text.encode("utf-8"))},
+                      headers=_headers(user), timeout=30)
+    r.raise_for_status()
+    with _snapshot_lock:
+        _da_snapshot.discard(project)
+    return r.json()
+
+
 def trang_thai(project: str, user: dict) -> dict:
     """Trạng thái từ service; khi vừa chạy xong + có report → snapshot MỘT lần.
     Trả {running, has_report, done_moi (vừa đóng băng snapshot xong)}."""
