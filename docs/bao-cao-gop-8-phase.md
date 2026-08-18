@@ -394,3 +394,17 @@ ai-agent + video-review (ăn KHONG_LAP_TOOLS niche-research + sidebar mới); to
 chờ phiên song song tự restart. BẪY UNICODE mới: chuỗi tiếng Việt trong test vs
 code lệch tổ hợp dấu NFC/NFD → assert in thất bại dù mắt thấy giống — so sánh phải
 normalize NFC 2 vế (test_dropdown ghim). Suite 104 pass.
+
+## 18/08 (tiếp 8) — VÁ sidebar 2 nấc: bấm tên app phải ĐIỀU HƯỚNG
+
+User bắt bug ngay: từ RadarY bấm Content Ultimate / Data Analytics thì URL không
+đổi, không ra trang đầu — vì bản 2 nấc dùng <details>/<summary>: tên app thành nút
+XỔ NHÓM, nuốt mất điều hướng. Vá cả 5 khuôn: tên app trở lại LINK THẬT (Data
+Analytics → /data-analytics landing 2 khối; Content Ultimate → /open/content-ultimate
+trang chủ 3 card); dòng con KHÔNG cần bấm để xổ nữa — TỰ HIỆN khi đang đứng trong
+app đó (DA: path /niche|/chan-doan|/bao-cao-lich-su; CU: app.slug trong khung, dòng
+con active theo ?duong=); mũi tên chỉ còn là chỉ báo (xoay khi nhóm đang mở).
+Luồng chuẩn: bấm tên app → sang trang đầu app → dòng con tự xổ ở đó. Kiểm sống
+:9102 đủ claims (bẫy harness: sidebar chỉ render khi có X-Remote-Dept — curl thiếu
+header này là tưởng sidebar biến mất). Suite 104 pass; template hot-reload, không
+cần restart thêm.
