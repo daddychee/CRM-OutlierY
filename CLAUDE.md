@@ -211,3 +211,26 @@ Quy ước từ 16/08/2026 (user chốt): mỗi mạch việc lớn có MỘT s�
   160 test nền pass; đăng ký đủ PORTS/apps.json/phan_quyen/start-all; 5 commit
   (97f4938→b46fb5d). Chi tiết + quyết định thiết kế + bẫy + việc treo:
   apps/video-review/CLAUDE.md.
+- 18/08/2026 — **NAS TRỌN VÀO V2 (mảnh tầng nền)**: `nen/common/nas_sync.py` mới
+  (đồng bộ tài khoản Windows theo mật khẩu OUTLIERY, DI TRÚ từ hệ cũ, KHÔNG đụng
+  file nào trong C:\OutlierY) — gateway gọi lúc đăng nhập/tự đổi mật khẩu (3 chỗ:
+  `/login`, `/profile/mat-khau`, `/doi-mat-khau`); nhóm Windows tính qua hành động
+  IAM mới `nas_cap_cao` (apps.to-chuc, MỘT CỬA `co_quyen()` — ô tick lẻ/cấp truy cập
+  tự ăn, không cần code riêng như hệ cũ); to-chuc hết hard-code `tt_nas='tat'`, đọc
+  thật. Sổ `data/nen/nas-dong-bo.json` khai trong apps.json (Luật 6). BẪY ĐẶT TÊN
+  IAM: khóa hành động chứa `toan_quyen`/`xoa`/`sua`/`tao`/`them` bị `iam.vai_cho_app()`
+  dò substring nuốt nhầm vào luật suy vai app (dính thật, test_iam.py bắt được) —
+  đổi `nas_cap_cao`. 177 test root + 62 to-chuc pass. Chi tiết: apps/to-chuc/CLAUDE.md.
+- 18/08/2026 — **THỊ TRƯỜNG THUỘC TỪNG NGÁCH, USER CHỌN** (commit c5812bc; nen danh
+  bạ 30 test + DA 106 test xanh; nghiệm thu sống DB thật). Owner sửa luật: hết cảnh
+  "mọi niche mặc định có cả 3 thị trường Hàn/Mỹ/TBN" — gốc bệnh là thi_truong bảng
+  TOÀN CỤC không có liên kết ngách↔thị trường. Sửa: danh bạ migration 002 bảng
+  ngach_thi_truong (ngách mới = 0 thị trường, dat_thi_truong_ngach thay cả tập) +
+  BACKFILL từ thực tế kênh đang đứng (LIFE IN→US+Spain, OLD→US, Korea không dính
+  ngách nào); General→Niches thêm cột Markets + checkbox chọn trong modal; DA
+  dashboard pills/dropdown New report lọc theo thị trường CỦA ngách (thay lệnh
+  "liệt kê đủ danh bạ" sáng cùng ngày), tạo report chặn 400 khi thị trường chưa
+  thuộc ngách — DA KHÔNG tự ghi danh bạ (Luật một chiều). LƯU Ý phiên song song:
+  main.py/CLAUDE.md commit theo HUNK, 4 fail test_khung_app/test_radary là nền dở
+  của phiên khác (stash đối chứng), iam.db test đã bị thay máu còn 2 tài khoản —
+  nghiệm thu gateway bằng IAM cách ly + danh bạ thật.
