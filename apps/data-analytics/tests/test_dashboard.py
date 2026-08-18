@@ -166,6 +166,10 @@ def test_kenh_pane_tile_va_benchmark(client, monkeypatch):
     assert "500.000" in body and "5.1%" in body               # tile từ metrics_chinh
     assert "Full analysis" in body
     assert "3.071" in body and "128.885" in body              # dải so-ngách từ snapshot niche
+    # REPORT LIST cuối kênh (user 18/08): đủ cả bản cũ + link Full analysis từng bản
+    assert ">Reports<" in body and "Tuần 33" in body
+    assert "/bao-cao-lich-su/r-cu" in body and "/bao-cao-lich-su/r-moi" in body
+    assert "đang xem" in body                                 # đánh dấu bản đang mở
     assert "chỉ hiện số tóm tắt" in body                      # file gốc không có → lý do, không vỡ
     assert "— 💰" in body or "chưa bật kiếm tiền" in body     # tile doanh thu van chống bịa
 
