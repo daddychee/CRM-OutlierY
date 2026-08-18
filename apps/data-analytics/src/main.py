@@ -511,3 +511,5 @@ def bao_cao_tai_goc(bao_cao_id: str, user: dict = Depends(yeu_cau_data_analytics
 # ---------- dashboard Niche (module gộp — src/dashboard.py) ----------
 from src.dashboard import router as _dashboard_router  # noqa: E402
 app.include_router(_dashboard_router)
+from src.agent_api import router as _agent_router  # noqa: E402 — cau noi AI Agent (phuong an 2)
+app.include_router(_agent_router)
