@@ -58,6 +58,15 @@
    "muc_quy": "vang",
    "backup": "api-snapshot",
    "giu": "7-ban"
+  },
+  {
+   "ten": "nas-dong-bo",
+   "loai": "json",
+   "duong": "data/nen/nas-dong-bo.json",
+   "muc_quy": "bac",
+   "backup": "copy",
+   "giu": "vinh-vien",
+   "ghi_chu": "Sổ trạng thái đồng bộ tài khoản NAS Windows theo người (nen/common/nas_sync.py, gateway gọi lúc đăng nhập/tự đổi mật khẩu). Mất sổ này KHÔNG mất tài khoản Windows đã tạo — chỉ mất cache 'đã đồng bộ chưa', tự dựng lại ở lượt đăng nhập kế tiếp."
   }
  ],
  "apps": [
@@ -138,7 +147,9 @@
     "/chan-doan",
     "/bao-cao-lich-su",
     "/bao-cao-goc",
-    "/api/bao-cao-lich-su"
+    "/api/bao-cao-lich-su",
+    "/niche",
+    "/api/agent"
    ],
    "health": "/health",
    "phien_ban": "2.0.0",
