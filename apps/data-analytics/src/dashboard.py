@@ -132,10 +132,14 @@ def trang_niche(request: Request, user: dict = Depends(_lay_user),
         mapping = _map_projects().get(ngach_hien["ma"], {})
         for tt_ma, project in mapping.items():
             tom_tat = niche_bridge.tom_tat_overall(project, ngay)
+            from src import gates as gates_mod
             thi_truong.append({"ma": tt_ma, "ten": ten_tt.get(tt_ma, tt_ma),
                                "project": project, "so": tom_tat,
                                "radar": _radar_points(tom_tat.get("tru_diem") or {}),
-                               "scatter": _scatter_beachhead(tom_tat.get("beachhead") or [])})
+                               "scatter": _scatter_beachhead(tom_tat.get("beachhead") or []),
+                               "gates": gates_mod.trang_thai(
+                                   ngach_hien["ma"], tt_ma,
+                                   tom_tat.get("co_bao_cao", False), user["level"])})
             for d in (tom_tat.get("ds_snapshot") or []):
                 if d not in ds_ngay:
                     ds_ngay.append(d)
@@ -235,6 +239,22 @@ def chay_trang_thai(project: str, user: dict = Depends(_lay_user)):
         return niche_run.trang_thai(project, user)
     except Exception as e:
         raise HTTPException(502, f"Niche service không phản hồi: {e}")
+
+
+# ---------- gate ký ----------
+
+@router.post("/niche/gate/{ngach_ma}/{tt_ma}/{gate}")
+def ky_gate(ngach_ma: str, tt_ma: str, gate: str, user: dict = Depends(_lay_user),
+            phuong_an: str = Form(""), ghi_chu: str = Form("")):
+    from src import gates as gates_mod
+    try:
+        return gates_mod.ky(ngach_ma, tt_ma, gate, user, phuong_an, ghi_chu)
+    except KeyError:
+        raise HTTPException(404, "Gate không tồn tại.")
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+    except PermissionError as e:
+        raise HTTPException(403, str(e))
 
 
 # ---------- pane KÊNH ----------
