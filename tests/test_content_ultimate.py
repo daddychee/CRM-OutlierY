@@ -115,7 +115,9 @@ def test_di_tru_khoa_content_idempotent(tmp_path, monkeypatch):
         assert len(cp["lay_transcript"]["khoa"]) == 1 and len(cp["lay_comment"]["khoa"]) == 1
         assert mod.di_tru(env, c) == []                 # idempotent
         assert len(ket.liet_ke_api_keys(c)) == 3        # ADMIN_USERS/HTPASSWD không vào
-        assert not any("sk-glm" in str(v) for k in ket.liet_ke_api_keys(c)
+        # không TOÀN BỘ plaintext ra UI (dau 10 là lộ có chủ đích từ 18/08 —
+        # LUẬT cấm lộ trọn khóa, không phải cấm prefix)
+        assert not any("sk-glm-1111" in str(v) for k in ket.liet_ke_api_keys(c)
                        for v in k.values())
     finally:
         c.close()

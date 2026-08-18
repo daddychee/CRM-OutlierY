@@ -66,8 +66,8 @@ def test_owner_luu_vai_llm_va_key_write_only(client):
     assert r.status_code == 303
     trang = client.get("/general/api-keys").text     # migration chạy lúc mở trang
     assert "glm-4.5-air" in trang
-    assert "sk-···9999" in trang          # dau···duoi (Owner chốt 17/08)
-    assert "sk-that-9999" not in trang    # KHÔNG bao giờ hiện lại key
+    assert "sk-that-99···9999" in trang   # dau(10)···duoi (Owner phê lần 4)
+    assert "sk-that-9999" not in trang    # KHÔNG bao giờ hiện lại key trọn
     conn = ket.ket_noi()
     assert len(ket.liet_ke_api_keys(conn)) == 1      # mục cũ → 1 khóa LLM
     assert ket.doc_cap_phat(conn)["ai-agent"]["writer"]["khoa"] == ["api-001"]
@@ -91,10 +91,10 @@ def test_trang_api_keys_them_thu_hoi_cap_phat(client):
     (trả nợ 'két không vết' — DE.md 3b)."""
     _login(client, "owner-test", "mk-test")
     r = client.post("/general/api-keys/add", data={
-        "loai_chon": "llm:glm", "khoa": "sk-ui-2468", "model": "glm-4.5-air"})
+        "loai_chon": "llm:glm", "khoa": "sk-ui-kiemthu-2468", "model": "glm-4.5-air"})
     assert r.status_code == 303 and "bao=" in r.headers["location"]
     trang = client.get("/general/api-keys").text
-    assert "sk-···2468" in trang and "sk-ui-2468" not in trang
+    assert "sk-ui-kiem···2468" in trang and "sk-ui-kiemthu-2468" not in trang
 
     r = client.post("/general/api-keys/cap-phat", data={     # cấp cho việc hợp đồng
         "app_slug": "ai-agent", "viec": "writer", "them": "api-001"})
@@ -121,7 +121,8 @@ def test_trang_api_keys_them_thu_hoi_cap_phat(client):
     conn.close()
     assert "api_key_them" in hd and "api_cap_phat" in hd and "api_key_thu_hoi" in hd
     nk = iam.ket_noi()
-    assert not any("sk-ui-2468" in d["chi_tiet"] for d in iam.doc_nhat_ky(nk, 20))
+    assert not any("sk-ui-kiemthu-2468" in d["chi_tiet"]
+                   for d in iam.doc_nhat_ky(nk, 20))
     nk.close()                                               # audit không chứa key
 
 
@@ -141,7 +142,7 @@ def test_assigned_keys_show_more_server_side(client):
     trang = client.get("/general/api-keys?tab=app&app=radary").text
     assert 'class="khoa-list"' in trang
     assert trang.count('class="khoa-dong"') == 5
-    assert "AIz···" in trang                           # dau···duoi, không ••••duoi
+    assert "AIzaKhoaTh···" in trang                    # dau(10)···duoi, không ••••duoi
     assert "••••" not in trang
     assert ">Show more (2)</a>" in trang
     # Jinja escape & thành &amp; trong thuộc tính — trình duyệt đọc lại thành &
@@ -171,6 +172,68 @@ def test_assigned_keys_show_more_server_side(client):
     assert "Show more" not in trang and "Show less" not in trang
 
 
+def test_redirect_giu_vi_tri_va_modal_revoke(client):
+    """Owner phê lần 4 ('ấn vào quay về đầu trang'): (a) mọi POST đọc ve_tab/
+    ve_app/ve_mo_rong từ form → redirect về ĐÚNG chỗ đang đứng, nhánh lỗi cũng
+    vậy; form cũ không mang field → hành vi cũ. (b) Revoke đổi sang MODAL xác
+    nhận dùng chung — ô inline 'tail' bé xíu bị bỏ hẳn."""
+    _login(client, "owner-test", "mk-test")
+    conn = ket.ket_noi()
+    kid = ket.them_api_key(conn, "llm", "sk-llm-redirect-9012", nha="glm")
+    conn.close()
+
+    # (a) redirect giữ vị trí — cap-phat từ tab app đang mở rộng writer
+    r = client.post("/general/api-keys/cap-phat", data={
+        "app_slug": "ai-agent", "viec": "writer", "them": kid,
+        "ve_tab": "app", "ve_app": "ai-agent", "ve_mo_rong": "writer"})
+    loc = r.headers["location"]
+    assert "tab=app" in loc and "app=ai-agent" in loc and "mo_rong=writer" in loc
+    r = client.post("/general/api-keys/model", data={
+        "id": kid, "model": "glm-5", "ve_tab": "api"})
+    assert r.headers["location"].startswith("/general/api-keys?tab=api")
+    # nhánh LỖI giữ nguyên vị trí (gõ sai đuôi trong modal)
+    r = client.post("/general/api-keys/revoke", data={
+        "id": kid, "go_lai": "sai!", "ve_tab": "api"})
+    loc = r.headers["location"]
+    assert "tab=api" in loc and "loi=" in loc
+    # form CŨ không mang ve_* (trang mở trước khi vá) — cap-phat lùi về tab app
+    r = client.post("/general/api-keys/cap-phat", data={
+        "app_slug": "ai-agent", "viec": "writer", "go": kid})
+    assert "tab=app" in r.headers["location"] and "app=ai-agent" in r.headers["location"]
+
+    # (b) modal revoke: nút mỗi dòng type=button mở modal, KHÔNG còn ô inline
+    trang = client.get("/general/api-keys").text
+    assert f'data-thu-hoi="{kid}"' in trang
+    assert 'id="md-revoke"' in trang and 'id="rv-go-lai"' in trang
+    assert trang.count('name="go_lai"') == 1          # DUY NHẤT trong modal
+    # chip giãn hết cột — hết khoảng chết giữa chip khóa và nút ✕ (lỗi 2a)
+    assert ".khoa-dong .chip-o{flex:1;text-align:left}" in trang
+
+
+def test_model_chi_hien_cho_llm_generate(client):
+    """Owner phê lần 4 ('tự bịa đúng không?'): ô model CHỈ có ở loại llm/generate
+    — task transcript KHÔNG có input model (loại này không có khái niệm model);
+    input model còn lại autocomplete=off (chặn trình duyệt gợi ý lịch sử bậy)."""
+    _login(client, "owner-test", "mk-test")
+    conn = ket.ket_noi()
+    ket.them_api_key(conn, "transcript", "tr-abcdefgh-9999")
+    ket.them_api_key(conn, "llm", "sk-llm-abcdef-8888", nha="glm")
+    conn.close()
+
+    # tab 2: content-ultimate có cả task llm (2) + transcript + youtube trong
+    # contract → đúng 2 input model (chỉ 2 task llm), có autocomplete=off
+    trang = client.get("/general/api-keys?tab=app&app=content-ultimate").text
+    assert trang.count('name="model"') == 2
+    assert 'autocomplete="off"' in trang
+
+    # tab 1: bảng YouTube Transcript (đứng CUỐI danh sách loại) không còn form
+    # đổi model — form model chỉ nằm trong các khối llm/generate phía trên
+    trang = client.get("/general/api-keys").text
+    assert 'action="/general/api-keys/model"' in trang
+    khoi_transcript = trang.split("YouTube Transcript", 1)[1]
+    assert 'action="/general/api-keys/model"' not in khoi_transcript
+
+
 def test_api_keys_va_permissions_khong_cache(client):
     """Owner nghi cache trình duyệt khi thấy UI cũ ở 2 trang sửa liên tục —
     no-store cho mọi đường render (GET lẫn POST-lỗi trực tiếp của Permissions)."""
@@ -195,7 +258,7 @@ def test_tab1_generate_nhom_theo_nha_va_modal_2_option(client):
     trang = client.get("/general/api-keys").text
     assert "Generate Video/Image API" in trang          # đúng 4 khối: youtube/llm/generate/transcript
     assert "VEO (Google Flow)" in trang and "Seedream" in trang   # nhóm theo nhà, khuôn LLM
-    assert "flo···1234" in trang and "see···5678" in trang
+    assert "flow-that-···1234" in trang and "seed-that-···5678" in trang
     assert "YouTube Transcript" in trang
     assert "VEO (Google Flow) (Google Flow)" not in trang          # không lặp nhãn cũ
 
@@ -210,7 +273,7 @@ def test_tab1_generate_nhom_theo_nha_va_modal_2_option(client):
     conn = ket.ket_noi()
     ds = ket.liet_ke_api_keys(conn)
     conn.close()
-    muc = next(k for k in ds if k["dau"] == "flo" and k["duoi"] == "a-ui")
+    muc = next(k for k in ds if k["dau"] == "flow-them-" and k["duoi"] == "a-ui")
     assert muc["loai"] == "generate" and muc["nha"] == "veo"     # partition(":") sinh generic ăn luôn
 
 

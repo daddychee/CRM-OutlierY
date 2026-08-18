@@ -1084,11 +1084,30 @@ def _audit_api(user: dict, hanh_dong: str, chi_tiet: str) -> None:
         conn.close()
 
 
+def _ve_api_keys(ve_tab: str = "", ve_app: str = "", ve_mo_rong: str = "",
+                 bao: str = "", loi: str = "") -> RedirectResponse:
+    """Redirect về ĐÚNG chỗ đang đứng trên trang API Keys. Owner phê lần 4
+    (18/08): redirect trần mất tab/app/mo_rong — mọi thao tác đều bị ném về tab
+    1 đầu trang. Mọi form mang hidden ve_tab/ve_app/ve_mo_rong (macro ve_fields
+    trong template); param rỗng bị bỏ cho URL gọn."""
+    phan = [p for p in (
+        f"tab={quote(ve_tab)}" if ve_tab else "",
+        f"app={quote(ve_app)}" if ve_app else "",
+        f"mo_rong={quote(ve_mo_rong)}" if ve_mo_rong else "",
+        "bao=" + quote(bao) if bao else "",
+        "loi=" + quote(loi) if loi else "") if p]
+    return RedirectResponse(
+        "/general/api-keys" + ("?" + "&".join(phan) if phan else ""),
+        status_code=303)
+
+
 @app.post("/general/api-keys/add")
 def nen_api_keys_them(request: Request, loai_chon: str = Form(...),
-                      khoa: str = Form(...), model: str = Form("")):
-    """Thêm khóa: loai_chon = youtube | llm:<nhà> | veo | seedream. Ô khóa
-    WRITE-ONLY — lưu xong không bao giờ render lại; audit chỉ ghi đuôi."""
+                      khoa: str = Form(...), model: str = Form(""),
+                      ve_tab: str = Form(""), ve_app: str = Form(""),
+                      ve_mo_rong: str = Form("")):
+    """Thêm khóa: loai_chon = youtube | llm:<nhà> | generate:<nhà> | transcript.
+    Ô khóa WRITE-ONLY — lưu xong không bao giờ render lại; audit chỉ ghi đuôi."""
     user = _gate_nen(request, quyen="ket_cau_hinh")
     if isinstance(user, Response):
         return user
@@ -1097,22 +1116,21 @@ def nen_api_keys_them(request: Request, loai_chon: str = Form(...),
     try:
         kid = ket.them_api_key(conn, loai, khoa, nha=nha, model=model)
     except ValueError as e:
-        return RedirectResponse("/general/api-keys?loi=" + quote(str(e)),
-                                status_code=303)
+        return _ve_api_keys(ve_tab, ve_app, ve_mo_rong, loi=str(e))
     finally:
         conn.close()
     _audit_api(user, "api_key_them",
                f"{kid} {loai}{('/' + nha) if nha else ''} ••••{khoa.strip()[-4:]}")
-    return RedirectResponse(
-        f"/general/api-keys?bao=" + quote(f"Added key {kid} (••••{khoa.strip()[-4:]})."),
-        status_code=303)
+    return _ve_api_keys(ve_tab, ve_app, ve_mo_rong,
+                        bao=f"Added key {kid} (••••{khoa.strip()[-4:]}).")
 
 
 @app.post("/general/api-keys/revoke")
 def nen_api_keys_thu_hoi(request: Request, id: str = Form(...),
-                         go_lai: str = Form("")):
-    """Thu hồi có xác nhận (gõ lại ĐUÔI 4): xóa bí mật + gỡ khỏi mọi cấp phát +
-    vết audit; KHÔNG xóa lịch sử quota log."""
+                         go_lai: str = Form(""), ve_tab: str = Form(""),
+                         ve_app: str = Form(""), ve_mo_rong: str = Form("")):
+    """Thu hồi có xác nhận (gõ lại ĐUÔI 4 trong MODAL): xóa bí mật + gỡ khỏi mọi
+    cấp phát + vết audit; KHÔNG xóa lịch sử quota log."""
     user = _gate_nen(request, quyen="ket_cau_hinh")
     if isinstance(user, Response):
         return user
@@ -1120,66 +1138,62 @@ def nen_api_keys_thu_hoi(request: Request, id: str = Form(...),
     try:
         muc = next((k for k in ket.liet_ke_api_keys(conn) if k["id"] == id), None)
         if not muc:
-            return RedirectResponse("/general/api-keys?loi=No+such+key.",
-                                    status_code=303)
+            return _ve_api_keys(ve_tab, ve_app, ve_mo_rong, loi="No such key.")
         if go_lai.strip() != muc["duoi"]:
-            return RedirectResponse(
-                "/general/api-keys?loi=" + quote("To revoke, retype the 4-char key tail."),
-                status_code=303)
+            return _ve_api_keys(ve_tab, ve_app, ve_mo_rong,
+                                loi="To revoke, retype the 4-char key tail.")
         ket.thu_hoi_api_key(conn, id)
     finally:
         conn.close()
     _audit_api(user, "api_key_thu_hoi", f"{id} ••••{muc['duoi']}")
-    return RedirectResponse(
-        "/general/api-keys?bao=" + quote(f"Revoked {id} (••••{muc['duoi']})."),
-        status_code=303)
+    return _ve_api_keys(ve_tab, ve_app, ve_mo_rong,
+                        bao=f"Revoked {id} (••••{muc['duoi']}).")
 
 
 @app.post("/general/api-keys/model")
 def nen_api_keys_model(request: Request, id: str = Form(...),
-                       model: str = Form("")):
+                       model: str = Form(""), ve_tab: str = Form(""),
+                       ve_app: str = Form(""), ve_mo_rong: str = Form("")):
     user = _gate_nen(request, quyen="ket_cau_hinh")
     if isinstance(user, Response):
         return user
     conn = ket.ket_noi()
     try:
         if not ket.lay_cau_hinh(conn, f"api.{id}.loai"):
-            return RedirectResponse("/general/api-keys?loi=No+such+key.",
-                                    status_code=303)
+            return _ve_api_keys(ve_tab, ve_app, ve_mo_rong, loi="No such key.")
         ket.dat_cau_hinh(conn, f"api.{id}.model", model.strip())
     finally:
         conn.close()
     _audit_api(user, "api_key_model", f"{id} = {model.strip()}")
-    return RedirectResponse("/general/api-keys?bao=" + quote(f"Model saved for {id}."),
-                            status_code=303)
+    return _ve_api_keys(ve_tab, ve_app, ve_mo_rong, bao=f"Model saved for {id}.")
 
 
 @app.post("/general/api-keys/cap-phat")
 def nen_api_keys_cap_phat(request: Request, app_slug: str = Form(...),
                           viec: str = Form(...), them: str = Form(""),
                           go: str = Form(""), che_do: str = Form(""),
-                          model: str = Form("")):
+                          model: str = Form(""), ve_tab: str = Form(""),
+                          ve_app: str = Form(""), ve_mo_rong: str = Form("")):
     """MỘT route cho 3 thao tác của một VIỆC: + khóa (them) / gỡ × (go) / Lưu
     chế độ + model. Khóa thêm phải ĐÚNG LOẠI API của việc (theo hợp đồng)."""
     user = _gate_nen(request, quyen="ket_cau_hinh")
     if isinstance(user, Response):
         return user
+    # form cũ (mở trước khi thêm ve_*) không mang field → giữ hành vi cũ tab app
+    ve_tab, ve_app = ve_tab or "app", ve_app or app_slug
     viec_api = _viec_api_cua()
     muc_viec = next((v for v in viec_api.get(app_slug, {}).get("viec", [])
                      if v["ma"] == viec), None)
     if not muc_viec:
-        return RedirectResponse("/general/api-keys?tab=app&loi=Unknown+app+task.",
-                                status_code=303)
-    ve_lai = f"/general/api-keys?tab=app&app={app_slug}"
+        return _ve_api_keys(ve_tab, ve_app, ve_mo_rong, loi="Unknown app task.")
     conn = ket.ket_noi()
     try:
         hien = ket.doc_cap_phat(conn).get(app_slug, {}).get(viec, {})
         ids = list(hien.get("khoa", []))
         if them:
             if ket.lay_cau_hinh(conn, f"api.{them}.loai") != muc_viec["loai"]:
-                return RedirectResponse(
-                    ve_lai + "&loi=" + quote("Key type does not match this task."),
-                    status_code=303)
+                return _ve_api_keys(ve_tab, ve_app, ve_mo_rong,
+                                    loi="Key type does not match this task.")
             if them not in ids:
                 ids.append(them)
         if go:
@@ -1192,8 +1206,7 @@ def nen_api_keys_cap_phat(request: Request, app_slug: str = Form(...),
     _audit_api(user, "api_cap_phat",
                f"{app_slug}/{viec} = {muc['khoa']} {muc['che_do']}"
                + (f" model={muc['model']}" if muc.get("model") else ""))
-    return RedirectResponse(ve_lai + "&bao=" + quote(f"Saved {viec}."),
-                            status_code=303)
+    return _ve_api_keys(ve_tab, ve_app, ve_mo_rong, bao=f"Saved {viec}.")
 
 
 @app.get("/general/api-keys/export")

@@ -19,9 +19,13 @@
   .usage i.cao{background:var(--loi)}
   .khoa-list{display:flex;flex-direction:column;gap:4px}
   .khoa-list form.khoa-dong{display:flex;justify-content:space-between;align-items:center;gap:8px}
+  .khoa-dong .chip-o{flex:1;text-align:left}
 </style>
 
 {% macro khoa_ngan(dau, duoi) %}{{ dau }}···{{ duoi }}{% endmacro %}
+{# ve_fields: MỌI form POST mang vị trí đang đứng (tab/app/mo_rong) để handler
+   redirect về ĐÚNG chỗ — Owner phê lần 4 "ấn vào quay về đầu trang". #}
+{% macro ve_fields() %}<input type="hidden" name="ve_tab" value="{{ tab }}">{% if tab == 'app' %}<input type="hidden" name="ve_app" value="{{ app_chon }}"><input type="hidden" name="ve_mo_rong" value="{{ mo_rong | sort | join(',') }}">{% endif %}{% endmacro %}
 
 <div class="toolbar" style="margin-top:2px">
   <span class="steps">
@@ -41,8 +45,10 @@
 {% for loai, ten in ten_loai.items() %}
 <h2>{{ ten }} <span class="badge {% if theo_loai[loai] %}ok{% endif %}">{{ theo_loai[loai] | length }} key{{ 's' if theo_loai[loai] | length != 1 }}</span></h2>
 <table class="gon">
+  {# Model CHỈ có nghĩa với loại llm/generate (= nha_por_loai) — Owner phê lần 4:
+     transcript/youtube hiện ô model là "tự bịa". #}
   <tr>{% if loai in nha_por_loai %}<th>Provider</th>{% else %}<th>#</th>{% endif %}
-    <th>Key (tail)</th>{% if loai != 'youtube' %}<th>Model</th>{% endif %}
+    <th>Key (tail)</th>{% if loai in nha_por_loai %}<th>Model</th>{% endif %}
     <th>Calls today</th>{% if loai == 'youtube' %}<th>Usage</th>{% endif %}
     <th>Status</th><th>Added</th><th></th></tr>
   {% if loai in nha_por_loai %}
@@ -53,6 +59,7 @@
         <td><span class="chip-o">{{ khoa_ngan(k.dau, k.duoi) }}</span></td>
         <td>
           <form class="dong" method="post" action="/general/api-keys/model">
+            {{ ve_fields() }}
             <input type="hidden" name="id" value="{{ k.id }}">
             <select name="model" onchange="this.form.submit()">
               <option value="{{ k.model }}" selected>{{ k.model or '—' }}</option>
@@ -65,11 +72,8 @@
         <td>{% if k.id in dang_dung %}<span class="badge ok">in use</span>{% else %}<span class="badge">idle</span>{% endif %}</td>
         <td class="phu">{{ k.ngay or '—' }}</td>
         <td>
-          <form class="dong" method="post" action="/general/api-keys/revoke">
-            <input type="hidden" name="id" value="{{ k.id }}">
-            <input name="go_lai" size="5" placeholder="tail">
-            <button class="nguy" style="padding:3px 10px">Revoke</button>
-          </form></td></tr>
+          <button type="button" class="nguy" style="padding:3px 10px"
+                  data-thu-hoi="{{ k.id }}" data-khoa="{{ khoa_ngan(k.dau, k.duoi) }}">Revoke</button></td></tr>
       {% endfor %}
       {% if theo_loai[loai] | selectattr('nha', 'equalto', nha) | list | length == 0 %}
       <tr><td>{{ nha_info_cuc[nha].ten }}</td><td><span class="badge">no key yet</span></td>
@@ -80,18 +84,6 @@
     {% for k in theo_loai[loai] %}
     <tr><td>{{ loop.index }}</td>
       <td><span class="chip-o">{{ khoa_ngan(k.dau, k.duoi) }}</span></td>
-      {% if loai != 'youtube' %}
-      <td>
-        <form class="dong" method="post" action="/general/api-keys/model">
-          <input type="hidden" name="id" value="{{ k.id }}">
-          <select name="model" onchange="this.form.submit()">
-            <option value="{{ k.model }}" selected>{{ k.model or '—' }}</option>
-            {% for m in model_goi_y.get(loai, []) if m != k.model %}
-            <option value="{{ m }}">{{ m }}</option>
-            {% endfor %}
-          </select>
-        </form></td>
-      {% endif %}
       <td>{{ luot.get(k.duoi, 0) }}</td>
       {% if loai == 'youtube' %}
       {% set pct = ((luot.get(k.duoi, 0) * 100 / 10000) | round | int) %}
@@ -100,13 +92,10 @@
       <td>{% if k.id in dang_dung %}<span class="badge ok">in use</span>{% else %}<span class="badge">idle</span>{% endif %}</td>
       <td class="phu">{{ k.ngay or '—' }}</td>
       <td>
-        <form class="dong" method="post" action="/general/api-keys/revoke">
-          <input type="hidden" name="id" value="{{ k.id }}">
-          <input name="go_lai" size="5" placeholder="tail">
-          <button class="nguy" style="padding:3px 10px">Revoke</button>
-        </form></td></tr>
+        <button type="button" class="nguy" style="padding:3px 10px"
+                data-thu-hoi="{{ k.id }}" data-khoa="{{ khoa_ngan(k.dau, k.duoi) }}">Revoke</button></td></tr>
     {% else %}
-    <tr><td colspan="{{ 8 if loai == 'youtube' else 7 }}" class="phu">No key yet.</td></tr>
+    <tr><td colspan="{{ 7 if loai == 'youtube' else 6 }}" class="phu">No key yet.</td></tr>
     {% endfor %}
   {% endif %}
 </table>
@@ -118,6 +107,7 @@
     <h3>Add API key
       <button type="button" class="dong-x" data-dong="md-key" aria-label="Close">✕</button></h3>
     <form method="post" action="/general/api-keys/add">
+      {{ ve_fields() }}
       <div class="form-grid">
         <div><label>API type</label><select name="loai_chon">
           <option value="youtube">YouTube Data v3</option>
@@ -131,10 +121,30 @@
           <option value="transcript">YouTube Transcript</option>
         </select></div>
         <div><label>Key (never shown again)</label><input name="khoa" type="password" required></div>
-        <div><label>Default model</label><input name="model"></div>
+        <div><label>Default model</label><input name="model" autocomplete="off"></div>
       </div>
       <div style="margin-top:14px"><button>Save key</button>
         <button type="button" class="phu" data-dong="md-key">Cancel</button></div>
+    </form>
+  </div>
+</div>
+
+{# ===== MODAL Revoke dùng chung (Owner phê lần 4: ô inline "tail" bé xíu không
+   ai nhận ra phải gõ trước — giờ nút Revoke mở modal xác nhận; route + field
+   server GIỮ NGUYÊN, JS chỉ đổ id + chuỗi khóa vào). ===== #}
+<div class="modal-bg" id="md-revoke">
+  <div class="modal">
+    <h3>Revoke key <span class="chip-o" id="rv-khoa"></span>
+      <button type="button" class="dong-x" data-dong="md-revoke" aria-label="Close">✕</button></h3>
+    <form method="post" action="/general/api-keys/revoke">
+      {{ ve_fields() }}
+      <input type="hidden" name="id" id="rv-id" value="">
+      <div class="form-grid">
+        <div><label>Type the 4-char tail to confirm</label>
+          <input name="go_lai" id="rv-go-lai" autocomplete="off" required></div>
+      </div>
+      <div style="margin-top:14px"><button class="nguy">Revoke</button>
+        <button type="button" class="phu" data-dong="md-revoke">Cancel</button></div>
     </form>
   </div>
 </div>
@@ -164,6 +174,7 @@
       {% for kid in (ids if day_du else ids[:5]) %}
         {% for k in keys if k.id == kid %}
         <form class="khoa-dong" method="post" action="/general/api-keys/cap-phat">
+          {{ ve_fields() }}
           <input type="hidden" name="app_slug" value="{{ app_chon }}">
           <input type="hidden" name="viec" value="{{ v.ma }}">
           <input type="hidden" name="go" value="{{ kid }}">
@@ -180,6 +191,7 @@
       {% set con_lai = keys | selectattr('loai', 'equalto', v.loai) | rejectattr('id', 'in', ids) | list %}
       {% if con_lai %}
       <form class="dong" method="post" action="/general/api-keys/cap-phat">
+        {{ ve_fields() }}
         <input type="hidden" name="app_slug" value="{{ app_chon }}">
         <input type="hidden" name="viec" value="{{ v.ma }}">
         <select name="them">
@@ -195,10 +207,13 @@
     </td>
     <td>{% if ids | length > 1 %}<span class="badge warn">{{ {'xoay_vong': 'rotate', 'du_phong': 'failover'}.get(muc.get('che_do'), 'rotate') }} · {{ ids | length }} keys</span>
         {% elif ids %}<span class="badge">single key</span>{% else %}—{% endif %}</td>
-    <td>{{ muc.get('model') or '—' }}</td>
+    {# Model CHỈ có nghĩa với llm/generate — Owner phê lần 4: task transcript
+       hiện ô model (kèm gợi ý GLM từ autocomplete trình duyệt) là "tự bịa". #}
+    <td>{% if v.loai in ('llm', 'generate') %}{{ muc.get('model') or '—' }}{% else %}—{% endif %}</td>
     <td class="phu">{{ muc.get('ngay') or '—' }}</td>
     <td>
       <form class="dong" method="post" action="/general/api-keys/cap-phat">
+        {{ ve_fields() }}
         <input type="hidden" name="app_slug" value="{{ app_chon }}">
         <input type="hidden" name="viec" value="{{ v.ma }}">
         {% if ids | length > 1 %}
@@ -207,8 +222,8 @@
           <option value="du_phong"{% if muc.get('che_do') == 'du_phong' %} selected{% endif %}>failover</option>
         </select>
         {% endif %}
-        {% if v.loai != 'youtube' %}
-        <input name="model" size="13" placeholder="model" value="{{ muc.get('model', '') }}">
+        {% if v.loai in ('llm', 'generate') %}
+        <input name="model" size="13" placeholder="model" autocomplete="off" value="{{ muc.get('model', '') }}">
         {% endif %}
         <button style="padding:3px 12px">Save</button>
       </form></td></tr>
@@ -276,6 +291,19 @@
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape') document.querySelectorAll('.modal-bg.show').forEach(
       function (bg) { bg.classList.remove('show'); });
+  });
+
+  // Revoke: nút mỗi dòng mở MODAL xác nhận dùng chung — JS chỉ đổ id + chuỗi
+  // khóa vào; route/field server giữ nguyên (validate gõ lại đuôi ở server).
+  document.querySelectorAll('[data-thu-hoi]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      document.getElementById('rv-id').value = b.dataset.thuHoi;
+      document.getElementById('rv-khoa').textContent = b.dataset.khoa;
+      var o = document.getElementById('rv-go-lai');
+      o.value = '';
+      document.getElementById('md-revoke').classList.add('show');
+      o.focus();
+    });
   });
 })();
 </script>

@@ -170,5 +170,9 @@ def test_di_tru_khoa_radary_idempotent_dung_ngan(ket_tmp, tmp_path):
     assert cp["quet_dinh_ky"]["che_do"] == "xoay_vong"
     assert mod.di_tru(db, sk, c) == []              # idempotent — marker chặn nạp đôi
     assert len(ket.liet_ke_api_keys(c)) == 3
-    assert not any("AIza-" in str(v) for k in ket.liet_ke_api_keys(c)
-                   for v in k.values())             # không plaintext ra UI
+    # không TOÀN BỘ plaintext ra UI (dau 10 + duoi 4 là lộ CÓ CHỦ ĐÍCH từ 18/08
+    # — LUẬT là cấm lộ trọn khóa, không phải cấm prefix)
+    assert not any(kt in str(v)
+                   for kt in ("AIza-harvest-1111", "AIza-scan-2222",
+                              "AIza-scan-tran-3333")
+                   for k in ket.liet_ke_api_keys(c) for v in k.values())

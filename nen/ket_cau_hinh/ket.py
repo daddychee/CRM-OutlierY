@@ -90,7 +90,7 @@ def dat_bi_mat(conn: sqlite3.Connection, khoa: str, gia_tri: str) -> None:
             "INSERT INTO bi_mat (khoa, gia_tri_ma, duoi, dau, sua_luc) VALUES (?,?,?,?,?) "
             "ON CONFLICT(khoa) DO UPDATE SET gia_tri_ma=excluded.gia_tri_ma, "
             "duoi=excluded.duoi, dau=excluded.dau, sua_luc=excluded.sua_luc",
-            (khoa, ma, gia_tri[-4:], gia_tri[:3], _gio()))
+            (khoa, ma, gia_tri[-4:], gia_tri[:DAU_DAI], _gio()))
 
 
 def lay_bi_mat(conn: sqlite3.Connection, khoa: str) -> str | None:
@@ -111,13 +111,21 @@ def liet_ke(conn: sqlite3.Connection) -> dict:
     }
 
 
+# Độ dài phần ĐẦU khóa hiển thị. Owner phê lần 4 (18/08): 3 ký tự VÔ DỤNG với
+# 19 khóa Google cùng bắt đầu "AIz" — nâng 10; khóa 39 ký tự lộ 10+4=14 còn ẩn
+# 25 (chấp nhận cho công cụ nội bộ LAN, đổi lại phân biệt được từng khóa).
+DAU_DAI = 10
+
+
 def backfill_dau_khoa(conn: sqlite3.Connection) -> int:
-    """Backfill MỘT LẦN cột 'dau' cho khóa nạp TRƯỚC migration 002 (dau rỗng).
-    Idempotent: chỉ xử lý dòng dau='' → lần sau SELECT rỗng, không giải mã lại.
-    Giải mã CHỈ để cắt 3 ký tự đầu — TUYỆT ĐỐI không log/in giá trị đầy đủ ở bất
-    cứ đâu; KHÔNG đụng gia_tri_ma/sua_luc. Gọi mỗi lần mở trang API Keys (khuôn
-    di_tru_llm_cu — rẻ vì hàng đã có dau bị SELECT loại ngay, không decrypt lại)."""
-    rows = conn.execute("SELECT khoa, gia_tri_ma FROM bi_mat WHERE dau=''").fetchall()
+    """Backfill cột 'dau' cho khóa nạp trước migration 002 (dau rỗng) HOẶC trước
+    khi nâng DAU_DAI 3→10 (v2, 18/08 — dòng dau ngắn được giải mã tính lại).
+    Idempotent: dòng đã đủ DAU_DAI bị SELECT loại ngay, không giải mã lại; giá
+    trị tính ra không đổi → không UPDATE, không đếm. Giải mã CHỈ để cắt DAU_DAI
+    ký tự đầu — TUYỆT ĐỐI không log/in giá trị đầy đủ ở bất cứ đâu; KHÔNG đụng
+    gia_tri_ma/sua_luc. Gọi mỗi lần mở trang API Keys (khuôn di_tru_llm_cu)."""
+    rows = conn.execute("SELECT khoa, gia_tri_ma, dau FROM bi_mat "
+                        "WHERE length(dau) < ?", (DAU_DAI,)).fetchall()
     if not rows:
         return 0
     f = _fernet()
@@ -128,8 +136,10 @@ def backfill_dau_khoa(conn: sqlite3.Connection) -> int:
                 plaintext = f.decrypt(r["gia_tri_ma"].encode("ascii")).decode("utf-8")
             except Exception:
                 continue   # khóa hỏng/không giải mã được — bỏ qua, không chết cả đợt
-            conn.execute("UPDATE bi_mat SET dau=? WHERE khoa=?",
-                        (plaintext[:3], r["khoa"]))
+            moi = plaintext[:DAU_DAI]
+            if moi == r["dau"]:
+                continue   # khóa NGẮN hơn DAU_DAI đã đúng trọn — đừng đếm lại mãi
+            conn.execute("UPDATE bi_mat SET dau=? WHERE khoa=?", (moi, r["khoa"]))
             so += 1
     return so
 

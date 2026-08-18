@@ -33,11 +33,14 @@ def test_bi_mat_ma_hoa_that_trong_db(conn):
 
 
 def test_liet_ke_khong_lo_secret(conn):
-    ket.dat_bi_mat(conn, "llm.writer.api_key", "sk-9999xyza")
+    """LUẬT lộ-có-chủ-đích (Owner phê lần 4): dau DAU_DAI(10) + duoi 4 để nhận
+    diện — nhưng KHÔNG BAO GIỜ trả bản mã hay TOÀN BỘ plaintext trong một trường."""
+    ket.dat_bi_mat(conn, "llm.writer.api_key", "sk-9999-abcdefgh-xyza")
     ds = ket.liet_ke(conn)
-    assert ds["bi_mat"][0]["duoi"] == "xyza"
+    assert ds["bi_mat"][0]["dau"] == "sk-9999-ab" and ds["bi_mat"][0]["duoi"] == "xyza"
     assert "gia_tri_ma" not in ds["bi_mat"][0]
-    assert not any("sk-9999" in str(v) for v in ds["bi_mat"][0].values())
+    assert not any("sk-9999-abcdefgh-xyza" in str(v)
+                   for v in ds["bi_mat"][0].values())
 
 
 def test_cau_hinh_llm_gop_du_va_mac_dinh_an_toan(conn):
@@ -195,48 +198,58 @@ def _bi_mat_theo_khoa(conn, khoa):
     return next(r for r in ket.liet_ke(conn)["bi_mat"] if r["khoa"] == khoa)
 
 
-def test_dau_khoa_luu_dung_3_ky_tu(conn):
-    """Owner chốt 17/08: hiển thị khóa 'dau···duoi' — dat_bi_mat lưu 3 ký tự đầu
-    ngang hàng đuôi 4; liet_ke() + liet_ke_api_keys() đều trả 'dau', không trả
-    plaintext ở bất cứ trường nào."""
-    ket.dat_bi_mat(conn, "llm.writer.api_key", "sk-9999xyza")
+def test_dau_khoa_luu_dung_10_ky_tu(conn):
+    """Hiển thị khóa 'dau···duoi' — dat_bi_mat lưu DAU_DAI(10) ký tự đầu (Owner
+    phê lần 4: 3 ký tự vô dụng với 19 khóa Google cùng 'AIz') ngang hàng đuôi 4;
+    liet_ke() + liet_ke_api_keys() đều trả 'dau', không trả TOÀN BỘ plaintext."""
+    assert ket.DAU_DAI == 10
+    ket.dat_bi_mat(conn, "llm.writer.api_key", "sk-9999-abcdefgh-xyza")
     r = _bi_mat_theo_khoa(conn, "llm.writer.api_key")
-    assert r["dau"] == "sk-" and r["duoi"] == "xyza"
-    assert not any("sk-9999xyza" in str(v) for v in r.values())
+    assert r["dau"] == "sk-9999-ab" and r["duoi"] == "xyza"
+    assert not any("sk-9999-abcdefgh-xyza" in str(v) for v in r.values())
 
     kid = ket.them_api_key(conn, "youtube", "AIzaSyABCDEF1234567890")
     muc = next(k for k in ket.liet_ke_api_keys(conn) if k["id"] == kid)
-    assert muc["dau"] == "AIz" and muc["duoi"] == "7890"
+    assert muc["dau"] == "AIzaSyABCD" and muc["duoi"] == "7890"
     assert not any("AIzaSyABCDEF1234567890" in str(v) for v in muc.values())
 
     # ghi đè cùng khóa (ON CONFLICT) → dau/duoi cập nhật theo giá trị mới
-    ket.dat_bi_mat(conn, "llm.writer.api_key", "zz-khac-han-0000")
+    ket.dat_bi_mat(conn, "llm.writer.api_key", "zz-khac-han-hoan-toan-0000")
     r2 = _bi_mat_theo_khoa(conn, "llm.writer.api_key")
-    assert r2["dau"] == "zz-" and r2["duoi"] == "0000"
+    assert r2["dau"] == "zz-khac-ha" and r2["duoi"] == "0000"
 
 
 def test_backfill_dau_khoa_idempotent(conn):
-    """Khóa nạp TRƯỚC migration 002 (dau rỗng) → backfill tính đúng từ bản mã;
-    KHÔNG đụng gia_tri_ma/sua_luc; gọi lần 2 không đổi gì (idempotent)."""
-    ket.dat_bi_mat(conn, "llm.writer.api_key", "sk-that-1234")
-    # mô phỏng dòng cũ trước migration: xóa dau về rỗng như DEFAULT của cột mới
+    """Backfill phủ CẢ HAI đời cũ: dau rỗng (trước migration 002) VÀ dau 3 ký tự
+    (trước khi nâng DAU_DAI 3→10) → tính lại từ bản mã; KHÔNG đụng gia_tri_ma/
+    sua_luc; gọi lần 2 không đổi gì (idempotent)."""
+    ket.dat_bi_mat(conn, "llm.writer.api_key", "sk-that-abcdef-1234")
+    ket.dat_bi_mat(conn, "llm.critic.api_key", "sk-critic-ghijkl-5678")
+    # mô phỏng 2 đời cũ: dòng dau rỗng + dòng dau 3 ký tự (bản 17/08)
     with conn:
         conn.execute("UPDATE bi_mat SET dau='' WHERE khoa='llm.writer.api_key'")
+        conn.execute("UPDATE bi_mat SET dau='sk-' WHERE khoa='llm.critic.api_key'")
     truoc = dict(conn.execute(
         "SELECT gia_tri_ma, sua_luc FROM bi_mat WHERE khoa='llm.writer.api_key'"
     ).fetchone())
 
     so = ket.backfill_dau_khoa(conn)
-    assert so == 1
+    assert so == 2                                  # cả dòng rỗng lẫn dòng 3 ký tự
     r = conn.execute(
         "SELECT dau, gia_tri_ma, sua_luc FROM bi_mat WHERE khoa='llm.writer.api_key'"
     ).fetchone()
-    assert r["dau"] == "sk-"
+    assert r["dau"] == "sk-that-ab"
     assert r["gia_tri_ma"] == truoc["gia_tri_ma"]   # không ghi lại bản mã
     assert r["sua_luc"] == truoc["sua_luc"]         # không đụng mốc sửa
+    assert _bi_mat_theo_khoa(conn, "llm.critic.api_key")["dau"] == "sk-critic-"
 
-    assert ket.backfill_dau_khoa(conn) == 0         # lần 2: không còn dòng dau='' → idempotent
-    assert ket.lay_bi_mat(conn, "llm.writer.api_key") == "sk-that-1234"  # giải mã vẫn đúng
+    assert ket.backfill_dau_khoa(conn) == 0         # lần 2: không còn gì để nâng
+    assert ket.lay_bi_mat(conn, "llm.writer.api_key") == "sk-that-abcdef-1234"
+
+    # khóa NGẮN hơn DAU_DAI: dau = trọn khóa, backfill KHÔNG đếm lại mãi
+    ket.dat_bi_mat(conn, "khoa.ngan", "abc123")
+    assert _bi_mat_theo_khoa(conn, "khoa.ngan")["dau"] == "abc123"
+    assert ket.backfill_dau_khoa(conn) == 0
 
 
 def test_di_tru_llm_cu_idempotent_giu_base_url(conn):
