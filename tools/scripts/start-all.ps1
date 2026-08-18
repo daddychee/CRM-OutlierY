@@ -25,6 +25,14 @@ $env:RADARY_TRUST_PROXY = '1'
 # App KHONG co scheduler nen (pipeline chi chay khi user bam) - khac RadarY.
 $env:CU_DATA_DIR = (Join-Path $root 'data/content-ultimate')
 $env:CU_TRUST_PROXY = '1'
+
+# Niche Research (APPS.md app 3 - Owner chen len 18/08): du lieu tro
+# data/niche-research; SSO bat; WATCH SCHEDULER TAT o V3 (he that C:\ van tu
+# watch theo lich tren CUNG du an - V3 chay song song la dot doi quota YouTube;
+# nghiem thu watch bang POST /api/watch/{name}/run tay).
+$env:NICHE_DATA_DIR = (Join-Path $root 'data/niche-research')
+$env:NICHE_TRUST_PROXY = '1'
+$env:NICHE_SCHEDULER = '0'
 # Bay UTF-8 may Windows nay: app in tieng Viet ra stdout -> cp1252 chet luc khoi dong.
 $env:PYTHONIOENCODING = 'utf-8'
 $dichVu = @(
@@ -52,6 +60,9 @@ $dichVu = @(
        Wd = $root }
     @{ Ten = 'content-ultimate'; Cong = 9112; Exe = $py
        Args = '-m contentultimate.server --port 9112 --no-browser'
+       Wd = $root }
+    @{ Ten = 'niche-research'; Cong = 9113; Exe = $py
+       Args = '-m uvicorn server:app --app-dir "apps/niche-research" --host 127.0.0.1 --port 9113'
        Wd = $root }
     @{ Ten = 'caddy-tls'; Cong = 9443
        Exe = (Join-Path $root 'tools\caddy\caddy.exe')

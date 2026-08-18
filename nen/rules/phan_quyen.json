@@ -132,6 +132,36 @@
         "mo_ta": "Tab Cài đặt: API key + cấu hình dịch vụ + thành viên (vai admin nội bộ app)",
         "min_level": 5
       }
+    },
+    "niche-research": {
+      "vao": {
+        "min_level": 2,
+        "bo_phan": [
+          "Kinh doanh"
+        ]
+      },
+      "tao": {
+        "nhan": "Tạo nghiên cứu",
+        "mo_ta": "Tạo dự án + chạy phân tích ngách (run/resume/watch/agent LLM — vai leader)",
+        "min_level": 3,
+        "bo_phan": [
+          "Kinh doanh"
+        ]
+      },
+      "toan_quyen": {
+        "nhan": "Toàn quyền vận hành",
+        "mo_ta": "Xóa dự án + xóa tài liệu báo cáo — KHÔNG gồm Settings/API key/users (vai manager)",
+        "min_level": 4,
+        "bo_phan": [
+          "Kinh doanh"
+        ]
+      },
+      "quan_tri": {
+        "nhan": "Quản trị",
+        "mo_ta": "Settings · API key · users/invites nội bộ app — ĐÃ ĐÓNG khi SSO (khóa ở General › API Keys, quyền ở General › Permissions)",
+        "min_level": 5
+      },
+      "vai_xoa": "manager"
     }
   }
 }

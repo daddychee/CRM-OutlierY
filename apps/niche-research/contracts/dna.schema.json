@@ -1,0 +1,30 @@
+{
+ "$schema": "http://json-schema.org/draft-07/schema#",
+ "type": "object",
+ "required": ["hook_patterns", "structures"],
+ "properties": {
+  "niche": {"type": "string"},
+  "source": {"type": "string"},
+  "layers_note": {"type": "string"},
+  "hook_patterns": {"type": "array", "items": {"type": "object",
+    "properties": {"name": {"type": "string"}, "type": {"type": "string"},
+                   "formula": {"type": "string"}, "fit": {"type": "string"},
+                   "example": {"type": "string"}}}},
+  "structures": {"type": "array", "items": {"type": "object",
+    "properties": {"name": {"type": "string"}, "arc": {"type": "string"}, "fit": {"type": "string"}}}},
+  "emotions": {"type": "array", "items": {"type": "object",
+    "properties": {"emotion": {"type": "string"}, "clusters": {"type": "string"}, "exemplars": {"type": "string"}}}},
+  "voice": {"type": "array", "items": {"type": "object",
+    "properties": {"aspect": {"type": "string"}, "detail": {"type": "string"}}}},
+  "strong_lines": {"type": "array", "items": {"type": "object",
+    "properties": {"line": {"type": "string"}, "video": {"type": "string"}, "klass": {"type": "string"},
+                   "emotion": {"type": "string"}, "why": {"type": "string"}}}},
+  "hook_keywords": {"type": "array", "items": {"type": "object",
+    "properties": {"group": {"type": "string"}, "terms": {"type": "string"}}}},
+  "terms": {"type": "array", "items": {"type": "object",
+    "properties": {"term": {"type": "string"}, "meaning": {"type": "string"}, "example": {"type": "string"}}}},
+  "avoid": {"type": "array", "items": {"type": "object",
+    "properties": {"mistake": {"type": "string"}, "evidence": {"type": "string"},
+                   "consequence": {"type": "string"}, "severity": {"type": "string"}}}}
+ }
+}

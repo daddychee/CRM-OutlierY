@@ -1,0 +1,17 @@
+.env
+.env.*
+!.env.example
+.venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.DS_Store
+*.zip
+.last_project.json
+**/competitors.txt
+**/niche-data/
+.htpasswd
+data/
+logs/
+projects/

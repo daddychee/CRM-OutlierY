@@ -1,0 +1,33 @@
+{
+ "$schema": "http://json-schema.org/draft-07/schema#",
+ "type": "object",
+ "required": [
+  "decision",
+  "attractiveness",
+  "pillars"
+ ],
+ "properties": {
+  "decision": {
+   "enum": [
+    "GO",
+    "CONDITIONAL",
+    "NO-GO"
+   ]
+  },
+  "attractiveness": {
+   "type": "number"
+  },
+  "pillars": {
+   "type": "object"
+  },
+  "weights": {
+   "type": "object"
+  },
+  "crackability_verdict": {
+   "type": "string"
+  },
+  "gate_reason": {
+   "type": "string"
+  }
+ }
+}

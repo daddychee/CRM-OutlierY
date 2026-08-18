@@ -460,6 +460,61 @@
      "loai": "youtube"
     }
    ]
+  },
+  {
+   "slug": "niche-research",
+   "ten": "Niche Research",
+   "mo_ta": "Nghiên cứu ngách YouTube: quét đối thủ → outlier → gap comment → phán quyết Go/NoGo + agent LLM (namer/auditor/plan/summary). Đưa vào V3 từ hệ cũ 18/08 (APPS.md app 3 — Owner chen lên trước SEO).",
+   "cong": 9113,
+   "tien_to": [
+    "/api",
+    "/web"
+   ],
+   "health": "/api/health",
+   "phien_ban": "1.0-v3",
+   "chay": {
+    "kieu": "uvicorn",
+    "app_dir": "apps/niche-research",
+    "module": "server:app"
+   },
+   "du_lieu": [
+    {
+     "ten": "niche-projects",
+     "loai": "kho-file",
+     "duong": "data/niche-research/projects",
+     "muc_quy": "vang",
+     "backup": "copy",
+     "giu": "vinh-vien",
+     "ghi_chu": "Mỗi dự án nghiên cứu ngách một thư mục: competitors.txt + niche-data (scan/decision/bets) + Report xlsx/SUMMARY — snapshot từ hệ thật 18/08"
+    },
+    {
+     "ten": "niche-invites",
+     "loai": "json",
+     "duong": "data/niche-research/data",
+     "muc_quy": "vang",
+     "backup": "copy",
+     "giu": "vinh-vien",
+     "ghi_chu": "users.json/invites.json di sản V2 — SSO bật thì quản trị đóng 404, giữ làm dữ liệu"
+    }
+   ],
+   "giao_dien": "khung",
+   "viec_api": [
+    {
+     "ma": "quet_kenh",
+     "ten": "Quét kênh đối thủ (scan · keywords · comments · demand)",
+     "loai": "youtube"
+    },
+    {
+     "ma": "phan_tich",
+     "ten": "Agent phân tích (namer · auditor · plan · dna · summary)",
+     "loai": "llm"
+    },
+    {
+     "ma": "lay_transcript",
+     "ten": "Lấy transcript deepdive (S15)",
+     "loai": "transcript"
+    }
+   ]
   }
  ]
 }

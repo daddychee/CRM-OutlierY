@@ -11,6 +11,7 @@
 | 9103 | apps/to-chuc | KPI + chấm công + NAS |
 | 9111 | apps/radary | RadarY (đưa vào 16/08 — mạch APPS.md) |
 | 9112 | apps/content-ultimate | Content Ultimate (đưa vào 16/08 — mạch APPS.md) |
+| 9113 | apps/niche-research | Niche Research (Owner chen lên app #3 — 18/08) |
 | 9190 | apps/app-mau | App mẫu chứng minh hợp đồng app |
 | 6343 | Qdrant test (HTTP) | storage: data\qdrant — TÁCH HẲN kho thật |
 | 6344 | Qdrant test (gRPC) | phải khai tường minh kẻo rơi về 6334 đụng hệ thật |

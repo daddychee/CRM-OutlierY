@@ -43,10 +43,11 @@
 |---|---|---|---|---|---|
 | 1 | RadarY | 9111 | data\radary\ (db 88M + niche 41M + reports; thumbs 636M TÁI-SINH không snapshot) | mọi BP L1 xem · them_video/tao_pool KD L3 · toan_quyen Manager chủ quản (vai manager) · quan_tri Owner | **XONG** (chờ Owner chạy migration khóa) |
 | 2 | Content Ultimate | 9112 | data\content-ultimate\ | VH L2 · sua L3 leader · quan_tri Owner | **XONG** (chờ Owner chạy migration khóa) |
-| 3 | SEO Optimize | 9113 | data\seo-optimize\ | KD L2 vai seo · sua L3 · toan_quyen L4 manager · quan_tri Owner | chờ |
-| 4 | Data Analytics | 9102 | data\data-analytics\ | đã trong V3 từ đầu | XONG (còn Đ2.2 nối danh bạ) |
-| 5 | PlannerY | 9114 | data\plannery\ | mọi BP L1 · them_kenh_video KD L2 seo · sua L3 · quan_tri Owner + VÁ bẫy users.json thắng header | chờ |
-| 6 | SpeakY | 9115 | data\speaky\ | VH L2, quyền ở cửa vào; model dùng chung HF cache máy | chờ |
+| 3 | Niche Research | 9113 | data\niche-research\ (projects VÀNG + data/invites di sản) | KD L2 xem · tao KD L3 leader · toan_quyen KD L4 manager · quan_tri Owner | **ĐANG LÀM** (18/08 — Owner chen lên trước SEO; chờ nghiệm thu + cấp khóa) |
+| 4 | SEO Optimize | 91xx (lấy khi tới lượt) | data\seo-optimize\ | KD L2 vai seo · sua L3 · toan_quyen L4 manager · quan_tri Owner | chờ |
+| — | Data Analytics | 9102 | data\data-analytics\ | đã trong V3 từ đầu | XONG (còn Đ2.2 nối danh bạ) |
+| 5 | PlannerY | 91xx | data\plannery\ | mọi BP L1 · them_kenh_video KD L2 seo · sua L3 · quan_tri Owner + VÁ bẫy users.json thắng header | chờ |
+| 6 | SpeakY | 91xx | data\speaky\ | VH L2, quyền ở cửa vào; model dùng chung HF cache máy | chờ |
 | — | NAS | — | — | nút đáy sidebar, trang chỉ đường | chờ |
 
 ## Bẫy phải nhớ khi đưa app (từ V2 + memory)
@@ -148,3 +149,28 @@
   đồng + viec_api. GHI HÀNG ĐỢI: **Niche Research = ứng viên app #7** (KD L2 xem
   · L3+ tạo · manager xóa · quan_tri Owner — thang V2 sẵn), vào mạch sau
   SEO/PlannerY/SpeakY hoặc sớm hơn nếu Owner xếp — chờ Owner chốt thứ tự.
+- 18/08/2026 — **Owner CHỐT: Niche Research CHEN LÊN làm app #3** (trước SEO —
+  SEO→#4, PlannerY→#5, SpeakY→#6). **TÍCH HỢP XONG đúng khuôn 6 bước**: chạy
+  9113 (`server:app` uvicorn, `NICHE_DATA_DIR=data/niche-research` — projects +
+  data trỏ hết qua env, V2 không đặt env thì cạnh code như cũ); hợp đồng
+  apps.json (tien_to `/api` `/web` từ registry V2, `giao_dien: "khung"`, health
+  MỚI `/api/health` — app V2 không có); luật phan_quyen.json KD L2 vào · tao L3
+  · toan_quyen L4 (`vai_xoa: "manager"`) · quan_tri Owner; SSO adapter
+  Actions-first (quan_tri→admin · toan_quyen→manager · tao→leader · còn lại
+  **seo** DEFAULT fail-closed; fallback Role danh pháp mới; SSO bật không bao
+  giờ rơi về ADMIN_USERS). **LÀM GỌN cùng đợt**: 10 cửa quản trị (settings ×2 ·
+  users ×4 · invite ×2 · register ×2) đóng 404 khi SSO kể cả admin nội bộ, UI ẩn
+  nút ⚙; nguồn khóa = KÉT (`khoa_v3.py`, viec_api 3 việc theo tính năng thật:
+  quet_kenh youtube · phan_tich llm · lay_transcript transcript) — **YouTube key
+  của app này nằm trong CHÍNH competitors.txt user dán (thiết kế V2, regex
+  AIza…) → V3 bơm khóa két vào file mỗi run** (dedup, thiếu khóa → 503 rõ,
+  KHÔNG fallback .env); LLM/transcript bơm qua env tiến trình con đúng danh
+  pháp `scripts/llm_provider.py` (claude→anthropic · glm · chatgpt→openai ·
+  gemini/deepseek→custom). **WATCH SCHEDULER TẮT ở V3** (`NICHE_SCHEDULER=0`
+  trong start-all — hệ thật C:\ vẫn tự watch cùng dự án, chạy song song là đốt
+  đôi quota; nghiệm thu bằng POST /api/watch/{name}/run tay).
+  `scripts/di_tru_khoa_niche.py` idempotent NHƯNG **.env hệ cũ (đọc 18/08) chỉ
+  có ADMIN_USERS — KHÔNG có khóa nào để di trú** (GROK_API_KEY không có giá trị
+  → KHÔNG thêm nhà grok vào két); snapshot projects cũng 0 key AIza → **khóa
+  cho niche-research cấp TAY ở General › API Keys**. Suite mới: root
+  tests/test_niche_research.py (5) + apps/niche-research/tests (11).
