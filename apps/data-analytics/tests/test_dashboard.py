@@ -56,6 +56,27 @@ def test_overall_banner_pills_strip(client):
     assert b2.status_code == 200 and "TEST NICHE" in b2.text
 
 
+def test_tab_evidence_va_full_report(client):
+    """3 nội dung show bằng tab (user 18/08): Overview / Evidence / Full report."""
+    body = client.get("/niche", headers=CLAIMS).text
+    assert ">Overview<" in body and ">Evidence<" in body and ">Full report<" in body
+    assert "demand evidence" in body                     # bảng bằng chứng
+    assert "Which legendary place next?" in body and "191" in body   # câu hỏi khán giả
+    assert "surprised most" in body                      # theme comment
+    assert 'data-src="/niche/tai/TestNiche_US/2026-08-18/BAO-CAO-8-PHASE.html?inline=1"' in body
+
+
+def test_pill_du_moi_thi_truong_danh_ba(client, monkeypatch):
+    """User bắt lỗi 18/08: General có 3 thị trường, dashboard chỉ hiện 2 — market
+    chưa gán dự án phải hiện pill + khối hướng dẫn, KHÔNG được giấu."""
+    monkeypatch.setattr(dashboard, "_ten_thi_truong",
+                        lambda: {"TT-US": "US", "TT-KOREA": "Korea"})
+    body = client.get("/niche", headers=CLAIMS).text
+    assert ">Korea<" in body                              # pill + khối thị trường
+    assert "Chưa gán dự án nghiên cứu" in body            # hướng dẫn thay vì giấu
+    assert "chayNiche('None'" not in body                 # không nút Run mồ côi
+
+
 def test_xem_lai_ngay_cu(client):
     r = client.get("/niche", headers=CLAIMS, params={"ngach": "N-TEST", "ngay": "2026-08-18"})
     assert r.status_code == 200 and "snapshot 2026-08-18" in r.text
@@ -155,4 +176,6 @@ def test_niche_chua_gan_project(client, tmp_path, monkeypatch):
     monkeypatch.setattr(dashboard, "_ds_ngach",
                         lambda: [{"ma": "N-KHAC", "ten_chuan": "NICHE TRỐNG"}])
     r = client.get("/niche", headers=CLAIMS, params={"ngach": "N-KHAC"})
-    assert r.status_code == 200 and "chưa gán dự án" in r.text
+    # Từ 18/08 mọi thị trường danh bạ đều có khối riêng — niche chưa gán dự án
+    # hiện hướng dẫn New report per-market thay vì một dòng chung.
+    assert r.status_code == 200 and "Chưa gán dự án nghiên cứu" in r.text

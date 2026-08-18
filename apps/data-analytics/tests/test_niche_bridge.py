@@ -32,7 +32,10 @@ def _seed(tmp_path, project="TestNiche_US", ngay="2026-08-18"):
     (snap / "analysis.json").write_text(json.dumps({
         "total_videos": 3815, "n_winners": 648, "n_early_confirmed": 104}), encoding="utf-8")
     (snap / "gaps.json").write_text(json.dumps({
-        "total_comments": 12869, "total_questions": 1081}), encoding="utf-8")
+        "total_comments": 12869, "total_questions": 1081,
+        "top_questions": [{"q": "Which legendary place next?", "like": 191,
+                           "video": "The Strait Of Hormuz"}],
+        "themes": [{"theme": "surprised most", "count": 20, "pct": 1.9}]}), encoding="utf-8")
     (snap / "channels.json").write_text(json.dumps(
         {f"UC{i}": {} for i in range(75)}), encoding="utf-8")
     (snap / "BAO-CAO-8-PHASE.html").write_text("<title>x</title>", encoding="utf-8")

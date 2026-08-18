@@ -301,3 +301,19 @@ dashboard xấu hơn mockup đã duyệt → dựng lại trọn pane Overall:
 Bridge thêm: pipeline{9 khóa} + moc_trung_x + cua_vao_thang + rpm_nhan + so_cum +
 diem_cum_tb — TẤT CẢ nhặt/chia từ artifact, không tính lại chỉ số. Suite 99 pass;
 kiểm HTML thật :9102 đủ banner/pills/strip/vì-sao, 0 chữ "None".
+
+## 18/08 (tiếp 3) — hạ cỡ chữ + tab 3 nội dung + pill đủ thị trường danh bạ
+
+Ba phản hồi kiểm mắt tiếp của user: (1) chữ dashboard to hơn app khác → hạ cả thang
+(~12-20%: h1 1.25→1.02rem, tile 1.7→1.32rem, thân .87→.8rem…). (2) "3 ảnh 3 nội dung
+cần show, hiển thị bằng quẹt chuyển tab" → mỗi khối thị trường 3 TAB: Overview (banner
++ tile + radar + B&W + strip như cũ) · Evidence (bảng SỐ LIỆU—DEMAND EVIDENCE cột
+bằng chứng/số/đọc-ra/nguồn — cột đọc-ra CHỈ ghi khi suy từ enum/tỉ lệ: trend FLAT →
+"giành phần, không đón sóng", chênh ≥5× → "ăn theo cú trúng"; + bảng câu hỏi khán giả
+like cao nhất + theme comment — nguyên văn gaps.json) · Full report (iframe báo cáo
+gộp 8 phase, nạp LƯỜI khi mở tab — Audience Canvas và mọi tầng NGHĨA nằm ở đây, vì
+canvas là nội dung LLM/tay không có trong artifact JSON). (3) General có 3 thị trường
+mà dashboard chỉ hiện 2 → pills liệt kê ĐỦ danh bạ (mapped trước), market chưa gán dự
+án hiện khối "Chưa gán dự án nghiên cứu — bấm New report" + nút New report (KHÔNG nút
+Run mồ côi project None — test ghim). Suite 101 pass; kiểm HTML thật: 4 pill
+All/US/SPAIN/KOREA, 3 tab, câu hỏi thật 750 like, iframe data-src đúng.

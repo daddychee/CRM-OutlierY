@@ -11,7 +11,7 @@
   .nd-top select{background:var(--th-182233);color:var(--ink);border:1px solid var(--line);
     border-radius:9px;padding:6px 10px;font:inherit;font-weight:600;max-width:230px}
   .nd-tabs{display:flex;gap:2px;align-items:center;overflow-x:auto;flex:1;min-width:120px}
-  .nd-tab{padding:6px 12px;border-radius:8px;color:var(--muted);font-size:.86rem;
+  .nd-tab{padding:5px 11px;border-radius:8px;color:var(--muted);font-size:.8rem;
     text-decoration:none;white-space:nowrap}
   .nd-tab.on{background:var(--th-182233);color:var(--accent);font-weight:600}
   .nd-tab:hover{color:var(--ink)}
@@ -19,22 +19,22 @@
   /* pane nội dung — FULL bề ngang như RadarY/Content (user chê hẹp 18/08) */
   .nd-main{flex:1;overflow-y:auto;min-width:0;padding:16px 24px 26px}
   .nd-band{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
-  .nd-band h1{font-size:1.25rem;margin:0}
+  .nd-band h1{font-size:1.02rem;margin:0}
   .nd-band select{background:var(--th-182233);color:var(--ink);border:1px solid var(--line);
-    border-radius:999px;padding:4px 12px;font:inherit;font-size:.85rem;margin-left:auto}
+    border-radius:999px;padding:3px 11px;font:inherit;font-size:.78rem;margin-left:auto}
   /* pill thị trường All | US | … (mockup đã duyệt) */
-  .nd-pill{border:1px solid var(--line);border-radius:999px;padding:4px 14px;font-size:.82rem;
+  .nd-pill{border:1px solid var(--line);border-radius:999px;padding:3px 13px;font-size:.76rem;
     font-weight:600;color:var(--muted);text-decoration:none;white-space:nowrap}
   .nd-pill.on{background:var(--accent);border-color:var(--accent);color:var(--th-090c12)}
   .nd-pill:hover{color:var(--ink);border-color:var(--accent)}
   /* banner PHÁN QUYẾT — nội dung báo cáo gộp kéo ra overview (user chốt 18/08) */
   .nd-ban{padding:14px 16px 15px;border-bottom:1px solid var(--line)}
-  .nd-ban .chip{display:inline-block;font-size:.68rem;font-weight:700;letter-spacing:.07em;
+  .nd-ban .chip{display:inline-block;font-size:.63rem;font-weight:700;letter-spacing:.07em;
     border:1px solid var(--th-c2cbd9);color:var(--th-c2cbd9);border-radius:7px;padding:2px 10px;margin-bottom:8px}
   .nd-ban .chip.go{border-color:var(--th-4c8fe0);color:var(--th-4c8fe0)}
   .nd-ban .chip.nogo{border-color:var(--th-d97c6c);color:var(--th-d97c6c)}
-  .nd-ban h2{margin:0 0 6px;font-size:1.18rem;line-height:1.4}
-  .nd-ban p{margin:0;font-size:.87rem;color:var(--muted);line-height:1.6;max-width:70rem}
+  .nd-ban h2{margin:0 0 6px;font-size:.98rem;line-height:1.4}
+  .nd-ban p{margin:0;font-size:.8rem;color:var(--muted);line-height:1.6;max-width:70rem}
   .nd-ban p b{color:var(--ink)}
   /* lưới tile 3 cột + bản đồ beachhead cột phải cao 2 hàng (mockup) */
   .nd-grid{display:grid;grid-template-columns:repeat(3,1fr) 1.45fr;gap:10px;padding:12px}
@@ -48,21 +48,21 @@
   .nd-strip{padding:0 12px 14px}
   .nd-strip .tieu{font-size:.66rem;letter-spacing:.12em;color:var(--muted);text-transform:uppercase;
     border-top:1px solid var(--line);padding:10px 2px 6px}
-  .nd-strip table{width:100%;border-collapse:collapse;font-size:.86rem;font-variant-numeric:tabular-nums}
+  .nd-strip table{width:100%;border-collapse:collapse;font-size:.8rem;font-variant-numeric:tabular-nums}
   .nd-strip th{font-size:.64rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);
     text-align:right;padding:4px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
   .nd-strip td{text-align:right;padding:6px 8px;font-weight:700}
   .nd-tt{border:1px solid var(--line);border-radius:14px;margin-bottom:16px;overflow:hidden}
   .nd-tt-h{display:flex;align-items:center;gap:10px;padding:11px 16px;background:var(--th-121826);
     border-bottom:1px solid var(--line);flex-wrap:wrap}
-  .nd-tt-h b{font-size:1rem}
+  .nd-tt-h b{font-size:.9rem}
   /* ponytail: khung app chưa có token ok/warn xanh-lá/vàng — tạm dùng bảng sẵn có
      (accent = tốt, d97c6c = xấu); thêm cặp token vào nen_khung_app rồi đổi lại. */
-  .nd-verdict{font-size:.72rem;font-weight:700;border-radius:999px;padding:2px 11px;letter-spacing:.04em;
+  .nd-verdict{font-size:.66rem;font-weight:700;border-radius:999px;padding:2px 11px;letter-spacing:.04em;
     background:var(--th-182233);border:1px solid var(--th-31425e);color:var(--th-c2cbd9)}
   .v-ok{color:var(--th-4c8fe0);border-color:var(--th-4c8fe0)}
   .nd-act{margin-left:auto;display:flex;gap:8px}
-  .nd-btn{display:inline-flex;align-items:center;gap:6px;font-size:.82rem;font-weight:600;
+  .nd-btn{display:inline-flex;align-items:center;gap:6px;font-size:.76rem;font-weight:600;
     border:1px solid var(--line);border-radius:9px;padding:5px 12px;color:var(--ink);text-decoration:none;
     background:transparent;cursor:pointer;font-family:inherit}
   .nd-btn.chinh{background:var(--accent);border-color:var(--accent);color:var(--th-090c12)}
@@ -70,18 +70,27 @@
   .nd-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:9px;padding:12px}
   .nd-tile{background:var(--th-121826);border:1px solid var(--line);border-radius:11px;
     padding:12px 14px;text-align:left}
-  .nd-tile .t{font-size:.86rem;font-weight:600;margin-bottom:2px}
+  .nd-tile .t{font-size:.78rem;font-weight:600;margin-bottom:2px}
   .nd-tile .k{font-size:.6rem;letter-spacing:.12em;color:var(--muted);text-transform:uppercase}
-  .nd-tile .v{font-size:1.7rem;font-weight:700;margin:2px 0;font-variant-numeric:tabular-nums}
-  .nd-tile .s{font-size:.74rem;color:var(--muted);line-height:1.45}
+  .nd-tile .v{font-size:1.32rem;font-weight:700;margin:2px 0;font-variant-numeric:tabular-nums}
+  .nd-tile .s{font-size:.7rem;color:var(--muted);line-height:1.45}
   .nd-bw{padding:0 12px 12px}
-  .nd-bw table{width:100%;border-collapse:collapse;font-size:.84rem}
+  .nd-bw table{width:100%;border-collapse:collapse;font-size:.8rem}
   .nd-bw th{font-size:.66rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);
     text-align:left;padding:5px 8px;border-bottom:1px solid var(--line)}
   .nd-bw td{padding:5px 8px;border-bottom:1px solid var(--th-182233)}
   .bw-g{color:var(--th-4c8fe0);font-weight:700;text-align:right;font-variant-numeric:tabular-nums}
   .bw-r{color:var(--th-d97c6c);font-weight:700;text-align:right;font-variant-numeric:tabular-nums}
-  .nd-trong{padding:26px 16px;text-align:center;color:var(--muted);font-size:.9rem}
+  .nd-trong{padding:26px 16px;text-align:center;color:var(--muted);font-size:.84rem}
+  /* tab trong khối thị trường: Overview | Evidence | Full report (user 18/08 —
+     3 nội dung báo cáo show bằng chuyển tab) */
+  .sec-tabs{display:flex;gap:2px;padding:8px 12px 0}
+  .sec-tab{border:0;background:transparent;padding:5px 11px;border-radius:8px;color:var(--muted);
+    font-family:inherit;font-size:.78rem;font-weight:600;cursor:pointer}
+  .sec-tab.on{background:var(--th-182233);color:var(--accent)}
+  .sec-tab:hover{color:var(--ink)}
+  .tieu-nho{font-size:.64rem;letter-spacing:.12em;color:var(--muted);text-transform:uppercase;margin:0 0 6px}
+  .chip-file{font-size:.66rem;border:1px solid var(--line);border-radius:6px;padding:1px 7px;color:var(--muted)}
 {% endblock %}
 
 {% block noi_dung %}
@@ -299,7 +308,7 @@
     {% endif %}
 
     {% for tt in thi_truong %}
-    <section class="nd-tt">
+    <section class="nd-tt" id="sec-{{ tt.project or tt.ma }}">
       <div class="nd-tt-h">
         <b>{{ tt.ten }}</b>
         {% if tt.so.co_bao_cao %}
@@ -327,17 +336,30 @@
           </span>
         {% else %}
           <span class="s" style="color:var(--muted)">{{ tt.so.ly_do }}</span>
-          {% if user.level >= 3 %}
+          {% if user.level >= 3 and tt.project %}
           <span class="nd-act">
             <button class="nd-btn chinh" onclick="chayNiche('{{ tt.project }}', this)">
               <svg class="ic" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg> Run analysis</button>
             <span class="s" id="run-{{ tt.project }}" style="color:var(--muted);font-size:.78rem"></span>
+          </span>
+          {% elif user.level >= 3 %}
+          <span class="nd-act">
+            <button class="nd-btn chinh" onclick="moModal()">
+              <svg class="ic" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> New report</button>
           </span>
           {% endif %}
         {% endif %}
       </div>
       {% if tt.so.co_bao_cao %}
       {% set so = tt.so %}
+      {% set nsf = namespace(html=None) %}
+      {% for f in so.bao_cao_files %}{% if f.endswith('.html') and not nsf.html %}{% set nsf.html = f %}{% endif %}{% endfor %}
+      <div class="sec-tabs">
+        <button type="button" class="sec-tab on" onclick="secTab(this, 'tq')">Overview</button>
+        <button type="button" class="sec-tab" onclick="secTab(this, 'bc')">Evidence</button>
+        {% if nsf.html %}<button type="button" class="sec-tab" onclick="secTab(this, 'full')">Full report</button>{% endif %}
+      </div>
+      <div class="sec-pane" data-pane="tq">
 
       <!-- banner PHÁN QUYẾT — nội dung báo cáo gộp kéo ra overview; headline theo
            enum phán quyết (copy cố định của phương pháp), số + lý do từ pipeline -->
@@ -413,7 +435,7 @@
         {% if so.cum_tot %}
         <div class="nd-tile">
           <div class="t" style="text-align:center">Best &amp; Worst — cụm sub-niche theo điểm beachhead</div>
-          <table style="width:100%;border-collapse:collapse;font-size:.85rem;margin-top:6px">
+          <table style="width:100%;border-collapse:collapse;font-size:.78rem;margin-top:6px">
             <tr><th style="font-size:.64rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);text-align:right;padding:4px 8px;border-bottom:1px solid var(--line)">Điểm</th>
                 <th style="font-size:.64rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);text-align:left;padding:4px 8px;border-bottom:1px solid var(--line)">Cụm</th>
                 <th style="font-size:.64rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);text-align:left;padding:4px 8px;border-bottom:1px solid var(--line)">Vì sao</th></tr>
@@ -475,6 +497,57 @@
             <td>{{ p.cung_thang | round | int if p.cung_thang is not none else '—' }}</td>
           </tr>
         </table></div>
+      </div>
+      {% endif %}
+      </div><!-- /pane Overview -->
+
+      <!-- pane EVIDENCE — bảng bằng chứng + câu hỏi khán giả + theme (gaps/demand thật) -->
+      <div class="sec-pane" data-pane="bc" style="display:none">
+        <div class="nd-bw" style="padding:12px 16px 16px">
+          {% if tt.bang_chung %}
+          <div class="tieu-nho">Số liệu — demand evidence</div>
+          <div style="overflow-x:auto"><table>
+            <tr><th>Bằng chứng</th><th style="text-align:right">Số</th><th>Đọc ra điều gì</th><th>Nguồn</th></tr>
+            {% for r in tt.bang_chung %}
+            <tr><td>{{ r.ten }}</td>
+                <td style="text-align:right;font-weight:700;font-variant-numeric:tabular-nums">{{ r.so }}</td>
+                <td style="color:var(--muted)">{{ r.doc }}</td>
+                <td><span class="chip-file">{{ r.nguon }}</span></td></tr>
+            {% endfor %}
+          </table></div>
+          {% endif %}
+          {% if so.cau_hoi_top %}
+          <div class="tieu-nho" style="margin-top:16px">Câu hỏi khán giả được like nhiều nhất</div>
+          <div style="overflow-x:auto"><table>
+            <tr><th style="text-align:right">Like</th><th>Câu hỏi</th><th>Dưới video</th></tr>
+            {% for q in so.cau_hoi_top %}
+            <tr><td class="bw-g">{{ q.like }}</td><td>{{ q.q }}</td>
+                <td style="color:var(--muted)">{{ (q.video or '') | truncate(52) }}</td></tr>
+            {% endfor %}
+          </table></div>
+          {% endif %}
+          {% if so.theme_top %}
+          <div class="tieu-nho" style="margin-top:16px">Theme comment nổi bật</div>
+          <div style="overflow-x:auto"><table>
+            <tr><th>Theme</th><th style="text-align:right">Số câu</th><th style="text-align:right">% câu hỏi</th></tr>
+            {% for th in so.theme_top %}
+            <tr><td><b>{{ th.theme }}</b></td>
+                <td style="text-align:right;font-variant-numeric:tabular-nums">{{ th.count }}</td>
+                <td style="text-align:right;color:var(--muted)">{{ th.pct }}%</td></tr>
+            {% endfor %}
+          </table></div>
+          {% endif %}
+          {% if not tt.bang_chung and not so.cau_hoi_top %}
+          <div class="nd-trong">Snapshot này chưa có demand.json / gaps.json — chạy lại phân tích để có tầng bằng chứng.</div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- pane FULL REPORT — nhúng báo cáo gộp 8 phase (nạp lười khi mở tab) -->
+      {% if nsf.html %}
+      <div class="sec-pane" data-pane="full" style="display:none">
+        <iframe data-src="/niche/tai/{{ tt.project }}/{{ so.snapshot }}/{{ nsf.html }}?inline=1"
+                title="Full report" style="width:100%;height:78vh;border:0;display:block;background:var(--th-121826)"></iframe>
       </div>
       {% endif %}
       {% endif %}
@@ -561,6 +634,21 @@ function kyGate(ngach, tt, gate, nut){
   fetch('/niche/gate/' + ngach + '/' + tt + '/' + gate, {method: 'POST', body: fd})
     .then(function(r){ if (!r.ok) throw 0; location.reload(); })
     .catch(function(){ nut.disabled = false; nut.textContent = 'Lỗi'; });
+}
+
+// ===== tab trong khối thị trường (Overview / Evidence / Full report) =====
+function secTab(btn, t){
+  var sec = btn.closest('section');
+  sec.querySelectorAll('.sec-tab').forEach(function(b){ b.classList.remove('on'); });
+  btn.classList.add('on');
+  sec.querySelectorAll('.sec-pane').forEach(function(pn){
+    var mo = pn.getAttribute('data-pane') === t;
+    pn.style.display = mo ? '' : 'none';
+    if (mo && t === 'full'){          // báo cáo đầy đủ nạp LƯỜI khi mở tab lần đầu
+      var f = pn.querySelector('iframe');
+      if (f && !f.src) f.src = f.getAttribute('data-src');
+    }
+  });
 }
 
 // ===== modal New report =====

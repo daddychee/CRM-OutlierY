@@ -120,6 +120,51 @@ def _scatter_beachhead(beachhead: list[dict]) -> list[dict]:
     return out
 
 
+def _fmt_vn(n) -> str:
+    return "{:,}".format(round(n)).replace(",", ".")
+
+
+def _bang_chung(so: dict) -> list[dict]:
+    """Bảng SỐ LIỆU — DEMAND EVIDENCE cho tab Bằng chứng (PY dựng chuỗi, template
+    chỉ in). Cột 'đọc ra điều gì' CHỈ ghi khi suy được từ enum/tỉ lệ đã tính —
+    không suy diễn ngoài số (van chống bịa)."""
+    rows: list[dict] = []
+    p = so.get("pipeline") or {}
+    if so.get("view_trung_vi"):
+        ten = "View trung vị video trưởng thành"
+        if p.get("video_truong_thanh"):
+            ten += f" (n={_fmt_vn(p['video_truong_thanh'])})"
+        rows.append({"ten": ten, "so": _fmt_vn(so["view_trung_vi"]),
+                     "doc": "Mức nền của ngách — mốc so với video của mình",
+                     "nguon": "demand.json"})
+    if so.get("moc_trung"):
+        x = so.get("moc_trung_x")
+        doc = (f"Chênh {x}× trung vị → thị trường ăn theo cú trúng" if x and x >= 5
+               else (f"Chênh {x}× trung vị" if x else ""))
+        rows.append({"ten": "Top 10% (p90) — mốc video “trúng”",
+                     "so": _fmt_vn(so["moc_trung"]), "doc": doc, "nguon": "demand.json"})
+    if so.get("cung_thang"):
+        rows.append({"ten": "Nguồn cung", "so": f"{round(so['cung_thang'])} video/tháng",
+                     "doc": "Mật độ ra bài của ngách", "nguon": "demand.json"})
+    if so.get("trend"):
+        st = so.get("trend_strength")
+        gia_tri = so["trend"] + (f" ({str(round(st, 2)).replace('.', ',')})"
+                                 if st is not None else "")
+        doc = {"FLAT": "Thị trường trưởng thành — giành phần, không đón sóng",
+               "RISING": "Sóng đang lên — cửa sổ vào sớm",
+               "DECLINING": "Nhu cầu đang co — thận trọng"}.get(so["trend"], "")
+        rows.append({"ten": "Xu hướng 12 tháng (OX slope, khử tuổi video)",
+                     "so": gia_tri, "doc": doc, "nguon": "demand.json"})
+    if p.get("comment"):
+        rows.append({"ten": "Comment đã quét", "so": _fmt_vn(p["comment"]),
+                     "doc": "Nguồn gap & demand từ khán giả thật", "nguon": "gaps.json"})
+    if p.get("cau_hoi"):
+        rows.append({"ten": "Câu hỏi khán giả", "so": _fmt_vn(p["cau_hoi"]),
+                     "doc": "Câu hỏi chưa được trả lời = demand còn trống",
+                     "nguon": "gaps.json"})
+    return rows
+
+
 @router.get("/niche", response_class=HTMLResponse)
 def trang_niche(request: Request, user: dict = Depends(_lay_user),
                 ngach: str = "", ngay: str = "latest", tt: str = ""):
@@ -130,22 +175,35 @@ def trang_niche(request: Request, user: dict = Depends(_lay_user),
     ten_tt = _ten_thi_truong()
     thi_truong = []
     ds_ngay: list[str] = []
-    pills: list[dict] = []      # pill thị trường (All | US | …) theo mọi market đã gán
+    pills: list[dict] = []      # pill thị trường = MỌI market trong danh bạ
     if ngach_hien:
         mapping = _map_projects().get(ngach_hien["ma"], {})
-        pills = [{"ma": m, "ten": ten_tt.get(m, m)} for m in mapping]
-        if tt and tt in mapping:              # pill chọn 1 thị trường; rỗng/lạ = All
-            mapping = {tt: mapping[tt]}
-        for tt_ma, project in mapping.items():
-            tom_tat = niche_bridge.tom_tat_overall(project, ngay)
-            from src import gates as gates_mod
+        # User bắt lỗi 18/08: General có 3 thị trường mà dashboard chỉ hiện 2 —
+        # pills phải liệt kê ĐỦ danh bạ; market chưa gán dự án hiện khối hướng dẫn
+        # (New report nhánh Niche tự tạo pool + tự gán map), không được giấu.
+        thu_tu = sorted(ten_tt, key=lambda m: (m not in mapping, ten_tt[m]))
+        pills = [{"ma": m, "ten": ten_tt[m]} for m in thu_tu]
+        chon = [tt] if tt in ten_tt else thu_tu   # pill chọn 1; rỗng/lạ = All
+        for tt_ma in chon:
+            project = mapping.get(tt_ma)
+            if project:
+                tom_tat = niche_bridge.tom_tat_overall(project, ngay)
+                from src import gates as gates_mod
+                gates = gates_mod.trang_thai(ngach_hien["ma"], tt_ma,
+                                             tom_tat.get("co_bao_cao", False),
+                                             user["level"])
+            else:
+                tom_tat = {"co_bao_cao": False,
+                           "ly_do": "Chưa gán dự án nghiên cứu — bấm New report "
+                                    "(nhánh Niche), chọn thị trường này và dán pool "
+                                    "đối thủ để tạo bản đầu tiên."}
+                gates = []
             thi_truong.append({"ma": tt_ma, "ten": ten_tt.get(tt_ma, tt_ma),
                                "project": project, "so": tom_tat,
+                               "bang_chung": _bang_chung(tom_tat),
                                "radar": _radar_points(tom_tat.get("tru_diem") or {}),
                                "scatter": _scatter_beachhead(tom_tat.get("beachhead") or []),
-                               "gates": gates_mod.trang_thai(
-                                   ngach_hien["ma"], tt_ma,
-                                   tom_tat.get("co_bao_cao", False), user["level"])})
+                               "gates": gates})
             for d in (tom_tat.get("ds_snapshot") or []):
                 if d not in ds_ngay:
                     ds_ngay.append(d)

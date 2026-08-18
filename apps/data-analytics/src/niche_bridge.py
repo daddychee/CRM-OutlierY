@@ -112,6 +112,7 @@ def tom_tat_overall(project: str, snap_id: str = "latest") -> dict:
         "moc_trung": demand.get("reach_p90_views"),
         "cung_thang": demand.get("supply_per_month"),
         "trend": demand.get("trend"),
+        "trend_strength": demand.get("trend_strength"),
         "cua_vao_rate": crack.get("newcomer_rate"),
         "cua_vao_verdict": crack.get("verdict"),
         "rpm_band": f"${rpm[0]}–{rpm[1]}" if isinstance(rpm, list) and len(rpm) == 2 else None,
@@ -134,6 +135,16 @@ def tom_tat_overall(project: str, snap_id: str = "latest") -> dict:
             "hhi": d1.get("competition_hhi"),
             "cung_thang": demand.get("supply_per_month"),
         },
+        # tab Bằng chứng (user chốt 18/08 — 3 nội dung show bằng tab): câu hỏi khán
+        # giả like cao nhất + theme comment nổi bật, nguyên văn từ gaps.json
+        "cau_hoi_top": [
+            {"q": q.get("q"), "like": q.get("like"), "video": q.get("video")}
+            for q in (gaps.get("top_questions") or [])[:8]
+        ],
+        "theme_top": [
+            {"theme": t.get("theme"), "count": t.get("count"), "pct": t.get("pct")}
+            for t in (gaps.get("themes") or [])[:6]
+        ],
         # beachhead: top 2 accent + toàn bộ toạ độ cho scatter (PY đã tính sẵn)
         "beachhead": [
             {"anchor": r.get("anchor"), "diem": r.get("beachhead_score"),
