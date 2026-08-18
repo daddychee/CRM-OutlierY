@@ -113,6 +113,30 @@ def test_gan_ngach_thi_truong_pool_cu_co_vet(org_moi, goi, mock_de):
     assert any("TT-SPAIN" in e["payload"] for e in ev)           # đổi cấu hình phải có vết
 
 
+def test_nhan_pool_goc_doi_ten_theo_general(org_moi, goi, mock_de):
+    """PATCH market RỖNG = nhận workspace hiện hữu làm POOL GỐC của ngách —
+    tên pool ĐỒNG NHẤT theo tên ngách General (luật user 18/08: 'chỉ khi tạo
+    niche trong General thì mới có tên pool trong Radary')."""
+    from radary import db
+    conn = db.connect()
+    with conn:
+        ws = db.create_workspace(conn, org_moi, "Life in X")
+    conn.close()
+    r = goi("PATCH", f"/api/workspaces/{ws}/market",
+            json={"ngach": "N-LIFE-IN", "market": ""})
+    assert r.status_code == 200 and r.json()["name"] == "LIFE IN"
+    conn = db.connect()
+    row = conn.execute("SELECT name, ngach, market FROM workspaces WHERE id=?",
+                       (ws,)).fetchone()
+    conn.close()
+    assert (row["name"], row["ngach"], row["market"]) == ("LIFE IN", "N-LIFE-IN", "")
+    # ngách lạ vẫn chặn kể cả market rỗng; TẠO pool mới thì market vẫn BẮT BUỘC
+    assert goi("PATCH", f"/api/workspaces/{ws}/market",
+               json={"ngach": "N-LA", "market": ""}).status_code == 422
+    assert goi("POST", "/api/workspaces",
+               json={"name": "x", "ngach": "N-LIFE-IN"}).status_code == 422
+
+
 # ---------- tách pool: chuyển kênh giữ lịch sử ----------
 
 def _seed_hai_pool(org):

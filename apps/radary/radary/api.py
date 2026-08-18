@@ -514,10 +514,11 @@ class WorkspaceIn(BaseModel):
 def _v3() -> bool:
     return os.environ.get('RADARY_TRUST_PROXY') == '1'
 
-def _kiem_de(ngach: str, market: str) -> tuple[str, str]:
+def _kiem_de(ngach: str, market: str, cho_phep_goc: bool = False) -> tuple[str, str]:
     """Validation dropdown Ở SERVER khi V3: ngách tồn tại trong đế, thị trường
-    THUỘC tập thị trường của ngách (user chọn ở General › Niches). Standalone
-    giữ hành vi cũ (cả hai tùy chọn, không gọi gateway)."""
+    THUỘC tập thị trường của ngách (user chọn ở General › Niches).
+    cho_phep_goc: market RỖNG hợp lệ = POOL GỐC của ngách (kênh chưa phân loại
+    thị trường — workspace hiện hữu nhận làm ngách). Standalone giữ hành vi cũ."""
     ngach, market = (ngach or '').strip(), (market or '').strip()
     if not _v3():
         return ngach, market
@@ -527,6 +528,8 @@ def _kiem_de(ngach: str, market: str) -> tuple[str, str]:
         if not ngach or not ng:
             raise HTTPException(422, 'phải chọn NGÁCH từ danh mục OUTLIERY '
                                      '(thiếu thì Owner thêm ở General › Niches)')
+        if cho_phep_goc and not market:
+            return ngach, market
         if not ng.get('thi_truong'):
             raise HTTPException(422, f'ngách {ng.get("ten") or ngach} chưa khai thị trường nào '
                                      '— Owner gắn thị trường cho ngách ở General › Niches trước')
@@ -603,17 +606,32 @@ class MarketIn(BaseModel):
 
 @app.patch('/api/workspaces/{ws}/market')
 def set_workspace_market(ws: int, body: MarketIn, request: Request):
-    """Gán/đổi ngách + thị trường cho pool có TRƯỚC tính năng (leader trở lên) —
-    V3 kiểm CẶP như lúc tạo; ghi event config_change để có vết."""
-    ngach, market = _kiem_de(body.ngach, body.market)
+    """Nối pool với đế (leader trở lên). market RỖNG = NHẬN LÀM POOL GỐC của
+    ngách (kênh hiện có = 'chưa phân loại') — khi đó TÊN workspace ĐỒNG NHẤT
+    theo tên ngách General (luật user 18/08: 'chỉ khi tạo niche trong General
+    thì mới có tên pool trong Radary'). Ghi event config_change có vết."""
+    ngach, market = _kiem_de(body.ngach, body.market, cho_phep_goc=True)
     with get_conn() as c:
         u = auth.require_user(c, request)
         auth.ws_for_user(c, ws, u['id'], 'leader')
+        ten_moi = None
+        if _v3() and ngach and not market:      # nhận gốc → tên theo General
+            from . import thi_truong_v3
+            try:
+                ten_moi = next((n.get('ten') for n in thi_truong_v3.ds_ngach()
+                                if n.get('ma') == ngach), None)
+            except RuntimeError:
+                ten_moi = None                  # danh mục vừa đọc được ở _kiem_de — hụt thì giữ tên cũ
         with c:
-            c.execute('UPDATE workspaces SET market=?, ngach=? WHERE id=?', (market, ngach, ws))
+            if ten_moi:
+                c.execute('UPDATE workspaces SET market=?, ngach=?, name=? WHERE id=?',
+                          (market, ngach, ten_moi, ws))
+            else:
+                c.execute('UPDATE workspaces SET market=?, ngach=? WHERE id=?', (market, ngach, ws))
             db.append_events(c, ws, [{'ts': time.time(), 'kind': 'config_change',
-                                      'payload': {'market': market, 'ngach': ngach, 'by': u['email']}}])
-        return {'id': ws, 'market': market, 'ngach': ngach}
+                                      'payload': {'market': market, 'ngach': ngach,
+                                                  'ten': ten_moi, 'by': u['email']}}])
+        return {'id': ws, 'market': market, 'ngach': ngach, 'name': ten_moi}
 
 @app.get('/api/workspaces/{ws}/status')
 def ws_status(ws: int, request: Request):

@@ -1195,37 +1195,50 @@ function Pool({ ws, canEdit, role, wss, onMoved }) {
   const [picked, setPicked] = useState({});   // tách pool theo thị trường (18/08): yt_id -> true
   const [dest, setDest] = useState('');
   const [nganhs, setNganhs] = useState([]);   // ngách + tập thị trường CỦA ngách — SINH Ở GENERAL, radary chỉ phản chiếu
-  const [chon, setChon] = useState('');       // ngách đang xem (mã N-xxx) hoặc 'ws:<id>' = pool cũ chưa xếp
-  const [tabTT, setTabTT] = useState('');     // mã thị trường của tab nhỏ đang mở
+  const [tabTT, setTabTT] = useState('');     // '' = tab GỐC "Chưa phân loại" | mã TT-xx = tab thị trường
+  const [goiY, setGoiY] = useState('');       // ngách General gợi ý nhận cho workspace chưa nối
   useEffect(() => { api('GET', '/ngach').then(setNganhs).catch(() => setNganhs([])); }, []);
+  useEffect(() => { setTabTT(''); }, [ws]);
+  // WORKSPACE HIỆN TẠI = NGÁCH (user chốt 18/08: 'Life in X, Space, Storm chính
+  // là các ngách'); trong 1 ngách tồn tại các pool theo thị trường — chuyển kênh
+  // CHỈ trong nội bộ ngách. Chưa nối General → gợi ý khớp tên, 1 click xác nhận
+  // (nối bằng MÃ + tên tự đồng nhất theo General ở server).
   const curW = (wss || []).find(w => w.id === ws) || {};
-  useEffect(() => {                            // mặc định theo workspace đang chọn trên switcher
-    if (!nganhs.length) return;
-    setChon(curW.ngach || (curW.id ? 'ws:' + curW.id : (nganhs[0] || {}).ma || ''));
+  const niche = nganhs.find(n => n.ma === curW.ngach);
+  const _bo = s => String(s || '').toLowerCase().normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim();
+  useEffect(() => {
+    if (niche || !nganhs.length || !curW.id) return;
+    const t = _bo(curW.name);
+    const khop = nganhs.find(n => _bo(n.ten) === t)
+      || nganhs.find(n => t.includes(_bo(n.ten)) || _bo(n.ten).includes(t));
+    setGoiY((khop || nganhs[0]).ma);
   }, [ws, nganhs.length]);
-  const niche = nganhs.find(n => n.ma === chon);
-  const legacyW = chon.startsWith('ws:') ? (wss || []).find(w => w.id === Number(chon.slice(3))) : null;
-  // TAB NHỎ = thị trường CỦA NGÁCH (General › Niches): ngách có 3 thị trường
-  // thì pool có đủ 3 tab — tab chưa có pool là nút dựng (leader trở lên)
+  const nhanNgach = async () => {
+    setMsg(null);
+    try {
+      const r = await api('PATCH', `/workspaces/${ws}/market`, { ngach: goiY, market: '' });
+      if (onMoved) await onMoved();
+      setMsg({ ok: 1, t: `Đã nhận ngách${r.name ? ` — pool đổi tên "${r.name}" theo General` : ''}. Kênh hiện có nằm ở tab "Chưa phân loại", chuyển dần về các tab thị trường.` });
+    } catch (e) { setMsg({ ok: 0, t: String(e.message) }); }
+  };
+  // TAB NHỎ trong ngách: thị trường của ngách (General) — ngách có 3 thị trường
+  // thì có đủ 3 tab; tab chưa có pool là nút dựng (leader trở lên)
   const subtabs = niche ? niche.thi_truong.map(tt => ({
     tt, w: (wss || []).find(x => x.ngach === niche.ma && x.market === tt.ma)
   })) : [];
-  useEffect(() => {                            // đổi ngách → mở tab đầu tiên ĐÃ có pool (chưa có thì tab đầu)
-    if (niche) setTabTT(((subtabs.find(s => s.w) || subtabs[0]) || { tt: {} }).tt.ma || '');
-  }, [chon, (wss || []).length]);
-  const shown = subtabs.find(s => s.tt.ma === tabTT);
-  const poolWs = legacyW ? legacyW.id
-    : shown && shown.w ? shown.w.id
-    : nganhs.length ? null : ws;               // standalone (không có đế) — hành vi cũ nguyên vẹn
+  const shown = tabTT ? subtabs.find(s => s.tt.ma === tabTT) : null;
+  const poolWs = !tabTT ? ws : (shown && shown.w ? shown.w.id : null);
   const load = useCallback(() => poolWs
     ? api('GET', `/workspaces/${poolWs}/channels`).then(setChans)
     : Promise.resolve(setChans([])), [poolWs]);
   useEffect(() => { load(); setPicked({}); setDest(''); setSel(null); }, [load]);
   const canMove = role === 'manager' || role === 'owner';   // dời dữ liệu lớn — cùng nấc xóa workspace
-  const others = niche
-    ? subtabs.filter(s => s.w && s.w.id !== poolWs).map(s => ({ id: s.w.id, label: `${niche.ten} — ${s.tt.ten}` }))
-    : (wss || []).filter(w => w.id !== poolWs).map(w => ({
-        id: w.id, label: w.ngach_ten ? `${w.ngach_ten} — ${w.market_ten}` : w.name }));
+  const others = niche ? [
+    ...(tabTT ? [{ id: ws, label: 'Chưa phân loại (gốc)' }] : []),
+    ...subtabs.filter(s => s.w && s.tt.ma !== tabTT)
+              .map(s => ({ id: s.w.id, label: `${niche.ten} — ${s.tt.ten}` })),
+  ] : [];
   const nPicked = Object.values(picked).filter(Boolean).length;
   const taoPoolTT = async tt => {              // dựng pool cho thị trường của ngách — cấu trúc từ General, không hỏi lại
     setMsg(null);
@@ -1233,7 +1246,7 @@ function Pool({ ws, canEdit, role, wss, onMoved }) {
       const w = await api('POST', '/workspaces', { name: `${niche.ten} — ${tt.ten}`, ngach: niche.ma, market: tt.ma });
       if (onMoved) await onMoved();            // nạp lại danh sách pool để tab mới có mặt
       setTabTT(tt.ma);
-      setMsg({ ok: 1, t: `Đã dựng pool "${w.name}" — thêm kênh hoặc chuyển kênh từ pool khác sang.` });
+      setMsg({ ok: 1, t: `Đã dựng pool "${w.name}" — thêm kênh mới hoặc chuyển kênh từ "Chưa phân loại" sang.` });
     } catch (e) { setMsg({ ok: 0, t: String(e.message) }); }
   };
   const move = async () => {
@@ -1300,14 +1313,17 @@ function Pool({ ws, canEdit, role, wss, onMoved }) {
           ${active.length > 0 && html`<button class="btn small ghost" style="margin-left:auto"
             onClick=${download}>⬇ Tải danh sách (.csv)</button>`}
         </div>
-        ${nganhs.length > 0 && html`<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
-          <span class="note">Ngách (sinh ở General):</span>
-          <select value=${chon} onChange=${e => setChon(e.target.value)}>
+        ${!niche && nganhs.length > 0 && curW.id && html`<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
+          <span class="note">Niche này chưa nối với General —</span>
+          <select value=${goiY} onChange=${e => setGoiY(e.target.value)}>
             ${nganhs.map(n => html`<option value=${n.ma}>${n.ten}</option>`)}
-            ${(wss || []).filter(w => !w.ngach).map(w => html`<option value=${'ws:' + w.id}>Pool cũ — ${w.name}</option>`)}
           </select>
+          <button class="btn small" disabled=${!canEdit || !goiY} onClick=${nhanNgach}>Nhận "${curW.name}" là ngách này</button>
+          <span class="note">(chưa có trong danh sách → Owner tạo niche ở General › Niches trước)</span>
         </div>`}
-        ${subtabs.length > 0 && html`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
+        ${niche && html`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
+          <button class=${'btn small' + (tabTT === '' ? '' : ' ghost')}
+            onClick=${() => setTabTT('')}>Chưa phân loại <small>· ${curW.videos} video</small></button>
           ${subtabs.map(s => s.w
             ? html`<button class=${'btn small' + (s.tt.ma === tabTT ? '' : ' ghost')}
                 onClick=${() => setTabTT(s.tt.ma)}>${s.tt.ten} <small>· ${s.w.videos} video</small></button>`
@@ -1317,10 +1333,8 @@ function Pool({ ws, canEdit, role, wss, onMoved }) {
         </div>`}
         ${niche && subtabs.length === 0 && html`<div class="note" style="margin-bottom:8px">
           Ngách này chưa khai thị trường nào — Owner gắn thị trường cho ngách ở General › Niches.</div>`}
-        ${niche && subtabs.length > 0 && !poolWs && html`<div class="note" style="margin-bottom:8px">
+        ${niche && tabTT && !poolWs && html`<div class="note" style="margin-bottom:8px">
           Thị trường này chưa có pool${canEdit ? ' — bấm nút ＋ trên tab để dựng.' : '.'}</div>`}
-        ${legacyW && html`<div class="note" style="margin-bottom:8px">
-          Pool cũ trộn thị trường — tích kênh rồi chuyển về pool thị trường của ngách (chọn pool đích bên dưới).</div>`}
         ${canMove && others.length > 0 && html`<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
           <span class="note">Chuyển kênh giữa các pool — tích chọn kênh rồi:</span>
           <select value=${dest} onChange=${e => setDest(e.target.value)}>
@@ -1442,14 +1456,19 @@ function NewNiche({ onCreated, role }) {
   const [market, setMarket] = useState('');
   useEffect(() => { api('GET', '/ngach').then(setNganhs).catch(() => setNganhs([])); }, []);
   const ngPicked = nganhs.find(n => n.ma === ngach);
+  const ttPicked = ngPicked && ngPicked.thi_truong.find(x => x.ma === market);
+  // Luật user 18/08: 'chỉ khi tạo niche trong General thì mới có tên pool trong
+  // Radary' — V3 tên pool TỰ SINH '<ngách> — <thị trường>', không gõ tay;
+  // standalone (không đế) giữ ô tên tự do như cũ.
+  const tenPool = nganhs.length ? (ngPicked && ttPicked ? `${ngPicked.ten} — ${ttPicked.ten}` : '') : name.trim();
   const create = async () => {
     const items = chans.split('\n').map(s => s.trim()).filter(Boolean);
-    if (!name.trim() || !items.length) { setErr('Cần tên niche và ít nhất 1 kênh.'); return; }
     if (nganhs.length && (!ngach || !market)) { setErr('Chọn NGÁCH + THỊ TRƯỜNG thuộc ngách — mỗi pool gắn đúng một thị trường.'); return; }
+    if (!tenPool || !items.length) { setErr(`Cần ${nganhs.length ? 'ngách + thị trường' : 'tên niche'} và ít nhất 1 kênh.`); return; }
     setErr('');
     try {
       setStep('Tạo workspace…');
-      const w = await api('POST', '/workspaces', { name: name.trim(), ngach, market });
+      const w = await api('POST', '/workspaces', { name: tenPool, ngach, market });
       if (role !== 'viewer' && keyMain.trim().length >= 20) {
         setStep('Gắn key cho niche…');
         await api('POST', `/orgs/${w.org_id}/keys`, { key: keyMain.trim(), workspace_id: w.id });
@@ -1466,22 +1485,19 @@ function NewNiche({ onCreated, role }) {
   return html`
     <div class="panel" style="max-width:640px">
       <h2>Niche mới — dán pool kênh đối thủ là chạy</h2>
-      <div class="formrow"><label>Tên niche</label>
-        <input type="text" placeholder="vd: Xe điện Việt Nam" value=${name} onInput=${e => setName(e.target.value)}/></div>
+      ${nganhs.length === 0 && html`<div class="formrow"><label>Tên niche</label>
+        <input type="text" placeholder="vd: Xe điện Việt Nam" value=${name} onInput=${e => setName(e.target.value)}/></div>`}
       ${nganhs.length > 0 && html`<div class="formrow"><label>Ngách</label>
         <select value=${ngach} onChange=${e => { setNgach(e.target.value); setMarket(''); }}>
           <option value="">— chọn ngách (khai ở General) —</option>
           ${nganhs.map(n => html`<option value=${n.ma}>${n.ten}</option>`)}
         </select></div>`}
       ${ngPicked && html`<div class="formrow"><label>Thị trường</label>
-        <select value=${market} onChange=${e => {
-          setMarket(e.target.value);
-          const t = ngPicked.thi_truong.find(x => x.ma === e.target.value);
-          if (t && !name.trim()) setName(ngPicked.ten + ' — ' + t.ten);   // tên nhất quán với pool dựng từ tab Pool
-        }}>
+        <select value=${market} onChange=${e => setMarket(e.target.value)}>
           <option value="">— chọn thị trường của ngách —</option>
           ${ngPicked.thi_truong.map(t => html`<option value=${t.ma}>${t.ten}${t.ngon_ngu ? ' (' + t.ngon_ngu + ')' : ''}</option>`)}
         </select></div>`}
+      ${nganhs.length > 0 && tenPool && html`<div class="note">Tên pool tự đặt theo General: <b>${tenPool}</b></div>`}
       ${ngPicked && ngPicked.thi_truong.length === 0 && html`<div class="note">
         Ngách này chưa khai thị trường nào — Owner gắn thị trường cho ngách ở General › Niches trước.</div>`}
       ${role !== 'viewer' && html`

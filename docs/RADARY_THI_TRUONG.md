@@ -117,20 +117,38 @@
   /workspaces/{ws}/market GIỮ làm API vận hành (có test) nhưng KHÔNG còn UI —
   đường chính thống là dựng pool từ cấu trúc. Suite radary 24 pass, headless OK.
 
-## Nghiệm thu còn chờ (user/Owner) — cập nhật vòng 3
+- 18/08/2026 — **VÒNG 4 — USER CHỐT MÔ HÌNH CUỐI: WORKSPACE = NGÁCH** ("không
+  phải chuyển giữa các pool khác niche — trong 1 niche tồn tại các pool theo
+  thị trường; Life in X, Space, Storm chính là các ngách"; "sửa niche Life in X
+  thành LIFE IN; từ nay CHỈ tạo niche trong General mới có tên pool trong
+  Radary"). Đã làm: (a) DATA: workspace 1 đổi tên `Life in X` → `LIFE IN`
+  (đúng ten_chuan đế) + nối `ngach=N-LIFE-IN`, market='' = POOL GỐC "chưa
+  phân loại", event vết (sửa thẳng db V3 — snapshot test, có vết). (b) BỎ ô
+  chọn ngách + nhóm "Pool cũ" của vòng 3 — tab Pool bám workspace-ngách đang
+  chọn ở switcher; trong ngách: tab **"Chưa phân loại"** (kênh của workspace
+  gốc) + các tab thị trường của ngách; **chuyển kênh CHỈ trong nội bộ ngách**
+  (dest = tab anh em, có cả chiều trả về gốc). (c) Workspace chưa nối General
+  → banner gợi ý khớp tên + 1 nút "Nhận … là ngách này" (leader+): PATCH
+  market rỗng (`cho_phep_goc`) → server nối MÃ + **tự đổi tên pool theo tên
+  ngách General** (luật tên-từ-General). (d) "+ New Niche" V3: ô tên tự do
+  BỎ — tên tự sinh `<ngách> — <thị trường>` hiện preview; standalone giữ
+  nguyên. Suite radary 25 pass; restart 9111; headless OK.
+
+## Nghiệm thu còn chờ (user/Owner) — cập nhật vòng 4
 
 1. Vào **V3** (https://outliery.test:9443, KHÔNG phải cổng 8000) → RadarY →
-   tab **Data Pool** → **Ctrl+F5** một lần cho chắc.
-2. Thấy ngay: ô "Ngách (sinh ở General)" với LIFE IN / OLD + nhóm "Pool cũ".
-   Chọn LIFE IN → 3 tab Korea · Spain · US (đúng khai báo General) đều là nút
-   ＋ (chưa có pool) → bấm ＋ US là pool dựng ngay.
-3. Chọn "Pool cũ — Life in X" → tích kênh → chuyển về "LIFE IN — US"…
-   (vai Manager/Owner). Nhập kênh mới: đứng ở tab thị trường rồi dán vào ô
-   Thêm kênh.
-4. Pool cũ sau khi rỗng: xóa workspace (endpoint manager còn sống nhưng nút UI
-   đang ẩn khi SSO — capability đã ghi từ mạch làm gọn; cần thì làm nút xóa ở
-   đợt sau, Owner quyết).
-5. SAU CUTOVER: chạy lại việc tách trên snapshot cuối bằng chính UI này.
+   chọn niche **LIFE IN** trên switcher (tên mới) → tab **Data Pool** →
+   **Ctrl+F5** một lần cho chắc.
+2. Thấy dải tab: **Chưa phân loại · ~4.9k video** + **＋ Korea · ＋ Spain ·
+   ＋ US** (đúng khai báo General). Bấm ＋ US → pool "LIFE IN — US" dựng ngay.
+3. Ở tab Chưa phân loại: tích kênh → "Chuyển kênh đã chọn" sang US/Spain/Korea
+   (vai Manager/Owner — chuyển CHỈ trong nội bộ ngách). Nhập kênh mới: đứng ở
+   tab thị trường rồi dán vào ô Thêm kênh.
+4. Các niche khác (Space, Storm…): tạo niche tương ứng ở General › Niches +
+   khai thị trường → mở Data Pool của niche đó → banner "Niche này chưa nối
+   với General" đã gợi ý sẵn → bấm "Nhận … là ngách này" (pool tự đổi tên
+   theo General).
+5. SAU CUTOVER: chạy lại việc nối + tách trên snapshot cuối bằng chính UI này.
 
 ## Nợ đã thấy khi khảo sát (KHÔNG thuộc mạch này — ghi để khỏi quên)
 
