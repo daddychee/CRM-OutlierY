@@ -112,12 +112,14 @@ def lay_video(ma: str) -> dict | None:
 
 
 def danh_sach_video() -> list[dict]:
-    """Danh sách chưa-gỡ, mới nhất trước, kèm số bình luận còn mở."""
+    """Danh sách chưa-gỡ, mới nhất trước, kèm số bình luận còn mở + TỔNG bình luận
+    (so_tong = 0 là dấu hiệu 'chưa ai review' — logic hiển thị Awaiting review)."""
     conn = ket_noi()
     try:
         hang = conn.execute(
             "SELECT v.*, (SELECT COUNT(*) FROM binh_luan b WHERE b.video_ma = v.ma"
-            "  AND b.trang_thai = 'mo') AS so_mo"
+            "  AND b.trang_thai = 'mo') AS so_mo,"
+            " (SELECT COUNT(*) FROM binh_luan b2 WHERE b2.video_ma = v.ma) AS so_tong"
             " FROM video v WHERE v.trang_thai != 'da_xoa' ORDER BY v.id DESC").fetchall()
         return [dict(h) for h in hang]
     finally:

@@ -46,6 +46,9 @@ templates = Jinja2Templates(directory=str(_APP_DIR / "src" / "templates"),
 
 NHAN_TRANG_THAI = {"dang_duyet": "In review", "can_sua": "Changes requested",
                    "da_duyet": "Approved"}
+# Nhãn trạng thái HIỂN THỊ trang danh sách (cho_review/dang_review suy từ bình luận)
+NHAN_HIEN_THI = {"cho_review": "Awaiting review", "dang_review": "In review",
+                 "can_sua": "Changes requested", "da_duyet": "Approved"}
 
 
 def _fmt_mmss(v) -> str:
@@ -59,6 +62,7 @@ def _fmt_mmss(v) -> str:
 
 templates.env.filters["mmss"] = _fmt_mmss
 templates.env.globals["NHAN_TRANG_THAI"] = NHAN_TRANG_THAI
+templates.env.globals["NHAN_HIEN_THI"] = NHAN_HIEN_THI
 
 
 @app.on_event("startup")
@@ -121,8 +125,16 @@ async def goc():
 
 @app.get("/danh-sach", response_class=HTMLResponse)
 async def danh_sach(request: Request, user: dict = Depends(khu_cua_toi)):
+    cac_video = kho_video.danh_sach_video()
+    # Trạng thái HIỂN THỊ (user chốt 18/08 — video up lên chưa ai review phải nổi):
+    # dang_duyet + CHƯA có bình luận nào = cho_review (Awaiting) · có rồi = dang_review.
+    for v in cac_video:
+        if v["trang_thai"] == "dang_duyet":
+            v["hien_thi"] = "cho_review" if v["so_tong"] == 0 else "dang_review"
+        else:
+            v["hien_thi"] = v["trang_thai"]
     return templates.TemplateResponse(request, "danh_sach.html", {
-        "cac_video": kho_video.danh_sach_video(), "user": user,
+        "cac_video": cac_video, "user": user,
         "max_mb": int(os.environ.get("VR_MAX_MB", "2048")),
         "nas_bat": nap_nas.nas_dir() is not None,
         "nas_max_gb": int(os.environ.get("VR_NAS_MAX_MB", "20480")) // 1024})

@@ -16,11 +16,25 @@
   table.vr td{padding:10px;border-bottom:1px solid var(--line);vertical-align:middle}
   table.vr tr:hover td{background:var(--th-141c2b)}
   .chip{display:inline-block;font-size:12px;font-weight:600;border-radius:999px;padding:2px 10px;white-space:nowrap}
-  .chip.dang_duyet{background:var(--th-16263f);color:var(--accent)}
+  .chip.cho_review{background:var(--th-16263f);color:var(--accent);font-weight:700}
+  .chip.dang_review,.chip.dang_duyet{background:var(--th-182233);color:var(--th-9aa5b5);border:1px solid var(--chip-line)}
   .chip.can_sua{background:rgba(217,124,108,.14);color:var(--th-d97c6c)}
   .chip.da_duyet{background:rgba(90,170,120,.16);color:#5aaa78}
   html[data-theme="light"] .chip.da_duyet{color:#2e7d4f}
   .vr-bl{font-size:12.5px;color:var(--muted)}
+  /* hàng lọc: tab trạng thái + tìm + Mine only */
+  .loc-hang{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:4px 0 14px}
+  .loc-tab{background:var(--th-182233);border:1px solid var(--chip-line);border-radius:999px;
+    color:var(--th-9aa5b5);font-size:13px;font-weight:600;padding:5px 13px;cursor:pointer;font-family:inherit}
+  .loc-tab:hover{color:var(--ink)}
+  .loc-tab.chon{background:var(--th-223050);color:var(--ink);border-color:var(--th-31425e)}
+  .loc-tab .dem{opacity:.75;font-weight:400;margin-left:3px}
+  .loc-tab[data-loc="cho_review"].chon,.loc-tab[data-loc="cho_review"]:not(.chon) .dem-canh{color:var(--accent)}
+  #loc-tim{margin-left:auto;padding:6px 12px;border:1px solid var(--chip-line);border-radius:9px;
+    background:var(--th-182233);color:var(--ink);font-size:13px;font-family:inherit;min-width:180px}
+  .loc-toi-nhan{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);cursor:pointer}
+  tr[data-tt="cho_review"] td:first-child{border-left:3px solid var(--accent)}
+  #khong-khop{color:var(--muted);padding:14px 4px;display:none}
   /* khối Nạp từ NAS */
   .nas-vet{font-size:12.5px;color:var(--muted);margin-bottom:6px;display:flex;gap:4px;flex-wrap:wrap}
   .nas-vet button{background:none;border:0;color:var(--accent);cursor:pointer;font-size:12.5px;
@@ -71,14 +85,23 @@
 {% endif %}
 
 {% if cac_video %}
+<div class="loc-hang" id="loc-hang">
+  <button type="button" class="loc-tab" data-loc="cho_review">Awaiting review<span class="dem"></span></button>
+  <button type="button" class="loc-tab" data-loc="dang_review">In review<span class="dem"></span></button>
+  <button type="button" class="loc-tab" data-loc="can_sua">Changes requested<span class="dem"></span></button>
+  <button type="button" class="loc-tab" data-loc="da_duyet">Approved<span class="dem"></span></button>
+  <button type="button" class="loc-tab" data-loc="tat_ca">All<span class="dem"></span></button>
+  <input type="search" id="loc-tim" placeholder="Search name / owner…">
+  <label class="loc-toi-nhan"><input type="checkbox" id="loc-toi"> Mine only</label>
+</div>
 <table class="vr">
   <thead><tr><th>Video</th><th>Status</th><th>Owner</th><th>Uploaded</th><th>Size</th><th>Open notes</th></tr></thead>
-  <tbody>
+  <tbody id="vr-than">
   {% for v in cac_video %}
-    <tr>
+    <tr data-tt="{{ v.hien_thi }}" data-ten="{{ v.ten }}" data-nguoi="{{ v.nguoi_tao }}">
       <td><a href="/xem/{{ v.ma }}"><b>{{ v.ten }}</b></a>
         <span class="vr-bl">· {{ v.ma }}</span></td>
-      <td><span class="chip {{ v.trang_thai }}">{{ NHAN_TRANG_THAI.get(v.trang_thai, v.trang_thai) }}</span></td>
+      <td><span class="chip {{ v.hien_thi }}">{{ NHAN_HIEN_THI.get(v.hien_thi, v.hien_thi) }}</span></td>
       <td>{{ v.nguoi_tao }}</td>
       <td class="vr-bl">{{ v.tao_luc[:10] }}</td>
       <td class="vr-bl">{{ (v.kich_thuoc / 1048576) | round(1) }}MB</td>
@@ -87,12 +110,60 @@
   {% endfor %}
   </tbody>
 </table>
+<div id="khong-khop">No videos match this filter.</div>
 {% else %}
 <p style="color:var(--muted)">No videos yet — upload the first cut above.</p>
 {% endif %}
 {% endblock %}
 
 {% block script %}
+<script>
+(function () {
+  "use strict";
+  // Lọc danh sách: tab trạng thái (đếm số) + tìm KHÔNG DẤU + Mine only.
+  // Mặc định mở tab Awaiting review khi còn video chưa ai review (user chốt 18/08).
+  var hang = document.getElementById("loc-hang");
+  if (!hang) return;
+  var TOI = {{ user.ten | tojson }};
+  var cacDong = Array.prototype.slice.call(document.querySelectorAll("#vr-than tr"));
+  var oTim = document.getElementById("loc-tim");
+  var oToi = document.getElementById("loc-toi");
+  var khongKhop = document.getElementById("khong-khop");
+  function boDau(s) {
+    return (s || "").toLowerCase().replace(/đ/g, "d")
+      .normalize("NFD").replace(/[̀-ͯ]/g, "");
+  }
+  var dem = { tat_ca: cacDong.length };
+  cacDong.forEach(function (d) { dem[d.dataset.tt] = (dem[d.dataset.tt] || 0) + 1; });
+  hang.querySelectorAll(".loc-tab").forEach(function (t) {
+    t.querySelector(".dem").textContent = " (" + (dem[t.dataset.loc] || 0) + ")";
+    t.addEventListener("click", function () {
+      hang.querySelectorAll(".loc-tab").forEach(function (x) { x.classList.remove("chon"); });
+      t.classList.add("chon"); apDung();
+    });
+  });
+  function locHien() {
+    var t = hang.querySelector(".loc-tab.chon");
+    return t ? t.dataset.loc : "tat_ca";
+  }
+  function apDung() {
+    var loc = locHien(), tim = boDau(oTim.value.trim()), toi = oToi.checked, thay = 0;
+    cacDong.forEach(function (d) {
+      var hien = (loc === "tat_ca" || d.dataset.tt === loc)
+        && (!tim || boDau(d.dataset.ten + " " + d.dataset.nguoi).indexOf(tim) !== -1)
+        && (!toi || d.dataset.nguoi === TOI);
+      d.style.display = hien ? "" : "none";
+      if (hien) thay++;
+    });
+    khongKhop.style.display = thay ? "none" : "block";
+  }
+  oTim.addEventListener("input", apDung);
+  oToi.addEventListener("change", apDung);
+  hang.querySelector('[data-loc="' + ((dem.cho_review || 0) > 0 ? "cho_review" : "tat_ca") + '"]')
+    .classList.add("chon");
+  apDung();
+})();
+</script>
 <script>
 (function () {
   "use strict";

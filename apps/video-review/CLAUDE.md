@@ -20,6 +20,15 @@
   không đo được), form thuần giữ làm fallback khi JS chết (lệ LAN-HTTP); % đo
   chặng trình duyệt→gateway nên 100% xong còn "Processing…" một nhịp (gateway
   buffer rồi mới chuyển app) — hành vi đúng, đừng tưởng treo.
+- 18/08/2026 — **LOGIC HIỂN THỊ "CHƯA ĐƯỢC REVIEW" + LỌC DANH SÁCH** (user chốt:
+  quyền giữ nguyên, không cần nhóm dự án vì video review xong sẽ xóa; cần video
+  up lên chưa ai review phải NỔI). Trạng thái HIỂN THỊ suy từ bình luận:
+  dang_duyet + so_tong=0 → **cho_review** (Awaiting review, chip accent + viền
+  trái dòng) · có bình luận (kể cả đã giải) → dang_review (chip xám). Hàng tab
+  đếm số theo trạng thái, MẶC ĐỊNH mở tab Awaiting khi còn video chờ; tìm
+  KHÔNG DẤU (NFD + đ→d, dải combining U+0300–U+036F viết dạng escape trong regex — nhét
+  ký tự tổ hợp THÔ vào regex/script từng vỡ heredoc cp1252 ngay phiên này) +
+  lọc Mine only. Lọc client-side trên bảng đã render. 27 test pass.
 
 ## Quyết định thiết kế (đừng phá)
 

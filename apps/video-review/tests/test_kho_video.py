@@ -89,4 +89,6 @@ def test_danh_sach_dem_binh_luan_mo():
     bl = kho_video.them_binh_luan(b["ma"], "an", "một")
     kho_video.them_binh_luan(b["ma"], "an", "hai")
     kho_video.giai_binh_luan(bl["id"], "an", False)
-    assert kho_video.danh_sach_video()[0]["so_mo"] == 1
+    hang = kho_video.danh_sach_video()[0]
+    assert hang["so_mo"] == 1
+    assert hang["so_tong"] == 2      # so_tong đếm CẢ đã giải — tín hiệu "đã có người review"

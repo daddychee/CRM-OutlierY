@@ -57,6 +57,24 @@ def test_upload_chan_duoi_la_va_qua_tran(client, monkeypatch):
     assert not list(kho_video.kho_dir().rglob("*.tam"))
 
 
+def test_danh_sach_trang_thai_hien_thi_cho_review(client):
+    """Video up lên CHƯA ai bình luận = Awaiting review; có bình luận = In review;
+    Approved giữ nhãn thật (logic hiển thị user chốt 18/08)."""
+    _up(client, ten="chưa ai xem")
+    _up(client, ten="đã có góp ý")
+    _up(client, ten="đã duyệt")
+    kho_video.them_binh_luan("VR-0002", "binh", "note")
+    kho_video.doi_trang_thai("VR-0003", "da_duyet")
+    trang = client.get("/danh-sach", headers=h()).text
+    assert 'data-tt="cho_review"' in trang and "Awaiting review" in trang
+    assert 'data-tt="dang_review"' in trang
+    assert 'data-tt="da_duyet"' in trang
+    # bình luận đã giải vẫn tính là "đã có người review" — không rơi lại cho_review
+    bl = kho_video.ds_binh_luan("VR-0002")[0]
+    kho_video.giai_binh_luan(bl["id"], "binh", False)
+    assert 'data-tt="dang_review"' in client.get("/danh-sach", headers=h()).text
+
+
 def test_trang_xem_nhung_binh_luan(client):
     _up(client)
     kho_video.them_binh_luan("VR-0001", "an", "note <script>alert(1)</script>", ts_giay=3)
