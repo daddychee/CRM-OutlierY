@@ -90,9 +90,10 @@ async def goc():
 
 @app.get("/chan-doan", response_class=HTMLResponse)
 def chan_doan_trang(request: Request, user: dict = Depends(yeu_cau_data_analytics)):
-    return templates.TemplateResponse(request, "chan_doan.html", {
-        "user": user, "can_upload": False,   # link nạp tài liệu thuộc app ai-agent
-    })
+    # PA2 (chốt user 18/08): MỘT mặt tiền /niche — form nạp report kênh sống trong
+    # modal New report. GET trang cũ chỉ còn redirect; POST /chan-doan + trang-thai
+    # + mọi route con GIỮ NGUYÊN (backend của modal + pane Kênh).
+    return RedirectResponse("/niche", status_code=303)
 
 
 async def _doc_report_upload(file: UploadFile):

@@ -104,9 +104,36 @@
         </div>
       </div>
       <div id="nr-kenh" style="display:none">
-        <p style="font-size:.88rem;color:var(--muted);margin:.2rem 0 1rem">Nạp file YouTube Studio của kênh nhà — chạy nền, tự vào lịch sử; nhớ điền ô "Tên kênh" đúng tên trong danh bạ.</p>
-        <a class="nd-btn chinh" href="/chan-doan">
-          <svg class="ic" viewBox="0 0 24 24"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 21h16"/></svg> Mở form nạp report kênh</a>
+        {% if ds_kenh %}
+        <div style="display:flex;gap:8px;margin-bottom:10px">
+          <select id="nrk-kenh" style="flex:1.2;background:var(--th-182233);color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:7px 9px;font:inherit"
+                  title="Kênh sinh ở tab General — chọn từ danh bạ, không gõ tay">
+            {% for k in ds_kenh %}<option value="{{ k.ten_chuan }}" data-ma="{{ k.ma }}">{{ k.ten_chuan }}</option>{% endfor %}
+          </select>
+          <select id="nrk-loai" style="flex:1;background:var(--th-182233);color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:7px 9px;font:inherit">
+            <option value="">Channel type —</option>
+            <option value="tre_em">Kids</option><option value="documentary">Documentary</option>
+            <option value="narrator">Narrator</option><option value="compilation">Compilation</option>
+            <option value="tutorial">Tutorial</option><option value="giai_tri">General entertainment</option>
+          </select>
+        </div>
+        <input type="file" id="nrk-file" accept=".csv,.xlsx"
+               style="width:100%;background:var(--th-182233);color:var(--ink);border:1px dashed var(--line);border-radius:9px;padding:10px;font:inherit;font-size:.85rem">
+        <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;font-size:.78rem;color:var(--muted)">
+          <input id="nrk-ten" placeholder="Report name (optional)" style="flex:1.3;background:var(--th-182233);color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:6px 9px;font:inherit;font-size:.82rem">
+          <label>run <input type="date" id="nrk-ngay" style="background:var(--th-182233);color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:5px 7px;font:inherit;font-size:.78rem"></label>
+          <label>kỳ <input type="date" id="nrk-tu" style="background:var(--th-182233);color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:5px 7px;font:inherit;font-size:.78rem">
+          → <input type="date" id="nrk-den" style="background:var(--th-182233);color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:5px 7px;font:inherit;font-size:.78rem"></label>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;margin-top:10px">
+          <button type="button" class="nd-btn chinh" id="nrk-run" onclick="nrKenhChay()">
+            <svg class="ic" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg> Diagnose</button>
+          <span id="nrk-status" style="font-size:.8rem;color:var(--muted)"></span>
+        </div>
+        <p style="font-size:.72rem;color:var(--muted);margin:.7rem 0 0">File YouTube Studio (.csv/.xlsx) xuất per-video. Kỳ chỉ cần điền khi file không có sheet Chart data. Chạy nền — xong tự mở trang kênh.</p>
+        {% else %}
+        <p style="font-size:.85rem;color:var(--muted)">Niche này chưa có kênh trong danh bạ — tạo kênh ở <a href="/general/niches" style="color:var(--accent)">tab General</a> trước.</p>
+        {% endif %}
       </div>
     </div>
   </div>
@@ -389,6 +416,48 @@ function theoDoiNiche(project){
       .then(function(st){
         if (el) el.textContent = 'Đang chạy… ' + Math.round((Date.now() - t0) / 1000) + 's';
         if (!st.running){ clearInterval(iv); location.reload(); }
+      })
+      .catch(function(){ /* mạng chớp — poll tiếp */ });
+  }, 3000);
+}
+
+// ===== New report — nhánh Kênh (POST /chan-doan sẵn có, chạy nền + poll) =====
+function nrKenhChay(){
+  var nut = document.getElementById('nrk-run'), st = document.getElementById('nrk-status');
+  var f = document.getElementById('nrk-file');
+  if (!f.files.length){ st.textContent = 'Chọn file report trước.'; return; }
+  nut.disabled = true; st.textContent = 'Đang gửi…';
+  var sel = document.getElementById('nrk-kenh');
+  var fd = new FormData();
+  fd.append('file', f.files[0]);
+  fd.append('ten_kenh', sel.value);
+  fd.append('ten_bao_cao', document.getElementById('nrk-ten').value);
+  fd.append('loai_kenh', document.getElementById('nrk-loai').value);
+  fd.append('ngay_chay', document.getElementById('nrk-ngay').value);
+  fd.append('ky_bat_dau', document.getElementById('nrk-tu').value);
+  fd.append('ky_ket_thuc', document.getElementById('nrk-den').value);
+  var kenhMa = sel.options[sel.selectedIndex].getAttribute('data-ma');
+  fetch('/chan-doan', {method: 'POST', body: fd})
+    .then(function(r){ return r.json().then(function(d){ return {ok: r.ok, d: d}; }); })
+    .then(function(x){
+      if (!x.ok) throw new Error(x.d.detail || 'Lỗi');
+      if (x.d.loai === 'nen'){ theoDoiKenh(x.d.task_id, kenhMa, st); }
+      else { location = '/niche/kenh/' + kenhMa; }        // nhánh dữ liệu cũ: xong ngay
+    })
+    .catch(function(e){ nut.disabled = false; st.textContent = e.message; });
+}
+function theoDoiKenh(taskId, kenhMa, st){
+  var t0 = Date.now();
+  var iv = setInterval(function(){
+    fetch('/chan-doan/trang-thai/' + taskId)
+      .then(function(r){ return r.json(); })
+      .then(function(tv){
+        st.textContent = 'Đang phân tích… ' + Math.round((Date.now() - t0) / 1000) + 's';
+        if (tv.trang_thai !== 'dang_chay'){
+          clearInterval(iv);
+          if (tv.loi){ st.textContent = 'Lỗi: ' + tv.loi; }
+          else { location = '/niche/kenh/' + kenhMa; }     // xong → mở trang kênh, số mới hiện
+        }
       })
       .catch(function(){ /* mạng chớp — poll tiếp */ });
   }, 3000);

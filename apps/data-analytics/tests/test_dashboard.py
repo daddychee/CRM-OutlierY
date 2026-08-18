@@ -114,6 +114,20 @@ def test_kenh_khong_ton_tai_404(client, monkeypatch):
     assert client.get("/niche/kenh/K-XYZ", headers=CLAIMS).status_code == 404
 
 
+# ---------- PA2: một mặt tiền /niche ----------
+
+def test_chan_doan_redirect_ve_niche(client):
+    r = client.get("/chan-doan", headers=CLAIMS, follow_redirects=False)
+    assert r.status_code == 303 and r.headers["location"] == "/niche"
+
+
+def test_modal_co_form_kenh_tu_danh_ba(client):
+    body = client.get("/niche", headers=CLAIMS).text
+    assert 'id="nrk-kenh"' in body and "KENH A" in body       # select kênh từ danh bạ
+    assert 'id="nrk-file"' in body and "Diagnose" in body     # form nạp trong modal
+    assert 'href="/chan-doan"' not in body                     # hết link sang trang cũ
+
+
 def test_niche_chua_gan_project(client, tmp_path, monkeypatch):
     monkeypatch.setattr(dashboard, "_ds_ngach",
                         lambda: [{"ma": "N-KHAC", "ten_chuan": "NICHE TRỐNG"}])
