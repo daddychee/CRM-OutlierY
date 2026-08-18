@@ -1,700 +1,700 @@
-﻿{
- "_ghi_chu": "HỢP ĐỒNG APP — mỗi app tự khai với tầng nền (khuôn manifest Odoo/Nextcloud). Thêm app = thêm mục ở đây + ghi cổng vào docs/PORTS.md TRƯỚC. Mục du_lieu: mọi store phải có danh phận (xem docs/SO_DIA_BA_DU_LIEU.md) — store không khai = không được backup.",
- "du_lieu_nen": [
-  {
-   "ten": "ho-so-tai-lieu",
-   "loai": "kho-file",
-   "duong": "data/nen/ho-so-tai-lieu",
-   "muc_quy": "vang",
-   "backup": "copy",
-   "giu": "vinh-vien",
-   "ghi_chu": "Tài liệu gốc hồ sơ nhân sự <mã NS>/ (scan CCCD, SYLL — DE.md mục 12.1). NHẠY CẢM: chỉ Owner + giỏ nhan_su xem, mọi lượt xem có vết nhat_ky_quyen."
-  },
-  {
-   "ten": "iam-db",
-   "loai": "sqlite",
-   "duong": "data/nen/iam.db",
-   "muc_quy": "vang",
-   "backup": "sqlite-snapshot",
-   "giu": "vinh-vien"
-  },
-  {
-   "ten": "danh-ba-db",
-   "loai": "sqlite",
-   "duong": "data/nen/danh_ba.db",
-   "muc_quy": "vang",
-   "backup": "sqlite-snapshot",
-   "giu": "vinh-vien"
-  },
-  {
-   "ten": "ket-db",
-   "loai": "sqlite",
-   "duong": "data/nen/ket.db",
-   "muc_quy": "vang",
-   "backup": "sqlite-snapshot",
-   "giu": "vinh-vien"
-  },
-  {
-   "ten": "ket-khoa",
-   "loai": "file-khoa",
-   "duong": "data/nen/ket.key",
-   "muc_quy": "vang",
-   "backup": "copy",
-   "giu": "vinh-vien"
-  },
-  {
-   "ten": "logs",
-   "loai": "kho-file",
-   "duong": "data/logs",
-   "muc_quy": "bac",
-   "backup": "copy",
-   "giu": "60-ngay"
-  },
-  {
-   "ten": "qdrant",
-   "loai": "qdrant",
-   "duong": "data/qdrant/storage/snapshots",
-   "url": "http://127.0.0.1:6343",
-   "muc_quy": "vang",
-   "backup": "api-snapshot",
-   "giu": "7-ban"
-  },
-  {
-   "ten": "nas-dong-bo",
-   "loai": "json",
-   "duong": "data/nen/nas-dong-bo.json",
-   "muc_quy": "bac",
-   "backup": "copy",
-   "giu": "vinh-vien",
-   "ghi_chu": "Sổ trạng thái đồng bộ tài khoản NAS Windows theo người (nen/common/nas_sync.py, gateway gọi lúc đăng nhập/tự đổi mật khẩu). Mất sổ này KHÔNG mất tài khoản Windows đã tạo — chỉ mất cache 'đã đồng bộ chưa', tự dựng lại ở lượt đăng nhập kế tiếp."
-  }
- ],
- "apps": [
-  {
-   "slug": "ai-agent",
-   "ten": "AI Agent",
-   "mo_ta": "Hỏi–đáp RAG trích nguồn + nhập/quản kho tài liệu (Qdrant) + kho-thiếu/Q&A bổ sung + nguồn ngoài YouTube (bài học có neo) + lịch sử hội thoại + giám sát.",
-   "cong": 9101,
-   "tien_to": [
-    "/hoi-dap",
-    "/hoi",
-    "/upload",
-    "/kho-tai-lieu",
-    "/kho-thieu",
-    "/nguon",
-    "/nguon-ngoai",
-    "/lich-su",
-    "/giam-sat",
-    "/tai-ban-dep",
-    "/tai-ban-goc",
-    "/tu-khoa-goi-y",
-    "/co-tay",
-    "/phan-hoi",
-    "/kiem-stream",
-    "/static"
-   ],
-   "health": "/health",
-   "phien_ban": "2.0.0",
-   "chay": {
-    "kieu": "uvicorn",
-    "app_dir": "apps/ai-agent",
-    "module": "src.main:app"
-   },
-   "du_lieu": [
+{
+  "_ghi_chu": "HỢP ĐỒNG APP — mỗi app tự khai với tầng nền (khuôn manifest Odoo/Nextcloud). Thêm app = thêm mục ở đây + ghi cổng vào docs/PORTS.md TRƯỚC. Mục du_lieu: mọi store phải có danh phận (xem docs/SO_DIA_BA_DU_LIEU.md) — store không khai = không được backup.",
+  "du_lieu_nen": [
     {
-     "ten": "kho-tai-lieu",
-     "loai": "kho-file",
-     "duong": "data/ai-agent/kho/kho-tai-lieu",
-     "muc_quy": "vang",
-     "backup": "copy",
-     "giu": "vinh-vien",
-     "ghi_chu": "File gốc 8 ngăn + _catalog.csv + sổ vận hành + youtube_cookies.txt (NHẠY — write-only như key)"
+      "ten": "ho-so-tai-lieu",
+      "loai": "kho-file",
+      "duong": "data/nen/ho-so-tai-lieu",
+      "muc_quy": "vang",
+      "backup": "copy",
+      "giu": "vinh-vien",
+      "ghi_chu": "Tài liệu gốc hồ sơ nhân sự <mã NS>/ (scan CCCD, SYLL — DE.md mục 12.1). NHẠY CẢM: chỉ Owner + giỏ nhan_su xem, mọi lượt xem có vết nhat_ky_quyen."
     },
     {
-     "ten": "lich-su-hoi-thoai",
-     "loai": "json",
-     "duong": "data/ai-agent/db/lich-su",
-     "muc_quy": "vang",
-     "backup": "copy",
-     "giu": "vinh-vien",
-     "ghi_chu": "Mỗi user 1 file JSON ghi nguyên tử — nội dung hỏi-đáp, không đưa ra ngoài"
+      "ten": "iam-db",
+      "loai": "sqlite",
+      "duong": "data/nen/iam.db",
+      "muc_quy": "vang",
+      "backup": "sqlite-snapshot",
+      "giu": "vinh-vien"
+    },
+    {
+      "ten": "danh-ba-db",
+      "loai": "sqlite",
+      "duong": "data/nen/danh_ba.db",
+      "muc_quy": "vang",
+      "backup": "sqlite-snapshot",
+      "giu": "vinh-vien"
+    },
+    {
+      "ten": "ket-db",
+      "loai": "sqlite",
+      "duong": "data/nen/ket.db",
+      "muc_quy": "vang",
+      "backup": "sqlite-snapshot",
+      "giu": "vinh-vien"
+    },
+    {
+      "ten": "ket-khoa",
+      "loai": "file-khoa",
+      "duong": "data/nen/ket.key",
+      "muc_quy": "vang",
+      "backup": "copy",
+      "giu": "vinh-vien"
+    },
+    {
+      "ten": "logs",
+      "loai": "kho-file",
+      "duong": "data/logs",
+      "muc_quy": "bac",
+      "backup": "copy",
+      "giu": "60-ngay"
+    },
+    {
+      "ten": "qdrant",
+      "loai": "qdrant",
+      "duong": "data/qdrant/storage/snapshots",
+      "url": "http://127.0.0.1:6343",
+      "muc_quy": "vang",
+      "backup": "api-snapshot",
+      "giu": "7-ban"
+    },
+    {
+      "ten": "nas-dong-bo",
+      "loai": "json",
+      "duong": "data/nen/nas-dong-bo.json",
+      "muc_quy": "bac",
+      "backup": "copy",
+      "giu": "vinh-vien",
+      "ghi_chu": "Sổ trạng thái đồng bộ tài khoản NAS Windows theo người (nen/common/nas_sync.py, gateway gọi lúc đăng nhập/tự đổi mật khẩu). Mất sổ này KHÔNG mất tài khoản Windows đã tạo — chỉ mất cache 'đã đồng bộ chưa', tự dựng lại ở lượt đăng nhập kế tiếp."
     }
-   ],
-   "viec_api": [
+  ],
+  "apps": [
     {
-     "ma": "writer",
-     "ten": "Writer (trả lời hỏi–đáp)",
-     "loai": "llm"
+      "slug": "ai-agent",
+      "ten": "AI Agent",
+      "mo_ta": "Hỏi–đáp RAG trích nguồn + nhập/quản kho tài liệu (Qdrant) + kho-thiếu/Q&A bổ sung + nguồn ngoài YouTube (bài học có neo) + lịch sử hội thoại + giám sát.",
+      "cong": 9101,
+      "tien_to": [
+        "/hoi-dap",
+        "/hoi",
+        "/upload",
+        "/kho-tai-lieu",
+        "/kho-thieu",
+        "/nguon",
+        "/nguon-ngoai",
+        "/lich-su",
+        "/giam-sat",
+        "/tai-ban-dep",
+        "/tai-ban-goc",
+        "/tu-khoa-goi-y",
+        "/co-tay",
+        "/phan-hoi",
+        "/kiem-stream",
+        "/static"
+      ],
+      "health": "/health",
+      "phien_ban": "2.0.0",
+      "chay": {
+        "kieu": "uvicorn",
+        "app_dir": "apps/ai-agent",
+        "module": "src.main:app"
+      },
+      "du_lieu": [
+        {
+          "ten": "kho-tai-lieu",
+          "loai": "kho-file",
+          "duong": "data/ai-agent/kho/kho-tai-lieu",
+          "muc_quy": "vang",
+          "backup": "copy",
+          "giu": "vinh-vien",
+          "ghi_chu": "File gốc 8 ngăn + _catalog.csv + sổ vận hành + youtube_cookies.txt (NHẠY — write-only như key)"
+        },
+        {
+          "ten": "lich-su-hoi-thoai",
+          "loai": "json",
+          "duong": "data/ai-agent/db/lich-su",
+          "muc_quy": "vang",
+          "backup": "copy",
+          "giu": "vinh-vien",
+          "ghi_chu": "Mỗi user 1 file JSON ghi nguyên tử — nội dung hỏi-đáp, không đưa ra ngoài"
+        }
+      ],
+      "viec_api": [
+        {
+          "ma": "writer",
+          "ten": "Writer (trả lời hỏi–đáp)",
+          "loai": "llm"
+        },
+        {
+          "ma": "critic",
+          "ten": "Critic (phản biện)",
+          "loai": "llm"
+        },
+        {
+          "ma": "extract",
+          "ten": "Trích nguồn ngoài",
+          "loai": "llm"
+        }
+      ]
     },
     {
-     "ma": "critic",
-     "ten": "Critic (phản biện)",
-     "loai": "llm"
+      "slug": "radary",
+      "ten": "RadarY",
+      "mo_ta": "Radar theo dõi video/kênh đối thủ YouTube: pool quét theo lịch, alert breakout, heatmap, niche report. Đưa vào V3 từ hệ cũ 16/08 (APPS.md app 1/6).",
+      "cong": 9111,
+      "tien_to": [
+        "/api",
+        "/app.js",
+        "/vendor"
+      ],
+      "health": "/api/health",
+      "phien_ban": "1.0-v3",
+      "chay": {
+        "kieu": "uvicorn",
+        "app_dir": "apps/radary",
+        "module": "radary.api:app"
+      },
+      "du_lieu": [
+        {
+          "ten": "radary-db",
+          "loai": "sqlite",
+          "duong": "data/radary/radary.db",
+          "muc_quy": "vang",
+          "backup": "sqlite-snapshot",
+          "giu": "vinh-vien",
+          "ghi_chu": "orgs/users/workspaces/channels/videos/ticks/events + api_keys Fernet — snapshot từ hệ thật 16/08"
+        },
+        {
+          "ten": "radary-secret",
+          "loai": "file-khoa",
+          "duong": "data/radary/secret.key",
+          "muc_quy": "vang",
+          "backup": "copy",
+          "giu": "vinh-vien",
+          "ghi_chu": "Khóa chủ Fernet mã hóa API key YouTube trong db — mất khóa là mất key"
+        },
+        {
+          "ten": "radary-niche",
+          "loai": "kho-file",
+          "duong": "data/radary/niche",
+          "muc_quy": "vang",
+          "backup": "copy",
+          "giu": "vinh-vien"
+        },
+        {
+          "ten": "radary-reports",
+          "loai": "kho-file",
+          "duong": "data/radary/reports",
+          "muc_quy": "vang",
+          "backup": "copy",
+          "giu": "vinh-vien"
+        },
+        {
+          "ten": "radary-thumbs",
+          "loai": "kho-file",
+          "duong": "data/radary/thumbs",
+          "muc_quy": "tai-sinh",
+          "backup": "khong",
+          "giu": "tai-sinh",
+          "ghi_chu": "Thumbnail cache tự tái sinh khi quét — loại khỏi backup (đúng lệ hệ cũ)"
+        }
+      ],
+      "viec_api": [
+        {
+          "ma": "harvest",
+          "ten": "Quét pool đối thủ (harvest scan)",
+          "loai": "youtube"
+        },
+        {
+          "ma": "quet_dinh_ky",
+          "ten": "Cào video định kỳ (tick 15')",
+          "loai": "youtube"
+        },
+        {
+          "ma": "dien_giai",
+          "ten": "Diễn giải kết quả (LLM)",
+          "loai": "llm"
+        }
+      ],
+      "giao_dien": "khung"
     },
     {
-     "ma": "extract",
-     "ten": "Trích nguồn ngoài",
-     "loai": "llm"
+      "slug": "plannery",
+      "ten": "PlannerY",
+      "mo_ta": "Điều phối sản xuất video: dự án → kênh → video, phân công người theo khâu (content/editor), lịch tuần + cảnh báo trễ/thiếu người. Đưa vào V3 từ hệ cũ 19/08 (APPS.md app 5/6); SPA vanilla stdlib, ghi qua /api/plan CAS _rev + backup 2 lớp.",
+      "cong": 9116,
+      "tien_to": [
+        "/api"
+      ],
+      "health": "/api/me",
+      "phien_ban": "3.0-v3",
+      "chay": {
+        "kieu": "python-script",
+        "app_dir": "apps/plannery",
+        "module": "server.py"
+      },
+      "du_lieu": [
+        {
+          "ten": "plannery-plan",
+          "loai": "json",
+          "duong": "data/plannery/plan.json",
+          "muc_quy": "vang",
+          "backup": "copy",
+          "giu": "vinh-vien",
+          "ghi_chu": "Kế hoạch sản xuất (people/projects/assignments, CAS _rev). BẢN SAO plan.json hệ thật 19/08 — V2 cổng 8123 vẫn là nguồn thật tới cutover; app tự giữ plan.backup.json + backups/ 40 bản cạnh file."
+        }
+      ],
+      "giao_dien": "khung"
+    },
+    {
+      "slug": "content-ultimate",
+      "ten": "Content Ultimate",
+      "mo_ta": "Outline board (bằng chứng từ video đối thủ) + Author Extract (giọng văn + kịch bản). Đưa vào V3 từ hệ cũ 16/08 (APPS.md app 2/6).",
+      "cong": 9112,
+      "tien_to": [
+        "/api",
+        "/oe",
+        "/author",
+        "/outline",
+        "/write",
+        "/manage",
+        "/settings",
+        "/logout"
+      ],
+      "health": "/api/health",
+      "phien_ban": "0.2-v3",
+      "chay": {
+        "kieu": "python-module",
+        "app_dir": "apps/content-ultimate",
+        "module": "contentultimate.server"
+      },
+      "du_lieu": [
+        {
+          "ten": "cu-authors",
+          "loai": "kho-file",
+          "duong": "data/content-ultimate/authors",
+          "muc_quy": "vang",
+          "backup": "copy",
+          "giu": "vinh-vien",
+          "ghi_chu": "Hồ sơ giọng văn + corpus tác giả (Author Extract)"
+        },
+        {
+          "ten": "cu-library",
+          "loai": "json",
+          "duong": "data/content-ultimate/library",
+          "muc_quy": "vang",
+          "backup": "copy",
+          "giu": "vinh-vien",
+          "ghi_chu": "Sổ đăng ký tác giả index.json (mã A001… bất biến)"
+        },
+        {
+          "ten": "cu-runs",
+          "loai": "kho-file",
+          "duong": "data/content-ultimate/runs",
+          "muc_quy": "vang",
+          "backup": "copy",
+          "giu": "vinh-vien",
+          "ghi_chu": "Run pipeline Outline (bằng chứng + cluster + beat)"
+        },
+        {
+          "ten": "cu-uploads",
+          "loai": "kho-file",
+          "duong": "data/content-ultimate/uploads",
+          "muc_quy": "vang",
+          "backup": "copy",
+          "giu": "vinh-vien"
+        },
+        {
+          "ten": "cu-admin",
+          "loai": "json",
+          "duong": "data/content-ultimate/admin",
+          "muc_quy": "vang",
+          "backup": "copy",
+          "giu": "vinh-vien",
+          "ghi_chu": "usage/history/access .jsonl chỉ-thêm — KPI đọc history.jsonl"
+        },
+        {
+          "ten": "cu-cau-hinh",
+          "loai": "json",
+          "duong": "data/content-ultimate/roles.json",
+          "muc_quy": "vang",
+          "backup": "copy",
+          "giu": "vinh-vien",
+          "ghi_chu": "roles.json + invites.json di sản V2 — SSO bật thì KHÔNG thắng header, giữ làm dữ liệu"
+        },
+        {
+          "ten": "cu-cookies",
+          "loai": "file-khoa",
+          "duong": "data/content-ultimate/cookies.txt",
+          "muc_quy": "vang",
+          "backup": "copy",
+          "giu": "vinh-vien",
+          "ghi_chu": "SECRET — cookies YouTube của team (Netscape), gitignore theo data/; backup như bản mã két, không đưa vào gói chia sẻ"
+        }
+      ],
+      "giao_dien": "khung",
+      "viec_api": [
+        {
+          "ma": "viet_kich_ban",
+          "ten": "Viết kịch bản (Author/Writing board)",
+          "loai": "llm"
+        },
+        {
+          "ma": "phan_tich_outline",
+          "ten": "Phân tích Outline (beats · label · cluster)",
+          "loai": "llm"
+        },
+        {
+          "ma": "lay_transcript",
+          "ten": "Lấy transcript video (S1b)",
+          "loai": "transcript"
+        },
+        {
+          "ma": "lay_comment",
+          "ten": "Lấy comment video (S1c)",
+          "loai": "youtube"
+        }
+      ]
+    },
+    {
+      "slug": "video-review",
+      "ten": "Video Review",
+      "mo_ta": "Feedback video kiểu Frame.io: upload bản dựng → bình luận gắn mốc thời gian + vẽ chú thích trên khung hình → trạng thái duyệt (In review / Changes requested / Approved). App V3 mới 18/08.",
+      "cong": 9114,
+      "tien_to": [
+        "/danh-sach",
+        "/xem",
+        "/media",
+        "/upload-video",
+        "/api-vr"
+      ],
+      "health": "/health",
+      "phien_ban": "0.1.0",
+      "chay": {
+        "kieu": "uvicorn",
+        "app_dir": "apps/video-review",
+        "module": "src.main:app"
+      },
+      "du_lieu": [
+        {
+          "ten": "video-goc",
+          "loai": "kho-file",
+          "duong": "data/video-review/kho",
+          "muc_quy": "vang",
+          "backup": "copy",
+          "giu": "vinh-vien",
+          "ghi_chu": "Video bản dựng team upload, kho năm/tháng (Luật 5) — file lớn; xóa trên UI là GỠ MỀM, file giữ nguyên"
+        },
+        {
+          "ten": "video-review-db",
+          "loai": "sqlite",
+          "duong": "data/video-review/db/video_review.db",
+          "muc_quy": "vang",
+          "backup": "sqlite-snapshot",
+          "giu": "vinh-vien",
+          "ghi_chu": "Sổ video + bình luận mốc thời gian + nét vẽ chú thích (schema_version, migrations/)"
+        }
+      ]
+    },
+    {
+      "slug": "seo-optimize",
+      "ten": "SEO Optimize",
+      "mo_ta": "Sinh metadata SEO YouTube (title/description/tags/timestamps/CTA) theo format học từ kênh đối thủ: hồ sơ kênh + format + kho niche + tập. Đưa vào V3 từ hệ cũ 19/08 (APPS.md app 4/6).",
+      "cong": 9115,
+      "tien_to": [
+        "/api"
+      ],
+      "health": "/api/health",
+      "phien_ban": "1.0-v3",
+      "chay": {
+        "kieu": "python-module",
+        "app_dir": "apps/seo-optimize",
+        "module": "seo.server"
+      },
+      "du_lieu": [
+        {
+          "ten": "seo-users",
+          "loai": "json",
+          "duong": "data/seo-optimize/users.json",
+          "muc_quy": "vang",
+          "backup": "copy",
+          "giu": "vinh-vien",
+          "ghi_chu": "DI SẢN V2: hash mật khẩu cục bộ + GIỚI HẠN thị trường/kênh đã gán. SSO bật thì app CHỈ ĐỌC giới hạn — KHÔNG ghi/tạo tài khoản (tài khoản từ khối nền, lệnh user 19/08); đường login cục bộ đóng 404."
+        },
+        {
+          "ten": "seo-markets",
+          "loai": "json",
+          "duong": "data/seo-optimize/markets.json",
+          "muc_quy": "vang",
+          "backup": "copy",
+          "giu": "vinh-vien"
+        },
+        {
+          "ten": "seo-profiles",
+          "loai": "kho-file",
+          "duong": "data/seo-optimize/profiles",
+          "muc_quy": "vang",
+          "backup": "copy",
+          "giu": "vinh-vien",
+          "ghi_chu": "Hồ sơ kênh (guide + link/CTA/sub_url user gõ tay — mất là không dựng lại được)"
+        },
+        {
+          "ten": "seo-episodes",
+          "loai": "kho-file",
+          "duong": "data/seo-optimize/episodes",
+          "muc_quy": "vang",
+          "backup": "copy",
+          "giu": "vinh-vien"
+        },
+        {
+          "ten": "seo-formats",
+          "loai": "kho-file",
+          "duong": "data/seo-optimize/formats",
+          "muc_quy": "vang",
+          "backup": "copy",
+          "giu": "vinh-vien",
+          "ghi_chu": "Format đối thủ harvest từ YouTube — nạp lại được nhưng tốn quota"
+        },
+        {
+          "ten": "seo-niches",
+          "loai": "kho-file",
+          "duong": "data/seo-optimize/niches",
+          "muc_quy": "vang",
+          "backup": "copy",
+          "giu": "vinh-vien",
+          "ghi_chu": "Kho niche (title/công thức/text-on-thumb team vun tay)"
+        },
+        {
+          "ten": "seo-runs",
+          "loai": "kho-file",
+          "duong": "data/seo-optimize/runs",
+          "muc_quy": "bac",
+          "backup": "copy",
+          "giu": "60-ngay",
+          "ghi_chu": "Kết quả sinh metadata từng lượt — tái sinh được (tốn token), board đọc lại qua /api/runs"
+        },
+        {
+          "ten": "seo-audit",
+          "loai": "json",
+          "duong": "data/seo-optimize/logs",
+          "muc_quy": "vang",
+          "backup": "copy",
+          "giu": "vinh-vien",
+          "ghi_chu": "audit.jsonl chỉ-thêm (ai làm gì, xoay vòng .1.jsonl) — sử liệu vận hành"
+        }
+      ],
+      "giao_dien": "khung",
+      "viec_api": [
+        {
+          "ma": "trich_kenh",
+          "ten": "Trích kênh YouTube (hồ sơ kênh mình + format đối thủ)",
+          "loai": "youtube"
+        },
+        {
+          "ma": "sinh_metadata",
+          "ten": "Sinh metadata SEO (title · description · tags · CTA)",
+          "loai": "llm"
+        }
+      ]
+    },
+    {
+      "slug": "data-analytics",
+      "ten": "Data Analytics",
+      "mo_ta": "Chẩn đoán số liệu kênh YouTube — engine 4 trục, 7 phán quyết, báo cáo 9 mục, lịch sử dùng chung.",
+      "cong": 9102,
+      "tien_to": [
+        "/chan-doan",
+        "/bao-cao-lich-su",
+        "/bao-cao-goc",
+        "/api/bao-cao-lich-su",
+        "/niche",
+        "/api/agent"
+      ],
+      "health": "/health",
+      "phien_ban": "2.0.0",
+      "chay": {
+        "kieu": "uvicorn",
+        "app_dir": "apps/data-analytics",
+        "module": "src.main:app"
+      },
+      "du_lieu": [
+        {
+          "ten": "bao-cao-lich-su",
+          "loai": "json",
+          "duong": "data/data-analytics/db/bao-cao-lich-su",
+          "muc_quy": "vang",
+          "backup": "copy",
+          "giu": "vinh-vien"
+        },
+        {
+          "ten": "bao-cao-goc",
+          "loai": "kho-file",
+          "duong": "data/data-analytics/kho/bao-cao-goc",
+          "muc_quy": "vang",
+          "backup": "copy",
+          "giu": "vinh-vien"
+        }
+      ],
+      "viec_api": [
+        {
+          "ma": "dien_giai",
+          "ten": "Diễn giải kết quả (Writer)",
+          "loai": "llm"
+        },
+        {
+          "ma": "phan_bien",
+          "ten": "Phản biện (Critic)",
+          "loai": "llm"
+        }
+      ]
+    },
+    {
+      "slug": "niche-research",
+      "ten": "Niche Research",
+      "mo_ta": "Nghiên cứu ngách YouTube: quét đối thủ → outlier → gap comment → phán quyết Go/NoGo + agent LLM (namer/auditor/plan/summary). Đưa vào V3 từ hệ cũ 18/08 (APPS.md app 3 — Owner chen lên trước SEO).",
+      "cong": 9113,
+      "tien_to": [
+        "/api",
+        "/web"
+      ],
+      "health": "/api/health",
+      "phien_ban": "1.0-v3",
+      "chay": {
+        "kieu": "uvicorn",
+        "app_dir": "apps/niche-research",
+        "module": "server:app"
+      },
+      "du_lieu": [
+        {
+          "ten": "niche-projects",
+          "loai": "kho-file",
+          "duong": "data/niche-research/projects",
+          "muc_quy": "vang",
+          "backup": "copy",
+          "giu": "vinh-vien",
+          "ghi_chu": "Mỗi dự án nghiên cứu ngách một thư mục: competitors.txt + niche-data (scan/decision/bets) + Report xlsx/SUMMARY — snapshot từ hệ thật 18/08"
+        },
+        {
+          "ten": "niche-invites",
+          "loai": "json",
+          "duong": "data/niche-research/data",
+          "muc_quy": "vang",
+          "backup": "copy",
+          "giu": "vinh-vien",
+          "ghi_chu": "users.json/invites.json di sản V2 — SSO bật thì quản trị đóng 404, giữ làm dữ liệu"
+        }
+      ],
+      "giao_dien": "khung",
+      "viec_api": [
+        {
+          "ma": "quet_kenh",
+          "ten": "Quét kênh đối thủ (scan · keywords · comments · demand)",
+          "loai": "youtube"
+        },
+        {
+          "ma": "phan_tich",
+          "ten": "Agent phân tích (namer · auditor · plan · dna · summary)",
+          "loai": "llm"
+        },
+        {
+          "ma": "lay_transcript",
+          "ten": "Lấy transcript deepdive (S15)",
+          "loai": "transcript"
+        }
+      ]
+    },
+    {
+      "slug": "to-chuc",
+      "ten": "Organization",
+      "mo_ta": "KPI tự động 4 nguồn chỉ-đọc + chấm công hiện diện + trang NAS + Vault tài khoản số (chỉ Owner).",
+      "cong": 9103,
+      "tien_to": [
+        "/kpi",
+        "/nas",
+        "/api/nhip",
+        "/api/nhip-thoat",
+        "/vault",
+        "/hr",
+        "/finance"
+      ],
+      "health": "/health",
+      "phien_ban": "2.0.0",
+      "chay": {
+        "kieu": "uvicorn",
+        "app_dir": "apps/to-chuc",
+        "module": "src.main:app"
+      },
+      "du_lieu": [
+        {
+          "ten": "cham-cong",
+          "loai": "json",
+          "duong": "data/to-chuc/db/cham-cong",
+          "muc_quy": "vang",
+          "backup": "copy",
+          "giu": "vinh-vien"
+        },
+        {
+          "ten": "vault",
+          "loai": "kho-file",
+          "duong": "data/vault",
+          "muc_quy": "vang",
+          "backup": "copy",
+          "giu": "vinh-vien",
+          "ghi_chu": "CHỈ BẢN MÃ vault.enc + hash safekey + audit.csv — backup nhận bản mã, đúng lệ hệ cũ"
+        },
+        {
+          "ten": "cham-cong-chot",
+          "loai": "json",
+          "duong": "data/to-chuc/db/cham-cong-chot",
+          "muc_quy": "vang",
+          "backup": "copy",
+          "giu": "vinh-vien",
+          "ghi_chu": "Bảng công đã CHỐT kỳ (HR Hub) — chỉ-thêm, mỗi kỳ một file, không ghi đè"
+        },
+        {
+          "ten": "kpi-danh-gia",
+          "loai": "json",
+          "duong": "data/to-chuc/db/kpi-danh-gia",
+          "muc_quy": "vang",
+          "backup": "copy",
+          "giu": "vinh-vien",
+          "ghi_chu": "Xếp loại KPI per người per kỳ (HR Hub) — append bản ghi, giữ trọn lịch sử chấm"
+        },
+        {
+          "ten": "so-thu-chi",
+          "loai": "json",
+          "duong": "data/to-chuc/db/so-thu-chi",
+          "muc_quy": "vang",
+          "backup": "copy",
+          "giu": "vinh-vien",
+          "ghi_chu": "SỔ THU CHI JSONL theo năm (Finance Hub) — SỐ TIỀN là dữ liệu bảo quản lâu dài, chỉ-thêm, sửa = bút toán đảo (luật toàn cục DE.md mục 13)"
+        },
+        {
+          "ten": "muc-tieu",
+          "loai": "json",
+          "duong": "data/to-chuc/db/muc-tieu.json",
+          "muc_quy": "vang",
+          "backup": "copy",
+          "giu": "vinh-vien",
+          "ghi_chu": "Sổ mục tiêu chi tiêu (Finance Hub) — mọi bút toán gắn một mục tiêu"
+        }
+      ]
+    },
+    {
+      "slug": "app-mau",
+      "ten": "Sample App",
+      "mo_ta": "App 50 dòng chứng minh hợp đồng app: nhận claims, /health, proxy.",
+      "cong": 9190,
+      "tien_to": [],
+      "health": "/health",
+      "phien_ban": "0.1.0",
+      "chay": {
+        "kieu": "uvicorn",
+        "app_dir": "apps/app-mau/src",
+        "module": "main:app"
+      },
+      "du_lieu": []
     }
-   ]
-  },
-  {
-   "slug": "data-analytics",
-   "ten": "Data Analytics",
-   "mo_ta": "Chẩn đoán số liệu kênh YouTube — engine 4 trục, 7 phán quyết, báo cáo 9 mục, lịch sử dùng chung.",
-   "cong": 9102,
-   "tien_to": [
-    "/chan-doan",
-    "/bao-cao-lich-su",
-    "/bao-cao-goc",
-    "/api/bao-cao-lich-su",
-    "/niche",
-    "/api/agent"
-   ],
-   "health": "/health",
-   "phien_ban": "2.0.0",
-   "chay": {
-    "kieu": "uvicorn",
-    "app_dir": "apps/data-analytics",
-    "module": "src.main:app"
-   },
-   "du_lieu": [
-    {
-     "ten": "bao-cao-lich-su",
-     "loai": "json",
-     "duong": "data/data-analytics/db/bao-cao-lich-su",
-     "muc_quy": "vang",
-     "backup": "copy",
-     "giu": "vinh-vien"
-    },
-    {
-     "ten": "bao-cao-goc",
-     "loai": "kho-file",
-     "duong": "data/data-analytics/kho/bao-cao-goc",
-     "muc_quy": "vang",
-     "backup": "copy",
-     "giu": "vinh-vien"
-    }
-   ],
-   "viec_api": [
-    {
-     "ma": "dien_giai",
-     "ten": "Diễn giải kết quả (Writer)",
-     "loai": "llm"
-    },
-    {
-     "ma": "phan_bien",
-     "ten": "Phản biện (Critic)",
-     "loai": "llm"
-    }
-   ]
-  },
-  {
-   "slug": "to-chuc",
-   "ten": "Organization",
-   "mo_ta": "KPI tự động 4 nguồn chỉ-đọc + chấm công hiện diện + trang NAS + Vault tài khoản số (chỉ Owner).",
-   "cong": 9103,
-   "tien_to": [
-    "/kpi",
-    "/nas",
-    "/api/nhip",
-    "/api/nhip-thoat",
-    "/vault",
-    "/hr",
-    "/finance"
-   ],
-   "health": "/health",
-   "phien_ban": "2.0.0",
-   "chay": {
-    "kieu": "uvicorn",
-    "app_dir": "apps/to-chuc",
-    "module": "src.main:app"
-   },
-   "du_lieu": [
-    {
-     "ten": "cham-cong",
-     "loai": "json",
-     "duong": "data/to-chuc/db/cham-cong",
-     "muc_quy": "vang",
-     "backup": "copy",
-     "giu": "vinh-vien"
-    },
-    {
-     "ten": "vault",
-     "loai": "kho-file",
-     "duong": "data/vault",
-     "muc_quy": "vang",
-     "backup": "copy",
-     "giu": "vinh-vien",
-     "ghi_chu": "CHỈ BẢN MÃ vault.enc + hash safekey + audit.csv — backup nhận bản mã, đúng lệ hệ cũ"
-    },
-    {
-     "ten": "cham-cong-chot",
-     "loai": "json",
-     "duong": "data/to-chuc/db/cham-cong-chot",
-     "muc_quy": "vang",
-     "backup": "copy",
-     "giu": "vinh-vien",
-     "ghi_chu": "Bảng công đã CHỐT kỳ (HR Hub) — chỉ-thêm, mỗi kỳ một file, không ghi đè"
-    },
-    {
-     "ten": "kpi-danh-gia",
-     "loai": "json",
-     "duong": "data/to-chuc/db/kpi-danh-gia",
-     "muc_quy": "vang",
-     "backup": "copy",
-     "giu": "vinh-vien",
-     "ghi_chu": "Xếp loại KPI per người per kỳ (HR Hub) — append bản ghi, giữ trọn lịch sử chấm"
-    },
-    {
-     "ten": "so-thu-chi",
-     "loai": "json",
-     "duong": "data/to-chuc/db/so-thu-chi",
-     "muc_quy": "vang",
-     "backup": "copy",
-     "giu": "vinh-vien",
-     "ghi_chu": "SỔ THU CHI JSONL theo năm (Finance Hub) — SỐ TIỀN là dữ liệu bảo quản lâu dài, chỉ-thêm, sửa = bút toán đảo (luật toàn cục DE.md mục 13)"
-    },
-    {
-     "ten": "muc-tieu",
-     "loai": "json",
-     "duong": "data/to-chuc/db/muc-tieu.json",
-     "muc_quy": "vang",
-     "backup": "copy",
-     "giu": "vinh-vien",
-     "ghi_chu": "Sổ mục tiêu chi tiêu (Finance Hub) — mọi bút toán gắn một mục tiêu"
-    }
-   ]
-  },
-  {
-   "slug": "video-review",
-   "ten": "Video Review",
-   "mo_ta": "Feedback video kiểu Frame.io: upload bản dựng → bình luận gắn mốc thời gian + vẽ chú thích trên khung hình → trạng thái duyệt (In review / Changes requested / Approved). App V3 mới 18/08.",
-   "cong": 9114,
-   "tien_to": [
-    "/danh-sach",
-    "/xem",
-    "/media",
-    "/upload-video",
-    "/api-vr"
-   ],
-   "health": "/health",
-   "phien_ban": "0.1.0",
-   "chay": {
-    "kieu": "uvicorn",
-    "app_dir": "apps/video-review",
-    "module": "src.main:app"
-   },
-   "du_lieu": [
-    {
-     "ten": "video-goc",
-     "loai": "kho-file",
-     "duong": "data/video-review/kho",
-     "muc_quy": "vang",
-     "backup": "copy",
-     "giu": "vinh-vien",
-     "ghi_chu": "Video bản dựng team upload, kho năm/tháng (Luật 5) — file lớn; xóa trên UI là GỠ MỀM, file giữ nguyên"
-    },
-    {
-     "ten": "video-review-db",
-     "loai": "sqlite",
-     "duong": "data/video-review/db/video_review.db",
-     "muc_quy": "vang",
-     "backup": "sqlite-snapshot",
-     "giu": "vinh-vien",
-     "ghi_chu": "Sổ video + bình luận mốc thời gian + nét vẽ chú thích (schema_version, migrations/)"
-    }
-   ]
-  },
-  {
-   "slug": "app-mau",
-   "ten": "Sample App",
-   "mo_ta": "App 50 dòng chứng minh hợp đồng app: nhận claims, /health, proxy.",
-   "cong": 9190,
-   "tien_to": [],
-   "health": "/health",
-   "phien_ban": "0.1.0",
-   "chay": {
-    "kieu": "uvicorn",
-    "app_dir": "apps/app-mau/src",
-    "module": "main:app"
-   },
-   "du_lieu": []
-  },
-  {
-   "slug": "radary",
-   "ten": "RadarY",
-   "mo_ta": "Radar theo dõi video/kênh đối thủ YouTube: pool quét theo lịch, alert breakout, heatmap, niche report. Đưa vào V3 từ hệ cũ 16/08 (APPS.md app 1/6).",
-   "cong": 9111,
-   "tien_to": [
-    "/api",
-    "/app.js",
-    "/vendor"
-   ],
-   "health": "/api/health",
-   "phien_ban": "1.0-v3",
-   "chay": {
-    "kieu": "uvicorn",
-    "app_dir": "apps/radary",
-    "module": "radary.api:app"
-   },
-   "du_lieu": [
-    {
-     "ten": "radary-db",
-     "loai": "sqlite",
-     "duong": "data/radary/radary.db",
-     "muc_quy": "vang",
-     "backup": "sqlite-snapshot",
-     "giu": "vinh-vien",
-     "ghi_chu": "orgs/users/workspaces/channels/videos/ticks/events + api_keys Fernet — snapshot từ hệ thật 16/08"
-    },
-    {
-     "ten": "radary-secret",
-     "loai": "file-khoa",
-     "duong": "data/radary/secret.key",
-     "muc_quy": "vang",
-     "backup": "copy",
-     "giu": "vinh-vien",
-     "ghi_chu": "Khóa chủ Fernet mã hóa API key YouTube trong db — mất khóa là mất key"
-    },
-    {
-     "ten": "radary-niche",
-     "loai": "kho-file",
-     "duong": "data/radary/niche",
-     "muc_quy": "vang",
-     "backup": "copy",
-     "giu": "vinh-vien"
-    },
-    {
-     "ten": "radary-reports",
-     "loai": "kho-file",
-     "duong": "data/radary/reports",
-     "muc_quy": "vang",
-     "backup": "copy",
-     "giu": "vinh-vien"
-    },
-    {
-     "ten": "radary-thumbs",
-     "loai": "kho-file",
-     "duong": "data/radary/thumbs",
-     "muc_quy": "tai-sinh",
-     "backup": "khong",
-     "giu": "tai-sinh",
-     "ghi_chu": "Thumbnail cache tự tái sinh khi quét — loại khỏi backup (đúng lệ hệ cũ)"
-    }
-   ],
-   "viec_api": [
-    {
-     "ma": "harvest",
-     "ten": "Quét pool đối thủ (harvest scan)",
-     "loai": "youtube"
-    },
-    {
-     "ma": "quet_dinh_ky",
-     "ten": "Cào video định kỳ (tick 15')",
-     "loai": "youtube"
-    },
-    {
-     "ma": "dien_giai",
-     "ten": "Diễn giải kết quả (LLM)",
-     "loai": "llm"
-    }
-   ],
-   "giao_dien": "khung"
-  },
-  {
-   "slug": "content-ultimate",
-   "ten": "Content Ultimate",
-   "mo_ta": "Outline board (bằng chứng từ video đối thủ) + Author Extract (giọng văn + kịch bản). Đưa vào V3 từ hệ cũ 16/08 (APPS.md app 2/6).",
-   "cong": 9112,
-   "tien_to": [
-    "/api",
-    "/oe",
-    "/author",
-    "/outline",
-    "/write",
-    "/manage",
-    "/settings",
-    "/logout"
-   ],
-   "health": "/api/health",
-   "phien_ban": "0.2-v3",
-   "chay": {
-    "kieu": "python-module",
-    "app_dir": "apps/content-ultimate",
-    "module": "contentultimate.server"
-   },
-   "du_lieu": [
-    {
-     "ten": "cu-authors",
-     "loai": "kho-file",
-     "duong": "data/content-ultimate/authors",
-     "muc_quy": "vang",
-     "backup": "copy",
-     "giu": "vinh-vien",
-     "ghi_chu": "Hồ sơ giọng văn + corpus tác giả (Author Extract)"
-    },
-    {
-     "ten": "cu-library",
-     "loai": "json",
-     "duong": "data/content-ultimate/library",
-     "muc_quy": "vang",
-     "backup": "copy",
-     "giu": "vinh-vien",
-     "ghi_chu": "Sổ đăng ký tác giả index.json (mã A001… bất biến)"
-    },
-    {
-     "ten": "cu-runs",
-     "loai": "kho-file",
-     "duong": "data/content-ultimate/runs",
-     "muc_quy": "vang",
-     "backup": "copy",
-     "giu": "vinh-vien",
-     "ghi_chu": "Run pipeline Outline (bằng chứng + cluster + beat)"
-    },
-    {
-     "ten": "cu-uploads",
-     "loai": "kho-file",
-     "duong": "data/content-ultimate/uploads",
-     "muc_quy": "vang",
-     "backup": "copy",
-     "giu": "vinh-vien"
-    },
-    {
-     "ten": "cu-admin",
-     "loai": "json",
-     "duong": "data/content-ultimate/admin",
-     "muc_quy": "vang",
-     "backup": "copy",
-     "giu": "vinh-vien",
-     "ghi_chu": "usage/history/access .jsonl chỉ-thêm — KPI đọc history.jsonl"
-    },
-    {
-     "ten": "cu-cau-hinh",
-     "loai": "json",
-     "duong": "data/content-ultimate/roles.json",
-     "muc_quy": "vang",
-     "backup": "copy",
-     "giu": "vinh-vien",
-     "ghi_chu": "roles.json + invites.json di sản V2 — SSO bật thì KHÔNG thắng header, giữ làm dữ liệu"
-    },
-    {
-     "ten": "cu-cookies",
-     "loai": "file-khoa",
-     "duong": "data/content-ultimate/cookies.txt",
-     "muc_quy": "vang",
-     "backup": "copy",
-     "giu": "vinh-vien",
-     "ghi_chu": "SECRET — cookies YouTube của team (Netscape), gitignore theo data/; backup như bản mã két, không đưa vào gói chia sẻ"
-    }
-   ],
-   "giao_dien": "khung",
-   "viec_api": [
-    {
-     "ma": "viet_kich_ban",
-     "ten": "Viết kịch bản (Author/Writing board)",
-     "loai": "llm"
-    },
-    {
-     "ma": "phan_tich_outline",
-     "ten": "Phân tích Outline (beats · label · cluster)",
-     "loai": "llm"
-    },
-    {
-     "ma": "lay_transcript",
-     "ten": "Lấy transcript video (S1b)",
-     "loai": "transcript"
-    },
-    {
-     "ma": "lay_comment",
-     "ten": "Lấy comment video (S1c)",
-     "loai": "youtube"
-    }
-   ]
-  },
-  {
-   "slug": "niche-research",
-   "ten": "Niche Research",
-   "mo_ta": "Nghiên cứu ngách YouTube: quét đối thủ → outlier → gap comment → phán quyết Go/NoGo + agent LLM (namer/auditor/plan/summary). Đưa vào V3 từ hệ cũ 18/08 (APPS.md app 3 — Owner chen lên trước SEO).",
-   "cong": 9113,
-   "tien_to": [
-    "/api",
-    "/web"
-   ],
-   "health": "/api/health",
-   "phien_ban": "1.0-v3",
-   "chay": {
-    "kieu": "uvicorn",
-    "app_dir": "apps/niche-research",
-    "module": "server:app"
-   },
-   "du_lieu": [
-    {
-     "ten": "niche-projects",
-     "loai": "kho-file",
-     "duong": "data/niche-research/projects",
-     "muc_quy": "vang",
-     "backup": "copy",
-     "giu": "vinh-vien",
-     "ghi_chu": "Mỗi dự án nghiên cứu ngách một thư mục: competitors.txt + niche-data (scan/decision/bets) + Report xlsx/SUMMARY — snapshot từ hệ thật 18/08"
-    },
-    {
-     "ten": "niche-invites",
-     "loai": "json",
-     "duong": "data/niche-research/data",
-     "muc_quy": "vang",
-     "backup": "copy",
-     "giu": "vinh-vien",
-     "ghi_chu": "users.json/invites.json di sản V2 — SSO bật thì quản trị đóng 404, giữ làm dữ liệu"
-    }
-   ],
-   "giao_dien": "khung",
-   "viec_api": [
-    {
-     "ma": "quet_kenh",
-     "ten": "Quét kênh đối thủ (scan · keywords · comments · demand)",
-     "loai": "youtube"
-    },
-    {
-     "ma": "phan_tich",
-     "ten": "Agent phân tích (namer · auditor · plan · dna · summary)",
-     "loai": "llm"
-    },
-    {
-     "ma": "lay_transcript",
-     "ten": "Lấy transcript deepdive (S15)",
-     "loai": "transcript"
-    }
-   ]
-  },
-  {
-   "slug": "seo-optimize",
-   "ten": "SEO Optimize",
-   "mo_ta": "Sinh metadata SEO YouTube (title/description/tags/timestamps/CTA) theo format học từ kênh đối thủ: hồ sơ kênh + format + kho niche + tập. Đưa vào V3 từ hệ cũ 19/08 (APPS.md app 4/6).",
-   "cong": 9115,
-   "tien_to": [
-    "/api"
-   ],
-   "health": "/api/health",
-   "phien_ban": "1.0-v3",
-   "chay": {
-    "kieu": "python-module",
-    "app_dir": "apps/seo-optimize",
-    "module": "seo.server"
-   },
-   "du_lieu": [
-    {
-     "ten": "seo-users",
-     "loai": "json",
-     "duong": "data/seo-optimize/users.json",
-     "muc_quy": "vang",
-     "backup": "copy",
-     "giu": "vinh-vien",
-     "ghi_chu": "DI SẢN V2: hash mật khẩu cục bộ + GIỚI HẠN thị trường/kênh đã gán. SSO bật thì app CHỈ ĐỌC giới hạn — KHÔNG ghi/tạo tài khoản (tài khoản từ khối nền, lệnh user 19/08); đường login cục bộ đóng 404."
-    },
-    {
-     "ten": "seo-markets",
-     "loai": "json",
-     "duong": "data/seo-optimize/markets.json",
-     "muc_quy": "vang",
-     "backup": "copy",
-     "giu": "vinh-vien"
-    },
-    {
-     "ten": "seo-profiles",
-     "loai": "kho-file",
-     "duong": "data/seo-optimize/profiles",
-     "muc_quy": "vang",
-     "backup": "copy",
-     "giu": "vinh-vien",
-     "ghi_chu": "Hồ sơ kênh (guide + link/CTA/sub_url user gõ tay — mất là không dựng lại được)"
-    },
-    {
-     "ten": "seo-episodes",
-     "loai": "kho-file",
-     "duong": "data/seo-optimize/episodes",
-     "muc_quy": "vang",
-     "backup": "copy",
-     "giu": "vinh-vien"
-    },
-    {
-     "ten": "seo-formats",
-     "loai": "kho-file",
-     "duong": "data/seo-optimize/formats",
-     "muc_quy": "vang",
-     "backup": "copy",
-     "giu": "vinh-vien",
-     "ghi_chu": "Format đối thủ harvest từ YouTube — nạp lại được nhưng tốn quota"
-    },
-    {
-     "ten": "seo-niches",
-     "loai": "kho-file",
-     "duong": "data/seo-optimize/niches",
-     "muc_quy": "vang",
-     "backup": "copy",
-     "giu": "vinh-vien",
-     "ghi_chu": "Kho niche (title/công thức/text-on-thumb team vun tay)"
-    },
-    {
-     "ten": "seo-runs",
-     "loai": "kho-file",
-     "duong": "data/seo-optimize/runs",
-     "muc_quy": "bac",
-     "backup": "copy",
-     "giu": "60-ngay",
-     "ghi_chu": "Kết quả sinh metadata từng lượt — tái sinh được (tốn token), board đọc lại qua /api/runs"
-    },
-    {
-     "ten": "seo-audit",
-     "loai": "json",
-     "duong": "data/seo-optimize/logs",
-     "muc_quy": "vang",
-     "backup": "copy",
-     "giu": "vinh-vien",
-     "ghi_chu": "audit.jsonl chỉ-thêm (ai làm gì, xoay vòng .1.jsonl) — sử liệu vận hành"
-    }
-   ],
-   "giao_dien": "khung",
-   "viec_api": [
-    {
-     "ma": "trich_kenh",
-     "ten": "Trích kênh YouTube (hồ sơ kênh mình + format đối thủ)",
-     "loai": "youtube"
-    },
-    {
-     "ma": "sinh_metadata",
-     "ten": "Sinh metadata SEO (title · description · tags · CTA)",
-     "loai": "llm"
-    }
-   ]
-  },
-  {
-   "slug": "plannery",
-   "ten": "PlannerY",
-   "mo_ta": "Điều phối sản xuất video: dự án → kênh → video, phân công người theo khâu (content/editor), lịch tuần + cảnh báo trễ/thiếu người. Đưa vào V3 từ hệ cũ 19/08 (APPS.md app 5/6); SPA vanilla stdlib, ghi qua /api/plan CAS _rev + backup 2 lớp.",
-   "cong": 9116,
-   "tien_to": [
-    "/api"
-   ],
-   "health": "/api/me",
-   "phien_ban": "3.0-v3",
-   "chay": {
-    "kieu": "python-script",
-    "app_dir": "apps/plannery",
-    "module": "server.py"
-   },
-   "du_lieu": [
-    {
-     "ten": "plannery-plan",
-     "loai": "json",
-     "duong": "data/plannery/plan.json",
-     "muc_quy": "vang",
-     "backup": "copy",
-     "giu": "vinh-vien",
-     "ghi_chu": "Kế hoạch sản xuất (people/projects/assignments, CAS _rev). BẢN SAO plan.json hệ thật 19/08 — V2 cổng 8123 vẫn là nguồn thật tới cutover; app tự giữ plan.backup.json + backups/ 40 bản cạnh file."
-    }
-   ],
-   "giao_dien": "khung"
-  }
- ]
+  ]
 }
