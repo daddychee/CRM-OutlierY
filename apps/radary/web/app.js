@@ -1194,32 +1194,46 @@ function Pool({ ws, canEdit, role, wss, onMoved }) {
   const [sel, setSel] = useState(null);       // kênh đang mở hồ sơ — bấm lại là đóng
   const [picked, setPicked] = useState({});   // tách pool theo thị trường (18/08): yt_id -> true
   const [dest, setDest] = useState('');
-  const [nganhs, setNganhs] = useState([]);   // ngách + tập thị trường của ngách (từ đế, 18/08)
-  const [poolWs, setPoolWs] = useState(ws);   // pool đang xem trong tab — đổi theo tab nhỏ thị trường
+  const [nganhs, setNganhs] = useState([]);   // ngách + tập thị trường CỦA ngách — SINH Ở GENERAL, radary chỉ phản chiếu
+  const [chon, setChon] = useState('');       // ngách đang xem (mã N-xxx) hoặc 'ws:<id>' = pool cũ chưa xếp
+  const [tabTT, setTabTT] = useState('');     // mã thị trường của tab nhỏ đang mở
   useEffect(() => { api('GET', '/ngach').then(setNganhs).catch(() => setNganhs([])); }, []);
-  useEffect(() => { setPoolWs(ws); }, [ws]);
-  const load = useCallback(() => api('GET', `/workspaces/${poolWs}/channels`).then(setChans), [poolWs]);
+  const curW = (wss || []).find(w => w.id === ws) || {};
+  useEffect(() => {                            // mặc định theo workspace đang chọn trên switcher
+    if (!nganhs.length) return;
+    setChon(curW.ngach || (curW.id ? 'ws:' + curW.id : (nganhs[0] || {}).ma || ''));
+  }, [ws, nganhs.length]);
+  const niche = nganhs.find(n => n.ma === chon);
+  const legacyW = chon.startsWith('ws:') ? (wss || []).find(w => w.id === Number(chon.slice(3))) : null;
+  // TAB NHỎ = thị trường CỦA NGÁCH (General › Niches): ngách có 3 thị trường
+  // thì pool có đủ 3 tab — tab chưa có pool là nút dựng (leader trở lên)
+  const subtabs = niche ? niche.thi_truong.map(tt => ({
+    tt, w: (wss || []).find(x => x.ngach === niche.ma && x.market === tt.ma)
+  })) : [];
+  useEffect(() => {                            // đổi ngách → mở tab đầu tiên ĐÃ có pool (chưa có thì tab đầu)
+    if (niche) setTabTT(((subtabs.find(s => s.w) || subtabs[0]) || { tt: {} }).tt.ma || '');
+  }, [chon, (wss || []).length]);
+  const shown = subtabs.find(s => s.tt.ma === tabTT);
+  const poolWs = legacyW ? legacyW.id
+    : shown && shown.w ? shown.w.id
+    : nganhs.length ? null : ws;               // standalone (không có đế) — hành vi cũ nguyên vẹn
+  const load = useCallback(() => poolWs
+    ? api('GET', `/workspaces/${poolWs}/channels`).then(setChans)
+    : Promise.resolve(setChans([])), [poolWs]);
   useEffect(() => { load(); setPicked({}); setDest(''); setSel(null); }, [load]);
   const canMove = role === 'manager' || role === 'owner';   // dời dữ liệu lớn — cùng nấc xóa workspace
-  const curW = (wss || []).find(w => w.id === ws) || {};
-  const niche = nganhs.find(n => n.ma === curW.ngach);
-  // TAB NHỎ theo thị trường CỦA NGÁCH (khai ở General › Niches): mỗi thị trường
-  // một pool cùng ngách — chưa có pool thì tab thành nút tạo (leader trở lên)
-  const subtabs = niche ? niche.thi_truong.map(tt => ({
-    tt, w: (wss || []).find(x => x.ngach === curW.ngach && x.market === tt.ma && x.org_id === curW.org_id)
-  })) : [];
-  const others = subtabs.length
-    ? subtabs.filter(s => s.w && s.w.id !== poolWs).map(s => ({ id: s.w.id, label: `${s.tt.ten} — ${s.w.name}` }))
-    : (wss || []).filter(w => w.id !== poolWs).map(w => ({ id: w.id, label: w.name + (w.market_ten ? ' · ' + w.market_ten : '') }));
+  const others = niche
+    ? subtabs.filter(s => s.w && s.w.id !== poolWs).map(s => ({ id: s.w.id, label: `${niche.ten} — ${s.tt.ten}` }))
+    : (wss || []).filter(w => w.id !== poolWs).map(w => ({
+        id: w.id, label: w.ngach_ten ? `${w.ngach_ten} — ${w.market_ten}` : w.name }));
   const nPicked = Object.values(picked).filter(Boolean).length;
-  const taoPoolTT = async tt => {
-    if (!confirm(`Tạo pool "${niche.ten} — ${tt.ten}" cho thị trường ${tt.ten}?`)) return;
+  const taoPoolTT = async tt => {              // dựng pool cho thị trường của ngách — cấu trúc từ General, không hỏi lại
     setMsg(null);
     try {
-      const w = await api('POST', '/workspaces', { name: `${niche.ten} — ${tt.ten}`, ngach: curW.ngach, market: tt.ma });
-      if (onMoved) await onMoved();               // nạp lại danh sách pool để tab mới có mặt
-      setPoolWs(w.id);
-      setMsg({ ok: 1, t: `Đã tạo pool "${w.name}" — thêm kênh hoặc chuyển kênh từ pool khác sang.` });
+      const w = await api('POST', '/workspaces', { name: `${niche.ten} — ${tt.ten}`, ngach: niche.ma, market: tt.ma });
+      if (onMoved) await onMoved();            // nạp lại danh sách pool để tab mới có mặt
+      setTabTT(tt.ma);
+      setMsg({ ok: 1, t: `Đã dựng pool "${w.name}" — thêm kênh hoặc chuyển kênh từ pool khác sang.` });
     } catch (e) { setMsg({ ok: 0, t: String(e.message) }); }
   };
   const move = async () => {
@@ -1286,16 +1300,27 @@ function Pool({ ws, canEdit, role, wss, onMoved }) {
           ${active.length > 0 && html`<button class="btn small ghost" style="margin-left:auto"
             onClick=${download}>⬇ Tải danh sách (.csv)</button>`}
         </div>
+        ${nganhs.length > 0 && html`<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
+          <span class="note">Ngách (sinh ở General):</span>
+          <select value=${chon} onChange=${e => setChon(e.target.value)}>
+            ${nganhs.map(n => html`<option value=${n.ma}>${n.ten}</option>`)}
+            ${(wss || []).filter(w => !w.ngach).map(w => html`<option value=${'ws:' + w.id}>Pool cũ — ${w.name}</option>`)}
+          </select>
+        </div>`}
         ${subtabs.length > 0 && html`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
           ${subtabs.map(s => s.w
-            ? html`<button class=${'btn small' + (s.w.id === poolWs ? '' : ' ghost')}
-                onClick=${() => setPoolWs(s.w.id)}>${s.tt.ten} <small>· ${s.w.videos} video</small></button>`
-            : html`<button class="btn small ghost" disabled=${!canEdit}
-                title=${'Chưa có pool cho thị trường ' + s.tt.ten + (canEdit ? ' — bấm để tạo' : '')}
+            ? html`<button class=${'btn small' + (s.tt.ma === tabTT ? '' : ' ghost')}
+                onClick=${() => setTabTT(s.tt.ma)}>${s.tt.ten} <small>· ${s.w.videos} video</small></button>`
+            : html`<button class=${'btn small ghost'} disabled=${!canEdit}
+                title=${'Thị trường ' + s.tt.ten + ' chưa có pool' + (canEdit ? ' — bấm để dựng' : '')}
                 onClick=${() => canEdit && taoPoolTT(s.tt)}>＋ ${s.tt.ten}</button>`)}
         </div>`}
-        ${!niche && nganhs.length > 0 && canEdit && html`<div class="note" style="margin-bottom:8px">
-          Pool chưa gán ngách/thị trường — gán trong tab Tuning để có tab nhỏ theo thị trường của ngách.</div>`}
+        ${niche && subtabs.length === 0 && html`<div class="note" style="margin-bottom:8px">
+          Ngách này chưa khai thị trường nào — Owner gắn thị trường cho ngách ở General › Niches.</div>`}
+        ${niche && subtabs.length > 0 && !poolWs && html`<div class="note" style="margin-bottom:8px">
+          Thị trường này chưa có pool${canEdit ? ' — bấm nút ＋ trên tab để dựng.' : '.'}</div>`}
+        ${legacyW && html`<div class="note" style="margin-bottom:8px">
+          Pool cũ trộn thị trường — tích kênh rồi chuyển về pool thị trường của ngách (chọn pool đích bên dưới).</div>`}
         ${canMove && others.length > 0 && html`<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
           <span class="note">Chuyển kênh giữa các pool — tích chọn kênh rồi:</span>
           <select value=${dest} onChange=${e => setDest(e.target.value)}>
@@ -1324,8 +1349,9 @@ function Pool({ ws, canEdit, role, wss, onMoved }) {
         <h2>Thêm kênh</h2>
         <textarea placeholder=${'Mỗi dòng một kênh — nhận cả 3 dạng:\nhttps://youtube.com/channel/UCxxxx\n@tenkenh\nUCxxxxxxxxxxxxxxxxxxxx'}
           value=${text} onInput=${e => setText(e.target.value)}></textarea>
-        <div style="margin-top:10px"><button class="btn" disabled=${busy} onClick=${add}>
+        <div style="margin-top:10px"><button class="btn" disabled=${busy || !poolWs} onClick=${add}>
           ${busy ? html`<span class="spin"></span> đang resolve…` : 'Thêm vào pool'}</button></div>
+        ${!poolWs && html`<div class="note" style="margin-top:8px">Chọn/dựng pool thị trường ở cột trái trước khi thêm kênh.</div>`}
         ${msg && html`<div class="msg ${msg.ok ? '' : 'err'}" style="margin-top:10px">${msg.t}</div>`}
       </div>`}
     </div>`;
@@ -1336,27 +1362,17 @@ const NUMS = [['T1_vph', 'Sàn VPH — T1 Quan sát'], ['T2_vph', 'Sàn VPH — 
               ['T3_vph', 'Sàn VPH — T3 Sóng (xác nhận rồi push)'], ['T4_vph', 'Sàn VPH — T4 Bùng nổ (push tức thì)'],
               ['T2_daily_cap', 'Trần push T2 / ngày'], ['allages_vpd_floor', 'Sàn VPD bảng mọi-tuổi'],
               ['min_duration_s', 'Video tối thiểu (giây, lọc Shorts)']];
-function Settings({ ws, role, orgId, market, ngach, onMarket }) {
+function Settings({ ws, role, orgId }) {
+  // Ngách/thị trường KHÔNG chỉnh ở đây (user chốt 18/08): ngách sinh ở General,
+  // pool sinh từ tab Pool theo cấu trúc ngách × thị trường — Tuning chỉ lo ngưỡng.
   const vw = role === 'viewer';
   const [cfg, setCfg] = useState(null);
   const [cal, setCal] = useState(null);
   const [msg, setMsg] = useState(null);
-  const [nganhs, setNganhs] = useState([]);    // ngách + thị trường của ngách từ đế (18/08) — rỗng = standalone
-  const [selNg, setSelNg] = useState(ngach || '');
-  const [selTt, setSelTt] = useState(market || '');
   useEffect(() => {
     api('GET', `/workspaces/${ws}/config`).then(setCfg);
     api('GET', `/workspaces/${ws}/calibration`).then(setCal).catch(() => setCal(null));
-    api('GET', '/ngach').then(setNganhs).catch(() => setNganhs([]));
   }, [ws]);
-  useEffect(() => { setSelNg(ngach || ''); setSelTt(market || ''); }, [ws, ngach, market]);
-  const ngPicked = nganhs.find(n => n.ma === selNg);
-  const saveDe = async () => {
-    setMsg(null);
-    try { await api('PATCH', `/workspaces/${ws}/market`, { ngach: selNg, market: selTt });
-          setMsg({ ok:1, t:'Đã gán ngách + thị trường — có ghi vết trong Alerts.' }); onMarket && onMarket(); }
-    catch (e) { setMsg({ ok:0, t:String(e.message) }); }
-  };
   const save = async patch => {
     setMsg(null);
     try { setCfg(await api('PUT', `/workspaces/${ws}/config`, patch)); setMsg({ ok:1, t:'Đã lưu — có ghi vết trong Alerts.' }); }
@@ -1378,19 +1394,6 @@ function Settings({ ws, role, orgId, market, ngach, onMarket }) {
         <h2>Ngưỡng bậc T1-T4 <small>· chỉnh theo dữ liệu, không theo cảm giác</small></h2>
         ${NUMS.map(([k, label]) => html`
           <div class="formrow"><label>${label}</label><input type="number" id=${'f_' + k} value=${cfg[k]} disabled=${vw}/></div>`)}
-        ${nganhs.length > 0 && html`<div class="formrow"><label>Ngách · thị trường</label>
-          <span style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
-            <select value=${selNg} disabled=${vw} onChange=${e => { setSelNg(e.target.value); setSelTt(''); }}>
-              <option value="">— ngách —</option>
-              ${nganhs.map(n => html`<option value=${n.ma}>${n.ten}</option>`)}
-            </select>
-            <select value=${selTt} disabled=${vw || !ngPicked} onChange=${e => setSelTt(e.target.value)}>
-              <option value="">— thị trường —</option>
-              ${(ngPicked ? ngPicked.thi_truong : []).map(t => html`<option value=${t.ma}>${t.ten}${t.ngon_ngu ? ' (' + t.ngon_ngu + ')' : ''}</option>`)}
-            </select>
-            <button class="btn small" disabled=${vw || !selNg || !selTt || (selNg === (ngach || '') && selTt === (market || ''))}
-              onClick=${saveDe}>Gán</button>
-          </span></div>`}
         <div class="formrow"><label>ntfy topic (bí mật)</label><input type="text" id="f_topic" value=${cfg.ntfy_topic} disabled=${vw}/></div>
         <div class="formrow"><label>Push điện thoại (ntfy)</label>
           <span><input type="checkbox" id="f_ntfy" checked=${cfg.ntfy_enabled} disabled=${vw}/> bật</span></div>
@@ -1471,7 +1474,11 @@ function NewNiche({ onCreated, role }) {
           ${nganhs.map(n => html`<option value=${n.ma}>${n.ten}</option>`)}
         </select></div>`}
       ${ngPicked && html`<div class="formrow"><label>Thị trường</label>
-        <select value=${market} onChange=${e => setMarket(e.target.value)}>
+        <select value=${market} onChange=${e => {
+          setMarket(e.target.value);
+          const t = ngPicked.thi_truong.find(x => x.ma === e.target.value);
+          if (t && !name.trim()) setName(ngPicked.ten + ' — ' + t.ten);   // tên nhất quán với pool dựng từ tab Pool
+        }}>
           <option value="">— chọn thị trường của ngách —</option>
           ${ngPicked.thi_truong.map(t => html`<option value=${t.ma}>${t.ten}${t.ngon_ngu ? ' (' + t.ngon_ngu + ')' : ''}</option>`)}
         </select></div>`}
@@ -1747,8 +1754,7 @@ function App() {
       : tab === 'reports' ? html`<${Reports} ws=${ws} canEdit=${canEdit}/>`
       : tab === 'pool' ? html`<${Pool} ws=${ws} canEdit=${canEdit} role=${role}
           wss=${wss.filter(w => w.org_id === orgId)} onMoved=${() => loadWs(true)}/>`
-      : html`<${Settings} ws=${ws} role=${role} orgId=${orgId} market=${cur.market}
-          ngach=${cur.ngach} onMarket=${() => loadWs(true)}/>`}
+      : html`<${Settings} ws=${ws} role=${role} orgId=${orgId}/>`}
   `;
 }
 render(html`<${App}/>`, document.getElementById('app'));

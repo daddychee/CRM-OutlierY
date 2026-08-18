@@ -101,18 +101,36 @@
   (LIFE IN: KR/ES/US · OLD: US — Owner đã khai ở General), /api/ngach join
   tên chuẩn, Chrome headless render OK. Migration cột ngach tự áp db thật.
 
-## Nghiệm thu còn chờ (user/Owner) — cập nhật vòng 2
+- 18/08/2026 — **VÒNG 3 — USER SỬA LOGIC: NGÁCH-TRƯỚC, TUNING KHÔNG GÁN**
+  ("Niche được sinh ra trong khối General, khối Tuning ko có quyền để gán
+  ngách. Nếu ngách Life In có 3 ngôn ngữ thị trường thì pool cũng phải có 3").
+  Mô hình chốt: **General là nguồn CẤU TRÚC duy nhất — RadarY chỉ phản chiếu**,
+  không có bước gán ngách phía RadarY. Tab Pool giờ: (1) ô chọn **Ngách**
+  (danh sách từ đế) + nhóm "Pool cũ — <tên>" cho pool trộn chưa xếp; (2) chọn
+  ngách → dải tab nhỏ hiện ĐỦ mọi thị trường của ngách — tab đã có pool bấm
+  là quản, tab chưa có = nút ＋ leader bấm là DỰNG NGAY (tên tự sinh
+  `<ngách> — <thị trường>`, không hỏi lại — cấu trúc đến từ General); (3) mở
+  pool cũ → tích kênh → chuyển về pool thị trường (dest gắn nhãn
+  `<ngách> — <thị trường>`); (4) GỠ khối "Ngách · thị trường" khỏi Tuning
+  (Tuning chỉ còn ngưỡng/ntfy); NewNiche tự điền tên theo ngách—thị trường.
+  Backend KHÔNG đổi (không cần restart — app.js đọc từ đĩa); PATCH
+  /workspaces/{ws}/market GIỮ làm API vận hành (có test) nhưng KHÔNG còn UI —
+  đường chính thống là dựng pool từ cấu trúc. Suite radary 24 pass, headless OK.
 
-1. ~~Restart~~ ĐÃ restart radary 9111 + gateway 9000 (18/08, phiên này) —
-   đăng nhập cũ vẫn sống.
-2. Qua 9443 vào RadarY: pool cũ chưa gán → Tuning gán CẶP ngách + thị trường
-   (vd Life in X → LIFE IN · US); quay lại tab Pool sẽ thấy dải tab nhỏ
-   US · Spain · Korea theo đúng khai báo General.
-3. Tab thị trường chưa có pool → bấm ＋ tạo; tích kênh → "Chuyển kênh đã
-   chọn" sang tab đích (vai Manager/Owner); nhập kênh mới = dán vào ô Thêm
-   kênh khi đang đứng ở tab thị trường đó.
-4. Tách thật pool trộn (Life in X…) trên V3 để nghiệm thu; SAU CUTOVER chạy
-   lại việc tách trên snapshot cuối bằng chính UI này (sổ đã ghi).
+## Nghiệm thu còn chờ (user/Owner) — cập nhật vòng 3
+
+1. Vào **V3** (https://outliery.test:9443, KHÔNG phải cổng 8000) → RadarY →
+   tab **Data Pool** → **Ctrl+F5** một lần cho chắc.
+2. Thấy ngay: ô "Ngách (sinh ở General)" với LIFE IN / OLD + nhóm "Pool cũ".
+   Chọn LIFE IN → 3 tab Korea · Spain · US (đúng khai báo General) đều là nút
+   ＋ (chưa có pool) → bấm ＋ US là pool dựng ngay.
+3. Chọn "Pool cũ — Life in X" → tích kênh → chuyển về "LIFE IN — US"…
+   (vai Manager/Owner). Nhập kênh mới: đứng ở tab thị trường rồi dán vào ô
+   Thêm kênh.
+4. Pool cũ sau khi rỗng: xóa workspace (endpoint manager còn sống nhưng nút UI
+   đang ẩn khi SSO — capability đã ghi từ mạch làm gọn; cần thì làm nút xóa ở
+   đợt sau, Owner quyết).
+5. SAU CUTOVER: chạy lại việc tách trên snapshot cuối bằng chính UI này.
 
 ## Nợ đã thấy khi khảo sát (KHÔNG thuộc mạch này — ghi để khỏi quên)
 
