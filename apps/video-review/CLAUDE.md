@@ -64,6 +64,13 @@
   01/08); dữ liệu server nhúng qua `|tojson`; confirm 2-bấm thay hộp thoại
   trình duyệt.
 
+## Thực tế vận hành (user báo 18/08)
+
+- Video team upload: **2-10GB, codec H.264** — trình duyệt phát native (mp4/m4v
+  chắc chắn, mov thường được) → KHÔNG cần transcode server-side. Tầng transcode
+  chỉ đáng làm nếu team đổi sang xuất HEVC/ProRes (van sẵn có: player báo
+  "Re-export as mp4 (H.264)" khi không phát được).
+
 ## Việc treo
 
 - Gateway buffer body request khi upload (RAM tạm = cỡ file) — trần VR_MAX_MB
