@@ -109,6 +109,118 @@ def trang_niche(request: Request, user: dict = Depends(_lay_user),
     })
 
 
+# ---------- pane KÊNH ----------
+
+def _kenh_theo_ma(kenh_ma: str) -> dict | None:
+    try:
+        from nen.common import danh_ba
+        return next((k for k in danh_ba.liet_ke("kenh") if k["ma"] == kenh_ma), None)
+    except Exception:
+        return None
+
+
+def _bao_cao_cua_kenh(kenh: dict) -> list[dict]:
+    """Report của kênh: so `ten_kenh` bản ghi với tên chuẩn + bí danh danh bạ
+    (chuẩn hóa không dấu — hàm thuần, không cần DB). Mới nhất trước."""
+    try:
+        from nen.common.danh_ba import chuan_hoa_ten
+    except Exception:
+        return []
+    from src.bao_cao_lich_su import doc_bao_cao_moi_nguoi
+    ten_hop_le = {chuan_hoa_ten(kenh.get("ten_chuan", ""))}
+    ten_hop_le |= {chuan_hoa_ten(b) for b in (kenh.get("bi_danh") or "").split(";") if b.strip()}
+    ds = [r for r in doc_bao_cao_moi_nguoi()
+          if chuan_hoa_ten(r.get("ten_kenh", "")) in ten_hop_le]
+    ds.sort(key=lambda r: r.get("thoi_gian", ""), reverse=True)
+    return ds
+
+
+def _chi_tiet_tu_goc(rec: dict, moc_song=None) -> dict:
+    """Best&Worst video + line chart, dựng lại từ FILE GỐC (rẻ, không LLM — khuôn
+    trang lịch sử). Mọi bước hỏng → trả lý do, pane vẫn sống (van chống bịa)."""
+    duong = Path(rec.get("duong_dan_goc", ""))
+    if not duong.is_file():
+        return {"loi": "Không thấy file gốc — chỉ hiện số tóm tắt của bản ghi."}
+    try:
+        from src.diagnosis_engine import chan_doan_toan_bo, doc_bao_cao, doc_chart_data
+        df = doc_bao_cao(duong)
+        df_chart = doc_chart_data(duong)
+        toan_bo = chan_doan_toan_bo(df, df_chart=df_chart, loai_kenh=rec.get("loai_kenh") or None)
+        vids = [v for v in toan_bo.get("videos", []) if v.get("views") is not None]
+        vids.sort(key=lambda v: v["views"], reverse=True)
+        so_song = sum(1 for v in vids if moc_song and v["views"] >= moc_song) if moc_song else None
+        chart = _duong_views(df_chart)
+        return {"loi": None, "tong_video": len(toan_bo.get("videos", [])),
+                "top": vids[:3], "bot": list(reversed(vids[-3:])) if len(vids) > 3 else [],
+                "so_song": so_song, "chart": chart}
+    except Exception as e:                                   # file lạ không được giết pane
+        return {"loi": f"Không dựng được chi tiết từ file gốc: {e}"}
+
+
+def _duong_views(df_chart) -> dict | None:
+    """Điểm polyline SVG từ Chart data (PY tính sẵn — template chỉ vẽ). Không có
+    cột ngày/views nhận diện được → None (không đoán)."""
+    if df_chart is None or getattr(df_chart, "empty", True):
+        return None
+    cot_ngay = cot_views = None
+    for c in df_chart.columns:
+        t = str(c).lower()
+        if cot_ngay is None and ("date" in t or "ngày" in t or "ngay" in t):
+            cot_ngay = c
+        if cot_views is None and ("views" in t or "lượt xem" in t):
+            cot_views = c
+    if cot_ngay is None or cot_views is None:
+        return None
+    import pandas as pd
+    s = (df_chart[[cot_ngay, cot_views]].dropna()
+         .assign(_v=lambda d: pd.to_numeric(d[cot_views], errors="coerce")).dropna(subset=["_v"]))
+    s = s.sort_values(by=cot_ngay).tail(60)
+    vals = s["_v"].tolist()
+    if len(vals) < 2:
+        return None
+    W, H, dinh = 270, 120, max(vals) or 1
+    n = len(vals)
+    pts = " ".join(f"{10 + i * (W - 20) / (n - 1):.1f},{H - 10 - (v / dinh) * (H - 30):.1f}"
+                   for i, v in enumerate(vals))
+    return {"points": pts, "dinh": int(dinh), "so_ngay": n,
+            "tu": str(s[cot_ngay].iloc[0])[:10], "den": str(s[cot_ngay].iloc[-1])[:10]}
+
+
+@router.get("/niche/kenh/{kenh_ma}", response_class=HTMLResponse)
+def trang_kenh(kenh_ma: str, request: Request, user: dict = Depends(_lay_user),
+               id: str = "latest"):
+    from src.main import templates
+    kenh = _kenh_theo_ma(kenh_ma)
+    if kenh is None:
+        raise HTTPException(404)
+    ds_ngach = _ds_ngach()
+    ngach = next((n for n in ds_ngach if n["ma"] == kenh.get("ngach_ma")), None)
+
+    ds_bao_cao = _bao_cao_cua_kenh(kenh)
+    rec = next((r for r in ds_bao_cao if r.get("id") == id),
+               ds_bao_cao[0] if ds_bao_cao else None)
+
+    # benchmark ngách của đúng thị trường kênh này (giá trị của việc gộp)
+    benchmark = None
+    if ngach:
+        project = _map_projects().get(ngach["ma"], {}).get(kenh.get("thi_truong_ma", ""))
+        if project:
+            so = niche_bridge.tom_tat_overall(project)
+            if so.get("co_bao_cao"):
+                benchmark = {"song": so.get("view_trung_vi"), "trung": so.get("moc_trung"),
+                             "snapshot": so.get("snapshot")}
+
+    chi_tiet = _chi_tiet_tu_goc(rec, (benchmark or {}).get("song")) if rec else None
+    return templates.TemplateResponse(request, "dashboard.html", {
+        "user": user, "ds_ngach": ds_ngach, "ngach": ngach,
+        "thi_truong": [], "ds_kenh": _ds_kenh(kenh["ngach_ma"]) if kenh.get("ngach_ma") else [],
+        "ds_ngay": [], "ngay_chon": "latest",
+        "kenh_pane": {"kenh": kenh, "ten_tt": _ten_thi_truong().get(kenh.get("thi_truong_ma", ""), ""),
+                      "ds_bao_cao": ds_bao_cao, "rec": rec,
+                      "benchmark": benchmark, "chi_tiet": chi_tiet},
+    })
+
+
 @router.get("/niche/tai/{project}/{snap_id}/{ten_file}")
 def tai_bao_cao(project: str, snap_id: str, ten_file: str, inline: int = 0,
                 user: dict = Depends(_lay_user)):

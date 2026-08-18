@@ -63,16 +63,113 @@
       {% endfor %}
       {% if not ds_ngach %}<option>— chưa có niche —</option>{% endif %}
     </select>
-    <a class="nd-it on" href="/niche{% if ngach %}?ngach={{ ngach.ma }}{% endif %}"><span class="nd-dot"></span>Overall</a>
+    <a class="nd-it {% if not kenh_pane %}on{% endif %}" href="/niche{% if ngach %}?ngach={{ ngach.ma }}{% endif %}"><span class="nd-dot"></span>Overall</a>
     {% for k in ds_kenh %}
-    <a class="nd-it" href="/bao-cao-lich-su" title="{{ k.ten_chuan }}"><span class="nd-dot"></span>{{ k.ten_chuan }}</a>
+    <a class="nd-it {% if kenh_pane and kenh_pane.kenh.ma == k.ma %}on{% endif %}" href="/niche/kenh/{{ k.ma }}" title="{{ k.ten_chuan }}"><span class="nd-dot"></span>{{ k.ten_chuan }}</a>
     {% endfor %}
     <a class="nd-it nd-new" href="/chan-doan" title="Channel report: nạp file YouTube Studio. Niche report: chạy từ tool Niche Research (nối ở đợt sau).">
       <svg class="ic" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> New report</a>
   </nav>
 
   <div class="nd-main">
-    {% if not ngach %}
+    {% if kenh_pane %}
+    {% set kp = kenh_pane %}
+    {% set nhan_pq = {'nhan_ban':'Nhân bản','giu':'Giữ','sua_bao_bi':'Sửa bao bì','sua_noi_dung':'Sửa nội dung',
+                      'doi_ngach_vi_tien':'Đổi ngách vì tiền','bo':'Bỏ','chua_du_du_lieu':'Chưa đủ dữ liệu'} %}
+    <div class="nd-band">
+      <h1>{{ kp.kenh.ten_chuan }}</h1>
+      <span style="color:var(--muted);font-size:.85rem">{{ kp.ten_tt }}</span>
+      {% if kp.ds_bao_cao %}
+      <select onchange="location='/niche/kenh/{{ kp.kenh.ma }}?id='+this.value" aria-label="Report">
+        {% for r in kp.ds_bao_cao %}
+        <option value="{{ r.id }}" {% if kp.rec and r.id == kp.rec.id %}selected{% endif %}>
+          🗓 {{ r.thoi_gian[:10] }} — {{ r.ten_bao_cao or r.ten_file_goc }}</option>
+        {% endfor %}
+      </select>
+      {% endif %}
+    </div>
+
+    {% if not kp.rec %}
+      <div class="nd-trong">Chưa có report nào gắn tên kênh này.<br>
+        <a class="nd-btn chinh" style="margin-top:10px" href="/chan-doan">
+          <svg class="ic" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> New report</a>
+        <span style="display:block;margin-top:8px;font-size:.8rem">Khi nạp, điền ô "Tên kênh" = {{ kp.kenh.ten_chuan }} (hoặc bí danh trong danh bạ).</span></div>
+    {% else %}
+    {% set m = kp.rec.kenh.metrics_chinh or {} %}
+    <section class="nd-tt">
+      <div class="nd-tt-h">
+        <b>{{ kp.rec.ten_bao_cao or kp.rec.ten_file_goc }}</b>
+        <span style="color:var(--muted);font-size:.78rem">
+          {{ kp.rec.ky_bat_dau or '?' }} → {{ kp.rec.ky_ket_thuc or '?' }} · người chạy: {{ kp.rec.nguoi_chay }}</span>
+        <span class="nd-act">
+          <a class="nd-btn chinh" href="/bao-cao-lich-su/{{ kp.rec.id }}?nguoi={{ kp.rec.nguoi_chay }}">
+            <svg class="ic" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg> Full analysis</a>
+        </span>
+      </div>
+      <div class="nd-tiles">
+        <div class="nd-tile"><div class="k">sum</div>
+          <div class="v">{{ '{:,}'.format(m.views | int).replace(',', '.') if m.views is defined and m.views is not none else '—' }}</div>
+          <div class="s">views kỳ này</div></div>
+        <div class="nd-tile"><div class="k">sum · giờ</div>
+          <div class="v">{{ '{:,}'.format(m.watchtime | round | int).replace(',', '.') if m.watchtime is defined and m.watchtime is not none else '—' }}</div>
+          <div class="s">giờ xem</div></div>
+        <div class="nd-tile"><div class="k">avg</div>
+          <div class="v">{{ (m.ctr * 100) | round(1) ~ '%' if m.ctr is defined and m.ctr is not none else '—' }}</div>
+          <div class="s">CTR</div></div>
+        <div class="nd-tile"><div class="k">avg</div>
+          <div class="v">{{ (m.retention * 100) | round | int ~ '%' if m.retention is defined and m.retention is not none else '—' }}</div>
+          <div class="s">retention</div></div>
+        <div class="nd-tile"><div class="k">sum</div>
+          <div class="v">{{ '$' ~ (m.revenue | round(1)) if m.revenue is defined and m.revenue is not none else '—' }}</div>
+          <div class="s">doanh thu{% if m.revenue is not defined or m.revenue is none %} — 💰 chưa bật kiếm tiền / report không có cột{% endif %}</div></div>
+        <div class="nd-tile"><div class="k">verdict</div>
+          <div class="v" style="font-size:1rem">{{ kp.rec.kenh.tang_vo or '—' }}</div>
+          <div class="s">tầng vỡ sớm nhất · {{ kp.rec.kenh.so_video or '?' }} video</div></div>
+      </div>
+      {% if kp.benchmark %}
+      <div class="nd-bw" style="padding-top:0">
+        <div style="font-size:.8rem;color:var(--muted);border:1px solid var(--line);border-radius:9px;padding:7px 11px">
+          So ngách (snapshot {{ kp.benchmark.snapshot }}): video "sống" ≥ {{ '{:,}'.format(kp.benchmark.song).replace(',', '.') }} view
+          · "trúng" ≥ {{ '{:,}'.format(kp.benchmark.trung).replace(',', '.') }}
+          {% if kp.chi_tiet and kp.chi_tiet.so_song is not none %}
+          — kênh này: <b style="color:var(--ink)">{{ kp.chi_tiet.so_song }}/{{ kp.chi_tiet.tong_video }}</b> video sống{% endif %}
+        </div>
+      </div>
+      {% endif %}
+      {% if kp.chi_tiet %}
+        {% if kp.chi_tiet.loi %}
+        <div class="nd-bw"><div style="font-size:.8rem;color:var(--muted)">{{ kp.chi_tiet.loi }}</div></div>
+        {% else %}
+        {% if kp.chi_tiet.chart %}
+        <div class="nd-bw">
+          <div style="font-size:.72rem;color:var(--muted);margin-bottom:3px">VIEWS THEO NGÀY — {{ kp.chi_tiet.chart.tu }} → {{ kp.chi_tiet.chart.den }} ({{ kp.chi_tiet.chart.so_ngay }} điểm, đỉnh {{ '{:,}'.format(kp.chi_tiet.chart.dinh).replace(',', '.') }})</div>
+          <svg width="100%" viewBox="0 0 270 120" preserveAspectRatio="none" style="max-height:130px">
+            <line x1="10" y1="110" x2="260" y2="110" stroke="var(--line)"/>
+            <polyline fill="none" stroke="var(--accent)" stroke-width="1.6" points="{{ kp.chi_tiet.chart.points }}"/>
+          </svg>
+        </div>
+        {% endif %}
+        {% if kp.chi_tiet.top %}
+        <div class="nd-bw"><table>
+          <tr><th style="text-align:right">Views</th><th>Video</th><th>Phán quyết</th></tr>
+          {% for v in kp.chi_tiet.top %}
+          <tr><td class="bw-g">{{ '{:,}'.format(v.views | int).replace(',', '.') }}</td>
+              <td>{{ (v.video_title or ('video #' ~ v.chi_muc)) | truncate(70) }}</td>
+              <td>{{ nhan_pq.get(v.phan_quyet, v.phan_quyet) }}</td></tr>
+          {% endfor %}
+          {% for v in kp.chi_tiet.bot %}
+          <tr><td class="bw-r">{{ '{:,}'.format(v.views | int).replace(',', '.') }}</td>
+              <td>{{ (v.video_title or ('video #' ~ v.chi_muc)) | truncate(70) }}</td>
+              <td>{{ nhan_pq.get(v.phan_quyet, v.phan_quyet) }}</td></tr>
+          {% endfor %}
+        </table></div>
+        {% endif %}
+        {% endif %}
+      {% endif %}
+    </section>
+    {% endif %}
+
+    {% elif not ngach %}
       <div class="nd-trong">Chưa có niche trong danh bạ — tạo ở cổng OUTLIERY (Niches) trước.</div>
     {% else %}
     <div class="nd-band">

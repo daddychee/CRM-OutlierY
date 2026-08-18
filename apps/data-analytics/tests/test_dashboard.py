@@ -60,6 +60,60 @@ def test_doc_va_tai_bao_cao(client):
                       headers=CLAIMS).status_code == 404
 
 
+# ---------- pane KÊNH ----------
+
+def _seed_kenh(monkeypatch, co_report=True):
+    from src.bao_cao_lich_su import luu_bao_cao
+    monkeypatch.setattr(dashboard, "_kenh_theo_ma",
+                        lambda ma: {"ma": "K-A", "ten_chuan": "KENH A", "bi_danh": "kenh-alias",
+                                    "ngach_ma": "N-TEST", "thi_truong_ma": "TT-US"}
+                        if ma == "K-A" else None)
+    if co_report:
+        luu_bao_cao("tester", {
+            "id": "r-cu", "ten_file_goc": "cu.csv", "ten_bao_cao": "Tuần 33",
+            "ten_kenh": "Kenh A", "duong_dan_goc": "/khong/co",
+            "kenh": {"tang_vo": "retention", "so_video": 14,
+                     "metrics_chinh": {"ctr": 0.046, "retention": 0.24, "views": 412680}},
+        }, "2026-08-10T00:00:00")
+        luu_bao_cao("tester", {
+            "id": "r-moi", "ten_file_goc": "moi.csv", "ten_bao_cao": "Tuần 34",
+            "ten_kenh": "KENH  A",                 # lệch hoa/khoảng trắng — phải vẫn khớp
+            "duong_dan_goc": "/khong/co",
+            "kenh": {"tang_vo": "ctr", "so_video": 15,
+                     "metrics_chinh": {"ctr": 0.051, "retention": 0.26, "views": 500000}},
+        }, "2026-08-17T00:00:00")
+
+
+def test_kenh_pane_tile_va_benchmark(client, monkeypatch):
+    _seed_kenh(monkeypatch)
+    r = client.get("/niche/kenh/K-A", headers=CLAIMS)
+    assert r.status_code == 200
+    body = r.text
+    assert "KENH A" in body and "Tuần 34" in body            # bản mới nhất mặc định
+    assert "500.000" in body and "5.1%" in body               # tile từ metrics_chinh
+    assert "Full analysis" in body
+    assert "3.071" in body and "128.885" in body              # dải so-ngách từ snapshot niche
+    assert "chỉ hiện số tóm tắt" in body                      # file gốc không có → lý do, không vỡ
+    assert "— 💰" in body or "chưa bật kiếm tiền" in body     # tile doanh thu van chống bịa
+
+
+def test_kenh_pane_xem_report_cu(client, monkeypatch):
+    _seed_kenh(monkeypatch)
+    r = client.get("/niche/kenh/K-A", headers=CLAIMS, params={"id": "r-cu"})
+    assert r.status_code == 200 and "Tuần 33" in r.text and "412.680" in r.text
+
+
+def test_kenh_chua_co_report(client, monkeypatch):
+    _seed_kenh(monkeypatch, co_report=False)
+    r = client.get("/niche/kenh/K-A", headers=CLAIMS)
+    assert r.status_code == 200 and "Chưa có report nào gắn tên kênh" in r.text
+
+
+def test_kenh_khong_ton_tai_404(client, monkeypatch):
+    _seed_kenh(monkeypatch, co_report=False)
+    assert client.get("/niche/kenh/K-XYZ", headers=CLAIMS).status_code == 404
+
+
 def test_niche_chua_gan_project(client, tmp_path, monkeypatch):
     monkeypatch.setattr(dashboard, "_ds_ngach",
                         lambda: [{"ma": "N-KHAC", "ten_chuan": "NICHE TRỐNG"}])
