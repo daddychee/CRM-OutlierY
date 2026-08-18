@@ -113,6 +113,34 @@ def test_gan_ngach_thi_truong_pool_cu_co_vet(org_moi, goi, mock_de):
     assert any("TT-SPAIN" in e["payload"] for e in ev)           # đổi cấu hình phải có vết
 
 
+def test_volume_ca_ngach(org_moi, goi, mock_de):
+    """Volume cả ngách (user 18/08: 'xem được cả volume của niche'): cộng nhịp
+    mọi pool của ngách user thấy + bảng theo thị trường; ngách lạ 404."""
+    import time as _t
+
+    from radary import db
+    now = _t.time()
+    conn = db.connect()
+    with conn:
+        w1 = db.create_workspace(conn, org_moi, "LIFE IN", ngach="N-LIFE-IN")
+        w2 = db.create_workspace(conn, org_moi, "LIFE IN — US", market="TT-US", ngach="N-LIFE-IN")
+        conn.execute("INSERT INTO channels(workspace_id, yt_id, title) VALUES(?, 'UC-A', 'A')", (w1,))
+        conn.execute("INSERT INTO channels(workspace_id, yt_id, title) VALUES(?, 'UC-B', 'B')", (w2,))
+        conn.execute("INSERT INTO pool_stats VALUES(?,?,?,?,?)", (w1, now - 3600, 100, 10.0, 2))
+        conn.execute("INSERT INTO pool_stats VALUES(?,?,?,?,?)", (w2, now - 3600, 50, 20.0, 1))
+        conn.execute("INSERT INTO channel_stats VALUES(?,?,?,?)", (w1, now - 3600, "A", 100))
+        conn.execute("INSERT INTO channel_stats VALUES(?,?,?,?)", (w2, now - 3600, "B", 50))
+    conn.close()
+    r = goi("GET", "/api/ngach/N-LIFE-IN/volume")
+    assert r.status_code == 200
+    d = r.json()
+    assert d["tong"] == {"kenh": 2, "video": 0, "views_7d": 150, "views_28d": 150}
+    assert [p["nhan"] for p in d["pools"]] == ["Chưa phân loại", "US"]
+    assert len(d["pts"]) == 1 and d["pts"][0]["dviews"] == 150
+    assert abs(d["pts"][0]["vph_avg"] - 40 / 3) < 1e-6   # TB trọng số theo n_young
+    assert goi("GET", "/api/ngach/N-LA/volume").status_code == 404
+
+
 def test_nhan_pool_goc_doi_ten_theo_general(org_moi, goi, mock_de):
     """PATCH market RỖNG = nhận workspace hiện hữu làm POOL GỐC của ngách —
     tên pool ĐỒNG NHẤT theo tên ngách General (luật user 18/08: 'chỉ khi tạo

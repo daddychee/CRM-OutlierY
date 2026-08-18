@@ -558,6 +558,60 @@ def ngach_list(request: Request):
     except RuntimeError as e:
         raise HTTPException(502, str(e))
 
+@app.get('/api/ngach/{ma}/volume')
+def ngach_volume(ma: str, request: Request, days: int = 30):
+    """VOLUME CẢ NGÁCH (user 18/08: 'xem được cả volume của niche'): cộng nhịp
+    views của MỌI pool thuộc ngách mà user thấy được (lọc phạm vi như
+    list_workspaces) + bảng volume theo thị trường. Chỉ đọc pool_stats/
+    channel_stats — số đo thật đã quét, không gọi YouTube, không bịa.
+    Gộp theo NGÀY (giờ máy chủ = giờ VN — cùng quy ước bucket căn giờ VN)."""
+    days = max(2, min(days, 400))
+    with get_conn() as c:
+        u = auth.require_user(c, request)
+        pools = [dict(r) for r in c.execute(
+            'SELECT DISTINCT w.id, w.name, w.market FROM workspaces w '
+            'JOIN members m ON m.org_id=w.org_id WHERE m.user_id=? '
+            'AND (m.workspace_id IS NULL OR m.workspace_id=w.id) AND w.ngach=? '
+            'ORDER BY w.market', (u['id'], ma))]
+        if not pools:
+            raise HTTPException(404, 'ngách chưa có pool nào (hoặc ngoài phạm vi của bạn)')
+        ids = [p['id'] for p in pools]
+        qm = ','.join('?' * len(ids))
+        now = time.time()
+        ngay: dict = {}
+        for r in c.execute(f'SELECT bucket_ts, dviews, vph_avg, n_young FROM pool_stats '
+                           f'WHERE workspace_id IN ({qm}) AND bucket_ts>=?',
+                           (*ids, now - days * 86400)):
+            d0 = time.strftime('%Y-%m-%d', time.localtime(r['bucket_ts']))
+            g = ngay.setdefault(d0, {'dviews': 0, 'vs': 0.0, 'n': 0})
+            g['dviews'] += r['dviews']
+            g['vs'] += r['vph_avg'] * r['n_young']
+            g['n'] += r['n_young']
+        pts = [{'ngay': k, 'dviews': v['dviews'], 'n': v['n'],
+                'vph_avg': (v['vs'] / v['n']) if v['n'] else 0}
+               for k, v in sorted(ngay.items())]
+        ten_tt = {}
+        if _v3():
+            from . import thi_truong_v3
+            try: ten_tt = {t['ma']: t.get('ten') or t['ma'] for t in thi_truong_v3.danh_sach()}
+            except RuntimeError: pass          # gateway chết — hiện mã trần, volume vẫn sống
+        bang = []
+        for p in pools:
+            v7 = c.execute('SELECT COALESCE(SUM(dviews),0) FROM channel_stats '
+                           'WHERE workspace_id=? AND bucket_ts>=?', (p['id'], now - 7 * 86400)).fetchone()[0]
+            v28 = c.execute('SELECT COALESCE(SUM(dviews),0) FROM channel_stats '
+                            'WHERE workspace_id=? AND bucket_ts>=?', (p['id'], now - 28 * 86400)).fetchone()[0]
+            bang.append({
+                'id': p['id'],
+                'nhan': (ten_tt.get(p['market'], p['market']) or 'Chưa phân loại'),
+                'kenh': c.execute('SELECT COUNT(*) FROM channels WHERE workspace_id=? AND active=1',
+                                  (p['id'],)).fetchone()[0],
+                'video': c.execute('SELECT COUNT(*) FROM videos WHERE workspace_id=? AND dead=0',
+                                   (p['id'],)).fetchone()[0],
+                'views_7d': v7, 'views_28d': v28})
+        tong = {k: sum(b[k] for b in bang) for k in ('kenh', 'video', 'views_7d', 'views_28d')}
+        return {'ngach': ma, 'days': days, 'pools': bang, 'tong': tong, 'pts': pts}
+
 @app.get('/api/workspaces')
 def list_workspaces(request: Request):
     with get_conn() as c:
@@ -575,10 +629,13 @@ def list_workspaces(request: Request):
                            'AND (m.workspace_id IS NULL OR m.workspace_id=w.id) ORDER BY w.id', (u['id'],)):
             tiers = {str(r['tier']): r['n'] for r in c.execute(
                 'SELECT tier, COUNT(*) n FROM videos WHERE workspace_id=? AND dead=0 GROUP BY tier', (w['id'],))}
+            so_kenh = c.execute('SELECT COUNT(*) FROM channels WHERE workspace_id=? AND active=1',
+                                (w['id'],)).fetchone()[0]
             out.append({'id': w['id'], 'name': w['name'], 'tz': w['tz'], 'org_id': w['org_id'],
                         'market': w['market'], 'market_ten': ten_tt.get(w['market'], w['market']),
                         'ngach': w['ngach'], 'ngach_ten': ten_ng.get(w['ngach'], w['ngach']),
                         'videos': sum(tiers.values()), 'tiers': tiers,
+                        'channels': so_kenh,     # Data Pool quản theo SỐ KÊNH (user 18/08)
                         'heartbeat_ts': db.kv_get(c, w['id'], 'heartbeat', 0)})
         return out
 

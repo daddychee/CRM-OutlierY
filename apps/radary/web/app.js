@@ -1186,7 +1186,7 @@ function ChannelModal({ ws, ytId, onClose }) {
 }
 
 // ---------- Pool ----------
-function Pool({ ws, canEdit, role, wss, onMoved }) {
+function Pool({ ws, canEdit, role, wss, nganhs, onMoved }) {
   const [chans, setChans] = useState([]);
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
@@ -1194,26 +1194,21 @@ function Pool({ ws, canEdit, role, wss, onMoved }) {
   const [sel, setSel] = useState(null);       // kênh đang mở hồ sơ — bấm lại là đóng
   const [picked, setPicked] = useState({});   // tách pool theo thị trường (18/08): yt_id -> true
   const [dest, setDest] = useState('');
-  const [nganhs, setNganhs] = useState([]);   // ngách + tập thị trường CỦA ngách — SINH Ở GENERAL, radary chỉ phản chiếu
-  const [tabTT, setTabTT] = useState('');     // '' = tab GỐC "Chưa phân loại" | mã TT-xx = tab thị trường
   const [goiY, setGoiY] = useState('');       // ngách General gợi ý nhận cho workspace chưa nối
-  useEffect(() => { api('GET', '/ngach').then(setNganhs).catch(() => setNganhs([])); }, []);
-  useEffect(() => { setTabTT(''); }, [ws]);
-  // WORKSPACE HIỆN TẠI = NGÁCH (user chốt 18/08: 'Life in X, Space, Storm chính
-  // là các ngách'); trong 1 ngách tồn tại các pool theo thị trường — chuyển kênh
-  // CHỈ trong nội bộ ngách. Chưa nối General → gợi ý khớp tên, 1 click xác nhận
-  // (nối bằng MÃ + tên tự đồng nhất theo General ở server).
+  // WORKSPACE = NGÁCH; pool thị trường chuyển bằng DẢI TAB CẤP APP (dưới header).
+  // Pool tab chỉ còn: bảng kênh pool đang mở + chuyển kênh NỘI BỘ ngách + banner
+  // nhận ngách cho workspace chưa nối General (nối bằng MÃ, tên theo General).
   const curW = (wss || []).find(w => w.id === ws) || {};
-  const niche = nganhs.find(n => n.ma === curW.ngach);
+  const niche = (nganhs || []).find(n => n.ma === curW.ngach);
   const _bo = s => String(s || '').toLowerCase().normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim();
   useEffect(() => {
-    if (niche || !nganhs.length || !curW.id) return;
+    if (niche || !(nganhs || []).length || !curW.id) return;
     const t = _bo(curW.name);
     const khop = nganhs.find(n => _bo(n.ten) === t)
       || nganhs.find(n => t.includes(_bo(n.ten)) || _bo(n.ten).includes(t));
     setGoiY((khop || nganhs[0]).ma);
-  }, [ws, nganhs.length]);
+  }, [ws, (nganhs || []).length]);
   const nhanNgach = async () => {
     setMsg(null);
     try {
@@ -1222,33 +1217,17 @@ function Pool({ ws, canEdit, role, wss, onMoved }) {
       setMsg({ ok: 1, t: `Đã nhận ngách${r.name ? ` — pool đổi tên "${r.name}" theo General` : ''}. Kênh hiện có nằm ở tab "Chưa phân loại", chuyển dần về các tab thị trường.` });
     } catch (e) { setMsg({ ok: 0, t: String(e.message) }); }
   };
-  // TAB NHỎ trong ngách: thị trường của ngách (General) — ngách có 3 thị trường
-  // thì có đủ 3 tab; tab chưa có pool là nút dựng (leader trở lên)
-  const subtabs = niche ? niche.thi_truong.map(tt => ({
-    tt, w: (wss || []).find(x => x.ngach === niche.ma && x.market === tt.ma)
-  })) : [];
-  const shown = tabTT ? subtabs.find(s => s.tt.ma === tabTT) : null;
-  const poolWs = !tabTT ? ws : (shown && shown.w ? shown.w.id : null);
-  const load = useCallback(() => poolWs
-    ? api('GET', `/workspaces/${poolWs}/channels`).then(setChans)
-    : Promise.resolve(setChans([])), [poolWs]);
+  const load = useCallback(() => api('GET', `/workspaces/${ws}/channels`).then(setChans), [ws]);
   useEffect(() => { load(); setPicked({}); setDest(''); setSel(null); }, [load]);
   const canMove = role === 'manager' || role === 'owner';   // dời dữ liệu lớn — cùng nấc xóa workspace
+  // đích chuyển = pool ANH EM trong CÙNG ngách (gốc + các thị trường) — không chuyển chéo ngách
   const others = niche ? [
-    ...(tabTT ? [{ id: ws, label: 'Chưa phân loại (gốc)' }] : []),
-    ...subtabs.filter(s => s.w && s.tt.ma !== tabTT)
-              .map(s => ({ id: s.w.id, label: `${niche.ten} — ${s.tt.ten}` })),
-  ] : [];
+    { id: ((wss || []).find(w => w.ngach === niche.ma && !w.market) || {}).id, label: 'Chưa phân loại (gốc)' },
+    ...niche.thi_truong
+      .map(tt => ({ tt, w: (wss || []).find(x => x.ngach === niche.ma && x.market === tt.ma) }))
+      .filter(s => s.w).map(s => ({ id: s.w.id, label: `${niche.ten} — ${s.tt.ten}` })),
+  ].filter(o => o.id && o.id !== ws) : [];
   const nPicked = Object.values(picked).filter(Boolean).length;
-  const taoPoolTT = async tt => {              // dựng pool cho thị trường của ngách — cấu trúc từ General, không hỏi lại
-    setMsg(null);
-    try {
-      const w = await api('POST', '/workspaces', { name: `${niche.ten} — ${tt.ten}`, ngach: niche.ma, market: tt.ma });
-      if (onMoved) await onMoved();            // nạp lại danh sách pool để tab mới có mặt
-      setTabTT(tt.ma);
-      setMsg({ ok: 1, t: `Đã dựng pool "${w.name}" — thêm kênh mới hoặc chuyển kênh từ "Chưa phân loại" sang.` });
-    } catch (e) { setMsg({ ok: 0, t: String(e.message) }); }
-  };
   const move = async () => {
     const ids = Object.keys(picked).filter(k => picked[k]);
     const dw = others.find(o => o.id === Number(dest));
@@ -1256,7 +1235,7 @@ function Pool({ ws, canEdit, role, wss, onMoved }) {
     if (!confirm(`Chuyển ${ids.length} kênh sang pool "${dw.label}"?\n\nLịch sử video/tick/nhịp kênh đi theo kênh; nhịp POOL của pool đích chỉ tính từ giờ trở đi. Alerts cũ ở lại pool nguồn (sổ cái).`)) return;
     setMsg(null);
     try {
-      const r = await api('POST', `/workspaces/${poolWs}/channels/move`,
+      const r = await api('POST', `/workspaces/${ws}/channels/move`,
                           { to_ws: Number(dest), yt_ids: ids, confirm: true });
       setMsg({ ok: 1, t: `Đã chuyển ${r.moved.length} kênh (${r.moved_videos} video) sang "${dw.label}".` });
       setPicked({}); setDest(''); load(); onMoved && onMoved();
@@ -1267,7 +1246,7 @@ function Pool({ ws, canEdit, role, wss, onMoved }) {
     if (!items.length) return;
     setBusy(true); setMsg(null);
     try {
-      const r = await api('POST', `/workspaces/${poolWs}/channels`, { items });
+      const r = await api('POST', `/workspaces/${ws}/channels`, { items });
       const parts = [];
       if (r.added.length) parts.push(`✅ Đã thêm ${r.added.length} kênh mới`);
       if ((r.reactivated || []).length) parts.push(`↩ Khôi phục ${r.reactivated.length} kênh từng gỡ`);
@@ -1285,13 +1264,13 @@ function Pool({ ws, canEdit, role, wss, onMoved }) {
   const remove = async ch => {
     if (!confirm(`Gỡ kênh "${ch.title}" khỏi pool?\n\n⚠ TOÀN BỘ video + lịch sử theo dõi của kênh này trong workspace sẽ bị XÓA (không hoàn tác được). Lịch sử alerts giữ nguyên.`)) return;
     try {
-      const r = await api('DELETE', `/workspaces/${poolWs}/channels/${ch.yt_id}`);
+      const r = await api('DELETE', `/workspaces/${ws}/channels/${ch.yt_id}`);
       setMsg({ ok: 1, t: `Đã gỡ "${ch.title}" — xóa ${r.purged_videos} video khỏi radar. ${r.note}` });
       load();
     } catch (e) { setMsg({ ok: 0, t: String(e.message) }); }
   };
   const toggleFav = async c => {
-    try { await api('POST', `/workspaces/${poolWs}/channels/${c.yt_id}/favorite`, { favorite: !c.favorite }); load(); }
+    try { await api('POST', `/workspaces/${ws}/channels/${c.yt_id}/favorite`, { favorite: !c.favorite }); load(); }
     catch (e) { setMsg({ ok: 0, t: String(e.message) }); }
   };
   const active = chans.filter(c => c.active);
@@ -1321,20 +1300,6 @@ function Pool({ ws, canEdit, role, wss, onMoved }) {
           <button class="btn small" disabled=${!canEdit || !goiY} onClick=${nhanNgach}>Nhận "${curW.name}" là ngách này</button>
           <span class="note">(chưa có trong danh sách → Owner tạo niche ở General › Niches trước)</span>
         </div>`}
-        ${niche && html`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
-          <button class=${'btn small' + (tabTT === '' ? '' : ' ghost')}
-            onClick=${() => setTabTT('')}>Chưa phân loại <small>· ${curW.videos} video</small></button>
-          ${subtabs.map(s => s.w
-            ? html`<button class=${'btn small' + (s.tt.ma === tabTT ? '' : ' ghost')}
-                onClick=${() => setTabTT(s.tt.ma)}>${s.tt.ten} <small>· ${s.w.videos} video</small></button>`
-            : html`<button class=${'btn small ghost'} disabled=${!canEdit}
-                title=${'Thị trường ' + s.tt.ten + ' chưa có pool' + (canEdit ? ' — bấm để dựng' : '')}
-                onClick=${() => canEdit && taoPoolTT(s.tt)}>＋ ${s.tt.ten}</button>`)}
-        </div>`}
-        ${niche && subtabs.length === 0 && html`<div class="note" style="margin-bottom:8px">
-          Ngách này chưa khai thị trường nào — Owner gắn thị trường cho ngách ở General › Niches.</div>`}
-        ${niche && tabTT && !poolWs && html`<div class="note" style="margin-bottom:8px">
-          Thị trường này chưa có pool${canEdit ? ' — bấm nút ＋ trên tab để dựng.' : '.'}</div>`}
         ${canMove && others.length > 0 && html`<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
           <span class="note">Chuyển kênh giữa các pool — tích chọn kênh rồi:</span>
           <select value=${dest} onChange=${e => setDest(e.target.value)}>
@@ -1358,14 +1323,13 @@ function Pool({ ws, canEdit, role, wss, onMoved }) {
         </table></div>
         <div class="note">Bấm vào kênh để xem hồ sơ (subs, description, links). Gỡ = ngừng theo dõi video mới; dữ liệu lịch sử giữ lại.</div>
       </div>
-      ${sel && html`<${ChannelModal} ws=${poolWs} ytId=${sel} onClose=${() => setSel(null)}/>`}
+      ${sel && html`<${ChannelModal} ws=${ws} ytId=${sel} onClose=${() => setSel(null)}/>`}
       ${canEdit && html`<div class="panel">
         <h2>Thêm kênh</h2>
         <textarea placeholder=${'Mỗi dòng một kênh — nhận cả 3 dạng:\nhttps://youtube.com/channel/UCxxxx\n@tenkenh\nUCxxxxxxxxxxxxxxxxxxxx'}
           value=${text} onInput=${e => setText(e.target.value)}></textarea>
-        <div style="margin-top:10px"><button class="btn" disabled=${busy || !poolWs} onClick=${add}>
+        <div style="margin-top:10px"><button class="btn" disabled=${busy} onClick=${add}>
           ${busy ? html`<span class="spin"></span> đang resolve…` : 'Thêm vào pool'}</button></div>
-        ${!poolWs && html`<div class="note" style="margin-top:8px">Chọn/dựng pool thị trường ở cột trái trước khi thêm kênh.</div>`}
         ${msg && html`<div class="msg ${msg.ok ? '' : 'err'}" style="margin-top:10px">${msg.t}</div>`}
       </div>`}
     </div>`;
@@ -1702,6 +1666,48 @@ function HarvestKeys({ orgId }) {
     </div>`;
 }
 
+// ---------- Volume cả ngách (user 18/08: 'xem được cả volume của niche') ----------
+function NicheVolume({ ma, ten }) {
+  const [days, setDays] = useState(30);
+  const [d, setD] = useState(null);
+  const [err, setErr] = useState('');
+  useEffect(() => {
+    setD(null);
+    api('GET', `/ngach/${ma}/volume?days=${days}`)
+      .then(x => { setD(x); setErr(''); }).catch(e => setErr(String(e.message)));
+  }, [ma, days]);
+  const pts = d ? d.pts : [];
+  const xf = i => { const p = pts[Math.round(i)]; return p ? p.ngay.slice(8) + '/' + p.ngay.slice(5, 7) : ''; };
+  return html`
+    <div class="panel">
+      <h2>Volume cả ngách — ${ten} <small>· cộng mọi pool thị trường trong phạm vi của bạn · số đo thật từ nhịp quét</small></h2>
+      <div class="chips" style="margin:4px 0 0">
+        ${[['30 ngày', 30], ['90 ngày', 90], ['1 năm', 365]].map(([lb, n]) => html`
+          <button class="btn small ${days === n ? '' : 'ghost'}" onClick=${() => setDays(n)}>${lb}</button>`)}
+      </div>
+      ${err && html`<div class="msg err" style="margin-top:8px">${err}</div>`}
+      ${!d && !err ? html`<div class="note" style="margin-top:8px"><span class="spin"></span> Đang tải…</div>`
+        : d && pts.length < 2 ? html`<div class="note" style="margin-top:8px">Chưa đủ dữ liệu nhịp trong khoảng này —
+            volume dày lên theo thời gian quét; pool mới tách tích từ lúc tách.</div>`
+        : d && html`<${LineChart} title="Sóng views cả ngách — views cộng thêm mỗi ngày (mọi pool)" height=${200}
+            pts=${pts.map((p, i) => [i, p.dviews])} bands=${[]} markers=${[]}
+            yfmt=${kfmt} xfmt=${xf} xstep=${Math.max(1, Math.ceil(pts.length / 8))} xtipfmt=${xf}/>`}
+      ${d && html`
+        <div class="tablewrap" style="margin-top:10px"><table>
+          <tr><th>Thị trường</th><th class="num">Kênh</th><th class="num">Video</th>
+            <th class="num">Views 7 ngày</th><th class="num">Views 28 ngày</th></tr>
+          ${d.pools.map(b => html`<tr><td>${b.nhan}</td><td class="num">${fmt(b.kenh)}</td>
+            <td class="num">${fmt(b.video)}</td><td class="num">${kfmt(b.views_7d)}</td>
+            <td class="num">${kfmt(b.views_28d)}</td></tr>`)}
+          <tr><td><b>Cả ngách</b></td><td class="num"><b>${fmt(d.tong.kenh)}</b></td>
+            <td class="num"><b>${fmt(d.tong.video)}</b></td><td class="num"><b>${kfmt(d.tong.views_7d)}</b></td>
+            <td class="num"><b>${kfmt(d.tong.views_28d)}</b></td></tr>
+        </table></div>
+        <div class="note" style="margin-top:8px">Nhịp pool đích tính từ lúc tách kênh — quá khứ pool trộn nằm ở
+          "Chưa phân loại" (trung thực, không bịa lại lịch sử theo thị trường).</div>`}
+    </div>`;
+}
+
 const TABS = [['board', 'Board'], ['alerts', 'Alerts'], ['reports', 'Report'], ['pool', 'Data Pool'],
               ['harvest', 'Harvest'], ['settings', 'Tuning'], ['admin', 'Setting'], ['new', '+ New Niche']];
 function App() {
@@ -1710,7 +1716,10 @@ function App() {
   const [wss, setWss] = useState([]);
   const [ws, setWs] = useState(h0.ws ? Number(h0.ws) : null);
   const [tab, setTab] = useState(h0.tab || 'board');
+  const [nganhs, setNganhs] = useState([]);      // ngách + thị trường CỦA ngách — sinh ở General (18/08)
+  const [nicheView, setNicheView] = useState(false);   // Board: xem VOLUME CẢ NGÁCH thay vì 1 pool
   useEffect(() => { api('GET', '/auth/me').then(setMe).catch(() => setMe(null)); }, []);
+  useEffect(() => { if (me) api('GET', '/ngach').then(setNganhs).catch(() => setNganhs([])); }, [me]);
   useEffect(() => { writeHash({ tab, ws: ws ?? '' }); }, [tab, ws]);
   useEffect(() => {                              // tab trong hash không hợp lệ với vai → về board
     if (!me) return;
@@ -1742,6 +1751,19 @@ function App() {
     : k === 'admin' ? (!me.sso && (role === 'owner' || role === 'manager')) : true));
   // 23/07: Data Pool/Harvest/New Niche = leader trở lên. 04/08: manager vào tab Quản trị
   // CHỈ thấy khối xóa niche (vận hành) — key/thành viên/LLM vẫn riêng owner (server chặn thật).
+  // DẢI TAB THỊ TRƯỜNG CỦA NGÁCH (user 18/08): Board/Alerts/Report/Pool/Tuning đều
+  // xem theo thị trường — bấm tab = chuyển sang pool thị trường đó (đếm theo SỐ KÊNH,
+  // Data Pool quản kênh); tab chưa có pool = nút ＋ dựng ngay (leader trở lên).
+  const niche = cur && nganhs.find(n => n.ma === cur.ngach);
+  const goc = niche && wss.find(w => w.ngach === niche.ma && !w.market);
+  const dai = niche ? niche.thi_truong.map(tt => ({
+    tt, w: wss.find(x => x.ngach === niche.ma && x.market === tt.ma) })) : [];
+  const taoPoolTT = async tt => {
+    try {
+      const w = await api('POST', '/workspaces', { name: `${niche.ten} — ${tt.ten}`, ngach: niche.ma, market: tt.ma });
+      await loadWs(true); setWs(w.id);
+    } catch (e) { alert(String(e.message)); }
+  };
   return html`
     <header class="top">
       <h1>📡 RADAR<span>Y</span></h1>
@@ -1754,6 +1776,22 @@ function App() {
         <span class="note" title=${me.email}>${me.email.split('@')[0]}${role !== 'owner' ? html` · <span class="rolechip ${role}">${role}</span>` : ''}</span>
         <button class="btn small ghost" onClick=${logout}>Thoát</button>`}
     </header>
+    ${niche && !['new', 'harvest', 'admin'].includes(tab) && html`
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin:0 0 12px">
+        <span class="note">${niche.ten}:</span>
+        ${tab === 'board' && html`<button class=${'btn small' + (nicheView ? '' : ' ghost')}
+          title="Volume cộng gộp mọi pool thị trường của ngách"
+          onClick=${() => setNicheView(true)}>Σ Cả ngách</button>`}
+        ${goc && html`<button class=${'btn small' + (!nicheView && ws === goc.id ? '' : ' ghost')}
+          onClick=${() => { setNicheView(false); setWs(goc.id); }}>Chưa phân loại <small>· ${goc.channels} kênh</small></button>`}
+        ${dai.map(s => s.w
+          ? html`<button class=${'btn small' + (!nicheView && ws === s.w.id ? '' : ' ghost')}
+              onClick=${() => { setNicheView(false); setWs(s.w.id); }}>${s.tt.ten} <small>· ${s.w.channels} kênh</small></button>`
+          : html`<button class="btn small ghost" disabled=${!canEdit}
+              title=${'Thị trường ' + s.tt.ten + ' chưa có pool' + (canEdit ? ' — bấm để dựng' : '')}
+              onClick=${() => canEdit && taoPoolTT(s.tt)}>＋ ${s.tt.ten}</button>`)}
+        ${dai.length === 0 && html`<span class="note">ngách chưa khai thị trường — gắn ở General › Niches</span>`}
+      </div>`}
     ${tab === 'admin' && !me.sso && (role === 'owner' || role === 'manager') ? html`
         ${role === 'owner' && html`<${OrgAdmin} orgId=${orgId} meEmail=${me.email} wss=${wss.filter(w => w.org_id === orgId)}/>`}
         <${OrgNiches} wss=${wss.filter(w => w.org_id === orgId)}
@@ -1765,10 +1803,11 @@ function App() {
       : tab === 'harvest' ? html`<${Harvest} orgId=${orgId} canEdit=${canEdit}/>`
       : !cur ? html`<div class="panel">${canEdit ? 'Chưa có workspace nào — bấm "+ New Niche". Nhớ thêm YouTube API key trong tab Setting trước.'
                                                  : 'Org chưa có workspace nào — chờ owner/leader tạo.'}</div>`
+      : tab === 'board' && nicheView && niche ? html`<${NicheVolume} ma=${niche.ma} ten=${niche.ten}/>`
       : tab === 'board' ? html`<${Board} ws=${ws} canEdit=${canEdit}/>`
       : tab === 'alerts' ? html`<${Alerts} ws=${ws} canEdit=${canEdit}/>`
       : tab === 'reports' ? html`<${Reports} ws=${ws} canEdit=${canEdit}/>`
-      : tab === 'pool' ? html`<${Pool} ws=${ws} canEdit=${canEdit} role=${role}
+      : tab === 'pool' ? html`<${Pool} ws=${ws} canEdit=${canEdit} role=${role} nganhs=${nganhs}
           wss=${wss.filter(w => w.org_id === orgId)} onMoved=${() => loadWs(true)}/>`
       : html`<${Settings} ws=${ws} role=${role} orgId=${orgId}/>`}
   `;

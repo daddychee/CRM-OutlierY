@@ -134,6 +134,47 @@
   BỎ — tên tự sinh `<ngách> — <thị trường>` hiện preview; standalone giữ
   nguyên. Suite radary 25 pass; restart 9111; headless OK.
 
+- 18/08/2026 — **VÒNG 5 — 3 YÊU CẦU VẬN HÀNH + ƯU TIÊN "xem từng thị trường +
+  volume cả ngách"**: (1) DẢI TAB THỊ TRƯỜNG LÊN CẤP APP (dưới header, hiện ở
+  Board/Alerts/Report/Pool/Tuning): bấm tab = chuyển pool thị trường — Board
+  xem theo thị trường được (yêu cầu 1); Pool bỏ dải tab nội bộ (một dải duy
+  nhất, nhận nganhs qua props). (2) Đếm theo SỐ KÊNH trên dải tab +
+  list_workspaces thêm trường `channels` (yêu cầu 2 — Data Pool quản kênh).
+  (3) Nút **Σ Cả ngách** trên Board → `GET /api/ngach/{ma}/volume`: cộng nhịp
+  views MỌI pool của ngách user thấy (pool_stats gộp theo ngày, VPH TB trọng
+  số n_young) + bảng volume theo thị trường (kênh/video/views 7d/28d từ
+  channel_stats — số đo thật, không bịa; lưu ý trung thực: nhịp pool đích chỉ
+  tích từ lúc tách, quá khứ pool trộn nằm ở "Chưa phân loại"). Suite radary
+  26 pass; restart 9111; kiểm sống volume LIFE IN: 72 kênh · 4.922 video ·
+  3,74M views 7d · 21,2M views 28d; 3 pool thị trường Korea/Spain/US đã dựng
+  (0 kênh — chờ phân loại theo phương án mục dưới).
+
+## PHƯƠNG ÁN PHÂN LOẠI LẠI KÊNH POOL BẨN (đề xuất — CHỜ USER DUYỆT)
+
+Bối cảnh: user không muốn phí data đã quét; V3 dừng quét 2 ngày (by design —
+scheduler tắt), V2 vẫn chạy để đối chiếu. Nguyên tắc: cơ chế move đã GIỮ TRỌN
+lịch sử video/tick/nhịp kênh → phân loại xong KHÔNG mất data cũ.
+
+**3 bước, 0 quota YouTube, người duyệt là chốt chặn:**
+1. **Máy gợi ý từ data ĐÃ QUÉT** (script offline đọc db V3): mỗi kênh active
+   trong pool gốc chấm thị trường theo 3 nguồn — (a) NGÔN NGỮ TIÊU ĐỀ toàn bộ
+   video của kênh trong bảng `videos` (hàng nghìn title đã quét: Hangul →
+   Korea, dấu tiếng Việt → VN, function-words ES → Spain, còn lại EN → US —
+   tái dùng fingerprint sẵn có của Harvest); (b) `country` trong hồ sơ kênh
+   cache (`channel_info`); (c) đối chiếu bảng tách US 77/ES 22/VN 4 mạch
+   Niche Research 18/08. Ra bảng: kênh → gợi ý + độ đồng thuận + bằng chứng.
+2. **Người duyệt trên UI**: tab "Chưa phân loại" hiện cột gợi ý + nút "tích
+   theo gợi ý <thị trường>" — user soi mắt bỏ tick kênh nghi (bài học Globe
+   Cover: kênh Urdu lọt pool US — vì vậy KHÔNG auto-move).
+3. **Bấm chuyển bằng move sẵn có** → lịch sử đi theo kênh.
+
+Đối chiếu V2 (tùy chọn, sau bước 3): so danh sách kênh V2 (đọc từ backup
+gương `D:\OUTLIERY-backup` — KHÔNG đụng db sống) với V3 → kênh team thêm
+trong 2 ngày V3 đứng im → dán bổ sung vào đúng pool thị trường (resolve tốn
+~1 unit/kênh, không đáng kể). SAU CUTOVER: snapshot cuối rồi chạy lại đúng
+quy trình 1-2-3 trên dữ liệu mới nhất — vì vậy làm thành TÍNH NĂNG lặp lại
+được, không phải script một lần.
+
 ## Nghiệm thu còn chờ (user/Owner) — cập nhật vòng 4
 
 1. Vào **V3** (https://outliery.test:9443, KHÔNG phải cổng 8000) → RadarY →
