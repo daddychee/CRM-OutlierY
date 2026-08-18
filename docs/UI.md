@@ -31,6 +31,16 @@
   chỉ phải khớp nút bấm — alias ở `_ALIAS` (nen/gateway/main.py), app KHÔNG đổi
   route. Thêm trang có nút sidebar = thêm dòng `_ALIAS` + href đẹp trong 4 template
   vỏ (3 base.html + hoi_dap.html).
+- **LUẬT TRANG API KEYS (Owner chốt 18/08)**: mọi danh sách trên trang API Keys —
+  bảng khóa theo loại tab 1, Assigned keys tab 2, quota log tab 3, và MỌI
+  khối/bảng mới thêm sau này — **mặc định 5 dòng, Show more/less SERVER-SIDE**
+  (query `?mo_rong=` + link GET thật, server cắt trước khi gửi HTML; cơ chế
+  `url_mo_rong` + macro `hang_mo_rong` trong nen_api_keys.html — KHÔNG dùng JS
+  ẩn/hiện, đã hỏng trên trình duyệt thật 18/08 không tái hiện được).
+- **`<details>` khu General phải có CHỈ BÁO MỞ RỘNG** (Owner 18/08 — A3 từng gỡ
+  mũi tên mặc định làm mất affordance): chevron `svg.ic.chev` ▸ xoay 90° khi
+  `[open]` (transition nhẹ) + `cursor:pointer` + hover nền nhạt — khuôn CSS
+  `details.app` trong nen_phan_quyen.html, khối mới chép cùng khuôn.
 - **ICON MINIMALIST**: cấm emoji màu trong UI chrome (heading/nút/banner/nhãn) —
   dùng inline SVG line-icon `svg.ic` (stroke, viewBox 24, khuôn Lucide). Ký hiệu
   chữ đơn sắc (→ ← ✓ ✗ ✕ ☰, ô phán quyết ✓/⚠/✗/?) được giữ. Emoji còn lại nằm

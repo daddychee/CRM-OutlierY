@@ -1040,18 +1040,33 @@ def _render_api_keys(request: Request, user: dict, bao: str = "",
                     "generate": (ket.NHA_GEN, ket.NHA_GEN_INFO)}
     # Show-more SERVER-SIDE (18/08): JS ẩn/hiện cũ Owner báo không tác dụng trên
     # trình duyệt thật mà không tái hiện được — đổi sang server tự cắt danh sách
-    # (>5 khóa render 5 dòng + LINK GET thật), kiểm được 100% bằng TestClient.
-    # ?mo_rong=<ma1,ma2> = các việc đang yêu cầu hiện ĐỦ; URL mở/gọn tính sẵn ở
-    # Python từng việc (Jinja set-math rắc rối, không đáng).
+    # (>5 dòng render 5 + LINK GET thật), kiểm được 100% bằng TestClient.
+    # LUẬT TRANG API (Owner chốt 18/08, ghi docs/UI.md): MỌI danh sách trên trang
+    # mặc định 5 dòng + Show more/less — tab 1 mỗi KHỐI LOẠI một mã 'loai:<x>',
+    # tab 2 mỗi việc một mã, tab 3 mã 'log' (URL giữ nguyên bộ lọc ngày/api/app).
+    # ?mo_rong=<ma1,ma2> = các khối đang yêu cầu hiện ĐỦ; URL mở/gọn tính sẵn ở
+    # Python từng mã (Jinja set-math rắc rối, không đáng).
     mo_rong = {x for x in q.get("mo_rong", "").split(",") if x}
     url_mo_rong = {}
+
+    def _lam_url_mo(goc: str, ma: str) -> None:
+        bot = ",".join(sorted(mo_rong - {ma}))
+        url_mo_rong[ma] = {
+            "mo": goc + "&mo_rong=" + ",".join(sorted(mo_rong | {ma})),
+            "gon": goc + (f"&mo_rong={bot}" if bot else "")}
+
     if tab == "app" and app_chon in viec_api:
         for v in viec_api[app_chon]["viec"]:
-            goc = f"/general/api-keys?tab=app&app={app_chon}"
-            bot = ",".join(sorted(mo_rong - {v["ma"]}))
-            url_mo_rong[v["ma"]] = {
-                "mo": goc + "&mo_rong=" + ",".join(sorted(mo_rong | {v["ma"]})),
-                "gon": goc + (f"&mo_rong={bot}" if bot else "")}
+            _lam_url_mo(f"/general/api-keys?tab=app&app={app_chon}", v["ma"])
+    elif tab == "api":
+        for lo in ket.LOAI_API:
+            _lam_url_mo("/general/api-keys?tab=api", f"loai:{lo}")
+    elif tab == "log":
+        goc = "/general/api-keys?tab=log" + "".join(
+            f"&{t}={quote(g)}" for t, g in
+            (("ngay", ngay), ("loc_api", loc["api"]),
+             ("loc_khoa", loc["khoa"]), ("loc_app", loc["app"])) if g)
+        _lam_url_mo(goc, "log")
     # KHÔNG BAO GIỜ cache: trang sửa liên tục (Owner nghi cache trình duyệt khi
     # thấy UI cũ) — no-store cho MỌI đường render.
     return templates.TemplateResponse(request, "nen_api_keys.html", {

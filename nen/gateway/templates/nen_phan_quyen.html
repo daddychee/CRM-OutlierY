@@ -6,9 +6,18 @@
    ưu tiên OVERRIDE > ACTING LEVEL > default. #}
 <style>
   details.app{border:1px solid var(--vien);border-radius:12px;margin:8px 0;padding:0 14px;background:var(--the)}
-  details.app summary{cursor:pointer;padding:11px 0;font-weight:600;display:flex;gap:8px;align-items:center;flex-wrap:wrap;list-style:none}
+  /* Owner phê 18/08: (a) summary hạ cỡ chữ — tên app 14px/600, dòng roles cỡ
+     phụ (KHÔNG ăn cỡ heading); (b) khối mở-rộng-được PHẢI có chỉ báo: chevron
+     ▸ xoay 90° khi mở + hover nền nhạt (A3 từng gỡ mũi tên mặc định của
+     <details> làm mất luôn affordance). Luật docs/UI.md: mọi <details> khu
+     General đều theo khuôn này. */
+  details.app summary{cursor:pointer;margin:0 -14px;padding:11px 14px;font-size:14px;font-weight:600;
+    display:flex;gap:8px;align-items:center;flex-wrap:wrap;list-style:none;border-radius:12px}
+  details.app summary:hover{background:var(--nen)}
   details.app summary::-webkit-details-marker{display:none}
-  details.app[open] summary{border-bottom:1px solid var(--vien)}
+  details.app summary .chev{flex:0 0 auto;color:var(--phu);transition:transform .15s ease}
+  details.app[open] summary .chev{transform:rotate(90deg)}
+  details.app[open] summary{border-bottom:1px solid var(--vien);border-radius:12px 12px 0 0}
   details.app table{border:0}
   .le td{outline:2px solid var(--accent);outline-offset:-2px}
   .uu-tien{font-size:12px;color:var(--phu)}
@@ -78,7 +87,7 @@
   <input type="hidden" name="ten" value="{{ ten_chon }}">
   {% for k in khoi_p4 %}
   <details class="app"{% if k.so_le %} open{% endif %}>
-    <summary>{{ k.ten }}
+    <summary><svg class="ic chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>{{ k.ten }}
       {% if k.so_le %}<span class="badge warn">{{ k.so_le }} override{{ 's' if k.so_le != 1 }}</span>
       {% else %}<span class="badge">0 overrides</span>{% endif %}
       {% if k.slug != '*' %}<span class="uu-tien" style="font-weight:400">roles: viewer &lt; leader &lt; manager &lt; admin</span>{% endif %}

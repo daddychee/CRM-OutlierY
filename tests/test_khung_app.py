@@ -125,3 +125,8 @@ def test_ui_a2_a3_modal_va_badge(client):
     b = client.get("/general/permissions?ten=nhanvien").text
     assert "0 overrides" in b                           # badge chuẩn trên summary
     assert 'class="badge ok">yes' in b                  # P2 badge thay chip
+    # Owner 18/08 (docs/UI.md): <details> khu General phải có CHỈ BÁO mở rộng —
+    # chevron trong summary xoay 90° khi [open], summary hạ cỡ 14px không ăn heading
+    assert '<summary><svg class="ic chev"' in b
+    assert "details.app[open] summary .chev{transform:rotate(90deg)}" in b
+    assert "font-size:14px" in b.split("details.app summary{", 1)[1].split("}", 1)[0]

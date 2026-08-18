@@ -20,12 +20,20 @@
   .khoa-list{display:flex;flex-direction:column;gap:4px}
   .khoa-list form.khoa-dong{display:flex;justify-content:space-between;align-items:center;gap:8px}
   .khoa-dong .chip-o{flex:1;text-align:left}
+  /* dropdown "+ key" (kho khóa dự phòng) cùng cỡ với dòng chip — Owner phê:
+     box to hơn các chip khác */
+  .khoa-list form.dong{display:flex;gap:6px;align-items:center}
+  .khoa-list form.dong select, .khoa-list form.dong button{font-size:.8rem;padding:2px 7px}
 </style>
 
 {% macro khoa_ngan(dau, duoi) %}{{ dau }}···{{ duoi }}{% endmacro %}
 {# ve_fields: MỌI form POST mang vị trí đang đứng (tab/app/mo_rong) để handler
-   redirect về ĐÚNG chỗ — Owner phê lần 4 "ấn vào quay về đầu trang". #}
-{% macro ve_fields() %}<input type="hidden" name="ve_tab" value="{{ tab }}">{% if tab == 'app' %}<input type="hidden" name="ve_app" value="{{ app_chon }}"><input type="hidden" name="ve_mo_rong" value="{{ mo_rong | sort | join(',') }}">{% endif %}{% endmacro %}
+   redirect về ĐÚNG chỗ — Owner phê lần 4 "ấn vào quay về đầu trang". ve_mo_rong
+   ở MỌI tab (từ 18/08 tab 1 + 3 cũng có khối mở rộng, không riêng tab 2). #}
+{% macro ve_fields() %}<input type="hidden" name="ve_tab" value="{{ tab }}">{% if tab == 'app' %}<input type="hidden" name="ve_app" value="{{ app_chon }}">{% endif %}<input type="hidden" name="ve_mo_rong" value="{{ mo_rong | sort | join(',') }}">{% endmacro %}
+{# Luật trang API (Owner 18/08 — docs/UI.md): MỌI danh sách mặc định 5 dòng,
+   Show more/less server-side. Macro link dùng chung cho hàng cuối bảng. #}
+{% macro hang_mo_rong(ma, tong, cot) %}{% if not (ma in mo_rong or tong <= 5) %}<tr><td colspan="{{ cot }}"><a class="phu" style="font-size:.8rem" href="{{ url_mo_rong[ma].mo }}">Show more ({{ tong - 5 }})</a></td></tr>{% elif ma in mo_rong and tong > 5 %}<tr><td colspan="{{ cot }}"><a class="phu" style="font-size:.8rem" href="{{ url_mo_rong[ma].gon }}">Show less</a></td></tr>{% endif %}{% endmacro %}
 
 <div class="toolbar" style="margin-top:2px">
   <span class="steps">
@@ -43,7 +51,11 @@
 
 {% if tab == 'api' %}
 {% for loai, ten in ten_loai.items() %}
-<h2>{{ ten }} <span class="badge {% if theo_loai[loai] %}ok{% endif %}">{{ theo_loai[loai] | length }} key{{ 's' if theo_loai[loai] | length != 1 }}</span></h2>
+{% set ma_khoi = 'loai:' ~ loai %}
+{% set tong = theo_loai[loai] | length %}
+{% set day_du = ma_khoi in mo_rong or tong <= 5 %}
+{% set cot = 7 if (loai in nha_por_loai or loai == 'youtube') else 6 %}
+<h2>{{ ten }} <span class="badge {% if theo_loai[loai] %}ok{% endif %}">{{ tong }} key{{ 's' if tong != 1 }}</span></h2>
 <table class="gon">
   {# Model CHỈ có nghĩa với loại llm/generate (= nha_por_loai) — Owner phê lần 4:
      transcript/youtube hiện ô model là "tự bịa". #}
@@ -53,8 +65,11 @@
     <th>Status</th><th>Added</th><th></th></tr>
   {% if loai in nha_por_loai %}
     {% set nha_tuple, nha_info_cuc = nha_por_loai[loai] %}
+    {% set dem = namespace(n=0) %}
     {% for nha in nha_tuple %}
       {% for k in theo_loai[loai] if k.nha == nha %}
+      {% if day_du or dem.n < 5 %}
+      {% set dem.n = dem.n + 1 %}
       <tr><td>{{ nha_info_cuc[nha].ten }}</td>
         <td><span class="chip-o">{{ khoa_ngan(k.dau, k.duoi) }}</span></td>
         <td>
@@ -69,11 +84,12 @@
             </select>
           </form></td>
         <td>{{ luot.get(k.duoi, 0) }}</td>
-        <td>{% if k.id in dang_dung %}<span class="badge ok">in use</span>{% else %}<span class="badge">idle</span>{% endif %}</td>
+        <td>{% if k.id in dang_dung %}<span class="badge ok">in use</span>{% else %}<span class="badge">spare</span>{% endif %}</td>
         <td class="phu">{{ k.ngay or '—' }}</td>
         <td>
           <button type="button" class="nguy" style="padding:3px 10px"
                   data-thu-hoi="{{ k.id }}" data-khoa="{{ khoa_ngan(k.dau, k.duoi) }}">Revoke</button></td></tr>
+      {% endif %}
       {% endfor %}
       {% if theo_loai[loai] | selectattr('nha', 'equalto', nha) | list | length == 0 %}
       <tr><td>{{ nha_info_cuc[nha].ten }}</td><td><span class="badge">no key yet</span></td>
@@ -81,7 +97,7 @@
       {% endif %}
     {% endfor %}
   {% else %}
-    {% for k in theo_loai[loai] %}
+    {% for k in (theo_loai[loai] if day_du else theo_loai[loai][:5]) %}
     <tr><td>{{ loop.index }}</td>
       <td><span class="chip-o">{{ khoa_ngan(k.dau, k.duoi) }}</span></td>
       <td>{{ luot.get(k.duoi, 0) }}</td>
@@ -89,7 +105,7 @@
       {% set pct = ((luot.get(k.duoi, 0) * 100 / 10000) | round | int) %}
       <td><span class="usage"><i class="{% if pct >= 80 %}cao{% endif %}" style="width:{{ [pct, 100] | min }}%"></i></span></td>
       {% endif %}
-      <td>{% if k.id in dang_dung %}<span class="badge ok">in use</span>{% else %}<span class="badge">idle</span>{% endif %}</td>
+      <td>{% if k.id in dang_dung %}<span class="badge ok">in use</span>{% else %}<span class="badge">spare</span>{% endif %}</td>
       <td class="phu">{{ k.ngay or '—' }}</td>
       <td>
         <button type="button" class="nguy" style="padding:3px 10px"
@@ -98,6 +114,7 @@
     <tr><td colspan="{{ 7 if loai == 'youtube' else 6 }}" class="phu">No key yet.</td></tr>
     {% endfor %}
   {% endif %}
+  {{ hang_mo_rong(ma_khoi, tong, cot) }}
 </table>
 {% endfor %}
 
@@ -195,11 +212,15 @@
         <input type="hidden" name="app_slug" value="{{ app_chon }}">
         <input type="hidden" name="viec" value="{{ v.ma }}">
         <select name="them">
+          {# nhãn đầu (disabled) — Owner phê: phải nói rõ đây là KHO KHÓA DỰ
+             PHÒNG chưa gán; chưa chọn gì mà bấm + thì server nhận them rỗng =
+             không đổi gì (an toàn) #}
+          <option value="" disabled selected>— spare keys ({{ con_lai | length }}) —</option>
           {% for k in con_lai %}
           <option value="{{ k.id }}">{% if k.nha %}{{ k.nha }} {% endif %}{{ khoa_ngan(k.dau, k.duoi) }}</option>
           {% endfor %}
         </select>
-        <button class="phu" style="padding:3px 9px">
+        <button class="phu">
           <svg class="ic" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> key</button>
       </form>
       {% elif not ids %}<span class="badge bad">no key of this type — add in tab 1</span>{% endif %}
@@ -256,10 +277,11 @@
   <a class="chip-o" style="padding:6px 11px" href="/general/api-keys/export?ngay={{ ngay }}&loc_api={{ loc.api }}&loc_khoa={{ loc.khoa }}&loc_app={{ loc.app }}">
     <svg class="ic" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 11l5 5 5-5"/><path d="M5 21h14"/></svg> Export CSV</a>
 </form>
+{% set day_du_log = 'log' in mo_rong or log_rows | length <= 5 %}
 <table class="gon">
   <tr><th>Time</th><th>API</th><th>Key</th><th>App</th><th>Task</th>
     <th>Calls</th><th>Quota used</th></tr>
-  {% for d in log_rows %}
+  {% for d in (log_rows if day_du_log else log_rows[:5]) %}
   <tr><td class="phu">{{ d.luc }}</td><td>{{ ten_loai.get(d.api, d.api) }}</td>
     <td><span class="chip-o">{{ khoa_ngan(dau_theo_duoi.get(d.khoa_duoi, ''), d.khoa_duoi) }}</span></td>
     <td>{{ d.app }}</td><td>{{ d.viec }}</td>
@@ -267,6 +289,7 @@
   {% else %}
   <tr><td colspan="7" class="phu">No usage logged yet.</td></tr>
   {% endfor %}
+  {{ hang_mo_rong('log', log_rows | length, 7) }}
 </table>
 {% endif %}
 

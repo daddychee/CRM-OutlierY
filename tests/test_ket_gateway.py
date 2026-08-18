@@ -170,6 +170,59 @@ def test_assigned_keys_show_more_server_side(client):
     trang = client.get("/general/api-keys?tab=app&app=radary").text
     assert trang.count('class="khoa-dong"') == 4
     assert "Show more" not in trang and "Show less" not in trang
+    # dropdown "+ key" phải NÓI RÕ đây là kho khóa DỰ PHÒNG (Owner 18/08):
+    # option nhãn đầu disabled + đúng số khóa chưa gán (7 tạo - 4 đang gán = 3)
+    assert "— spare keys (3) —" in trang
+    assert '<option value="" disabled selected>' in trang
+
+
+def test_tab1_moi_khoi_5_dong_show_more_server_side(client):
+    """LUẬT TRANG API (Owner 18/08 — docs/UI.md): MỌI danh sách mặc định 5 dòng
+    + Show more/less server-side. Tab 1: 20 khóa YouTube → collapsed đúng 5 dòng
+    + link 'Show more (15)' (mã mo_rong theo KHỐI LOẠI 'loai:youtube'); expanded
+    đủ 20 + Show less; khối ≤5 không link. Badge khóa chưa dùng là 'spare'
+    (Owner gọi là key dự phòng — 'idle' không truyền đạt ý)."""
+    _login(client, "owner-test", "mk-test")
+    conn = ket.ket_noi()
+    for i in range(20):
+        ket.them_api_key(conn, "youtube", f"AIzaTabMot{i:02d}xxxxxx")
+    conn.close()
+
+    trang = client.get("/general/api-keys").text
+    assert trang.count("data-thu-hoi=") == 5           # server chỉ gửi 5 dòng khóa
+    assert ">Show more (15)</a>" in trang
+    assert 'href="/general/api-keys?tab=api&amp;mo_rong=loai:youtube"' in trang
+    assert trang.count("Show more") == 1               # khối llm/generate/transcript ≤5: không link
+    assert "Show less" not in trang
+    assert ">spare</span>" in trang and ">idle<" not in trang
+
+    trang = client.get("/general/api-keys?tab=api&mo_rong=loai:youtube").text
+    assert trang.count("data-thu-hoi=") == 20          # expanded đủ 20
+    assert "Show more" not in trang
+    assert ">Show less</a>" in trang
+    assert 'href="/general/api-keys?tab=api"' in trang
+
+
+def test_tab3_quota_log_5_dong_show_more_server_side(client):
+    """Cùng LUẬT cho bảng Quota log (mã 'log'): 7 dòng log → collapsed 5 +
+    Show more (2); expanded đủ + Show less; URL giữ nguyên bộ lọc."""
+    from nen.common import quota_log
+    _login(client, "owner-test", "mk-test")
+    for i in range(7):
+        quota_log.ghi("youtube", "9999", "radary", f"viec-log-{i}")
+
+    trang = client.get("/general/api-keys?tab=log").text
+    assert trang.count("viec-log-") == 5
+    assert ">Show more (2)</a>" in trang
+    assert 'href="/general/api-keys?tab=log&amp;mo_rong=log"' in trang
+
+    trang = client.get("/general/api-keys?tab=log&mo_rong=log").text
+    assert trang.count("viec-log-") == 7
+    assert ">Show less</a>" in trang
+
+    # bộ lọc sống sót trong link Show more (không mất ngày/app đang lọc)
+    trang = client.get("/general/api-keys?tab=log&loc_app=radary").text
+    assert "tab=log&amp;loc_app=radary&amp;mo_rong=log" in trang
 
 
 def test_redirect_giu_vi_tri_va_modal_revoke(client):
