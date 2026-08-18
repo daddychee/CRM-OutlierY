@@ -521,3 +521,27 @@ trong _procs NGAY TRONG LOCK lúc kiểm (poll()=None để status coi là đang
 cửa sổ spawn) + Popen lỗi thì trả chỗ (không kẹt 'running'); restart :9113 lúc rảnh.
 Snapshot ES đóng băng qua bridge (done_moi=true); dashboard TT-SPAIN sống: PHÁN
 QUYẾT VÀO · 62/100, verdict pipeline "GO — enter via Vida real y tradiciones…".
+
+## 19/08 (tiếp 3) — TẦNG 1 BUILDER BÁO CÁO GỘP HTML chạy end-to-end (user: "code đến cuối")
+
+Trả lời "thiếu báo cáo HTML do đâu": pipeline 20 stage kết ở 18_build_report (Excel +
+SUMMARY) — bản HTML của US là bản SOẠN TAY 18/08; máy sinh chưa tồn tại. ĐÃ CODE:
+• apps/niche-research/scripts/19_build_bao_cao.py — HTML gộp 8 phase THUẦN PY từ
+  artifact niche-data: anchor tq/p0..p8/honesty như bản mẫu; mỗi phase 3 lớp SỐ→
+  NGHĨA→GATE; bảng dài trong <details>; số VN, thiếu nguồn ghi "nguồn thiếu";
+  tầng NGHĨA = SLOT nhãn "GIẢ ĐỊNH / CHỜ WRITER" (không bịa) — RIÊNG artifact LLM
+  pipeline đã sinh khi --llm (execution_plan / dna / SUMMARY.md) nhúng NGUYÊN VĂN
+  kèm nhãn nguồn; mục honesty ghi van chống bịa + nguồn từng mục. Ghi nguyên tử
+  tmp+replace vào Report/BAO-CAO-8-PHASE.html.
+• Móc vào bridge: niche_run._snapshot chạy builder TRƯỚC snapshot.py (best-effort)
+  → từ nay MỌI run tự có HTML; snapshot.py quét Report/ nên tự vào sổ bao_cao.
+• Backfill ES end-to-end THẬT: build + snapshot lại (id 2026-08-18 — snapshot dấu
+  ngày UTC) → bao_cao = [BAO-CAO-8-PHASE.html, xlsx, SUMMARY.md]; dashboard Spain
+  đủ Read report/HTML/Excel + link "đọc trong báo cáo ↗"; mở inline 200.
+• BUG TỰ BẮT khi kiểm: builder dùng nháy ĐƠN class='layer' còn bound trich_nghia
+  chỉ tìm nháy kép → extractor vớ nhầm bảng cụm P2 thành "canvas" — vá bound ĐA MỐC
+  (class="layer / class='layer / </section>); kiểm lại: ES trả {} (đúng — canvas chờ
+  writer), US vẫn đủ canvas + phương án. Suite 113 pass.
+CÒN (tầng 2, đợt riêng): bao_cao_writer [LLM] sinh NGHĨA vào JSON theo schema —
+builder đọc JSON đó đổ vào slot thay nhãn chờ; US giữ bản mẫu soạn tay làm chuẩn
+đối chiếu (không ghi đè — lệ mockup).

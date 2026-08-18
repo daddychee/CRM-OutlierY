@@ -101,10 +101,18 @@ def trich_nghia(project: str, snap_id: str = "latest") -> dict:
         return {}
     out: dict = {}
 
-    # 1) Audience Profile Canvas — bảng đầu tiên sau tiêu đề
+    # 1) Audience Profile Canvas — bảng đầu tiên sau tiêu đề, CHỈ trong đoạn tới
+    # nhãn layer kế (báo cáo tự build 19/08 để canvas là slot chờ writer — không
+    # bound là vớ nhầm bảng của mục sau thành "canvas")
     i = s.find("Audience Profile Canvas")
     if i != -1:
-        m = _re.search(r"<table>(.*?)</table>", s[i:i + 20000], _re.S)
+        # bound đa mốc (19/08: builder dùng nháy ĐƠN class='layer' — bound một mốc
+        # nháy kép trượt, extractor vớ nhầm bảng P2 thành "canvas")
+        cac_moc = [s.find(m, i + 1)
+                   for m in ('class="layer', "class='layer", "</section>")]
+        cac_moc = [x for x in cac_moc if x != -1]
+        doan = s[i:min(cac_moc)] if cac_moc else s[i:i + 20000]
+        m = _re.search(r"<table>(.*?)</table>", doan, _re.S)
         if m:
             hang = [[_bo_the(c) for c in _re.findall(r"<t[hd][^>]*>(.*?)</t[hd]>", h, _re.S)]
                     for h in _re.findall(r"<tr>(.*?)</tr>", m.group(1), _re.S)]

@@ -23,6 +23,7 @@ import requests
 _APP_DIR = Path(__file__).resolve().parents[1]
 _ROOT = _APP_DIR.parents[1]
 _SNAPSHOT_PY = _ROOT / "apps" / "niche-research" / "scripts" / "snapshot.py"
+_BUILD_BC_PY = _ROOT / "apps" / "niche-research" / "scripts" / "19_build_bao_cao.py"
 
 # chống snapshot đúp khi nhiều tab cùng poll thấy "vừa xong"
 _snapshot_lock = threading.Lock()
@@ -106,9 +107,17 @@ def trang_thai(project: str, user: dict) -> dict:
 
 
 def _snapshot(project: str) -> bool:
-    """Đóng băng lần chạy hiện tại bằng script CLI của niche-research (best-effort)."""
+    """Đóng băng lần chạy hiện tại bằng script CLI của niche-research (best-effort).
+    TRƯỚC snapshot: build BÁO CÁO GỘP HTML (19_build_bao_cao.py — tầng 1, 19/08)
+    để mọi run tự có HTML trong Report/; build hỏng chỉ mất HTML, không chặn snapshot."""
     duong = Path(os.environ.get("NICHE_PROJECTS_DIR")
                  or _ROOT / "data" / "niche-research" / "projects") / project
+    try:
+        subprocess.run([sys.executable, str(_BUILD_BC_PY), str(duong)],
+                       capture_output=True, timeout=120,
+                       env={**os.environ, "PYTHONUTF8": "1"})
+    except (OSError, subprocess.SubprocessError):
+        pass
     try:
         cp = subprocess.run([sys.executable, str(_SNAPSHOT_PY), str(duong)],
                             capture_output=True, timeout=120,
