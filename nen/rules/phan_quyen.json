@@ -177,6 +177,44 @@
         "mo_ta": "Gỡ video khỏi danh sách (GỠ MỀM — file giữ nguyên trong kho)",
         "min_level": 4
       }
+    },
+    "seo-optimize": {
+      "vao": {
+        "min_level": 2,
+        "bo_phan": [
+          "Kinh doanh"
+        ]
+      },
+      "van_hanh": {
+        "nhan": "Nghiệp vụ SEO",
+        "mo_ta": "Vai seo: xem kênh trong thị trường mình, sinh metadata + xuất file (tốn token), TỰ THÊM kênh mình từ URL YouTube, nạp format đối thủ, thêm vào kho niche — không xóa gì. LƯU Ý ĐẶT TÊN: khóa cố ý tránh substring them/tao/sua/xoa/toan_quyen kẻo iam.vai_cho_app() đẩy nhầm vai (bẫy nas_cap_cao).",
+        "min_level": 2,
+        "bo_phan": [
+          "Kinh doanh"
+        ]
+      },
+      "sua": {
+        "nhan": "Thị trường được giao",
+        "mo_ta": "Vai leader: tạo/sửa thị trường, xóa format + mục kho niche, gán/đổi CHỦ kênh, khôi phục thùng rác 24h — KHÔNG xóa kênh/thị trường",
+        "min_level": 3,
+        "bo_phan": [
+          "Kinh doanh"
+        ]
+      },
+      "toan_quyen": {
+        "nhan": "Toàn quyền vận hành",
+        "mo_ta": "Vai manager: sửa MỌI kênh, xóa kênh/format/tập/thị trường + dọn thùng rác, xem nhật ký audit — KHÔNG gồm tài khoản/API key (Manager không ngang Owner)",
+        "min_level": 4,
+        "bo_phan": [
+          "Kinh doanh"
+        ]
+      },
+      "quan_tri": {
+        "nhan": "Quản trị",
+        "mo_ta": "Tài khoản + API key nội bộ app — ĐÃ ĐÓNG khi SSO (khóa nhập ở General › API Keys, tài khoản/quyền ở General › Accounts / Permissions)",
+        "min_level": 5
+      },
+      "vai_xoa": "manager"
     }
   }
 }

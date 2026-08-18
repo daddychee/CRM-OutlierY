@@ -13,6 +13,7 @@
 | 9112 | apps/content-ultimate | Content Ultimate (đưa vào 16/08 — mạch APPS.md) |
 | 9113 | apps/niche-research | Niche Research (Owner chen lên app #3 — 18/08) |
 | 9114 | apps/video-review | Video Review — feedback video kiểu Frame.io (app V3 mới 18/08) |
+| 9115 | apps/seo-optimize | SEO Optimize (đưa vào 19/08 — APPS.md app 4/6) |
 | 9190 | apps/app-mau | App mẫu chứng minh hợp đồng app |
 | 6343 | Qdrant test (HTTP) | storage: data\qdrant — TÁCH HẲN kho thật |
 | 6344 | Qdrant test (gRPC) | phải khai tường minh kẻo rơi về 6334 đụng hệ thật |

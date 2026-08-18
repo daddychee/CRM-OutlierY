@@ -643,7 +643,9 @@ def list_workspaces(request: Request):
 
 @app.post('/api/workspaces', status_code=201)
 def create_workspace(body: WorkspaceIn, request: Request):
-    ngach, market = _kiem_de(body.ngach, body.market)   # kiểm TRƯỚC khi tạo gì (V3: bắt buộc cặp)
+    # cho_phep_goc: ngach + market RỖNG = dựng POOL GỐC "Chưa phân loại" cho ngách
+    # MỚI từ General (19/08 — user phát hiện ngách mới không hiện đâu trong RadarY)
+    ngach, market = _kiem_de(body.ngach, body.market, cho_phep_goc=True)
     with get_conn() as c:
         u = auth.require_user(c, request)
         my_orgs = auth.user_orgs(c, u['id'])
@@ -1004,6 +1006,22 @@ def channels(ws: int, request: Request):
         return [dict(r) for r in c.execute(
             'SELECT yt_id, title, active, favorite FROM channels WHERE workspace_id=? ORDER BY title', (ws,))]
 
+def _khoa_quet(c, ws):
+    """V3: khóa từ KÉT theo việc quet_dinh_ky (khuôn run_cycle — KHÔNG fallback
+    bảng nội bộ; trả nợ 19/08: add_channels từng đọc bảng nội bộ nên pool MỚI
+    chỉ với được khóa org-wide cũ → 403 hết vòng). Standalone: bảng nội bộ như V2."""
+    if _v3():
+        from . import khoa_v3
+        try:
+            return khoa_v3.lay_khoa('quet_dinh_ky')
+        except RuntimeError as e:
+            raise HTTPException(503, str(e))
+    keys = db.api_keys(c, ws)
+    if not keys:
+        raise HTTPException(400, 'niche này chưa có key YouTube — owner gắn KEY CHÍNH trong '
+                                 'Cài đặt của niche (hoặc key toàn org trong tab Quản trị)')
+    return keys
+
 @app.post('/api/workspaces/{ws}/channels')
 def add_channels(ws: int, body: ChannelsIn, request: Request):
     items = [str(x) for x in body.items if str(x).strip()]
@@ -1011,10 +1029,11 @@ def add_channels(ws: int, body: ChannelsIn, request: Request):
     with get_conn() as c:
         u = auth.require_user(c, request)
         auth.ws_for_user(c, ws, u['id'], 'leader')
-        keys = db.api_keys(c, ws)
-        if not keys: raise HTTPException(400, 'niche này chưa có key YouTube — owner gắn KEY CHÍNH trong '
-                                              'Cài đặt của niche (hoặc key toàn org trong tab Quản trị) rồi mới thêm kênh được')
-        found = scan.resolve_channels(scan.API(keys), items)
+        keys = _khoa_quet(c, ws)
+        try:
+            found = scan.resolve_channels(scan.API(keys), items)
+        except RuntimeError as e:      # YouTube từ chối mọi khóa — trả lỗi đọc được thay vì 500 trần
+            raise HTTPException(503, f'YouTube API từ chối khi resolve kênh: {str(e)[:200]}')
         if not found: raise HTTPException(422, 'không resolve được kênh nào từ input')
         added, existing, reactivated = [], [], []
         with c:
@@ -1060,8 +1079,7 @@ def channel_profile(ws: int, yt_id: str, request: Request):
         auth.ws_for_user(c, ws, u['id'], 'leader')      # hồ sơ kênh thuộc Data Pool — leader trở lên
         ch = c.execute('SELECT * FROM channels WHERE workspace_id=? AND yt_id=?', (ws, yt_id)).fetchone()
         if not ch: raise HTTPException(404, 'kênh không có trong pool')
-        keys = db.api_keys(c, ws)
-        if not keys: raise HTTPException(400, 'org chưa có API key')
+        keys = _khoa_quet(c, ws)
         try:
             return channel_info.get_info(c, ch, scan.API(keys))
         except LookupError as e:

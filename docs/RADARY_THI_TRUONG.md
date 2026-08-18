@@ -311,3 +311,20 @@ quy trình 1-2-3 trên dữ liệu mới nhất — vì vậy làm thành TÍNH 
   V2 vẫn quét + vẫn là nguồn push của team tới cutover. Quota: 2 hệ cùng
   tiêu 1 bó khóa — user đã cân; nếu quotaExceeded diện rộng thì V3 báo rõ
   từng pool (scheduler cô lập lỗi), xử bằng tắt lại RADARY_SCHEDULER=0.
+
+- 19/08/2026 — **NICHE MỚI RETIREMENT (110 kênh CSV) + VÁ 2 LỖ user phát hiện.**
+  (1) User báo "niche tạo ở General chưa xuất hiện trong RadarY" — đúng: sau
+  khi bỏ +New Niche, ngách CHƯA có pool không hiện đâu. Vá: switcher thêm mục
+  "＋ <ngách> (ngách mới — dựng pool)" cho ngách đế chưa có pool (leader bấm
+  là dựng pool GỐC, viewer disabled); POST /workspaces cho_phep_goc (ngach +
+  market rỗng = pool gốc, có test). (2) Nạp RETIREMENT lộ NỢ CŨ: add_channels
+  + channel_profile còn đọc khóa BẢNG NỘI BỘ V2 → pool mới chỉ với được khóa
+  org-wide cũ → 403 hết vòng, 500 trần. TRẢ NỢ: `_khoa_quet` — V3 lấy khóa
+  KÉT việc quet_dinh_ky (khuôn run_cycle, không fallback; lỗi khóa → 503
+  thông điệp rõ), standalone giữ bảng nội bộ; resolve bọc RuntimeError → 503.
+  (Nợ còn lại: overview_refresh + niche_report.py vẫn bảng nội bộ — dùng khi
+  sinh báo cáo ngách, chuyển nốt đợt sau.) KẾT QUẢ RETIREMENT: dựng gốc ws26
+  + Spain 27 + US 28 (đế khai US+Spain); nạp 110/110 (0 lỗi resolve — khóa
+  két ăn ngay), discover 157 units, chia **US 107 kênh (2.118 video)** · để
+  lại 3 (AshyyyMC/SideTripLife/World According To Briggs — title ít chữ chấm
+  được, user tick tay); Spain 0 (pool thuần Mỹ). Suite 17 pass, headless OK.

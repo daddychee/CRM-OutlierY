@@ -1701,9 +1701,23 @@ function App() {
       <nav class="tabs">${tabs.map(([k, label]) => html`
         <button class=${tab === k ? 'on' : ''} onClick=${() => setTab(k)}>${label}</button>`)}</nav>
       <select class="ws" value=${cur && cur.market ? ((wss.find(x => x.ngach === cur.ngach && !x.market) || cur).id) : ws}
-        onChange=${e => { const w = wss.find(x => x.id === Number(e.target.value)); if (!w) return;
-          setWs(w.id); setNicheView(!!w.ngach); }}>
+        onChange=${async e => {
+          const v = e.target.value;
+          if (v.startsWith('ng:')) {              // ngách MỚI từ General chưa có pool (19/08) → dựng pool gốc
+            const n = nganhs.find(x => x.ma === v.slice(3));
+            if (!n || !canEdit) return;
+            try {
+              const w = await api('POST', '/workspaces', { name: n.ten, ngach: n.ma, market: '' });
+              await loadWs(true); setWs(w.id); setNicheView(true);
+            } catch (err) { alert(String(err.message)); }
+            return;
+          }
+          const w = wss.find(x => x.id === Number(v)); if (!w) return;
+          setWs(w.id); setNicheView(!!w.ngach);
+        }}>
         ${wss.filter(w => !w.market).map(w => html`<option value=${w.id}>${w.name}</option>`)}
+        ${nganhs.filter(n => !wss.some(w => w.ngach === n.ma)).map(n => html`
+          <option value=${'ng:' + n.ma} disabled=${!canEdit}>＋ ${n.ten} (ngách mới — dựng pool)</option>`)}
       </select>
       ${me.sso ? '' : html`
         <span class="note" title=${me.email}>${me.email.split('@')[0]}${role !== 'owner' ? html` · <span class="rolechip ${role}">${role}</span>` : ''}</span>

@@ -1,0 +1,3 @@
+# SEO Optimize — chỉ cần Python 3 (stdlib: http.server, urllib, json).
+# YouTube Data API + LLM gọi qua urllib → không cần thư viện ngoài.
+# Nếu sau này dùng SDK LLM (anthropic...) thì thêm ở đây.

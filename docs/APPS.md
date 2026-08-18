@@ -44,7 +44,7 @@
 | 1 | RadarY | 9111 | data\radary\ (db 88M + niche 41M + reports; thumbs 636M TÁI-SINH không snapshot) | mọi BP L1 xem · them_video/tao_pool KD L3 · toan_quyen Manager chủ quản (vai manager) · quan_tri Owner | **XONG** (chờ Owner chạy migration khóa) |
 | 2 | Content Ultimate | 9112 | data\content-ultimate\ | VH L2 · sua L3 leader · quan_tri Owner | **XONG** (chờ Owner chạy migration khóa) |
 | 3 | Niche Research | 9113 | data\niche-research\ (projects VÀNG + data/invites di sản) | KD L2 xem · tao KD L3 leader · toan_quyen KD L4 manager · quan_tri Owner | **ĐANG LÀM** (18/08 — Owner chen lên trước SEO; chờ nghiệm thu + cấp khóa) |
-| 4 | SEO Optimize | 91xx (lấy khi tới lượt) | data\seo-optimize\ | KD L2 vai seo · sua L3 · toan_quyen L4 manager · quan_tri Owner | chờ |
+| 4 | SEO Optimize | 9115 | data\seo-optimize\ (~15M: profiles/episodes/formats/niches/runs + users.json di sản + audit) | KD L2 van_hanh (vai seo) · sua L3 · toan_quyen L4 manager · quan_tri Owner | **XONG** (19/08 — chờ Owner chạy migration khóa + soi UI qua 9443) |
 | — | Data Analytics | 9102 | data\data-analytics\ | đã trong V3 từ đầu | XONG (còn Đ2.2 nối danh bạ) |
 | 5 | PlannerY | 91xx | data\plannery\ | mọi BP L1 · them_kenh_video KD L2 seo · sua L3 · quan_tri Owner + VÁ bẫy users.json thắng header | chờ |
 | 6 | SpeakY | 91xx | data\speaky\ | VH L2, quyền ở cửa vào; model dùng chung HF cache máy | chờ |
@@ -62,6 +62,43 @@
 
 ## Nhật ký
 
+- 19/08/2026 — **SEO OPTIMIZE XONG (app 4/6)** — đúng khuôn 6 bước, cổng 9115
+  (`python -m seo.server`, stdlib thuần — KHÔNG uvicorn; Wd = apps/seo-optimize,
+  SEO_DATA_DIR=data/seo-optimize vì V2 neo mọi store vào common.ROOT cạnh code).
+  (1) **SSO adapter Actions-first** (`server.vai_tu_claims`): quan_tri→owner ·
+  toan_quyen→manager · sua→leader · **van_hanh→seo** · còn lại viewer fail-closed;
+  khóa hành động MỚI `van_hanh` (KD L2) vì "vai seo" của app KHÔNG phải chỉ-đọc
+  (sinh metadata tốn token) — không thể để DEFAULT như niche; tên cố ý né substring
+  them/tao/sua (bẫy vai_cho_app). Fallback Role nhận 'admin'→owner.
+  (2) **LỆNH USER 19/08 "mọi truy xuất tài khoản từ khối nền, không tự tạo trong
+  app"**: GỠ `users.sync_sso` khỏi `_sso()` — app không ghi/tạo bản ghi tài khoản
+  nào nữa (V2 upsert mỗi request); users.json snapshot = DI SẢN CHỈ-ĐỌC (giữ giới
+  hạn thị trường đã gán); `_authed`/`_me` KHÔNG rơi về chế-độ-mở owner của
+  access.py khi SSO bật (không danh tính → 401, test ghim). Gán giới hạn thị
+  trường cho leader/seo giờ KHÔNG có UI (pane Tài khoản đóng) — cần thì làm
+  đường vận hành riêng, Owner quyết.
+  (3) **12 cửa quản trị đóng 404 khi SSO** kể cả vai owner (login/forgot/resets×2/
+  change-password/users/user-save/user-passwd/user-disable/user-remove/admin-keys
+  GET+POST); board tự ẩn pane Tài khoản+API key nhờ whoami gỡ perm 'users' khi
+  sso (board gate bằng may('users') — không sửa board.html 452KB).
+  (4) **Nguồn khóa = KÉT** (`seo/khoa_v3.py`): viec_api trich_kenh (youtube, pool
+  XOAY VÒNG — cơ chế con trỏ yt_get giữ nguyên, chỉ đổi nguồn danh sách) +
+  sinh_metadata (llm, map nhà glm/claude/chatgpt → danh pháp seo/llm.py); không
+  fallback .env/api.txt. `scripts/di_tru_khoa_seo.py` idempotent (marker
+  api.di_tru.seo_khoa, đọc .env hệ cũ CHỈ ĐỌC, audit chỉ đuôi 4) — **Owner chạy**.
+  (5) **2 bẫy khởi động vá**: run() gọi load_keys() lúc boot chỉ để ĐẾM key —
+  khóa chưa cấp phát từng giết cả app (giờ app sống, lỗi rõ hiện lúc bấm extract);
+  webbrowser.open() tắt khi SSO (chạy nền qua start-all là bật trình duyệt oan
+  trên máy chủ). (6) `/api/health` MỚI không cần đăng nhập (V2 chỉ có /api/version
+  sau cổng); selftest nội bộ app vẫn xanh (51 endpoint khai quyền). Test: root
+  +5 (tests/test_seo_optimize.py — hợp đồng/ma trận vai/tick lẻ/viec_api/di trú)
+  = 191 pass · app 13 (tests/test_sso_v3.py). Nghiệm thu sống 9115: health 200 ·
+  5 vai đúng theo Actions · cửa quản trị 404 với owner · viewer bị 403 generate ·
+  users.json mtime BẤT BIẾN sau mọi request · gateway proxy nhận hợp đồng KHÔNG
+  cần restart (hop_dong cache mtime). CÒN CHỜ OWNER: chạy di_tru_khoa_seo.py
+  (hoặc cấp khóa tay ở General › API Keys); restart gateway để ăn alias URL đẹp
+  /seo-optimize (_ALIAS_KHUNG — trước đó /open/seo-optimize + /app/... vẫn chạy);
+  soi UI board qua 9443 từng vai.
 - 19/08/2026 — **RadarY V3 BẬT SCHEDULER chạy SONG SONG V2** (user chốt: "API
   hoàn toàn đủ" — đảo chốt tắt-cố-định 16/08). Điều kiện đi kèm: pool đã chia
   thị trường + số liệu đã đồng bộ từ backup V2; **ntfy TẮT TOÀN V3** (user

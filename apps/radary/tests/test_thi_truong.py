@@ -159,11 +159,17 @@ def test_nhan_pool_goc_doi_ten_theo_general(org_moi, goi, mock_de):
                        (ws,)).fetchone()
     conn.close()
     assert (row["name"], row["ngach"], row["market"]) == ("LIFE IN", "N-LIFE-IN", "")
-    # ngách lạ vẫn chặn kể cả market rỗng; TẠO pool mới thì market vẫn BẮT BUỘC
+    # ngách lạ vẫn chặn kể cả market rỗng
     assert goi("PATCH", f"/api/workspaces/{ws}/market",
                json={"ngach": "N-LA", "market": ""}).status_code == 422
+    # 19/08: POST ngach + market RỖNG = dựng POOL GỐC cho ngách mới từ General
+    # (lỗ user phát hiện: ngách chưa có pool không hiện đâu trong RadarY)
+    r = goi("POST", "/api/workspaces", json={"name": "LIFE IN", "ngach": "N-LIFE-IN"})
+    assert r.status_code == 201
+    assert r.json()["ngach"] == "N-LIFE-IN" and r.json()["market"] == ""
+    # market vẫn phải THUỘC ngách khi tạo pool thị trường
     assert goi("POST", "/api/workspaces",
-               json={"name": "x", "ngach": "N-LIFE-IN"}).status_code == 422
+               json={"name": "x", "ngach": "N-LIFE-IN", "market": "TT-XX"}).status_code == 422
 
 
 # ---------- tách pool: chuyển kênh giữ lịch sử ----------

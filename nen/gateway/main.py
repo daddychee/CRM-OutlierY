@@ -1993,7 +1993,8 @@ for _duong, (_slug, _dd) in _ALIAS.items():
 # --- URL đẹp cấp-1 cho app KHUNG (đồng nhất URL 18/08: mọi nút Tools = /<slug>) ---
 # Phục vụ CÙNG trang khung như /open/<slug> tại URL đẹp; /open/<slug> giữ nguyên
 # cho bookmark. Thêm app khung mới = thêm slug vào tuple này.
-_ALIAS_KHUNG = ("radary", "content-ultimate", "niche-research")
+_ALIAS_KHUNG = ("radary", "content-ultimate", "niche-research", "seo-optimize",
+                "plannery")
 
 
 def _lam_alias_khung(slug: str):

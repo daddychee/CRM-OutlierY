@@ -41,6 +41,12 @@ $env:CU_TRUST_PROXY = '1'
 $env:NICHE_DATA_DIR = (Join-Path $root 'data/niche-research')
 $env:NICHE_TRUST_PROXY = '1'
 $env:NICHE_SCHEDULER = '0'
+
+# SEO Optimize (APPS.md app 4/6, dua vao 19/08): du lieu tro data/seo-optimize;
+# SSO bat (khoa tu KET qua GATEWAY_URL, khong doc .env/api.txt). App KHONG co
+# scheduler nen — sinh metadata/extract chi chay khi user bam.
+$env:SEO_DATA_DIR = (Join-Path $root 'data/seo-optimize')
+$env:SEO_TRUST_PROXY = '1'
 # Bay UTF-8 may Windows nay: app in tieng Viet ra stdout -> cp1252 chet luc khoi dong.
 $env:PYTHONIOENCODING = 'utf-8'
 $dichVu = @(
@@ -75,6 +81,9 @@ $dichVu = @(
     @{ Ten = 'niche-research'; Cong = 9113; Exe = $py
        Args = '-m uvicorn server:app --app-dir "apps/niche-research" --host 127.0.0.1 --port 9113'
        Wd = $root }
+    @{ Ten = 'seo-optimize'; Cong = 9115; Exe = $py
+       Args = '-m seo.server --host 127.0.0.1 --port 9115'
+       Wd = (Join-Path $root 'apps/seo-optimize') }
     @{ Ten = 'caddy-tls'; Cong = 9443
        Exe = (Join-Path $root 'tools\caddy\caddy.exe')
        Args = 'run --config "' + (Join-Path $root 'tools\caddy\Caddyfile') + '"'

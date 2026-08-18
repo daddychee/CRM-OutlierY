@@ -566,6 +566,107 @@
      "loai": "transcript"
     }
    ]
+  },
+  {
+   "slug": "seo-optimize",
+   "ten": "SEO Optimize",
+   "mo_ta": "Sinh metadata SEO YouTube (title/description/tags/timestamps/CTA) theo format học từ kênh đối thủ: hồ sơ kênh + format + kho niche + tập. Đưa vào V3 từ hệ cũ 19/08 (APPS.md app 4/6).",
+   "cong": 9115,
+   "tien_to": [
+    "/api"
+   ],
+   "health": "/api/health",
+   "phien_ban": "1.0-v3",
+   "chay": {
+    "kieu": "python-module",
+    "app_dir": "apps/seo-optimize",
+    "module": "seo.server"
+   },
+   "du_lieu": [
+    {
+     "ten": "seo-users",
+     "loai": "json",
+     "duong": "data/seo-optimize/users.json",
+     "muc_quy": "vang",
+     "backup": "copy",
+     "giu": "vinh-vien",
+     "ghi_chu": "DI SẢN V2: hash mật khẩu cục bộ + GIỚI HẠN thị trường/kênh đã gán. SSO bật thì app CHỈ ĐỌC giới hạn — KHÔNG ghi/tạo tài khoản (tài khoản từ khối nền, lệnh user 19/08); đường login cục bộ đóng 404."
+    },
+    {
+     "ten": "seo-markets",
+     "loai": "json",
+     "duong": "data/seo-optimize/markets.json",
+     "muc_quy": "vang",
+     "backup": "copy",
+     "giu": "vinh-vien"
+    },
+    {
+     "ten": "seo-profiles",
+     "loai": "kho-file",
+     "duong": "data/seo-optimize/profiles",
+     "muc_quy": "vang",
+     "backup": "copy",
+     "giu": "vinh-vien",
+     "ghi_chu": "Hồ sơ kênh (guide + link/CTA/sub_url user gõ tay — mất là không dựng lại được)"
+    },
+    {
+     "ten": "seo-episodes",
+     "loai": "kho-file",
+     "duong": "data/seo-optimize/episodes",
+     "muc_quy": "vang",
+     "backup": "copy",
+     "giu": "vinh-vien"
+    },
+    {
+     "ten": "seo-formats",
+     "loai": "kho-file",
+     "duong": "data/seo-optimize/formats",
+     "muc_quy": "vang",
+     "backup": "copy",
+     "giu": "vinh-vien",
+     "ghi_chu": "Format đối thủ harvest từ YouTube — nạp lại được nhưng tốn quota"
+    },
+    {
+     "ten": "seo-niches",
+     "loai": "kho-file",
+     "duong": "data/seo-optimize/niches",
+     "muc_quy": "vang",
+     "backup": "copy",
+     "giu": "vinh-vien",
+     "ghi_chu": "Kho niche (title/công thức/text-on-thumb team vun tay)"
+    },
+    {
+     "ten": "seo-runs",
+     "loai": "kho-file",
+     "duong": "data/seo-optimize/runs",
+     "muc_quy": "bac",
+     "backup": "copy",
+     "giu": "60-ngay",
+     "ghi_chu": "Kết quả sinh metadata từng lượt — tái sinh được (tốn token), board đọc lại qua /api/runs"
+    },
+    {
+     "ten": "seo-audit",
+     "loai": "json",
+     "duong": "data/seo-optimize/logs",
+     "muc_quy": "vang",
+     "backup": "copy",
+     "giu": "vinh-vien",
+     "ghi_chu": "audit.jsonl chỉ-thêm (ai làm gì, xoay vòng .1.jsonl) — sử liệu vận hành"
+    }
+   ],
+   "giao_dien": "khung",
+   "viec_api": [
+    {
+     "ma": "trich_kenh",
+     "ten": "Trích kênh YouTube (hồ sơ kênh mình + format đối thủ)",
+     "loai": "youtube"
+    },
+    {
+     "ma": "sinh_metadata",
+     "ten": "Sinh metadata SEO (title · description · tags · CTA)",
+     "loai": "llm"
+    }
+   ]
   }
  ]
 }

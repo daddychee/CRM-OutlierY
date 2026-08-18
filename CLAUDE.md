@@ -239,3 +239,11 @@ Quy ước từ 16/08/2026 (user chốt): mỗi mạch việc lớn có MỘT s�
   main.py/CLAUDE.md commit theo HUNK, 4 fail test_khung_app/test_radary là nền dở
   của phiên khác (stash đối chứng), iam.db test đã bị thay máu còn 2 tài khoản —
   nghiệm thu gateway bằng IAM cách ly + danh bạ thật.
+- 19/08/2026 — **SEO OPTIMIZE VÀO V3 (APPS.md app 4/6, cổng 9115)** — đúng khuôn
+  6 bước: SSO adapter Actions-first (khóa hành động MỚI `van_hanh` KD L2 → vai
+  seo — vai này KHÔNG chỉ-đọc nên không để DEFAULT như niche), tài khoản CHỈ từ
+  khối nền (gỡ sync_sso, users.json thành di sản chỉ-đọc — lệnh user 19/08),
+  12 cửa quản trị 404 khi SSO, khóa từ két (trich_kenh pool xoay vòng +
+  sinh_metadata). Root 191 pass + app 13; nghiệm thu sống 5 vai qua 9115.
+  Chi tiết + việc chờ Owner (migration khóa, restart gateway ăn alias):
+  docs/APPS.md nhật ký 19/08 + apps/seo-optimize/CLAUDE.md.
