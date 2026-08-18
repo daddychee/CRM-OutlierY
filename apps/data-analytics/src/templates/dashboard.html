@@ -248,6 +248,47 @@
           <div class="v">{{ tt.so.rpm_band or '—' }}</div>
           <div class="s">RPM ước tính{% if not tt.so.rpm_band %} — nguồn thiếu{% endif %}</div></div>
       </div>
+      {% if tt.radar or tt.scatter %}
+      <div class="nd-bw" style="display:grid;grid-template-columns:1fr 1.9fr;gap:10px">
+        {% if tt.radar %}
+        <div style="border:1px solid var(--th-182233);border-radius:10px;padding:8px">
+          <div style="font-size:.66rem;letter-spacing:.1em;color:var(--muted);text-transform:uppercase;text-align:center;margin-bottom:2px">5 trụ điểm</div>
+          <svg width="100%" viewBox="0 0 120 118" style="max-height:150px">
+            <g stroke="var(--line)" fill="none">
+              <polygon points="60,12 105.7,45.2 88.2,98.8 31.8,98.8 14.3,45.2"/>
+              <line x1="60" y1="60" x2="60" y2="12"/><line x1="60" y1="60" x2="105.7" y2="45.2"/>
+              <line x1="60" y1="60" x2="88.2" y2="98.8"/><line x1="60" y1="60" x2="31.8" y2="98.8"/><line x1="60" y1="60" x2="14.3" y2="45.2"/>
+            </g>
+            <polygon points="{{ tt.radar }}" fill="var(--th-16263f)" stroke="var(--accent)" stroke-width="1.6"/>
+            <g fill="var(--muted)" font-size="8">
+              <text x="60" y="8" text-anchor="middle">nhu cầu</text><text x="112" y="42" text-anchor="middle">$</text>
+              <text x="91" y="110" text-anchor="middle">cửa vào</text><text x="27" y="110" text-anchor="middle">phân mảnh</text>
+              <text x="9" y="42" text-anchor="middle">trend</text>
+            </g>
+          </svg>
+        </div>
+        {% endif %}
+        {% if tt.scatter %}
+        <div style="border:1px solid var(--th-182233);border-radius:10px;padding:8px">
+          <div style="font-size:.66rem;letter-spacing:.1em;color:var(--muted);text-transform:uppercase;text-align:center;margin-bottom:2px">Bản đồ beachhead — {{ tt.scatter | length }} cụm · cỡ = số video</div>
+          <svg width="100%" viewBox="0 0 270 150" style="max-height:170px">
+            <line x1="10" y1="135" x2="260" y2="135" stroke="var(--line)"/>
+            <line x1="10" y1="135" x2="10" y2="10" stroke="var(--line)"/>
+            <line x1="135" y1="135" x2="135" y2="10" stroke="var(--line)" stroke-dasharray="3,4"/>
+            {% for c in tt.scatter %}{% if not c.accent %}
+            <circle cx="{{ c.x }}" cy="{{ c.y }}" r="{{ c.r }}" fill="var(--muted)" opacity=".45"><title>{{ c.anchor }} · {{ c.diem }}</title></circle>
+            {% endif %}{% endfor %}
+            {% for c in tt.scatter %}{% if c.accent %}
+            <circle cx="{{ c.x }}" cy="{{ c.y }}" r="{{ c.r }}" fill="var(--accent)" opacity=".92"><title>{{ c.anchor }} · {{ c.diem }}</title></circle>
+            <text x="{{ c.x + c.r + 3 }}" y="{{ c.y - 3 }}" font-size="9" fill="var(--ink)" font-weight="600">{{ c.anchor }} · {{ c.diem | round | int }}</text>
+            {% endif %}{% endfor %}
+            <text x="12" y="9" font-size="8.5" fill="var(--muted)">điểm ↑</text>
+            <text x="198" y="146" font-size="8.5" fill="var(--muted)">cạnh tranh →</text>
+          </svg>
+        </div>
+        {% endif %}
+      </div>
+      {% endif %}
       {% if tt.so.cum_tot %}
       <div class="nd-bw"><table>
         <tr><th style="text-align:right">Điểm</th><th>Cụm sub-niche</th><th>Cạnh tranh</th></tr>

@@ -81,6 +81,44 @@ def _map_projects() -> dict:
         return {}
 
 
+# ---------- toạ độ SVG (PY tính — template chỉ vẽ, đúng nguyên tắc vàng) ----------
+
+import math
+
+_RADAR_TRUC = ["demand", "monetization", "crackability", "competition", "trend"]
+
+
+def _radar_points(pillars: dict) -> str | None:
+    """Polygon 5 trụ trên ngũ giác tâm (60,60) R=48 — thiếu trụ nào coi như 0."""
+    if not pillars:
+        return None
+    pts = []
+    for i, ten in enumerate(_RADAR_TRUC):
+        v = max(0, min(100, pillars.get(ten) or 0)) / 100
+        goc = math.radians(-90 + i * 72)
+        pts.append(f"{60 + 48 * v * math.cos(goc):.1f},{60 + 48 * v * math.sin(goc):.1f}")
+    return " ".join(pts)
+
+
+def _scatter_beachhead(beachhead: list[dict]) -> list[dict]:
+    """Toạ độ bản đồ cụm (viewBox 270×150): x = cạnh tranh, y = điểm, r ~ √size.
+    Accent đúng 2 cụm đầu bảng (ngữ pháp diagram-design: accent 1–2 điểm nhìn trước)."""
+    if not beachhead:
+        return []
+    dinh = max((c.get("diem") or 0) for c in beachhead) or 1
+    out = []
+    for i, c in enumerate(beachhead):
+        comp = max(0.0, min(1.0, c.get("canh_tranh") or 0))
+        diem = max(0.0, c.get("diem") or 0)
+        out.append({
+            "x": round(10 + comp * 240, 1),
+            "y": round(130 - (diem / dinh) * 105, 1),
+            "r": round(max(3.0, min(9.0, math.sqrt(c.get("size") or 1))), 1),
+            "accent": i < 2, "anchor": c.get("anchor"), "diem": c.get("diem"),
+        })
+    return out
+
+
 @router.get("/niche", response_class=HTMLResponse)
 def trang_niche(request: Request, user: dict = Depends(_lay_user),
                 ngach: str = "", ngay: str = "latest"):
@@ -96,7 +134,9 @@ def trang_niche(request: Request, user: dict = Depends(_lay_user),
         for tt_ma, project in mapping.items():
             tom_tat = niche_bridge.tom_tat_overall(project, ngay)
             thi_truong.append({"ma": tt_ma, "ten": ten_tt.get(tt_ma, tt_ma),
-                               "project": project, "so": tom_tat})
+                               "project": project, "so": tom_tat,
+                               "radar": _radar_points(tom_tat.get("tru_diem") or {}),
+                               "scatter": _scatter_beachhead(tom_tat.get("beachhead") or [])})
             for d in (tom_tat.get("ds_snapshot") or []):
                 if d not in ds_ngay:
                     ds_ngay.append(d)
