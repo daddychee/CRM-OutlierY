@@ -575,6 +575,8 @@ def ngach_volume(ma: str, request: Request, days: int = 30):
             'ORDER BY w.market', (u['id'], ma))]
         if not pools:
             raise HTTPException(404, 'ngách chưa có pool nào (hoặc ngoài phạm vi của bạn)')
+        # thứ tự ưu tiên user 19/08: US → Tây Ban Nha → khác; "Chưa phân loại" cuối bảng
+        pools.sort(key=lambda p: {'TT-US': 0, 'TT-SPAIN': 1}.get(p['market'], 2) if p['market'] else 9)
         ids = [p['id'] for p in pools]
         qm = ','.join('?' * len(ids))
         now = time.time()

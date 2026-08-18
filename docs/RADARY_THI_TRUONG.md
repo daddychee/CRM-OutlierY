@@ -185,6 +185,22 @@
   4 pool còn lại (Investigation / Old Investigate / OLD Newbie / Health):
   user chốt QUÁ BẨN, ĐỂ SAU — không đụng.
 
+- 19/08/2026 — **VÒNG 8 — LUẬT PT=SPAIN + GỠ NGA/HÀN + THỨ TỰ TAB ƯU TIÊN.**
+  User chốt: kênh Bồ/Brazil GỘP thị trường Tây Ban Nha (cùng họ ngôn ngữ);
+  kênh Hàn/Nga TẠM GỠ khỏi pool; thứ tự UI: US trước → Spain → khác → "Chưa
+  phân loại" → **Σ Cả ngách CUỐI dải** (bảng volume cùng thứ tự, backend sort).
+  Đã áp: LIFE IN +3 PT → Spain (20 kênh · 2.079 video); SPACE +9 PT → Spain
+  (33 kênh · 1.037 video) + GỠ 4 kênh Nga/Hàn (KOSMO/Апогей/Тихий Космос/
+  우주 신호 — active=0, video purge theo lệ gỡ kênh, còn 2 snapshot cứu).
+  Script chuẩn cập nhật luật pt-cộng-es (bỏ nhánh "nghi tiếng Bồ").
+  **CHẨN ĐOÁN "radar không chạy" (user hỏi)**: KHÔNG phải lỗi — khóa đã cấp
+  đủ (quet_dinh_ky 15 · harvest 14 · dien_giai 1, đọc từ két OK); V3 không
+  quét vì `RADARY_SCHEDULER=0` CỐ ĐỊNH theo thiết kế song song (hệ thật V2
+  cổng 8123 ĐANG quét bằng CÙNG bộ khóa — V3 quét song song = đốt đôi quota
+  10K/dự án/ngày, bài học quotaExceeded 10-11/07 hệ cũ). Chờ user chọn:
+  chuyển vai quét sang V3 (tắt quét V2) / giữ nguyên quét tay / bật song song
+  (không khuyến nghị).
+
 ## PHƯƠNG ÁN PHÂN LOẠI LẠI KÊNH POOL BẨN (đã duyệt 19/08 — chạy thật cho LIFE IN, xem vòng 6)
 
 Bối cảnh: user không muốn phí data đã quét; V3 dừng quét 2 ngày (by design —

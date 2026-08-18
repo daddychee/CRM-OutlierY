@@ -8,8 +8,10 @@ người duyệt trước; tiền lệ chia LIFE IN 19/08 — docs/RADARY_THI_TR
 
 Luật user 19/08: kênh CHƯA CHẮC → để lại "Chưa phân loại". Ngưỡng bảo thủ:
 ≥5 title chấm được + ≥80% một ngôn ngữ; loại nếu lẫn hệ chữ khác (Hangul/CJK/
-Ả Rập/Kirin/Thái/Devanagari >10%), tiếng Việt (>20%), NGHI tiếng Bồ (>15% —
-PT dùng chung từ chức năng với ES, bẫy kênh BR chấm nhầm sang Spain)."""
+Ả Rập/Kirin/Thái/Devanagari >10%) hoặc tiếng Việt (>20%).
+LUẬT BỔ SUNG user 19/08: kênh tiếng BỒ/BRAZIL gộp chung thị trường TÂY BAN NHA
+(cùng họ ngôn ngữ) — pt cộng vào es khi chấm kênh, vẫn đếm riêng để báo cáo;
+kênh Hàn/Nga user gỡ khỏi pool TAY (script chỉ báo, không tự gỡ)."""
 import io
 import json
 import os
@@ -99,15 +101,15 @@ for c in kenh:
         try: country = (json.loads(info['payload']) or {}).get('country') or ''
         except Exception: pass
     cham = d['en'] + d['es']
+    cham = cham + d['pt']                 # PT gộp Spain (luật 19/08) — vẫn đếm riêng để báo cáo
+    es_hop = d['es'] + d['pt']
     if tong == 0 or cham < 5:
         kq = 'DE_LAI (it du lieu)'
     elif d['khac'] / tong > 0.10:
         kq = 'DE_LAI (lan he chu khac)'
     elif d['vi'] / tong > 0.20:
         kq = 'DE_LAI (tieng Viet)'
-    elif d['pt'] / tong > 0.15:
-        kq = 'DE_LAI (nghi tieng Bo)'
-    elif d['es'] / cham >= 0.80:
+    elif es_hop / cham >= 0.80:
         kq = 'SPAIN'
     elif d['en'] / cham >= 0.80:
         kq = 'US'

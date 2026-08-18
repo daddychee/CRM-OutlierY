@@ -135,7 +135,8 @@ def test_volume_ca_ngach(org_moi, goi, mock_de):
     assert r.status_code == 200
     d = r.json()
     assert d["tong"] == {"kenh": 2, "video": 0, "views_7d": 150, "views_28d": 150}
-    assert [p["nhan"] for p in d["pools"]] == ["Chưa phân loại", "US"]
+    # thứ tự ưu tiên 19/08: US trước, "Chưa phân loại" cuối bảng
+    assert [p["nhan"] for p in d["pools"]] == ["US", "Chưa phân loại"]
     assert len(d["pts"]) == 1 and d["pts"][0]["dviews"] == 150
     assert abs(d["pts"][0]["vph_avg"] - 40 / 3) < 1e-6   # TB trọng số theo n_young
     assert goi("GET", "/api/ngach/N-LA/volume").status_code == 404

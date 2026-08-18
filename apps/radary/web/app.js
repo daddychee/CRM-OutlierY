@@ -1407,83 +1407,6 @@ function Settings({ ws, role, orgId }) {
     </div>`;
 }
 
-// ---------- Onboarding niche mới ----------
-function NewNiche({ onCreated, role }) {
-  const [name, setName] = useState('');
-  const [chans, setChans] = useState('');
-  const [keyMain, setKeyMain] = useState('');
-  const [keyBk, setKeyBk] = useState('');
-  const [step, setStep] = useState('');
-  const [err, setErr] = useState('');
-  const [nganhs, setNganhs] = useState([]);    // ngách + thị trường của ngách từ đế (18/08) — rỗng = standalone, ẩn dropdown
-  const [ngach, setNgach] = useState('');
-  const [market, setMarket] = useState('');
-  useEffect(() => { api('GET', '/ngach').then(setNganhs).catch(() => setNganhs([])); }, []);
-  const ngPicked = nganhs.find(n => n.ma === ngach);
-  const ttPicked = ngPicked && ngPicked.thi_truong.find(x => x.ma === market);
-  // Luật user 18/08: 'chỉ khi tạo niche trong General thì mới có tên pool trong
-  // Radary' — V3 tên pool TỰ SINH '<ngách> — <thị trường>', không gõ tay;
-  // standalone (không đế) giữ ô tên tự do như cũ.
-  const tenPool = nganhs.length ? (ngPicked && ttPicked ? `${ngPicked.ten} — ${ttPicked.ten}` : '') : name.trim();
-  const create = async () => {
-    const items = chans.split('\n').map(s => s.trim()).filter(Boolean);
-    if (nganhs.length && (!ngach || !market)) { setErr('Chọn NGÁCH + THỊ TRƯỜNG thuộc ngách — mỗi pool gắn đúng một thị trường.'); return; }
-    if (!tenPool || !items.length) { setErr(`Cần ${nganhs.length ? 'ngách + thị trường' : 'tên niche'} và ít nhất 1 kênh.`); return; }
-    setErr('');
-    try {
-      setStep('Tạo workspace…');
-      const w = await api('POST', '/workspaces', { name: tenPool, ngach, market });
-      if (role !== 'viewer' && keyMain.trim().length >= 20) {
-        setStep('Gắn key cho niche…');
-        await api('POST', `/orgs/${w.org_id}/keys`, { key: keyMain.trim(), workspace_id: w.id });
-        if (keyBk.trim().length >= 20)
-          await api('POST', `/orgs/${w.org_id}/keys`, { key: keyBk.trim(), workspace_id: w.id, backup: true });
-      }
-      setStep(`Resolve ${items.length} kênh…`);
-      const r = await api('POST', `/workspaces/${w.id}/channels`, { items });
-      setStep(`Đã nhận ${r.added.length} kênh — quét lần đầu (có thể mất 1-2 phút)…`);
-      await api('POST', `/workspaces/${w.id}/run?budget=300`);
-      setStep(''); onCreated(w.id);
-    } catch (e) { setErr(String(e.message)); setStep(''); }
-  };
-  return html`
-    <div class="panel" style="max-width:640px">
-      <h2>Niche mới — dán pool kênh đối thủ là chạy</h2>
-      ${nganhs.length === 0 && html`<div class="formrow"><label>Tên niche</label>
-        <input type="text" placeholder="vd: Xe điện Việt Nam" value=${name} onInput=${e => setName(e.target.value)}/></div>`}
-      ${nganhs.length > 0 && html`<div class="formrow"><label>Ngách</label>
-        <select value=${ngach} onChange=${e => { setNgach(e.target.value); setMarket(''); }}>
-          <option value="">— chọn ngách (khai ở General) —</option>
-          ${nganhs.map(n => html`<option value=${n.ma}>${n.ten}</option>`)}
-        </select></div>`}
-      ${ngPicked && html`<div class="formrow"><label>Thị trường</label>
-        <select value=${market} onChange=${e => setMarket(e.target.value)}>
-          <option value="">— chọn thị trường của ngách —</option>
-          ${ngPicked.thi_truong.map(t => html`<option value=${t.ma}>${t.ten}${t.ngon_ngu ? ' (' + t.ngon_ngu + ')' : ''}</option>`)}
-        </select></div>`}
-      ${nganhs.length > 0 && tenPool && html`<div class="note">Tên pool tự đặt theo General: <b>${tenPool}</b></div>`}
-      ${ngPicked && ngPicked.thi_truong.length === 0 && html`<div class="note">
-        Ngách này chưa khai thị trường nào — Owner gắn thị trường cho ngách ở General › Niches trước.</div>`}
-      ${role !== 'viewer' && html`
-        <div class="formrow"><label>Key chính của niche</label>
-          <input type="text" placeholder="AIza… (bỏ trống nếu dùng key toàn org)" value=${keyMain}
-            onInput=${e => setKeyMain(e.target.value)}/></div>
-        <div class="formrow"><label>Key dự phòng (tùy chọn)</label>
-          <input type="text" placeholder="AIza… — tự lên thay khi key chính hết quota" value=${keyBk}
-            onInput=${e => setKeyBk(e.target.value)}/></div>`}
-      <div class="formrow"><label>Pool kênh (mỗi dòng 1 kênh)</label>
-        <textarea placeholder=${'https://youtube.com/channel/UCxxxx\n@tenkenh\n…'}
-          value=${chans} onInput=${e => setChans(e.target.value)}></textarea></div>
-      <div class="note">Báo cáo ngách KHÔNG cần nhập tay — sau khi tạo, vào tab Báo cáo bấm
-        "🔄 Sinh báo cáo ngách" khi pool đủ lớn.</div>
-      ${err && html`<div class="msg err">${err}</div>`}
-      ${step ? html`<div class="msg"><span class="spin"></span> ${step}</div>`
-             : html`<button class="btn" onClick=${create}>Tạo niche & quét lần đầu</button>`}
-      <div class="note">48h đầu là kỳ hiệu chỉnh sống (cold start theo spec): radar gắn cờ sơ bộ bằng VPD-since-publish,
-        xếp hạng VPH chính thức từ lần quét thứ 2. Sau ≥14 ngày, vào Cài đặt → "Căn cứ hiệu chỉnh" để chỉnh sàn T1-T4 theo phân phối thực của niche.</div>
-    </div>`;
-}
-
 // ---------- App ----------
 // ---------- HARVEST (spec_harvest_1 — read-only advisory, 1 job hiện hành/org) ----------
 function Harvest({ orgId, canEdit }) {
@@ -1708,8 +1631,10 @@ function NicheVolume({ ma, ten }) {
     </div>`;
 }
 
+// '+ New Niche' ĐÃ BỎ (user 19/08): niche sinh ở General, pool dựng từ nút ＋
+// trên dải tab thị trường, kênh nhập ở Data Pool — không còn cửa tạo tự do.
 const TABS = [['board', 'Board'], ['alerts', 'Alerts'], ['reports', 'Report'], ['pool', 'Data Pool'],
-              ['harvest', 'Harvest'], ['settings', 'Tuning'], ['admin', 'Setting'], ['new', '+ New Niche']];
+              ['harvest', 'Harvest'], ['settings', 'Tuning'], ['admin', 'Setting']];
 function App() {
   const h0 = readHash();
   const [me, setMe] = useState(undefined);       // undefined = đang kiểm tra, null = chưa đăng nhập
@@ -1727,7 +1652,7 @@ function App() {
     const orgId0 = cur0 ? cur0.org_id : (me.orgs || [])[0]?.id;
     const role0 = (me.orgs || []).find(o => o.id === orgId0)?.role || 'viewer';
     const ok = ['board', 'alerts', 'reports', 'settings'].includes(tab)
-      || (['pool', 'harvest', 'new'].includes(tab) && role0 !== 'viewer')   // 23/07: leader trở lên
+      || (['pool', 'harvest'].includes(tab) && role0 !== 'viewer')   // 23/07: leader trở lên
       || (tab === 'admin' && role0 === 'owner');
     if (!ok) setTab('board');
   }, [me, wss, ws, tab]);
@@ -1747,7 +1672,7 @@ function App() {
   const canEdit = role !== 'viewer';
   // V3 (lam gon 16/08): SSO qua OUTLIERY -> tab Quan tri AN HAN ke ca owner —
   // khoa nhap o General > API Keys, quyen o General > Permissions (server cung 404).
-  const tabs = TABS.filter(([k]) => (['new', 'pool', 'harvest'].includes(k) ? canEdit
+  const tabs = TABS.filter(([k]) => (['pool', 'harvest'].includes(k) ? canEdit
     : k === 'admin' ? (!me.sso && (role === 'owner' || role === 'manager')) : true));
   // 23/07: Data Pool/Harvest/New Niche = leader trở lên. 04/08: manager vào tab Quản trị
   // CHỈ thấy khối xóa niche (vận hành) — key/thành viên/LLM vẫn riêng owner (server chặn thật).
@@ -1756,8 +1681,12 @@ function App() {
   // Data Pool quản kênh); tab chưa có pool = nút ＋ dựng ngay (leader trở lên).
   const niche = cur && nganhs.find(n => n.ma === cur.ngach);
   const goc = niche && wss.find(w => w.ngach === niche.ma && !w.market);
+  // thứ tự ưu tiên user 19/08: US trước → Tây Ban Nha → thị trường khác;
+  // "Chưa phân loại" sau các thị trường; Σ Cả ngách xếp CUỐI dải
+  const _uu = ma => ma === 'TT-US' ? 0 : ma === 'TT-SPAIN' ? 1 : 2;
   const dai = niche ? niche.thi_truong.map(tt => ({
-    tt, w: wss.find(x => x.ngach === niche.ma && x.market === tt.ma) })) : [];
+    tt, w: wss.find(x => x.ngach === niche.ma && x.market === tt.ma) }))
+    .sort((a, b) => _uu(a.tt.ma) - _uu(b.tt.ma)) : [];
   const taoPoolTT = async tt => {
     try {
       const w = await api('POST', '/workspaces', { name: `${niche.ten} — ${tt.ten}`, ngach: niche.ma, market: tt.ma });
@@ -1771,27 +1700,27 @@ function App() {
         <button class=${tab === k ? 'on' : ''} onClick=${() => setTab(k)}>${label}</button>`)}</nav>
       <select class="ws" value=${cur && cur.market ? ((wss.find(x => x.ngach === cur.ngach && !x.market) || cur).id) : ws}
         onChange=${e => { const w = wss.find(x => x.id === Number(e.target.value)); if (!w) return;
-          setWs(w.id); setNicheView(!!w.ngach); if (tab === 'new') setTab('board'); }}>
+          setWs(w.id); setNicheView(!!w.ngach); }}>
         ${wss.filter(w => !w.market).map(w => html`<option value=${w.id}>${w.name}</option>`)}
       </select>
       ${me.sso ? '' : html`
         <span class="note" title=${me.email}>${me.email.split('@')[0]}${role !== 'owner' ? html` · <span class="rolechip ${role}">${role}</span>` : ''}</span>
         <button class="btn small ghost" onClick=${logout}>Thoát</button>`}
     </header>
-    ${niche && !['new', 'harvest', 'admin'].includes(tab) && html`
+    ${niche && !['harvest', 'admin'].includes(tab) && html`
       <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin:0 0 12px">
         <span class="note">${niche.ten}:</span>
-        ${tab === 'board' && html`<button class=${'btn small' + (nicheView || !(cur && cur.market) ? '' : ' ghost')}
-          title="Volume cộng gộp mọi pool thị trường của ngách"
-          onClick=${() => setNicheView(true)}>Σ Cả ngách</button>`}
-        ${goc && tab === 'pool' && html`<button class=${'btn small' + (ws === goc.id ? '' : ' ghost')}
-          onClick=${() => { setNicheView(false); setWs(goc.id); }}>Chưa phân loại <small>· ${goc.channels} kênh</small></button>`}
         ${dai.map(s => s.w
           ? html`<button class=${'btn small' + (!nicheView && ws === s.w.id ? '' : ' ghost')}
               onClick=${() => { setNicheView(false); setWs(s.w.id); }}>${s.tt.ten} <small>· ${s.w.channels} kênh</small></button>`
           : html`<button class="btn small ghost" disabled=${!canEdit}
               title=${'Thị trường ' + s.tt.ten + ' chưa có pool' + (canEdit ? ' — bấm để dựng' : '')}
               onClick=${() => canEdit && taoPoolTT(s.tt)}>＋ ${s.tt.ten}</button>`)}
+        ${goc && tab === 'pool' && html`<button class=${'btn small' + (ws === goc.id ? '' : ' ghost')}
+          onClick=${() => { setNicheView(false); setWs(goc.id); }}>Chưa phân loại <small>· ${goc.channels} kênh</small></button>`}
+        ${tab === 'board' && html`<button class=${'btn small' + (nicheView || !(cur && cur.market) ? '' : ' ghost')}
+          title="Volume cộng gộp mọi pool thị trường của ngách"
+          onClick=${() => setNicheView(true)}>Σ Cả ngách</button>`}
         ${dai.length === 0 && html`<span class="note">ngách chưa khai thị trường — gắn ở General › Niches</span>`}
       </div>`}
     ${tab === 'admin' && !me.sso && (role === 'owner' || role === 'manager') ? html`
@@ -1801,9 +1730,8 @@ function App() {
         ${role === 'owner' && html`<${OrgKeys} wss=${wss}/>`}
         ${role === 'owner' && html`<${HarvestKeys} orgId=${orgId}/>`}
         ${role === 'owner' && html`<${LlmPanel} orgId=${orgId}/>`}`
-      : tab === 'new' && canEdit ? html`<${NewNiche} role=${role} onCreated=${async id => { await loadWs(true); setWs(id); setTab('board'); }}/>`
       : tab === 'harvest' ? html`<${Harvest} orgId=${orgId} canEdit=${canEdit}/>`
-      : !cur ? html`<div class="panel">${canEdit ? 'Chưa có workspace nào — bấm "+ New Niche". Nhớ thêm YouTube API key trong tab Setting trước.'
+      : !cur ? html`<div class="panel">${canEdit ? 'Chưa có pool nào — tạo niche + thị trường ở General › Niches rồi dựng pool bằng nút ＋ trên dải tab.'
                                                  : 'Org chưa có workspace nào — chờ owner/leader tạo.'}</div>`
       : tab === 'board' && niche && (nicheView || !(cur && cur.market)) ? html`<${NicheVolume} ma=${niche.ma} ten=${niche.ten}/>`
       : tab === 'board' ? html`<${Board} ws=${ws} canEdit=${canEdit}/>`
