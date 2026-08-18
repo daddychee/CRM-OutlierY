@@ -252,6 +252,50 @@ def test_backfill_dau_khoa_idempotent(conn):
     assert ket.backfill_dau_khoa(conn) == 0
 
 
+def test_them_api_key_chan_trung_gia_tri(conn):
+    """Owner 18/08 (check trùng key): cùng MỘT khóa dán 2 lần → ValueError chỉ
+    ra bản đã có (id + dau···duoi) thay vì lặng lẽ đẻ bản sao — so bằng SHA-256
+    (Fernet không so được bản mã); khóa KHÁC giá trị vào bình thường; khóa đã
+    THU HỒI dán lại được (bản cũ đã xóa hẳn)."""
+    kid = ket.them_api_key(conn, "youtube", "AIza-trung-lap-1111")
+    with pytest.raises(ValueError) as e:
+        ket.them_api_key(conn, "youtube", "AIza-trung-lap-1111")
+    assert kid in str(e.value) and "AIza-trung···1111" in str(e.value)
+    with pytest.raises(ValueError):                        # trùng cả khi khác LOẠI
+        ket.them_api_key(conn, "transcript", "AIza-trung-lap-1111")
+    assert len(ket.liet_ke_api_keys(conn)) == 1            # không đẻ bản sao
+    ket.them_api_key(conn, "youtube", "AIza-khac-han-2222")
+    assert len(ket.liet_ke_api_keys(conn)) == 2
+    ket.thu_hoi_api_key(conn, kid)
+    kid2 = ket.them_api_key(conn, "youtube", "AIza-trung-lap-1111")   # dán lại OK
+    assert kid2 != kid
+
+
+def test_backfill_hash_va_luu_cap_phat_dedup(conn):
+    """(a) Dòng trước migration 003 (hash rỗng) được backfill điền hash cùng
+    lượt decrypt — idempotent, không đụng gia_tri_ma/sua_luc; sau backfill khóa
+    trùng giá trị MỚI bị bắt. (b) luu_cap_phat_viec DEDUP giữ thứ tự — cùng
+    khóa không bao giờ nằm 2 lần trong MỘT việc."""
+    ket.them_api_key(conn, "youtube", "AIza-hash-cu-3333")
+    with conn:                                  # mô phỏng dòng đời trước 003
+        conn.execute("UPDATE bi_mat SET hash='' WHERE khoa LIKE 'api.%'")
+    # hash rỗng → khóa trùng CHƯA bị bắt (không có gì để so)
+    kid_trung = ket.them_api_key(conn, "transcript", "AIza-hash-cu-3333")
+    ket.thu_hoi_api_key(conn, kid_trung)        # dọn bản trùng thử
+    with conn:
+        conn.execute("UPDATE bi_mat SET hash='' WHERE khoa LIKE 'api.%'")
+    assert ket.backfill_dau_khoa(conn) == 1     # điền hash (dau vốn đã đủ 10)
+    assert ket.backfill_dau_khoa(conn) == 0     # idempotent
+    with pytest.raises(ValueError):             # sau backfill: trùng bị bắt
+        ket.them_api_key(conn, "youtube", "AIza-hash-cu-3333")
+
+    k1 = ket.them_api_key(conn, "youtube", "AIza-dedup-a-4444")
+    k2 = ket.them_api_key(conn, "youtube", "AIza-dedup-b-5555")
+    muc = ket.luu_cap_phat_viec(conn, "radary", "harvest",
+                                [k1, k2, k1, k1], "xoay_vong")
+    assert muc["khoa"] == [k1, k2]              # dedup giữ thứ tự
+
+
 def test_di_tru_llm_cu_idempotent_giu_base_url(conn):
     ket.dat_cau_hinh(conn, "llm.writer.provider", "openai_compatible")
     ket.dat_cau_hinh(conn, "llm.writer.model", "glm-4.5-air")

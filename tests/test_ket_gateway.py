@@ -191,7 +191,10 @@ def test_tab1_moi_khoi_5_dong_show_more_server_side(client):
     trang = client.get("/general/api-keys").text
     assert trang.count("data-thu-hoi=") == 5           # server chỉ gửi 5 dòng khóa
     assert ">Show more (15)</a>" in trang
-    assert 'href="/general/api-keys?tab=api&amp;mo_rong=loai:youtube"' in trang
+    # Owner 18/08: Show more/less phải TRÔNG NHƯ NÚT — class nut-mo (anchor chữ
+    # trần không ai nhận ra bấm được), style khai trong trang
+    assert 'class="nut-mo" href="/general/api-keys?tab=api&amp;mo_rong=loai:youtube"' in trang
+    assert "a.nut-mo{" in trang
     assert trang.count("Show more") == 1               # khối llm/generate/transcript ≤5: không link
     assert "Show less" not in trang
     assert ">spare</span>" in trang and ">idle<" not in trang

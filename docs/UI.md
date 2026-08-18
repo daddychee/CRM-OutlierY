@@ -36,7 +36,9 @@
   khối/bảng mới thêm sau này — **mặc định 5 dòng, Show more/less SERVER-SIDE**
   (query `?mo_rong=` + link GET thật, server cắt trước khi gửi HTML; cơ chế
   `url_mo_rong` + macro `hang_mo_rong` trong nen_api_keys.html — KHÔNG dùng JS
-  ẩn/hiện, đã hỏng trên trình duyệt thật 18/08 không tái hiện được).
+  ẩn/hiện, đã hỏng trên trình duyệt thật 18/08 không tái hiện được). **Show
+  more/less phải TRÔNG NHƯ NÚT BẤM** (class `a.nut-mo` — border + radius +
+  accent + hover; Owner 18/08: anchor chữ trần không ai nhận ra bấm được).
 - **`<details>` khu General phải có CHỈ BÁO MỞ RỘNG** (Owner 18/08 — A3 từng gỡ
   mũi tên mặc định làm mất affordance): chevron `svg.ic.chev` ▸ xoay 90° khi
   `[open]` (transition nhẹ) + `cursor:pointer` + hover nền nhạt — khuôn CSS

@@ -27,7 +27,10 @@ def he(tmp_path, monkeypatch):
 
 
 def _login(ten, mk):
-    c = TestClient(gateway_app, follow_redirects=False)
+    # follow_redirects=True: từ 18/08 mọi POST danh bạ là POST-REDIRECT-GET
+    # (Owner 'đổi trạng thái kênh bị chuyển URL') — client luồng đi theo redirect
+    # để assert trang đích như cũ; ý nghĩa test (luồng + quyền) GIỮ NGUYÊN.
+    c = TestClient(gateway_app, follow_redirects=True)
     c.post("/login", data={"ten": ten, "mat_khau": mk})
     return c
 
@@ -85,6 +88,40 @@ def test_khai_tu_chi_owner_va_phai_go_lai_ma(he):
                 data={"ma": "K-TIME-VAULT", "go_lai": "K-TIME-VAULT"})
     assert "Retired" in r.text
     assert "khai_tu" in ow.get("/general/channels?ma=K-TIME-VAULT").text
+
+
+def test_post_redirect_get_giu_vi_tri(he):
+    """Owner 18/08 'đổi trạng thái kênh bị chuyển URL': mọi POST danh bạ 303 về
+    GET sạch GIỮ VỊ TRÍ (?ma= chi tiết đang mở + bộ lọc) + bao/loi — hết kẹt URL
+    đường POST, F5 hết re-submit; nhánh LỖI cũng redirect."""
+    c = TestClient(gateway_app, follow_redirects=False)
+    c.post("/login", data={"ten": "quanly", "mat_khau": "mk-ql-6"})
+    c.post("/general/niches/create", data={"ten_chuan": "Space"})
+    r = c.post("/general/channels/create",
+               data={"ten_chuan": "Astro", "ngach_ma": "N-SPACE"})
+    assert r.status_code == 303
+    assert "ma=K-ASTRO" in r.headers["location"]       # mở luôn kênh vừa tạo
+
+    r = c.post("/general/channels/trang-thai",
+               data={"ma": "K-ASTRO", "trang_thai": "hoat_dong",
+                     "ve_ma": "K-ASTRO", "ve_ngach": "N-SPACE"})
+    assert r.status_code == 303
+    loc = r.headers["location"]
+    assert loc.startswith("/general/channels?")
+    assert "ma=K-ASTRO" in loc and "ngach=N-SPACE" in loc and "bao=" in loc
+    trang = c.get(loc).text
+    assert ">Active</span>" in trang                   # đổi THẬT + chi tiết vẫn mở
+
+    # nhánh lỗi cũng redirect kèm loi + giữ vị trí (không kẹt URL POST)
+    r = c.post("/general/channels/trang-thai",
+               data={"ma": "K-ASTRO", "trang_thai": "trang-thai-la",
+                     "ve_ma": "K-ASTRO"})
+    assert r.status_code == 303
+    assert "loi=" in r.headers["location"] and "ma=K-ASTRO" in r.headers["location"]
+    # niches cùng khuôn: trạng thái lạ → 303 kèm loi (không render trực tiếp)
+    r = c.post("/general/niches/create",
+               data={"ten_chuan": "Space 2", "trang_thai": "trang-thai-la"})
+    assert r.status_code == 303 and "loi=" in r.headers["location"]
 
 
 def test_lien_ket_app_chi_owner(he):

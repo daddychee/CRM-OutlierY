@@ -9,6 +9,11 @@
 {% set nhan_vd = {'uom_mam': 'Incubating', 'sandbox': 'Sandbox', 'hoat_dong': 'Active',
                   'monetized': 'Monetized', 'ngu_dong': 'Dormant', 'khai_tu': 'Retired'} %}
 {% set badge_vd = {'hoat_dong': 'ok', 'monetized': 'ok', 'sandbox': 'warn', 'khai_tu': 'bad'} %}
+{# ve_vi_tri: MỌI form POST mang vị trí đang đứng (chi tiết kênh đang mở + bộ
+   lọc) — Owner 18/08 "đổi trạng thái kênh bị chuyển URL": handler redirect 303
+   về GET sạch đúng chỗ (khuôn _ve_api_keys), hết kẹt URL đường POST + F5
+   re-submit. #}
+{% macro ve_vi_tri(ma_mo='') %}<input type="hidden" name="ve_ma" value="{{ ma_mo }}"><input type="hidden" name="ve_ngach" value="{{ loc_ngach }}"><input type="hidden" name="ve_trang_thai" value="{{ loc_tt }}">{% endmacro %}
 
 <h2>Channels</h2>
 <form class="toolbar" method="get" action="/general/channels">
@@ -58,6 +63,7 @@
 <h2>{{ chi_tiet.ma }} · {{ chi_tiet.ten_chuan }}</h2>
 <div class="khoi">
   <form class="steps" method="post" action="/general/channels/trang-thai">
+    {{ ve_vi_tri(chi_tiet.ma) }}
     <input type="hidden" name="ma" value="{{ chi_tiet.ma }}">
     {% for tt in tt_kenh %}
     <button class="s {% if tt == chi_tiet.trang_thai %}on{% endif %}" name="trang_thai"
@@ -66,6 +72,7 @@
   </form>
 
   <form method="post" action="/general/channels/update" style="margin-top:14px">
+    {{ ve_vi_tri(chi_tiet.ma) }}
     <input type="hidden" name="ma" value="{{ chi_tiet.ma }}">
     <div class="form-grid">
       <div><label>Name</label><input name="ten_chuan" value="{{ chi_tiet.ten_chuan }}" required></div>
@@ -92,6 +99,7 @@
 
   <h2>Aliases</h2>
   <form class="dong" method="post" action="/general/channels/alias">
+    {{ ve_vi_tri(chi_tiet.ma) }}
     <input type="hidden" name="ma" value="{{ chi_tiet.ma }}">
     <span>{% for a in chi_tiet.bi_danh.split(';') if a %}<span class="chip-o">{{ a }}</span>{% else %}<span class="badge">none</span>{% endfor %}</span>
     <input name="bi_danh" placeholder="alias" required>
@@ -110,6 +118,7 @@
   </table>
   {% if la_owner %}
   <form class="dong" method="post" action="/general/channels/link" style="margin-top:10px">
+    {{ ve_vi_tri(chi_tiet.ma) }}
     <input type="hidden" name="ma" value="{{ chi_tiet.ma }}">
     <select name="app_slug">{% for a in ds_app %}<option>{{ a }}</option>{% endfor %}</select>
     <input name="khoa" placeholder="key in app (empty = unlink)">
@@ -118,6 +127,7 @@
 
   <h2>Retire</h2>
   <form class="dong" method="post" action="/general/channels/khai-tu">
+    {{ ve_vi_tri(chi_tiet.ma) }}
     <input type="hidden" name="ma" value="{{ chi_tiet.ma }}">
     <input name="go_lai" placeholder="retype {{ chi_tiet.ma }}" required size="20">
     <button class="nguy">Retire channel</button>
@@ -136,6 +146,7 @@
     <div style="margin-top:14px"><button type="button" class="phu" data-dong="md-kenh">Close</button></div>
     {% else %}
     <form method="post" action="/general/channels/create">
+      {{ ve_vi_tri() }}
       <div class="form-grid">
         <div><label>Niche</label><select name="ngach_ma" required>
           {% for n in ds_ngach %}<option value="{{ n.ma }}" {% if n.ma == loc_ngach %}selected{% endif %}>{{ n.ten_chuan }}</option>{% endfor %}

@@ -24,6 +24,12 @@
      box to hơn các chip khác */
   .khoa-list form.dong{display:flex;gap:6px;align-items:center}
   .khoa-list form.dong select, .khoa-list form.dong button{font-size:.8rem;padding:2px 7px}
+  /* link mở/gọn danh sách phải TRÔNG NHƯ NÚT (Owner 18/08 — anchor chữ trần
+     không ai nhận ra bấm được); luật docs/UI.md đi kèm luật 5-dòng. */
+  a.nut-mo{display:inline-block;border:1px solid var(--vien);border-radius:8px;
+    padding:3px 10px;font-size:.8rem;color:var(--accent);text-decoration:none;
+    cursor:pointer;background:var(--the)}
+  a.nut-mo:hover{background:var(--nen)}
 </style>
 
 {% macro khoa_ngan(dau, duoi) %}{{ dau }}···{{ duoi }}{% endmacro %}
@@ -33,7 +39,7 @@
 {% macro ve_fields() %}<input type="hidden" name="ve_tab" value="{{ tab }}">{% if tab == 'app' %}<input type="hidden" name="ve_app" value="{{ app_chon }}">{% endif %}<input type="hidden" name="ve_mo_rong" value="{{ mo_rong | sort | join(',') }}">{% endmacro %}
 {# Luật trang API (Owner 18/08 — docs/UI.md): MỌI danh sách mặc định 5 dòng,
    Show more/less server-side. Macro link dùng chung cho hàng cuối bảng. #}
-{% macro hang_mo_rong(ma, tong, cot) %}{% if not (ma in mo_rong or tong <= 5) %}<tr><td colspan="{{ cot }}"><a class="phu" style="font-size:.8rem" href="{{ url_mo_rong[ma].mo }}">Show more ({{ tong - 5 }})</a></td></tr>{% elif ma in mo_rong and tong > 5 %}<tr><td colspan="{{ cot }}"><a class="phu" style="font-size:.8rem" href="{{ url_mo_rong[ma].gon }}">Show less</a></td></tr>{% endif %}{% endmacro %}
+{% macro hang_mo_rong(ma, tong, cot) %}{% if not (ma in mo_rong or tong <= 5) %}<tr><td colspan="{{ cot }}"><a class="nut-mo" href="{{ url_mo_rong[ma].mo }}">Show more ({{ tong - 5 }})</a></td></tr>{% elif ma in mo_rong and tong > 5 %}<tr><td colspan="{{ cot }}"><a class="nut-mo" href="{{ url_mo_rong[ma].gon }}">Show less</a></td></tr>{% endif %}{% endmacro %}
 
 <div class="toolbar" style="margin-top:2px">
   <span class="steps">
@@ -201,9 +207,9 @@
         {% endfor %}
       {% endfor %}
       {% if not day_du %}
-      <a class="phu" style="font-size:.8rem" href="{{ url_mo_rong[v.ma].mo }}">Show more ({{ ids | length - 5 }})</a>
+      <a class="nut-mo" href="{{ url_mo_rong[v.ma].mo }}">Show more ({{ ids | length - 5 }})</a>
       {% elif v.ma in mo_rong and ids | length > 5 %}
-      <a class="phu" style="font-size:.8rem" href="{{ url_mo_rong[v.ma].gon }}">Show less</a>
+      <a class="nut-mo" href="{{ url_mo_rong[v.ma].gon }}">Show less</a>
       {% endif %}
       {% set con_lai = keys | selectattr('loai', 'equalto', v.loai) | rejectattr('id', 'in', ids) | list %}
       {% if con_lai %}

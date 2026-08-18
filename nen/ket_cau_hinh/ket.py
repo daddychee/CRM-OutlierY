@@ -18,6 +18,7 @@ Quy ước khóa LLM theo VAI (writer/critic/extractor/router…):
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import re
@@ -83,14 +84,24 @@ def lay_cau_hinh(conn: sqlite3.Connection, khoa: str, mac_dinh: str = "") -> str
 
 # ---------- bí mật (mã hóa) ----------
 
+def _hash_khoa(gia_tri: str) -> str:
+    """SHA-256 hex của GIÁ TRỊ bí mật — Fernet mỗi lần ra bản mã khác nhau nên
+    không so được bản mã; hash tất định để phát hiện cùng một khóa dán 2 lần
+    (Owner 18/08). Chỉ dùng so trùng, không bao giờ hiện lên UI."""
+    return hashlib.sha256(gia_tri.encode("utf-8")).hexdigest()
+
+
 def dat_bi_mat(conn: sqlite3.Connection, khoa: str, gia_tri: str) -> None:
     ma = _fernet().encrypt(gia_tri.encode("utf-8")).decode("ascii")
     with conn:
         conn.execute(
-            "INSERT INTO bi_mat (khoa, gia_tri_ma, duoi, dau, sua_luc) VALUES (?,?,?,?,?) "
+            "INSERT INTO bi_mat (khoa, gia_tri_ma, duoi, dau, hash, sua_luc) "
+            "VALUES (?,?,?,?,?,?) "
             "ON CONFLICT(khoa) DO UPDATE SET gia_tri_ma=excluded.gia_tri_ma, "
-            "duoi=excluded.duoi, dau=excluded.dau, sua_luc=excluded.sua_luc",
-            (khoa, ma, gia_tri[-4:], gia_tri[:DAU_DAI], _gio()))
+            "duoi=excluded.duoi, dau=excluded.dau, hash=excluded.hash, "
+            "sua_luc=excluded.sua_luc",
+            (khoa, ma, gia_tri[-4:], gia_tri[:DAU_DAI], _hash_khoa(gia_tri),
+             _gio()))
 
 
 def lay_bi_mat(conn: sqlite3.Connection, khoa: str) -> str | None:
@@ -119,13 +130,15 @@ DAU_DAI = 10
 
 def backfill_dau_khoa(conn: sqlite3.Connection) -> int:
     """Backfill cột 'dau' cho khóa nạp trước migration 002 (dau rỗng) HOẶC trước
-    khi nâng DAU_DAI 3→10 (v2, 18/08 — dòng dau ngắn được giải mã tính lại).
-    Idempotent: dòng đã đủ DAU_DAI bị SELECT loại ngay, không giải mã lại; giá
-    trị tính ra không đổi → không UPDATE, không đếm. Giải mã CHỈ để cắt DAU_DAI
-    ký tự đầu — TUYỆT ĐỐI không log/in giá trị đầy đủ ở bất cứ đâu; KHÔNG đụng
-    gia_tri_ma/sua_luc. Gọi mỗi lần mở trang API Keys (khuôn di_tru_llm_cu)."""
-    rows = conn.execute("SELECT khoa, gia_tri_ma, dau FROM bi_mat "
-                        "WHERE length(dau) < ?", (DAU_DAI,)).fetchall()
+    khi nâng DAU_DAI 3→10 (v2, 18/08 — dòng dau ngắn được giải mã tính lại),
+    VÀ cột 'hash' cho dòng trước migration 003 (v3, 18/08 — check trùng key,
+    cùng lượt decrypt). Idempotent: dòng đã đủ dau + có hash bị SELECT loại
+    ngay, không giải mã lại; giá trị tính ra không đổi → không UPDATE, không
+    đếm. Giải mã CHỈ để cắt DAU_DAI ký tự đầu + tính SHA-256 — TUYỆT ĐỐI không
+    log/in giá trị đầy đủ ở bất cứ đâu; KHÔNG đụng gia_tri_ma/sua_luc. Gọi mỗi
+    lần mở trang API Keys (khuôn di_tru_llm_cu)."""
+    rows = conn.execute("SELECT khoa, gia_tri_ma, dau, hash FROM bi_mat "
+                        "WHERE length(dau) < ? OR hash=''", (DAU_DAI,)).fetchall()
     if not rows:
         return 0
     f = _fernet()
@@ -137,9 +150,11 @@ def backfill_dau_khoa(conn: sqlite3.Connection) -> int:
             except Exception:
                 continue   # khóa hỏng/không giải mã được — bỏ qua, không chết cả đợt
             moi = plaintext[:DAU_DAI]
-            if moi == r["dau"]:
+            hs = _hash_khoa(plaintext)
+            if moi == r["dau"] and hs == r["hash"]:
                 continue   # khóa NGẮN hơn DAU_DAI đã đúng trọn — đừng đếm lại mãi
-            conn.execute("UPDATE bi_mat SET dau=? WHERE khoa=?", (moi, r["khoa"]))
+            conn.execute("UPDATE bi_mat SET dau=?, hash=? WHERE khoa=?",
+                         (moi, hs, r["khoa"]))
             so += 1
     return so
 
@@ -201,6 +216,16 @@ def them_api_key(conn: sqlite3.Connection, loai: str, khoa: str,
         nha = ""
     if not khoa.strip():
         raise ValueError("Thiếu khóa.")
+    # CHẶN TRÙNG GIÁ TRỊ (Owner 18/08): cùng một khóa dán 2 lần → chỉ ra bản đã
+    # có (id + dau···duoi) thay vì lặng lẽ đẻ bản sao. So bằng hash tất định
+    # (Fernet không so được bản mã); chỉ soi ngăn khóa API 'api.%'.
+    cu = conn.execute(
+        "SELECT khoa, dau, duoi FROM bi_mat WHERE hash=? AND khoa LIKE 'api.%'",
+        (_hash_khoa(khoa.strip()),)).fetchone()
+    if cu:
+        kid_cu = cu["khoa"].split(".")[1]
+        raise ValueError(
+            f"Key đã tồn tại: {kid_cu} ({cu['dau']}···{cu['duoi']})")
     so = 0
     for r in conn.execute("SELECT khoa FROM cau_hinh WHERE khoa LIKE 'api.api-%.loai'"):
         m = re.fullmatch(r"api\.api-(\d+)\.loai", r["khoa"])
@@ -276,8 +301,10 @@ def luu_cap_phat_viec(conn: sqlite3.Connection, app_slug: str, viec: str,
                       model: str = "") -> dict:
     """Lưu cấp phát MỘT việc: nhiều khóa cùng loại (K5 vòng 4). Chế độ chuẩn hóa:
     ≤1 khóa = mot_khoa; >1 chọn xoay_vong/du_phong (mặc định xoay_vong).
-    Chỉ giữ id khóa còn sống (khóa đã thu hồi tự rơi)."""
-    khoa_ids = [k for k in khoa_ids
+    Chỉ giữ id khóa còn sống (khóa đã thu hồi tự rơi); DEDUP giữ thứ tự (Owner
+    18/08 — cùng khóa không bao giờ nằm 2 lần trong MỘT việc; cùng khóa ở 2
+    việc KHÁC nhau vẫn hợp lệ, vd GLM chung 2 việc)."""
+    khoa_ids = [k for k in dict.fromkeys(khoa_ids)
                 if lay_cau_hinh(conn, f"api.{k}.loai")]
     cp = doc_cap_phat(conn)
     muc = cp.setdefault(app_slug, {}).setdefault(viec, {})
