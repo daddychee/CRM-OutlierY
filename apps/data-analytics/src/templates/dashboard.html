@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+{% block title %}Data Analytics — Niche{% endblock %}
+{% block topbar_ten %}Data Analytics{% endblock %}
+
+{% block style_them %}
+  .nd-wrap{display:flex;gap:0;height:100%;min-height:0}
+  /* rail trái — bản chốt: chọn niche → Overall / kênh / New report */
+  .nd-rail{width:198px;flex:0 0 198px;border-right:1px solid var(--line);padding:14px 10px;
+    display:flex;flex-direction:column;gap:2px;overflow-y:auto}
+  .nd-rail select{width:100%;background:var(--th-182233);color:var(--ink);border:1px solid var(--line);
+    border-radius:9px;padding:7px 9px;font:inherit;font-weight:600;margin-bottom:12px}
+  .nd-it{display:flex;align-items:center;gap:9px;padding:8px 11px;border-radius:9px;color:var(--muted);
+    font-size:13.5px;text-decoration:none}
+  .nd-it.on{background:var(--th-182233);color:var(--accent);font-weight:600}
+  .nd-it:hover{color:var(--ink)}
+  .nd-dot{width:7px;height:7px;border-radius:50%;background:var(--line);flex:0 0 auto}
+  .nd-it.on .nd-dot{background:var(--accent)}
+  .nd-new{margin-top:auto;background:var(--accent);color:var(--th-090c12);border-radius:9px;
+    font-weight:700;justify-content:center}
+  .nd-new:hover{color:var(--th-090c12);filter:brightness(1.08)}
+  /* pane phải */
+  .nd-main{flex:1;overflow-y:auto;padding:18px 22px;min-width:0}
+  .nd-band{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+  .nd-band h1{font-size:1.2rem;margin:0}
+  .nd-band select{background:var(--th-182233);color:var(--ink);border:1px solid var(--line);
+    border-radius:999px;padding:4px 12px;font:inherit;font-size:.85rem;margin-left:auto}
+  .nd-tt{border:1px solid var(--line);border-radius:14px;margin-bottom:16px;overflow:hidden}
+  .nd-tt-h{display:flex;align-items:center;gap:10px;padding:11px 16px;background:var(--th-121826);
+    border-bottom:1px solid var(--line);flex-wrap:wrap}
+  .nd-tt-h b{font-size:1rem}
+  /* ponytail: khung app chưa có token ok/warn xanh-lá/vàng — tạm dùng bảng sẵn có
+     (accent = tốt, d97c6c = xấu); thêm cặp token vào nen_khung_app rồi đổi lại. */
+  .nd-verdict{font-size:.72rem;font-weight:700;border-radius:999px;padding:2px 11px;letter-spacing:.04em;
+    background:var(--th-182233);border:1px solid var(--th-31425e);color:var(--th-c2cbd9)}
+  .v-ok{color:var(--th-4c8fe0);border-color:var(--th-4c8fe0)}
+  .nd-act{margin-left:auto;display:flex;gap:8px}
+  .nd-btn{display:inline-flex;align-items:center;gap:6px;font-size:.82rem;font-weight:600;
+    border:1px solid var(--line);border-radius:9px;padding:5px 12px;color:var(--ink);text-decoration:none}
+  .nd-btn.chinh{background:var(--accent);border-color:var(--accent);color:var(--th-090c12)}
+  .nd-btn:hover{border-color:var(--accent)}
+  .nd-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:9px;padding:12px}
+  .nd-tile{background:var(--th-121826);border:1px solid var(--line);border-radius:11px;
+    padding:11px 12px;text-align:center}
+  .nd-tile .k{font-size:.62rem;letter-spacing:.12em;color:var(--muted);text-transform:uppercase}
+  .nd-tile .v{font-size:1.35rem;font-weight:700;margin:2px 0}
+  .nd-tile .s{font-size:.72rem;color:var(--muted)}
+  .nd-bw{padding:0 12px 12px}
+  .nd-bw table{width:100%;border-collapse:collapse;font-size:.84rem}
+  .nd-bw th{font-size:.66rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);
+    text-align:left;padding:5px 8px;border-bottom:1px solid var(--line)}
+  .nd-bw td{padding:5px 8px;border-bottom:1px solid var(--th-182233)}
+  .bw-g{color:var(--th-4c8fe0);font-weight:700;text-align:right;font-variant-numeric:tabular-nums}
+  .bw-r{color:var(--th-d97c6c);font-weight:700;text-align:right;font-variant-numeric:tabular-nums}
+  .nd-trong{padding:26px 16px;text-align:center;color:var(--muted);font-size:.9rem}
+{% endblock %}
+
+{% block noi_dung %}
+<div class="nd-wrap">
+  <nav class="nd-rail">
+    <select onchange="location='/niche?ngach='+this.value" aria-label="Niche">
+      {% for n in ds_ngach %}
+      <option value="{{ n.ma }}" {% if ngach and n.ma == ngach.ma %}selected{% endif %}>{{ n.ten_chuan }}</option>
+      {% endfor %}
+      {% if not ds_ngach %}<option>— chưa có niche —</option>{% endif %}
+    </select>
+    <a class="nd-it on" href="/niche{% if ngach %}?ngach={{ ngach.ma }}{% endif %}"><span class="nd-dot"></span>Overall</a>
+    {% for k in ds_kenh %}
+    <a class="nd-it" href="/bao-cao-lich-su" title="{{ k.ten_chuan }}"><span class="nd-dot"></span>{{ k.ten_chuan }}</a>
+    {% endfor %}
+    <a class="nd-it nd-new" href="/chan-doan" title="Channel report: nạp file YouTube Studio. Niche report: chạy từ tool Niche Research (nối ở đợt sau).">
+      <svg class="ic" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> New report</a>
+  </nav>
+
+  <div class="nd-main">
+    {% if not ngach %}
+      <div class="nd-trong">Chưa có niche trong danh bạ — tạo ở cổng OUTLIERY (Niches) trước.</div>
+    {% else %}
+    <div class="nd-band">
+      <h1>{{ ngach.ten_chuan }} — Báo cáo ngách</h1>
+      {% if ds_ngay %}
+      <select onchange="location='/niche?ngach={{ ngach.ma }}&ngay='+this.value" aria-label="Report date">
+        <option value="latest">🗓 Mới nhất</option>
+        {% for d in ds_ngay | reverse %}
+        <option value="{{ d }}" {% if d == ngay_chon %}selected{% endif %}>{{ d }}</option>
+        {% endfor %}
+      </select>
+      {% endif %}
+    </div>
+
+    {% if not thi_truong %}
+      <div class="nd-trong">Niche này chưa gán dự án Niche Research nào —
+        gán trong <code>data/data-analytics/niche_projects.json</code> (⚙ Settings ở đợt sau).</div>
+    {% endif %}
+
+    {% for tt in thi_truong %}
+    <section class="nd-tt">
+      <div class="nd-tt-h">
+        <b>{{ tt.ten }}</b>
+        {% if tt.so.co_bao_cao %}
+          <span class="nd-verdict {% if tt.so.phan_quyet == 'GO' %}v-ok{% else %}v-warn{% endif %}">
+            {{ {'GO':'VÀO','CONDITIONAL':'VÀO CÓ ĐIỀU KIỆN','NO-GO':'KHÔNG VÀO'}.get(tt.so.phan_quyet, tt.so.phan_quyet) }}
+            {% if tt.so.diem_hap_dan is not none %}· {{ tt.so.diem_hap_dan }}{% endif %}</span>
+          <span class="s" style="color:var(--muted);font-size:.78rem">snapshot {{ tt.so.snapshot }}</span>
+          <span class="nd-act">
+            {% set ns = namespace(html=None) %}
+            {% for f in tt.so.bao_cao_files %}{% if f.endswith('.html') and not ns.html %}{% set ns.html = f %}{% endif %}{% endfor %}
+            {% if ns.html %}
+            <a class="nd-btn chinh" href="/niche/tai/{{ tt.project }}/{{ tt.so.snapshot }}/{{ ns.html }}?inline=1" target="_blank">
+              <svg class="ic" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg> Read report</a>
+            {% endif %}
+            {% for f in tt.so.bao_cao_files %}
+            <a class="nd-btn" href="/niche/tai/{{ tt.project }}/{{ tt.so.snapshot }}/{{ f }}" title="{{ f }}">
+              <svg class="ic" viewBox="0 0 24 24"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 21h16"/></svg>
+              {{ 'HTML' if f.endswith('.html') else ('Excel' if f.endswith('.xlsx') else f) }}</a>
+            {% endfor %}
+          </span>
+        {% else %}
+          <span class="s" style="color:var(--muted)">{{ tt.so.ly_do }}</span>
+        {% endif %}
+      </div>
+      {% if tt.so.co_bao_cao %}
+      <div class="nd-tiles">
+        <div class="nd-tile"><div class="k">score /100</div>
+          <div class="v">{{ tt.so.diem_hap_dan if tt.so.diem_hap_dan is not none else '—' }}</div>
+          <div class="s">điểm hấp dẫn ngách</div></div>
+        <div class="nd-tile"><div class="k">median</div>
+          <div class="v">{{ '{:,}'.format(tt.so.view_trung_vi).replace(',', '.') if tt.so.view_trung_vi else '—' }}</div>
+          <div class="s">view trung vị ngách</div></div>
+        <div class="nd-tile"><div class="k">p90</div>
+          <div class="v">{{ '{:,}'.format(tt.so.moc_trung).replace(',', '.') if tt.so.moc_trung else '—' }}</div>
+          <div class="s">mốc video "trúng"</div></div>
+        <div class="nd-tile"><div class="k">count / tháng</div>
+          <div class="v">{{ tt.so.cung_thang | round | int if tt.so.cung_thang else '—' }}</div>
+          <div class="s">nguồn cung · trend {{ tt.so.trend or '—' }}</div></div>
+        <div class="nd-tile"><div class="k">rate</div>
+          <div class="v">{{ (tt.so.cua_vao_rate * 100) | round | int ~ '%' if tt.so.cua_vao_rate else '—' }}</div>
+          <div class="s">cửa vào · {{ tt.so.cua_vao_verdict or '—' }}</div></div>
+        <div class="nd-tile"><div class="k">band · heuristic</div>
+          <div class="v">{{ tt.so.rpm_band or '—' }}</div>
+          <div class="s">RPM ước tính{% if not tt.so.rpm_band %} — nguồn thiếu{% endif %}</div></div>
+      </div>
+      {% if tt.so.cum_tot %}
+      <div class="nd-bw"><table>
+        <tr><th style="text-align:right">Điểm</th><th>Cụm sub-niche</th><th>Cạnh tranh</th></tr>
+        {% for c in tt.so.cum_tot %}
+        <tr><td class="bw-g">{{ c.beachhead_score }}</td><td><b>{{ c.anchor }}</b></td><td>{{ c.competition }}</td></tr>
+        {% endfor %}
+        {% for c in tt.so.cum_xau %}
+        <tr><td class="bw-r">{{ c.beachhead_score }}</td><td>{{ c.anchor }}</td><td>{{ c.competition }}</td></tr>
+        {% endfor %}
+      </table></div>
+      {% endif %}
+      {% endif %}
+    </section>
+    {% endfor %}
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

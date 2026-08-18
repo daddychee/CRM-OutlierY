@@ -506,3 +506,8 @@ def bao_cao_tai_goc(bao_cao_id: str, user: dict = Depends(yeu_cau_data_analytics
     if not duong.is_file():
         raise khong_co
     return FileResponse(duong, filename=rec.get("ten_file_goc") or duong.name)
+
+
+# ---------- dashboard Niche (module gộp — src/dashboard.py) ----------
+from src.dashboard import router as _dashboard_router  # noqa: E402
+app.include_router(_dashboard_router)
