@@ -64,8 +64,9 @@ def test_sidebar_tu_an_app_da_di_tru():
     giao hợp đồng × X-Remote-Apps; 3 app lõi + app-mau không lặp ở nhóm Tools."""
     from nen.common.sidebar import sb_apps_tu_claims
     ds = sb_apps_tu_claims(["radary", "ai-agent", "to-chuc", "app-mau"])
-    # app khai giao_dien 'khung' → mở qua /open (giữ sidebar — Owner 16/08)
-    assert ds == [{"slug": "radary", "ten": "RadarY", "href": "/open/radary"}]
+    # đồng nhất URL 18/08 (4f37839): mọi nút Tools = /<slug> — app khung phục vụ
+    # cùng trang giữ-sidebar tại URL đẹp, /open/<slug> chỉ còn đỡ bookmark cũ
+    assert ds == [{"slug": "radary", "ten": "RadarY", "href": "/radary"}]
     assert sb_apps_tu_claims([]) == []                # không quyền → không mục
     assert sb_apps_tu_claims(["la-lam"]) == []        # slug lạ ngoài hợp đồng → ẩn
 

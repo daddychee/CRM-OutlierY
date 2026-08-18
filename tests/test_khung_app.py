@@ -44,7 +44,8 @@ def test_open_radary_khung_du_sidebar_va_iframe(client):
     assert '<iframe class="khung-app" src="/app/radary/"' in b   # nội dung = iframe
     assert 'class="sidebar"' in b and "OUTLIERY" in b            # shell chuẩn
     assert "RadarY" in b and "Content Ultimate" in b             # nhóm Tools đủ app
-    assert 'class="nav-item active" href="/open/radary"' in b    # mục đang mở active
+    # đồng nhất URL 18/08 (4f37839): nút Tools = /<slug> (khung phục vụ cùng trang)
+    assert 'class="nav-item active" href="/radary"' in b         # mục đang mở active
     assert "<title>RadarY — OUTLIERY</title>" in b
 
 
@@ -62,7 +63,7 @@ def test_open_khoi_quan_ly_nam_gon_trong_popup(client):
         assert duong not in truoc, duong                  # không còn link phẳng ở pane
         # các mục theo quyền Owner đều có mặt TRONG popup
         assert duong in sau, duong
-    assert 'class="nav-item" href="/"' in truoc           # Home = chỗ của AI Agent
+    assert 'class="nav-item new" href="/"' in truoc       # Home = chỗ của AI Agent (kiểu nút New chat)
     assert "mgmt-mui" in sau                              # nút chip + mũi tên popup
 
 
@@ -83,10 +84,12 @@ def test_open_native_va_slug_la_404(client):
 
 
 def test_sidebar_href_khung_vs_native():
+    # đồng nhất URL 18/08 (4f37839): MỘT luật /<slug> cho mọi nút Tools —
+    # /open/<slug> vẫn sống đỡ bookmark cũ (test_open_* bên trên vẫn đi cửa đó)
     ds = {a["slug"]: a["href"] for a in sb_apps_tu_claims(
         ["radary", "content-ultimate"])}
-    assert ds == {"radary": "/open/radary",
-                  "content-ultimate": "/open/content-ultimate"}
+    assert ds == {"radary": "/radary",
+                  "content-ultimate": "/content-ultimate"}
 
 
 def test_proxy_cat_header_khung_va_wiring(client, monkeypatch):
