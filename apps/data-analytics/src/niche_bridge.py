@@ -127,9 +127,10 @@ def trich_nghia(project: str, snap_id: str = "latest") -> dict:
         p3 = s[i3:i4] if i4 > i3 else s[i3:]
         pa = []
         for c in _re.split(r'<div class="card">', p3)[1:]:
-            cut = c.find('<div class="layer')
-            if cut != -1:
-                c = c[:cut]
+            cac_cut = [x for x in (c.find('<div class="layer'),
+                                   c.find("<div class='layer")) if x != -1]
+            if cac_cut:
+                c = c[:min(cac_cut)]
             mh = _re.search(r"<h4[^>]*>(.*?)</h4>", c, _re.S)
             if not mh:
                 continue

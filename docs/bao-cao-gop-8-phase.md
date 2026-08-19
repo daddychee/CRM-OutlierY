@@ -545,3 +545,23 @@ SUMMARY) — bản HTML của US là bản SOẠN TAY 18/08; máy sinh chưa t�
 CÒN (tầng 2, đợt riêng): bao_cao_writer [LLM] sinh NGHĨA vào JSON theo schema —
 builder đọc JSON đó đổ vào slot thay nhãn chờ; US giữ bản mẫu soạn tay làm chuẩn
 đối chiếu (không ghi đè — lệ mockup).
+
+## 19/08 (tiếp 4) — TẦNG 2 bao_cao_writer [LLM] — BÁO CÁO HOÀN THIỆN end-to-end
+
+User chốt "code luôn tầng 2": scripts/20_bao_cao_writer.py — LLM viết tầng NGHĨA
+ra niche-data/bao_cao_nghia.json THEO SCHEMA (tq headline+đoạn · canvas 3 nhóm × 6
+hàng · phương án A/B/C + anti · winning_format · tổng hợp + falsifiers rút lui).
+Đầu vào là DIGEST artifact chắt sẵn (không transcript thô — dna/gaps đã distill);
+LUẬT NEO trong prompt: mỗi luận điểm kèm số/chuỗi có thật trong digest, thiếu căn
+cứ phải ghi 'GIẢ ĐỊNH:'; validate_json + kiểm tối thiểu (canvas ≥4 hàng, ≥2 phương
+án) mới ghi file (nguyên tử). Khóa: KÉT khoa_v3.env_llm (việc phan_tich — Owner ĐÃ
+cấp phát, writer báo 'khoa LLM: KET'); KÉT thiếu → thử .env V2 như pipeline cũ.
+Builder đổ NGHĨA vào slot với badge "DIỄN GIẢI — bao_cao_writer [LLM] · glm · giờ
+sinh"; thiếu file → slot giữ nhãn chờ như tầng 1. Chuỗi snapshot bridge: WRITER →
+BUILDER → SNAPSHOT (mỗi best-effort). Khối NGHĨA dùng markup nháy kép đúng khuôn
+extractor — trich_nghia cắt được từ báo cáo máy sinh y như bản mẫu tay (vá thêm
+marker cắt phương án 2 kiểu nháy).
+ĐO THẬT trên LifeIn_ES: max_tokens 4096 CỤT JSON giữa chừng → nâng 8192 (ghi chú
+trong code); chạy lại DONE (provider=glm), build + snapshot 2026-08-19; extractor
+trả canvas 3 nhóm (neo số thật: 9.659 comment · 457 câu hỏi · 249 like) + 3 phương
+án + anti 5 mục; US bản mẫu tay nguyên vẹn. Suite 113 pass.

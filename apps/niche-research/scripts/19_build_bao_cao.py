@@ -93,6 +93,60 @@ def cho_writer(mo_ta: str) -> str:
             f"(chưa chạy cho bản này); số bên trên là nguồn neo.</div>")
 
 
+def khoi_canvas(nghia: dict, nhan: str) -> str:
+    """Audience Profile Canvas từ bao_cao_writer — markup NHÁY KÉP + <table> trần
+    đúng khuôn bản mẫu US để dashboard trich_nghia cắt được."""
+    cv = nghia.get("canvas") or {}
+    cot, hang = cv.get("cot") or [], cv.get("hang") or []
+    if not (cot and hang):
+        return ""
+    th = "<th></th>" + "".join(f"<th>{e(c)}</th>" for c in cot)
+    tr = "".join("<tr><td>" + e(h.get("ten")) + "</td>"
+                 + "".join(f"<td>{e(o)}</td>" for o in (h.get("o") or []))
+                 + "</tr>" for h in hang)
+    return (f'<div class="card"><h4>Audience Profile Canvas '
+            f'<span class="as">DIỄN GIẢI — {nhan}</span></h4>'
+            f"<div class='tblwrap'><table><tr>{th}</tr>{tr}</table></div></div>")
+
+
+def khoi_phuong_an(nghia: dict, nhan: str) -> str:
+    """Card Phương án A/B/C + Anti-positioning — h4 bắt đầu 'Phương án'/'Anti-'
+    đúng khuôn extractor dashboard."""
+    ds = nghia.get("phuong_an") or []
+    if not ds:
+        return ""
+    ra = [f'<div class="card"><span class="as">DIỄN GIẢI — {nhan}</span></div>']
+    for pa in ds:
+        muc = "".join(f"<li>{e(x)}</li>" for x in (pa.get("noi_dung") or []))
+        ra.append(f'<div class="card"><h4>{e(pa.get("ten"))}</h4><ul>{muc}</ul></div>')
+    anti = nghia.get("anti") or []
+    if anti:
+        muc = "".join(f"<li>{e(x)}</li>" for x in anti)
+        ra.append('<div class="card"><h4>Anti-positioning — những điều KHÔNG làm'
+                  f"</h4><ul>{muc}</ul></div>")
+    return "".join(ra)
+
+
+def khoi_muc_list(ds, tieu_de: str, nhan: str) -> str:
+    if not ds:
+        return ""
+    muc = "".join(f"<li>{e(x)}</li>" for x in ds)
+    return (f'<div class="card"><h4>{e(tieu_de)} '
+            f'<span class="as">DIỄN GIẢI — {nhan}</span></h4><ul>{muc}</ul></div>')
+
+
+def khoi_tong_hop(nghia: dict, nhan: str) -> str:
+    th = nghia.get("tong_hop") or {}
+    if not th.get("doan"):
+        return ""
+    rut = "".join(f"<li>{e(x)}</li>" for x in (th.get("rut_lui") or []))
+    return (f'<div class="card"><h4>Tổng hợp chiến lược '
+            f'<span class="as">DIỄN GIẢI — {nhan}</span></h4>'
+            f"<p style='margin:.4em 0'>{e(th.get('doan'))}</p>"
+            + (f"<b style='font-size:12px'>Điều kiện rút lui (falsifiers):</b><ul>{rut}</ul>" if rut else "")
+            + "</div>")
+
+
 def thieu(nguon: str) -> str:
     return f"<div class='card cho'>Nguồn thiếu — pipeline chưa sinh <code>{nguon}</code> cho run này.</div>"
 
@@ -174,6 +228,13 @@ def build(project_dir: Path) -> Path:
     p_sum = project_dir / REPORT_DIR / "SUMMARY.md"
     if p_sum.is_file():
         summary_md = p_sum.read_text(encoding="utf-8", errors="replace")
+    # tầng 2 (19/08): NGHĨA do bao_cao_writer [LLM] sinh — có file thì đổ vào slot,
+    # không có thì slot giữ nhãn chờ (builder không bịa)
+    nghia = _doc(nd, "bao_cao_nghia.json")
+    meta_w = nghia.get("_meta") or {}
+    nhan_writer = (f"bao_cao_writer [LLM] · {e(meta_w.get('provider') or '?')}"
+                   f"{' · ' + e(meta_w.get('model')) if meta_w.get('model') else ''}"
+                   f" · {e((meta_w.get('generated') or '')[:16])}")
 
     qd = d1.get("decision") or "?"
     nhan_qd, lop_qd = _NHAN_QD.get(qd, (qd, ""))
@@ -196,8 +257,9 @@ def build(project_dir: Path) -> Path:
     tq = f"""
 <section id="tq">
   <span class="chip {lop_qd}">PHÁN QUYẾT — {nhan_qd}{f' · {diem}/100' if diem is not None else ''}</span>
-  <h2 style="margin-top:10px">{e(_HEADLINE.get(qd, qd))}</h2>
+  <h2 style="margin-top:10px">{e((nghia.get('tq') or {}).get('headline') or _HEADLINE.get(qd, qd))}</h2>
   <div class="card">Pipeline: <b>{e(d1.get('gate_reason'))}</b></div>
+  {f"<div class='card'><span class='as'>DIỄN GIẢI — {nhan_writer}</span><br>{e(nghia['tq'].get('doan'))}</div>" if nghia.get('tq', {}).get('doan') else ''}
   {lop_so('5 trụ điểm — trọng số ' + e(d1.get('weights')))}
   {thanh_tru}
   {lop_so('Tổng quan số của pipeline')}
@@ -256,7 +318,7 @@ def build(project_dir: Path) -> Path:
        bang(['Like', 'Câu hỏi', 'Dưới video'], hang_ch, {0})) if hang_ch else thieu('gaps.json')}
   {gon(f'{len(hang_theme)} theme comment', bang(['Theme', 'Số câu', '% câu hỏi'], hang_theme, {1, 2})) if hang_theme else ''}
   {lop_nghia('Diễn giải — Audience Profile Canvas')}
-  {cho_writer('Chân dung 3 nhóm khán giả (Là ai · Jobs-to-be-Done · Pain · Desired outcome · Đang xem thay thế · Ngôn ngữ họ dùng)')}
+  {khoi_canvas(nghia, nhan_writer) or cho_writer('Chân dung 3 nhóm khán giả (Là ai · Jobs-to-be-Done · Pain · Desired outcome · Đang xem thay thế · Ngôn ngữ họ dùng)')}
   {lop_gate('Gate P1 — đủ bằng chứng demand mới sang Phase 2 (ký trên dashboard)')}
 </section>"""
 
@@ -298,7 +360,7 @@ def build(project_dir: Path) -> Path:
             hang_bet, {3, 4, 5, 6, 7, 8}), mo=True) if hang_bet else thieu('bets.json')}
   {lop_nghia('Ba phương án + Anti-positioning')}
   {khoi_plan}
-  {cho_writer('Positioning options A/B/C + Anti-positioning (những điều KHÔNG làm)')}
+  {khoi_phuong_an(nghia, nhan_writer) or cho_writer('Positioning options A/B/C + Anti-positioning (những điều KHÔNG làm)')}
   {lop_gate('Gate P3 — chốt phương án positioning TRƯỚC khi sản xuất hàng loạt (ký trên dashboard)')}
 </section>"""
 
@@ -332,7 +394,8 @@ def build(project_dir: Path) -> Path:
        bang(['Từ khóa', 'Loại', 'Lift', 'Kiểm định', 'Kênh'], hang_lift, {2, 4}), mo=True) if hang_lift else ''}
   {lop_nghia('Diễn giải khuôn thắng')}
   {khoi_dna}
-  {cho_writer('Winning Format tổng hợp (độ dài · nhịp · hook · thumbnail grammar)')}
+  {khoi_muc_list(nghia.get('winning_format'), 'Winning Format tổng hợp', nhan_writer)
+   or cho_writer('Winning Format tổng hợp (độ dài · nhịp · hook · thumbnail grammar)')}
 </section>"""
 
     # ---------- P5 — Monetization ----------
@@ -382,7 +445,7 @@ def build(project_dir: Path) -> Path:
     Gate ký từng phase nằm TRÊN DASHBOARD (sống qua các lần chạy lại) — báo cáo này là bản đóng băng theo snapshot.</div>
   {khoi_summary}
   {lop_nghia('Tổng hợp chiến lược')}
-  {cho_writer('Bản tổng hợp GO/NO-GO viết liền mạch + điều kiện rút lui')}
+  {khoi_tong_hop(nghia, nhan_writer) or cho_writer('Bản tổng hợp GO/NO-GO viết liền mạch + điều kiện rút lui')}
 </section>"""
 
     honesty = f"""

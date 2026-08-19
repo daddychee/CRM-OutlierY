@@ -24,6 +24,7 @@ _APP_DIR = Path(__file__).resolve().parents[1]
 _ROOT = _APP_DIR.parents[1]
 _SNAPSHOT_PY = _ROOT / "apps" / "niche-research" / "scripts" / "snapshot.py"
 _BUILD_BC_PY = _ROOT / "apps" / "niche-research" / "scripts" / "19_build_bao_cao.py"
+_WRITER_PY = _ROOT / "apps" / "niche-research" / "scripts" / "20_bao_cao_writer.py"
 
 # chống snapshot đúp khi nhiều tab cùng poll thấy "vừa xong"
 _snapshot_lock = threading.Lock()
@@ -113,6 +114,11 @@ def _snapshot(project: str) -> bool:
     duong = Path(os.environ.get("NICHE_PROJECTS_DIR")
                  or _ROOT / "data" / "niche-research" / "projects") / project
     try:
+        # tầng 2 TRƯỚC (writer LLM sinh bao_cao_nghia.json — 1 lời gọi/run, key KÉT;
+        # hỏng chỉ mất tầng NGHĨA, builder giữ slot chờ) rồi tầng 1 render HTML.
+        subprocess.run([sys.executable, str(_WRITER_PY), str(duong)],
+                       capture_output=True, timeout=300,
+                       env={**os.environ, "PYTHONUTF8": "1"})
         subprocess.run([sys.executable, str(_BUILD_BC_PY), str(duong)],
                        capture_output=True, timeout=120,
                        env={**os.environ, "PYTHONUTF8": "1"})
