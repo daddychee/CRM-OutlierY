@@ -46,7 +46,7 @@ def test_open_radary_khung_du_sidebar_va_iframe(client):
     assert "RadarY" in b and "Content Ultimate" in b             # nhóm Tools đủ app
     # đồng nhất URL 18/08 (4f37839): nút Tools = /<slug> (khung phục vụ cùng trang)
     assert 'class="nav-item active" href="/radary"' in b         # mục đang mở active
-    assert "<title>RadarY — OUTLIERY</title>" in b
+    assert "<title>RadarY — AI AGENT OUTLIERY</title>" in b
 
 
 def test_open_khoi_quan_ly_nam_gon_trong_popup(client):
