@@ -73,8 +73,19 @@
   Owner duyệt/merge trên GitHub → Owner chạy `tools/scripts/cap-nhat-app.ps1
   <slug>` trên server (fetch → pull --ff-only → pytest app + test root → restart
   theo cổng đọc từ apps.json; TEST ĐỎ LÀ DỪNG, quay lui git reset --hard HEAD@{1}).
-  Remote đề xuất `daddychee/seo-optimize-v3` (private) — CHỜ Owner: tạo repo +
-  push + mời collaborator (Write, đúng 1 repo) + khóa nhánh main (require PR).
+  Remote = repo GitHub CÓ SẴN `daddychee/seo-optimize-outliery` (đã dùng để push
+  V2 hồi 03-06/08, KHÔNG tạo repo `-v3` mới) — fetch trước khi push xác nhận
+  `origin/main` vẫn đúng `b009287` (hệ cũ chưa push gì thêm từ lúc fork) nên
+  `git push origin main` là FAST-FORWARD sạch, đã đẩy `353c542` lên thật.
+  **Còn tay Owner:** mời collaborator (Write, đúng 1 repo) + khóa nhánh main
+  (require PR). **LƯU Ý SỐNG CHUNG:** repo cục bộ hệ cũ `C:\OutlierY\apps\
+  seo-optimize` VẪN đứng ở `b009287` (đã đứng sau remote) — nếu ai đó push tiếp
+  từ hệ cũ (vd commit dữ liệu vận hành định kỳ), git sẽ TỪ CHỐI (non-fast-forward)
+  chứ không đè ngầm; muốn push được phải `git pull` trước, và khi đó code V3
+  (SSO/khoá-két) chảy VỀ hệ cũ — không vỡ gì vì mọi nhánh V3 đều rẽ nhánh qua
+  `SEO_TRUST_PROXY` (mặc định tắt = hành vi V2 y nguyên), nhưng NÊN xem đây là
+  tín hiệu "đã tới lúc coi seo-optimize-outliery là MỘT repo, hệ cũ ngừng push
+  riêng" — Owner quyết khi gặp.
   Bẫy: clone V2 dính filename-too-long (episodes tên >260 ký tự) → repo app set
   `core.longpaths true`. HOÃN ai-agent + app còn lại: phiên song song ĐANG có sửa
   đổi chưa commit trong apps/ai-agent — gỡ track lúc này là phá mạch phiên kia
