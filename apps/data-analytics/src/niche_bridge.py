@@ -75,11 +75,14 @@ def duong_bao_cao(project: str, snap_id: str, ten_file: str) -> Path | None:
 # ---------- trích tầng NGHĨA từ báo cáo gộp (user chốt 18/08: tab phải DIỄN GIẢI
 # LẠI kiểu dashboard, không nhúng nguyên báo cáo) ----------
 
+import html as _html
 import re as _re
 
 
 def _bo_the(t: str) -> str:
-    return _re.sub(r"\s+", " ", _re.sub(r"<[^>]+>", " ", t)).strip()
+    # bỏ thẻ TRƯỚC rồi unescape entity (19/08: báo cáo máy sinh escape " thành
+    # &quot; — không unescape là entity lọt nguyên văn lên dashboard)
+    return _re.sub(r"\s+", " ", _html.unescape(_re.sub(r"<[^>]+>", " ", t))).strip()
 
 
 def trich_nghia(project: str, snap_id: str = "latest") -> dict:
