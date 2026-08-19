@@ -12,6 +12,7 @@ Mọi lời gọi HTTP có timeout (bài học SDK-600s hệ cũ); service chế
 """
 from __future__ import annotations
 
+import json
 import os
 import subprocess
 import sys
@@ -29,6 +30,7 @@ _WRITER_PY = _ROOT / "apps" / "niche-research" / "scripts" / "20_bao_cao_writer.
 # chống snapshot đúp khi nhiều tab cùng poll thấy "vừa xong"
 _snapshot_lock = threading.Lock()
 _da_snapshot: set[str] = set()      # project đã snapshot cho lần-xong hiện tại
+_dang_dong_goi: set[str] = set()    # project đang đóng gói nền (19/08)
 
 
 def _api() -> str:
@@ -105,6 +107,83 @@ def trang_thai(project: str, user: dict) -> dict:
                 done_moi = _snapshot(project)
     return {"running": bool(st.get("running")), "has_report": bool(st.get("has_report")),
             "done_moi": done_moi}
+
+
+def _thu_muc(project: str) -> Path:
+    return Path(os.environ.get("NICHE_PROJECTS_DIR")
+                or _ROOT / "data" / "niche-research" / "projects") / project
+
+
+def can_dong_goi(project: str) -> bool:
+    """Run đã xong nhưng CHƯA đóng gói (writer+builder+snapshot)?
+
+    Sự cố 19/08 (user: 'chạy Space/Spain mà tool không hiện gì'): chuỗi đóng gói
+    chỉ chạy khi tab dashboard còn mở để poll — đóng tab là báo cáo nằm trên đĩa
+    mà dashboard (đọc theo snapshot) không thấy, cũng không báo vỡ ở đâu. Hàm này
+    cho trang tự phát hiện: có file Report mà chưa snapshot / snapshot cũ hơn."""
+    d = _thu_muc(project)
+    rp = d / "Report"
+    if not rp.is_dir():
+        return False
+    files = [f for f in rp.glob("*") if f.is_file() and not f.name.startswith("~$")]
+    if not files:
+        return False
+    moi_nhat = max(f.stat().st_mtime for f in files)
+    idx = d / "snapshots" / "index.json"
+    if not idx.is_file():
+        return True
+    try:
+        so = json.loads(idx.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return True
+    if not so:
+        return True
+    thu_muc_snap = d / "snapshots" / so[-1]["id"]
+    if not thu_muc_snap.is_dir():
+        return True
+    return moi_nhat > thu_muc_snap.stat().st_mtime + 1
+
+
+def dong_goi_nen(project: str) -> None:
+    """Đóng gói NỀN (thread) — trang không chờ; chống chạy trùng bằng _dang_dong_goi."""
+    with _snapshot_lock:
+        if project in _dang_dong_goi:
+            return
+        _dang_dong_goi.add(project)
+
+    def _chay():
+        try:
+            _snapshot(project)
+        finally:
+            with _snapshot_lock:
+                _dang_dong_goi.discard(project)
+
+    threading.Thread(target=_chay, daemon=True).start()
+
+
+def dang_dong_goi(project: str) -> bool:
+    with _snapshot_lock:
+        return project in _dang_dong_goi
+
+
+def tinh_trang(project: str, so_dong: int = 12) -> dict:
+    """Trạng thái run ĐỌC TỪ ĐĨA (không cần service): đuôi stdout.log + mốc thời
+    gian — để trang nói được 'vỡ ở đâu' thay vì im lặng (user 19/08)."""
+    d = _thu_muc(project)
+    log = d / "niche-data" / "stdout.log"
+    if not log.is_file():
+        return {"co_log": False}
+    try:
+        dong = log.read_text(encoding="utf-8", errors="replace").splitlines()
+    except OSError:
+        return {"co_log": False}
+    duoi = [x for x in dong if x.strip()][-so_dong:]
+    xong = any("Pipeline done" in x for x in dong[-40:])
+    loi = [x for x in dong[-80:]
+           if ("Traceback" in x or "ERROR" in x or "LOI" in x or "Error:" in x)]
+    from datetime import datetime as _dt
+    return {"co_log": True, "xong": xong, "duoi": duoi, "loi": loi[-3:],
+            "luc": _dt.fromtimestamp(log.stat().st_mtime).strftime("%d/%m %H:%M")}
 
 
 def _snapshot(project: str) -> bool:

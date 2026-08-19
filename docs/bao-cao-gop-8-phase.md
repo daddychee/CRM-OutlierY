@@ -565,3 +565,25 @@ marker cắt phương án 2 kiểu nháy).
 trong code); chạy lại DONE (provider=glm), build + snapshot 2026-08-19; extractor
 trả canvas 3 nhóm (neo số thật: 9.659 comment · 457 câu hỏi · 249 like) + 3 phương
 án + anti 5 mục; US bản mẫu tay nguyên vẹn. Suite 113 pass.
+
+## 19/08 (tiếp 5) — SỰ CỐ "chạy Space/Spain mà tool không hiện gì, không báo vỡ ở đâu"
+
+TRUY VẾT: pipeline Space_SPAIN chạy XONG 10:00 (Excel 16 sheet + SUMMARY + dna +
+execution_plan trên đĩa, log kết "✓ Pipeline done") nhưng **snapshots/index.json
+KHÔNG tồn tại** → dashboard đọc theo snapshot nên thấy "Chưa có báo cáo". GỐC BỆNH
+KIẾN TRÚC: chuỗi đóng gói (writer → builder → snapshot) chỉ chạy trong nhánh POLL
+`/niche/chay/{project}/trang-thai` — tức CHỈ khi tab dashboard còn mở; user đóng
+tab/chuyển trang là run mồ côi: kết quả nằm trên đĩa mà UI im lặng.
+VÁ 3 LỚP (không chỉ chạy tay 1 lần):
+1. `niche_run.can_dong_goi(project)` — so mtime Report/* với snapshot cuối → biết
+   run nào xong mà chưa đóng gói; `dong_goi_nen()` chạy chuỗi trong thread có cờ
+   `_dang_dong_goi` chống trùng.
+2. Route `/niche` TỰ phát hiện + tự đóng gói nền mỗi lần mở trang → đóng tab không
+   còn mất báo cáo; đang gói thì trang tự reload sau 20s.
+3. `niche_run.tinh_trang(project)` đọc THẲNG stdout.log (không cần service): xong
+   hay chưa, mốc thời gian, 12 dòng cuối, và bắt Traceback/ERROR → khối "Nhật ký
+   lần chạy gần nhất" + dải lỗi đỏ ngay trong khối thị trường. Hết cảnh im lặng.
+Chạy bù Space_SPAIN: writer (glm, KÉT) + build + snapshot 2026-08-19 → dashboard
+Space/Spain: PHÁN QUYẾT VÀO CÓ ĐIỀU KIỆN · 60/100, Read report + Audience Canvas
+đủ. Suite 114 pass. (Bẫy phụ: chuỗi lệnh nền qua `&` trong git-bash bị cắt khi lệnh
+cha kết thúc — chạy đồng bộ hoặc dùng thread trong app.)

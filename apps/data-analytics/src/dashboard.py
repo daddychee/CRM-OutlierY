@@ -198,9 +198,18 @@ def trang_niche(request: Request, user: dict = Depends(_lay_user),
         for tt_ma in ([tt] if tt else []):
             project = mapping.get(tt_ma)
             nghia = {}
+            tinh_trang = None
             if project:
+                # Sự cố 19/08: run xong mà tab đã đóng → không ai đóng gói, trang im
+                # lặng. Trang TỰ phát hiện + đóng gói nền, và luôn nói trạng thái.
+                from src import niche_run as _nr
+                if _nr.can_dong_goi(project):
+                    _nr.dong_goi_nen(project)
                 tom_tat = niche_bridge.tom_tat_overall(project, ngay)
                 nghia = niche_bridge.trich_nghia(project, ngay)
+                if not tom_tat.get("co_bao_cao") or _nr.dang_dong_goi(project):
+                    tinh_trang = _nr.tinh_trang(project)
+                    tinh_trang["dang_dong_goi"] = _nr.dang_dong_goi(project)
                 from src import gates as gates_mod
                 gates = gates_mod.trang_thai(ngach_hien["ma"], tt_ma,
                                              tom_tat.get("co_bao_cao", False),
@@ -213,6 +222,7 @@ def trang_niche(request: Request, user: dict = Depends(_lay_user),
                 gates = []
             thi_truong.append({"ma": tt_ma, "ten": ten_tt.get(tt_ma, tt_ma),
                                "project": project, "so": tom_tat, "nghia": nghia,
+                               "tinh_trang": tinh_trang,
                                "bang_chung": _bang_chung(tom_tat),
                                "radar": _radar_points(tom_tat.get("tru_diem") or {}),
                                "scatter": _scatter_beachhead(tom_tat.get("beachhead") or []),

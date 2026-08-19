@@ -435,7 +435,14 @@
             <span class="s" id="run-{{ tt.project }}" style="color:var(--muted);font-size:.78rem"></span>
           </span>
         {% else %}
-          <span class="s" style="color:var(--muted)">{{ tt.so.ly_do }}</span>
+          <span class="s" style="color:var(--muted)">
+            {%- if tt.tinh_trang and tt.tinh_trang.dang_dong_goi -%}
+              🧩 Run đã xong — đang đóng gói báo cáo (writer + build), trang tự tải lại…
+            {%- elif tt.tinh_trang and tt.tinh_trang.co_log and tt.tinh_trang.xong -%}
+              ✅ Pipeline chạy xong lúc {{ tt.tinh_trang.luc }} — chưa đóng gói, đang xử lý…
+            {%- elif tt.tinh_trang and tt.tinh_trang.co_log -%}
+              ⚠ Lần chạy gần nhất {{ tt.tinh_trang.luc }} chưa tới đích — xem nhật ký bên dưới
+            {%- else -%}{{ tt.so.ly_do }}{%- endif -%}</span>
           {% if user.level >= 3 %}
           <span class="nd-act">
             <button class="nd-btn chinh" onclick="moNicheModal('{{ tt.ma }}')">
@@ -445,6 +452,23 @@
           {% endif %}
         {% endif %}
       </div>
+      {# NHẬT KÝ RUN (19/08 — user: "không cho biết vỡ ở đâu"): khi chưa có báo cáo
+         mà đã từng chạy, hiện luôn đuôi log + lỗi bắt được, tự tải lại khi đang gói #}
+      {% if tt.tinh_trang and tt.tinh_trang.co_log %}
+      <div class="nd-bw" style="padding:10px 16px 14px">
+        {% if tt.tinh_trang.loi %}
+        <div class="card" style="border-color:var(--th-d97c6c);color:var(--th-d97c6c);font-size:.78rem">
+          {% for l in tt.tinh_trang.loi %}<div>{{ l | truncate(160) }}</div>{% endfor %}
+        </div>
+        {% endif %}
+        <details><summary style="font-size:.78rem;color:var(--accent);cursor:pointer">Nhật ký lần chạy gần nhất ({{ tt.tinh_trang.luc }})</summary>
+          <pre style="font-size:.7rem;color:var(--muted);white-space:pre-wrap;margin:6px 0 0">{% for l in tt.tinh_trang.duoi %}{{ l }}
+{% endfor %}</pre></details>
+      </div>
+      {% if tt.tinh_trang.dang_dong_goi %}
+      <script>setTimeout(function(){ location.reload(); }, 20000);</script>
+      {% endif %}
+      {% endif %}
       {% if tt.so.co_bao_cao %}
       {% set so = tt.so %}
       {% set nsf = namespace(html=None) %}

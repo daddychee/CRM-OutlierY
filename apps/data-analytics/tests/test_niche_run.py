@@ -177,6 +177,32 @@ def test_kiem_api_gateway_chet_502(client, monkeypatch):
     assert r.status_code == 502 and "KÉT" in r.json()["detail"]
 
 
+def test_tu_dong_goi_khi_run_xong_ma_chua_snapshot(tmp_path, monkeypatch):
+    """Sự cố 19/08 (Space/Spain): run xong nhưng tab đã đóng → không ai đóng gói,
+    dashboard im lặng. can_dong_goi phải phát hiện + tinh_trang phải nói được
+    lần chạy tới đâu."""
+    monkeypatch.setenv("NICHE_PROJECTS_DIR", str(tmp_path))
+    d = tmp_path / "Proj_X"
+    (d / "Report").mkdir(parents=True)
+    (d / "niche-data").mkdir()
+    (d / "Report" / "competitors_report.xlsx").write_bytes(b"x")
+    assert niche_run.can_dong_goi("Proj_X") is True          # có report, chưa snapshot
+    # có snapshot MỚI HƠN report → hết việc
+    snap = d / "snapshots" / "2026-08-19"
+    snap.mkdir(parents=True)
+    (d / "snapshots" / "index.json").write_text(
+        json.dumps([{"id": "2026-08-19", "artifacts": [], "bao_cao": []}]), encoding="utf-8")
+    assert niche_run.can_dong_goi("Proj_X") is False
+    # tình trạng đọc từ đĩa: nói được đã xong + đuôi log + lỗi
+    (d / "niche-data" / "stdout.log").write_text(
+        ">>> [19/20] plan\nTraceback (most recent call last):\n"
+        "✓ Pipeline done — report: x.xlsx\n", encoding="utf-8")
+    t = niche_run.tinh_trang("Proj_X")
+    assert t["co_log"] and t["xong"] is True and t["duoi"]
+    assert any("Traceback" in x for x in t["loi"])
+    assert niche_run.tinh_trang("KhongCo")["co_log"] is False
+
+
 def test_service_chet_502(client, monkeypatch):
     def _no(url, **kw):
         raise niche_run.requests.ConnectionError("refused")
