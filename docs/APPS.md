@@ -62,6 +62,23 @@
 
 ## Nhật ký
 
+- 19/08/2026 — **TÁCH REPO RIÊNG TỪNG APP (bắt đầu: seo-optimize)** — Owner chốt
+  cho nhân sự sửa từ xa ĐÚNG MỘT app; GitHub chỉ phân quyền theo REPO nên monorepo
+  không cấp collaborator từng app được. Khuôn = NESTED REPO như hệ cũ: apps/<slug>
+  có .git riêng GIỮ TRỌN lịch sử V2 (seo: fork b009287 → e3688fa V3 + 353c542 vá
+  rút body trước khi đáp 404 — flaky ConnectionAborted), repo cha gỡ track +
+  .gitignore `apps/seo-optimize/` (5880d80); đường dẫn KHÔNG đổi nên start-all/
+  apps.json/test-all nguyên vẹn; root tests/test_<app>.py GIỮ ở repo cha (test
+  tích hợp nền+luật). LUỒNG NHÂN SỰ TỪ XA: clone repo app → nhánh → push → PR →
+  Owner duyệt/merge trên GitHub → Owner chạy `tools/scripts/cap-nhat-app.ps1
+  <slug>` trên server (fetch → pull --ff-only → pytest app + test root → restart
+  theo cổng đọc từ apps.json; TEST ĐỎ LÀ DỪNG, quay lui git reset --hard HEAD@{1}).
+  Remote đề xuất `daddychee/seo-optimize-v3` (private) — CHỜ Owner: tạo repo +
+  push + mời collaborator (Write, đúng 1 repo) + khóa nhánh main (require PR).
+  Bẫy: clone V2 dính filename-too-long (episodes tên >260 ký tự) → repo app set
+  `core.longpaths true`. HOÃN ai-agent + app còn lại: phiên song song ĐANG có sửa
+  đổi chưa commit trong apps/ai-agent — gỡ track lúc này là phá mạch phiên kia
+  (đúng ca "xung đột hệ thống thật" trong memory); tách dần khi từng mạch lặng.
 - 19/08/2026 — **PLANNERY XONG (app 5/6)** — cổng 9116 (`python server.py
   --no-browser`, stdlib ThreadingHTTPServer; Wd = apps/plannery), giao diện khung,
   `tien_to ["/api"]` (SPA fetch đường tuyệt đối — proxy viết lại byte như V2).
