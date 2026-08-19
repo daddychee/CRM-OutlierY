@@ -78,7 +78,9 @@ $dichVu = @(
        Args = '-m uvicorn main:app --app-dir "apps/app-mau/src" --host 127.0.0.1 --port 9190'
        Wd = $root }
     @{ Ten = 'gateway'; Cong = 9000; Exe = $py
-       Args = '-m uvicorn nen.gateway.main:app --host 127.0.0.1 --port 9000'
+       # 19/08 Owner mo LAN cho team: gateway bind 0.0.0.0 (link http://192.168.1.250:9000)
+       # — app phu van loopback, proxy cat het x-remote-* tu ngoai, firewall chi mo 9000.
+       Args = '-m uvicorn nen.gateway.main:app --host 0.0.0.0 --port 9000'
        Wd = $root }
     @{ Ten = 'ai-agent'; Cong = 9101; Exe = $py
        Args = '-m uvicorn src.main:app --app-dir "apps/ai-agent" --host 127.0.0.1 --port 9101'

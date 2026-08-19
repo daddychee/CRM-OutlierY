@@ -4,7 +4,7 @@
 
 | Cổng | Dịch vụ | Ghi chú |
 |---|---|---|
-| 9000 | Gateway (HTTP) | Cửa vào duy nhất giai đoạn dev |
+| 9000 | Gateway (HTTP) | Cửa vào duy nhất — **MỞ LAN cho team 19/08**: `http://192.168.1.250:9000` (bind 0.0.0.0, firewall rule OUTLIERY-V3-9000 Private/Domain; app phụ vẫn loopback, proxy cắt x-remote-* từ ngoài) |
 | 9443 | Caddy TLS → gateway | Cert tự ký giai đoạn test; domain thật khi thay thế |
 | 9101 | apps/ai-agent | Hỏi–đáp RAG + kho tài liệu + nguồn ngoài |
 | 9102 | apps/data-analytics | Chẩn đoán số liệu |
