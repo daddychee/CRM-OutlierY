@@ -34,3 +34,9 @@ apps/*/tests/du-lieu-mau/
 
 # Repo tham khao (clone ngoai, khong commit)
 _references/
+
+# App co REPO GIT RIENG (tach 19/08 — cap quyen collaborator GitHub theo TUNG app,
+# nhan su chi duoc dung repo app minh): nguon su that la repo con nam ngay trong
+# apps/<slug>/.git; repo cha (nen) khong track code app nay nua. Cac app khac se
+# tach dan sau khi mach phien song song tren monorepo lang xuong.
+apps/seo-optimize/
