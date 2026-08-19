@@ -16,13 +16,20 @@ def _due_any(conn, ws):
     now = time.time()
     return not jobs or any(now >= t for t in jobs.values())
 
+def _hang_cho(w):
+    """Pool GỐC 'Chưa phân loại' của ngách (ngach có, market rỗng) = HÀNG CHỜ
+    thuần (user chốt 19/08): scheduler KHÔNG tracking — không đốt quota cho kênh
+    chưa xếp thị trường. Quét TAY (POST /run) vẫn được — chính là bước lấy tiêu
+    đề để phân loại. Pool chưa nối ngách (ngach rỗng) vẫn quét như cũ."""
+    return bool(w['ngach']) and not w['market']
+
 def _loop(interval):
     budget = float(os.environ.get('RADAR_BUDGET', '120'))
     while True:
         try:
             conn = db.connect()
-            for w in conn.execute('SELECT id, name FROM workspaces').fetchall():
-                if not _due_any(conn, w['id']):
+            for w in conn.execute('SELECT id, name, ngach, market FROM workspaces').fetchall():
+                if _hang_cho(w) or not _due_any(conn, w['id']):
                     continue
                 try:      # cô lập lỗi theo workspace: 1 pool lỗi (vd hết quota) không chặn pool còn lại
                     with LOCK:

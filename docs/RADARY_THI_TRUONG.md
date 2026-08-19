@@ -337,3 +337,12 @@ quy trình 1-2-3 trên dữ liệu mới nhất — vì vậy làm thành TÍNH 
   Sửa: volume gắn cờ `dang_do` cho ngày hôm nay; UI KHÔNG vẽ điểm đó lên
   đường, hiện ghi chú "Hôm nay đang tích: X views — ngày chưa trọn". Test ghim
   cờ. Suite 17 pass, restart 9111.
+
+- 19/08/2026 — **"CHƯA PHÂN LOẠI" = HÀNG CHỜ THUẦN, KHÔNG TRACKING** (user
+  chốt): scheduler BỎ QUA pool gốc của ngách (`_hang_cho`: ngach có + market
+  rỗng) — không đốt quota cho kênh chưa xếp thị trường; kênh chỉ được tracking
+  khi chuyển vào pool thị trường. Quét TAY (POST /run) trên pool gốc VẪN được
+  — chính là bước lấy tiêu đề để phân loại. Pool CHƯA nối ngách (Investigation/
+  Old Investigate/OLD Newbie/Health — ngach rỗng) vẫn quét như cũ tới khi user
+  xử lý. Data Pool hiện ghi chú 🕐 hàng chờ trên pool gốc. Test ghim
+  _hang_cho 3 ca; suite 18 pass; restart 9111.

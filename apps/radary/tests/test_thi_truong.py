@@ -173,6 +173,16 @@ def test_nhan_pool_goc_doi_ten_theo_general(org_moi, goi, mock_de):
                json={"name": "x", "ngach": "N-LIFE-IN", "market": "TT-XX"}).status_code == 422
 
 
+def test_hang_cho_khong_tracking():
+    """Pool gốc 'Chưa phân loại' = HÀNG CHỜ thuần (user 19/08): scheduler bỏ
+    qua (không đốt quota cho kênh chưa xếp); pool thị trường + pool chưa nối
+    ngách vẫn quét; quét TAY vẫn được (bước lấy tiêu đề phân loại)."""
+    from radary import scheduler
+    assert scheduler._hang_cho({'ngach': 'N-LIFE-IN', 'market': ''}) is True
+    assert scheduler._hang_cho({'ngach': 'N-LIFE-IN', 'market': 'TT-US'}) is False
+    assert scheduler._hang_cho({'ngach': '', 'market': ''}) is False
+
+
 # ---------- tách pool: chuyển kênh giữ lịch sử ----------
 
 def _seed_hai_pool(org):

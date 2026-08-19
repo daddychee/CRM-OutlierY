@@ -1300,6 +1300,8 @@ function Pool({ ws, canEdit, role, wss, nganhs, onMoved }) {
           <button class="btn small" disabled=${!canEdit || !goiY} onClick=${nhanNgach}>Nhận "${curW.name}" là ngách này</button>
           <span class="note">(chưa có trong danh sách → Owner tạo niche ở General › Niches trước)</span>
         </div>`}
+        ${curW.ngach && !curW.market && html`<div class="note" style="margin-bottom:8px">
+          🕐 Hàng chờ phân loại — radar KHÔNG tự quét pool này (không tốn quota); kênh chỉ được tracking khi chuyển vào pool thị trường.</div>`}
         ${canMove && others.length > 0 && html`<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
           <span class="note">Chuyển kênh giữa các pool — tích chọn kênh rồi:</span>
           <select value=${dest} onChange=${e => setDest(e.target.value)}>
