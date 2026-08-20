@@ -1,10 +1,22 @@
 # -*- coding: utf-8 -*-
-"""Test tầng dữ liệu kho_video — sổ SQLite + luật quyền bình luận."""
-import sqlite3
+"""Test tầng dữ liệu kho_video — sổ SQLite + liên kết NAS + luật quyền bình luận."""
+import itertools
 
 import pytest
 
 from src import kho_video
+
+_DEM = itertools.count(1)
+
+
+def _them(ten="x", duoi=".mp4", nguoi="an", bo_phan="", noi_dung=b"v"):
+    """Đặt file vào NAS giả rồi liên kết — khuôn thêm video duy nhất từ 20/08."""
+    goc = kho_video.nas_dir()
+    f = goc / f"ban-{next(_DEM)}{duoi}"
+    if duoi in kho_video.DUOI_CHO_PHEP:
+        f.write_bytes(noi_dung)
+    return kho_video.them_video_nas(ten, f.name, nguoi, bo_phan, len(noi_dung),
+                                    f.stat().st_mtime if f.exists() else 0.0)
 
 
 def test_khoi_tao_ghi_schema_version():
@@ -21,24 +33,53 @@ def test_khoi_tao_chay_lai_khong_vo():
     kho_video.khoi_tao()
 
 
-def test_them_video_ma_bat_bien_va_duong_nam_thang():
-    b = kho_video.them_video("Bản dựng Tập 1 — Đảo hoang", ".mp4", "an", "Vận hành", 123)
+def test_them_video_nas_ma_bat_bien_va_chi_tro_duong():
+    """Liên kết = ghi sổ ĐƯỜNG NAS + vân tay; app không sinh file nào."""
+    goc = kho_video.nas_dir()
+    (goc / "xuat").mkdir()
+    f = goc / "xuat" / "LI049_Round 2.mp4"
+    f.write_bytes(b"v" * 10)
+    b = kho_video.them_video_nas("Bản dựng Tập 1", "xuat/LI049_Round 2.mp4", "an",
+                                 "Vận hành", 10, f.stat().st_mtime)
     assert b["ma"] == "VR-0001"
-    # Luật 5: năm/tháng + khuôn tên YYYY-MM-DD_<ma>_<slug>; 'Đ' phải thành 'd'
-    assert b["duong"].count("/") == 2
-    assert "_VR-0001_" in b["ten_file"]
-    assert "dao-hoang" in b["ten_file"]
-    b2 = kho_video.them_video("hai", ".webm", "an", "Vận hành", 1)
-    assert b2["ma"] == "VR-0002"
+    assert b["duong"] == "xuat/LI049_Round 2.mp4"
+    assert b["ten_file"] == "LI049_Round 2.mp4"      # giữ nguyên tên anh em đặt
+    v = kho_video.lay_video("VR-0001")
+    assert v["nguon"] == "nas" and v["mime"] == "video/mp4"
+    assert kho_video.duong_video(v) == f
+    assert not list(kho_video.kho_dir().rglob("*.mp4"))
+    assert kho_video.them_video_nas("hai", "xuat/hai.webm", "an", "", 1, 0)["ma"] == "VR-0002"
 
 
-def test_them_video_duoi_la_bi_chan():
+def test_them_video_nas_duoi_la_bi_chan():
     with pytest.raises(ValueError):
-        kho_video.them_video("x", ".exe", "an", "", 1)
+        kho_video.them_video_nas("x", "xuat/virus.exe", "an", "", 1, 0)
+    with pytest.raises(ValueError):
+        kho_video.them_video_nas("x", "   ", "an", "", 1, 0)
+
+
+def test_duong_video_chan_so_tro_ra_ngoai_goc_nas():
+    """Sổ bị sửa tay trỏ ra ngoài gốc → resolve trả None, không phát bừa file lạ."""
+    b = kho_video.them_video_nas("x", "a.mp4", "an", "", 1, 0)
+    v = dict(kho_video.lay_video(b["ma"]))
+    v["duong"] = "../../Windows/win.ini"
+    assert kho_video.duong_video(v) is None
+    assert kho_video.tinh_trang_file(v)["co"] is False
+
+
+def test_tinh_trang_file_bat_mat_file_va_ghi_de():
+    b = _them(noi_dung=b"v" * 20)
+    v = kho_video.lay_video(b["ma"])
+    tt = kho_video.tinh_trang_file(v)
+    assert tt["co"] is True and tt["doi"] is False
+    kho_video.duong_video(v).write_bytes(b"v" * 999)          # ghi đè bản khác
+    assert kho_video.tinh_trang_file(v)["doi"] is True
+    kho_video.duong_video(v).unlink()                          # xóa hẳn trên NAS
+    assert kho_video.tinh_trang_file(v)["co"] is False
 
 
 def test_doi_trang_thai_va_go_mem():
-    b = kho_video.them_video("x", ".mp4", "an", "", 1)
+    b = _them()
     kho_video.doi_trang_thai(b["ma"], "da_duyet")
     assert kho_video.lay_video(b["ma"])["trang_thai"] == "da_duyet"
     with pytest.raises(ValueError):
@@ -50,7 +91,7 @@ def test_doi_trang_thai_va_go_mem():
 
 
 def test_binh_luan_vong_doi_va_quyen():
-    b = kho_video.them_video("x", ".mp4", "an", "", 1)
+    b = _them()
     bl = kho_video.them_binh_luan(b["ma"], "an", "cắt cảnh này", ts_giay=12.5,
                                   ve_json='{"net": []}')
     assert bl["ts_giay"] == 12.5
@@ -66,7 +107,7 @@ def test_binh_luan_vong_doi_va_quyen():
 
 
 def test_binh_luan_chan_rong_va_ve_json_hong_va_video_ma():
-    b = kho_video.them_video("x", ".mp4", "an", "", 1)
+    b = _them()
     with pytest.raises(ValueError):
         kho_video.them_binh_luan(b["ma"], "an", "   ")
     with pytest.raises(ValueError):
@@ -76,7 +117,7 @@ def test_binh_luan_chan_rong_va_ve_json_hong_va_video_ma():
 
 
 def test_ds_binh_luan_moc_truoc_chung_sau():
-    b = kho_video.them_video("x", ".mp4", "an", "", 1)
+    b = _them()
     kho_video.them_binh_luan(b["ma"], "an", "chung")               # không mốc
     kho_video.them_binh_luan(b["ma"], "an", "muon", ts_giay=30)
     kho_video.them_binh_luan(b["ma"], "an", "som", ts_giay=5)
@@ -85,7 +126,7 @@ def test_ds_binh_luan_moc_truoc_chung_sau():
 
 
 def test_danh_sach_dem_binh_luan_mo():
-    b = kho_video.them_video("x", ".mp4", "an", "", 1)
+    b = _them()
     bl = kho_video.them_binh_luan(b["ma"], "an", "một")
     kho_video.them_binh_luan(b["ma"], "an", "hai")
     kho_video.giai_binh_luan(bl["id"], "an", False)

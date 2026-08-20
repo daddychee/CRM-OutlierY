@@ -360,17 +360,16 @@
     {
       "slug": "video-review",
       "ten": "Video Review",
-      "mo_ta": "Feedback video kiểu Frame.io: upload bản dựng → bình luận gắn mốc thời gian + vẽ chú thích trên khung hình → trạng thái duyệt (In review / Changes requested / Approved). App V3 mới 18/08.",
+      "mo_ta": "Feedback video kiểu Frame.io: chọn bản dựng có sẵn trên NAS (không upload, không chép) → bình luận gắn mốc thời gian + vẽ chú thích trên khung hình → trạng thái duyệt (In review / Changes requested / Approved).",
       "cong": 9114,
       "tien_to": [
         "/danh-sach",
         "/xem",
         "/media",
-        "/upload-video",
         "/api-vr"
       ],
       "health": "/health",
-      "phien_ban": "0.1.0",
+      "phien_ban": "0.2.0",
       "chay": {
         "kieu": "uvicorn",
         "app_dir": "apps/video-review",
@@ -378,13 +377,13 @@
       },
       "du_lieu": [
         {
-          "ten": "video-goc",
+          "ten": "phu-de-va-ban-sao-cu",
           "loai": "kho-file",
           "duong": "data/video-review/kho",
-          "muc_quy": "vang",
+          "muc_quy": "bac",
           "backup": "copy",
           "giu": "vinh-vien",
-          "ghi_chu": "Video bản dựng team upload, kho năm/tháng (Luật 5) — file lớn; xóa trên UI là GỠ MỀM, file giữ nguyên"
+          "ghi_chu": "Từ 20/08/2026 VIDEO KHÔNG nằm ở đây nữa — app LIÊN KẾT thẳng tới file gốc trên NAS (VR_NAS_DIR), NAS chỉ đọc. Thư mục này chỉ còn phụ đề gắn từ app (phu-de/<ma>.srt) + bản sao video đời cũ chưa dọn."
         },
         {
           "ten": "video-review-db",
@@ -393,7 +392,7 @@
           "muc_quy": "vang",
           "backup": "sqlite-snapshot",
           "giu": "vinh-vien",
-          "ghi_chu": "Sổ video + bình luận mốc thời gian + nét vẽ chú thích (schema_version, migrations/)"
+          "ghi_chu": "Sổ video (đường tới file NAS + vân tay dung lượng/ngày sửa) + bình luận mốc thời gian + nét vẽ chú thích. ĐÂY là thứ duy nhất phải backup của app — video gốc do NAS giữ."
         }
       ]
     },
@@ -552,6 +551,7 @@
     {
       "slug": "niche-research",
       "ten": "Niche Research",
+      "gop_vao": "data-analytics",
       "mo_ta": "Nghiên cứu ngách YouTube: quét đối thủ → outlier → gap comment → phán quyết Go/NoGo + agent LLM (namer/auditor/plan/summary). Đưa vào V3 từ hệ cũ 18/08 (APPS.md app 3 — Owner chen lên trước SEO).",
       "cong": 9113,
       "tien_to": [

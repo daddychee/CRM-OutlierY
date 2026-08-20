@@ -9,15 +9,16 @@ Nghiệp vụ: team upload bản dựng video → người khác xem, BÌNH LU�
    tính năng bằng CỜ X-Remote-Actions (Permissions v2, fail-closed):
    'duyet' = đổi trạng thái video (mặc định Leader+) · 'xoa' = gỡ video (Manager+).
    Xem/bình luận/upload = mọi người có claims ('vao' min_level 1).
-2. DỮ LIỆU (Luật 6): sổ SQLite data/video-review/db + file video
-   data/video-review/kho/<năm>/<tháng>/ (Luật 5). Xóa = GỠ MỀM, file giữ nguyên.
+2. DỮ LIỆU (Luật 6): sổ SQLite data/video-review/db. VIDEO KHÔNG NẰM TRONG APP —
+   app LIÊN KẾT tới file gốc trên NAS (VR_NAS_DIR), sổ chỉ giữ đường tương đối
+   (user chốt 20/08: anh em up NAS rồi đưa sang app, không chép bản thứ hai).
+   NAS chỉ ĐỌC — xóa video vẫn là GỠ MỀM, không bao giờ đụng file trên NAS.
 3. VIDEO QUA PROXY: proxy gateway đọc TRỌN body phản hồi vào RAM (trừ SSE) →
    /media trả 206 TỪNG KHÚC ≤ VR_KHUC_MB (mặc định 8MB), trình duyệt tự xin khúc
    kế tiếp — tua được mà gateway không phình RAM. KHÔNG sửa proxy.
-4. Upload: đọc từng khúc + đếm dung lượng (trần VR_MAX_MB, mặc định 2048), ghi file
-   tạm rồi os.replace (nguyên tử). LƯU Ý đã biết: gateway buffer body request vào
-   RAM → file quá lớn vẫn nặng RAM ở proxy; trần 2GB là chấp nhận được trên LAN,
-   nâng nữa phải dạy proxy stream request (việc treo, ghi CLAUDE.md app).
+4. THÊM VIDEO = duyệt NAS server-side rồi liên kết — tức thì, không upload, không
+   chép byte nào, không trần dung lượng (đường upload trình duyệt đã GỠ 20/08).
+   File NAS bị xóa/ghi đè sau khi liên kết → app so vân tay và CẢNH BÁO, không tự sửa.
 
 Chạy (từ ROOT): python -m uvicorn src.main:app --app-dir "apps/video-review" --port 9114
 """
@@ -26,19 +27,18 @@ from __future__ import annotations
 import json
 import os
 import re
-import tempfile
 from pathlib import Path
 from urllib.parse import unquote
 
-from fastapi import (BackgroundTasks, Depends, FastAPI, Form, Header, HTTPException,
-                     Request, UploadFile)
+from fastapi import (Depends, FastAPI, Form, Header, HTTPException, Request,
+                     UploadFile)
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from fastapi.templating import Jinja2Templates
 
-from src import kho_video, nap_nas, upload_khuc
+from src import kho_video, nap_nas
 
 _APP_DIR = Path(__file__).resolve().parents[1]
-PHIEN_BAN = "0.1.0"
+PHIEN_BAN = "0.2.0"
 app = FastAPI(title="Video Review v3")
 from nen.common.sidebar import ctx_sidebar  # noqa: E402 — cờ sidebar UI_FLOW.md mục 2
 templates = Jinja2Templates(directory=str(_APP_DIR / "src" / "templates"),
@@ -133,73 +133,12 @@ async def danh_sach(request: Request, user: dict = Depends(khu_cua_toi)):
             v["hien_thi"] = "cho_review" if v["so_tong"] == 0 else "dang_review"
         else:
             v["hien_thi"] = v["trang_thai"]
+    for v in cac_video:
+        # vân tay file gốc: mất file / bị ghi đè đều phải NỔI ngay ở danh sách
+        v["tt_file"] = kho_video.tinh_trang_file(v)
     return templates.TemplateResponse(request, "danh_sach.html", {
         "cac_video": cac_video, "user": user,
-        "max_gb": int(os.environ.get("VR_MAX_MB", "20480")) // 1024,
-        "nas_bat": nap_nas.nas_dir() is not None,
-        "nas_max_gb": int(os.environ.get("VR_NAS_MAX_MB", "20480")) // 1024})
-
-
-def _luu_file_tai_len(f: UploadFile, dich: Path, tran_bytes: int) -> int:
-    """Chép upload TỪNG KHÚC vào file tạm cùng thư mục rồi os.replace (nguyên tử);
-    vượt trần → dọn file tạm + 413. Trả tổng byte. Hàm SYNC — route đẩy threadpool."""
-    dich.parent.mkdir(parents=True, exist_ok=True)
-    tong = 0
-    fd, tam = tempfile.mkstemp(dir=dich.parent, suffix=".tam")
-    try:
-        with os.fdopen(fd, "wb") as ra:
-            while True:
-                khuc = f.file.read(1024 * 1024)
-                if not khuc:
-                    break
-                tong += len(khuc)
-                if tong > tran_bytes:
-                    raise HTTPException(413, f"File quá {tran_bytes // (1024*1024)}MB.")
-                ra.write(khuc)
-        os.replace(tam, dich)
-    except BaseException:
-        try:
-            os.unlink(tam)
-        except OSError:
-            pass
-        raise
-    return tong
-
-
-@app.post("/upload-video")
-async def upload_video(request: Request, file: UploadFile,
-                       ten: str = Form(""), phu_de: UploadFile | None = None,
-                       user: dict = Depends(khu_cua_toi)):
-    """Đường form MỘT PHÁT — chỉ còn là fallback khi JS chết. Trần RIÊNG
-    VR_MAX_FORM_MB (2GB): cả file đi một request nên proxy buffer trọn vào RAM —
-    file lớn phải đi đường chunked /api-vr/upload-* (JS tự dùng)."""
-    from starlette.concurrency import run_in_threadpool
-    duoi = Path(file.filename or "").suffix.lower()
-    if duoi not in kho_video.DUOI_CHO_PHEP:
-        raise HTTPException(422, "Chỉ nhận video mp4 / webm / mov / m4v.")
-    ten = (ten or "").strip() or Path(file.filename or "video").stem
-    tran = int(os.environ.get("VR_MAX_FORM_MB", "2048")) * 1024 * 1024
-    # phụ đề tùy chọn: kiểm TRƯỚC khi ghi sổ video — file hỏng thì 422 ngay,
-    # không để lại video thiếu phụ đề mà user tưởng đã gắn
-    chu_phu_de, duoi_phu_de = None, None
-    if phu_de is not None and phu_de.filename:
-        duoi_phu_de = Path(phu_de.filename).suffix.lower()
-        if duoi_phu_de not in kho_video.DUOI_PHU_DE:
-            raise HTTPException(422, "Chỉ nhận phụ đề .srt / .vtt.")
-        chu_phu_de = _kiem_phu_de(await phu_de.read())
-    ban_ghi = kho_video.them_video(ten, duoi, user["ten"], user["bo_phan"], 0)
-    tong = await run_in_threadpool(_luu_file_tai_len, file,
-                                   ban_ghi["duong_tuyet_doi"], tran)
-    # cập nhật dung lượng thật sau khi chép xong
-    conn = kho_video.ket_noi()
-    try:
-        conn.execute("UPDATE video SET kich_thuoc=? WHERE ma=?", (tong, ban_ghi["ma"]))
-        conn.commit()
-    finally:
-        conn.close()
-    if chu_phu_de is not None:
-        kho_video.ghi_phu_de({"duong": ban_ghi["duong"]}, chu_phu_de, duoi_phu_de)
-    return RedirectResponse(f"/xem/{ban_ghi['ma']}", status_code=303)
+        "nas_bat": nap_nas.nas_dir() is not None})
 
 
 # ---------- trang review ----------
@@ -214,9 +153,12 @@ def _video_song(ma: str) -> dict:
 @app.get("/xem/{ma}", response_class=HTMLResponse)
 async def xem(request: Request, ma: str, user: dict = Depends(khu_cua_toi)):
     video = _video_song(ma)
+    _, pd_nguon = kho_video.phu_de_tim(video)
     return templates.TemplateResponse(request, "xem.html", {
         "video": video, "user": user,
-        "co_phu_de": kho_video.duong_phu_de(video) is not None,
+        "co_phu_de": pd_nguon != "",
+        "pd_nguon": pd_nguon,                    # app|nas|kho — NAS thì app không gỡ được
+        "tt_file": kho_video.tinh_trang_file(video),
         "cac_bl": kho_video.ds_binh_luan(ma)})   # nhúng vào JS qua |tojson (script-safe)
 
 
@@ -250,7 +192,9 @@ async def api_phu_de_xoa(ma: str, user: dict = Depends(lay_user)):
     video = _video_song(ma)
     if user["ten"] != video["nguoi_tao"]:
         raise HTTPException(403, "Chỉ người đăng video được gỡ phụ đề.")
-    kho_video.xoa_phu_de(video)
+    if not kho_video.xoa_phu_de(video):
+        raise HTTPException(409, "Phụ đề này là file .srt nằm cạnh video trên NAS — "
+                                 "app chỉ đọc, muốn bỏ thì gỡ file đó trên NAS.")
     return {"ok": True}
 
 
@@ -275,9 +219,9 @@ async def media(ma: str, user: dict = Depends(lay_user), range: str = Header("")
     video = kho_video.lay_video(ma)
     if video is None or video["trang_thai"] == "da_xoa":
         raise HTTPException(404, "Không có video này.")
-    duong = kho_video.kho_dir() / video["duong"]
-    if not duong.is_file():
-        raise HTTPException(404, "File video không còn trong kho.")
+    duong = kho_video.duong_video(video)
+    if duong is None or not duong.is_file():
+        raise HTTPException(404, "File gốc không còn ở nơi đã liên kết (NAS).")
     size = duong.stat().st_size
     khuc = int(os.environ.get("VR_KHUC_MB", "8")) * 1024 * 1024
 
@@ -302,86 +246,30 @@ async def media(ma: str, user: dict = Depends(lay_user), range: str = Header("")
                              "Content-Range": f"bytes {dau}-{cuoi}/{size}"})
 
 
-# ---------- upload TỪNG KHÚC (file 2-10GB — xem src/upload_khuc.py) ----------
-
-@app.post("/api-vr/upload-bat-dau")
-async def api_up_bat_dau(ten_file: str = Form(...), kich_thuoc: int = Form(...),
-                         ten: str = Form(""), user: dict = Depends(khu_cua_toi)):
-    try:
-        pid = upload_khuc.bat_dau(ten_file, kich_thuoc, ten, user["ten"], user["bo_phan"])
-    except OverflowError as e:
-        raise HTTPException(413, str(e))
-    except ValueError as e:
-        raise HTTPException(422, str(e))
-    return {"phien": pid, "khuc_mb": int(os.environ.get("VR_KHUC_UP_MB", "64"))}
-
-
-@app.post("/api-vr/upload-khuc/{pid}")
-async def api_up_khuc(pid: str, request: Request, offset: int,
-                      user: dict = Depends(lay_user)):
-    from starlette.concurrency import run_in_threadpool
-    du_lieu = await request.body()
-    try:
-        da_nhan = await run_in_threadpool(upload_khuc.ghi_khuc, pid, user["ten"],
-                                          offset, du_lieu)
-    except KeyError:
-        raise HTTPException(404, "Không có phiên upload này.")
-    except OverflowError as e:
-        raise HTTPException(413, str(e))
-    except ValueError as e:
-        raise HTTPException(409, str(e))
-    return {"da_nhan": da_nhan}
-
-
-@app.post("/api-vr/upload-xong/{pid}")
-async def api_up_xong(pid: str, user: dict = Depends(lay_user)):
-    try:
-        ban_ghi = upload_khuc.hoan_tat(pid, user["ten"])
-    except KeyError:
-        raise HTTPException(404, "Không có phiên upload này.")
-    except ValueError as e:
-        raise HTTPException(409, str(e))
-    return {"ma": ban_ghi["ma"]}
-
-
-@app.post("/api-vr/upload-huy/{pid}")
-async def api_up_huy(pid: str, user: dict = Depends(lay_user)):
-    upload_khuc.huy(pid, user["ten"])
-    return {"ok": True}
-
-
-# ---------- nạp từ NAS (đường file lớn — xem src/nap_nas.py) ----------
+# ---------- thêm video từ NAS (liên kết, không chép — xem src/nap_nas.py) ----------
 
 @app.get("/api-vr/nas")
 async def api_nas_liet_ke(duong: str = "", user: dict = Depends(lay_user)):
     try:
         return nap_nas.liet_ke(duong)
     except (FileNotFoundError, PermissionError):
-        # ngoài-root và không-tồn-tại trả CÙNG 404 — không lộ cây thư mục ngoài root
+        # ngoài-gốc và không-tồn-tại trả CÙNG 404 — không lộ cây thư mục ngoài gốc
         raise HTTPException(404, "Không có thư mục này.")
 
 
-@app.post("/api-vr/nas-nap")
-async def api_nas_nap(bg: BackgroundTasks, duong: str = Form(...), ten: str = Form(""),
-                      user: dict = Depends(khu_cua_toi)):
+@app.post("/api-vr/nas-lien-ket")
+async def api_nas_lien_ket(duong: str = Form(...), ten: str = Form(""),
+                           user: dict = Depends(khu_cua_toi)):
+    """Thêm video = ghi sổ đường file NAS. Không tác vụ nền, không % — tức thì."""
     try:
-        tid = nap_nas.tao_tac_vu(duong, ten.strip(), user["ten"], user["bo_phan"])
-    except OverflowError as e:
-        raise HTTPException(413, str(e))
+        ban_ghi = nap_nas.lien_ket(duong, ten, user["ten"], user["bo_phan"])
+    except FileExistsError as e:
+        raise HTTPException(409, f"File này đã có trong app ({e.args[0]}).")
     except ValueError as e:
         raise HTTPException(422, str(e))
     except (FileNotFoundError, PermissionError):
         raise HTTPException(404, "Không thấy file trên NAS.")
-    bg.add_task(nap_nas.chay_nap, tid)          # hàm SYNC → threadpool, không khóa loop
-    return {"task_id": tid}
-
-
-@app.get("/api-vr/nas-tien-do/{tid}")
-async def api_nas_tien_do(tid: str, user: dict = Depends(lay_user)):
-    tt = nap_nas.trang_thai(tid, user["ten"])
-    if tt is None:
-        raise HTTPException(404, "Không có tác vụ này.")
-    return tt
+    return {"ma": ban_ghi["ma"]}
 
 
 # ---------- API bình luận + trạng thái ----------
@@ -448,7 +336,7 @@ async def api_trang_thai(ma: str = Form(...), trang_thai: str = Form(...),
 @app.post("/api-vr/xoa-video")
 async def api_xoa_video(ma: str = Form(...), user: dict = Depends(yeu_cau_xoa)):
     try:
-        kho_video.doi_trang_thai(ma, "da_xoa")   # GỠ MỀM — file giữ nguyên trong kho
+        kho_video.doi_trang_thai(ma, "da_xoa")   # GỠ MỀM — file gốc trên NAS KHÔNG bị đụng
     except KeyError:
         raise HTTPException(404, "Không có video này.")
     return {"ok": True}

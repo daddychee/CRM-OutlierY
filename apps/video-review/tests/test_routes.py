@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-"""Test route Video Review — claims + RBAC cờ hành động + upload + Range từng khúc."""
-import io
+"""Test route Video Review — claims + RBAC cờ hành động + liên kết NAS + Range từng khúc."""
+import itertools
 from urllib.parse import quote
 
 import pytest
@@ -22,10 +22,24 @@ def h(ten="an", level=2, actions="", dept="Vận hành Sản xuất"):
             "X-Remote-Dept": quote(dept), "X-Remote-Actions": actions}
 
 
-def _up(client, ten="ban dung 1", noi_dung=b"x" * 64, duoi=".mp4", **hd):
-    return client.post("/upload-video", data={"ten": ten},
-                       files={"file": (f"a{duoi}", io.BytesIO(noi_dung), "video/mp4")},
-                       headers=h(**hd), follow_redirects=False)
+_DEM = itertools.count(1)
+
+
+def tao_file_nas(noi_dung=b"x" * 64, duoi=".mp4", thu_muc="xuat") -> str:
+    """Đặt một file vào NAS giả, trả ĐƯỜNG TƯƠNG ĐỐI để liên kết."""
+    goc = kho_video.nas_dir()
+    d = goc / thu_muc if thu_muc else goc
+    d.mkdir(parents=True, exist_ok=True)
+    f = d / f"ban-dung-{next(_DEM)}{duoi}"
+    f.write_bytes(noi_dung)
+    return f.relative_to(goc.resolve()).as_posix()
+
+
+def _them(client, ten="ban dung 1", noi_dung=b"x" * 64, duoi=".mp4", **hd):
+    """Thêm video = liên kết file có sẵn trên NAS (không upload byte nào)."""
+    rel = tao_file_nas(noi_dung, duoi)
+    return client.post("/api-vr/nas-lien-ket", data={"duong": rel, "ten": ten},
+                       headers=h(**hd))
 
 
 def test_health_khong_can_claims(client):
@@ -38,45 +52,51 @@ def test_khong_claims_bi_401(client):
         assert client.get(duong).status_code == 401, duong
 
 
-def test_upload_ghi_kho_va_hien_danh_sach(client):
-    r = _up(client, ten="Tập 1")
-    assert r.status_code == 303 and r.headers["location"] == "/xem/VR-0001"
+def test_lien_ket_khong_chep_file_vao_app(client):
+    """Bất biến 20/08: sổ chỉ TRỎ tới file NAS — kho app không sinh bản sao nào."""
+    r = _them(client, ten="Tập 1")
+    assert r.status_code == 200 and r.json()["ma"] == "VR-0001"
     v = kho_video.lay_video("VR-0001")
-    assert (kho_video.kho_dir() / v["duong"]).is_file()
-    assert v["kich_thuoc"] == 64
+    assert v["nguon"] == "nas" and v["kich_thuoc"] == 64
+    assert kho_video.duong_video(v).is_file()
+    assert not list(kho_video.kho_dir().rglob("*.mp4"))   # KHÔNG chép vào app
     trang = client.get("/danh-sach", headers=h())
     assert trang.status_code == 200 and "Tập 1" in trang.text
 
 
-def test_upload_chan_duoi_la_va_qua_tran(client, monkeypatch):
-    assert _up(client, duoi=".exe").status_code == 422
-    monkeypatch.setenv("VR_MAX_FORM_MB", "1")   # trần RIÊNG đường form một phát
-    r = _up(client, noi_dung=b"x" * (1024 * 1024 + 1))
-    assert r.status_code == 413
-    # file tạm vượt trần phải được dọn — kho không còn file .tam nào
-    assert not list(kho_video.kho_dir().rglob("*.tam"))
+def test_lien_ket_chan_duoi_la_file_ma_va_them_trung(client):
+    rel = tao_file_nas(b"x", ".exe")
+    assert client.post("/api-vr/nas-lien-ket", data={"duong": rel},
+                       headers=h()).status_code == 422
+    assert client.post("/api-vr/nas-lien-ket", data={"duong": "xuat/khong-co.mp4"},
+                       headers=h()).status_code == 404
+    rel2 = tao_file_nas()
+    assert client.post("/api-vr/nas-lien-ket", data={"duong": rel2},
+                       headers=h()).status_code == 200
+    r = client.post("/api-vr/nas-lien-ket", data={"duong": rel2}, headers=h())
+    assert r.status_code == 409 and "VR-0001" in r.json()["detail"]
+    assert len(kho_video.danh_sach_video()) == 1
 
 
 def test_danh_sach_trang_thai_hien_thi_cho_review(client):
-    """Video up lên CHƯA ai bình luận = Awaiting review; có bình luận = In review;
+    """Video mới thêm CHƯA ai bình luận = Awaiting review; có bình luận = In review;
     Approved giữ nhãn thật (logic hiển thị user chốt 18/08)."""
-    _up(client, ten="chưa ai xem")
-    _up(client, ten="đã có góp ý")
-    _up(client, ten="đã duyệt")
+    _them(client, ten="chưa ai xem")
+    _them(client, ten="đã có góp ý")
+    _them(client, ten="đã duyệt")
     kho_video.them_binh_luan("VR-0002", "binh", "note")
     kho_video.doi_trang_thai("VR-0003", "da_duyet")
     trang = client.get("/danh-sach", headers=h()).text
     assert 'data-tt="cho_review"' in trang and "Awaiting review" in trang
     assert 'data-tt="dang_review"' in trang
     assert 'data-tt="da_duyet"' in trang
-    # bình luận đã giải vẫn tính là "đã có người review" — không rơi lại cho_review
     bl = kho_video.ds_binh_luan("VR-0002")[0]
     kho_video.giai_binh_luan(bl["id"], "binh", False)
     assert 'data-tt="dang_review"' in client.get("/danh-sach", headers=h()).text
 
 
 def test_trang_xem_nhung_binh_luan(client):
-    _up(client)
+    _them(client)
     kho_video.them_binh_luan("VR-0001", "an", "note <script>alert(1)</script>", ts_giay=3)
     r = client.get("/xem/VR-0001", headers=h())
     assert r.status_code == 200
@@ -86,34 +106,52 @@ def test_trang_xem_nhung_binh_luan(client):
 
 def test_media_range_tung_khuc(client, monkeypatch):
     monkeypatch.setenv("VR_KHUC_MB", "1")
-    _up(client, noi_dung=b"a" * (2 * 1024 * 1024))    # 2MB, khúc 1MB
-    # mở đầu không giới hạn cuối → bị CẮT còn 1 khúc (proxy không phình RAM)
+    _them(client, noi_dung=b"a" * (2 * 1024 * 1024))  # 2MB trên NAS, khúc 1MB
     r = client.get("/media/VR-0001", headers={**h(), "Range": "bytes=0-"})
     assert r.status_code == 206
     assert r.headers["content-range"] == f"bytes 0-{1024*1024-1}/{2*1024*1024}"
     assert len(r.content) == 1024 * 1024
-    # khúc giữa chừng đúng offset; range ngoài file → 416
     r2 = client.get("/media/VR-0001", headers={**h(), "Range": f"bytes={2*1024*1024-3}-"})
     assert r2.status_code == 206 and len(r2.content) == 3
     assert client.get("/media/VR-0001",
                       headers={**h(), "Range": "bytes=9999999-"}).status_code == 416
-    # không Range (nút tải về) → trọn file 200
     r3 = client.get("/media/VR-0001", headers=h())
     assert r3.status_code == 200 and len(r3.content) == 2 * 1024 * 1024
 
 
+def test_file_nas_bien_mat_thi_bao_ro_khong_no(client):
+    """Bản dựng bị xóa/đổi tên trên NAS: danh sách + trang xem vẫn mở, có cảnh báo;
+    chỉ /media mới 404. Bình luận không mất theo."""
+    _them(client, ten="mat file")
+    v = kho_video.lay_video("VR-0001")
+    kho_video.them_binh_luan("VR-0001", "an", "giữ lại note", ts_giay=1)
+    kho_video.duong_video(v).unlink()
+    assert "file missing" in client.get("/danh-sach", headers=h()).text
+    xem = client.get("/xem/VR-0001", headers=h())
+    assert xem.status_code == 200 and "Source file not found" in xem.text
+    assert client.get("/media/VR-0001", headers=h()).status_code == 404
+    assert kho_video.ds_binh_luan("VR-0001")[0]["noi_dung"] == "giữ lại note"
+
+
+def test_file_nas_bi_ghi_de_thi_canh_bao_lech_moc(client):
+    """Editor xuất bản mới ĐÈ cùng tên → mốc giây bình luận cũ lệch: phải cảnh báo."""
+    _them(client)
+    v = kho_video.lay_video("VR-0001")
+    kho_video.duong_video(v).write_bytes(b"y" * 999)     # bản khác, cùng tên
+    assert "file changed" in client.get("/danh-sach", headers=h()).text
+    assert "File changed on the NAS" in client.get("/xem/VR-0001", headers=h()).text
+
+
 def test_api_binh_luan_vong_doi(client):
-    _up(client)
+    _them(client)
     r = client.post("/api-vr/binh-luan", headers=h(),
                     json={"video_ma": "VR-0001", "noi_dung": "cắt 0:03", "ts_giay": 3.2,
                           "ve": {"w": 1, "h": 1, "net": [{"mau": "#ff5f56", "diem": [[0, 0], [1, 1]]}]}})
     assert r.status_code == 200
     bl_id = r.json()["id"]
     assert client.get("/api-vr/binh-luan/VR-0001", headers=h()).json()[0]["ts_giay"] == 3.2
-    # người khác level thường không giải được; chính chủ được
     assert client.post(f"/api-vr/binh-luan/{bl_id}/giai", headers=h(ten="binh")).status_code == 403
     assert client.post(f"/api-vr/binh-luan/{bl_id}/giai", headers=h()).status_code == 200
-    # leader (cờ duyet) mở lại + xóa được dù không phải chính chủ
     assert client.post(f"/api-vr/binh-luan/{bl_id}/mo-lai",
                        headers=h(ten="chi", actions="duyet")).status_code == 200
     assert client.post(f"/api-vr/binh-luan/{bl_id}/xoa",
@@ -123,7 +161,7 @@ def test_api_binh_luan_vong_doi(client):
 
 
 def test_trang_thai_can_co_duyet(client):
-    _up(client)
+    _them(client)
     du = {"ma": "VR-0001", "trang_thai": "da_duyet"}
     assert client.post("/api-vr/trang-thai", data=du, headers=h()).status_code == 403
     assert client.post("/api-vr/trang-thai", data=du,
@@ -133,14 +171,14 @@ def test_trang_thai_can_co_duyet(client):
                        headers=h(actions="duyet")).status_code == 422  # gỡ đi đường xoa riêng
 
 
-def test_xoa_video_can_co_xoa_va_la_go_mem(client):
-    _up(client)
+def test_xoa_video_can_co_xoa_va_khong_dung_file_nas(client):
+    _them(client)
+    v = kho_video.lay_video("VR-0001")
     assert client.post("/api-vr/xoa-video", data={"ma": "VR-0001"},
                        headers=h(actions="duyet")).status_code == 403
     assert client.post("/api-vr/xoa-video", data={"ma": "VR-0001"},
                        headers=h(level=4, actions="duyet,xoa")).status_code == 200
-    # gỡ mềm: trang + media 404 nhưng FILE còn trong kho (còn đường cứu)
+    # gỡ mềm: trang + media 404 nhưng FILE TRÊN NAS còn nguyên (app chỉ đọc)
     assert client.get("/xem/VR-0001", headers=h()).status_code == 404
     assert client.get("/media/VR-0001", headers=h()).status_code == 404
-    v = kho_video.lay_video("VR-0001")
-    assert (kho_video.kho_dir() / v["duong"]).is_file()
+    assert kho_video.duong_video(v).is_file()

@@ -10,22 +10,6 @@
     border-radius:9px;background:var(--th-182233);color:var(--ink);font-size:14px;font-family:inherit}
   .vr-up input[type=file]{font-size:13px;color:var(--muted);max-width:260px}
   .vr-hint{font-size:12.5px;color:var(--muted);margin-top:8px}
-  /* dropzone kéo-thả (JS thêm class .js vào form → giấu input file thô) */
-  .tha-vung{display:flex;flex-direction:column;align-items:center;gap:7px;
-    border:1.5px dashed var(--th-31425e);border-radius:14px;padding:26px 16px;cursor:pointer;
-    text-align:center;background:var(--th-141c2b);transition:border-color .15s,background .15s;
-    margin-bottom:12px}
-  .tha-vung:hover,.tha-vung.keo{border-color:var(--accent);background:var(--th-16263f)}
-  .tha-vung.co-file{border-style:solid;border-color:var(--accent)}
-  .tha-ic{width:34px;height:34px;stroke:var(--muted);stroke-width:1.6;fill:none;
-    stroke-linecap:round;stroke-linejoin:round;transition:stroke .15s}
-  .tha-vung:hover .tha-ic,.tha-vung.keo .tha-ic,.tha-vung.co-file .tha-ic{stroke:var(--accent)}
-  .tha-chinh{font-size:14.5px;overflow-wrap:anywhere}
-  .tha-chinh span{color:var(--muted)}
-  .tha-phu{font-size:12.5px;color:var(--muted)}
-  #form-up.js #o-file{display:none}
-  .pd-hang{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
-  #form-up.js #o-srt{display:none}
   table.vr{width:100%;border-collapse:collapse;font-size:14px}
   table.vr th{text-align:left;font-size:12px;color:var(--muted);text-transform:uppercase;
     letter-spacing:.04em;padding:8px 10px;border-bottom:1px solid var(--line)}
@@ -38,6 +22,12 @@
   .chip.da_duyet{background:rgba(90,170,120,.16);color:#5aaa78}
   html[data-theme="light"] .chip.da_duyet{color:#2e7d4f}
   .vr-bl{font-size:12.5px;color:var(--muted)}
+  .vr-duong{font-size:11.5px;color:var(--muted);opacity:.85;overflow-wrap:anywhere}
+  .canh{display:inline-block;font-size:11.5px;font-weight:600;border-radius:999px;
+    padding:1px 8px;white-space:nowrap;margin-left:6px}
+  .canh.mat{background:rgba(217,124,108,.16);color:var(--th-d97c6c)}
+  .canh.doi{background:rgba(214,166,74,.16);color:#d6a64a}
+  html[data-theme="light"] .canh.doi{color:#8a6413}
   /* hàng lọc: tab trạng thái + tìm + Mine only */
   .loc-hang{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:4px 0 14px}
   .loc-tab{background:var(--th-182233);border:1px solid var(--chip-line);border-radius:999px;
@@ -64,51 +54,28 @@
   .nas-muc.chon{background:var(--th-223050);font-weight:600}
   .nas-muc .mb{margin-left:auto;color:var(--muted);font-size:12px}
   .nas-trong{padding:10px 12px;font-size:13px;color:var(--muted)}
-  .nas-thanh{height:10px;border-radius:6px;background:var(--th-182233);border:1px solid var(--chip-line);
-    overflow:hidden;margin-top:10px}
-  .nas-thanh div{height:100%;width:0;background:var(--accent);transition:width .4s}
   #nas-loi{color:var(--th-d97c6c);font-size:13px;margin-top:8px;display:none}
 {% endblock %}
 
 {% block noi_dung %}
-<div class="vr-card">
-  <h2>Upload a cut for review</h2>
-  <form id="form-up" method="post" action="/upload-video" enctype="multipart/form-data">
-    <label class="tha-vung" id="tha-vung" for="o-file">
-      <svg class="tha-ic" viewBox="0 0 24 24"><path d="M12 16V4"/><path d="m7 9 5-5 5 5"/><path d="M20 16v3a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-3"/></svg>
-      <div class="tha-chinh" id="tha-chinh"><b>Drop your video here</b> <span>or click to browse</span></div>
-      <div class="tha-phu" id="tha-phu">mp4 / webm / m4v / mov · up to {{ max_gb }}GB</div>
-    </label>
-    <input type="file" name="file" id="o-file" accept=".mp4,.m4v,.webm,.mov,video/*" required>
-    <div class="pd-hang">
-      <input type="file" name="phu_de" id="o-srt" accept=".srt,.vtt">
-      <button class="nut phu" type="button" id="nut-srt" hidden>+ Subtitles (.srt · optional)</button>
-      <span class="vr-hint" id="srt-ten" style="margin-top:0"></span>
-    </div>
-    <div class="vr-up">
-      <input type="text" name="ten" id="o-ten" placeholder="Video name (optional — file name used if empty)" maxlength="120">
-      <button class="nut" type="submit" id="nut-up">Upload</button>
-    </div>
-  </form>
-  {% if nas_bat %}
-  <div class="vr-hint">Big export already sitting on NAS? <b>Load from NAS</b> below — the server copies it directly, no upload.</div>
-  {% endif %}
-  <div class="nas-thanh" id="up-thanh" style="display:none"><div id="up-thanh-ruot"></div></div>
-  <div id="up-loi" style="color:var(--th-d97c6c);font-size:13px;margin-top:8px;display:none"></div>
-</div>
-
 {% if nas_bat %}
 <div class="vr-card">
-  <h2>Load from NAS <span style="font-weight:400;font-size:12.5px;color:var(--muted)">
-    — for big exports (up to {{ nas_max_gb }}GB): pick the file, the server copies it directly, no browser upload</span></h2>
+  <h2>Add a cut from NAS <span style="font-weight:400;font-size:12.5px;color:var(--muted)">
+    — pick the export your team already put on the NAS; nothing is copied, review starts right away</span></h2>
   <div class="nas-vet" id="nas-vet"></div>
   <div class="nas-ds" id="nas-ds"><div class="nas-trong">Loading…</div></div>
   <div class="vr-up">
     <input type="text" id="nas-ten" placeholder="Video name (optional — file name used if empty)" maxlength="120">
-    <button class="nut" type="button" id="nas-nut" disabled>Load selected file</button>
+    <button class="nut" type="button" id="nas-nut" disabled>Add to review</button>
   </div>
-  <div class="nas-thanh" id="nas-thanh" style="display:none"><div id="nas-thanh-ruot"></div></div>
+  <div class="vr-hint">Drop a matching <b>.srt</b> next to the video on the NAS and it shows up as subtitles automatically. The app never writes to the NAS.</div>
   <div id="nas-loi"></div>
+</div>
+{% else %}
+<div class="vr-card">
+  <h2>NAS folder not set</h2>
+  <div class="vr-hint">Videos are played straight from the NAS — an Owner needs to set
+    <b>VR_NAS_DIR</b> in the server .env and restart the app before cuts can be added.</div>
 </div>
 {% endif %}
 
@@ -128,7 +95,10 @@
   {% for v in cac_video %}
     <tr data-tt="{{ v.hien_thi }}" data-ten="{{ v.ten }}" data-nguoi="{{ v.nguoi_tao }}">
       <td><a href="/xem/{{ v.ma }}"><b>{{ v.ten }}</b></a>
-        <span class="vr-bl">· {{ v.ma }}</span></td>
+        <span class="vr-bl">· {{ v.ma }}</span>
+        {%- if not v.tt_file.co %}<span class="canh mat">file missing</span>
+        {%- elif v.tt_file.doi %}<span class="canh doi">file changed</span>{% endif %}
+        <div class="vr-duong">{% if v.nguon == 'nas' %}NAS · {{ v.duong }}{% else %}copy in app store · {{ v.ten_file }}{% endif %}</div></td>
       <td><span class="chip {{ v.hien_thi }}">{{ NHAN_HIEN_THI.get(v.hien_thi, v.hien_thi) }}</span></td>
       <td>{{ v.nguoi_tao }}</td>
       <td class="vr-bl">{{ v.tao_luc[:10] }}</td>
@@ -140,7 +110,7 @@
 </table>
 <div id="khong-khop">No videos match this filter.</div>
 {% else %}
-<p style="color:var(--muted)">No videos yet — upload the first cut above.</p>
+<p style="color:var(--muted)">No videos yet — pick the first cut from the NAS above.</p>
 {% endif %}
 {% endblock %}
 
@@ -190,139 +160,6 @@
   hang.querySelector('[data-loc="' + ((dem.cho_review || 0) > 0 ? "cho_review" : "tat_ca") + '"]')
     .classList.add("chon");
   apDung();
-})();
-</script>
-<script>
-(function () {
-  "use strict";
-  // Upload TỪNG KHÚC (file 2-10GB): cắt file bằng File.slice, gửi tuần tự từng
-  // khúc — mỗi request qua proxy chỉ nặng 1 khúc, không bom RAM gateway.
-  // JS chết → form thuần submit /upload-video (một phát, trần VR_MAX_FORM_MB).
-  // Không API secure-context-only (lệ LAN-HTTP).
-  var form = document.getElementById("form-up");
-  if (!form) return;
-  form.classList.add("js");
-  var oFile = document.getElementById("o-file");
-  oFile.removeAttribute("required");   // input đã giấu — để required là Chrome chặn submit "not focusable"
-  // phụ đề .srt tùy chọn (chỉ chính chủ video — chính là người đang upload)
-  var oSrt = document.getElementById("o-srt");
-  var nutSrt = document.getElementById("nut-srt");
-  var srtTen = document.getElementById("srt-ten");
-  nutSrt.hidden = false;
-  nutSrt.addEventListener("click", function () { oSrt.click(); });
-  oSrt.addEventListener("change", function () {
-    var f = oSrt.files[0];
-    if (!f) return;
-    if (!/\.(srt|vtt)$/i.test(f.name)) { baoLoi("Subtitles must be .srt or .vtt."); oSrt.value = ""; return; }
-    srtTen.textContent = f.name;
-    nutSrt.textContent = "Replace subtitles";
-    baoLoi("");
-  });
-  var vung = document.getElementById("tha-vung");
-  var chinh = document.getElementById("tha-chinh");
-  var phu = document.getElementById("tha-phu");
-  var oTen = document.getElementById("o-ten");
-  var nut = document.getElementById("nut-up");
-  var thanh = document.getElementById("up-thanh");
-  var ruot = document.getElementById("up-thanh-ruot");
-  var loiEl = document.getElementById("up-loi");
-  var fileChon = null, dangGui = false;
-
-  function baoLoi(chu) { loiEl.textContent = chu; loiEl.style.display = chu ? "block" : "none"; }
-  function coDep(n) {
-    return n >= 1073741824 ? (n / 1073741824).toFixed(2) + "GB" : Math.round(n / 1048576) + "MB";
-  }
-  function chon(f) {
-    if (!f) return;
-    if (!/\.(mp4|m4v|webm|mov)$/i.test(f.name)) { baoLoi("Only mp4 / webm / m4v / mov files."); return; }
-    fileChon = f;
-    vung.classList.add("co-file");
-    chinh.textContent = "";
-    var b = document.createElement("b"); b.textContent = f.name;
-    chinh.appendChild(b);
-    chinh.appendChild(document.createTextNode(" · " + coDep(f.size)));
-    phu.textContent = "Click to choose a different file";
-    if (!oTen.value) oTen.value = f.name.replace(/\.[^.]+$/, "");
-    baoLoi("");
-  }
-  oFile.addEventListener("change", function () { chon(oFile.files[0]); });
-  ["dragover", "dragenter"].forEach(function (t) {
-    vung.addEventListener(t, function (e) { e.preventDefault(); vung.classList.add("keo"); });
-  });
-  ["dragleave", "drop"].forEach(function (t) {
-    vung.addEventListener(t, function (e) { e.preventDefault(); vung.classList.remove("keo"); });
-  });
-  vung.addEventListener("drop", function (e) {
-    if (e.dataTransfer && e.dataTransfer.files.length) chon(e.dataTransfer.files[0]);
-  });
-
-  function guiKhuc(url, mieng, daXong, tong) {
-    return new Promise(function (ok, hong) {
-      var xhr = new XMLHttpRequest();
-      xhr.open("POST", url);
-      xhr.upload.addEventListener("progress", function (ev) {
-        var pt = Math.min(100, Math.round((daXong + ev.loaded) * 100 / tong));
-        ruot.style.width = pt + "%";
-        nut.textContent = "Uploading… " + pt + "%";
-      });
-      xhr.addEventListener("load", function () {
-        if (xhr.status >= 200 && xhr.status < 300) { ok(); return; }
-        var chu = "HTTP " + xhr.status;
-        try { chu = JSON.parse(xhr.responseText).detail || chu; } catch (er) {}
-        hong(chu);
-      });
-      xhr.addEventListener("error", function () { hong("Network error — try again."); });
-      xhr.send(mieng);
-    });
-  }
-
-  form.addEventListener("submit", function (e) {
-    e.preventDefault();
-    if (dangGui) return;
-    if (!fileChon) { oFile.click(); return; }
-    dangGui = true; nut.disabled = true; baoLoi("");
-    thanh.style.display = "block"; ruot.style.width = "0";
-    var fd = new FormData();
-    fd.append("ten_file", fileChon.name);
-    fd.append("kich_thuoc", fileChon.size);
-    fd.append("ten", oTen.value.trim());
-    var phien = "";
-    fetch("/api-vr/upload-bat-dau", { method: "POST", body: fd })
-      .then(function (r) { if (!r.ok) return r.json().then(function (j) { throw j.detail; }); return r.json(); })
-      .then(function (du) {
-        phien = du.phien;
-        var khuc = du.khuc_mb * 1048576, viTri = 0;
-        function tiep() {
-          if (viTri >= fileChon.size) return Promise.resolve();
-          var mieng = fileChon.slice(viTri, viTri + khuc);
-          return guiKhuc("/api-vr/upload-khuc/" + phien + "?offset=" + viTri,
-                         mieng, viTri, fileChon.size)
-            .then(function () { viTri += mieng.size; return tiep(); });
-        }
-        return tiep();
-      })
-      .then(function () {
-        nut.textContent = "Finalizing…";
-        return fetch("/api-vr/upload-xong/" + phien, { method: "POST" })
-          .then(function (r) { if (!r.ok) return r.json().then(function (j) { throw j.detail; }); return r.json(); });
-      })
-      .then(function (du) {
-        // gắn phụ đề nếu có chọn — hỏng cũng KHÔNG chặn (gắn lại được ở trang review)
-        if (!oSrt.files[0]) return du;
-        nut.textContent = "Attaching subtitles…";
-        var fdS = new FormData();
-        fdS.append("file", oSrt.files[0]);
-        return fetch("/api-vr/phu-de/" + du.ma, { method: "POST", body: fdS })
-          .then(function () { return du; }, function () { return du; });
-      })
-      .then(function (du) { location.href = "/xem/" + du.ma; })
-      .catch(function (loi) {
-        if (phien) fetch("/api-vr/upload-huy/" + phien, { method: "POST" });
-        dangGui = false; nut.disabled = false; nut.textContent = "Upload";
-        thanh.style.display = "none";
-        baoLoi(typeof loi === "string" ? loi : "Upload failed — try again.");
-      });
-  });
 })();
 </script>
 {% if nas_bat %}
@@ -378,7 +215,9 @@
           b.appendChild(document.createTextNode(m.ten));
           if (m.loai === "file") {
             var mb = document.createElement("span"); mb.className = "mb";
-            mb.textContent = m.mb + "MB"; b.appendChild(mb);
+            mb.textContent = m.da_them ? "already in app" : m.mb + "MB";
+            b.appendChild(mb);
+            if (m.da_them) { b.disabled = true; b.style.opacity = ".55"; b.style.cursor = "default"; }
             b.addEventListener("click", function () {
               dsEl.querySelectorAll(".nas-muc").forEach(function (x) { x.classList.remove("chon"); });
               b.classList.add("chon"); fileChon = m; nut.disabled = false;
@@ -398,34 +237,19 @@
 
   nut.addEventListener("click", function () {
     if (!fileChon) return;
-    nut.disabled = true; loi("");
+    nut.disabled = true; nut.textContent = "Adding…"; loi("");
     var fd = new FormData();
     fd.append("duong", fileChon.duong);
     fd.append("ten", document.getElementById("nas-ten").value.trim());
-    fetch("/api-vr/nas-nap", { method: "POST", body: fd })
+    // Liên kết = ghi sổ, xong ngay — không có tác vụ nền/% như thời còn chép file.
+    fetch("/api-vr/nas-lien-ket", { method: "POST", body: fd })
       .then(function (r) { if (!r.ok) return r.json().then(function (j) { throw j; }); return r.json(); })
-      .then(function (du) { theoDoi(du.task_id); })
-      .catch(function (j) { nut.disabled = false; loi((j && j.detail) || "Could not start the copy."); });
+      .then(function (du) { location.href = "/xem/" + du.ma; })
+      .catch(function (j) {
+        nut.disabled = false; nut.textContent = "Add to review";
+        loi((j && j.detail) || "Could not add this file.");
+      });
   });
-
-  function theoDoi(tid) {
-    var thanh = document.getElementById("nas-thanh");
-    var ruot = document.getElementById("nas-thanh-ruot");
-    thanh.style.display = "block";
-    var lap = setInterval(function () {
-      fetch("/api-vr/nas-tien-do/" + tid)
-        .then(function (r) { if (!r.ok) throw 0; return r.json(); })
-        .then(function (tt) {
-          ruot.style.width = tt.phan_tram + "%";
-          if (tt.trang_thai === "xong") { clearInterval(lap); location.href = "/xem/" + tt.ma; }
-          if (tt.trang_thai === "loi") {
-            clearInterval(lap); thanh.style.display = "none"; nut.disabled = false;
-            loi("Copy failed: " + (tt.loi || "unknown error"));
-          }
-        })
-        .catch(function () { clearInterval(lap); nut.disabled = false; loi("Lost track of the copy task."); });
-    }, 900);
-  }
 
   mo("");
 })();

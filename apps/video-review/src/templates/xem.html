@@ -3,6 +3,12 @@
 {% block topbar_ten %}Video Review{% endblock %}
 
 {% block style_them %}
+  .bang-canh{border-radius:12px;padding:11px 14px;margin-bottom:14px;font-size:13.5px;line-height:1.5}
+  .bang-canh b{display:block;margin-bottom:2px}
+  .bang-canh.mat{background:rgba(217,124,108,.13);border:1px solid rgba(217,124,108,.4);color:var(--th-d97c6c)}
+  .bang-canh.doi{background:rgba(214,166,74,.13);border:1px solid rgba(214,166,74,.4);color:#d6a64a}
+  html[data-theme="light"] .bang-canh.doi{color:#7c5a10}
+  .bang-canh code{font-size:12.5px;overflow-wrap:anywhere}
   .noi-dung{max-width:1240px}
   .vr-head{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}
   .vr-head h2{margin:0;font-size:17px;flex:1;min-width:200px}
@@ -56,6 +62,15 @@
 {% endblock %}
 
 {% block noi_dung %}
+{% if not tt_file.co %}
+<div class="bang-canh mat"><b>Source file not found</b>
+  This cut is linked to a file on the NAS that is no longer there — it was moved, renamed or deleted.
+  Notes below are still safe. Path on record: <code>{{ video.duong }}</code></div>
+{% elif tt_file.doi %}
+<div class="bang-canh doi"><b>File changed on the NAS since it was linked</b>
+  Someone overwrote it with a different export under the same name, so existing timestamped notes
+  may point at the wrong moment. Add the new export as its own entry to keep notes trustworthy.</div>
+{% endif %}
 <div class="vr-head">
   <h2>{{ video.ten }} <span style="color:var(--muted);font-size:12.5px;font-weight:400">
     {{ video.ma }} · {{ video.nguoi_tao }} · {{ video.tao_luc[:10] }}</span></h2>
@@ -70,7 +85,8 @@
   {% if user.ten == video.nguoi_tao %}
   <input type="file" id="o-pd" accept=".srt,.vtt" style="display:none">
   <button class="nut nho phu" id="nut-pd">{% if co_phu_de %}Replace subs{% else %}+ Subtitles{% endif %}</button>
-  {% if co_phu_de %}<button class="nut nho nguy" id="nut-pd-xoa">Remove subs</button>{% endif %}
+  {% if co_phu_de and pd_nguon != 'nas' %}<button class="nut nho nguy" id="nut-pd-xoa">Remove subs</button>{% endif %}
+  {% if pd_nguon == 'nas' %}<span class="vr-bl" style="color:var(--muted);font-size:12.5px">subs read from the NAS folder</span>{% endif %}
   {% endif %}
   <a class="nut nho phu" href="/danh-sach">← All videos</a>
   <span id="pd-loi" style="color:var(--th-d97c6c);font-size:12.5px;display:none;flex-basis:100%"></span>
@@ -89,7 +105,7 @@
     </div>
     <div class="moc-bar" id="moc-bar" title="Comment markers — click a dot to jump"></div>
     <p id="loi-phat" style="display:none;color:var(--th-d97c6c);font-size:13px">
-      This browser can’t play the file (codec). Re-export as mp4 (H.264) and upload again.</p>
+      This browser can’t play the file (codec). Re-export as mp4 (H.264) onto the NAS and add that file.</p>
   </div>
 
   <div class="bl-panel">

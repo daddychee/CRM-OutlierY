@@ -47,12 +47,13 @@
 | Chủ | Store | Đường | Mức quý | Backup |
 |---|---|---|---|---|
 | nen | iam.db / ket.db / ket.key / logs / qdrant | data\nen, data\logs, data\qdrant | 🥇 | snapshot/copy/api |
+| nen | sổ đồng bộ tài khoản NAS (nas-dong-bo.json) | data\nen\nas-dong-bo.json | 🥈 | copy |
 | ai-agent | kho-tai-lieu (file gốc 8 ngăn + catalog + sổ vận hành) | data\ai-agent\kho\kho-tai-lieu | 🥇 | copy |
 | ai-agent | lịch sử hội thoại per-user | data\ai-agent\db\lich-su | 🥇 | copy |
 | data-analytics | bao-cao-lich-su / bao-cao-goc | data\data-analytics\{db,kho} | 🥇 | copy |
 | to-chuc | chấm công | data\to-chuc\db\cham-cong | 🥇 | copy |
 | to-chuc | vault (CHỈ bản mã) | data\vault | 🥇 | copy |
-| video-review | video bản dựng (kho năm/tháng, file lớn) | data\video-review\kho | 🥇 | copy |
+| video-review | phụ đề gắn từ app + bản sao video ĐỜI CŨ (video gốc nằm trên NAS từ 20/08) | data\video-review\kho | 🥈 | copy |
 | video-review | sổ video + bình luận mốc thời gian | data\video-review\db\video_review.db | 🥇 | sqlite-snapshot |
 
 ## Trạng thái bản v2 (cập nhật khi mỗi phase xong)

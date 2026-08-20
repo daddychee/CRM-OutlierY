@@ -69,6 +69,11 @@ $env:PYTHONIOENCODING = 'utf-8'
 $env:NAS_DUONG_DAN = '\\192.168.1.250\NAS1;\\192.168.1.250\Video'
 $env:NAS_RIENG_MANAGER = 'NAS1'
 $env:NAS_DONG_BO = 'true'
+# Video Review: video KHONG nam trong app - app lien ket thang toi file goc tren NAS
+# (user chot 20/08). Share 'Video' cua server nam ngay tren may nay (o F:) nen doc
+# thang o dia, KHONG di duong UNC (tac vu SYSTEM khong co credential mang).
+$env:VR_NAS_DIR = 'F:\OutlierY Nas 2'
+
 $dichVu = @(
     @{ Ten = 'qdrant-test'; Cong = 6343
        Exe = (Join-Path $root 'tools\qdrant\qdrant.exe')
