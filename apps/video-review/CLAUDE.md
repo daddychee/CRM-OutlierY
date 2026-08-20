@@ -74,6 +74,29 @@
   `F:\OutlierY Nas 2` = share 'Video', ổ vật lý ngay trên máy chủ nên đọc thẳng,
   KHÔNG đi UNC vì tác vụ SYSTEM không có credential mạng).
 
+- 20/08/2026 (cùng ngày, sau khi team dùng thật) — **SỰ CỐ "CHỈ CÓ TIẾNG, KHÔNG
+  CÓ HÌNH" = FILE H.265**, không phải lỗi liên kết NAS. Video team vừa thêm
+  (`Life In/US/LI084/LI084_1080.mp4`) là **hevc Main + aac**: Chrome/Edge trên
+  Windows thiếu HEVC Video Extension nên phát TIẾNG, hình đen, và **KHÔNG bắn sự
+  kiện `error`** → handler lỗi cũ không đời nào chạy, app hỏng LẶNG LẼ. Đổi sang
+  NAS không gây ra lỗi này nhưng LÀM NÓ LỘ RA: trước team chỉ đưa vào app bản
+  render đã chọn, giờ chọn được mọi file trên NAS. Đếm thật `Life In/US`: 940
+  h264 · 37 av1 (Chrome đọc được) · **9 hevc**, và 9 file đó tụm vào một tay dựng
+  (`LI063_Hai`, `LI066_Hai`, `LI072_Hai`, `LI078_Hai`, `LI080_Hai`, `LI076`,
+  `LI084`) → bệnh preset xuất, sẽ lặp lại. **User chốt: CHỈ CẢNH BÁO, KHÔNG
+  transcode** (server còn chạy 6 app khác; đội dựng xuất lại H.264).
+  Làm: migration 003 cột `codec`; `doc_codec` gọi ffprobe CÓ TIMEOUT 20s
+  (`VR_FFPROBE` khai trong start-all.ps1 — dùng bản ffmpeg cài sẵn cho SpeakY);
+  dò lúc thêm + dò LƯỜI một lần cho bản ghi cũ rồi nhớ vào sổ (đừng probe 9 file
+  mỗi lần vào trang); cảnh báo ở BA chỗ — ngay lúc thêm, chip đỏ ở danh sách,
+  banner trang xem kèm cách xuất lại. **LƯỚI CHÓT không phụ thuộc ffprobe**:
+  `loadedmetadata` mà `videoWidth === 0` → hiện thông điệp (máy thiếu ffprobe
+  hoặc codec lạ vẫn không hỏng lặng lẽ). Thiếu ffprobe thì im lặng chứ KHÔNG báo
+  bừa. 44 test pass.
+  **BÀI HỌC:** codec trình duyệt không đọc được là ca hỏng KHÔNG có sự kiện lỗi —
+  chỉ `videoWidth === 0` mới lộ; và mở kho file cho người dùng chọn tự do thì
+  phải kiểm định dạng NGAY TẠI CỬA, đừng tin "team toàn xuất H.264".
+
 ## Quyết định thiết kế (đừng phá)
 
 - **NAS CHỈ ĐỌC TUYỆT ĐỐI**: app không chép/ghi/xóa/đổi tên gì trong `VR_NAS_DIR`

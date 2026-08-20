@@ -136,6 +136,10 @@ async def danh_sach(request: Request, user: dict = Depends(khu_cua_toi)):
     for v in cac_video:
         # vân tay file gốc: mất file / bị ghi đè đều phải NỔI ngay ở danh sách
         v["tt_file"] = kho_video.tinh_trang_file(v)
+        # codec dò lười một lần rồi nhớ (bản ghi cũ chưa có) — file H.265 phải
+        # lộ ngay ở danh sách, đừng để người review mở ra mới thấy hình đen
+        v["canh_codec"] = kho_video.canh_bao_codec(
+            kho_video.bao_dam_codec(v) if v["tt_file"]["co"] else "")
     return templates.TemplateResponse(request, "danh_sach.html", {
         "cac_video": cac_video, "user": user,
         "nas_bat": nap_nas.nas_dir() is not None})
@@ -154,11 +158,14 @@ def _video_song(ma: str) -> dict:
 async def xem(request: Request, ma: str, user: dict = Depends(khu_cua_toi)):
     video = _video_song(ma)
     _, pd_nguon = kho_video.phu_de_tim(video)
+    tt_file = kho_video.tinh_trang_file(video)
+    canh_codec = kho_video.canh_bao_codec(
+        kho_video.bao_dam_codec(video) if tt_file["co"] else "")
     return templates.TemplateResponse(request, "xem.html", {
         "video": video, "user": user,
         "co_phu_de": pd_nguon != "",
         "pd_nguon": pd_nguon,                    # app|nas|kho — NAS thì app không gỡ được
-        "tt_file": kho_video.tinh_trang_file(video),
+        "tt_file": tt_file, "canh_codec": canh_codec,
         "cac_bl": kho_video.ds_binh_luan(ma)})   # nhúng vào JS qua |tojson (script-safe)
 
 
@@ -269,7 +276,8 @@ async def api_nas_lien_ket(duong: str = Form(...), ten: str = Form(""),
         raise HTTPException(422, str(e))
     except (FileNotFoundError, PermissionError):
         raise HTTPException(404, "Không thấy file trên NAS.")
-    return {"ma": ban_ghi["ma"]}
+    return {"ma": ban_ghi["ma"],
+            "canh_codec": kho_video.canh_bao_codec(ban_ghi.get("codec", ""))}
 
 
 # ---------- API bình luận + trạng thái ----------

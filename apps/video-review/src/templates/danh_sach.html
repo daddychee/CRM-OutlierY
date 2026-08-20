@@ -98,6 +98,7 @@
         <span class="vr-bl">· {{ v.ma }}</span>
         {%- if not v.tt_file.co %}<span class="canh mat">file missing</span>
         {%- elif v.tt_file.doi %}<span class="canh doi">file changed</span>{% endif %}
+        {%- if v.canh_codec %}<span class="canh mat" title="Browser cannot decode {{ v.canh_codec }} — audio plays, picture stays black">{{ v.canh_codec }} · won't play</span>{% endif %}
         <div class="vr-duong">{% if v.nguon == 'nas' %}NAS · {{ v.duong }}{% else %}copy in app store · {{ v.ten_file }}{% endif %}</div></td>
       <td><span class="chip {{ v.hien_thi }}">{{ NHAN_HIEN_THI.get(v.hien_thi, v.hien_thi) }}</span></td>
       <td>{{ v.nguoi_tao }}</td>
@@ -244,7 +245,15 @@
     // Liên kết = ghi sổ, xong ngay — không có tác vụ nền/% như thời còn chép file.
     fetch("/api-vr/nas-lien-ket", { method: "POST", body: fd })
       .then(function (r) { if (!r.ok) return r.json().then(function (j) { throw j; }); return r.json(); })
-      .then(function (du) { location.href = "/xem/" + du.ma; })
+      .then(function (du) {
+        if (du.canh_codec) {
+          loi(du.canh_codec + ": the browser cannot show this codec (audio only). "
+              + "Re-export as mp4 / H.264 — opening it anyway.");
+          setTimeout(function () { location.href = "/xem/" + du.ma; }, 2600);
+          return;
+        }
+        location.href = "/xem/" + du.ma;
+      })
       .catch(function (j) {
         nut.disabled = false; nut.textContent = "Add to review";
         loi((j && j.detail) || "Could not add this file.");

@@ -66,6 +66,11 @@
 <div class="bang-canh mat"><b>Source file not found</b>
   This cut is linked to a file on the NAS that is no longer there — it was moved, renamed or deleted.
   Notes below are still safe. Path on record: <code>{{ video.duong }}</code></div>
+{% elif canh_codec %}
+<div class="bang-canh mat"><b>This file is {{ canh_codec }} — the browser cannot show the picture</b>
+  You will hear the audio but the frame stays black; this is not a broken upload. Ask the editor to
+  re-export as <b>mp4 / H.264</b> (Premiere: H.264 preset · CapCut: export codec H.264), drop it on the
+  NAS and add that file. Notes on this entry stay where they are.</div>
 {% elif tt_file.doi %}
 <div class="bang-canh doi"><b>File changed on the NAS since it was linked</b>
   Someone overwrote it with a different export under the same name, so existing timestamped notes
@@ -174,7 +179,18 @@
     });
   }
   window.addEventListener("resize", function () { canChinhCanvas(); veNet(netDangXem); });
-  vid.addEventListener("loadedmetadata", function () { canChinhCanvas(); renderMoc(); });
+  vid.addEventListener("loadedmetadata", function () {
+    canChinhCanvas(); renderMoc();
+    // LƯỚI CHÓT cho codec trình duyệt không đọc được (H.265): file vẫn "chạy",
+    // vẫn có tiếng, KHÔNG bắn sự kiện error — dấu hiệu duy nhất là khung hình
+    // rỗng. Bắt ở đây thì kể cả máy chủ thiếu ffprobe vẫn không hỏng lặng lẽ.
+    if (!vid.videoWidth) {
+      var el = document.getElementById("loi-phat");
+      el.textContent = "Audio only — the browser cannot decode this video codec "
+        + "(usually H.265/HEVC). Ask for an mp4 / H.264 re-export.";
+      el.style.display = "block";
+    }
+  });
   vid.addEventListener("error", function () {
     document.getElementById("loi-phat").style.display = "block";
   });

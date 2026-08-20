@@ -63,5 +63,8 @@ def lien_ket(tuong_doi: str, ten: str, nguoi: str, bo_phan: str) -> dict:
     if cu is not None:
         raise FileExistsError(cu["ma"])
     st = f.stat()
+    # dò codec NGAY LÚC THÊM: H.265 phát ra tiếng mà hình đen và KHÔNG báo lỗi gì,
+    # biết sớm thì người thêm được cảnh báo ngay thay vì người review ngồi đoán.
     return kho_video.them_video_nas((ten or "").strip() or f.stem, rel, nguoi,
-                                    bo_phan, st.st_size, st.st_mtime)
+                                    bo_phan, st.st_size, st.st_mtime,
+                                    kho_video.doc_codec(f))

@@ -16,8 +16,9 @@ from __future__ import annotations
 import json
 import os
 import re
+import shutil
 import sqlite3
-import unicodedata
+import subprocess
 from datetime import datetime
 from pathlib import Path
 
@@ -95,6 +96,69 @@ def tinh_trang_file(video: dict) -> dict:
             "kich_thuoc_hien": st.st_size}
 
 
+# Codec trình duyệt giải mã được trong thẻ <video>. HEVC/H.265 KHÔNG nằm đây:
+# Chrome/Edge trên Windows thiếu HEVC Video Extension nên chỉ ra tiếng, hình đen,
+# lại KHÔNG bắn sự kiện lỗi → im lặng là kiểu hỏng tệ nhất, phải tự dò mà báo.
+CODEC_PHAT_DUOC = {"h264", "av1", "vp8", "vp9", "theora"}
+TEN_CODEC = {"hevc": "H.265 (HEVC)", "prores": "ProRes", "mpeg4": "MPEG-4 Part 2",
+             "vc1": "VC-1", "wmv3": "WMV", "dnxhd": "DNxHD"}
+
+
+def ffprobe() -> str | None:
+    """Đường ffprobe (env VR_FFPROBE, rồi PATH). Không có → bỏ dò, KHÔNG cảnh báo
+    bừa (thà không biết còn hơn báo sai)."""
+    d = os.environ.get("VR_FFPROBE", "").strip()
+    if d and Path(d).is_file():
+        return d
+    return shutil.which("ffprobe")
+
+
+def doc_codec(p: Path) -> str:
+    """Codec luồng hình đầu tiên, '' nếu không dò được. Luôn có TIMEOUT — lệnh
+    ngoài không được treo request (bài học LLM_TIMEOUT hệ cũ)."""
+    exe = ffprobe()
+    if exe is None or not p.is_file():
+        return ""
+    try:
+        ra = subprocess.run(
+            [exe, "-v", "error", "-select_streams", "v:0", "-show_entries",
+             "stream=codec_name", "-of", "default=noprint_wrappers=1:nokey=1", str(p)],
+            capture_output=True, text=True, timeout=20)
+    except (OSError, subprocess.SubprocessError):
+        return ""
+    return (ra.stdout or "").strip().splitlines()[0].strip() if ra.stdout.strip() else ""
+
+
+def ghi_codec(ma: str, codec: str) -> None:
+    conn = ket_noi()
+    try:
+        conn.execute("UPDATE video SET codec=? WHERE ma=?", (codec, ma))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def bao_dam_codec(video: dict) -> str:
+    """Codec của bản ghi, dò LƯỜI một lần rồi nhớ luôn (bản ghi đời cũ chưa có)."""
+    if video.get("codec"):
+        return video["codec"]
+    p = duong_video(video)
+    if p is None or not p.is_file():
+        return ""
+    c = doc_codec(p)
+    if c:
+        ghi_codec(video["ma"], c)
+        video["codec"] = c
+    return c
+
+
+def canh_bao_codec(codec: str) -> str:
+    """Câu cảnh báo cho người dùng, '' khi phát được hoặc chưa dò được."""
+    if not codec or codec in CODEC_PHAT_DUOC:
+        return ""
+    return TEN_CODEC.get(codec, codec.upper())
+
+
 def ket_noi() -> sqlite3.Connection:
     p = _db_path()
     p.parent.mkdir(parents=True, exist_ok=True)
@@ -128,7 +192,8 @@ def khoi_tao() -> None:
 
 
 def them_video_nas(ten: str, duong_nas: str, nguoi_tao: str, bo_phan: str,
-                   kich_thuoc: int, mtime: float, luc: datetime | None = None) -> dict:
+                   kich_thuoc: int, mtime: float, codec: str = "",
+                   luc: datetime | None = None) -> dict:
     """Ghi sổ 1 video LIÊN KẾT tới file có sẵn trên NAS — không chép byte nào.
     Mã VR-xxxx sinh từ rowid trong CÙNG transaction (không đua giữa 2 lượt thêm);
     ten_file = tên file thật trên NAS để hiện/tải về đúng tên anh em đặt."""
@@ -144,17 +209,17 @@ def them_video_nas(ten: str, duong_nas: str, nguoi_tao: str, bo_phan: str,
     try:
         cur = conn.execute(
             "INSERT INTO video (ma, ten, ten_file, duong, mime, kich_thuoc, nguoi_tao,"
-            " bo_phan, tao_luc, nguon, nas_mtime)"
-            " VALUES ('', ?, ?, ?, ?, ?, ?, ?, ?, 'nas', ?)",
+            " bo_phan, tao_luc, nguon, nas_mtime, codec)"
+            " VALUES ('', ?, ?, ?, ?, ?, ?, ?, ?, 'nas', ?, ?)",
             (ten or ten_file, ten_file, duong_nas, DUOI_CHO_PHEP[duoi], kich_thuoc,
-             nguoi_tao, bo_phan, luc.strftime("%Y-%m-%d %H:%M:%S"), mtime))
+             nguoi_tao, bo_phan, luc.strftime("%Y-%m-%d %H:%M:%S"), mtime, codec))
         ma = f"VR-{cur.lastrowid:04d}"
         conn.execute("UPDATE video SET ma=? WHERE id=?", (ma, cur.lastrowid))
         conn.commit()
     finally:
         conn.close()
     return {"ma": ma, "ten": ten or ten_file, "ten_file": ten_file,
-            "duong": duong_nas, "nguon": "nas"}
+            "duong": duong_nas, "nguon": "nas", "codec": codec}
 
 
 def da_lien_ket(duong_nas: str) -> dict | None:

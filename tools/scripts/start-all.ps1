@@ -74,6 +74,12 @@ $env:NAS_DONG_BO = 'true'
 # thang o dia, KHONG di duong UNC (tac vu SYSTEM khong co credential mang).
 $env:VR_NAS_DIR = 'F:\OutlierY Nas 2'
 
+# ffprobe cho video-review: do codec luc them video. File H.265 phat ra TIENG ma
+# hinh den va KHONG bao loi gi (su co 20/08) -> app phai tu biet ma canh bao.
+# Dung ban ffmpeg 8.1.2 da cai san cho SpeakY (he V2, cung may). Thieu ffprobe thi
+# app CHI bo qua buoc do - khong bao bua, va luoi chot ben trinh duyet van chay.
+$env:VR_FFPROBE = 'C:\OutlierY\tools\ffmpeg\bin\ffprobe.exe'
+
 $dichVu = @(
     @{ Ten = 'qdrant-test'; Cong = 6343
        Exe = (Join-Path $root 'tools\qdrant\qdrant.exe')
