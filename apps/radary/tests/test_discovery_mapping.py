@@ -685,8 +685,11 @@ def test_route_lich_su_doc_lap_va_hash_giu_tu_khoa():
     assert "'/api/workspaces/{ws}/tra-cuu/lich-su'" in api_src
     assert "/tra-cuu/lich-su`).then(r => setLichSu" in js
     assert "writeHash({ q })" in js
-    assert "String(h0.ws || '') === String(ws)" in js       # không mở nhầm pool khác
-    assert "writeHash({ q: '' })" in js                     # đổi pool thì bỏ từ khoá cũ
+    # Ghim Ý NGHĨA, không ghim mặt chữ: phải SO pool của từ khoá với pool đang mở
+    # trước khi tự mở lại, và đổi pool thì bỏ từ khoá cũ. (Bản đầu ghim nguyên câu
+    # lệnh nên vỡ ngay khi đổi cách viết — cùng lớp lỗi self-test ghim hằng số.)
+    assert "wsCuaQ" in js and "=== String(ws)" in js
+    assert "writeHash({ q: '' })" in js
 
 
 # ------------------- TỪ KHOÁ ĐANG NỔI trong pool (user 21/08) -------------------
@@ -772,3 +775,16 @@ def test_moi_video_dem_mot_lan_cho_mot_cum():
     kho = _kho("life in alaska and life in norway")
     ra = {g["seed"]: g["so_video"] for g in mapping.goi_y_seed(kho, 50, toi_thieu_video=1, moi_vi_tri=True)}
     assert ra.get("life in") == 1
+
+
+def test_nho_tab_qua_localStorage_vi_iframe_mat_hash():
+    """User 21/08: 'đang ở mapping nhưng ấn F5 luôn bị trả về board'.
+    Gốc: RadarY chạy TRONG IFRAME khi vào qua cổng 9000 — history.replaceState chỉ đổi
+    URL của iframe, F5 trang cha thì iframe tải lại src gốc và mất sạch hash."""
+    from pathlib import Path
+    js = Path(__file__).resolve().parents[1].joinpath("web", "app.js").read_text(encoding="utf-8")
+    assert "localStorage.setItem(NHO_KEY" in js and "nhoGhi(patch)" in js
+    # khởi tạo phải đọc hash TRƯỚC rồi mới tới localStorage (link chia sẻ vẫn thắng)
+    assert "h0.tab || nho0.tab || 'board'" in js
+    assert "h0.ws ? Number(h0.ws) : (nho0.ws ? Number(nho0.ws) : null)" in js
+    assert "h0.q || nho.q || ''" in js

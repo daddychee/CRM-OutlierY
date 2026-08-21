@@ -23,11 +23,22 @@ const readHash = () => {
   });
   return h;
 };
+// RadarY chạy TRONG IFRAME khi vào qua cổng 9000 (giao diện "khung" của OUTLIERY).
+// history.replaceState chỉ đổi URL của iframe, nên F5 trang cha là iframe tải lại src
+// gốc và MẤT SẠCH hash -> luôn rơi về Board (user báo 21/08). Nhớ song song vào
+// localStorage để khôi phục; hash vẫn giữ cho trường hợp mở thẳng cổng 9111 + chia sẻ link.
+const NHO_KEY = 'radary_ui';
+const nhoDoc = () => { try { return JSON.parse(localStorage.getItem(NHO_KEY) || '{}'); } catch (e) { return {}; } };
+const nhoGhi = patch => {
+  try { localStorage.setItem(NHO_KEY, JSON.stringify({ ...nhoDoc(), ...patch })); } catch (e) {}
+};
+
 const writeHash = patch => {
   const h = { ...readHash(), ...patch };
   Object.keys(h).forEach(k => (h[k] === '' || h[k] == null) && delete h[k]);
   const s = Object.entries(h).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join('&');
   history.replaceState(null, '', s ? '#' + s : location.pathname);
+  nhoGhi(patch);                     // iframe mất hash khi F5 -> localStorage giữ hộ
 };
 const fmt = n => n == null ? '—' : Math.round(n).toLocaleString('vi-VN');
 const fmtAge = h_ => h_ < 48 ? `${(h_/24).toFixed(1)}d` : `${Math.round(h_/24)}d`;
@@ -1842,9 +1853,11 @@ function Mapping({ ws, canEdit }) {
     api('GET', `/workspaces/${ws}/tra-cuu/so-sanh`).then(setSoSanh).catch(() => setSoSanh(null));
     // Từ khoá đang xem nằm trong URL (#q=...) -> F5 mở lại đúng chỗ, đọc từ lịch sử,
     // 0 quota. Chỉ tự mở khi hash thuộc ĐÚNG pool này.
-    const h0 = readHash();
-    if (h0.q && String(h0.ws || '') === String(ws)) traCuu(h0.q, true);
-    else if (h0.q) writeHash({ q: '' });      // đổi pool -> bỏ từ khoá của pool cũ
+    const h0 = readHash(), nho = nhoDoc();
+    const q0 = h0.q || nho.q || '';
+    const wsCuaQ = String(h0.ws || nho.ws || '');
+    if (q0 && wsCuaQ === String(ws)) traCuu(q0, true);
+    else if (q0) writeHash({ q: '' });        // đổi pool -> bỏ từ khoá của pool cũ
   }, [ws]);
 
   // `lai` = xem lại bản đã lưu: KHÔNG gọi lại nguồn ngoài (mỗi lần hỏi tốn 102 units).
@@ -2113,8 +2126,9 @@ function App() {
   const h0 = readHash();
   const [me, setMe] = useState(undefined);       // undefined = đang kiểm tra, null = chưa đăng nhập
   const [wss, setWss] = useState([]);
-  const [ws, setWs] = useState(h0.ws ? Number(h0.ws) : null);
-  const [tab, setTab] = useState(h0.tab || 'board');
+  const nho0 = nhoDoc();
+  const [ws, setWs] = useState(h0.ws ? Number(h0.ws) : (nho0.ws ? Number(nho0.ws) : null));
+  const [tab, setTab] = useState(h0.tab || nho0.tab || 'board');
   const [nganhs, setNganhs] = useState([]);      // ngách + thị trường CỦA ngách — sinh ở General (18/08)
   const [nicheView, setNicheView] = useState(false);   // Board: xem VOLUME CẢ NGÁCH thay vì 1 pool
   useEffect(() => { api('GET', '/auth/me').then(setMe).catch(() => setMe(null)); }, []);
