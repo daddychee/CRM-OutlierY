@@ -746,3 +746,29 @@ def test_co_chuoi_mat_do_theo_thang_de_ve_sparkline():
     kho = _kho_theo_ngay([("a b", 200, 4), ("a b", 100, 6), ("a b", 10, 8)], now)
     r = tra_cuu.xu_huong_cum(kho, ["a b"], bay_gio=now)[0]
     assert len(r["chuoi"]) >= 3 and all("ngay" in p and "gia_tri" in p for p in r["chuoi"])
+
+
+def test_quet_ngram_MOI_VI_TRI_ra_nhieu_cum_hon_han():
+    """User 21/08: 'từ khoá trong pool có rất nhiều, tại sao chỉ có mỗi vài cụm'.
+    Gốc: goi_y_seed chỉ lấy n-gram MỞ ĐẦU title nên bỏ sót chủ đề nằm giữa câu."""
+    kho = _kho(*(["Real Life in Vietnam Travel Documentary"] * 5),
+               *(["Amazing Facts About Beautiful Women"] * 5))
+    dau = {g["seed"] for g in mapping.goi_y_seed(kho, 50, toi_thieu_video=3)}
+    moi = {g["seed"] for g in mapping.goi_y_seed(kho, 50, toi_thieu_video=3, moi_vi_tri=True)}
+    assert "travel documentary" not in dau      # nằm cuối title -> chế độ cũ bỏ sót
+    assert "travel documentary" in moi
+    assert len(moi) > len(dau)
+
+
+def test_bo_ngram_toan_tu_chuc_nang_va_ngram_mo_dau_bang_tu_chuc_nang():
+    kho = _kho(*(["The Most Beautiful Land of Fire"] * 5))
+    ra = {g["seed"] for g in mapping.goi_y_seed(kho, 50, toi_thieu_video=3, moi_vi_tri=True)}
+    assert not any(c.split()[0] in mapping._TU_TRO for c in ra), "n-gram mở đầu bằng từ chức năng phải bị bỏ"
+    assert "land of" in ra, "n-gram KẾT THÚC bằng từ chức năng vẫn giữ (mẫu mở đầu chủ đề)"
+
+
+def test_moi_video_dem_mot_lan_cho_mot_cum():
+    """Title lặp cụm 2 lần không được tính thành 2 video."""
+    kho = _kho("life in alaska and life in norway")
+    ra = {g["seed"]: g["so_video"] for g in mapping.goi_y_seed(kho, 50, toi_thieu_video=1, moi_vi_tri=True)}
+    assert ra.get("life in") == 1

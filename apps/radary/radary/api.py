@@ -1015,7 +1015,7 @@ def mapping_api(ws: int, request: Request):
 
 
 @app.get('/api/workspaces/{ws}/discovery/tu-khoa-noi')
-def tu_khoa_noi(ws: int, request: Request, so_cum: int = 12, ngon_ngu: str = ''):
+def tu_khoa_noi(ws: int, request: Request, so_cum: int = 30, ngon_ngu: str = ''):
     """Cụm nào trong pool ĐANG LÊN / ĐANG GIẢM — 0 quota, đọc dữ liệu sẵn có.
 
     Không phải chờ tích luỹ: `pub_ts` của video trong pool có từ 2009 nên mật độ cụm
@@ -1032,8 +1032,8 @@ def tu_khoa_noi(ws: int, request: Request, so_cum: int = 12, ngon_ngu: str = '')
         # được; pool có thị trường thì vẫn tự động theo đế.
         loc = ngon_ngu.strip() or tu_de
         kho = mapping.tai_kho(c, ws)
-        cums = [g['seed'] for g in mapping.goi_y_seed(kho, so_goi_y=max(1, min(so_cum, 30)),
-                                                      ngon_ngu=loc)]
+        cums = [g['seed'] for g in mapping.goi_y_seed(kho, so_goi_y=max(1, min(so_cum, 60)),
+                                                      ngon_ngu=loc, moi_vi_tri=True)]
         dem_nn = {}
         for v in kho:
             ma = mapping.nhan_dien_ngon_ngu(v['title'])

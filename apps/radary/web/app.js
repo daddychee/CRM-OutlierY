@@ -1706,7 +1706,7 @@ function ThanhTruyVan({ muc, mau, ghi }) {
 function BanDoCum({ cum, onChon }) {
   const d = (cum || []).filter(r => r.phan_tram != null && r.tong_video > 0);
   if (d.length < 2) return null;
-  const w = 640, h = 300, L = 46, R = 24, T = 16, B = 30;
+  const w = 720, h = 360, L = 52, R = 30, T = 22, B = 40;
   const lg = v => Math.log10(Math.max(1, v));
   const xMax = Math.max(...d.map(r => lg(r.tong_video))) || 1;
   const ys = d.map(r => r.phan_tram);
@@ -1714,48 +1714,57 @@ function BanDoCum({ cum, onChon }) {
   const X = v => L + (lg(v) / xMax) * (w - L - R);
   const Y = v => T + (1 - (v - yLo) / (yHi - yLo || 1)) * (h - T - B);
   const rMax = Math.max(...d.map(r => r.video_30n), 1);
-  const ban_kinh = n => 5 + 16 * Math.sqrt(Math.max(0, n) / rMax);
+  const bk = n => 5 + 17 * Math.sqrt(Math.max(0, n) / rMax);
   const y0 = Y(0);
+  const cotX = [1, 10, 100, 1000, 10000].filter(v => lg(v) <= xMax);
+  // Nhãn: chỉ những cụm ĐÁNG NHÌN (3 lên mạnh + 2 giảm mạnh + 2 nhiều video nhất) —
+  // 30 bong bóng mà gắn hết thì chữ chồng nhau, đúng lỗi user báo. Còn lại rê chuột.
+  const theoPt = [...d].sort((a2, b2) => b2.phan_tram - a2.phan_tram);
+  const theoSo = [...d].sort((a2, b2) => b2.tong_video - a2.tong_video);
+  const ten = new Set([...theoPt.slice(0, 3), ...theoPt.slice(-2), ...theoSo.slice(0, 2)]
+                      .filter(Boolean).map(r => r.cum));
+  const daDung = [];
   return html`<div style="margin:8px 0 4px">
-    <svg viewBox=${`0 0 ${w} ${h}`} style="width:100%;height:300px">
-      <line x1=${L} y1=${y0} x2=${w - R} y2=${y0} stroke="currentColor" opacity="0.25" stroke-dasharray="4,3"/>
-      <text x=${L + 2} y=${y0 - 4} font-size="10" fill="currentColor" opacity="0.5">0% — đi ngang</text>
-      ${[1, 10, 100, 1000].filter(v => lg(v) <= xMax).map(v => html`
-        <text x=${X(v)} y=${h - 10} font-size="10" fill="currentColor" opacity="0.5" text-anchor="middle">${v}</text>`)}
-      <text x=${(w + L) / 2} y=${h - 1} font-size="10" fill="currentColor" opacity="0.6" text-anchor="middle">
-        số video trong pool (thang log) — càng phải càng đông người làm</text>
-      <text x=${12} y=${T + 8} font-size="10" fill="currentColor" opacity="0.6">+${Math.round(yHi)}%</text>
-      <text x=${12} y=${h - B} font-size="10" fill="currentColor" opacity="0.6">${Math.round(yLo)}%</text>
+    <svg viewBox=${`0 0 ${w} ${h}`} style="width:100%;height:360px">
+      <rect x=${L} y=${T} width=${w - L - R} height=${h - T - B} fill="currentColor" opacity="0.03"/>
+      ${cotX.map(v => html`<line x1=${X(v)} y1=${T} x2=${X(v)} y2=${h - B}
+        stroke="currentColor" opacity="0.10"/>`)}
+      <line x1=${L} y1=${y0} x2=${w - R} y2=${y0} stroke="currentColor" opacity="0.45" stroke-dasharray="5,4"/>
+      <text x=${L + 4} y=${y0 - 5} font-size="11" fill="currentColor" opacity="0.65">0% — đi ngang</text>
+      ${cotX.map(v => html`<text x=${X(v)} y=${h - B + 15} font-size="11" fill="currentColor"
+        opacity="0.7" text-anchor="middle">${v}</text>`)}
+      <text x=${(w + L) / 2} y=${h - 6} font-size="11" fill="currentColor" opacity="0.75" text-anchor="middle">
+        số video trong pool (thang log) → càng phải càng đông người làm</text>
+      <text x=${14} y=${T + 10} font-size="11" fill="currentColor" opacity="0.75">+${Math.round(yHi)}%</text>
+      <text x=${14} y=${h - B} font-size="11" fill="currentColor" opacity="0.75">${Math.round(yLo)}%</text>
+
       ${d.map(r => { const len = r.phan_tram > 15, xuong = r.phan_tram < -15;
-        const mau = len ? '#2e7d32' : xuong ? '#c62828' : '#7e57c2';
+        const mau = len ? '#2e7d32' : xuong ? '#c62828' : '#5b6b7c';
         return html`<g style="cursor:pointer" onClick=${() => onChon && onChon(r.cum)}>
-          <circle cx=${X(r.tong_video)} cy=${Y(r.phan_tram)} r=${ban_kinh(r.video_30n)}
-            fill=${mau} opacity="0.35" stroke=${mau} stroke-width="1.5"/>
+          <circle cx=${X(r.tong_video)} cy=${Y(r.phan_tram)} r=${bk(r.video_30n)}
+            fill=${mau} fill-opacity="0.55" stroke=${mau} stroke-width="1.8" stroke-opacity="0.95"/>
           <title>${r.cum} · ${r.tong_video} video · ${r.phan_tram > 0 ? '+' : ''}${r.phan_tram}% (${r.video_30n_truoc}→${r.video_30n})${r.view_moi_ngay ? ` · ${r.view_moi_ngay} view/ngày` : ''}</title>
         </g>`; })}
-      ${(() => {
-        // Gắn nhãn cho thứ ĐÁNG NHÌN: 3 cụm lên mạnh nhất + 2 cụm giảm mạnh nhất +
-        // cụm nhiều video nhất. Trước đây lấy 6 cụm đầu nên cụm ĐANG GIẢM không bao
-        // giờ có tên — mất đúng nửa thông tin của bản đồ.
-        const theoPt = [...d].sort((a, b) => b.phan_tram - a.phan_tram);
-        const ten = new Set([...theoPt.slice(0, 3), ...theoPt.slice(-2),
-                             [...d].sort((a, b) => b.tong_video - a.tong_video)[0]]
-                            .filter(Boolean).map(r => r.cum));
-        const daDung = [];
-        return d.filter(r => ten.has(r.cum)).map(r => {
-          const cx = X(r.tong_video), cy = Y(r.phan_tram), bk = ban_kinh(r.video_30n);
-          const phai = cx > (w + L) / 2;                     // nửa phải -> nhãn quay sang trái
-          let y = cy + 3;
-          while (daDung.some(v => Math.abs(v - y) < 11)) y += 11;   // tránh nhãn chồng nhau
-          daDung.push(y);
-          return html`<text x=${phai ? cx - bk - 4 : cx + bk + 4} y=${y} font-size="10"
-            fill="currentColor" opacity="0.9" text-anchor=${phai ? 'end' : 'start'}>${r.cum}</text>`;
-        });
-      })()}
+
+      ${d.filter(r => ten.has(r.cum)).map(r => {
+        const cx = X(r.tong_video), cy = Y(r.phan_tram), b2 = bk(r.video_30n);
+        const phai = cx > (w + L) / 2;
+        let y = cy + 4;
+        while (daDung.some(v => Math.abs(v - y) < 14)) y += 14;
+        daDung.push(y);
+        const x = phai ? cx - b2 - 6 : cx + b2 + 6;
+        // vẽ 2 lần: bản nền dày cùng màu nền để chữ không dính vào bong bóng/nhau
+        return html`<g>
+          <text x=${x} y=${y} font-size="12" font-weight="600" text-anchor=${phai ? 'end' : 'start'}
+            stroke="var(--panel,#fff)" stroke-width="3.5" stroke-linejoin="round">${r.cum}</text>
+          <text x=${x} y=${y} font-size="12" font-weight="600" fill="currentColor"
+            text-anchor=${phai ? 'end' : 'start'}>${r.cum}</text></g>`;
+      })}
     </svg>
-    <div class="note" style="margin:0">Cỡ bong bóng = số video mới ${''}30 ngày ·
-      <span style="color:#2e7d32">xanh</span> đang lên · <span style="color:#c62828">đỏ</span> đang giảm ·
-      góc TRÊN-TRÁI = đang lên mà còn ít người làm. Bấm một bong bóng để tra cứu cụm đó.</div>
+    <div class="note" style="margin:0">${d.length} cụm · cỡ bong bóng = số video mới 30 ngày ·
+      <b style="color:#2e7d32">xanh</b> đang lên · <b style="color:#c62828">đỏ</b> đang giảm ·
+      góc TRÊN-TRÁI = đang lên mà còn ít người làm. Rê chuột lên bong bóng để xem tên và số;
+      bấm để tra cứu cụm đó.</div>
   </div>`;
 }
 

@@ -253,20 +253,39 @@ def gan_thi_truong(bd: dict, tt_theo_cum: dict, pool_view_moi: int | None = None
 # Chua: seed phai la MAU CAU cua ngach. May biet mau do o dau? O chinh TITLE video
 # ma pool dang theo doi — n-gram lap lai nhieu nhat chinh la cach ngach nay dat ten.
 def goi_y_seed(kho: list[dict], so_goi_y: int = 8, toi_thieu_video: int = 3,
-               ngon_ngu: str | None = None) -> list[dict]:
+               ngon_ngu: str | None = None, moi_vi_tri: bool = False) -> list[dict]:
     """N-gram 2-3 tu lap lai nhieu nhat trong title pool -> seed dung ngach.
 
-    Chi lay n-gram MO DAU title (phan lon title dat theo mau "Life in X", "Living in
-    X") — n-gram giua cau thuong la ten rieng, khong dung lam seed duoc.
+    `moi_vi_tri=False` (mac dinh cu): chi lay n-gram MO DAU title — hop de goi y SEED
+    quet, vi phan lon title dat theo mau "Life in X".
+    `moi_vi_tri=True`: quet MOI vi tri trong title. User 21/08: "tu khoa trong pool
+    nay co rat nhieu, tai sao chi co moi vai cum" — dung, chi lay dau title thi bo sot
+    gan het chu de nam giua cau ("... abandoned village ...", "... cost of living ...").
+    Che do nay bo n-gram toan tu chuc nang ("in the", "of the") cho khoi rac.
     """
     dem: dict[str, int] = {}
     for v in kho:
         if not hop_ngon_ngu(v["title"], ngon_ngu):
             continue          # pool lẫn ngôn ngữ khác thị trường -> không lấy làm seed
         tu = [t for t in _TU_RX.findall(v["title_l"]) if len(t) > 1]
+        thay = set()          # mỗi cụm đếm MỘT lần cho mỗi video
         for n in (2, 3):
-            if len(tu) >= n:
-                dem[" ".join(tu[:n])] = dem.get(" ".join(tu[:n]), 0) + 1
+            if len(tu) < n:
+                continue
+            vi_tri = range(len(tu) - n + 1) if moi_vi_tri else [0]
+            for i in vi_tri:
+                cum = tu[i:i + n]
+                if all(t in _TU_TRO for t in cum):
+                    continue          # "in the", "of the" — không nói lên chủ đề nào
+                if moi_vi_tri and cum[0] in _TU_TRO:
+                    # Bỏ n-gram MỞ ĐẦU bằng từ chức năng ("the most", "of extremely",
+                    # "the world") — chúng là đuôi của cụm khác, không phải chủ đề.
+                    # Vẫn GIỮ n-gram kết thúc bằng từ chức năng ("life in", "land of")
+                    # vì đó là mẫu mở đầu chủ đề, chính là thứ ngách này hay dùng.
+                    continue
+                thay.add(" ".join(cum))
+        for c in thay:
+            dem[c] = dem.get(c, 0) + 1
     ra = [{"seed": k, "so_video": n} for k, n in dem.items() if n >= toi_thieu_video]
     # bo n-gram 3 tu neu n-gram 2 tu dau cua no da co va pho bien hon (tranh trung lap)
     hai = {r["seed"]: r["so_video"] for r in ra if len(r["seed"].split()) == 2}
