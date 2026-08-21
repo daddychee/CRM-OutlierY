@@ -546,6 +546,19 @@ def make_handler():
                 done = load_checkpoint(b.get("script", ""), b.get("outline", ""))
                 self._json(200, {"done": list(done)})
             elif path == "/api/build":
+                # CUA CHAN transcript tho (21/08/2026). Canh bao suong tu 16/07 da bi bo
+                # qua 100%: do that thang 8 cho thay 3/9 ho so trong kho van dung tren
+                # corpus khong dau cau (sentence_len_mean = 1085) va van duoc dung de viet
+                # suot 3 tuan. Van CHI chan mot lan — user tick xac_nhan la di tiep (A3:
+                # user quyet), nhung phai BIET minh dang quyet gi.
+                from .corpus import transcript_warnings
+                if not b.get("xac_nhan_transcript_tho"):
+                    canh = transcript_warnings(b.get("corpus", ""))
+                    if canh:
+                        self._json(409, {"error": "corpus_transcript_tho", "canh_bao": canh,
+                                         "goi_y": "Bỏ các file này ra, hoặc chấm câu lại rồi "
+                                                  "nạp lại. Vẫn muốn dựng thì tick xác nhận."})
+                        return
                 steps = (1 + int(bool(b.get("rhetoric", True)))
                          + int(bool(b.get("clonekit", True)))
                          + int(bool(b.get("dataset", True))) + int(bool(b.get("lab", False))))

@@ -177,6 +177,8 @@
     <!-- ============ TAB 2: WRITER ============ -->
     <section class="pane" id="p2" role="tabpanel" hidden>
       <div class="lib-note" id="w_libnote"></div>
+      <div id="w_hoso_canhbao" hidden style="margin:6px 0;padding:8px 10px;border-radius:8px;
+           border:1px solid #b1483f;background:rgba(177,72,63,.08);font-size:13px"></div>
       <div class="row">
         <label>Tác giả (thư viện)</label>
         <select id="w_author" onchange="suggestScript();authorMeta()"></select>
@@ -214,6 +216,7 @@ End: ..."></textarea>
         <button class="btn" id="w_stop" onclick="cancelWrite()" hidden>■ Dừng &amp; huỷ</button>
         <button class="btn" id="w_open" onclick="openPath(document.getElementById('w_script').value)" disabled>Mở script.md</button>
         <button class="btn" id="w_dl" onclick="downloadScript()" disabled>⬇ Tải về máy</button>
+        <button class="btn" id="w_kc" onclick="kiemChung()">🔍 Kiểm chứng kịch bản</button>
       </div>
       <div class="status" id="w_status"></div>
       <div class="progress"><i id="w_prog"></i></div>
@@ -221,6 +224,17 @@ End: ..."></textarea>
       <div class="verdict" id="w_verdict">
         <div><div class="pct" id="w_pct">—</div></div>
         <table class="tg" id="w_tg"></table>
+      </div>
+      <!-- KIEM CHUNG KICH BAN (21/08/2026) — 3 nhom tach bach, Python do, 0 LLM.
+           Chi BAO, khong tu sua van ban, khong chan viec xuat (luat A3). -->
+      <div id="kc_box" hidden style="margin-top:14px;border:1px solid var(--border);border-radius:10px;padding:12px">
+        <div class="eyebrow">Kiểm chứng kịch bản <span id="kc_nguon" style="opacity:.7;font-weight:400"></span></div>
+        <div id="kc_ket"></div>
+        <table class="tg" id="kc_bang"></table>
+        <details id="kc_chitiet" style="margin-top:8px" hidden>
+          <summary style="cursor:pointer">Cụm bị đánh dấu (bấm để xem)</summary>
+          <div id="kc_hits" style="max-height:240px;overflow:auto;margin-top:6px"></div>
+        </details>
       </div>
       <div class="logwrap"><div class="eyebrow">Log</div><div class="log" id="w_log"></div></div>
       <div class="hint">Bị ngắt giữa chừng (hết token/mất mạng)? Bấm <b>↻ Tiếp tục</b> để viết tiếp từ chương dở, không phải làm lại từ đầu.</div>
@@ -284,10 +298,29 @@ async function startExtract(){
   if(!corpus){ logLine('ex_log','LỖI: chưa chọn bộ văn bản (bấm Browse…).'); return; }
   if(!name || !out){ logLine('ex_log','LỖI: thiếu tên tác giả hoặc folder kết quả.'); return; }
   $('ex_log').textContent=''; setRunning('ex', true);
-  await api('/api/build', {corpus, name, out,
+  await guiBuild(corpus, name, out, false);
+}
+// Cua chan transcript tho: server tra 409 corpus_transcript_tho -> hoi mot lan roi
+// chay lai kem co xac nhan (user quyet — luat A3, nhung phai biet minh dang quyet gi).
+async function guiBuild(corpus, name, out, xacNhan){
+  const r = await api('/api/build', {corpus, name, out,
     rhetoric:$('ex_rhetoric').checked, clonekit:$('ex_clonekit').checked,
     dataset:$('ex_dataset').checked, provider:$('ex_llm').value||null,
-    lab:$('ex_lab').checked, lab_samples:parseInt($('ex_lab_n').value)||5});
+    lab:$('ex_lab').checked, lab_samples:parseInt($('ex_lab_n').value)||5,
+    xac_nhan_transcript_tho: !!xacNhan});
+  if(r && r.error === 'corpus_transcript_tho'){
+    setRunning('ex', false);
+    logLine('ex_log','⚠ CORPUS CÓ TRANSCRIPT THÔ — hồ sơ giọng dựng từ đây sẽ hỏng nhịp câu:');
+    (r.canh_bao||[]).forEach(c => logLine('ex_log','   • ' + c));
+    logLine('ex_log', r.goi_y || '');
+    if(confirm('Corpus có file transcript thô (không dấu câu).\n\n'
+             + (r.canh_bao||[]).join('\n')
+             + '\n\nDựng hồ sơ từ đây thì mọi số đo giọng đều sai. Vẫn dựng?')){
+      setRunning('ex', true);
+      return guiBuild(corpus, name, out, true);
+    }
+    return;
+  }
   poll('ex');
 }
 
@@ -316,10 +349,79 @@ function authorMeta(){          // dong ghi chu thu vien + nguoi viet ho so dang
   $('w_libnote').innerHTML = LIB.length
     ? `Thư viện: ${LIB.length} tác giả.${who}`
     : 'Chưa có tác giả nào. Sang tab Extractor tạo hồ sơ trước.';
+  soiHoSo();
+}
+// Soi ho so TRUOC khi viet: ho so dung tren corpus thieu dau cau thi moi so do giong
+// deu la rac, va van ra se lech nhip — bao ngay luc chon, dung de doi 20 phut moi biet.
+let SOI = null;
+async function soiHoSo(){
+  const box = $('w_hoso_canhbao'); if(!box) return;
+  try{
+    if(SOI === null) SOI = (await api('/api/soi-ho-so')).ho_so || [];
+  }catch(e){ SOI = []; }
+  const a = selectedAuthor();
+  const r = a && SOI.find(x => x.code === a.code);
+  if(!r || !(r.canh_bao||[]).length){ box.hidden = true; return; }
+  box.hidden = false;
+  box.innerHTML = (r.do_duoc ? '⚠ ' : '✗ ') +
+    `<b>Hồ sơ giọng này có vấn đề</b><br>` +
+    r.canh_bao.map(c => '• ' + esc(c)).join('<br>');
 }
 function suggestScript(){
   const a = selectedAuthor();
   if(a) $('w_script').value = a.output + '/script.md';
+}
+// --- KIEM CHUNG KICH BAN (21/08/2026) -------------------------------------------
+// Ba nhom tach bach: dau vet may (tuyet doi) · nhip (so exemplar ho so) · giong
+// (evaluate_script, CO CUA: ho so dung tren corpus hong thi khong cham).
+const KC_MUC = {dat:['✓','#4a8f5b'], canh_bao:['⚠','#b8860b'], nang:['✗','#b1483f']};
+function kcHang(ten, gtri, ghi){
+  return `<tr><td style="padding:3px 10px 3px 0;opacity:.75">${esc(ten)}</td>`+
+         `<td style="padding:3px 10px 3px 0;font-weight:600">${esc(gtri)}</td>`+
+         `<td style="padding:3px 0;opacity:.7">${esc(ghi||'')}</td></tr>`;
+}
+async function kiemChung(){
+  const a = selectedAuthor();
+  const btn = $('w_kc'); btn.disabled = true; btn.textContent = '⏳ Đang đo…';
+  try{
+    const r = await api('/api/kiem-chung', {code: a ? a.code : '', text: ''});
+    if(r.error){ $('kc_box').hidden=false; $('kc_ket').innerHTML =
+      `<div style="color:#b1483f">${esc(r.error)}</div>`; $('kc_bang').innerHTML=''; return; }
+
+    const A=r.dau_vet_may, B=r.nhip, C=r.giong;
+    const [ico,mau] = KC_MUC[A.muc] || ['·','inherit'];
+    $('kc_nguon').textContent = ` · ${r.nguon} · ${r.so_tu} từ`;
+    $('kc_ket').innerHTML = (r.ket_luan||[]).map(d=>`<div style="margin:2px 0">• ${esc(d)}</div>`).join('');
+
+    let rows = `<tr><td colspan="3" style="padding-top:8px;font-weight:600">A · Dấu vết máy `+
+               `<span style="color:${mau}">${ico}</span></td></tr>`;
+    rows += kcHang('Cụm sáo', `${A.so_hit} cụm`, `mật độ ${A.mat_do_cum}/1000 từ · ${A.so_luat} luật`);
+    rows += kcHang('Em-dash', `${A.em_dash_so_luong}`, `${A.em_dash_tren_1000_tu}/1000 từ · văn người ≈ 0–1,5`);
+    rows += kcHang('Ký tự vô hình', `${A.ky_tu_an}`, A.ky_tu_an? 'gỡ trước khi đăng':'sạch');
+    rows += `<tr><td colspan="3" style="padding-top:10px;font-weight:600">B · Nhịp`+
+            (B.chuan? ' <span style="opacity:.6;font-weight:400">(so với exemplar hồ sơ)</span>'
+                    : ' <span style="opacity:.6;font-weight:400">(mô tả — chưa có chuẩn)</span>')+`</td></tr>`;
+    const c=B.chi_so, ch=B.chuan;
+    rows += kcHang('Từ / câu', c.tu_moi_cau, ch? `exemplar ${ch.tu_moi_cau}`:'');
+    rows += kcHang('Câu cụt (<8 từ)', c.ti_le_cut+'%', ch? `exemplar ${ch.ti_le_cut}%`:'');
+    rows += kcHang('Câu dài (>25 từ)', c.ti_le_dai+'%', ch? `exemplar ${ch.ti_le_dai}%`:'');
+    rows += kcHang('Biến thiên độ dài', c.burstiness_cv, 'số mô tả, không dùng phán bệnh');
+    rows += `<tr><td colspan="3" style="padding-top:10px;font-weight:600">C · Bám giọng tác giả</td></tr>`;
+    rows += C.trang_thai==='da_cham'
+      ? kcHang('Đạt', `${C.phan_tram}%`, `${C.dat}/${C.tong} target`)
+      : kcHang('Chưa chấm', '—', C.ly_do||'');
+    $('kc_bang').innerHTML = rows;
+
+    const hits = A.hits||[];
+    $('kc_chitiet').hidden = !hits.length;
+    $('kc_hits').innerHTML = hits.map(h=>
+      `<div style="padding:2px 0">dòng ${h.dong} · <b>${esc(h.cum)}</b> `+
+      `<span style="opacity:.6">(${esc(h.nhan)})</span>`+
+      (h.goi_y?` → ${esc(h.goi_y)}`:'')+`</div>`).join('');
+    $('kc_box').hidden = false;
+  }catch(e){
+    $('kc_box').hidden=false; $('kc_ket').innerHTML=`<div style="color:#b1483f">Lỗi: ${esc(e)}</div>`;
+  }finally{ btn.disabled=false; btn.textContent='🔍 Kiểm chứng kịch bản'; }
 }
 async function pickSave(){
   const {path} = await api('/api/pick-save', {prompt:'Lưu kịch bản', default:'script.md'});

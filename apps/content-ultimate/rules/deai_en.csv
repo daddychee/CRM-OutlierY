@@ -1,0 +1,22 @@
+mau_regex,nhan,trong_so,goi_y_sua,ghi_chu
+"\bdelve[sd]? into\b",cum sao,3,"noi thang: 'look at' / bo han",dau hieu LLM kinh dien
+"\bin conclusion\b",chuyen y may,3,"ket bang mot hinh anh cu the",van noi khong ai noi cau nay
+"\bit(?:'s| is) worth noting that\b",cum sao,3,"bo han hoac noi thang dieu can noi",
+"\ba testament to\b",cum sao,3,"noi cai gi chung minh dieu gi",
+"\b(?:rich |vibrant )?tapestry of\b",cum sao,3,"ta thang thu nhin thay",
+"\bunlock(?:ing)? the secrets?\b",cum sao,3,"noi ro se cho xem gi",
+"\blet(?:'s| us) (?:dive|delve) (?:in|into)\b",cum sao,3,"vao thang noi dung",
+"\bin the realm of\b",cum sao,2,"'in' la du",
+"\bplays? a (?:crucial|vital|key|significant) role\b",cum sao,2,"noi no lam GI cu the",
+"\bstands? as a\b",cum sao,2,"'is' la du",
+"\bserves? as a\b",cum sao,2,"'is' la du",
+"\bwhen it comes to\b",cum sao,2,"vao thang chu de",
+"\bin today(?:'s)? world\b",cum sao,2,"bo — gan nhu luon thua",
+"\bnot (?:just|only)\b[^.]{1,60}\bbut\b",cau truc may,2,"tach thanh 2 cau",cau truc doi lap lap deu
+"^(?:Moreover|Furthermore|Additionally|Ultimately|In essence)\b",chuyen y may,2,"noi doan sau tu chay tiep",dau dong
+"^(?:Firstly|Secondly|Thirdly|Lastly)\b",chuyen y may,2,"bo danh so — ke lien mach",dau dong
+"\bfrom\b[^.]{1,40}\bto\b[^.]{1,40}\bto\b",tricolon may,1,"giu 2 ve manh nhat",liet ke 3 ve trong mot cau
+"\b(?:breathtaking|stunning|majestic|picturesque)\b",tinh tu rong,0.5,"ta bang chi tiet cu the",kenh du lich dung that — trong so thap co chu y
+"\bnestled\b",tinh tu rong,0.5,"'sits' / 'lies'",
+"\bboasts?\b",tinh tu rong,0.5,"'has' / ta so lieu that",
+"\bwhat (?:if|makes)\b[^?]{0,60}\?",cau hoi tu tu,0.5,"giu toi da 1-2 moi chuong",PACING cho phep — chi dem

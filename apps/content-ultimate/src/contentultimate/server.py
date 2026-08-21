@@ -16,6 +16,7 @@ CHỈ bind 127.0.0.1 — lên VPS phải đặt sau reverse proxy + HTTPS + auth
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import re
 import secrets
@@ -1405,6 +1406,66 @@ def _cham_title(b: dict, rd: Path) -> tuple[int, dict]:
     return 200, {"title": kq}
 
 
+def _kiem_chung(b: dict) -> tuple[int, dict]:
+    """KIEM CHUNG kich ban dau ra — 3 nhom tach bach, 0 LLM, 0 dong (voiceprofile/deai.py).
+
+    Nhan `code` (ma tac gia trong library) chu KHONG nhan duong dan tu client: profile
+    va script deu tra tu so dang ky, khong de client tro vao file bat ky. `text` rong
+    thi doc script.md cua chinh tac gia do.
+    """
+    from voiceprofile import deai, library
+
+    text = str(b.get("text") or "")
+    code = str(b.get("code") or "").strip()
+    profile = None
+    nguon = "van ban dan tay"
+
+    if code:
+        entry = next((a for a in library.list_authors() if a.get("code") == code), None)
+        if entry is None:
+            return 400, {"error": f"khong tim thay tac gia {code}"}
+        try:
+            profile = json.loads(Path(entry["profile"]).read_text(encoding="utf-8"))
+        except (OSError, ValueError) as e:
+            return 200, {"error": f"khong doc duoc ho so giong: {e}"}
+        if not text.strip():
+            sp = Path(entry["profile"]).parent / "script.md"
+            if not sp.exists():
+                return 400, {"error": "chua co script.md — viet kich ban truoc hoac dan van ban vao"}
+            text = sp.read_text(encoding="utf-8", errors="ignore")
+            nguon = f"script.md cua {entry.get('name') or code}"
+
+    if not text.strip():
+        return 400, {"error": "chua co van ban de kiem chung"}
+    if len(text) > 500_000:
+        return 400, {"error": "van ban qua dai (tran 500.000 ky tu)"}
+
+    kq = deai.kiem_chung(text, profile)
+    kq["nguon"] = nguon
+    return 200, kq
+
+
+def _soi_kho_ho_so(b: dict) -> tuple[int, dict]:
+    """Bang soi TOAN BO ho so giong: ho so nao dung tren corpus hong thi moi so do
+    giong dua tren no deu la rac (do that 21/08: 3/9 ho so dinh)."""
+    from voiceprofile import library, soi_ho_so
+
+    rows = []
+    for a in library.list_authors():
+        p = Path(a["profile"])
+        try:
+            r = soi_ho_so.soi_profile(json.loads(p.read_text(encoding="utf-8")))
+        except (OSError, ValueError):
+            continue
+        r["code"] = a.get("code")
+        r["thu_muc"] = p.parent.name
+        rows.append(r)
+    rows.sort(key=lambda r: (r["do_duoc"], r["neo_du"]))     # ho so hong len dau
+    return 200, {"ho_so": rows,
+                 "so_hong": sum(1 for r in rows if not r["do_duoc"]),
+                 "so_neo_mong": sum(1 for r in rows if not r["neo_du"])}
+
+
 def _py_split(b: dict, rd: Path) -> tuple[int, dict]:
     """Nút ⚡ Chia outline (PY): Python chia tất định từ số đo cluster (hook/ending
     mạnh nhất coverage→peak, N chương thứ tự theo pos) — 0 LLM, không tốn tiền."""
@@ -1647,6 +1708,8 @@ def make_handler(run_name: str):
                 self._json(200, oe_srv.status_of(rn or _rd_for(self).name))
             elif path == "/api/outlines":
                 self._json(200, {"outlines": _outlines()})
+            elif path == "/api/soi-ho-so":
+                self._json(*_soi_kho_ho_so({}))
             else:
                 super().do_GET()
 
@@ -1789,6 +1852,8 @@ def make_handler(run_name: str):
             elif path == "/oe/api/cham-title":
                 b = self._body()
                 self._json(*_cham_title(b, _rd_for(self, str(b.get("run") or ""))))
+            elif path == "/api/kiem-chung":
+                self._json(*_kiem_chung(self._body()))
             else:
                 super().do_POST()
 
