@@ -1742,12 +1742,14 @@ function Mapping({ ws, canEdit }) {
   const [busy, setBusy] = useState('');
   const [err, setErr] = useState('');
   const [lichSu, setLichSu] = useState([]);
+  const [soSanh, setSoSanh] = useState(null);
   const [xemLai, setXemLai] = useState(null);   // mốc thời gian nếu đang xem bản đã lưu
 
   // ĐỔI POOL = xoá sạch kết quả cũ. Thiếu chỗ này thì tra ở US xong sang Spain vẫn
   // thấy số của US — user báo 21/08 ("từ khoá thị trường US lọt sang Spain").
   useEffect(() => {
-    setA(null); setB(null); setCum(''); setErr(''); setBusy(''); setXemLai(null); setLichSu([]);
+    setA(null); setB(null); setCum(''); setErr(''); setBusy(''); setXemLai(null);
+    setLichSu([]); setSoSanh(null);
     api('GET', `/workspaces/${ws}/discovery/goi-y-seed`).then(r => setGoiY(r.seed || [])).catch(() => setGoiY([]));
     api('GET', `/workspaces/${ws}/mapping`).then(d => setPool(d.pool || {})).catch(() => setPool({}));
   }, [ws]);
@@ -1765,6 +1767,7 @@ function Mapping({ ws, canEdit }) {
       if (wsLucDo !== ws) return;               // người dùng đã đổi pool giữa chừng
       setA(a); setPool(a.pool || {}); setLichSu(a.lich_su || []);
       if (a.ngoai) setB(a.ngoai);               // kết quả ngoài đã lưu từ lần trước
+      api('GET', `/workspaces/${ws}/tra-cuu/so-sanh`).then(setSoSanh).catch(() => {});
       if (lai) { setXemLai(a.ts || null); setBusy(''); return; }
       if (!canEdit) { setBusy(''); return; }
       if (a.ngoai) {                            // đã có bản cũ -> hỏi lại là quyết định của người
@@ -1774,6 +1777,7 @@ function Mapping({ ws, canEdit }) {
       const b = await api('POST', `/workspaces/${ws}/tra-cuu/ngoai`, { cum: q });
       if (wsLucDo !== ws) return;
       setB(b); setLichSu(b.lich_su || []); setBusy('');
+      api('GET', `/workspaces/${ws}/tra-cuu/so-sanh`).then(setSoSanh).catch(() => {});
     } catch (e) { setErr(String(e.message)); setBusy(''); }
   };
   const hoiLaiNgoai = async () => {
@@ -1866,6 +1870,20 @@ function Mapping({ ws, canEdit }) {
         ${xemLai && canEdit ? html`<button class="btn small ghost" style="margin-left:8px"
           onClick=${hoiLaiNgoai} disabled=${!!busy}>↻ Hỏi lại (102 units)</button>` : ''}</div>
 
+      ${yt.co_du_lieu ? html`<div class="panel" style="margin:0 0 12px;background:var(--accent-soft,rgba(76,143,224,.08))">
+        <div class="row" style="gap:22px;flex-wrap:wrap;align-items:baseline">
+          <div><b style="font-size:20px">${soGon(yt.tong_view_90n)}</b>
+            <span class="note"> view thị trường trả cho chủ đề này trong 90 ngày
+            (top ${yt.so_ket_qua} video)</span></div>
+          <div><b>${soGon(yt.view_moi_thang)}</b> <span class="note">view/tháng</span></div>
+          ${wk.co_du_lieu ? html`<div><b>${soGon(wk.xem_thang_cuoi)}</b>
+            <span class="note">lượt tra Wikipedia/tháng</span></div>` : ''}
+        </div>
+        <div class="note" style="margin:4px 0 0">Không nền tảng nào công bố số lần tìm kiếm
+          của YouTube (API trả 1.000.000 cho mọi truy vấn — số giả). Đây là <b>view thật</b>
+          thị trường đang trả, dùng để so lượng giữa các từ khoá.</div>
+      </div>` : ''}
+
       ${tr.co_du_lieu ? html`<div style="margin-bottom:12px">
         <div><b>Google Trends</b> <span class="note">${tr.geo} · ${tr.timeframe}${tr.tu_cache ? ' · lấy lại từ lần hỏi hôm nay' : ''}</span>
           ${tr.xu_huong ? html` — <b style=${`color:${tr.xu_huong.chieu === 'lên' ? '#2e7d32' : tr.xu_huong.chieu === 'xuống' ? '#c62828' : '#546e7a'}`}>
@@ -1925,6 +1943,22 @@ function Mapping({ ws, canEdit }) {
         <${DuongXuHuong} diem=${wk.diem} nhan=${`Lượt xem/tháng · tháng gần nhất ${soGon(wk.xem_thang_cuoi)}`}/>
         ${(wk.bai_lien_quan || []).length ? html`<div class="note">Bài liên quan: ${(wk.bai_lien_quan || []).join(' · ')}</div>` : ''}
       </div>` : html`<div class="note">Wikipedia: ${wk.ly_do || 'không có dữ liệu'}${wk.bai ? ` (bài: ${wk.bai})` : ''}</div>`}
+
+      ${(soSanh && (soSanh.hang || []).filter(h => h.tong_view_90n != null).length > 1)
+        ? html`<div style="margin-bottom:12px">
+        <div><b>So lượng giữa các từ khoá đã tra ở pool này</b></div>
+        <table class="tbl"><thead><tr><th>Từ khoá</th><th>View 90 ngày</th>
+          <th>View/tháng</th><th>Wikipedia/tháng</th><th>Kênh nhỏ lọt top</th><th>Pool mình</th></tr></thead>
+          <tbody>${(soSanh.hang || []).filter(h => h.tong_view_90n != null).map(h => html`<tr
+            style=${h.cum === cum ? 'font-weight:600' : ''}>
+            <td><a href="#" onClick=${e => { e.preventDefault(); traCuu(h.cum, true); }}>${h.cum}</a></td>
+            <td>${soGon(h.tong_view_90n)}</td><td>${soGon(h.view_moi_thang)}</td>
+            <td>${h.wiki_thang ? soGon(h.wiki_thang) : '—'}</td>
+            <td>${h.kenh_nho_lot_top != null ? `${h.kenh_nho_lot_top}/${h.so_ket_qua}` : '—'}</td>
+            <td>${h.pool_video ?? '—'}</td></tr>`)}
+          </tbody></table>
+        <div class="note">${soSanh.ghi_chu}</div>
+      </div>` : ''}
 
       ${nw.co_du_lieu ? html`<div>
         <div><b>Báo chí đang nói gì</b> <span class="note">· ${nw.so_bai} bài (Google News)</span></div>

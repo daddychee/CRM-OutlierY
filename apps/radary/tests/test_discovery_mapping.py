@@ -644,3 +644,30 @@ def test_trends_bat_cookie_disk():
     src = Path(__file__).resolve().parents[1].joinpath("radary", "tra_cuu.py").read_text(encoding="utf-8")
     assert 'cookies="disk"' in src
     assert "TRENDSPYG_COOKIES" in src
+
+
+def test_chi_so_LUONG_la_view_that_khong_phai_totalResults():
+    """User 21/08: 'chưa đưa ra được quantity của từ khoá'. Không ai có search volume
+    của YouTube — pageInfo.totalResults đo thật trả 1.000.000 cho MỌI truy vấn (số
+    giả). Số thật duy nhất là VIEW thị trường đang trả."""
+    from radary import tra_cuu
+
+    class _Api:
+        used = 0
+
+        def get(self, ep, params, cost=1):
+            if ep == "search":
+                return {"pageInfo": {"totalResults": 1000000},
+                        "items": [{"id": {"videoId": f"v{i}"}} for i in range(2)]}
+            if ep == "videos":
+                return {"items": [
+                    {"id": f"v{i}", "snippet": {"title": "t", "channelTitle": "K",
+                                                "channelId": "UC", "publishedAt": "2026-07-01T00:00:00Z",
+                                                "defaultAudioLanguage": "en"},
+                     "statistics": {"viewCount": str(v)}, "contentDetails": {"duration": "PT20M"}}
+                    for i, v in enumerate([300000, 100000])]}
+            return {"items": []}
+    r = tra_cuu.ngoai_youtube(_Api(), "life in alaska", {"relevanceLanguage": "en"})
+    assert r["tong_view_90n"] == 400000
+    assert r["view_moi_thang"] == round(400000 / 3)
+    assert "totalResults" not in json.dumps(r)      # tuyệt đối không dùng số giả đó

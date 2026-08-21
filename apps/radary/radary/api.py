@@ -1014,6 +1014,44 @@ def mapping_api(ws: int, request: Request):
         return bd
 
 
+@app.get('/api/workspaces/{ws}/tra-cuu/so-sanh')
+def tra_cuu_so_sanh(ws: int, request: Request):
+    """Xếp hạng các từ khoá ĐÃ TRA ở pool này theo LƯỢNG — 0 quota, đọc lịch sử.
+
+    Không ai có search volume của YouTube (totalResults đo thật trả 1.000.000 cho mọi
+    truy vấn — số giả). Ba con số THẬT dùng được, để cạnh nhau cho người tự so:
+      · tổng view 90 ngày mà thị trường trả cho chủ đề (YouTube)
+      · lượt xem Wikipedia/tháng (mức quan tâm ngoài YouTube)
+      · số video pool mình đã làm về chủ đề đó
+    """
+    with get_conn() as c:
+        u = auth.require_user(c, request)
+        auth.ws_for_user(c, ws, u['id'])
+        hang = []
+        for m in db.tra_cuu_danh_sach(c, ws, limit=50):
+            d = db.tra_cuu_doc(c, ws, m['cum']) or {}
+            b, a = (d.get('b') or {}), (d.get('a') or {})
+            yt, wk = (b.get('youtube') or {}), (b.get('wiki') or {})
+            hang.append({
+                'cum': m['cum'], 'ts': m['ts'],
+                'tong_view_90n': yt.get('tong_view_90n'),
+                'view_moi_thang': yt.get('view_moi_thang'),
+                'view_giua': yt.get('view_giua'),
+                'kenh_nho_lot_top': len(yt.get('kenh_moi_noi') or []) if yt else None,
+                'so_ket_qua': yt.get('so_ket_qua'),
+                'wiki_thang': wk.get('xem_thang_cuoi'),
+                'wiki_bai': wk.get('bai'),
+                'pool_video': a.get('so_video'),
+            })
+        co_so = [h for h in hang if h['tong_view_90n'] is not None]
+        co_so.sort(key=lambda h: -(h['tong_view_90n'] or 0))
+        return {'hang': co_so + [h for h in hang if h['tong_view_90n'] is None],
+                'ghi_chu': ('YouTube không công bố số lần tìm kiếm; totalResults của API '
+                            'trả 1.000.000 cho mọi truy vấn nên vô dụng. Cột "view 90 ngày" '
+                            'là lượt xem THẬT thị trường trả cho chủ đề — dùng nó để so '
+                            'lượng giữa các từ khoá.')}
+
+
 @app.get('/api/workspaces/{ws}/tra-cuu')
 def tra_cuu_pool(ws: int, request: Request, cum: str = '', xem_lai: int = 0):
     """KHỐI A — pool đang mở làm gì với từ khoá này + xu hướng theo lứa đăng.

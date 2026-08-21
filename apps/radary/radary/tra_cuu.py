@@ -225,6 +225,12 @@ def ngoai_youtube(api, cum: str, vung: dict | None = None, so_kq: int = 20) -> d
     for x in vids:
         x.update(subs.get(x["kenh_id"]) or {"subs": None})
 
+    # LUONG (user 21/08: "chua dua ra duoc quantity cua tu khoa"). Khong ai co search
+    # volume cua YouTube — `pageInfo.totalResults` do that tra 1.000.000 cho MOI truy
+    # van (cat tran, so gia). Con so THAT duy nhat lay duoc la VIEW: tong luot xem ma
+    # thi truong tra cho chu de nay trong 90 ngay, tren top ket qua.
+    tong_view = sum(x["views"] for x in vids)
+
     # KENH MOI NOI: kenh nho ma video van len top view trong 90 ngay = dang thang
     nho = {}
     for x in vids:
@@ -241,6 +247,9 @@ def ngoai_youtube(api, cum: str, vung: dict | None = None, so_kq: int = 20) -> d
         "so_ket_qua": len(vids),
         "da_bo": {"khac_ngon_ngu": bo_ngon_ngu, "shorts": bo_short},
         "view_giua": statistics.median([x["views"] for x in vids]) if vids else 0,
+        "tong_view_90n": tong_view,
+        "view_moi_thang": round(tong_view / 3),          # 90 ngay ~ 3 thang
+        "view_moi_ngay_tong": round(sum(x["view_moi_ngay"] for x in vids)),
         "top_video": sorted(vids, key=lambda x: -x["views"])[:8],
         "kenh_moi_noi": sorted(nho.values(), key=lambda k: -k["view_tot_nhat"])[:6],
     }
