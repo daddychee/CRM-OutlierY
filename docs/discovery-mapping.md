@@ -293,3 +293,58 @@ hướng gõ) · `life in fairbanks alaska` (3) · `life in alaska cabin` · `�
 Ví dụ thật `life in alaska` (24s, 102 units): Trends **+65%** · Wikipedia bài
 *Life Below Zero* **−46%** · 8 bài báo · YouTube 90 ngày view giữa **726k** · kênh
 12.100 subs làm **2,48M view**.
+
+---
+
+## 12. TỪ KHOÁ ĐANG NỔI + bản đồ bong bóng (21/08, tối)
+
+User hỏi: *"biểu đồ từ khoá đang nổi này có tracking realtime, xem mật độ từ khoá nào
+đang lên đang giảm — làm được không?"* → **Được, và không phải chờ tích luỹ**: `pub_ts`
+của video trong pool có từ 2009 nên mật độ mỗi cụm theo tháng dựng được ngay; pool lại
+được scheduler quét liên tục nên số tự cập nhật mỗi vòng quét ("realtime" theo nhịp pool).
+
+Đo **hai chiều** để không nhầm *nhiều người làm* với *đang ăn*:
+
+| Chiều | Cách đo |
+|---|---|
+| **Lượng** | số video mới dùng cụm trong 30 ngày qua, so với 30 ngày liền trước |
+| **Chất** | view/ngày trung vị của video 90 ngày gần đây dùng cụm đó |
+
+Đo thật pool **LIFE IN — US** (3.254 video):
+
+| Cụm | Xu hướng | Video 30n | View/ngày |
+|---|---|---|---|
+| `living in` | **↑ +316%** | 19 → 79 | **108** |
+| `life in` | ↑ +61% | 314 → 504 | 48 |
+| `real life in` | ↑ +41% | 196 → 276 | 43 |
+| `documentary about` | **↓ −95%** | 20 → 1 | 12 |
+| `15 mind` | **↓ −100%** | 6 → 0 | — |
+
+Pool **SPACE — US**: `what happens` ↑+52% (view/ngày 117) · `james webb` ↑+32% ·
+`what is` đi ngang nhưng view/ngày **170** — cụm ổn định ăn khách nhất.
+
+### Bản đồ bong bóng (theo mẫu "beachhead map" user gửi)
+
+X = số video trong pool (**thang log** — lệch hàng trăm lần) · Y = % thay đổi 30 ngày ·
+cỡ bong bóng = số video mới 30 ngày · xanh lên / đỏ giảm. **Góc trên-trái = đang lên mà
+còn ít người làm.** Bấm một bong bóng là tra cứu cụm đó.
+
+**Ba lỗi hiển thị chỉ lộ khi chụp màn hình kiểm:** nhãn chồng nhau · nhãn bị cắt ở mép
+phải · và nặng nhất: nhãn chỉ gắn cho 6 cụm ĐẦU nên **cụm đang giảm không bao giờ có
+tên** — mất đúng nửa thông tin của bản đồ. Nay gắn nhãn cho 3 cụm lên mạnh nhất + 2 cụm
+giảm mạnh nhất + cụm nhiều video nhất, nhãn tự tránh nhau và quay vào trong khi ở nửa phải.
+
+### Cụm tiếng Việt vẫn lọt — vá
+
+Pool **chưa gắn thị trường** thì đế không cho biết ngôn ngữ, nên trước đó không lọc gì:
+pool gốc LIFE IN (102 video `vi` · 35 `en` · 2 `es`) ra cụm `sự thật`, `cuộc sống thực`.
+Nay khối này có **dropdown chọn ngôn ngữ lọc** khi pool chưa gắn thị trường (chọn
+English → `travel to`, `real life in`), **nhớ lựa chọn theo pool** qua localStorage, và
+hiện luôn thành phần ngôn ngữ của pool để biết mình đang nhìn cái gì. Pool có thị trường
+thì vẫn tự động theo đế, không hỏi.
+
+### Điều kiện đủ mẫu — sửa sau khi đo
+
+Ban đầu đòi **cả hai** kỳ ≥ 3 video mới tính %, nên cụm đang chết hẳn (`15 mind`: 6 → 0)
+bị xếp "ít mẫu" — mất đúng tín hiệu giảm mạnh nhất. Nay chỉ cần **kỳ trước** đủ mẫu
+(nó là mẫu số).

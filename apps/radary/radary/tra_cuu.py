@@ -347,3 +347,56 @@ def wikipedia(cum: str, lang: str = "en", doc=None, so_thang: int = 13) -> dict:
             "diem": diem, "xem_thang_cuoi": diem[-1]["gia_tri"],
             "xu_huong": {"phan_tram": lech,
                          "chieu": "lên" if lech > 15 else "xuống" if lech < -15 else "đi ngang"}}
+
+
+# ---- TU KHOA DANG NOI trong pool (21/08, user hoi "co tracking realtime khong") ----
+# CO — va khong phai cho tich luy: pub_ts cua video trong pool co tu 2009, nen mat do
+# cua mot cum theo thang dung duoc NGAY. Pool lai duoc scheduler quet lien tuc nen so
+# tu cap nhat moi vong quet. Day la "realtime" theo nhip pool, khong phai tung giay.
+#
+# Do HAI CHIEU de khong nham "nhieu nguoi lam" voi "dang an":
+#   LUONG  — so video moi dung cum do trong 30 ngay qua, so voi 30 ngay lien truoc
+#   CHAT   — view/ngay trung vi cua video 90 ngay gan day dung cum do
+CUA_SO_NGAY = 30
+TOI_THIEU_SO_SANH = 3        # duoi 3 video/cua so thi khong tinh % (mau qua nho)
+
+
+def xu_huong_cum(kho: list[dict], cums: list[str], bay_gio: float | None = None,
+                 so_thang: int = 12) -> list[dict]:
+    """Cum nao trong pool dang LEN / DANG GIAM. 0 quota, doc du lieu san co."""
+    bay_gio = bay_gio or time.time()
+    m30, m60 = bay_gio - CUA_SO_NGAY * 86400, bay_gio - 2 * CUA_SO_NGAY * 86400
+    m90 = bay_gio - 90 * 86400
+    moc_thang = bay_gio - so_thang * 30 * 86400
+    ra = []
+    for cum in cums:
+        rx = mapping._rx(cum)
+        khop = [v for v in kho if rx.search(v["title_l"])]
+        if not khop:
+            continue
+        nay = [v for v in khop if (v.get("pub_ts") or 0) >= m30]
+        truoc = [v for v in khop if m60 <= (v.get("pub_ts") or 0) < m30]
+        vpd = [x for x in (_view_moi_ngay(v, bay_gio) for v in khop
+                           if (v.get("pub_ts") or 0) >= m90) if x]
+        # Chi can KY TRUOC du mau (no la mau so). Ban dau doi ca hai ky >= 3 nen cum
+        # dang CHET han (truoc 6 video, nay 0) bi xep "it mau" — mat dung tin hieu
+        # giam manh nhat. Do that 21/08: '15 mind' 6 -> 0.
+        du = len(truoc) >= TOI_THIEU_SO_SANH
+        pt = round(100 * (len(nay) - len(truoc)) / len(truoc)) if du else None
+
+        thang: dict[str, int] = {}
+        for v in khop:
+            if (v.get("pub_ts") or 0) >= moc_thang:
+                thang[_thang(v["pub_ts"])] = thang.get(_thang(v["pub_ts"]), 0) + 1
+        ra.append({
+            "cum": cum, "tong_video": len(khop),
+            "video_30n": len(nay), "video_30n_truoc": len(truoc),
+            "phan_tram": pt,
+            "chieu": None if pt is None else ("lên" if pt > 15 else "xuống" if pt < -15 else "đi ngang"),
+            "du_mau": du,
+            "view_moi_ngay": round(statistics.median(vpd)) if len(vpd) >= 2 else None,
+            "chuoi": [{"ngay": k, "gia_tri": thang[k]} for k in sorted(thang)],
+        })
+    # dang len truoc, roi toi cum nhieu video — cum khong du mau xuong duoi cung
+    ra.sort(key=lambda r: (r["phan_tram"] is None, -(r["phan_tram"] or 0), -r["tong_video"]))
+    return ra

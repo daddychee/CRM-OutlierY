@@ -1014,6 +1014,37 @@ def mapping_api(ws: int, request: Request):
         return bd
 
 
+@app.get('/api/workspaces/{ws}/discovery/tu-khoa-noi')
+def tu_khoa_noi(ws: int, request: Request, so_cum: int = 12, ngon_ngu: str = ''):
+    """Cụm nào trong pool ĐANG LÊN / ĐANG GIẢM — 0 quota, đọc dữ liệu sẵn có.
+
+    Không phải chờ tích luỹ: `pub_ts` của video trong pool có từ 2009 nên mật độ cụm
+    theo tháng dựng được ngay. Pool lại được scheduler quét liên tục nên số tự cập
+    nhật mỗi vòng quét — "realtime" theo nhịp pool.
+    """
+    from . import mapping, tra_cuu
+    with get_conn() as c:
+        u = auth.require_user(c, request)
+        w = auth.ws_for_user(c, ws, u['id'])
+        _, tu_de = _vung_cua_ws(w)
+        # Pool CHƯA gắn thị trường thì đế không cho biết ngôn ngữ -> trước đây không lọc
+        # gì, nên cụm tiếng Việt lọt vào pool đang xem (user báo 21/08). Nay người chọn
+        # được; pool có thị trường thì vẫn tự động theo đế.
+        loc = ngon_ngu.strip() or tu_de
+        kho = mapping.tai_kho(c, ws)
+        cums = [g['seed'] for g in mapping.goi_y_seed(kho, so_goi_y=max(1, min(so_cum, 30)),
+                                                      ngon_ngu=loc)]
+        dem_nn = {}
+        for v in kho:
+            ma = mapping.nhan_dien_ngon_ngu(v['title'])
+            if ma:
+                dem_nn[ma] = dem_nn.get(ma, 0) + 1
+        return {'cum': tra_cuu.xu_huong_cum(kho, cums),
+                'cua_so_ngay': tra_cuu.CUA_SO_NGAY, 'so_video_pool': len(kho),
+                'ngon_ngu_loc': loc, 'tu_de': bool(tu_de),
+                'ngon_ngu_trong_pool': sorted(dem_nn.items(), key=lambda x: -x[1])}
+
+
 @app.get('/api/workspaces/{ws}/tra-cuu/lich-su')
 def tra_cuu_lich_su(ws: int, request: Request, limit: int = 30):
     """Từ khoá đã tra ở pool này. Có route riêng để mở tab (hoặc F5) là thấy ngay —

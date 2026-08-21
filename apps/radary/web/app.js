@@ -1699,6 +1699,75 @@ function ThanhTruyVan({ muc, mau, ghi }) {
   </div>`;
 }
 
+// BẢN ĐỒ BONG BÓNG cho từ khoá trong pool (user 21/08 gửi mẫu "beachhead map").
+// X = số video trong pool (mức cạnh tranh, thang log vì lệch hàng trăm lần)
+// Y = % thay đổi 30 ngày (xu hướng)   ·   cỡ bong bóng = số video mới 30 ngày
+// Góc TRÊN-TRÁI = đang lên mà ít người làm = chỗ đáng nhìn trước.
+function BanDoCum({ cum, onChon }) {
+  const d = (cum || []).filter(r => r.phan_tram != null && r.tong_video > 0);
+  if (d.length < 2) return null;
+  const w = 640, h = 300, L = 46, R = 24, T = 16, B = 30;
+  const lg = v => Math.log10(Math.max(1, v));
+  const xMax = Math.max(...d.map(r => lg(r.tong_video))) || 1;
+  const ys = d.map(r => r.phan_tram);
+  const yHi = Math.max(20, ...ys), yLo = Math.min(-20, ...ys);
+  const X = v => L + (lg(v) / xMax) * (w - L - R);
+  const Y = v => T + (1 - (v - yLo) / (yHi - yLo || 1)) * (h - T - B);
+  const rMax = Math.max(...d.map(r => r.video_30n), 1);
+  const ban_kinh = n => 5 + 16 * Math.sqrt(Math.max(0, n) / rMax);
+  const y0 = Y(0);
+  return html`<div style="margin:8px 0 4px">
+    <svg viewBox=${`0 0 ${w} ${h}`} style="width:100%;height:300px">
+      <line x1=${L} y1=${y0} x2=${w - R} y2=${y0} stroke="currentColor" opacity="0.25" stroke-dasharray="4,3"/>
+      <text x=${L + 2} y=${y0 - 4} font-size="10" fill="currentColor" opacity="0.5">0% — đi ngang</text>
+      ${[1, 10, 100, 1000].filter(v => lg(v) <= xMax).map(v => html`
+        <text x=${X(v)} y=${h - 10} font-size="10" fill="currentColor" opacity="0.5" text-anchor="middle">${v}</text>`)}
+      <text x=${(w + L) / 2} y=${h - 1} font-size="10" fill="currentColor" opacity="0.6" text-anchor="middle">
+        số video trong pool (thang log) — càng phải càng đông người làm</text>
+      <text x=${12} y=${T + 8} font-size="10" fill="currentColor" opacity="0.6">+${Math.round(yHi)}%</text>
+      <text x=${12} y=${h - B} font-size="10" fill="currentColor" opacity="0.6">${Math.round(yLo)}%</text>
+      ${d.map(r => { const len = r.phan_tram > 15, xuong = r.phan_tram < -15;
+        const mau = len ? '#2e7d32' : xuong ? '#c62828' : '#7e57c2';
+        return html`<g style="cursor:pointer" onClick=${() => onChon && onChon(r.cum)}>
+          <circle cx=${X(r.tong_video)} cy=${Y(r.phan_tram)} r=${ban_kinh(r.video_30n)}
+            fill=${mau} opacity="0.35" stroke=${mau} stroke-width="1.5"/>
+          <title>${r.cum} · ${r.tong_video} video · ${r.phan_tram > 0 ? '+' : ''}${r.phan_tram}% (${r.video_30n_truoc}→${r.video_30n})${r.view_moi_ngay ? ` · ${r.view_moi_ngay} view/ngày` : ''}</title>
+        </g>`; })}
+      ${(() => {
+        // Gắn nhãn cho thứ ĐÁNG NHÌN: 3 cụm lên mạnh nhất + 2 cụm giảm mạnh nhất +
+        // cụm nhiều video nhất. Trước đây lấy 6 cụm đầu nên cụm ĐANG GIẢM không bao
+        // giờ có tên — mất đúng nửa thông tin của bản đồ.
+        const theoPt = [...d].sort((a, b) => b.phan_tram - a.phan_tram);
+        const ten = new Set([...theoPt.slice(0, 3), ...theoPt.slice(-2),
+                             [...d].sort((a, b) => b.tong_video - a.tong_video)[0]]
+                            .filter(Boolean).map(r => r.cum));
+        const daDung = [];
+        return d.filter(r => ten.has(r.cum)).map(r => {
+          const cx = X(r.tong_video), cy = Y(r.phan_tram), bk = ban_kinh(r.video_30n);
+          const phai = cx > (w + L) / 2;                     // nửa phải -> nhãn quay sang trái
+          let y = cy + 3;
+          while (daDung.some(v => Math.abs(v - y) < 11)) y += 11;   // tránh nhãn chồng nhau
+          daDung.push(y);
+          return html`<text x=${phai ? cx - bk - 4 : cx + bk + 4} y=${y} font-size="10"
+            fill="currentColor" opacity="0.9" text-anchor=${phai ? 'end' : 'start'}>${r.cum}</text>`;
+        });
+      })()}
+    </svg>
+    <div class="note" style="margin:0">Cỡ bong bóng = số video mới ${''}30 ngày ·
+      <span style="color:#2e7d32">xanh</span> đang lên · <span style="color:#c62828">đỏ</span> đang giảm ·
+      góc TRÊN-TRÁI = đang lên mà còn ít người làm. Bấm một bong bóng để tra cứu cụm đó.</div>
+  </div>`;
+}
+
+function Sparkline({ chuoi, mau }) {
+  const d = (chuoi || []).filter(p => p);
+  if (d.length < 2) return null;
+  const w = 110, h = 22, max = Math.max(...d.map(p => p.gia_tri)) || 1;
+  const pts = d.map((p, i) => `${(i / (d.length - 1)) * w},${h - (p.gia_tri / max) * (h - 2) - 1}`).join(' ');
+  return html`<svg viewBox=${`0 0 ${w} ${h}`} style="width:110px;height:22px">
+    <polyline points=${pts} fill="none" stroke=${mau} stroke-width="1.6"/></svg>`;
+}
+
 function CotVaDuong({ lua }) {
   const d = (lua || []).slice(-12).filter(x => x.thang);
   if (d.length < 2) return null;
@@ -1739,6 +1808,7 @@ function Mapping({ ws, canEdit }) {
   const [B, setB] = useState(null);
   const [pool, setPool] = useState({});
   const [goiY, setGoiY] = useState([]);
+  const [noi, setNoi] = useState(null);
   const [busy, setBusy] = useState('');
   const [err, setErr] = useState('');
   const [lichSu, setLichSu] = useState([]);
@@ -1749,8 +1819,11 @@ function Mapping({ ws, canEdit }) {
   // thấy số của US — user báo 21/08 ("từ khoá thị trường US lọt sang Spain").
   useEffect(() => {
     setA(null); setB(null); setCum(''); setErr(''); setBusy(''); setXemLai(null);
-    setLichSu([]); setSoSanh(null);
+    setLichSu([]); setSoSanh(null); setNoi(null);
     api('GET', `/workspaces/${ws}/discovery/goi-y-seed`).then(r => setGoiY(r.seed || [])).catch(() => setGoiY([]));
+    const nnLuu = (() => { try { return localStorage.getItem('mapping_nn_' + ws) || ''; } catch (e) { return ''; } })();
+    api('GET', `/workspaces/${ws}/discovery/tu-khoa-noi`
+      + (nnLuu ? `?ngon_ngu=${encodeURIComponent(nnLuu)}` : '')).then(setNoi).catch(() => setNoi(null));
     api('GET', `/workspaces/${ws}/mapping`).then(d => setPool(d.pool || {})).catch(() => setPool({}));
     // Lịch sử phải có NGAY khi mở tab: trước đây chỉ tải kèm kết quả tra cứu nên F5
     // xong là trắng bảng, đúng lỗi user báo 21/08.
@@ -1836,11 +1909,45 @@ function Mapping({ ws, canEdit }) {
           style="margin:2px 4px 2px 0" title=${new Date(l.ts * 1000).toLocaleString()}
           onClick=${() => traCuu(l.cum, true)}>${l.cum}${l.co_ngoai ? '' : ' ·'}</button>`)}
       </div>` : ''}
-      ${goiY.length ? html`<div style="margin-top:6px">
+      ${(noi && (noi.cum || []).length) ? html`<div style="margin-top:10px">
+        <div class="note" style="margin:0 0 3px">Từ khoá trong pool — đang lên / đang giảm
+          (so ${noi.cua_so_ngay} ngày qua với ${noi.cua_so_ngay} ngày liền trước; cập nhật theo
+          mỗi vòng quét pool)
+          ${!noi.tu_de ? html`<span> · lọc ngôn ngữ:
+            <select value=${noi.ngon_ngu_loc || ''} onChange=${e => {
+              try { localStorage.setItem('mapping_nn_' + ws, e.target.value); } catch (err) {}
+              api('GET', `/workspaces/${ws}/discovery/tu-khoa-noi?ngon_ngu=${encodeURIComponent(e.target.value)}`)
+                .then(setNoi).catch(() => {});
+            }}>
+              <option value="">(không lọc — pool trộn ngôn ngữ)</option>
+              <option value="English">English</option>
+              <option value="Spanish">Spanish</option>
+              <option value="Vietnamese">Tiếng Việt</option>
+            </select>
+            ${(noi.ngon_ngu_trong_pool || []).length ? html`<span> · pool có:
+              ${(noi.ngon_ngu_trong_pool || []).map(([ma, n]) => `${ma} ${n}`).join(' · ')}</span>` : ''}
+          </span>` : ''}</div>
+        <${BanDoCum} cum=${noi.cum} onChon=${c => traCuu(c)}/>
+        <table class="tbl"><thead><tr><th>Cụm</th><th>Xu hướng</th>
+          <th>Video ${noi.cua_so_ngay}n</th><th>View/ngày</th>
+          <th title="số video mới mỗi tháng — khoảng thời gian khác cột Xu hướng">Mật độ theo tháng</th></tr></thead>
+          <tbody>${(noi.cum || []).map(r => { const len = r.chieu === 'lên', xuong = r.chieu === 'xuống';
+            return html`<tr>
+            <td><a href="#" onClick=${e => { e.preventDefault(); traCuu(r.cum); }}>${r.cum}</a>
+              <span class="note"> ${r.tong_video}</span></td>
+            <td style=${`white-space:nowrap;font-weight:600;color:${len ? '#2e7d32' : xuong ? '#c62828' : 'inherit'}`}>
+              ${r.phan_tram == null ? html`<span class="note" style="font-weight:400">ít mẫu</span>`
+                : `${len ? '↑' : xuong ? '↓' : '→'} ${r.phan_tram > 0 ? '+' : ''}${r.phan_tram}%`}</td>
+            <td style="white-space:nowrap">${r.video_30n_truoc} → <b>${r.video_30n}</b></td>
+            <td>${r.view_moi_ngay ?? '—'}</td>
+            <td style="width:120px" title="mật độ theo THÁNG — khác cột xu hướng (30 ngày)">
+              <${Sparkline} chuoi=${r.chuoi} mau="#7e57c2"/></td>
+          </tr>`; })}</tbody></table>
+      </div>` : (goiY.length ? html`<div style="margin-top:6px">
         <span class="note">Từ khoá phổ biến trong pool này:</span>
         ${goiY.map(g => html`<button class="btn small ghost" style="margin:2px 4px 2px 0"
           onClick=${() => traCuu(g.seed)}>${g.seed} <span class="note">${g.so_video}</span></button>`)}
-      </div>` : ''}
+      </div>` : '')}
     </div>
 
     ${A ? html`<div class="panel">

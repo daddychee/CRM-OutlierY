@@ -687,3 +687,62 @@ def test_route_lich_su_doc_lap_va_hash_giu_tu_khoa():
     assert "writeHash({ q })" in js
     assert "String(h0.ws || '') === String(ws)" in js       # không mở nhầm pool khác
     assert "writeHash({ q: '' })" in js                     # đổi pool thì bỏ từ khoá cũ
+
+
+# ------------------- TỪ KHOÁ ĐANG NỔI trong pool (user 21/08) -------------------
+
+
+def _kho_theo_ngay(cap, bay_gio):
+    """cap = [(cụm, số ngày trước, số video)] -> kho giả."""
+    kho, i = [], 0
+    for cum, ngay_truoc, n in cap:
+        for _ in range(n):
+            i += 1
+            kho.append({"id": i, "title": f"{cum} something", "title_l": f"{cum} something",
+                        "kenh": "K", "kenh_yt": "UC1", "yt_id": f"v{i}",
+                        "pub_ts": bay_gio - ngay_truoc * 86400, "vph": 1.0, "views": 10000})
+    return kho
+
+
+def test_bat_cum_dang_len():
+    """Đo thật pool US: 'living in' 19 -> 79 video = +316%."""
+    from radary import tra_cuu
+    now = time.time()
+    kho = _kho_theo_ngay([("living in", 45, 19), ("living in", 10, 79)], now)
+    r = tra_cuu.xu_huong_cum(kho, ["living in"], bay_gio=now)[0]
+    assert r["video_30n_truoc"] == 19 and r["video_30n"] == 79
+    assert r["phan_tram"] == 316 and r["chieu"] == "lên"
+
+
+def test_bat_cum_dang_chet_du_ky_nay_bang_khong():
+    """Ca thật '15 mind' 6 -> 0. Ban đầu đòi CẢ HAI kỳ đủ mẫu nên mất đúng tín hiệu
+    giảm mạnh nhất — nay chỉ cần kỳ TRƯỚC đủ mẫu (nó là mẫu số)."""
+    from radary import tra_cuu
+    now = time.time()
+    r = tra_cuu.xu_huong_cum(_kho_theo_ngay([("15 mind", 45, 6)], now), ["15 mind"], bay_gio=now)[0]
+    assert r["phan_tram"] == -100 and r["chieu"] == "xuống"
+
+
+def test_ky_truoc_qua_it_thi_noi_thang_khong_doan():
+    from radary import tra_cuu
+    now = time.time()
+    r = tra_cuu.xu_huong_cum(_kho_theo_ngay([("x y", 45, 1), ("x y", 5, 9)], now), ["x y"], bay_gio=now)[0]
+    assert r["phan_tram"] is None and r["chieu"] is None and r["du_mau"] is False
+
+
+def test_xep_cum_dang_len_truoc_it_mau_xuong_cuoi():
+    from radary import tra_cuu
+    now = time.time()
+    kho = _kho_theo_ngay([("len nhanh", 45, 5), ("len nhanh", 5, 40),
+                          ("giam", 45, 10), ("giam", 5, 3),
+                          ("it mau", 45, 1), ("it mau", 5, 1)], now)
+    ra = tra_cuu.xu_huong_cum(kho, ["len nhanh", "giam", "it mau"], bay_gio=now)
+    assert [r["cum"] for r in ra] == ["len nhanh", "giam", "it mau"]
+
+
+def test_co_chuoi_mat_do_theo_thang_de_ve_sparkline():
+    from radary import tra_cuu
+    now = time.time()
+    kho = _kho_theo_ngay([("a b", 200, 4), ("a b", 100, 6), ("a b", 10, 8)], now)
+    r = tra_cuu.xu_huong_cum(kho, ["a b"], bay_gio=now)[0]
+    assert len(r["chuoi"]) >= 3 and all("ngay" in p and "gia_tri" in p for p in r["chuoi"])
