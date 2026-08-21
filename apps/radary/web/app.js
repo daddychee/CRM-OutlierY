@@ -1722,11 +1722,14 @@ function Mapping({ ws, canEdit }) {
         ${oChon ? html` · đang lọc: <b>${(d.nhan_o[oChon] || [oChon])[0]}</b>` : ''}</div>
       <table class="tbl"><thead><tr>
         <th>Cụm</th><th>Cầu</th><th>Video</th><th>Kênh</th><th>View giữa</th>
+        <th title="tỉ lệ từ chưa từng xuất hiện trong pool — đọc là MỨC MỚI LẠ, không phải mức lạc đề: máy không phân biệt được hai thứ đó">Mới lạ</th>
         <th>Mới nhất</th><th>Ô</th><th></th></tr></thead><tbody>
         ${muc.map(m => html`<tr>
           <td><a href="#" onClick=${e => { e.preventDefault(); setCumMo(cumMo === m.cum ? null : m.cum); }}>${m.cum}</a></td>
           <td>${m.do_phu}</td><td>${m.so_video}</td><td>${m.so_kenh}</td>
-          <td>${(m.view_trung_vi || 0).toLocaleString()}</td><td>${ngayVN(m.moi_nhat)}</td>
+          <td>${(m.view_trung_vi || 0).toLocaleString()}</td>
+          <td>${m.tu_la === null || m.tu_la === undefined ? '—' : Math.round(m.tu_la * 100) + '%'}</td>
+          <td>${ngayVN(m.moi_nhat)}</td>
           <td style=${`color:${O_MAU[m.o] || 'inherit'}`}>${m.o ? (d.nhan_o[m.o] || [m.o])[0] : '—'}</td>
           <td>${canEdit ? html`<button class="btn small ghost" title="gạt cụm nhiễu (bật lại được)"
             onClick=${() => gat(m.cum)}>✕</button>` : ''}</td></tr>`)}

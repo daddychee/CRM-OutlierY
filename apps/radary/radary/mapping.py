@@ -86,6 +86,50 @@ def do_cung(kho: list[dict], cum: str, tran_vi_du: int = 8) -> dict:
     }
 
 
+# Từ quá phổ biến, có mặt ở mọi title nên không nói lên ngách nào cả.
+_TU_TRO = {"the", "a", "an", "of", "in", "on", "at", "to", "for", "and", "or", "is",
+           "are", "was", "were", "be", "with", "from", "by", "that", "this", "it",
+           "you", "your", "my", "we", "i", "how", "what", "why", "when", "where"}
+
+
+def von_tu_ngach(kho: list[dict], toi_thieu: int = 2) -> set[str]:
+    """Vốn từ của pool: từ xuất hiện trong >= `toi_thieu` title.
+
+    Chỉ để tính `tu_la_voi_pool` (mức mới lạ). KHÔNG dùng làm bộ lọc — xem docstring
+    hàm đó: từ chưa có trong pool vừa là dấu hiệu lạc đề, vừa là dấu hiệu khoảng trống.
+    """
+    dem: dict[str, int] = {}
+    for v in kho:
+        for t in set(re.findall(r"[a-z0-9']+", v["title_l"])):
+            if len(t) > 2 and t not in _TU_TRO:
+                dem[t] = dem.get(t, 0) + 1
+    return {t for t, n in dem.items() if n >= toi_thieu}
+
+
+def tu_la_voi_pool(cum: str, von: set[str], seed: str = "") -> float | None:
+    """Tỉ lệ từ của cụm CHƯA từng xuất hiện trong pool (0..1). Đọc là "mức mới lạ".
+
+    ĐỌC CHO ĐÚNG — đây là chỗ suýt làm sai (đo thật 21/08 trên pool LIFE IN — US):
+    thoạt tiên dùng chỉ số ngược lại làm "độ hợp ngách" để dìm cụm lạc đề, và nó dìm
+    được `life incremental` (game) thật. NHƯNG nó dìm luôn `life in rio`, `life in
+    kiev`, `life in the countryside` — những cụm hợp ngách hoàn hảo, chỉ là pool CHƯA
+    CÓ video nào, tức đúng cái KHOẢNG TRỐNG ta đang đi tìm.
+
+    Kết luận: máy KHÔNG phân biệt được "lạc đề" với "mới lạ" — cả hai đều là từ chưa
+    có trong pool. Nên chỉ số này chỉ là CỘT THÔNG TIN, tuyệt đối không dùng để xếp
+    hạng hay loại bỏ. Lọc nhiễu là việc của người (nút ✕) và của bảng từ chặn.
+
+    Bỏ từ của seed ra khỏi phép tính — seed thì cụm nào cũng có. Không còn từ nào để
+    chấm → None (không đủ cơ sở, KHÔNG cho 0).
+    """
+    tu_seed = {t for t in re.findall(r"[a-z0-9']+", (seed or "").lower())}
+    tu = [t for t in re.findall(r"[a-z0-9']+", cum.lower())
+          if len(t) > 2 and t not in _TU_TRO and t not in tu_seed]
+    if not tu:
+        return None
+    return round(sum(1 for t in tu if t not in von) / len(tu), 2)
+
+
 def _o(cau_cao: bool, cung_cao: bool) -> str:
     if cau_cao:
         return O_DO_LUA if cung_cao else O_KHOANG_TRONG
@@ -98,10 +142,12 @@ def ban_do(kho: list[dict], cums: list[dict]) -> dict:
     Nguong = TRUNG VI CUA CHINH PHIEN QUET (khong phai hang so). Duoi TOI_THIEU_CUM
     thi tra `du_mau=False` va KHONG xep o — noi thang thay vi doan.
     """
+    von = von_tu_ngach(kho)
     muc = []
     for c in cums:
         cung = do_cung(kho, c["cum"])
-        muc.append({**c, **cung})
+        muc.append({**c, **cung,
+                    "tu_la": tu_la_voi_pool(c["cum"], von, c.get("seed", ""))})
 
     du_mau = len(muc) >= TOI_THIEU_CUM
     nguong_cau = nguong_cung = None
@@ -118,6 +164,8 @@ def ban_do(kho: list[dict], cums: list[dict]) -> dict:
         for m in muc:
             m["o"] = None
 
+    # Xếp theo CẦU rồi tới cung. KHÔNG xếp theo `tu_la`: xem docstring
+    # tu_la_voi_pool — máy không phân biệt "lạc đề" với "mới lạ".
     muc.sort(key=lambda m: (-m["do_phu"], m["so_video"]))
     dem = {k: sum(1 for m in muc if m["o"] == k) for k in NHAN_O} if du_mau else {}
     return {

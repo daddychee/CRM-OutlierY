@@ -266,3 +266,26 @@ def test_mapping_doc_duoc_sau_khi_co_keyword(org_moi, goi, mock_de):
     assert d["du_mau"] is True and len(d["muc"]) == 6
     assert set(d["nhan_o"]) == {"khoang_trong", "do_lua", "bao_hoa", "hoang"}
     assert d["nguong"]["cau_do_phu"] is not None
+
+
+def test_tu_la_KHONG_duoc_dung_de_xep_hang():
+    """Ghim bài học 21/08: chỉ số 'từ chưa có trong pool' ban đầu được dùng làm
+    'độ hợp ngách' để dìm cụm lạc đề — nhưng đo thật cho thấy nó dìm luôn
+    'life in rio' / 'life in kiev' (hợp ngách, pool chưa có = ĐÚNG khoảng trống).
+    Máy không phân biệt được 'lạc đề' với 'mới lạ' → chỉ là cột thông tin."""
+    kho = _kho("life in japan", "life in japan again", "life in korea", "life in korea 2")
+    cums = [{"cum": c, "seed": "life in", "do_phu": d, "hang_tb": 1.0}
+            for c, d in [("life in japan", 1), ("life in rio", 9), ("life in korea", 2),
+                         ("life in kiev", 8), ("life in peru", 7)]]
+    bd = mapping.ban_do(kho, cums)
+    theo_cau = [m["cum"] for m in bd["muc"]]
+    assert theo_cau[0] == "life in rio", "phải xếp theo CẦU, không theo mức mới lạ"
+    la = {m["cum"]: m["tu_la"] for m in bd["muc"]}
+    assert la["life in rio"] == 1.0      # 'rio' chưa có trong pool = mới lạ tối đa
+    assert la["life in japan"] == 0.0    # 'japan' pool làm rồi
+
+
+def test_tu_la_bo_tu_seed_ra_khoi_phep_tinh():
+    von = {"japan"}
+    assert mapping.tu_la_voi_pool("life in japan", von, seed="life in") == 0.0
+    assert mapping.tu_la_voi_pool("life in", von, seed="life in") is None
