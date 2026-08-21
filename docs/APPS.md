@@ -62,6 +62,23 @@
 
 ## Nhật ký
 
+- 21/08/2026 — **CONTENT ULTIMATE (app 2/6): BỘ KIỂM CHỨNG KỊCH BẢN ĐẦU RA**
+  (commit 024c323, suite content 282 pass / 4 fail baseline). Bối cảnh: team ngừng
+  dùng app từ 07/08 vì "viết không tốt"; đo 38 lượt writer + 9 hồ sơ giọng ra gốc
+  bệnh là NEO GIỌNG — `generator.py:430` chỉ lấy 3 exemplar (~200 từ, có bản trùng
+  nhau) và không target nhịp nào vào prompt, trong khi 3 hồ sơ có
+  `sentence_len_mean = 1085` (transcript chưa dọn dấu câu). Dựng (0 LLM, 0 đồng):
+  `voiceprofile/soi_ho_so.py` (`do_duoc` vs `neo_du`) · `voiceprofile/deai.py` chấm
+  **3 nhóm tách bạch** (dấu vết máy · nhịp so exemplar · bám giọng qua
+  `validate.evaluate_script`, CÓ CỬA: hồ sơ hỏng → "không đủ cơ sở", không phán số) ·
+  `rules/deai_en.csv` luật ngoài code · `POST /api/kiem-chung` + `GET /api/soi-ho-so`
+  (chỉ nhận MÃ tác giả) · tab Writing: nút 🔍 Kiểm chứng + cảnh báo hồ sơ hỏng ngay
+  lúc chọn · `/api/build` chặn corpus transcript thô (409, tick xác nhận thì đi tiếp).
+  **KHÔNG điểm tổng** — dùng mật độ/1000 từ. Bài học ghim bằng test: ngưỡng
+  `burstiness_cv < 0,70` ĐÃ THỬ VÀ BỊ BÁC (văn NGƯỜI đo ra 0,36-0,60). Sổ chi tiết:
+  `docs/kich-ban-studio.md` mục 9 + `apps/content-ultimate/PROPOSAL-V3-ban2-*.md`.
+  Còn lại: C3 dựng lại neo giọng · C5 A/B model · B3 nuôi luật · siết em-dash PACING.
+
 - 19/08/2026 — **TÁCH REPO RIÊNG TỪNG APP (bắt đầu: seo-optimize)** — Owner chốt
   cho nhân sự sửa từ xa ĐÚNG MỘT app; GitHub chỉ phân quyền theo REPO nên monorepo
   không cấp collaborator từng app được. Khuôn = NESTED REPO như hệ cũ: apps/<slug>
