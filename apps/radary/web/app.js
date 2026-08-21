@@ -1833,14 +1833,13 @@ function Mapping({ ws, canEdit }) {
   const [busy, setBusy] = useState('');
   const [err, setErr] = useState('');
   const [lichSu, setLichSu] = useState([]);
-  const [soSanh, setSoSanh] = useState(null);
   const [xemLai, setXemLai] = useState(null);   // mốc thời gian nếu đang xem bản đã lưu
 
   // ĐỔI POOL = xoá sạch kết quả cũ. Thiếu chỗ này thì tra ở US xong sang Spain vẫn
   // thấy số của US — user báo 21/08 ("từ khoá thị trường US lọt sang Spain").
   useEffect(() => {
     setA(null); setB(null); setCum(''); setErr(''); setBusy(''); setXemLai(null);
-    setLichSu([]); setSoSanh(null); setNoi(null);
+    setLichSu([]); setNoi(null);
     api('GET', `/workspaces/${ws}/discovery/goi-y-seed`).then(r => setGoiY(r.seed || [])).catch(() => setGoiY([]));
     const nnLuu = (() => { try { return localStorage.getItem('mapping_nn_' + ws) || ''; } catch (e) { return ''; } })();
     api('GET', `/workspaces/${ws}/discovery/tu-khoa-noi`
@@ -1850,7 +1849,6 @@ function Mapping({ ws, canEdit }) {
     // xong là trắng bảng, đúng lỗi user báo 21/08.
     api('GET', `/workspaces/${ws}/tra-cuu/lich-su`).then(r => setLichSu(r.lich_su || []))
       .catch(() => setLichSu([]));
-    api('GET', `/workspaces/${ws}/tra-cuu/so-sanh`).then(setSoSanh).catch(() => setSoSanh(null));
     // Từ khoá đang xem nằm trong URL (#q=...) -> F5 mở lại đúng chỗ, đọc từ lịch sử,
     // 0 quota. Chỉ tự mở khi hash thuộc ĐÚNG pool này.
     const h0 = readHash(), nho = nhoDoc();
@@ -1874,7 +1872,6 @@ function Mapping({ ws, canEdit }) {
       setA(a); setPool(a.pool || {}); setLichSu(a.lich_su || []);
       writeHash({ q });                        // F5 giữ nguyên từ khoá đang xem
       if (a.ngoai) setB(a.ngoai);               // kết quả ngoài đã lưu từ lần trước
-      api('GET', `/workspaces/${ws}/tra-cuu/so-sanh`).then(setSoSanh).catch(() => {});
       if (lai) { setXemLai(a.ts || null); setBusy(''); return; }
       if (!canEdit) { setBusy(''); return; }
       if (a.ngoai) {                            // đã có bản cũ -> hỏi lại là quyết định của người
@@ -1884,7 +1881,6 @@ function Mapping({ ws, canEdit }) {
       const b = await api('POST', `/workspaces/${ws}/tra-cuu/ngoai`, { cum: q });
       if (wsLucDo !== ws) return;
       setB(b); setLichSu(b.lich_su || []); setBusy('');
-      api('GET', `/workspaces/${ws}/tra-cuu/so-sanh`).then(setSoSanh).catch(() => {});
     } catch (e) { setErr(String(e.message)); setBusy(''); }
   };
   const hoiLaiNgoai = async () => {
@@ -1926,11 +1922,16 @@ function Mapping({ ws, canEdit }) {
         <button class="btn primary" onClick=${() => traCuu()} disabled=${!!busy}>🔍 Tra cứu</button>
         <span class="note" style="margin:0">${busy}${err ? html`<span style="color:#c62828">${err}</span>` : ''}</span>
       </div>
-      ${lichSu.length ? html`<div style="margin-top:8px">
-        <span class="note">Đã tra ở pool này (bấm để xem lại, không tốn quota):</span>
-        ${lichSu.map(l => html`<button class=${'btn small' + (l.cum === cum ? '' : ' ghost')}
-          style="margin:2px 4px 2px 0" title=${new Date(l.ts * 1000).toLocaleString()}
-          onClick=${() => traCuu(l.cum, true)}>${l.cum}${l.co_ngoai ? '' : ' ·'}</button>`)}
+      ${lichSu.length ? html`<div style="margin-top:10px">
+        <div class="note" style="margin:0 0 3px">Lịch sử tra cứu — <b>mỗi từ khoá là một phiên
+          riêng</b>, đo tại thời điểm ghi bên cạnh. Bấm để xem lại đúng kết quả phiên đó
+          (0 quota). Không so số giữa các phiên: chúng đo ở những thời điểm khác nhau.</div>
+        <table class="tbl"><thead><tr><th>Từ khoá</th><th>Đo lúc</th><th>Nguồn ngoài</th></tr></thead>
+          <tbody>${lichSu.map(l => html`<tr style=${l.cum === cum ? 'font-weight:600' : ''}>
+            <td><a href="#" onClick=${e => { e.preventDefault(); traCuu(l.cum, true); }}>${l.cum}</a></td>
+            <td class="note">${new Date(l.ts * 1000).toLocaleString()}</td>
+            <td class="note">${l.co_ngoai ? 'đã hỏi' : 'chưa hỏi'}</td></tr>`)}
+          </tbody></table>
       </div>` : ''}
       ${(noi && (noi.cum || []).length) ? html`<div style="margin-top:10px">
         <div class="note" style="margin:0 0 3px">Từ khoá trong pool — đang lên / đang giảm
@@ -2094,22 +2095,6 @@ function Mapping({ ws, canEdit }) {
         <${DuongXuHuong} diem=${wk.diem} nhan=${`Lượt xem/tháng · tháng gần nhất ${soGon(wk.xem_thang_cuoi)}`}/>
         ${(wk.bai_lien_quan || []).length ? html`<div class="note">Bài liên quan: ${(wk.bai_lien_quan || []).join(' · ')}</div>` : ''}
       </div>` : html`<div class="note">Wikipedia: ${wk.ly_do || 'không có dữ liệu'}${wk.bai ? ` (bài: ${wk.bai})` : ''}</div>`}
-
-      ${(soSanh && (soSanh.hang || []).filter(h => h.tong_view_90n != null).length > 1)
-        ? html`<div style="margin-bottom:12px">
-        <div><b>So lượng giữa các từ khoá đã tra ở pool này</b></div>
-        <table class="tbl"><thead><tr><th>Từ khoá</th><th>View 90 ngày</th>
-          <th>View/tháng</th><th>Wikipedia/tháng</th><th>Kênh nhỏ lọt top</th><th>Pool mình</th></tr></thead>
-          <tbody>${(soSanh.hang || []).filter(h => h.tong_view_90n != null).map(h => html`<tr
-            style=${h.cum === cum ? 'font-weight:600' : ''}>
-            <td><a href="#" onClick=${e => { e.preventDefault(); traCuu(h.cum, true); }}>${h.cum}</a></td>
-            <td>${soGon(h.tong_view_90n)}</td><td>${soGon(h.view_moi_thang)}</td>
-            <td>${h.wiki_thang ? soGon(h.wiki_thang) : '—'}</td>
-            <td>${h.kenh_nho_lot_top != null ? `${h.kenh_nho_lot_top}/${h.so_ket_qua}` : '—'}</td>
-            <td>${h.pool_video ?? '—'}</td></tr>`)}
-          </tbody></table>
-        <div class="note">${soSanh.ghi_chu}</div>
-      </div>` : ''}
 
       ${nw.co_du_lieu ? html`<div>
         <div><b>Báo chí đang nói gì</b> <span class="note">· ${nw.so_bai} bài (Google News)</span></div>

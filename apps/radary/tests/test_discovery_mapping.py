@@ -788,3 +788,17 @@ def test_nho_tab_qua_localStorage_vi_iframe_mat_hash():
     assert "h0.tab || nho0.tab || 'board'" in js
     assert "h0.ws ? Number(h0.ws) : (nho0.ws ? Number(nho0.ws) : null)" in js
     assert "h0.q || nho.q || ''" in js
+
+
+def test_khong_tong_hop_so_giua_cac_PHIEN():
+    """User 21/08: bảng 'so lượng giữa các từ khoá đã tra' KHÔNG có giá trị — mỗi từ
+    khoá là MỘT PHIÊN, đo ở thời điểm khác nhau (cửa sổ 90 ngày trượt theo ngày đo) và
+    phạm vi khác nhau (địa danh vs mẫu câu). Lịch sử chỉ để XEM LẠI từng phiên."""
+    from pathlib import Path
+    goc = Path(__file__).resolve().parents[1]
+    api_src = goc.joinpath("radary", "api.py").read_text(encoding="utf-8")
+    js = goc.joinpath("web", "app.js").read_text(encoding="utf-8")
+    assert "@app.get('/api/workspaces/{ws}/tra-cuu/so-sanh')" not in api_src
+    assert "soSanh" not in js
+    assert "mỗi từ khoá là một phiên" in js.lower() or "mỗi từ khoá là một phiên" in js
+    assert "/tra-cuu/lich-su" in api_src, "lịch sử vẫn phải còn để xem lại"
