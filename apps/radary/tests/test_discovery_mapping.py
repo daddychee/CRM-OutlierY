@@ -802,3 +802,20 @@ def test_khong_tong_hop_so_giua_cac_PHIEN():
     assert "soSanh" not in js
     assert "mỗi từ khoá là một phiên" in js.lower() or "mỗi từ khoá là một phiên" in js
     assert "/tra-cuu/lich-su" in api_src, "lịch sử vẫn phải còn để xem lại"
+
+
+def test_bing_la_nguon_goi_y_thu_hai():
+    """Bing (DuckDuckGo dùng chung hạ tầng) trả cụm mà YouTube autocomplete không có —
+    đo thật 'life in alaska': 'during winter', 'anchorage alaska', 'alaska today'."""
+    def doc(url):
+        assert "bing.com" in url and "mkt=en-US" in url
+        return json.dumps(["life in alaska", ["life in alaska during winter",
+                                              "life in anchorage alaska"], [], {}])
+    r = discovery.goi_y_bing("life in alaska", doc, {"hl": "en", "gl": "us"})
+    assert r == ["life in alaska during winter", "life in anchorage alaska"]
+
+
+def test_bing_loi_mang_khong_giet_phien():
+    def doc_no(url):
+        raise OSError("chet")
+    assert discovery.goi_y_bing("x", doc_no) == []

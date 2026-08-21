@@ -4,7 +4,7 @@ Phase 4: mọi route workspace/org đều yêu cầu đăng nhập và phân tá
 (user chỉ thấy workspace thuộc org mình là thành viên). API key lưu mã hóa Fernet.
 Chạy: .venv/bin/python server.py → http://127.0.0.1:8000 (docs: /docs).
 """
-import json, os, secrets, time
+import json, os, secrets, sqlite3, time
 from contextlib import contextmanager
 from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.responses import PlainTextResponse
@@ -1111,6 +1111,21 @@ def tra_cuu_pool(ws: int, request: Request, cum: str = '', xem_lai: int = 0):
                 'lich_su': db.tra_cuu_danh_sach(c, ws)}
 
 
+def _ghi_bo_qua_khoa(ham, *a, **kw):
+    """Ghi cache/lịch sử — HỎNG THÌ BỎ QUA, không được giết kết quả tra cứu.
+
+    RadarY có scheduler quét trong cùng tiến trình; lúc nó giữ khoá ghi SQLite thì mọi
+    lệnh ghi khác nhận "database is locked" (bệnh đã vá 2 tầng 31/07, vẫn còn cửa hẹp).
+    Người dùng vừa chờ 20 giây và tiêu 102 units — mất kết quả chỉ vì không ghi nổi
+    cache là đánh đổi sai. Mất cache thì lần sau hỏi lại, không mất gì khác.
+    """
+    try:
+        return ham(*a, **kw)
+    except sqlite3.OperationalError as e:
+        print(f'[tra-cuu] bo qua ghi ({e}) — ket qua van tra ve', flush=True)
+        return None
+
+
 class TraCuuNgoaiIn(BaseModel):
     cum: str
     trends: bool = True        # Google Trends (~17s, 0 quota) — tắt được khi cần nhanh
@@ -1147,21 +1162,31 @@ def tra_cuu_ngoai(ws: int, body: TraCuuNgoaiIn, request: Request):
     # (từ khoá hẹp như 'life in alaska' thì Trends trả related rỗng). 0 quota, ~9s.
     from . import discovery
     bt = discovery.mo_rong(cum, discovery.BoDem(tran=9), vung=vung, tu_hoi=False)
-    bien_the = sorted(({'cum': k, 'do_phu': v['do_phu'], 'hang': v['hang_tot_nhat']}
+    bien_the = sorted(({'cum': k, 'do_phu': v['do_phu'], 'hang': v['hang_tot_nhat'],
+                        'nguon': 'youtube'}
                        for k, v in bt.items() if k != cum.lower()),
                       key=lambda m: (-m['do_phu'], m['hang']))[:10]
+    # Nguồn gợi ý THỨ HAI (Bing): ra cụm mà YouTube autocomplete không gợi ý. Chỉ giữ
+    # cụm MỚI so với danh sách trên — trùng thì không thêm dòng vô ích.
+    da_co = {m['cum'] for m in bien_the} | {cum.lower()}
+    bien_the += [{'cum': c, 'do_phu': None, 'hang': i + 1, 'nguon': 'bing'}
+                 for i, c in enumerate(discovery.goi_y_bing(cum, vung=vung))
+                 if c not in da_co][:8]
     # Trends: đọc cache trong NGÀY trước — Google chặn theo IP, hỏi lại cùng từ khoá
     # vừa vô ích vừa làm dính rate limit lâu hơn.
     tr = {'co_du_lieu': False, 'ly_do': 'đã tắt Google Trends'}
     if body.trends:
         with get_conn() as c2:
-            tr = db.trends_doc(c2, cum, geo) or {}
+            try:
+                tr = db.trends_doc(c2, cum, geo) or {}
+            except sqlite3.OperationalError:
+                tr = {}
             if tr:
                 tr['tu_cache'] = True
             else:
                 tr = tra_cuu.google_trends(cum, geo=geo)
                 if tr.get('co_du_lieu'):
-                    db.trends_ghi(c2, cum, geo, tr)
+                    _ghi_bo_qua_khoa(db.trends_ghi, c2, cum, geo, tr)
     # Hai nguồn 0 key, nhanh (~1-2s): tin báo đang nói gì + mức quan tâm trên Wikipedia.
     # Reddit đã thử cả .json lẫn .rss đều 403 từ IP này; X/Twitter cần bản trả phí.
     ra = {'cum': cum, 'youtube': yt, 'trends': tr,
@@ -1170,8 +1195,11 @@ def tra_cuu_ngoai(ws: int, body: TraCuuNgoaiIn, request: Request):
           'wiki': tra_cuu.wikipedia(cum, lang=lang),
           'quota_da_tieu': quota, 'vung': vung, 'ts': time.time()}
     with get_conn() as c3:                     # lưu để xem lại không tốn quota lần hai
-        db.tra_cuu_luu(c3, ws, cum, b=ra)
-        ra['lich_su'] = db.tra_cuu_danh_sach(c3, ws)
+        _ghi_bo_qua_khoa(db.tra_cuu_luu, c3, ws, cum, b=ra)
+        try:
+            ra['lich_su'] = db.tra_cuu_danh_sach(c3, ws)
+        except sqlite3.OperationalError:
+            ra['lich_su'] = []
     return ra
 
 

@@ -392,3 +392,29 @@ argentina · finlandia · suecia`. Pool **SPACE — US** ra ít đối tượng 
 
 Giao diện: nút lọc **Đối tượng / Mẫu câu / Tất cả** (mặc định **Đối tượng** — nó trả lời
 "làm video về CÁI GÌ"), áp cho cả bản đồ bong bóng lẫn bảng.
+
+---
+
+## 14. Rà nguồn mới (21/08) — kiểm bốn, nhận một
+
+User hỏi còn nguồn nào đưa vào được nữa. Kiểm thật từ máy này, **chỉ nhận cái có giá trị**:
+
+| Nguồn | Kiểm | Giá trị cho ngách | Quyết định |
+|---|---|---|---|
+| **Bing / DuckDuckGo suggest** | 200, không key, ~0,3s | **Cao** — trả cụm YouTube autocomplete KHÔNG có: `during winter`, `anchorage alaska`, `alaska today`, `life expectancy in alaska` | **ĐÃ THÊM** |
+| YouTube comments (`commentThreads`) | ✓ 1 unit/video | **Thấp** — 150 comment ở 5 video top chỉ ra 2 câu hỏi, đều lạc đề (*"didn't get served one ad"*). Khác ngách khoa học nơi khán giả hỏi nhiều | bỏ qua |
+| Google Trends daily RSS | ✓ 1 giây, có số traffic | **Thấp** — trả tin tức chung của cả nước (`fidelity crypto`, `voting`, `tesla autopilot`), không thuộc ngách | bỏ qua |
+| Wikipedia related pages | **403** | — | bỏ qua |
+| Reddit (OAuth/PRAW) | cần Owner tạo app ở reddit.com/prefs/apps | chưa đo được | chờ, chỉ làm khi có credentials |
+
+**Ghi nhớ khi đọc kết quả:** Bing là gợi ý của **tìm kiếm web**, không phải YouTube — dùng
+để MỞ RỘNG ý tưởng, không thay tín hiệu YouTube. Giao diện phân biệt bằng màu (tím =
+YouTube kèm số hướng gõ, nâu = Bing) và chỉ giữ cụm Bing **mới** so với danh sách YouTube.
+
+### Bệnh cũ lộ lại: `database is locked`
+
+Route tra cứu ghi cache + lịch sử; lúc scheduler của RadarY giữ khoá ghi SQLite thì lệnh
+ghi nhận `database is locked` và cả request **500** — người dùng vừa chờ 20 giây, tiêu 102
+units, rồi mất trắng kết quả chỉ vì không ghi nổi cache. Nay mọi đường ghi cache/lịch sử
+đi qua `_ghi_bo_qua_khoa`: hỏng thì bỏ qua và **vẫn trả kết quả** (mất cache thì lần sau
+hỏi lại, không mất gì khác).

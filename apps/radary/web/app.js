@@ -2050,16 +2050,17 @@ function Mapping({ ws, canEdit }) {
         class=${tr.rate_limit ? '' : 'note'}>${tr.rate_limit ? '⏳ ' : 'Google Trends: '}${tr.ly_do || 'không có dữ liệu'}</div>`}
 
       ${(B.bien_the || []).length ? html`<div style="margin-bottom:12px">
-        <div><b>Biến thể người ta gõ</b> <span class="note">· YouTube autocomplete,
-          thanh dài = lọt ra từ nhiều hướng gõ khác nhau</span></div>
-        ${(B.bien_the || []).map(m => { const max = Math.max(...B.bien_the.map(x => x.do_phu)) || 1;
+        <div><b>Biến thể người ta gõ</b> <span class="note">· YouTube autocomplete (thanh dài
+          = lọt ra từ nhiều hướng gõ) + Bing (gợi ý tìm kiếm web, cụm YouTube không có)</span></div>
+        ${(B.bien_the || []).map(m => { const max = Math.max(...B.bien_the.map(x => x.do_phu || 0)) || 1;
           return html`<div style="display:flex;align-items:center;gap:8px;padding:1px 0">
             <div style="flex:0 0 46%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
               <a href="#" onClick=${e => { e.preventDefault(); traCuu(m.cum); }}>${m.cum}</a></div>
             <div style="flex:1;background:rgba(127,127,127,.15);border-radius:3px;height:14px">
-              <div style=${`width:${Math.max(4, (m.do_phu / max) * 100)}%;height:14px;border-radius:3px;background:#7e57c2`}></div>
+              <div style=${`width:${m.nguon === "bing" ? 26 : Math.max(4, (m.do_phu / max) * 100)}%;height:14px;border-radius:3px;background:${m.nguon === "bing" ? "#8d6e63" : "#7e57c2"}`}></div>
             </div>
-            <div style="flex:0 0 58px;text-align:right" class="note">${m.do_phu} hướng</div>
+            <div style="flex:0 0 92px;text-align:right;white-space:nowrap" class="note">
+              ${m.nguon === 'bing' ? 'Bing' : m.do_phu + ' hướng'}</div>
           </div>`; })}
       </div>` : ''}
 

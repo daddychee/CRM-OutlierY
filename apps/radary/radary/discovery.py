@@ -181,3 +181,27 @@ def quet(seed: str, chan: tuple[str, ...] = (), lay_hn=False, dem: BoDem | None 
         ra.append(muc)
     ra.sort(key=lambda m: (-m["do_phu"], m["hang_tb"]))
     return ra
+
+
+# ---- NGUON GOI Y THU HAI: Bing (21/08) --------------------------------------------
+# Vi sao them: autocomplete cua Google/YouTube chi cho thay mot goc. Bing (DuckDuckGo
+# dung chung ha tang) tra ve cum KHAC — do that voi 'life in alaska': Bing co
+# 'life in alaska during winter', 'life in anchorage alaska', 'life in alaska today'
+# ma YouTube autocomplete khong goi y. 0 key, ~0,3s/loi goi.
+# LUU Y KHONG DUOC QUEN: day la goi y cua TIM KIEM WEB, khong phai YouTube. Nen dung
+# de MO RONG y tuong, khong dung thay tin hieu YouTube.
+BING_SUGGEST = "https://api.bing.com/osjson.aspx"
+
+
+def goi_y_bing(cum: str, doc=None, vung: dict | None = None) -> list[str]:
+    """Mot loi goi Bing suggest -> danh sach goi y. Loi mang -> tra RONG (khong nem)."""
+    q = {"query": cum}
+    if (vung or {}).get("hl"):
+        q["mkt"] = f"{vung['hl']}-{(vung.get('gl') or 'us').upper()}"
+    try:
+        d = json.loads(_tai(f"{BING_SUGGEST}?{urllib.parse.urlencode(q)}", doc))
+    except (OSError, ValueError):
+        return []
+    if not isinstance(d, list) or len(d) < 2 or not isinstance(d[1], list):
+        return []
+    return [chuan_hoa(x) for x in d[1] if isinstance(x, str) and chuan_hoa(x)]
