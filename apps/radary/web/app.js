@@ -1826,7 +1826,9 @@ function App() {
     const cur0 = wss.find(w => w.id === ws);
     const orgId0 = cur0 ? cur0.org_id : (me.orgs || [])[0]?.id;
     const role0 = (me.orgs || []).find(o => o.id === orgId0)?.role || 'viewer';
-    const ok = ['board', 'alerts', 'reports', 'settings'].includes(tab)
+    // 21/08: 'mapping' phải có trong whitelist này — thiếu là bấm tab xong bị đá về
+    // Board ngay (guard chạy sau setTab). Viewer xem được, như Board.
+    const ok = ['board', 'alerts', 'mapping', 'reports', 'settings'].includes(tab)
       || (['pool', 'harvest'].includes(tab) && role0 !== 'viewer')   // 23/07: leader trở lên
       || (tab === 'admin' && role0 === 'owner');
     if (!ok) setTab('board');

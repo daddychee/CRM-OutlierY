@@ -331,3 +331,15 @@ def test_thi_truong_tra_duoi_muc_minh_thi_khong_dang_vao():
     m = {"so_video": 0, "tt": _tt(view_giua_moi=4000)}
     assert mapping.phan_loai_quyet_dinh(m, pool_view_moi=30000) == "kho"
     assert mapping.phan_loai_quyet_dinh(m, pool_view_moi=None) == "dang_danh"   # không có baseline thì không phán
+
+
+def test_tab_mapping_nam_trong_whitelist_cua_UI():
+    """Bug 21/08: bấm tab Mapping xong bị đá về Board — vì guard 'tab không hợp lệ'
+    trong app.js giữ một whitelist CỨNG mà tab mới không được thêm vào.
+    Ghim cả 3 chỗ phải khai khi thêm tab, để lần sau không sót chỗ nào."""
+    from pathlib import Path
+    js = Path(__file__).resolve().parents[1].joinpath("web", "app.js").read_text(encoding="utf-8")
+    assert "['board', 'alerts', 'mapping', 'reports', 'settings'].includes(tab)" in js, \
+        "thiếu trong whitelist guard -> tab tự nhảy về board"
+    assert "['mapping', 'Mapping']" in js, "thiếu trong TABS -> không có nút"
+    assert "tab === 'mapping'" in js, "thiếu trong dispatch -> bấm vào ra trang trắng"
