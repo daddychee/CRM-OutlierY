@@ -500,3 +500,92 @@ def test_ngoai_youtube_khong_co_ket_qua_thi_noi_thang():
             return {"items": []}
     r = tra_cuu.ngoai_youtube(_Api(), "cụm không ai làm")
     assert r["co_du_lieu"] is False and "90 ngày" in r["ly_do"]
+
+
+def test_loc_video_khac_ngon_ngu_va_shorts():
+    """Ảnh user 21/08: pool US mà kết quả có video Indonesia + Shorts. YouTube CÓ trả
+    defaultAudioLanguage nên lọc được chính xác, không phải đoán từ title."""
+    from radary import tra_cuu
+
+    class _Api:
+        used = 0
+
+        def get(self, ep, params, cost=1):
+            if ep == "search":
+                return {"items": [{"id": {"videoId": f"v{i}"}} for i in range(4)]}
+            if ep == "videos":
+                return {"items": [
+                    {"id": "v0", "snippet": {"title": "Life in Alaska", "channelTitle": "A",
+                                             "channelId": "UCa", "publishedAt": "2026-07-01T00:00:00Z",
+                                             "defaultAudioLanguage": "en"},
+                     "statistics": {"viewCount": "1000"}, "contentDetails": {"duration": "PT20M"}},
+                    {"id": "v1", "snippet": {"title": "KISAH PENJARA", "channelTitle": "B",
+                                             "channelId": "UCb", "publishedAt": "2026-07-01T00:00:00Z",
+                                             "defaultAudioLanguage": "id"},
+                     "statistics": {"viewCount": "9999999"}, "contentDetails": {"duration": "PT30M"}},
+                    {"id": "v2", "snippet": {"title": "funny #shorts", "channelTitle": "C",
+                                             "channelId": "UCc", "publishedAt": "2026-07-01T00:00:00Z",
+                                             "defaultAudioLanguage": "en"},
+                     "statistics": {"viewCount": "8888888"}, "contentDetails": {"duration": "PT45S"}},
+                    {"id": "v3", "snippet": {"title": "Alaska cabin tour", "channelTitle": "D",
+                                             "channelId": "UCd", "publishedAt": "2026-07-01T00:00:00Z"},
+                     "statistics": {"viewCount": "500"}, "contentDetails": {"duration": "PT15M"}},
+                ]}
+            return {"items": []}
+    r = tra_cuu.ngoai_youtube(_Api(), "life in alaska",
+                              {"regionCode": "US", "relevanceLanguage": "en"})
+    assert r["so_ket_qua"] == 2                       # giữ v0 và v3
+    assert r["da_bo"] == {"khac_ngon_ngu": 1, "shorts": 1}
+    assert {v["yt_id"] for v in r["top_video"]} == {"v0", "v3"}
+
+
+def test_khong_khai_thi_truong_thi_khong_loc_ngon_ngu():
+    """Pool chưa gắn thị trường → không có căn cứ loại, giữ hết (không loại oan)."""
+    from radary import tra_cuu
+
+    class _Api:
+        used = 0
+
+        def get(self, ep, params, cost=1):
+            if ep == "search":
+                return {"items": [{"id": {"videoId": "v1"}}]}
+            if ep == "videos":
+                return {"items": [{"id": "v1", "snippet": {
+                    "title": "x", "channelTitle": "B", "channelId": "UCb",
+                    "publishedAt": "2026-07-01T00:00:00Z", "defaultAudioLanguage": "id"},
+                    "statistics": {"viewCount": "10"}, "contentDetails": {"duration": "PT20M"}}]}
+            return {"items": []}
+    r = tra_cuu.ngoai_youtube(_Api(), "x", None)
+    assert r["so_ket_qua"] == 1 and r["da_bo"]["khac_ngon_ngu"] == 0
+
+
+def test_trends_rate_limit_co_thong_diep_rieng(monkeypatch):
+    """RateLimitError phải ra câu người đọc hiểu, không phải tên lớp lỗi trần."""
+    from radary import tra_cuu
+    import builtins
+    that = builtins.__import__
+
+    class RateLimitError(Exception):
+        pass
+
+    def gia(name, *a, **k):
+        if name == "trendspyg":
+            class M:
+                @staticmethod
+                def download_google_trends_explore(*x, **y):
+                    raise RateLimitError("429")
+            return M
+        return that(name, *a, **k)
+    monkeypatch.setattr(builtins, "__import__", gia)
+    r = tra_cuu.google_trends("x")
+    assert r["co_du_lieu"] is False and r.get("rate_limit") is True
+    assert "chặn tạm" in r["ly_do"] and "nguồn khác vẫn chạy" in r["ly_do"]
+
+
+def test_cache_trends_theo_ngay(conn):
+    """Hỏi lại cùng từ khoá trong ngày phải đọc cache — Google chặn theo IP."""
+    assert db.trends_doc(conn, "life in alaska", "US", ngay="2026-08-21") is None
+    db.trends_ghi(conn, "Life In Alaska", "US", {"co_du_lieu": True, "diem": [1]}, ngay="2026-08-21")
+    d = db.trends_doc(conn, "life in alaska", "US", ngay="2026-08-21")   # không phân biệt hoa thường
+    assert d and d["co_du_lieu"] is True
+    assert db.trends_doc(conn, "life in alaska", "US", ngay="2026-08-22") is None

@@ -1073,8 +1073,18 @@ def tra_cuu_ngoai(ws: int, body: TraCuuNgoaiIn, request: Request):
     bien_the = sorted(({'cum': k, 'do_phu': v['do_phu'], 'hang': v['hang_tot_nhat']}
                        for k, v in bt.items() if k != cum.lower()),
                       key=lambda m: (-m['do_phu'], m['hang']))[:10]
-    tr = (tra_cuu.google_trends(cum, geo=geo)
-          if body.trends else {'co_du_lieu': False, 'ly_do': 'đã tắt Google Trends'})
+    # Trends: đọc cache trong NGÀY trước — Google chặn theo IP, hỏi lại cùng từ khoá
+    # vừa vô ích vừa làm dính rate limit lâu hơn.
+    tr = {'co_du_lieu': False, 'ly_do': 'đã tắt Google Trends'}
+    if body.trends:
+        with get_conn() as c2:
+            tr = db.trends_doc(c2, cum, geo) or {}
+            if tr:
+                tr['tu_cache'] = True
+            else:
+                tr = tra_cuu.google_trends(cum, geo=geo)
+                if tr.get('co_du_lieu'):
+                    db.trends_ghi(c2, cum, geo, tr)
     # Hai nguồn 0 key, nhanh (~1-2s): tin báo đang nói gì + mức quan tâm trên Wikipedia.
     # Reddit đã thử cả .json lẫn .rss đều 403 từ IP này; X/Twitter cần bản trả phí.
     return {'cum': cum, 'youtube': yt, 'trends': tr,

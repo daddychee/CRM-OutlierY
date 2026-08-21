@@ -161,6 +161,10 @@ CREATE TABLE IF NOT EXISTS keyword_market (            -- ĐO THỊ TRƯỜNG TH
   subs_giua INTEGER,
   top TEXT NOT NULL DEFAULT '[]',                      -- video thật để người soi (JSON)
   PRIMARY KEY (keyword_id, ngay));
+CREATE TABLE IF NOT EXISTS trends_cache (             -- Google Trends bị RateLimit (21/08)
+  cum TEXT NOT NULL, geo TEXT NOT NULL, ngay TEXT NOT NULL,
+  payload TEXT NOT NULL DEFAULT '{}',
+  PRIMARY KEY (cum, geo, ngay));
 CREATE INDEX IF NOT EXISTS idx_keywords_ws ON keywords(workspace_id, bo_qua);
 CREATE INDEX IF NOT EXISTS idx_cycles_ws ON cycles(workspace_id, ts);
 CREATE INDEX IF NOT EXISTS idx_videos_ws ON videos(workspace_id, dead);
@@ -487,3 +491,18 @@ def tom_tat_pool(conn, ws):
     return {'so_video': r['n'], 'so_kenh': r['k'], 'moi_nhat': r['moi_nhat'] or 0,
             'video_moi_30_ngay': moi30, 'top_90_ngay': top,
             'view_giua_moi': (vs[len(vs) // 2] if vs else None), 'so_mau_moi': len(vs)}
+
+def trends_doc(conn, cum, geo, ngay=None):
+    """Trends của hôm nay (nếu đã hỏi). Google chặn theo IP nên hỏi lại là dính tiếp."""
+    ngay = ngay or time.strftime('%Y-%m-%d', time.localtime())
+    r = conn.execute('SELECT payload FROM trends_cache WHERE cum=? AND geo=? AND ngay=?',
+                     ((cum or '').strip().lower(), geo or 'US', ngay)).fetchone()
+    return json.loads(r['payload']) if r else None
+
+def trends_ghi(conn, cum, geo, payload, ngay=None):
+    ngay = ngay or time.strftime('%Y-%m-%d', time.localtime())
+    conn.execute("""INSERT INTO trends_cache(cum, geo, ngay, payload) VALUES(?,?,?,?)
+                    ON CONFLICT(cum, geo, ngay) DO UPDATE SET payload=excluded.payload""",
+                 ((cum or '').strip().lower(), geo or 'US', ngay,
+                  json.dumps(payload, ensure_ascii=False)))
+    conn.commit()

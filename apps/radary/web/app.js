@@ -1800,7 +1800,7 @@ function Mapping({ ws, canEdit }) {
         <span class="note">${B.quota_da_tieu ? `· ${B.quota_da_tieu} units` : ''}</span></div>
 
       ${tr.co_du_lieu ? html`<div style="margin-bottom:12px">
-        <div><b>Google Trends</b> <span class="note">${tr.geo} · ${tr.timeframe}</span>
+        <div><b>Google Trends</b> <span class="note">${tr.geo} · ${tr.timeframe}${tr.tu_cache ? ' · lấy lại từ lần hỏi hôm nay' : ''}</span>
           ${tr.xu_huong ? html` — <b style=${`color:${tr.xu_huong.chieu === 'lên' ? '#2e7d32' : tr.xu_huong.chieu === 'xuống' ? '#c62828' : '#546e7a'}`}>
             ${tr.xu_huong.chieu} ${tr.xu_huong.phan_tram > 0 ? '+' : ''}${tr.xu_huong.phan_tram}%</b>` : ''}</div>
         <${DuongXuHuong} diem=${tr.diem} nhan="Mức quan tâm tương đối (Google Trends, 0–100)"/>
@@ -1809,7 +1809,8 @@ function Mapping({ ws, canEdit }) {
         ${!(tr.rising || []).length && !(tr.top || []).length ? html`<div class="note">
           Google Trends không có truy vấn liên quan cho từ khoá này (thường vì từ khoá quá hẹp)
           — xem phần “biến thể người ta gõ” bên dưới.</div>` : ''}
-      </div>` : html`<div class="note">Google Trends: ${tr.ly_do || 'không có dữ liệu'}</div>`}
+      </div>` : html`<div style=${tr.rate_limit ? 'padding:8px 10px;border-radius:8px;border:1px solid #ef6c00;background:rgba(239,108,0,.08);font-size:13px;margin-bottom:10px' : ''}
+        class=${tr.rate_limit ? '' : 'note'}>${tr.rate_limit ? '⏳ ' : 'Google Trends: '}${tr.ly_do || 'không có dữ liệu'}</div>`}
 
       ${(B.bien_the || []).length ? html`<div style="margin-bottom:12px">
         <div><b>Biến thể người ta gõ</b> <span class="note">· YouTube autocomplete,
@@ -1826,14 +1827,18 @@ function Mapping({ ws, canEdit }) {
       </div>` : ''}
 
       ${yt.co_du_lieu ? html`<div style="margin-bottom:12px">
-        <div><b>YouTube — video nổi 90 ngày qua</b> <span class="note">· view giữa ${soGon(yt.view_giua)}</span></div>
+        <div><b>YouTube — video nổi 90 ngày qua</b>
+          <span class="note">· ${yt.so_ket_qua} video · view giữa ${soGon(yt.view_giua)}${
+            (yt.da_bo && (yt.da_bo.khac_ngon_ngu || yt.da_bo.shorts))
+              ? ` · đã bỏ ${yt.da_bo.khac_ngon_ngu} video khác ngôn ngữ thị trường, ${yt.da_bo.shorts} Shorts` : ''}</span></div>
         ${(yt.top_video || []).map(v => html`<div style="padding:2px 0">
           <span style="font-weight:600;min-width:52px;display:inline-block">${soGon(v.views)}</span>
           <a href=${linkVideo(v.yt_id)} target="_blank" rel="noopener">${v.title}</a>
           <span class="note"> · </span>
           ${linkKenh(v.kenh_id) ? html`<a href=${linkKenh(v.kenh_id)} target="_blank" rel="noopener" class="note">${v.kenh}</a>` : html`<span class="note">${v.kenh}</span>`}
           <span class="note"> · ${v.subs == null ? 'subs ẩn' : soGon(v.subs) + ' subs'}
-            · ${v.tuoi_ngay} ngày · ${soGon(v.view_moi_ngay)}/ngày</span></div>`)}
+            · ${v.tuoi_ngay} ngày${v.duration_s ? ` · ${Math.round(v.duration_s / 60)} phút` : ''}
+            · ${soGon(v.view_moi_ngay)}/ngày</span></div>`)}
         ${(yt.kenh_moi_noi || []).length ? html`<div style="margin-top:8px">
           <div><b>Kênh nhỏ đang thắng chủ đề này</b> <span class="note">(dưới 50k subs mà vẫn lọt top view)</span></div>
           ${(yt.kenh_moi_noi || []).map(k => html`<div style="padding:2px 0">

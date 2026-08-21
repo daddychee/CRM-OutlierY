@@ -27,6 +27,7 @@ SO_THANG = 18            # cua so lua dang mac dinh
 TOI_THIEU_LUA = 2        # duoi 2 video/thang thi khong lay trung vi (mau qua nho)
 MOI_NGAY_B = 90          # "video noi gan day" = dang trong 90 ngay
 KENH_NHO_SUBS = 50_000
+SHORT_TOI_DA_S = 180     # <= 3 phut coi la Shorts/clip — ngach nay lam video DAI
 
 
 def _thang(ts: float) -> str:
@@ -113,7 +114,13 @@ def google_trends(cum: str, geo: str = "US", timeframe: str = "today 12-m") -> d
     try:
         d = ex(cum, geo=geo or "US", timeframe=timeframe, include_related=True)
     except Exception as e:                                  # noqa: BLE001 — thư viện non
-        return {"co_du_lieu": False, "ly_do": f"Google Trends lỗi: {type(e).__name__}"}
+        ten = type(e).__name__
+        if "RateLimit" in ten or "429" in str(e):
+            return {"co_du_lieu": False, "rate_limit": True,
+                    "ly_do": "Google Trends đang chặn tạm (hỏi quá nhiều trong ngày). "
+                             "Kết quả đã hỏi hôm nay vẫn xem lại được; từ khoá mới thì "
+                             "chờ ~30-60 phút. Các nguồn khác vẫn chạy bình thường."}
+        return {"co_du_lieu": False, "ly_do": f"Google Trends lỗi: {ten}"}
     if not d or d.get("is_empty"):
         return {"co_du_lieu": False, "ly_do": "Google Trends không có dữ liệu cho từ khoá này"}
     iot = [p for p in (d.get("interest_over_time") or []) if not p.get("is_partial")]
@@ -161,17 +168,35 @@ def ngoai_youtube(api, cum: str, vung: dict | None = None, so_kq: int = 20) -> d
         return {"co_du_lieu": False,
                 "ly_do": f"YouTube không có video nào về từ khoá này trong {MOI_NGAY_B} ngày qua"}
 
-    v = api.get("videos", {"part": "statistics,snippet", "id": ",".join(ids)}, cost=1)
+    v = api.get("videos", {"part": "statistics,snippet,contentDetails",
+                           "id": ",".join(ids)}, cost=1)
     from . import scan
-    vids = []
+    ma_tt = (vung or {}).get("relevanceLanguage")     # 'en' / 'es' / ...
+    vids, bo_ngon_ngu, bo_short = [], 0, 0
     for it in v.get("items") or []:
         sn, st = it.get("snippet") or {}, it.get("statistics") or {}
         pub = scan.parse_pub(sn.get("publishedAt"))
         tuoi = max(1.0, (time.time() - pub) / 86400)
         views = int(st.get("viewCount") or 0)
+        dai = scan.parse_dur((it.get("contentDetails") or {}).get("duration"))
+
+        # LOC NGON NGU (user 21/08: pool US van ra video tieng Viet/Indonesia). YouTube
+        # CO tra defaultAudioLanguage/defaultLanguage — chinh xac hon doan tu title;
+        # thieu ca hai thi moi doan tu title; van khong ro thi GIU (khong loai oan).
+        cua_vid = (sn.get("defaultAudioLanguage") or sn.get("defaultLanguage") or "").split("-")[0].lower()
+        if not cua_vid:
+            cua_vid = mapping.nhan_dien_ngon_ngu(sn.get("title") or "") or ""
+        if ma_tt and cua_vid and cua_vid != ma_tt:
+            bo_ngon_ngu += 1
+            continue
+        if dai and dai <= SHORT_TOI_DA_S:
+            bo_short += 1
+            continue
+
         vids.append({"yt_id": it.get("id"), "title": sn.get("title") or "",
                      "kenh": sn.get("channelTitle") or "", "kenh_id": sn.get("channelId") or "",
                      "views": views, "pub_ts": pub, "tuoi_ngay": round(tuoi),
+                     "ngon_ngu": cua_vid or None, "duration_s": dai,
                      "view_moi_ngay": round(views / tuoi)})
     ch_ids = list({x["kenh_id"] for x in vids if x["kenh_id"]})[:50]
     subs = {}
@@ -202,6 +227,7 @@ def ngoai_youtube(api, cum: str, vung: dict | None = None, so_kq: int = 20) -> d
     return {
         "co_du_lieu": True,
         "so_ket_qua": len(vids),
+        "da_bo": {"khac_ngon_ngu": bo_ngon_ngu, "shorts": bo_short},
         "view_giua": statistics.median([x["views"] for x in vids]) if vids else 0,
         "top_video": sorted(vids, key=lambda x: -x["views"])[:8],
         "kenh_moi_noi": sorted(nho.values(), key=lambda k: -k["view_tot_nhat"])[:6],
