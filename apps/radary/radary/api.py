@@ -905,6 +905,8 @@ class QuetCauIn(BaseModel):
     tu_hoi: bool = False          # thêm biến thể what/why/how — tốn thêm 9 lời gọi
     lay_hn: bool = False          # nguồn phụ Hacker News (lệch tệp, mặc định tắt)
     tran: int = 20                # trần lời gọi cho phiên này (mỗi lời gọi ~1s)
+    do_luon: bool = True          # đo thị trường ngay cho cụm triển vọng (xem dưới)
+    do_toi_da: int = 8            # trần cụm đo tự động (~102 units/cụm)
 
 
 @app.post('/api/workspaces/{ws}/discovery/scan')
@@ -925,8 +927,37 @@ def discovery_scan(ws: int, body: QuetCauIn, request: Request):
         muc = discovery.quet(body.seed, chan=tuple(body.chan), lay_hn=body.lay_hn,
                              dem=dem, tu_hoi=body.tu_hoi)
         kq = db.kw_luu(c, ws, muc)
+
+        # ĐO LUÔN cụm có triển vọng nhất (21/08 — sửa sau khi user báo bảng toàn "chưa
+        # đo"): quét xong mà để 191 dòng thô rồi bắt bấm 19 lô là đẩy việc của máy sang
+        # người. Chỉ đo cụm lọt ra từ >= 2 hướng gõ — tín hiệu cầu duy nhất ta có.
+        do_kq = {}
+        if body.do_luon:
+            from . import thi_truong
+            ung_vien = [m['cum'] for m in muc if m.get('do_phu', 0) >= 2][:body.do_toi_da]
+            if ung_vien:
+                try:
+                    r = thi_truong.do_nhieu_cum(ung_vien, tran=body.do_toi_da)
+                    db.kw_luu_thi_truong(c, ws, r['ket_qua'])
+                    do_kq = {'da_do': r['da_do'], 'quota_da_tieu': r['quota_da_tieu']}
+                except RuntimeError as e:
+                    do_kq = {'loi_do': str(e)}      # quét vẫn giữ, chỉ mất phần đo
         return {**kq, 'loi_goi': dem.da_goi, 'cham_tran': dem.da_goi >= dem.tran,
-                'cum': muc[:50]}
+                'do': do_kq, 'cum': muc[:50]}
+
+
+@app.get('/api/workspaces/{ws}/discovery/goi-y-seed')
+def goi_y_seed_api(ws: int, request: Request):
+    """Seed ĐÚNG NGÁCH, rút từ chính title video pool đang theo dõi.
+
+    Sự cố 21/08: ô seed để tự do → user gõ 'vietnam' → autocomplete trả 'vietnam
+    airlines', 'vietnam khmer rouge war' — cả vũ trụ chủ đề, không cụm nào thuộc ngách.
+    """
+    from . import mapping
+    with get_conn() as c:
+        u = auth.require_user(c, request)
+        auth.ws_for_user(c, ws, u['id'])
+        return {'seed': mapping.goi_y_seed(mapping.tai_kho(c, ws))}
 
 
 @app.get('/api/workspaces/{ws}/mapping')

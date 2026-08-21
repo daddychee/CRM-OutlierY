@@ -86,6 +86,11 @@ def do_cung(kho: list[dict], cum: str, tran_vi_du: int = 8) -> dict:
     }
 
 
+# Tách từ CÓ DẤU: `[a-z0-9']+` băm vụn tiếng Việt ("Cuộc sống" -> cu/c/s/ng) nên pool
+# tiếng Việt gợi ý ra rác "cu c (21)". `[^\W_]` giữ nguyên chữ Unicode có dấu.
+_TU_RX = re.compile(r"[^\W_]+(?:'[^\W_]+)?", re.UNICODE)
+
+
 # Từ quá phổ biến, có mặt ở mọi title nên không nói lên ngách nào cả.
 _TU_TRO = {"the", "a", "an", "of", "in", "on", "at", "to", "for", "and", "or", "is",
            "are", "was", "were", "be", "with", "from", "by", "that", "this", "it",
@@ -100,7 +105,7 @@ def von_tu_ngach(kho: list[dict], toi_thieu: int = 2) -> set[str]:
     """
     dem: dict[str, int] = {}
     for v in kho:
-        for t in set(re.findall(r"[a-z0-9']+", v["title_l"])):
+        for t in set(_TU_RX.findall(v["title_l"])):
             if len(t) > 2 and t not in _TU_TRO:
                 dem[t] = dem.get(t, 0) + 1
     return {t for t, n in dem.items() if n >= toi_thieu}
@@ -122,8 +127,8 @@ def tu_la_voi_pool(cum: str, von: set[str], seed: str = "") -> float | None:
     Bỏ từ của seed ra khỏi phép tính — seed thì cụm nào cũng có. Không còn từ nào để
     chấm → None (không đủ cơ sở, KHÔNG cho 0).
     """
-    tu_seed = {t for t in re.findall(r"[a-z0-9']+", (seed or "").lower())}
-    tu = [t for t in re.findall(r"[a-z0-9']+", cum.lower())
+    tu_seed = {t for t in _TU_RX.findall((seed or "").lower())}
+    tu = [t for t in _TU_RX.findall(cum.lower())
           if len(t) > 2 and t not in _TU_TRO and t not in tu_seed]
     if not tu:
         return None
@@ -239,3 +244,31 @@ def gan_thi_truong(bd: dict, tt_theo_cum: dict, pool_view_moi: int | None = None
                        "cua_ti_le_kenh_nho": CUA_TI_LE_KENH_NHO,
                        "duoi_muc_minh": DUOI_MUC_MINH, "pool_view_moi": pool_view_moi}
     return bd
+
+
+# ---- GOI Y SEED TU CHINH NGACH (21/08/2026, sau khi user quet seed 'vietnam') ----
+# Su co: o seed de tu do -> user go 'vietnam' (danh tu don) -> autocomplete tra ve
+# 'vietnam airlines', 'vietnam khmer rouge war', 'vietnam economy' — ca vu tru chu de,
+# khong cum nao thuoc ngach "Life in". 191 cum vo nghia.
+# Chua: seed phai la MAU CAU cua ngach. May biet mau do o dau? O chinh TITLE video
+# ma pool dang theo doi — n-gram lap lai nhieu nhat chinh la cach ngach nay dat ten.
+def goi_y_seed(kho: list[dict], so_goi_y: int = 8, toi_thieu_video: int = 3) -> list[dict]:
+    """N-gram 2-3 tu lap lai nhieu nhat trong title pool -> seed dung ngach.
+
+    Chi lay n-gram MO DAU title (phan lon title dat theo mau "Life in X", "Living in
+    X") — n-gram giua cau thuong la ten rieng, khong dung lam seed duoc.
+    """
+    dem: dict[str, int] = {}
+    for v in kho:
+        tu = [t for t in _TU_RX.findall(v["title_l"]) if len(t) > 1]
+        for n in (2, 3):
+            if len(tu) >= n:
+                dem[" ".join(tu[:n])] = dem.get(" ".join(tu[:n]), 0) + 1
+    ra = [{"seed": k, "so_video": n} for k, n in dem.items() if n >= toi_thieu_video]
+    # bo n-gram 3 tu neu n-gram 2 tu dau cua no da co va pho bien hon (tranh trung lap)
+    hai = {r["seed"]: r["so_video"] for r in ra if len(r["seed"].split()) == 2}
+    ra = [r for r in ra
+          if len(r["seed"].split()) == 2
+          or hai.get(" ".join(r["seed"].split()[:2]), 0) < r["so_video"] * 1.5]
+    ra.sort(key=lambda r: -r["so_video"])
+    return ra[:so_goi_y]

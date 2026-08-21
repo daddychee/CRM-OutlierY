@@ -1654,17 +1654,20 @@ const ngayVN = ts => ts ? new Date(ts * 1000).toISOString().slice(0, 10) : '—'
 function Mapping({ ws, canEdit }) {
   const [d, setD] = useState(null);
   const [err, setErr] = useState('');
-  const [oChon, setOChon] = useState(null);
   const [cumMo, setCumMo] = useState(null);
   const [seed, setSeed] = useState('');
   const [chan, setChan] = useState('roblox, minecraft, gta, fortnite');
   const [dangQuet, setDangQuet] = useState('');
   const [dangDo, setDangDo] = useState('');
   const [qdChon, setQdChon] = useState(null);
+  const [goiY, setGoiY] = useState([]);
+  const [hienChuaDo, setHienChuaDo] = useState(false);
   const load = useCallback(() =>
     api('GET', `/workspaces/${ws}/mapping`).then(x => { setD(x); setErr(''); })
       .catch(e => setErr(String(e.message))), [ws]);
   useEffect(() => { load(); }, [load]);
+  useEffect(() => { api('GET', `/workspaces/${ws}/discovery/goi-y-seed`)
+    .then(r => setGoiY(r.seed || [])).catch(() => setGoiY([])); }, [ws]);
 
   const quet = async () => {
     if (!seed.trim()) return;
@@ -1698,7 +1701,12 @@ function Mapping({ ws, canEdit }) {
   if (err) return html`<div class="panel">Lỗi: ${err}</div>`;
   if (!d) return html`<div class="note">Đang tải…</div>`;
 
-  const muc = (qdChon ? d.muc.filter(m => m.qd === qdChon) : d.muc);
+  // Mặc định CHỈ hiện cụm đã có số liệu thị trường — 187 dòng "chưa đo" là nhiễu thị
+  // giác, không quyết định được gì (user báo 21/08).
+  const daDo = d.muc.filter(m => m.qd && m.qd !== 'chua_do');
+  const chuaDo = d.muc.filter(m => !m.qd || m.qd === 'chua_do');
+  const muc = qdChon === 'chua_do' || hienChuaDo ? chuaDo
+    : (qdChon ? daDo.filter(m => m.qd === qdChon) : daDo);
   const qdCard = k => {
     const [ten, ghi] = (d.nhan_qd && d.nhan_qd[k]) || [k, ''];
     const n = (d.dem_qd && d.dem_qd[k]) || 0;
@@ -1741,9 +1749,16 @@ function Mapping({ ws, canEdit }) {
           📊 Đo thị trường (10 cụm)</button>
         <span class="note" style="margin:0">${dangQuet} ${dangDo}</span>
       </div>
-      <div class="note">Seed càng RỘNG càng ra nhiều tín hiệu — đo thật: “life in” → 10 gợi ý,
-        “life in tuvalu” → 1. Autocomplete chỉ cho biết <b>có người gõ</b>, không cho biết
-        bao nhiêu người: cột “cầu” là số biến thể seed mà cụm lọt ra, không phải lượt tìm.</div>
+      ${goiY.length ? html`<div style="margin-top:6px">
+        <span class="note">Seed của chính ngách này (rút từ title ${(d.pool || {}).so_video || 0} video trong pool):</span>
+        ${goiY.map(g => html`<button class="btn small ghost" style="margin:2px 4px 2px 0"
+          title=${`${g.so_video} video trong pool bắt đầu bằng cụm này`}
+          onClick=${() => setSeed(g.seed)}>${g.seed} <span class="note">${g.so_video}</span></button>`)}
+      </div>` : ''}
+      <div class="note">Dùng seed <b>đúng mẫu ngách</b> — gõ danh từ đơn (“vietnam”) thì
+        autocomplete trả cả vũ trụ chủ đề (vietnam airlines, vietnam economy…), không cụm nào
+        thuộc ngách. Autocomplete chỉ cho biết <b>có người gõ</b>, không cho biết bao nhiêu
+        người: cột “cầu” là số biến thể seed mà cụm lọt ra, không phải lượt tìm.</div>
     </div>
 
     ${d.chua_quet ? html`<div class="panel">${d.ly_do_thieu_mau}</div>` : ''}
@@ -1756,7 +1771,13 @@ function Mapping({ ws, canEdit }) {
         ${d.so_video_trong_kho} video trong kho pool này ·
         mốc cao/thấp = trung vị của chính phiên quét (cầu ${d.nguong?.cau_do_phu ?? '—'},
         cung ${d.nguong?.cung_so_video ?? '—'} video) — không phải ngưỡng cố định.
-        ${oChon ? html` · đang lọc: <b>${(d.nhan_o[oChon] || [oChon])[0]}</b>` : ''}</div>
+        ${qdChon ? html` · đang lọc: <b>${(d.nhan_qd[qdChon] || [qdChon])[0]}</b>` : ''}
+        ${chuaDo.length && !hienChuaDo && qdChon !== 'chua_do' ? html`
+          · <a href="#" onClick=${e => { e.preventDefault(); setHienChuaDo(true); }}>
+            hiện ${chuaDo.length} cụm chưa đo</a>` : ''}
+        ${hienChuaDo ? html` · <a href="#" onClick=${e => { e.preventDefault(); setHienChuaDo(false); }}>
+          ẩn cụm chưa đo</a>` : ''}</div>
+      ${!muc.length ? html`<div class="note">Chưa có cụm nào ở nhóm này.</div>` : ''}
       <table class="tbl"><thead><tr>
         <th>Cụm</th>
         <th title="số biến thể seed mà cụm lọt ra — KHÔNG phải lượt tìm kiếm">Cầu</th>
