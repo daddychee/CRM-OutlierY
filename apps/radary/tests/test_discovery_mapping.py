@@ -671,3 +671,19 @@ def test_chi_so_LUONG_la_view_that_khong_phai_totalResults():
     assert r["tong_view_90n"] == 400000
     assert r["view_moi_thang"] == round(400000 / 3)
     assert "totalResults" not in json.dumps(r)      # tuyệt đối không dùng số giả đó
+
+
+def test_route_lich_su_doc_lap_va_hash_giu_tu_khoa():
+    """User 21/08: 'kết quả mất sau mỗi lần F5'. Hai điều kiện để F5 không mất:
+    (1) có route lịch sử ĐỘC LẬP để tải ngay khi mở tab (trước đó lịch sử chỉ về kèm
+        kết quả tra cứu nên F5 xong là trắng);
+    (2) từ khoá đang xem nằm trong URL hash, và chỉ tự mở lại khi ĐÚNG pool."""
+    from pathlib import Path
+    goc = Path(__file__).resolve().parents[1]
+    api_src = goc.joinpath("radary", "api.py").read_text(encoding="utf-8")
+    js = goc.joinpath("web", "app.js").read_text(encoding="utf-8")
+    assert "'/api/workspaces/{ws}/tra-cuu/lich-su'" in api_src
+    assert "/tra-cuu/lich-su`).then(r => setLichSu" in js
+    assert "writeHash({ q })" in js
+    assert "String(h0.ws || '') === String(ws)" in js       # không mở nhầm pool khác
+    assert "writeHash({ q: '' })" in js                     # đổi pool thì bỏ từ khoá cũ

@@ -1752,6 +1752,16 @@ function Mapping({ ws, canEdit }) {
     setLichSu([]); setSoSanh(null);
     api('GET', `/workspaces/${ws}/discovery/goi-y-seed`).then(r => setGoiY(r.seed || [])).catch(() => setGoiY([]));
     api('GET', `/workspaces/${ws}/mapping`).then(d => setPool(d.pool || {})).catch(() => setPool({}));
+    // Lịch sử phải có NGAY khi mở tab: trước đây chỉ tải kèm kết quả tra cứu nên F5
+    // xong là trắng bảng, đúng lỗi user báo 21/08.
+    api('GET', `/workspaces/${ws}/tra-cuu/lich-su`).then(r => setLichSu(r.lich_su || []))
+      .catch(() => setLichSu([]));
+    api('GET', `/workspaces/${ws}/tra-cuu/so-sanh`).then(setSoSanh).catch(() => setSoSanh(null));
+    // Từ khoá đang xem nằm trong URL (#q=...) -> F5 mở lại đúng chỗ, đọc từ lịch sử,
+    // 0 quota. Chỉ tự mở khi hash thuộc ĐÚNG pool này.
+    const h0 = readHash();
+    if (h0.q && String(h0.ws || '') === String(ws)) traCuu(h0.q, true);
+    else if (h0.q) writeHash({ q: '' });      // đổi pool -> bỏ từ khoá của pool cũ
   }, [ws]);
 
   // `lai` = xem lại bản đã lưu: KHÔNG gọi lại nguồn ngoài (mỗi lần hỏi tốn 102 units).
@@ -1766,6 +1776,7 @@ function Mapping({ ws, canEdit }) {
         + (lai ? '&xem_lai=1' : ''));
       if (wsLucDo !== ws) return;               // người dùng đã đổi pool giữa chừng
       setA(a); setPool(a.pool || {}); setLichSu(a.lich_su || []);
+      writeHash({ q });                        // F5 giữ nguyên từ khoá đang xem
       if (a.ngoai) setB(a.ngoai);               // kết quả ngoài đã lưu từ lần trước
       api('GET', `/workspaces/${ws}/tra-cuu/so-sanh`).then(setSoSanh).catch(() => {});
       if (lai) { setXemLai(a.ts || null); setBusy(''); return; }

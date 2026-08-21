@@ -1014,6 +1014,16 @@ def mapping_api(ws: int, request: Request):
         return bd
 
 
+@app.get('/api/workspaces/{ws}/tra-cuu/lich-su')
+def tra_cuu_lich_su(ws: int, request: Request, limit: int = 30):
+    """Từ khoá đã tra ở pool này. Có route riêng để mở tab (hoặc F5) là thấy ngay —
+    trước đó lịch sử chỉ về kèm kết quả tra cứu nên F5 xong là trắng bảng."""
+    with get_conn() as c:
+        u = auth.require_user(c, request)
+        auth.ws_for_user(c, ws, u['id'])
+        return {'lich_su': db.tra_cuu_danh_sach(c, ws, limit=max(1, min(limit, 100)))}
+
+
 @app.get('/api/workspaces/{ws}/tra-cuu/so-sanh')
 def tra_cuu_so_sanh(ws: int, request: Request):
     """Xếp hạng các từ khoá ĐÃ TRA ở pool này theo LƯỢNG — 0 quota, đọc lịch sử.
