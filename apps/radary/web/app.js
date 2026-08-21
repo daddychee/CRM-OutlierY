@@ -1643,202 +1643,142 @@ function NicheVolume({ ma, ten }) {
 
 // '+ New Niche' ĐÃ BỎ (user 19/08): niche sinh ở General, pool dựng từ nút ＋
 // trên dải tab thị trường, kênh nhập ở Data Pool — không còn cửa tạo tự do.
-// ---------- Mapping: CẦU × CUNG (21/08/2026 — docs/discovery-mapping.md) ----------
-// Vế cung đọc SQLite sẵn có (0 quota); vế cầu là autocomplete đã quét và lưu theo ngày.
-// TRÌNH BẰNG CHỨNG — NGƯỜI CHỌN: bấm ô ra video thật, tool không "khuyên nên làm gì".
-const O_MAU = { khoang_trong: '#2e7d32', do_lua: '#c62828', bao_hoa: '#ef6c00', hoang: '#546e7a' };
-const QD_MAU = { dang_danh: '#2e7d32', dang_lam: '#1565c0', kho: '#ef6c00', nguoi: '#546e7a', chua_do: '#90a4ae' };
-const soGon = n => n == null ? '—' : (n >= 1e6 ? (n / 1e6).toFixed(1) + 'M' : n >= 1e3 ? Math.round(n / 1e3) + 'k' : String(n));
+// ---------- Mapping: TRA CỨU MỘT TỪ KHOÁ (21/08/2026, bản 2) ----------
+// Bản 1 (bản đồ 4 ô + 300 cụm) đã BỎ: user — "chỉ là duplicate của radary, không có
+// gì để make decision". Mô hình mới: nhập MỘT từ khoá → hai khối, đều theo THỊ TRƯỜNG
+// của pool đang mở:
+//   A · TRONG POOL  — xu hướng thật của thị trường mình theo dõi (0 quota, <1s)
+//   B · NGOÀI       — thiên hạ đang thịnh hành gì (YouTube ~102 units + Google Trends)
+const soGon = n => n == null ? '—' : (n >= 1e6 ? (n / 1e6).toFixed(1) + 'M' : n >= 1e3 ? Math.round(n / 1e3) + 'k' : String(Math.round(n)));
 const ngayVN = ts => ts ? new Date(ts * 1000).toISOString().slice(0, 10) : '—';
 
+function Sparkline({ diem }) {           // đường interest 12 tháng của Google Trends
+  if (!diem || diem.length < 2) return null;
+  const w = 320, h = 44, max = Math.max(...diem.map(p => p.gia_tri)) || 1;
+  const b = diem.map((p, i) => `${(i / (diem.length - 1)) * w},${h - (p.gia_tri / max) * h}`).join(' ');
+  return html`<svg viewBox=${`0 0 ${w} ${h}`} style="width:100%;max-width:340px;height:44px">
+    <polyline points=${b} fill="none" stroke="var(--accent,#4C8FE0)" stroke-width="2"/></svg>`;
+}
+
 function Mapping({ ws, canEdit }) {
-  const [d, setD] = useState(null);
-  const [err, setErr] = useState('');
-  const [cumMo, setCumMo] = useState(null);
-  const [seed, setSeed] = useState('');
-  const [chan, setChan] = useState('roblox, minecraft, gta, fortnite');
-  const [dangQuet, setDangQuet] = useState('');
-  const [dangDo, setDangDo] = useState('');
-  const [qdChon, setQdChon] = useState(null);
+  const [cum, setCum] = useState('');
+  const [A, setA] = useState(null);       // khối trong pool
+  const [B, setB] = useState(null);       // khối ngoài
+  const [pool, setPool] = useState({});
   const [goiY, setGoiY] = useState([]);
-  const [hienChuaDo, setHienChuaDo] = useState(false);
-  const load = useCallback(() =>
-    api('GET', `/workspaces/${ws}/mapping`).then(x => { setD(x); setErr(''); })
-      .catch(e => setErr(String(e.message))), [ws]);
-  useEffect(() => { load(); }, [load]);
-  useEffect(() => { api('GET', `/workspaces/${ws}/discovery/goi-y-seed`)
-    .then(r => setGoiY(r.seed || [])).catch(() => setGoiY([])); }, [ws]);
+  const [busy, setBusy] = useState('');
+  const [err, setErr] = useState('');
 
-  const quet = async () => {
-    if (!seed.trim()) return;
-    setDangQuet('Đang quét… (mỗi lời gọi giãn 1 giây để không bị YouTube chặn IP)');
+  useEffect(() => {
+    api('GET', `/workspaces/${ws}/discovery/goi-y-seed`).then(r => setGoiY(r.seed || [])).catch(() => setGoiY([]));
+    api('GET', `/workspaces/${ws}/mapping`).then(d => setPool(d.pool || {})).catch(() => {});
+  }, [ws]);
+
+  const traCuu = async (tu) => {
+    const q = (tu || cum).trim();
+    if (!q) return;
+    setCum(q); setErr(''); setB(null); setBusy('Đang đọc pool…');
     try {
-      const r = await api('POST', `/workspaces/${ws}/discovery/scan`,
-        { seed, chan: chan.split(',').map(s => s.trim()).filter(Boolean), tran: 20 });
-      setDangQuet(`Xong: ${r.tong} cụm (${r.moi} mới) · ${r.loi_goi} lời gọi`
-        + (r.cham_tran ? ' · chạm trần, quét lại để lấy thêm' : ''));
-      load();
-    } catch (e) { setDangQuet('Lỗi: ' + e.message); }
-  };
-  const gat = async cum => {
-    if (!canEdit) return;
-    try { await api('POST', `/workspaces/${ws}/keywords/bo-qua`, { cum, bo: true }); load(); }
-    catch (e) { alert(String(e.message)); }
-  };
-  // Đo THỊ TRƯỜNG THẬT — tầng thiếu của bản đồ đầu tiên. Tiêu quota (~102 units/cụm)
-  // nên trần thấp và chỉ chạy khi người bấm.
-  const doThiTruong = async (cum) => {
-    setDangDo('Đang hỏi YouTube…');
-    try {
-      const r = await api('POST', `/workspaces/${ws}/discovery/do-thi-truong`,
-        cum ? { cum: [cum], tran: 1 } : { tran: 10 });
-      setDangDo(r.ghi_chu || `Đo xong ${r.da_do} cụm · ${r.quota_da_tieu} units`
-        + (r.bo_qua ? ` · còn ${r.bo_qua} cụm chưa đo` : ''));
-      load();
-    } catch (e) { setDangDo('Lỗi: ' + e.message); }
+      const a = await api('GET', `/workspaces/${ws}/tra-cuu?cum=${encodeURIComponent(q)}`);
+      setA(a); setPool(a.pool || {});
+      if (!canEdit) { setBusy(''); return; }
+      setBusy('Đang hỏi YouTube + Google Trends (~20 giây)…');
+      const b = await api('POST', `/workspaces/${ws}/tra-cuu/ngoai`, { cum: q });
+      setB(b); setBusy('');
+    } catch (e) { setErr(String(e.message)); setBusy(''); }
   };
 
-  if (err) return html`<div class="panel">Lỗi: ${err}</div>`;
-  if (!d) return html`<div class="note">Đang tải…</div>`;
-
-  // Mặc định CHỈ hiện cụm đã có số liệu thị trường — 187 dòng "chưa đo" là nhiễu thị
-  // giác, không quyết định được gì (user báo 21/08).
-  const daDo = d.muc.filter(m => m.qd && m.qd !== 'chua_do');
-  const chuaDo = d.muc.filter(m => !m.qd || m.qd === 'chua_do');
-  const muc = qdChon === 'chua_do' || hienChuaDo ? chuaDo
-    : (qdChon ? daDo.filter(m => m.qd === qdChon) : daDo);
-  const qdCard = k => {
-    const [ten, ghi] = (d.nhan_qd && d.nhan_qd[k]) || [k, ''];
-    const n = (d.dem_qd && d.dem_qd[k]) || 0;
-    return html`<button class=${'panel' + (qdChon === k ? '' : ' ghost')}
-      style=${`flex:1;min-width:165px;text-align:left;border-left:4px solid ${QD_MAU[k]}`}
-      title=${ghi} onClick=${() => setQdChon(qdChon === k ? null : k)}>
-      <div style="font-size:22px;font-weight:700">${n}</div>
-      <div style="font-weight:600">${ten}</div>
-      <div class="note" style="margin:0">${ghi}</div></button>`;
-  };
-  const P = d.pool || {};
+  const tp = A && A.trong_pool || {};
+  const yt = B && B.youtube || {};
+  const tr = B && B.trends || {};
 
   return html`
-    <div class="panel" style="border-left:4px solid var(--accent, #4C8FE0)">
-      <div class="eyebrow" style="margin-top:0">Pool đang mở${P.ngach ? ` · ngách ${P.ngach}` : ''}${P.market ? ` · ${P.market}` : ''}
-        ${P.ngon_ngu ? html`<span style="color:var(--accent,#4C8FE0)"> · đang đo theo thị trường ${P.market} / ${P.ngon_ngu}</span>` : ''}</div>
-      <div class="row" style="gap:22px;flex-wrap:wrap;align-items:baseline">
-        <div><b style="font-size:19px">${P.ten || '—'}</b></div>
-        <div><b>${(P.so_video || 0).toLocaleString()}</b> <span class="note">video</span></div>
-        <div><b>${P.so_kenh || 0}</b> <span class="note">kênh theo dõi</span></div>
-        <div><b>${P.video_moi_30_ngay || 0}</b> <span class="note">video mới 30 ngày</span></div>
-        <div class="note">video gần nhất: ${ngayVN(P.moi_nhat)}</div>
+    <div class="panel" style="border-left:4px solid var(--accent,#4C8FE0)">
+      <div class="eyebrow" style="margin-top:0">Pool đang mở${pool.ngach ? ` · ngách ${pool.ngach}` : ''}
+        ${pool.ngon_ngu ? html`<span style="color:var(--accent,#4C8FE0)"> · đo theo thị trường ${pool.market} / ${pool.ngon_ngu}</span>` : ''}</div>
+      <div class="row" style="gap:20px;flex-wrap:wrap;align-items:baseline">
+        <b style="font-size:18px">${pool.ten || '—'}</b>
+        <div><b>${(pool.so_video || 0).toLocaleString()}</b> <span class="note">video</span></div>
+        <div><b>${pool.so_kenh || 0}</b> <span class="note">kênh</span></div>
+        <div><b>${pool.video_moi_30_ngay || 0}</b> <span class="note">video mới 30 ngày</span></div>
+        ${pool.view_giua_moi ? html`<div><b>${soGon(pool.view_giua_moi)}</b> <span class="note">view/video mới (mốc của pool)</span></div>` : ''}
       </div>
-      ${!P.market ? html`<div style="margin-top:8px;padding:8px 10px;border-radius:8px;
+      ${!pool.market ? html`<div style="margin-top:8px;padding:8px 10px;border-radius:8px;
         border:1px solid #ef6c00;background:rgba(239,108,0,.08);font-size:13px">
-        ⚠ <b>Pool này chưa gắn thị trường</b> — nên máy không ép được vùng/ngôn ngữ khi hỏi
-        YouTube. Kết quả sẽ theo IP máy chủ (đặt tại Việt Nam), không phải thị trường anh làm.
-        Mở pool theo thị trường (US/Spain…) ở dải tab, hoặc gán thị trường cho pool này.
-        </div>` : ''}
-      ${P.so_video_tieng_viet ? html`<div style="margin-top:8px;padding:8px 10px;border-radius:8px;
-        border:1px solid #ef6c00;background:rgba(239,108,0,.08);font-size:13px">
-        ⚠ Pool có <b>${P.so_video_tieng_viet}</b> video tiếng Việt (${P.ti_le_khac_ngon_ngu}% lệch
-        ngôn ngữ thị trường). Máy đã <b>bỏ chúng khi rút seed</b> để không quét nhầm sang thị
-        trường Việt — nhưng nên dọn khỏi pool nếu không theo dõi thị trường đó.
-        </div>` : ''}
-      ${(P.top_90_ngay || []).length ? html`<div style="margin-top:6px">
-        <span class="note">Đang chạy tốt nhất 90 ngày:</span>
-        ${(P.top_90_ngay || []).slice(0, 3).map(v => html`<div style="padding:1px 0">
-          <span style="font-weight:600">${soGon(v.views)}</span>
-          <span class="note"> · ${v.channel_title} · </span>${v.title}</div>`)}
-      </div>` : ''}
+        ⚠ Pool chưa gắn thị trường — máy không ép được vùng khi hỏi YouTube/Trends, kết quả sẽ
+        theo IP máy chủ (Việt Nam). Mở pool theo thị trường (US/Spain…) ở dải tab.</div>` : ''}
     </div>
 
     <div class="panel">
       <div class="row" style="gap:8px;flex-wrap:wrap;align-items:center">
-        <input placeholder="seed rộng, ví dụ: life in" value=${seed}
-          onInput=${e => setSeed(e.target.value)} style="min-width:220px"/>
-        <input placeholder="từ chặn, cách nhau dấu phẩy" value=${chan}
-          onInput=${e => setChan(e.target.value)} style="min-width:260px"/>
-        <button class="btn" disabled=${!canEdit} onClick=${quet}>🔎 Quét cầu</button>
-        <button class="btn" disabled=${!canEdit} onClick=${() => doThiTruong(null)}
-          title="Hỏi YouTube xem thị trường trả bao nhiêu view cho video mới, cụm còn sống không, kênh nhỏ có lọt top không (~102 units/cụm)">
-          📊 Đo thị trường (10 cụm)</button>
-        <span class="note" style="margin:0">${dangQuet} ${dangDo}</span>
+        <input placeholder="nhập MỘT từ khoá, ví dụ: life in alaska" value=${cum}
+          onInput=${e => setCum(e.target.value)}
+          onKeyDown=${e => { if (e.key === 'Enter') traCuu(); }} style="min-width:280px"/>
+        <button class="btn primary" onClick=${() => traCuu()} disabled=${!!busy}>🔍 Tra cứu</button>
+        <span class="note" style="margin:0">${busy}${err ? html`<span style="color:#c62828">${err}</span>` : ''}</span>
       </div>
       ${goiY.length ? html`<div style="margin-top:6px">
-        <span class="note">Seed của chính ngách này (rút từ title ${(d.pool || {}).so_video || 0} video trong pool):</span>
+        <span class="note">Từ khoá phổ biến trong pool này:</span>
         ${goiY.map(g => html`<button class="btn small ghost" style="margin:2px 4px 2px 0"
-          title=${`${g.so_video} video trong pool bắt đầu bằng cụm này`}
-          onClick=${() => setSeed(g.seed)}>${g.seed} <span class="note">${g.so_video}</span></button>`)}
+          onClick=${() => traCuu(g.seed)}>${g.seed} <span class="note">${g.so_video}</span></button>`)}
       </div>` : ''}
-      <div class="note">Dùng seed <b>đúng mẫu ngách</b> — gõ danh từ đơn (“vietnam”) thì
-        autocomplete trả cả vũ trụ chủ đề (vietnam airlines, vietnam economy…), không cụm nào
-        thuộc ngách. Autocomplete chỉ cho biết <b>có người gõ</b>, không cho biết bao nhiêu
-        người: cột “cầu” là số biến thể seed mà cụm lọt ra, không phải lượt tìm.</div>
     </div>
 
-    ${d.chua_quet ? html`<div class="panel">${d.ly_do_thieu_mau}</div>` : ''}
-    ${!d.chua_quet && !d.du_mau ? html`<div class="panel">${d.ly_do_thieu_mau}</div>` : ''}
-    ${d.muc.length ? html`<div class="row" style="gap:10px;flex-wrap:wrap;margin:10px 0">
-      ${['dang_danh', 'dang_lam', 'kho', 'nguoi', 'chua_do'].map(qdCard)}</div>` : ''}
+    ${A ? html`<div class="panel">
+      <div class="eyebrow" style="margin-top:0">A · Trong pool — “${A.cum}”</div>
+      ${!tp.co_du_lieu ? html`<div class="note">${tp.ly_do}</div>` : html`
+        <div class="row" style="gap:20px;flex-wrap:wrap;align-items:baseline">
+          <div><b>${tp.so_video}</b> <span class="note">video</span></div>
+          <div><b>${tp.so_kenh}</b> <span class="note">kênh</span></div>
+          <div><b>${tp.ti_trong_video}%</b> <span class="note">số video của pool</span></div>
+          <div><b>${tp.ti_trong_view}%</b> <span class="note">view của pool</span></div>
+          <div><b>${tp.vph_giua ?? '—'}</b> <span class="note">view/giờ hiện tại (pool ${tp.vph_giua_pool ?? '—'})</span></div>
+        </div>
+        <div class="eyebrow">Xu hướng theo lứa đăng — số video ra mỗi tháng và view/ngày của lứa đó</div>
+        <table class="tbl"><thead><tr><th>Tháng</th><th>Video mới</th><th>View/ngày (trung vị)</th></tr></thead>
+          <tbody>${(tp.lua || []).slice(-12).map(l => html`<tr>
+            <td>${l.thang}</td><td>${l.so_video}</td>
+            <td>${l.du_mau ? l.view_moi_ngay : html`<span class="note">— ít mẫu</span>`}</td></tr>`)}
+          </tbody></table>
+        ${(tp.top_kenh || []).length ? html`<div style="margin-top:8px">
+          <span class="note">Kênh đẩy mạnh chủ đề này (12 tháng):</span>
+          ${(tp.top_kenh || []).map(k => html`<span style="margin-right:12px">${k.kenh}
+            <span class="note">${k.so_video} video</span></span>`)}</div>` : ''}
+        ${tp.moi_nhat ? html`<div class="note" style="margin-top:6px">Bài gần nhất trong pool:
+          <a href=${'https://youtu.be/' + tp.moi_nhat.yt_id} target="_blank" rel="noopener">${tp.moi_nhat.title}</a>
+          · ${tp.moi_nhat.kenh} · ${soGon(tp.moi_nhat.views)} view · ${ngayVN(tp.moi_nhat.pub_ts)}</div>` : ''}`}
+    </div>` : ''}
 
-    ${d.muc.length ? html`<div class="panel">
-      <div class="note" style="margin-top:0">
-        ${d.so_video_trong_kho} video trong kho pool này ·
-        mốc cao/thấp = trung vị của chính phiên quét (cầu ${d.nguong?.cau_do_phu ?? '—'},
-        cung ${d.nguong?.cung_so_video ?? '—'} video) — không phải ngưỡng cố định.
-        ${qdChon ? html` · đang lọc: <b>${(d.nhan_qd[qdChon] || [qdChon])[0]}</b>` : ''}
-        ${chuaDo.length && !hienChuaDo && qdChon !== 'chua_do' ? html`
-          · <a href="#" onClick=${e => { e.preventDefault(); setHienChuaDo(true); }}>
-            hiện ${chuaDo.length} cụm chưa đo</a>` : ''}
-        ${hienChuaDo ? html` · <a href="#" onClick=${e => { e.preventDefault(); setHienChuaDo(false); }}>
-          ẩn cụm chưa đo</a>` : ''}</div>
-      ${!muc.length ? html`<div class="note">Chưa có cụm nào ở nhóm này.</div>` : ''}
-      <table class="tbl"><thead><tr>
-        <th>Cụm</th>
-        <th title="số biến thể seed mà cụm lọt ra — KHÔNG phải lượt tìm kiếm">Cầu</th>
-        <th colspan="3" style="text-align:center;border-bottom:1px solid var(--border)">THỊ TRƯỜNG (YouTube thật)</th>
-        <th colspan="2" style="text-align:center;border-bottom:1px solid var(--border)">POOL MÌNH</th>
-        <th>Quyết định</th><th></th></tr>
-        <tr><th></th><th></th>
-        <th title="view trung vị của video đăng trong 90 ngày">View/video mới</th>
-        <th title="bao nhiêu % video top đăng trong 90 ngày — cụm còn sống không">% mới</th>
-        <th title="số video top thuộc kênh dưới 50k subs — MÌNH CÓ CỬA KHÔNG">Kênh nhỏ lọt top</th>
-        <th>Video</th><th>View giữa</th><th></th><th></th></tr></thead><tbody>
-        ${muc.map(m => { const t = m.tt || {}; return html`<tr>
-          <td><a href="#" onClick=${e => { e.preventDefault(); setCumMo(cumMo === m.cum ? null : m.cum); }}>${m.cum}</a></td>
-          <td>${m.do_phu}</td>
-          <td>${t.so_ket_qua ? soGon(t.view_giua_moi) : '—'}</td>
-          <td>${t.so_ket_qua ? t.ti_le_moi + '%' : '—'}</td>
-          <td>${t.so_ket_qua ? `${t.kenh_nho_lot_top}/${t.so_ket_qua}` : '—'}</td>
-          <td>${m.so_video}</td>
-          <td>${m.so_video ? soGon(m.view_trung_vi) : '—'}</td>
-          <td style=${`color:${QD_MAU[m.qd] || 'inherit'};font-weight:600`}>
-            ${(d.nhan_qd && d.nhan_qd[m.qd] || [m.qd])[0]}</td>
-          <td style="white-space:nowrap">
-            ${!t.so_ket_qua && canEdit ? html`<button class="btn small" title="đo thị trường riêng cụm này (~102 units)"
-              onClick=${() => doThiTruong(m.cum)}>📊</button>` : ''}
-            ${canEdit ? html`<button class="btn small ghost" title="gạt cụm nhiễu (bật lại được)"
-              onClick=${() => gat(m.cum)}>✕</button>` : ''}</td></tr>`; })}
-      </tbody></table>
-      ${cumMo ? (() => {
-        const m = d.muc.find(x => x.cum === cumMo) || {}; const t = m.tt || {};
-        return html`<div style="margin-top:12px;border-top:1px solid var(--border);padding-top:10px">
-          <div class="eyebrow" style="margin-top:0">Trên YouTube — “${cumMo}”</div>
-          ${t.so_ket_qua ? html`
-            <div class="note">tuổi trung vị ${t.tuoi_giua_ngay} ngày · subs giữa ${soGon(t.subs_giua)}
-              · view giữa ${soGon(t.view_giua)}</div>
-            ${(t.top || []).map(v => html`<div style="padding:2px 0">
-              <span style="font-weight:600;min-width:56px;display:inline-block">${soGon(v.views)}</span>
-              <a href=${'https://youtu.be/' + v.yt_id} target="_blank" rel="noopener">${v.title}</a>
-              <span class="note"> · ${v.kenh} · ${v.subs == null ? 'subs ẩn' : soGon(v.subs) + ' subs'}
-                · ${Math.round(v.tuoi_ngay)} ngày</span></div>`)}`
-          : html`<div class="note">Chưa đo thị trường cho cụm này${canEdit ? ' — bấm 📊 ở cột cuối.' : '.'}</div>`}
-          <div class="eyebrow">Trong pool mình</div>
-          ${(m.vi_du || []).length ? (m.vi_du || []).map(v => html`<div style="padding:2px 0">
-            <span style="font-weight:600;min-width:56px;display:inline-block">${soGon(v.views)}</span>
-            <a href=${'https://youtu.be/' + v.yt_id} target="_blank" rel="noopener">${v.title}</a>
-            <span class="note"> · ${v.kenh} · ${ngayVN(v.pub_ts)}</span></div>`)
-            : html`<div class="note">Chưa có video nào trong pool khớp cụm này.</div>`}
-        </div>`;
-      })() : ''}
+    ${B ? html`<div class="panel">
+      <div class="eyebrow" style="margin-top:0">B · Ngoài — thiên hạ đang làm gì
+        <span class="note">${B.quota_da_tieu ? `· ${B.quota_da_tieu} units` : ''}</span></div>
+
+      ${tr.co_du_lieu ? html`<div style="margin-bottom:10px">
+        <div><b>Google Trends</b> <span class="note">${tr.geo} · ${tr.timeframe}</span>
+          ${tr.xu_huong ? html` — <b style=${`color:${tr.xu_huong.chieu === 'lên' ? '#2e7d32' : tr.xu_huong.chieu === 'xuống' ? '#c62828' : '#546e7a'}`}>
+            ${tr.xu_huong.chieu} ${tr.xu_huong.phan_tram > 0 ? '+' : ''}${tr.xu_huong.phan_tram}%</b>` : ''}</div>
+        <${Sparkline} diem=${tr.diem}/>
+        ${(tr.rising || []).length ? html`<div><span class="note">Truy vấn đang lên:</span>
+          ${(tr.rising || []).map(r => html`<span style="margin-right:10px">${r.cum}
+            <span class="note">${r.gia_tri}</span></span>`)}</div>` : ''}
+        ${(tr.top || []).length ? html`<div><span class="note">Truy vấn liên quan phổ biến:</span>
+          ${(tr.top || []).map(r => html`<span style="margin-right:10px">${r.cum}</span>`)}</div>` : ''}
+      </div>` : html`<div class="note">Google Trends: ${tr.ly_do || 'không có dữ liệu'}</div>`}
+
+      ${yt.co_du_lieu ? html`
+        <div><b>Video nổi 90 ngày qua</b> <span class="note">· view giữa ${soGon(yt.view_giua)}</span></div>
+        ${(yt.top_video || []).map(v => html`<div style="padding:2px 0">
+          <span style="font-weight:600;min-width:52px;display:inline-block">${soGon(v.views)}</span>
+          <a href=${'https://youtu.be/' + v.yt_id} target="_blank" rel="noopener">${v.title}</a>
+          <span class="note"> · ${v.kenh} · ${v.subs == null ? 'subs ẩn' : soGon(v.subs) + ' subs'}
+            · ${v.tuoi_ngay} ngày · ${soGon(v.view_moi_ngay)}/ngày</span></div>`)}
+        ${(yt.kenh_moi_noi || []).length ? html`<div style="margin-top:8px">
+          <div><b>Kênh nhỏ đang thắng chủ đề này</b> <span class="note">(dưới 50k subs mà vẫn lọt top view)</span></div>
+          ${(yt.kenh_moi_noi || []).map(k => html`<div style="padding:2px 0">${k.kenh}
+            <span class="note"> · ${soGon(k.subs)} subs · ${k.so_video_top} video trong top
+              · bài tốt nhất ${soGon(k.view_tot_nhat)} view${k.lap_luc ? ` · lập ${k.lap_luc}` : ''}</span></div>`)}
+        </div>` : ''}`
+      : html`<div class="note">YouTube: ${yt.ly_do || 'không có dữ liệu'}</div>`}
     </div>` : ''}`;
 }
 

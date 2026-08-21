@@ -188,3 +188,59 @@ Reddit (403) · trendspyg trong MVP · embedding cluster (dùng token overlap tr
 
 M1–M5 xong, đã chạy thật trên cổng 9111 (restart 21/08). **M6 (job theo lịch) chưa
 làm** — nên bật sau khi dùng tay vài lần để biết mỗi ngách cần seed nào và trần bao nhiêu.
+
+
+---
+
+## 10. BẢN 2 — ĐỔI SANG "TRA CỨU MỘT TỪ KHOÁ" (user chốt 21/08, chiều)
+
+Bản 1 (bản đồ 4 ô + hàng trăm cụm) **đã bỏ**. Phê bình của user: *"Mapping hiện tại chỉ
+là duplicate của radary, không có gì gọi là discovery, không có gì để make decision"* —
+đúng, và đo được: `do_phu = 1` ở 324/332 cụm (trục cầu là bit), còn vế cung chỉ đếm
+trong pool nên `0 video` bị gán nhầm là "khoảng trống".
+
+### Mô hình mới
+
+Nhập **MỘT từ khoá** → hai khối, đều theo **thị trường của pool đang mở**:
+
+| Khối | Nội dung | Chi phí |
+|---|---|---|
+| **A · Trong pool** | số video/kênh · % video và % view của pool · **xu hướng theo lứa đăng** (video ra mỗi tháng + view/ngày của lứa đó, 12–18 tháng) · velocity 46 ngày so với toàn pool · kênh đang đẩy · bài gần nhất | **0 quota**, < 1s |
+| **B · Ngoài** | **Google Trends** interest 12 tháng + chiều lên/xuống + truy vấn đang lên · **YouTube video nổi 90 ngày** · **kênh nhỏ đang thắng** (< 50k subs mà lọt top view) | ~102 units + ~17s |
+
+### Giới hạn dữ liệu (nói trước, không hứa quá)
+
+`ticks` chỉ có **46 ngày** → không dựng được đường view lịch sử. Xu hướng khối A vì thế
+dựng theo **lứa đăng**: video về từ khoá đăng tháng nào ăn bao nhiêu **view/ngày**
+(view ÷ tuổi, bỏ video dưới 7 ngày vì chưa ổn định). `pub_ts` có từ 2009 nên nhìn được
+12–24 tháng. Kèm velocity 46 ngày cho ngắn hạn — user chốt "cả hai".
+
+### Nghiệm thu thật 21/08 — pool LIFE IN — US
+
+`life in` : chiếm **59,3% số video và 68,2% view** của pool; lứa đăng bùng nổ từ tháng 6
+(84 → 396 video/tháng, view/ngày trung vị 6 → 53); một kênh đẩy **215 video**.
+
+`life in alaska` (0,3s + 18s, 102 units):
+
+| | |
+|---|---|
+| Pool mình | 2 video · 1 kênh · **0% view pool** |
+| Google Trends | **lên +65%** / 12 tháng |
+| YouTube 90 ngày | view trung vị **726k** |
+| Kênh nhỏ đang thắng | Highliner YTC **12.100 subs → 2,48M view** · Wildstay 36k · Nations Uncovered 13,8k |
+
+### Thị trường — sửa sau khi user nhắc "không làm Việt Nam, chủ yếu Mỹ"
+
+Máy chủ đặt tại Việt Nam nên autocomplete và YouTube API **mặc định xếp theo IP VN**.
+Đo thật cùng seed: mặc định ra `life in africa`, ép `gl=us` ra `life in alaska`. Nay cả
+ba tầng (seed / autocomplete / search) đều neo vào `market` của pool lấy từ ĐẾ; pool
+chưa gắn thị trường thì **không đoán "US"** mà hiện banner cảnh báo.
+
+**Lỗi dữ liệu trong đế (Owner nên sửa ở General › Niches):** `TT-US` khai ngôn ngữ
+`"US"`, `TT-SPAIN` khai `"Spainish"`. Code chịu được bằng cách suy ngôn ngữ từ mã vùng.
+
+### Dọn dữ liệu
+
+Đã xoá 898 cụm + 898 dòng thống kê + 34 bản ghi thị trường của bản 1 (gồm các cụm tiếng
+Việt quét nhầm). Backup trước khi xoá: `data/radary/radary-truoc-don-keywords-*.db`.
+Schema 3 bảng giữ lại — `keyword_market` còn dùng làm cache đo thị trường.

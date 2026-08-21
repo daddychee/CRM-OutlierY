@@ -408,3 +408,95 @@ def test_chiu_duoc_ten_ngon_ngu_sai_trong_de():
     assert mapping.vung_ngon_ngu("TT-SPAIN", "Spainish")["relevanceLanguage"] == "es"
     assert mapping.hop_ngon_ngu("Cuộc sống thực ở Mỹ", "US") is False
     assert mapping.hop_ngon_ngu("Life in Alaska", "US") is True
+
+
+# ============ TRA CỨU MỘT TỪ KHOÁ (bản 2, user chốt 21/08) ============
+
+
+def _kho_lua(thang_video, bay_gio):
+    """Dựng kho có video theo từng tháng đăng để kiểm xu hướng theo lứa."""
+    kho, i = [], 0
+    for thang_truoc, n in thang_video:
+        for _ in range(n):
+            i += 1
+            pub = bay_gio - thang_truoc * 30 * 86400
+            kho.append({"id": i, "title": "Life in Alaska ep", "title_l": "life in alaska ep",
+                        "kenh": "K", "kenh_yt": "UC1", "yt_id": f"v{i}", "pub_ts": pub,
+                        "vph": 5.0, "views": 1000 * thang_truoc})
+    return kho
+
+
+def test_xu_huong_theo_lua_dang():
+    from radary import tra_cuu
+    now = time.time()
+    r = tra_cuu.xu_huong_pool(_kho_lua([(3, 4), (2, 6), (1, 9)], now), "life in alaska",
+                              bay_gio=now)
+    assert r["co_du_lieu"] and r["so_video"] == 19
+    assert len(r["lua"]) == 3
+    assert [l["so_video"] for l in r["lua"]] == [4, 6, 9]     # theo thứ tự tháng tăng dần
+
+
+def test_lua_it_mau_thi_khong_lay_trung_vi():
+    """Dưới 2 video/tháng thì không kết luận view/ngày — mẫu quá nhỏ."""
+    from radary import tra_cuu
+    now = time.time()
+    r = tra_cuu.xu_huong_pool(_kho_lua([(2, 1)], now), "life in alaska", bay_gio=now)
+    assert r["lua"][0]["du_mau"] is False and r["lua"][0]["view_moi_ngay"] is None
+
+
+def test_video_qua_moi_khong_tinh_view_moi_ngay():
+    """Video dưới 7 ngày tuổi chưa ổn định — không đưa vào trung vị."""
+    from radary import tra_cuu
+    now = time.time()
+    assert tra_cuu._view_moi_ngay({"pub_ts": now - 3 * 86400, "views": 999}, now) is None
+    assert tra_cuu._view_moi_ngay({"pub_ts": now - 30 * 86400, "views": 300}, now) == 10
+
+
+def test_pool_khong_co_video_thi_noi_thang():
+    from radary import tra_cuu
+    r = tra_cuu.xu_huong_pool(_kho("chuyện khác"), "life in alaska")
+    assert r["co_du_lieu"] is False and "chưa có video" in r["ly_do"]
+
+
+def test_trends_loi_thi_khong_giet_ca_tra_cuu(monkeypatch):
+    """Google Trends là thư viện non (1.6.0, phát hành 19/08) — hỏng thì mất Trends,
+    không được mất luôn khối YouTube."""
+    from radary import tra_cuu
+    import builtins
+    that = builtins.__import__
+
+    def gia(name, *a, **k):
+        if name == "trendspyg":
+            raise ImportError("khong co")
+        return that(name, *a, **k)
+    monkeypatch.setattr(builtins, "__import__", gia)
+    r = tra_cuu.google_trends("life in alaska")
+    assert r["co_du_lieu"] is False and "trendspyg" in r["ly_do"]
+
+
+def test_ngoai_youtube_gioi_han_90_ngay_va_theo_vung():
+    from radary import tra_cuu
+    goi = []
+
+    class _Api:
+        used = 0
+
+        def get(self, ep, params, cost=1):
+            goi.append((ep, params))
+            return {}
+    tra_cuu.ngoai_youtube(_Api(), "life in alaska", {"regionCode": "US", "relevanceLanguage": "en"})
+    ep, p = goi[0]
+    assert ep == "search" and p["order"] == "viewCount"
+    assert "publishedAfter" in p and p["regionCode"] == "US"
+
+
+def test_ngoai_youtube_khong_co_ket_qua_thi_noi_thang():
+    from radary import tra_cuu
+
+    class _Api:
+        used = 0
+
+        def get(self, ep, params, cost=1):
+            return {"items": []}
+    r = tra_cuu.ngoai_youtube(_Api(), "cụm không ai làm")
+    assert r["co_du_lieu"] is False and "90 ngày" in r["ly_do"]

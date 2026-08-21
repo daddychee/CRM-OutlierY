@@ -10,7 +10,7 @@ from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.responses import PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
-from . import __version__, alertsview, auth, channel_info, core, crypto, db, heatmap, llm, niche_report, report, scan, scheduler, series
+from . import __version__, alertsview, auth, channel_info, core, crypto, db, heatmap, khoa_v3, llm, niche_report, report, scan, scheduler, series
 from .harvest import runner as harvest_runner
 
 WEB_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'web')
@@ -1012,6 +1012,61 @@ def mapping_api(ws: int, request: Request):
         bd['nhan_o'] = mapping.NHAN_O
         bd['pool'] = pool
         return bd
+
+
+@app.get('/api/workspaces/{ws}/tra-cuu')
+def tra_cuu_pool(ws: int, request: Request, cum: str = ''):
+    """KHỐI A — pool đang mở làm gì với từ khoá này + xu hướng theo lứa đăng.
+
+    Đọc SQLite thuần: 0 quota, dưới 1 giây. Viewer xem được.
+    """
+    from . import mapping, tra_cuu
+    if not cum.strip():
+        raise HTTPException(422, 'thiếu từ khoá')
+    with get_conn() as c:
+        u = auth.require_user(c, request)
+        w = auth.ws_for_user(c, ws, u['id'])
+        vung, ngon_ngu = _vung_cua_ws(w)
+        pool = db.tom_tat_pool(c, ws)
+        pool.update({'ten': w['name'], 'ngach': w['ngach'], 'market': w['market'],
+                     'ngon_ngu': ngon_ngu, 'vung': vung})
+        return {'cum': cum.strip(), 'pool': pool,
+                'trong_pool': tra_cuu.xu_huong_pool(mapping.tai_kho(c, ws), cum.strip())}
+
+
+class TraCuuNgoaiIn(BaseModel):
+    cum: str
+    trends: bool = True        # Google Trends (~17s, 0 quota) — tắt được khi cần nhanh
+
+
+@app.post('/api/workspaces/{ws}/tra-cuu/ngoai')
+def tra_cuu_ngoai(ws: int, body: TraCuuNgoaiIn, request: Request):
+    """KHỐI B — thiên hạ đang thịnh hành gì quanh từ khoá này, THEO THỊ TRƯỜNG pool.
+
+    YouTube: video nổi 90 ngày + kênh mới nổi (~102 units). Google Trends: interest
+    12 tháng + truy vấn đang lên (0 quota nhưng ~17s vì thư viện chạy trình duyệt).
+    Một nguồn chết không giết nguồn kia.
+    """
+    from . import thi_truong, tra_cuu
+    cum = body.cum.strip()
+    if not cum:
+        raise HTTPException(422, 'thiếu từ khoá')
+    with get_conn() as c:
+        u = auth.require_user(c, request)
+        w = auth.ws_for_user(c, ws, u['id'], 'leader')      # tiêu quota → leader+
+        vung, _ = _vung_cua_ws(w)
+
+    yt = {'co_du_lieu': False, 'ly_do': ''}
+    quota = 0
+    try:
+        api_yt = scan.API(khoa_v3.lay_khoa(thi_truong.VIEC_KHOA))
+        yt = tra_cuu.ngoai_youtube(api_yt, cum, vung)
+        quota = api_yt.used
+    except RuntimeError as e:
+        yt = {'co_du_lieu': False, 'ly_do': str(e)}
+    tr = (tra_cuu.google_trends(cum, geo=(vung or {}).get('regionCode') or 'US')
+          if body.trends else {'co_du_lieu': False, 'ly_do': 'đã tắt Google Trends'})
+    return {'cum': cum, 'youtube': yt, 'trends': tr, 'quota_da_tieu': quota, 'vung': vung}
 
 
 class DoThiTruongIn(BaseModel):
