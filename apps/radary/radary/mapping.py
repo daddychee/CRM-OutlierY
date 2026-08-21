@@ -382,3 +382,50 @@ def nhan_dien_ngon_ngu(title: str) -> str | None:
     if diem[tot] == 0 or diem[tot] == sorted(diem.values())[-2]:
         return None                     # hoa nhau hoac khong tu nao khop -> khong ket luan
     return tot
+
+
+# ---- DOI TUONG cua video (user 21/08: "thieu cac tu khoa ve objective") ------------
+# Cum 2-3 tu chi ra MAU CAU ("life in", "travel documentary"). Doi tuong THAT — ten
+# nuoc, dia danh, chu the — thuong dung MOT tu nen khong lot vao n-gram 2-3 tu.
+# Khong nhan dien duoc bang "chu viet hoa": title YouTube viet Hoa Moi Tu.
+# Cach dung: doi tuong gan nhu LUON dung sau gioi tu ("life IN vietnam", "travel TO
+# norway"), con tinh tu mo ta thi khong ("extremely beautiful"). Do ti le de tach.
+GIOI_TU = {"in", "to", "of", "from", "about", "across", "around", "en", "de", "a"}
+# Do that 21/08: nguong 0.5 van cho lot "extremely" (0,64 — vi "of extremely beautiful
+# women" rat pho bien trong ngach nay). 0.75 loai duoc no ma van giu het dia danh
+# (vietnam 1.00 · sweden 0.98 · uzbekistan 1.00).
+TI_LE_SAU_GIOI_TU = 0.75
+
+
+def doi_tuong(kho: list[dict], so_muc: int = 20, toi_thieu_video: int = 3,
+              ngon_ngu: str | None = None) -> list[dict]:
+    """Doi tuong (nuoc / dia danh / chu the) ma pool dang lam, kem so video."""
+    sau, tong = {}, {}
+    for v in kho:
+        if not hop_ngon_ngu(v["title"], ngon_ngu):
+            continue
+        tu = _TU_RX.findall(v["title_l"])
+        thay_sau, thay_moi = set(), set()
+        for i, t in enumerate(tu):
+            # bo trang tu tieng Anh (-ly): "extremely", "fully" — chung mo ta, khong
+            # phai doi tuong. Tu ngan hoac so cung bo.
+            if (len(t) > 2 and t not in _TU_TRO and not t.isdigit()
+                    and not (t.endswith("ly") and len(t) > 5)):
+                thay_moi.add(t)
+                if i and tu[i - 1] in GIOI_TU:
+                    thay_sau.add(t)
+        for t in thay_moi:
+            tong[t] = tong.get(t, 0) + 1
+        for t in thay_sau:
+            sau[t] = sau.get(t, 0) + 1
+
+    ra = []
+    for t, n in sau.items():
+        if n < toi_thieu_video:
+            continue
+        ti_le = n / max(1, tong.get(t, n))
+        if ti_le >= TI_LE_SAU_GIOI_TU:      # tinh tu mo ta bi loai o day
+            ra.append({"cum": t, "so_video": tong.get(t, n), "so_sau_gioi_tu": n,
+                       "ti_le": round(ti_le, 2)})
+    ra.sort(key=lambda r: -r["so_video"])
+    return ra[:so_muc]

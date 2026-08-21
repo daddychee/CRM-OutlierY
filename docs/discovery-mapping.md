@@ -348,3 +348,47 @@ thì vẫn tự động theo đế, không hỏi.
 Ban đầu đòi **cả hai** kỳ ≥ 3 video mới tính %, nên cụm đang chết hẳn (`15 mind`: 6 → 0)
 bị xếp "ít mẫu" — mất đúng tín hiệu giảm mạnh nhất. Nay chỉ cần **kỳ trước** đủ mẫu
 (nó là mẫu số).
+
+---
+
+## 13. HAI LOẠI TỪ KHOÁ — mẫu câu và ĐỐI TƯỢNG (21/08, tối muộn)
+
+User: *"thiếu các từ khoá về objective. Tôi không hiểu anh lấy từ khoá như thế nào"*.
+
+### Cách lấy — nay ghi thẳng trên giao diện
+
+Tất cả đếm trên **tiêu đề video trong chính pool**, 0 quota:
+
+| Loại | Cách lấy |
+|---|---|
+| **Mẫu câu** | cụm 2–3 từ lặp lại nhiều nhất (`life in`, `travel documentary`, `beautiful women`) |
+| **ĐỐI TƯỢNG** | từ đứng **ngay sau giới từ** (`in`/`to`/`of`…) và **≥75%** số lần xuất hiện là ở vị trí đó |
+
+### Vì sao trước đó thiếu hẳn đối tượng
+
+Tên nước/địa danh thường **một từ** (`Vietnam`, `Alaska`) nên không lọt vào n-gram 2–3 từ.
+Thử nhận diện bằng "chữ viết hoa giữa câu" — **thất bại**, vì title YouTube viết Hoa Mọi
+Từ (`Documentary`, `Travel`, `Women` đều viết hoa).
+
+Cách chạy được: đối tượng gần như **luôn** đứng sau giới từ (`life IN vietnam`,
+`travel TO norway`), còn tính từ mô tả thì không. Đo tỉ lệ để tách.
+**Ngưỡng 0,5 chưa đủ** — `extremely` đạt 0,64 (vì `of extremely beautiful women` rất phổ
+biến trong ngách này). Nâng lên **0,75** loại được nó mà vẫn giữ hết địa danh
+(`vietnam` 1,00 · `sweden` 0,98 · `uzbekistan` 1,00), cộng bỏ trạng từ đuôi `-ly`.
+
+### Kết quả — pool LIFE IN — US, 59 cụm = 30 đối tượng + 29 mẫu câu
+
+| Đối tượng | Xu hướng | Video 30n | View/ngày |
+|---|---|---|---|
+| `tajikistan` | **↑ +280%** | 5 → 19 | **207** |
+| `indonesia` | ↑ +267% | 6 → 22 | 64 |
+| `colombia` | ↑ +250% | 4 → 14 | 91 |
+| `laos` | ↑ +175% | 8 → 22 | 137 |
+| `bhutan` | ↑ +100% | 5 → 10 | **198** |
+
+Pool **Spain** ra `europa · áfrica · españa · letonia · irán · japón · francia ·
+argentina · finlandia · suecia`. Pool **SPACE — US** ra ít đối tượng (`photon`,
+`spaceflight`) — đúng bản chất: ngách khoa học không đặt tên theo địa danh, không ép.
+
+Giao diện: nút lọc **Đối tượng / Mẫu câu / Tất cả** (mặc định **Đối tượng** — nó trả lời
+"làm video về CÁI GÌ"), áp cho cả bản đồ bong bóng lẫn bảng.

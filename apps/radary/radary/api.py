@@ -1032,14 +1032,28 @@ def tu_khoa_noi(ws: int, request: Request, so_cum: int = 30, ngon_ngu: str = '')
         # được; pool có thị trường thì vẫn tự động theo đế.
         loc = ngon_ngu.strip() or tu_de
         kho = mapping.tai_kho(c, ws)
-        cums = [g['seed'] for g in mapping.goi_y_seed(kho, so_goi_y=max(1, min(so_cum, 60)),
-                                                      ngon_ngu=loc, moi_vi_tri=True)]
+        # HAI LOAI từ khoá, user 21/08 chỉ ra thiếu loại thứ hai:
+        #   mẫu câu  — cụm 2-3 từ lặp lại ("life in", "travel documentary")
+        #   ĐỐI TƯỢNG — nước/địa danh/chủ thể, thường MỘT từ nên n-gram bỏ sót
+        mau = [g['seed'] for g in mapping.goi_y_seed(kho, so_goi_y=max(1, min(so_cum, 60)),
+                                                     ngon_ngu=loc, moi_vi_tri=True)]
+        dt = [d['cum'] for d in mapping.doi_tuong(kho, so_muc=max(1, min(so_cum, 40)),
+                                                  ngon_ngu=loc)]
+        cums = mau + [x for x in dt if x not in mau]
+        loai = {**{m: 'mau_cau' for m in mau}, **{x: 'doi_tuong' for x in dt}}
         dem_nn = {}
         for v in kho:
             ma = mapping.nhan_dien_ngon_ngu(v['title'])
             if ma:
                 dem_nn[ma] = dem_nn.get(ma, 0) + 1
-        return {'cum': tra_cuu.xu_huong_cum(kho, cums),
+        xh = tra_cuu.xu_huong_cum(kho, cums)
+        for m in xh:
+            m['loai'] = loai.get(m['cum'], 'mau_cau')
+        return {'cum': xh,
+                'cach_lay': ('Đếm trên tiêu đề video trong chính pool này. MẪU CÂU = cụm '
+                             '2-3 từ lặp lại nhiều nhất. ĐỐI TƯỢNG = từ đứng ngay sau giới '
+                             'từ (in/to/of…) và ≥75% số lần xuất hiện là ở vị trí đó — '
+                             'cách tách tên nước/địa danh khỏi tính từ mô tả.'),
                 'cua_so_ngay': tra_cuu.CUA_SO_NGAY, 'so_video_pool': len(kho),
                 'ngon_ngu_loc': loc, 'tu_de': bool(tu_de),
                 'ngon_ngu_trong_pool': sorted(dem_nn.items(), key=lambda x: -x[1])}

@@ -1818,6 +1818,7 @@ function Mapping({ ws, canEdit }) {
   const [pool, setPool] = useState({});
   const [goiY, setGoiY] = useState([]);
   const [noi, setNoi] = useState(null);
+  const [loaiCum, setLoaiCum] = useState('doi_tuong');   // đối tượng trước — thứ quyết định làm video về CÁI GÌ
   const [busy, setBusy] = useState('');
   const [err, setErr] = useState('');
   const [lichSu, setLichSu] = useState([]);
@@ -1922,6 +1923,12 @@ function Mapping({ ws, canEdit }) {
         <div class="note" style="margin:0 0 3px">Từ khoá trong pool — đang lên / đang giảm
           (so ${noi.cua_so_ngay} ngày qua với ${noi.cua_so_ngay} ngày liền trước; cập nhật theo
           mỗi vòng quét pool)
+          <span> · <button class=${'btn small' + (loaiCum === 'doi_tuong' ? '' : ' ghost')}
+            onClick=${() => setLoaiCum('doi_tuong')}>Đối tượng</button>
+          <button class=${'btn small' + (loaiCum === 'mau_cau' ? '' : ' ghost')}
+            onClick=${() => setLoaiCum('mau_cau')}>Mẫu câu</button>
+          <button class=${'btn small' + (loaiCum === '' ? '' : ' ghost')}
+            onClick=${() => setLoaiCum('')}>Tất cả</button></span>
           ${!noi.tu_de ? html`<span> · lọc ngôn ngữ:
             <select value=${noi.ngon_ngu_loc || ''} onChange=${e => {
               try { localStorage.setItem('mapping_nn_' + ws, e.target.value); } catch (err) {}
@@ -1936,11 +1943,15 @@ function Mapping({ ws, canEdit }) {
             ${(noi.ngon_ngu_trong_pool || []).length ? html`<span> · pool có:
               ${(noi.ngon_ngu_trong_pool || []).map(([ma, n]) => `${ma} ${n}`).join(' · ')}</span>` : ''}
           </span>` : ''}</div>
-        <${BanDoCum} cum=${noi.cum} onChon=${c => traCuu(c)}/>
+        ${noi.cach_lay ? html`<div class="note" style="margin:2px 0 6px">
+          <b>Từ khoá lấy ở đâu ra:</b> ${noi.cach_lay}</div>` : ''}
+        <${BanDoCum} cum=${(noi.cum || []).filter(r => !loaiCum || r.loai === loaiCum)}
+          onChon=${c => traCuu(c)}/>
         <table class="tbl"><thead><tr><th>Cụm</th><th>Xu hướng</th>
           <th>Video ${noi.cua_so_ngay}n</th><th>View/ngày</th>
           <th title="số video mới mỗi tháng — khoảng thời gian khác cột Xu hướng">Mật độ theo tháng</th></tr></thead>
-          <tbody>${(noi.cum || []).map(r => { const len = r.chieu === 'lên', xuong = r.chieu === 'xuống';
+          <tbody>${(noi.cum || []).filter(r => !loaiCum || r.loai === loaiCum)
+            .map(r => { const len = r.chieu === 'lên', xuong = r.chieu === 'xuống';
             return html`<tr>
             <td><a href="#" onClick=${e => { e.preventDefault(); traCuu(r.cum); }}>${r.cum}</a>
               <span class="note"> ${r.tong_video}</span></td>
