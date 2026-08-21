@@ -252,7 +252,8 @@ def gan_thi_truong(bd: dict, tt_theo_cum: dict, pool_view_moi: int | None = None
 # khong cum nao thuoc ngach "Life in". 191 cum vo nghia.
 # Chua: seed phai la MAU CAU cua ngach. May biet mau do o dau? O chinh TITLE video
 # ma pool dang theo doi — n-gram lap lai nhieu nhat chinh la cach ngach nay dat ten.
-def goi_y_seed(kho: list[dict], so_goi_y: int = 8, toi_thieu_video: int = 3) -> list[dict]:
+def goi_y_seed(kho: list[dict], so_goi_y: int = 8, toi_thieu_video: int = 3,
+               ngon_ngu: str | None = None) -> list[dict]:
     """N-gram 2-3 tu lap lai nhieu nhat trong title pool -> seed dung ngach.
 
     Chi lay n-gram MO DAU title (phan lon title dat theo mau "Life in X", "Living in
@@ -260,6 +261,8 @@ def goi_y_seed(kho: list[dict], so_goi_y: int = 8, toi_thieu_video: int = 3) -> 
     """
     dem: dict[str, int] = {}
     for v in kho:
+        if not hop_ngon_ngu(v["title"], ngon_ngu):
+            continue          # pool lẫn ngôn ngữ khác thị trường -> không lấy làm seed
         tu = [t for t in _TU_RX.findall(v["title_l"]) if len(t) > 1]
         for n in (2, 3):
             if len(tu) >= n:
@@ -272,3 +275,60 @@ def goi_y_seed(kho: list[dict], so_goi_y: int = 8, toi_thieu_video: int = 3) -> 
           or hai.get(" ".join(r["seed"].split()[:2]), 0) < r["so_video"] * 1.5]
     ra.sort(key=lambda r: -r["so_video"])
     return ra[:so_goi_y]
+
+
+# ---- NGON NGU / VUNG CUA POOL (21/08/2026 — user: "khong lam thi truong Viet Nam") --
+# Su co: pool goc LIFE IN chua ca kenh Viet -> goi_y_seed rut "cuộc sống thực" -> quet
+# ra cum Viet -> do thi truong Viet. Toan bo chuoi lech thi truong, tieu 816 units cho
+# thu user khong dung. Goc chuoi la SEED, nen chan ngay o do.
+_VN_RX = re.compile(r"[ăâđêôơưàáảãạằắẳẵặầấẩẫậèéẻẽẹềếểễệìíỉĩịòóỏõọồốổỗộờớởỡợùúủũụừứửữựỳýỷỹỵ]")
+
+# Ngon ngu (theo ten trong de) -> ma dung cho autocomplete (hl) + YouTube API
+# (relevanceLanguage). Thieu ten nao thi khong ep — de mac dinh, khong doan bua.
+MA_NGON_NGU = {"english": "en", "spanish": "es", "vietnamese": "vi", "korean": "ko",
+               "japanese": "ja", "french": "fr", "german": "de", "portuguese": "pt",
+               "chinese": "zh", "tiếng việt": "vi", "tieng viet": "vi",
+               # Đế thật do người nhập nên có lỗi (đo 21/08): TT-US khai ngôn ngữ "US",
+               # TT-SPAIN khai "Spainish". Nhận luôn thay vì để rơi về "không rõ".
+               "us": "en", "uk": "en", "america": "en", "spainish": "es", "espanol": "es"}
+# Ma thi truong TT-xx -> regionCode ISO-3166. Chi khai cai dang dung.
+MA_VUNG = {"TT-US": "US", "TT-SPAIN": "ES", "TT-KOREA": "KR", "TT-VN": "VN",
+           "TT-UK": "GB", "TT-TAIWAN": "TW"}
+# Vung -> ngon ngu mac dinh, dung khi ten ngon ngu trong de khong doc duoc. Suy tu MA
+# thi truong (do Owner dat, on dinh hon o chu ngon ngu go tay).
+NGON_NGU_THEO_VUNG = {"US": "en", "GB": "en", "ES": "es", "KR": "ko", "VN": "vi",
+                      "TW": "zh", "JP": "ja", "FR": "fr", "DE": "de", "BR": "pt"}
+
+
+def la_tieng_viet(s: str) -> bool:
+    return bool(_VN_RX.search(s or ""))
+
+
+def hop_ngon_ngu(title: str, ngon_ngu: str | None) -> bool:
+    """Title co hop ngon ngu thi truong khong. MVP: chi phan biet Viet / khong-Viet —
+    du cho ca dang gap (pool EN lan kenh Viet). Khong ro ngon ngu -> nhan het."""
+    if not ngon_ngu:
+        return True
+    ma = MA_NGON_NGU.get(ngon_ngu.strip().lower())
+    if ma is None and ngon_ngu.strip().upper() in NGON_NGU_THEO_VUNG:
+        ma = NGON_NGU_THEO_VUNG[ngon_ngu.strip().upper()]
+    if ma == "vi":
+        return la_tieng_viet(title)
+    if ma in (None, ""):
+        return True
+    return not la_tieng_viet(title)      # thi truong khac Viet -> loai title tieng Viet
+
+
+def vung_ngon_ngu(market: str | None, ngon_ngu: str | None) -> dict:
+    """Tham so vung cho autocomplete (hl/gl) va YouTube search (regionCode/
+    relevanceLanguage). Khong khai duoc thi tra rong — KHONG doan mac dinh 'US'."""
+    ra = {}
+    ma_v = MA_VUNG.get((market or "").strip().upper())
+    ma_l = MA_NGON_NGU.get((ngon_ngu or "").strip().lower()) or NGON_NGU_THEO_VUNG.get(ma_v)
+    if ma_l:
+        ra["hl"] = ma_l
+        ra["relevanceLanguage"] = ma_l
+    if ma_v:
+        ra["gl"] = ma_v.lower()
+        ra["regionCode"] = ma_v
+    return ra

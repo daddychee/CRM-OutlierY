@@ -36,15 +36,22 @@ def _tuoi_ngay(pub_ts: float, bay_gio: float) -> float:
     return max(0.0, (bay_gio - pub_ts) / 86400)
 
 
-def do_mot_cum(api, cum: str, so_kq: int = SO_KQ, bay_gio: float | None = None) -> dict:
+def do_mot_cum(api, cum: str, so_kq: int = SO_KQ, bay_gio: float | None = None,
+               vung: dict | None = None) -> dict:
     """Do THI TRUONG cho mot cum. Tra so + danh sach video that de nguoi soi.
 
     Khong ket luan "nen lam hay khong" — chi trinh so (luat A3). Cum khong co ket qua
     -> tra `co_du_lieu=False`, KHONG tra 0 (0 view khac voi khong do duoc).
     """
     bay_gio = bay_gio or time.time()
-    r = api.get("search", {"part": "snippet", "q": cum, "type": "video",
-                           "order": "relevance", "maxResults": so_kq}, cost=100)
+    # regionCode/relevanceLanguage = thi truong cua pool. Thieu -> YouTube xep theo IP
+    # may chu (Viet Nam), so lieu "thi truong" thanh so lieu thi truong VN.
+    tham = {"part": "snippet", "q": cum, "type": "video",
+            "order": "relevance", "maxResults": so_kq}
+    for k in ("regionCode", "relevanceLanguage"):
+        if (vung or {}).get(k):
+            tham[k] = vung[k]
+    r = api.get("search", tham, cost=100)
     ids = [it["id"]["videoId"] for it in (r.get("items") or [])
            if isinstance(it.get("id"), dict) and it["id"].get("videoId")]
     if not ids:
@@ -97,7 +104,7 @@ def do_mot_cum(api, cum: str, so_kq: int = SO_KQ, bay_gio: float | None = None) 
 
 
 def do_nhieu_cum(cums: list[str], lay_khoa=None, tran: int = TRAN_CUM,
-                 api=None, bay_gio: float | None = None) -> dict:
+                 api=None, bay_gio: float | None = None, vung: dict | None = None) -> dict:
     """Do nhieu cum trong MOT phien, dung chung bo khoa + dem quota that da tieu."""
     if api is None:
         lay = lay_khoa or (lambda viec: __import__("radary.khoa_v3", fromlist=["x"]).lay_khoa(viec))
@@ -105,7 +112,7 @@ def do_nhieu_cum(cums: list[str], lay_khoa=None, tran: int = TRAN_CUM,
     ra, loi = {}, {}
     for cum in cums[:tran]:
         try:
-            ra[cum] = do_mot_cum(api, cum, bay_gio=bay_gio)
+            ra[cum] = do_mot_cum(api, cum, bay_gio=bay_gio, vung=vung)
         except (RuntimeError, OSError) as e:      # het quota / mang -> dung, giu phan da do
             loi[cum] = str(e)
             break

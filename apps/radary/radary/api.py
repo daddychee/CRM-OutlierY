@@ -899,6 +899,25 @@ def metrics_api(ws: int, request: Request, channel: str = ''):
 # CẦU (người ta gõ gì) ghép với CUNG (31.917 video đã có) → bản đồ 4 ô. Vế cung đọc
 # SQLite thuần: 0 quota, 0 LLM. Vế cầu gọi autocomplete — CÙNG IP với harvest nên
 # rate-limit bắt buộc (BoDem), trần mặc định thấp.
+def _vung_cua_ws(w) -> tuple[dict, str | None]:
+    """(tham số vùng cho API ngoài, tên ngôn ngữ) của thị trường pool — lấy từ ĐẾ.
+
+    Không khai được thị trường (pool gốc) → trả rỗng: KHÔNG đoán 'US'. UI hiện cảnh
+    báo để người chọn. Sự cố 21/08: pool gốc lẫn kênh Việt → seed tiếng Việt → đo cả
+    thị trường Việt, trong khi công ty chỉ làm Mỹ.
+    """
+    from . import mapping, thi_truong_v3
+    ma_tt = (w['market'] or '').strip()
+    if not ma_tt:
+        return {}, None
+    try:
+        tt = {x['ma']: x for x in thi_truong_v3.danh_sach()}.get(ma_tt) or {}
+    except Exception:                                    # noqa: BLE001 — đế chết thì không ép vùng
+        return {}, None
+    ngon_ngu = tt.get('ngon_ngu')
+    return mapping.vung_ngon_ngu(ma_tt, ngon_ngu), ngon_ngu
+
+
 class QuetCauIn(BaseModel):
     seed: str
     chan: list[str] = []          # từ chặn của workspace (nhiễu game/kênh lạ)
@@ -922,10 +941,11 @@ def discovery_scan(ws: int, body: QuetCauIn, request: Request):
         raise HTTPException(422, 'thiếu seed')
     with get_conn() as c:
         u = auth.require_user(c, request)
-        auth.ws_for_user(c, ws, u['id'], 'leader')     # quét = tiêu tài nguyên → leader+
+        w = auth.ws_for_user(c, ws, u['id'], 'leader')  # quét = tiêu tài nguyên → leader+
+        vung, _ = _vung_cua_ws(w)
         dem = discovery.BoDem(tran=max(1, min(int(body.tran), 120)))
         muc = discovery.quet(body.seed, chan=tuple(body.chan), lay_hn=body.lay_hn,
-                             dem=dem, tu_hoi=body.tu_hoi)
+                             dem=dem, tu_hoi=body.tu_hoi, vung=vung)
         kq = db.kw_luu(c, ws, muc)
 
         # ĐO LUÔN cụm có triển vọng nhất (21/08 — sửa sau khi user báo bảng toàn "chưa
@@ -937,13 +957,13 @@ def discovery_scan(ws: int, body: QuetCauIn, request: Request):
             ung_vien = [m['cum'] for m in muc if m.get('do_phu', 0) >= 2][:body.do_toi_da]
             if ung_vien:
                 try:
-                    r = thi_truong.do_nhieu_cum(ung_vien, tran=body.do_toi_da)
+                    r = thi_truong.do_nhieu_cum(ung_vien, tran=body.do_toi_da, vung=vung)
                     db.kw_luu_thi_truong(c, ws, r['ket_qua'])
                     do_kq = {'da_do': r['da_do'], 'quota_da_tieu': r['quota_da_tieu']}
                 except RuntimeError as e:
                     do_kq = {'loi_do': str(e)}      # quét vẫn giữ, chỉ mất phần đo
         return {**kq, 'loi_goi': dem.da_goi, 'cham_tran': dem.da_goi >= dem.tran,
-                'do': do_kq, 'cum': muc[:50]}
+                'do': do_kq, 'vung': vung, 'cum': muc[:50]}
 
 
 @app.get('/api/workspaces/{ws}/discovery/goi-y-seed')
@@ -956,8 +976,10 @@ def goi_y_seed_api(ws: int, request: Request):
     from . import mapping
     with get_conn() as c:
         u = auth.require_user(c, request)
-        auth.ws_for_user(c, ws, u['id'])
-        return {'seed': mapping.goi_y_seed(mapping.tai_kho(c, ws))}
+        w = auth.ws_for_user(c, ws, u['id'])
+        _, ngon_ngu = _vung_cua_ws(w)
+        return {'seed': mapping.goi_y_seed(mapping.tai_kho(c, ws), ngon_ngu=ngon_ngu),
+                'ngon_ngu': ngon_ngu, 'market': w['market']}
 
 
 @app.get('/api/workspaces/{ws}/mapping')
@@ -971,7 +993,15 @@ def mapping_api(ws: int, request: Request):
         u = auth.require_user(c, request)
         w = auth.ws_for_user(c, ws, u['id'])
         pool = db.tom_tat_pool(c, ws)
-        pool.update({'ten': w['name'], 'ngach': w['ngach'], 'market': w['market']})
+        vung, ngon_ngu = _vung_cua_ws(w)
+        pool.update({'ten': w['name'], 'ngach': w['ngach'], 'market': w['market'],
+                     'ngon_ngu': ngon_ngu, 'vung': vung})
+        # Cảnh báo pool trộn ngôn ngữ (pool gốc = hàng chờ, hay lẫn kênh thị trường khác)
+        kho_ = mapping.tai_kho(c, ws)
+        if kho_:
+            lac = sum(1 for v in kho_ if not mapping.hop_ngon_ngu(v['title'], ngon_ngu))
+            pool['ti_le_khac_ngon_ngu'] = round(100 * lac / len(kho_))
+            pool['so_video_tieng_viet'] = sum(1 for v in kho_ if mapping.la_tieng_viet(v['title']))
         cums = db.kw_danh_sach(c, ws)
         if not cums:
             return {'muc': [], 'du_mau': False, 'chua_quet': True, 'pool': pool,
@@ -1000,7 +1030,8 @@ def do_thi_truong(ws: int, body: DoThiTruongIn, request: Request):
     from . import mapping, thi_truong
     with get_conn() as c:
         u = auth.require_user(c, request)
-        auth.ws_for_user(c, ws, u['id'], 'leader')      # tiêu quota → leader+
+        w = auth.ws_for_user(c, ws, u['id'], 'leader')   # tiêu quota → leader+
+        vung, _ = _vung_cua_ws(w)
         cums = [x.strip().lower() for x in body.cum if x.strip()]
         if not cums:
             da_do = set(db.kw_thi_truong(c, ws))
@@ -1009,7 +1040,7 @@ def do_thi_truong(ws: int, body: DoThiTruongIn, request: Request):
             return {'da_do': 0, 'ghi_chu': 'mọi cụm đã có số liệu thị trường hôm nay'}
         tran = max(1, min(int(body.tran), thi_truong.TRAN_CUM))
         try:
-            kq = thi_truong.do_nhieu_cum(cums, tran=tran)
+            kq = thi_truong.do_nhieu_cum(cums, tran=tran, vung=vung)
         except RuntimeError as e:                        # chưa cấp khoá / gateway chết
             raise HTTPException(400, str(e))
         ghi = db.kw_luu_thi_truong(c, ws, kq['ket_qua'])

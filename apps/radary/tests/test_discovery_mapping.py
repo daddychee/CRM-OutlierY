@@ -343,3 +343,68 @@ def test_tab_mapping_nam_trong_whitelist_cua_UI():
         "thiếu trong whitelist guard -> tab tự nhảy về board"
     assert "['mapping', 'Mapping']" in js, "thiếu trong TABS -> không có nút"
     assert "tab === 'mapping'" in js, "thiếu trong dispatch -> bấm vào ra trang trắng"
+
+
+# --------------------------------- THỊ TRƯỜNG / NGÔN NGỮ (user: chỉ làm Mỹ, 21/08)
+
+
+def test_loai_title_tieng_viet_khoi_seed_cua_thi_truong_my():
+    """Sự cố thật: pool gốc lẫn kênh Việt → seed 'cuộc sống thực' → quét + đo cả thị
+    trường Việt, trong khi công ty chỉ làm Mỹ."""
+    kho = _kho(*(["Life in Alaska"] * 4), *(["Cuộc sống thực ở Mỹ"] * 9))
+    en = [g["seed"] for g in mapping.goi_y_seed(kho, ngon_ngu="English")]
+    assert "life in" in en
+    assert not any(mapping.la_tieng_viet(s) for s in en)
+    # thị trường Việt thì ngược lại
+    vi = [g["seed"] for g in mapping.goi_y_seed(kho, ngon_ngu="Vietnamese")]
+    assert any(mapping.la_tieng_viet(s) for s in vi)
+
+
+def test_khong_khai_ngon_ngu_thi_khong_loc():
+    kho = _kho(*(["Cuộc sống thực ở Mỹ"] * 5))
+    assert mapping.goi_y_seed(kho, ngon_ngu=None), "không rõ ngôn ngữ thì nhận hết, không đoán"
+
+
+def test_vung_ngon_ngu_khong_doan_khi_thieu_khai_bao():
+    """Không khai được thị trường → trả rỗng, KHÔNG mặc định 'US'."""
+    assert mapping.vung_ngon_ngu("", None) == {}
+    assert mapping.vung_ngon_ngu("TT-KHONG-CO", "Tiếng gì đó") == {}
+    assert mapping.vung_ngon_ngu("TT-US", "English") == {
+        "hl": "en", "relevanceLanguage": "en", "gl": "us", "regionCode": "US"}
+
+
+def test_vung_di_vao_loi_goi_autocomplete():
+    """hl/gl phải có mặt trong URL — thiếu là autocomplete trả theo IP máy chủ (VN)."""
+    thay = {}
+
+    def doc(url):
+        thay["url"] = url
+        return json.dumps(["x", [], [], {}])
+    discovery.goi_y_youtube("life in", doc, {"hl": "en", "gl": "us"})
+    assert "hl=en" in thay["url"] and "gl=us" in thay["url"]
+    discovery.goi_y_youtube("life in", doc, None)
+    assert "hl=" not in thay["url"] and "gl=" not in thay["url"]
+
+
+def test_vung_di_vao_loi_goi_search_youtube():
+    goi = []
+
+    class _Api:
+        used = 0
+
+        def get(self, ep, params, cost=1):
+            goi.append((ep, params))
+            return {}
+    from radary import thi_truong
+    thi_truong.do_mot_cum(_Api(), "life in alaska", vung={"regionCode": "US", "relevanceLanguage": "en"})
+    ep, params = goi[0]
+    assert ep == "search" and params["regionCode"] == "US" and params["relevanceLanguage"] == "en"
+
+
+def test_chiu_duoc_ten_ngon_ngu_sai_trong_de():
+    """Đế thật (đo 21/08) do người nhập nên có lỗi: TT-US khai ngôn ngữ 'US',
+    TT-SPAIN khai 'Spainish'. Code phải chịu được, không rơi về 'không rõ'."""
+    assert mapping.vung_ngon_ngu("TT-US", "US")["relevanceLanguage"] == "en"
+    assert mapping.vung_ngon_ngu("TT-SPAIN", "Spainish")["relevanceLanguage"] == "es"
+    assert mapping.hop_ngon_ngu("Cuộc sống thực ở Mỹ", "US") is False
+    assert mapping.hop_ngon_ngu("Life in Alaska", "US") is True

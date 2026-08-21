@@ -70,13 +70,20 @@ def chuan_hoa(s: str) -> str:
     return re.sub(r"\s+", " ", (s or "").strip().lower())
 
 
-def goi_y_youtube(cum: str, doc=None) -> list[str]:
+def goi_y_youtube(cum: str, doc=None, vung: dict | None = None) -> list[str]:
     """Mot loi goi autocomplete -> danh sach goi y (thu tu = hang, 0 la dau bang).
 
     Endpoint tra JSON dang ["query", ["goi y 1", ...], [], {...}]. Loi mang / JSON
     hong -> tra RONG, khong nem: mot seed chet khong duoc giet ca phien quet.
     """
-    url = f"{YT_SUGGEST}?{urllib.parse.urlencode({'client': 'firefox', 'ds': 'yt', 'q': cum})}"
+    # hl/gl = ngon ngu + vung cua THI TRUONG pool. Thieu no thi autocomplete tra theo
+    # IP MAY CHU (dat o Viet Nam) — do that: cung seed, mac dinh ra 'life in africa',
+    # ep gl=us ra 'life in alaska'/'life in antarctica'.
+    q = {'client': 'firefox', 'ds': 'yt', 'q': cum}
+    for k in ('hl', 'gl'):
+        if (vung or {}).get(k):
+            q[k] = vung[k]
+    url = f"{YT_SUGGEST}?{urllib.parse.urlencode(q)}"
     try:
         d = json.loads(_tai(url, doc))
     except (OSError, ValueError):
@@ -100,7 +107,7 @@ def bien_the_seed(seed: str, chu_cai=True, tu_hoi=True) -> list[str]:
 
 
 def mo_rong(seed: str, dem: BoDem | None = None, doc=None,
-            chu_cai=True, tu_hoi=True) -> dict[str, dict]:
+            chu_cai=True, tu_hoi=True, vung: dict | None = None) -> dict[str, dict]:
     """Seed -> {cum: {do_phu, hang_tb, hang_tot_nhat, tu_bien_the[]}}.
 
     do_phu = so BIEN THE seed ma cum xuat hien. Day la tin hieu dem duoc thay cho
@@ -113,7 +120,7 @@ def mo_rong(seed: str, dem: BoDem | None = None, doc=None,
     for bt in bien_the_seed(seed, chu_cai, tu_hoi):
         if not dem.xin_phep():
             break
-        for hang, g in enumerate(goi_y_youtube(bt, doc)):
+        for hang, g in enumerate(goi_y_youtube(bt, doc, vung)):
             thu.setdefault(g, []).append(hang + 1)
             goc.setdefault(g, []).append(bt)
     return {
@@ -159,13 +166,13 @@ def loc_nhieu(cums: dict[str, dict], seed: str, chan: tuple[str, ...] = ()) -> d
 
 
 def quet(seed: str, chan: tuple[str, ...] = (), lay_hn=False, dem: BoDem | None = None,
-         doc=None, **kw) -> list[dict]:
+         doc=None, vung: dict | None = None, **kw) -> list[dict]:
     """Mot phien quet cho MOT seed -> danh sach cum kem tin hieu, sap theo do_phu.
 
     Tra list (khong phai dict) vi day la thu di thang vao bang keyword_stats.
     """
     dem = dem or BoDem()
-    cums = loc_nhieu(mo_rong(seed, dem, doc, **kw), seed, chan)
+    cums = loc_nhieu(mo_rong(seed, dem, doc, vung=vung, **kw), seed, chan)
     ra = []
     for cum, v in cums.items():
         muc = {"cum": cum, "seed": chuan_hoa(seed), "nguon": "autocomplete", **v}

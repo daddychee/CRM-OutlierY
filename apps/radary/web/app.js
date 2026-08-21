@@ -1721,7 +1721,8 @@ function Mapping({ ws, canEdit }) {
 
   return html`
     <div class="panel" style="border-left:4px solid var(--accent, #4C8FE0)">
-      <div class="eyebrow" style="margin-top:0">Pool đang mở${P.ngach ? ` · ngách ${P.ngach}` : ''}${P.market ? ` · ${P.market}` : ''}</div>
+      <div class="eyebrow" style="margin-top:0">Pool đang mở${P.ngach ? ` · ngách ${P.ngach}` : ''}${P.market ? ` · ${P.market}` : ''}
+        ${P.ngon_ngu ? html`<span style="color:var(--accent,#4C8FE0)"> · đang đo theo thị trường ${P.market} / ${P.ngon_ngu}</span>` : ''}</div>
       <div class="row" style="gap:22px;flex-wrap:wrap;align-items:baseline">
         <div><b style="font-size:19px">${P.ten || '—'}</b></div>
         <div><b>${(P.so_video || 0).toLocaleString()}</b> <span class="note">video</span></div>
@@ -1729,6 +1730,18 @@ function Mapping({ ws, canEdit }) {
         <div><b>${P.video_moi_30_ngay || 0}</b> <span class="note">video mới 30 ngày</span></div>
         <div class="note">video gần nhất: ${ngayVN(P.moi_nhat)}</div>
       </div>
+      ${!P.market ? html`<div style="margin-top:8px;padding:8px 10px;border-radius:8px;
+        border:1px solid #ef6c00;background:rgba(239,108,0,.08);font-size:13px">
+        ⚠ <b>Pool này chưa gắn thị trường</b> — nên máy không ép được vùng/ngôn ngữ khi hỏi
+        YouTube. Kết quả sẽ theo IP máy chủ (đặt tại Việt Nam), không phải thị trường anh làm.
+        Mở pool theo thị trường (US/Spain…) ở dải tab, hoặc gán thị trường cho pool này.
+        </div>` : ''}
+      ${P.so_video_tieng_viet ? html`<div style="margin-top:8px;padding:8px 10px;border-radius:8px;
+        border:1px solid #ef6c00;background:rgba(239,108,0,.08);font-size:13px">
+        ⚠ Pool có <b>${P.so_video_tieng_viet}</b> video tiếng Việt (${P.ti_le_khac_ngon_ngu}% lệch
+        ngôn ngữ thị trường). Máy đã <b>bỏ chúng khi rút seed</b> để không quét nhầm sang thị
+        trường Việt — nhưng nên dọn khỏi pool nếu không theo dõi thị trường đó.
+        </div>` : ''}
       ${(P.top_90_ngay || []).length ? html`<div style="margin-top:6px">
         <span class="note">Đang chạy tốt nhất 90 ngày:</span>
         ${(P.top_90_ngay || []).slice(0, 3).map(v => html`<div style="padding:1px 0">
