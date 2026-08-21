@@ -132,6 +132,24 @@ CREATE TABLE IF NOT EXISTS llm_config (                -- Phase 7: LLM diễn gi
   model TEXT NOT NULL DEFAULT '',
   key TEXT NOT NULL DEFAULT '',                        -- mã hóa Fernet như api_keys
   updated_ts REAL NOT NULL DEFAULT 0);
+CREATE TABLE IF NOT EXISTS keywords (                  -- DISCOVERY (21/08/2026): vế CẦU
+  id INTEGER PRIMARY KEY,
+  workspace_id INTEGER NOT NULL REFERENCES workspaces(id),
+  cum TEXT NOT NULL,                                   -- cụm đã chuẩn hoá (lowercase, gọn khoảng trắng)
+  seed TEXT DEFAULT '',                                -- seed sinh ra nó
+  nguon TEXT NOT NULL DEFAULT 'autocomplete',          -- autocomplete | hn | tay
+  tao_ts REAL NOT NULL,
+  bo_qua INTEGER NOT NULL DEFAULT 0,                   -- user gạt khỏi bản đồ (nhiễu) — gỡ MỀM
+  UNIQUE (workspace_id, cum));
+CREATE TABLE IF NOT EXISTS keyword_stats (             -- append-only theo NGÀY (khuôn pool_stats)
+  keyword_id INTEGER NOT NULL REFERENCES keywords(id),
+  ngay TEXT NOT NULL,                                  -- YYYY-MM-DD giờ VN
+  do_phu INTEGER NOT NULL DEFAULT 0,                   -- xuất hiện ở bao nhiêu biến thể seed
+  hang_tb REAL NOT NULL DEFAULT 0,                     -- hạng trung bình trong gợi ý (1 = đầu bảng)
+  hn_bai INTEGER NOT NULL DEFAULT 0,
+  hn_diem INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (keyword_id, ngay));
+CREATE INDEX IF NOT EXISTS idx_keywords_ws ON keywords(workspace_id, bo_qua);
 CREATE INDEX IF NOT EXISTS idx_cycles_ws ON cycles(workspace_id, ts);
 CREATE INDEX IF NOT EXISTS idx_videos_ws ON videos(workspace_id, dead);
 CREATE INDEX IF NOT EXISTS idx_ticks_video ON ticks(video_id, ts);
@@ -331,3 +349,60 @@ def append_cycle(conn, ws, summary):
 def recent_cycles(conn, ws, limit=20):
     return [json.loads(r['payload']) for r in conn.execute(
         'SELECT payload FROM cycles WHERE workspace_id=? ORDER BY ts DESC, id DESC LIMIT ?', (ws, limit))]
+
+# ---------------- DISCOVERY: từ khoá (vế CẦU) — 21/08/2026 ----------------
+# keywords = danh tính cụm (bất biến trong workspace); keyword_stats = chuỗi theo NGÀY,
+# append-only như pool_stats/channel_stats. Chuỗi ngày chính là thứ Content Ultimate
+# không làm được (nó không có scheduler) và là cơ sở để sau này nói cụm đang lên/xuống.
+def kw_luu(conn, ws, muc, ngay=None):
+    """Ghi một phiên quét. Cụm cũ giữ nguyên id + cờ bỏ_qua (không dựng lại danh tính)."""
+    ngay = ngay or time.strftime('%Y-%m-%d', time.localtime())
+    n_moi = 0
+    for m in muc:
+        cum = (m.get('cum') or '').strip().lower()
+        if not cum:
+            continue
+        r = conn.execute('SELECT id FROM keywords WHERE workspace_id=? AND cum=?', (ws, cum)).fetchone()
+        if r:
+            kid = r['id']
+        else:
+            kid = conn.execute(
+                'INSERT INTO keywords(workspace_id, cum, seed, nguon, tao_ts) VALUES(?,?,?,?,?)',
+                (ws, cum, m.get('seed', ''), m.get('nguon', 'autocomplete'), time.time())).lastrowid
+            n_moi += 1
+        conn.execute("""INSERT INTO keyword_stats(keyword_id, ngay, do_phu, hang_tb, hn_bai, hn_diem)
+                        VALUES(?,?,?,?,?,?)
+                        ON CONFLICT(keyword_id, ngay) DO UPDATE SET
+                          do_phu=excluded.do_phu, hang_tb=excluded.hang_tb,
+                          hn_bai=excluded.hn_bai, hn_diem=excluded.hn_diem""",
+                     (kid, ngay, int(m.get('do_phu') or 0), float(m.get('hang_tb') or 0),
+                      int(m.get('hn_bai') or 0), int(m.get('hn_diem') or 0)))
+    conn.commit()
+    return {'tong': len(muc), 'moi': n_moi, 'ngay': ngay}
+
+def kw_danh_sach(conn, ws, gom_bo_qua=False):
+    """Cụm + số liệu của LẦN QUÉT GẦN NHẤT (mỗi cụm một dòng)."""
+    dk = '' if gom_bo_qua else ' AND k.bo_qua = 0'
+    return [dict(r) for r in conn.execute(f"""
+        SELECT k.id, k.cum, k.seed, k.nguon, k.bo_qua, s.ngay,
+               s.do_phu, s.hang_tb, s.hn_bai, s.hn_diem
+        FROM keywords k
+        LEFT JOIN keyword_stats s ON s.keyword_id = k.id
+          AND s.ngay = (SELECT MAX(ngay) FROM keyword_stats WHERE keyword_id = k.id)
+        WHERE k.workspace_id = ?{dk}
+        ORDER BY s.do_phu DESC, k.cum""", (ws,))]
+
+def kw_lich_su(conn, ws, cum, limit=60):
+    """Chuỗi theo ngày của MỘT cụm — để thấy đang lên hay đang xuống."""
+    return [dict(r) for r in conn.execute("""
+        SELECT s.ngay, s.do_phu, s.hang_tb FROM keyword_stats s
+        JOIN keywords k ON k.id = s.keyword_id
+        WHERE k.workspace_id = ? AND k.cum = ? ORDER BY s.ngay DESC LIMIT ?""",
+        (ws, (cum or '').strip().lower(), limit))]
+
+def kw_bo_qua(conn, ws, cum, bo=True):
+    """Gạt nhiễu — GỠ MỀM: giữ dòng + lịch sử, chỉ tắt cờ (bật lại được)."""
+    cur = conn.execute('UPDATE keywords SET bo_qua=? WHERE workspace_id=? AND cum=?',
+                       (1 if bo else 0, ws, (cum or '').strip().lower()))
+    conn.commit()
+    return cur.rowcount

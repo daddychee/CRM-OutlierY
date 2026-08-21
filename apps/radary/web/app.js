@@ -1643,8 +1643,109 @@ function NicheVolume({ ma, ten }) {
 
 // '+ New Niche' ĐÃ BỎ (user 19/08): niche sinh ở General, pool dựng từ nút ＋
 // trên dải tab thị trường, kênh nhập ở Data Pool — không còn cửa tạo tự do.
-const TABS = [['board', 'Board'], ['alerts', 'Alerts'], ['reports', 'Report'], ['pool', 'Data Pool'],
-              ['harvest', 'Harvest'], ['settings', 'Tuning'], ['admin', 'Setting']];
+// ---------- Mapping: CẦU × CUNG (21/08/2026 — docs/discovery-mapping.md) ----------
+// Vế cung đọc SQLite sẵn có (0 quota); vế cầu là autocomplete đã quét và lưu theo ngày.
+// TRÌNH BẰNG CHỨNG — NGƯỜI CHỌN: bấm ô ra video thật, tool không "khuyên nên làm gì".
+const O_MAU = { khoang_trong: '#2e7d32', do_lua: '#c62828', bao_hoa: '#ef6c00', hoang: '#546e7a' };
+const ngayVN = ts => ts ? new Date(ts * 1000).toISOString().slice(0, 10) : '—';
+
+function Mapping({ ws, canEdit }) {
+  const [d, setD] = useState(null);
+  const [err, setErr] = useState('');
+  const [oChon, setOChon] = useState(null);
+  const [cumMo, setCumMo] = useState(null);
+  const [seed, setSeed] = useState('');
+  const [chan, setChan] = useState('roblox, minecraft, gta, fortnite');
+  const [dangQuet, setDangQuet] = useState('');
+  const load = useCallback(() =>
+    api('GET', `/workspaces/${ws}/mapping`).then(x => { setD(x); setErr(''); })
+      .catch(e => setErr(String(e.message))), [ws]);
+  useEffect(() => { load(); }, [load]);
+
+  const quet = async () => {
+    if (!seed.trim()) return;
+    setDangQuet('Đang quét… (mỗi lời gọi giãn 1 giây để không bị YouTube chặn IP)');
+    try {
+      const r = await api('POST', `/workspaces/${ws}/discovery/scan`,
+        { seed, chan: chan.split(',').map(s => s.trim()).filter(Boolean), tran: 20 });
+      setDangQuet(`Xong: ${r.tong} cụm (${r.moi} mới) · ${r.loi_goi} lời gọi`
+        + (r.cham_tran ? ' · chạm trần, quét lại để lấy thêm' : ''));
+      load();
+    } catch (e) { setDangQuet('Lỗi: ' + e.message); }
+  };
+  const gat = async cum => {
+    if (!canEdit) return;
+    try { await api('POST', `/workspaces/${ws}/keywords/bo-qua`, { cum, bo: true }); load(); }
+    catch (e) { alert(String(e.message)); }
+  };
+
+  if (err) return html`<div class="panel">Lỗi: ${err}</div>`;
+  if (!d) return html`<div class="note">Đang tải…</div>`;
+
+  const muc = oChon ? d.muc.filter(m => m.o === oChon) : d.muc;
+  const oCard = k => {
+    const [ten, ghi] = (d.nhan_o && d.nhan_o[k]) || [k, ''];
+    const n = (d.dem_o && d.dem_o[k]) || 0;
+    return html`<button class=${'panel' + (oChon === k ? '' : ' ghost')}
+      style=${`flex:1;min-width:170px;text-align:left;border-left:4px solid ${O_MAU[k]}`}
+      title=${ghi} onClick=${() => setOChon(oChon === k ? null : k)}>
+      <div style="font-size:22px;font-weight:700">${n}</div>
+      <div style="font-weight:600">${ten}</div>
+      <div class="note" style="margin:0">${ghi}</div></button>`;
+  };
+
+  return html`
+    <div class="panel">
+      <div class="row" style="gap:8px;flex-wrap:wrap;align-items:center">
+        <input placeholder="seed rộng, ví dụ: life in" value=${seed}
+          onInput=${e => setSeed(e.target.value)} style="min-width:220px"/>
+        <input placeholder="từ chặn, cách nhau dấu phẩy" value=${chan}
+          onInput=${e => setChan(e.target.value)} style="min-width:260px"/>
+        <button class="btn" disabled=${!canEdit} onClick=${quet}>🔎 Quét cầu</button>
+        <span class="note" style="margin:0">${dangQuet}</span>
+      </div>
+      <div class="note">Seed càng RỘNG càng ra nhiều tín hiệu — đo thật: “life in” → 10 gợi ý,
+        “life in tuvalu” → 1. Autocomplete chỉ cho biết <b>có người gõ</b>, không cho biết
+        bao nhiêu người: cột “cầu” là số biến thể seed mà cụm lọt ra, không phải lượt tìm.</div>
+    </div>
+
+    ${d.chua_quet ? html`<div class="panel">${d.ly_do_thieu_mau}</div>` : ''}
+    ${!d.chua_quet && !d.du_mau ? html`<div class="panel">${d.ly_do_thieu_mau}</div>` : ''}
+    ${d.du_mau ? html`<div class="row" style="gap:10px;flex-wrap:wrap;margin:10px 0">
+      ${['khoang_trong', 'do_lua', 'bao_hoa', 'hoang'].map(oCard)}</div>` : ''}
+
+    ${d.muc.length ? html`<div class="panel">
+      <div class="note" style="margin-top:0">
+        ${d.so_video_trong_kho} video trong kho pool này ·
+        mốc cao/thấp = trung vị của chính phiên quét (cầu ${d.nguong?.cau_do_phu ?? '—'},
+        cung ${d.nguong?.cung_so_video ?? '—'} video) — không phải ngưỡng cố định.
+        ${oChon ? html` · đang lọc: <b>${(d.nhan_o[oChon] || [oChon])[0]}</b>` : ''}</div>
+      <table class="tbl"><thead><tr>
+        <th>Cụm</th><th>Cầu</th><th>Video</th><th>Kênh</th><th>View giữa</th>
+        <th>Mới nhất</th><th>Ô</th><th></th></tr></thead><tbody>
+        ${muc.map(m => html`<tr>
+          <td><a href="#" onClick=${e => { e.preventDefault(); setCumMo(cumMo === m.cum ? null : m.cum); }}>${m.cum}</a></td>
+          <td>${m.do_phu}</td><td>${m.so_video}</td><td>${m.so_kenh}</td>
+          <td>${(m.view_trung_vi || 0).toLocaleString()}</td><td>${ngayVN(m.moi_nhat)}</td>
+          <td style=${`color:${O_MAU[m.o] || 'inherit'}`}>${m.o ? (d.nhan_o[m.o] || [m.o])[0] : '—'}</td>
+          <td>${canEdit ? html`<button class="btn small ghost" title="gạt cụm nhiễu (bật lại được)"
+            onClick=${() => gat(m.cum)}>✕</button>` : ''}</td></tr>`)}
+      </tbody></table>
+      ${cumMo ? html`<div style="margin-top:10px">
+        <div class="eyebrow">Video đang chiếm chỗ — “${cumMo}”</div>
+        ${(d.muc.find(m => m.cum === cumMo)?.vi_du || []).map(v => html`
+          <div style="padding:3px 0">
+            <a href=${'https://youtu.be/' + v.yt_id} target="_blank" rel="noopener">${v.title}</a>
+            <span class="note"> · ${v.kenh} · ${(v.views || 0).toLocaleString()} view · ${ngayVN(v.pub_ts)}</span>
+          </div>`)}
+        ${!(d.muc.find(m => m.cum === cumMo)?.vi_du || []).length
+          ? html`<div class="note">Không có video nào trong pool khớp cụm này.</div>` : ''}
+      </div>` : ''}
+    </div>` : ''}`;
+}
+
+const TABS = [['board', 'Board'], ['alerts', 'Alerts'], ['mapping', 'Mapping'], ['reports', 'Report'],
+              ['pool', 'Data Pool'], ['harvest', 'Harvest'], ['settings', 'Tuning'], ['admin', 'Setting']];
 function App() {
   const h0 = readHash();
   const [me, setMe] = useState(undefined);       // undefined = đang kiểm tra, null = chưa đăng nhập
@@ -1760,6 +1861,7 @@ function App() {
       : tab === 'board' && niche && (nicheView || !(cur && cur.market)) ? html`<${NicheVolume} ma=${niche.ma} ten=${niche.ten}/>`
       : tab === 'board' ? html`<${Board} ws=${ws} canEdit=${canEdit}/>`
       : tab === 'alerts' ? html`<${Alerts} ws=${ws} canEdit=${canEdit}/>`
+      : tab === 'mapping' ? html`<${Mapping} ws=${ws} canEdit=${canEdit}/>`
       : tab === 'reports' ? html`<${Reports} ws=${ws} canEdit=${canEdit}/>`
       : tab === 'pool' ? html`<${Pool} ws=${ws} canEdit=${canEdit} role=${role} nganhs=${nganhs}
           wss=${wss.filter(w => w.org_id === orgId)} onMoved=${() => loadWs(true)}/>`

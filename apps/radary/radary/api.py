@@ -895,6 +895,85 @@ def metrics_api(ws: int, request: Request, channel: str = ''):
         w = auth.ws_for_user(c, ws, u['id'])           # viewer xem được (Board)
         return _metrics_data(c, ws, core.tzinfo(w['tz']), channel)
 
+# ---------------- DISCOVERY + MAPPING (21/08/2026 — docs/discovery-mapping.md) ----
+# CẦU (người ta gõ gì) ghép với CUNG (31.917 video đã có) → bản đồ 4 ô. Vế cung đọc
+# SQLite thuần: 0 quota, 0 LLM. Vế cầu gọi autocomplete — CÙNG IP với harvest nên
+# rate-limit bắt buộc (BoDem), trần mặc định thấp.
+class QuetCauIn(BaseModel):
+    seed: str
+    chan: list[str] = []          # từ chặn của workspace (nhiễu game/kênh lạ)
+    tu_hoi: bool = False          # thêm biến thể what/why/how — tốn thêm 9 lời gọi
+    lay_hn: bool = False          # nguồn phụ Hacker News (lệch tệp, mặc định tắt)
+    tran: int = 20                # trần lời gọi cho phiên này (mỗi lời gọi ~1s)
+
+
+@app.post('/api/workspaces/{ws}/discovery/scan')
+def discovery_scan(ws: int, body: QuetCauIn, request: Request):
+    """Quét tín hiệu CẦU quanh một seed rồi ghi vào keywords/keyword_stats.
+
+    Chạy ĐỒNG BỘ có chủ ý: trần 20 lời gọi × ~1s ≈ 20s, và route là `def` (FastAPI
+    đẩy sang threadpool) nên không khoá event loop. Muốn quét rộng thì tăng `tran`,
+    nhưng nhớ IP dùng chung với harvest.
+    """
+    from . import discovery
+    if not body.seed.strip():
+        raise HTTPException(422, 'thiếu seed')
+    with get_conn() as c:
+        u = auth.require_user(c, request)
+        auth.ws_for_user(c, ws, u['id'], 'leader')     # quét = tiêu tài nguyên → leader+
+        dem = discovery.BoDem(tran=max(1, min(int(body.tran), 120)))
+        muc = discovery.quet(body.seed, chan=tuple(body.chan), lay_hn=body.lay_hn,
+                             dem=dem, tu_hoi=body.tu_hoi)
+        kq = db.kw_luu(c, ws, muc)
+        return {**kq, 'loi_goi': dem.da_goi, 'cham_tran': dem.da_goi >= dem.tran,
+                'cum': muc[:50]}
+
+
+@app.get('/api/workspaces/{ws}/mapping')
+def mapping_api(ws: int, request: Request):
+    """Bản đồ cầu × cung. Viewer xem được (giống Board) — đây là thứ để ĐỌC, không sửa."""
+    from . import mapping
+    with get_conn() as c:
+        u = auth.require_user(c, request)
+        auth.ws_for_user(c, ws, u['id'])
+        cums = db.kw_danh_sach(c, ws)
+        if not cums:
+            return {'muc': [], 'du_mau': False, 'chua_quet': True,
+                    'ly_do_thieu_mau': 'Chưa quét cầu lần nào — bấm "Quét cầu" với một seed.',
+                    'nhan_o': mapping.NHAN_O}
+        bd = mapping.ban_do(mapping.tai_kho(c, ws), cums)
+        bd['nhan_o'] = mapping.NHAN_O
+        return bd
+
+
+class BoQuaIn(BaseModel):
+    cum: str
+    bo: bool = True
+
+
+@app.post('/api/workspaces/{ws}/keywords/bo-qua')
+def keyword_bo_qua(ws: int, body: BoQuaIn, request: Request):
+    """Gạt cụm nhiễu khỏi bản đồ — GỠ MỀM, bật lại được, lịch sử giữ nguyên."""
+    with get_conn() as c:
+        u = auth.require_user(c, request)
+        auth.ws_for_user(c, ws, u['id'], 'leader')
+        n = db.kw_bo_qua(c, ws, body.cum, body.bo)
+        if not n:
+            raise HTTPException(404, 'không có cụm này trong workspace')
+        return {'ok': True, 'cum': body.cum.strip().lower(), 'bo_qua': body.bo}
+
+
+@app.get('/api/workspaces/{ws}/keywords/lich-su')
+def keyword_lich_su(ws: int, request: Request, cum: str = ''):
+    """Chuỗi theo ngày của một cụm — thứ chỉ RadarY làm được (nó có scheduler)."""
+    with get_conn() as c:
+        u = auth.require_user(c, request)
+        auth.ws_for_user(c, ws, u['id'])
+        if not cum.strip():
+            raise HTTPException(422, 'thiếu cụm')
+        return {'cum': cum.strip().lower(), 'chuoi': db.kw_lich_su(c, ws, cum)}
+
+
 @app.get('/api/workspaces/{ws}/alerts')
 def alerts(ws: int, request: Request, limit: int = 100, offset: int = 0, kind: str = ''):
     """Tab Cảnh báo gom theo đơn vị (mockup user duyệt 24/07/2026). Trả object có 'mode':
