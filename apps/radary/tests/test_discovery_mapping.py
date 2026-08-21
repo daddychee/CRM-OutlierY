@@ -589,3 +589,58 @@ def test_cache_trends_theo_ngay(conn):
     d = db.trends_doc(conn, "life in alaska", "US", ngay="2026-08-21")   # không phân biệt hoa thường
     assert d and d["co_du_lieu"] is True
     assert db.trends_doc(conn, "life in alaska", "US", ngay="2026-08-22") is None
+
+
+# ---------------------------- LỊCH SỬ TRA CỨU (user 21/08) ----------------------
+
+
+def test_luu_va_doc_lai_tra_cuu(conn):
+    """User: 'sau mỗi lần tra từ khoá mới thì không quay lại xem từ khoá cũ được'."""
+    db.tra_cuu_luu(conn, 1, "life in alaska", a={"so_video": 2}, b={"youtube": {"x": 1}})
+    d = db.tra_cuu_doc(conn, 1, "life in alaska")
+    assert d["a"]["so_video"] == 2 and d["b"]["youtube"]["x"] == 1 and d["ts"] > 0
+
+
+def test_tra_lai_khoi_A_KHONG_xoa_ket_qua_ngoai(conn):
+    """Khối B tốn 102 units nên tra lại khối A (0 quota) không được xoá nó."""
+    db.tra_cuu_luu(conn, 1, "x", a={"v": 1}, b={"tot": True})
+    db.tra_cuu_luu(conn, 1, "x", a={"v": 2})              # chỉ cập nhật A
+    d = db.tra_cuu_doc(conn, 1, "x")
+    assert d["a"]["v"] == 2 and d["b"]["tot"] is True
+
+
+def test_danh_sach_moi_nhat_truoc_va_bao_co_ngoai_chua(conn):
+    db.tra_cuu_luu(conn, 1, "cu", a={})
+    time.sleep(0.01)
+    db.tra_cuu_luu(conn, 1, "moi", a={}, b={"co": 1})
+    ds = db.tra_cuu_danh_sach(conn, 1)
+    assert [x["cum"] for x in ds] == ["moi", "cu"]
+    assert ds[0]["co_ngoai"] is True and ds[1]["co_ngoai"] is False
+
+
+def test_moi_cum_mot_dong_khong_de_trung(conn):
+    for _ in range(3):
+        db.tra_cuu_luu(conn, 1, "life in alaska", a={})
+    assert conn.execute("SELECT COUNT(*) FROM tra_cuu_log").fetchone()[0] == 1
+
+
+def test_lich_su_tach_theo_pool(conn):
+    """Pool US và Spain không được thấy lịch sử của nhau."""
+    conn.execute("INSERT INTO workspaces(id, org_id, name, created_ts) VALUES(2,1,'w2',0)")
+    db.tra_cuu_luu(conn, 1, "life in", a={})
+    db.tra_cuu_luu(conn, 2, "la vida en", a={})
+    assert [x["cum"] for x in db.tra_cuu_danh_sach(conn, 1)] == ["life in"]
+    assert [x["cum"] for x in db.tra_cuu_danh_sach(conn, 2)] == ["la vida en"]
+
+
+def test_cum_rong_khong_ghi(conn):
+    db.tra_cuu_luu(conn, 1, "   ", a={})
+    assert conn.execute("SELECT COUNT(*) FROM tra_cuu_log").fetchone()[0] == 0
+
+
+def test_trends_bat_cookie_disk():
+    """Ghim: cookies='disk' phải được truyền — đây là thứ giảm rate limit về sau."""
+    from pathlib import Path
+    src = Path(__file__).resolve().parents[1].joinpath("radary", "tra_cuu.py").read_text(encoding="utf-8")
+    assert 'cookies="disk"' in src
+    assert "TRENDSPYG_COOKIES" in src

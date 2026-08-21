@@ -1741,29 +1741,46 @@ function Mapping({ ws, canEdit }) {
   const [goiY, setGoiY] = useState([]);
   const [busy, setBusy] = useState('');
   const [err, setErr] = useState('');
+  const [lichSu, setLichSu] = useState([]);
+  const [xemLai, setXemLai] = useState(null);   // mốc thời gian nếu đang xem bản đã lưu
 
   // ĐỔI POOL = xoá sạch kết quả cũ. Thiếu chỗ này thì tra ở US xong sang Spain vẫn
   // thấy số của US — user báo 21/08 ("từ khoá thị trường US lọt sang Spain").
   useEffect(() => {
-    setA(null); setB(null); setCum(''); setErr(''); setBusy('');
+    setA(null); setB(null); setCum(''); setErr(''); setBusy(''); setXemLai(null); setLichSu([]);
     api('GET', `/workspaces/${ws}/discovery/goi-y-seed`).then(r => setGoiY(r.seed || [])).catch(() => setGoiY([]));
     api('GET', `/workspaces/${ws}/mapping`).then(d => setPool(d.pool || {})).catch(() => setPool({}));
   }, [ws]);
 
-  const traCuu = async (tu) => {
+  // `lai` = xem lại bản đã lưu: KHÔNG gọi lại nguồn ngoài (mỗi lần hỏi tốn 102 units).
+  const traCuu = async (tu, lai) => {
     const q = (tu || cum).trim();
     if (!q) return;
-    const wsLuc_do = ws;
-    setCum(q); setErr(''); setB(null); setBusy('Đang đọc pool…');
+    const wsLucDo = ws;
+    setCum(q); setErr(''); setB(null); setXemLai(null);
+    setBusy(lai ? 'Đang mở lại bản đã lưu…' : 'Đang đọc pool…');
     try {
-      const a = await api('GET', `/workspaces/${ws}/tra-cuu?cum=${encodeURIComponent(q)}`);
-      if (wsLuc_do !== ws) return;              // người dùng đã đổi pool giữa chừng
-      setA(a); setPool(a.pool || {});
+      const a = await api('GET', `/workspaces/${ws}/tra-cuu?cum=${encodeURIComponent(q)}`
+        + (lai ? '&xem_lai=1' : ''));
+      if (wsLucDo !== ws) return;               // người dùng đã đổi pool giữa chừng
+      setA(a); setPool(a.pool || {}); setLichSu(a.lich_su || []);
+      if (a.ngoai) setB(a.ngoai);               // kết quả ngoài đã lưu từ lần trước
+      if (lai) { setXemLai(a.ts || null); setBusy(''); return; }
       if (!canEdit) { setBusy(''); return; }
+      if (a.ngoai) {                            // đã có bản cũ -> hỏi lại là quyết định của người
+        setXemLai(a.ngoai.ts || null); setBusy(''); return;
+      }
       setBusy('Đang hỏi YouTube · Google Trends · News · Wikipedia (~20 giây)…');
       const b = await api('POST', `/workspaces/${ws}/tra-cuu/ngoai`, { cum: q });
-      if (wsLuc_do !== ws) return;
-      setB(b); setBusy('');
+      if (wsLucDo !== ws) return;
+      setB(b); setLichSu(b.lich_su || []); setBusy('');
+    } catch (e) { setErr(String(e.message)); setBusy(''); }
+  };
+  const hoiLaiNgoai = async () => {
+    setBusy('Đang hỏi lại nguồn ngoài (~20 giây, 102 units)…'); setXemLai(null);
+    try {
+      const b = await api('POST', `/workspaces/${ws}/tra-cuu/ngoai`, { cum });
+      setB(b); setLichSu(b.lich_su || []); setBusy('');
     } catch (e) { setErr(String(e.message)); setBusy(''); }
   };
 
@@ -1798,6 +1815,12 @@ function Mapping({ ws, canEdit }) {
         <button class="btn primary" onClick=${() => traCuu()} disabled=${!!busy}>🔍 Tra cứu</button>
         <span class="note" style="margin:0">${busy}${err ? html`<span style="color:#c62828">${err}</span>` : ''}</span>
       </div>
+      ${lichSu.length ? html`<div style="margin-top:8px">
+        <span class="note">Đã tra ở pool này (bấm để xem lại, không tốn quota):</span>
+        ${lichSu.map(l => html`<button class=${'btn small' + (l.cum === cum ? '' : ' ghost')}
+          style="margin:2px 4px 2px 0" title=${new Date(l.ts * 1000).toLocaleString()}
+          onClick=${() => traCuu(l.cum, true)}>${l.cum}${l.co_ngoai ? '' : ' ·'}</button>`)}
+      </div>` : ''}
       ${goiY.length ? html`<div style="margin-top:6px">
         <span class="note">Từ khoá phổ biến trong pool này:</span>
         ${goiY.map(g => html`<button class="btn small ghost" style="margin:2px 4px 2px 0"
@@ -1838,7 +1861,10 @@ function Mapping({ ws, canEdit }) {
 
     ${B ? html`<div class="panel">
       <div class="eyebrow" style="margin-top:0">B · Ngoài — thị trường ${pool.market || '(chưa gắn)'}
-        <span class="note">${B.quota_da_tieu ? `· ${B.quota_da_tieu} units` : ''}</span></div>
+        <span class="note">${B.quota_da_tieu ? `· ${B.quota_da_tieu} units` : ''}
+        ${xemLai ? `· bản lưu lúc ${new Date(xemLai * 1000).toLocaleString()}` : ''}</span>
+        ${xemLai && canEdit ? html`<button class="btn small ghost" style="margin-left:8px"
+          onClick=${hoiLaiNgoai} disabled=${!!busy}>↻ Hỏi lại (102 units)</button>` : ''}</div>
 
       ${tr.co_du_lieu ? html`<div style="margin-bottom:12px">
         <div><b>Google Trends</b> <span class="note">${tr.geo} · ${tr.timeframe}${tr.tu_cache ? ' · lấy lại từ lần hỏi hôm nay' : ''}</span>

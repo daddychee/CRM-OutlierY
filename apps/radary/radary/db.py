@@ -161,6 +161,13 @@ CREATE TABLE IF NOT EXISTS keyword_market (            -- ĐO THỊ TRƯỜNG TH
   subs_giua INTEGER,
   top TEXT NOT NULL DEFAULT '[]',                      -- video thật để người soi (JSON)
   PRIMARY KEY (keyword_id, ngay));
+CREATE TABLE IF NOT EXISTS tra_cuu_log (              -- LỊCH SỬ TRA CỨU (21/08)
+  id INTEGER PRIMARY KEY,
+  workspace_id INTEGER NOT NULL REFERENCES workspaces(id),
+  cum TEXT NOT NULL, ts REAL NOT NULL,
+  a TEXT NOT NULL DEFAULT '{}',                        -- khối trong pool
+  b TEXT NOT NULL DEFAULT '',                          -- khối ngoài ('' = chưa hỏi ngoài)
+  UNIQUE (workspace_id, cum));
 CREATE TABLE IF NOT EXISTS trends_cache (             -- Google Trends bị RateLimit (21/08)
   cum TEXT NOT NULL, geo TEXT NOT NULL, ngay TEXT NOT NULL,
   payload TEXT NOT NULL DEFAULT '{}',
@@ -506,3 +513,37 @@ def trends_ghi(conn, cum, geo, payload, ngay=None):
                  ((cum or '').strip().lower(), geo or 'US', ngay,
                   json.dumps(payload, ensure_ascii=False)))
     conn.commit()
+
+# ---------------- LỊCH SỬ TRA CỨU (21/08/2026) ----------------
+# User: "sau mỗi lần truy xuất từ khoá mới thì không quay lại xem từ khoá cũ được".
+# Lưu cả hai khối để xem lại KHÔNG tốn quota — khối B tốn 102 units/lần nên tuyệt đối
+# không hỏi lại chỉ để xem lại. Mỗi (pool, cụm) giữ MỘT dòng, tra lại thì ghi đè.
+def tra_cuu_luu(conn, ws, cum, a=None, b=None):
+    cum = (cum or '').strip()
+    if not cum:
+        return
+    cu = conn.execute('SELECT a, b FROM tra_cuu_log WHERE workspace_id=? AND cum=?',
+                      (ws, cum)).fetchone()
+    a_json = json.dumps(a, ensure_ascii=False) if a is not None else (cu['a'] if cu else '{}')
+    b_json = json.dumps(b, ensure_ascii=False) if b is not None else (cu['b'] if cu else '')
+    conn.execute("""INSERT INTO tra_cuu_log(workspace_id, cum, ts, a, b) VALUES(?,?,?,?,?)
+                    ON CONFLICT(workspace_id, cum) DO UPDATE SET
+                      ts=excluded.ts, a=excluded.a, b=excluded.b""",
+                 (ws, cum, time.time(), a_json, b_json))
+    conn.commit()
+
+def tra_cuu_doc(conn, ws, cum):
+    r = conn.execute('SELECT * FROM tra_cuu_log WHERE workspace_id=? AND cum=?',
+                     (ws, (cum or '').strip())).fetchone()
+    if not r:
+        return None
+    return {'cum': r['cum'], 'ts': r['ts'],
+            'a': json.loads(r['a'] or '{}'),
+            'b': json.loads(r['b']) if r['b'] else None}
+
+def tra_cuu_danh_sach(conn, ws, limit=25):
+    """Từ khoá đã tra ở pool này, mới nhất trước — để bấm xem lại."""
+    return [{'cum': r['cum'], 'ts': r['ts'], 'co_ngoai': bool(r['b'])}
+            for r in conn.execute("""SELECT cum, ts, b FROM tra_cuu_log
+                                     WHERE workspace_id=? ORDER BY ts DESC LIMIT ?""",
+                                  (ws, limit))]

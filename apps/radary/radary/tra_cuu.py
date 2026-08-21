@@ -17,6 +17,7 @@ Kem velocity 46 ngay cho ngan han (user chot "ca hai").
 from __future__ import annotations
 
 import json
+import os
 import statistics
 import time
 from datetime import datetime, timedelta, timezone
@@ -100,7 +101,8 @@ def xu_huong_pool(kho: list[dict], cum: str, so_thang: int = SO_THANG,
     }
 
 
-def google_trends(cum: str, geo: str = "US", timeframe: str = "today 12-m") -> dict:
+def google_trends(cum: str, geo: str = "US", timeframe: str = "today 12-m",
+                  gprop: str = "") -> dict:
     """Interest 12 thang + truy van lien quan (top/rising) tu Google Trends.
 
     trendspyg 1.6.0 — thu vien MOI (phat hanh 19/08/2026), va no chay qua trinh duyet
@@ -111,8 +113,18 @@ def google_trends(cum: str, geo: str = "US", timeframe: str = "today 12-m") -> d
         from trendspyg import download_google_trends_explore as ex
     except ImportError:
         return {"co_du_lieu": False, "ly_do": "chưa cài trendspyg trên máy này"}
+    # cookies="disk" (trendspyg 1.6.0): giữ session cookie của Google giữa các lần gọi
+    # nên trông như KHÁCH QUAY LẠI. Tài liệu thư viện (đo 19/08/2026): sau một đợt gọi
+    # dồn, Google chặn khách MỚI bằng trang 429 cứng nhưng phiên mang jar đã thiết lập
+    # vẫn được phục vụ. Đây là cookie ẩn danh do thư viện tạo — KHÔNG phải tài khoản
+    # Google của ai, nên không có rủi ro khoá tài khoản.
+    # LƯU Ý ĐO THẬT 21/08: bật lúc ĐANG bị chặn thì không cứu được (không lập nổi jar
+    # mới); nó chỉ có tác dụng phòng, từ lần chạy sạch trở đi.
+    os.environ.setdefault("TRENDSPYG_COOKIES",
+                          os.path.join(os.environ.get("RADARY_DATA_DIR", "."), "trends_cookies.json"))
     try:
-        d = ex(cum, geo=geo or "US", timeframe=timeframe, include_related=True)
+        d = ex(cum, geo=geo or "US", timeframe=timeframe, include_related=True,
+               cookies="disk", **({"gprop": gprop} if gprop else {}))
     except Exception as e:                                  # noqa: BLE001 — thư viện non
         ten = type(e).__name__
         if "RateLimit" in ten or "429" in str(e):

@@ -1015,7 +1015,7 @@ def mapping_api(ws: int, request: Request):
 
 
 @app.get('/api/workspaces/{ws}/tra-cuu')
-def tra_cuu_pool(ws: int, request: Request, cum: str = ''):
+def tra_cuu_pool(ws: int, request: Request, cum: str = '', xem_lai: int = 0):
     """KHỐI A — pool đang mở làm gì với từ khoá này + xu hướng theo lứa đăng.
 
     Đọc SQLite thuần: 0 quota, dưới 1 giây. Viewer xem được.
@@ -1030,8 +1030,17 @@ def tra_cuu_pool(ws: int, request: Request, cum: str = ''):
         pool = db.tom_tat_pool(c, ws)
         pool.update({'ten': w['name'], 'ngach': w['ngach'], 'market': w['market'],
                      'ngon_ngu': ngon_ngu, 'vung': vung})
-        return {'cum': cum.strip(), 'pool': pool,
-                'trong_pool': tra_cuu.xu_huong_pool(mapping.tai_kho(c, ws), cum.strip())}
+        q = cum.strip()
+        cu = db.tra_cuu_doc(c, ws, q)
+        if xem_lai and cu:                    # xem lại: KHÔNG tính lại, KHÔNG gọi gì
+            return {'cum': q, 'pool': pool, 'trong_pool': cu['a'], 'ngoai': cu['b'],
+                    'tu_lich_su': True, 'ts': cu['ts'],
+                    'lich_su': db.tra_cuu_danh_sach(c, ws)}
+        a = tra_cuu.xu_huong_pool(mapping.tai_kho(c, ws), q)
+        db.tra_cuu_luu(c, ws, q, a=a)         # khối B giữ nguyên bản cũ nếu đã có
+        return {'cum': q, 'pool': pool, 'trong_pool': a,
+                'ngoai': (cu or {}).get('b'), 'ts': time.time(),
+                'lich_su': db.tra_cuu_danh_sach(c, ws)}
 
 
 class TraCuuNgoaiIn(BaseModel):
@@ -1087,11 +1096,15 @@ def tra_cuu_ngoai(ws: int, body: TraCuuNgoaiIn, request: Request):
                     db.trends_ghi(c2, cum, geo, tr)
     # Hai nguồn 0 key, nhanh (~1-2s): tin báo đang nói gì + mức quan tâm trên Wikipedia.
     # Reddit đã thử cả .json lẫn .rss đều 403 từ IP này; X/Twitter cần bản trả phí.
-    return {'cum': cum, 'youtube': yt, 'trends': tr,
-            'bien_the': bien_the,
-            'news': tra_cuu.google_news(cum, geo=geo, lang=lang),
-            'wiki': tra_cuu.wikipedia(cum, lang=lang),
-            'quota_da_tieu': quota, 'vung': vung}
+    ra = {'cum': cum, 'youtube': yt, 'trends': tr,
+          'bien_the': bien_the,
+          'news': tra_cuu.google_news(cum, geo=geo, lang=lang),
+          'wiki': tra_cuu.wikipedia(cum, lang=lang),
+          'quota_da_tieu': quota, 'vung': vung, 'ts': time.time()}
+    with get_conn() as c3:                     # lưu để xem lại không tốn quota lần hai
+        db.tra_cuu_luu(c3, ws, cum, b=ra)
+        ra['lich_su'] = db.tra_cuu_danh_sach(c3, ws)
+    return ra
 
 
 class DoThiTruongIn(BaseModel):
