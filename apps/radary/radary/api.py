@@ -39,8 +39,15 @@ async def _no_stale_ui(request: Request, call_next):
     """Frontend không build-step nên không có hash tên file — bắt trình duyệt revalidate
     app.js/index.html mỗi lần mở (ETag → 304, gần như miễn phí) để deploy xong là thấy UI mới."""
     resp = await call_next(request)
-    if not request.url.path.startswith('/api'):
-        resp.headers['Cache-Control'] = 'no-cache'
+    duong = request.url.path
+    if not duong.startswith('/api'):
+        # no-cache = "duoc luu nhung phai hoi lai". Qua cong 9000 app chay TRONG IFRAME
+        # va di qua mot tang proxy nua, thuc te van dinh ban cu (user bao 21/08: va xong
+        # van thay hanh vi cu). Frontend khong co build-hash nen khong co duong nao khac
+        # de ep — dat no-store cho HTML/JS: luon tai moi. ~100KB trong LAN, chap nhan duoc.
+        resp.headers['Cache-Control'] = ('no-store, must-revalidate'
+                                         if duong.endswith(('.js', '.html', '/')) else 'no-cache')
+        resp.headers['Pragma'] = 'no-cache'
     return resp
 
 # ---------------- auth ----------------
