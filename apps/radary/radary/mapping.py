@@ -281,7 +281,10 @@ def goi_y_seed(kho: list[dict], so_goi_y: int = 8, toi_thieu_video: int = 3,
 # Su co: pool goc LIFE IN chua ca kenh Viet -> goi_y_seed rut "cuộc sống thực" -> quet
 # ra cum Viet -> do thi truong Viet. Toan bo chuoi lech thi truong, tieu 816 units cho
 # thu user khong dung. Goc chuoi la SEED, nen chan ngay o do.
-_VN_RX = re.compile(r"[ăâđêôơưàáảãạằắẳẵặầấẩẫậèéẻẽẹềếểễệìíỉĩịòóỏõọồốổỗộờớởỡợùúủũụừứửữựỳýỷỹỵ]")
+# CHI ky tu RIENG tieng Viet. Ban dau gom ca à á è é ì í ò ó ù ú ý -> "La vida en
+# España — dónde vivir" bi nhan nham la tieng Viet (tieng Tay Ban Nha dung chung
+# cac dau do). Bo chung di, giu chu co dau/mu/moc va thanh hoi-nga-nang.
+_VN_RX = re.compile(r"[ăâđêôơưảãạằắẳẵặầấẩẫậẻẽẹềếểễệỉĩịỏõọồốổỗộờớởỡợủũụừứửữựỳỷỹỵ]")
 
 # Ngon ngu (theo ten trong de) -> ma dung cho autocomplete (hl) + YouTube API
 # (relevanceLanguage). Thieu ten nao thi khong ep — de mac dinh, khong doan bua.
@@ -312,11 +315,12 @@ def hop_ngon_ngu(title: str, ngon_ngu: str | None) -> bool:
     ma = MA_NGON_NGU.get(ngon_ngu.strip().lower())
     if ma is None and ngon_ngu.strip().upper() in NGON_NGU_THEO_VUNG:
         ma = NGON_NGU_THEO_VUNG[ngon_ngu.strip().upper()]
-    if ma == "vi":
-        return la_tieng_viet(title)
     if ma in (None, ""):
         return True
-    return not la_tieng_viet(title)      # thi truong khac Viet -> loai title tieng Viet
+    cua_title = nhan_dien_ngon_ngu(title)
+    if cua_title is None:
+        return True                      # không đủ căn cứ -> nhận, không loại oan
+    return cua_title == ma
 
 
 def vung_ngon_ngu(market: str | None, ngon_ngu: str | None) -> dict:
@@ -332,3 +336,30 @@ def vung_ngon_ngu(market: str | None, ngon_ngu: str | None) -> dict:
         ra["gl"] = ma_v.lower()
         ra["regionCode"] = ma_v
     return ra
+
+
+# ---- NHAN DIEN NGON NGU title (21/08, ban 2) ----------------------------------
+# hop_ngon_ngu ban dau chi phan biet Viet / khong-Viet, nen title TIENG ANH van lot
+# vao pool Spain. Dem TU CHUC NANG — du chinh xac cho title, khong can thu vien.
+_TU_CHUC_NANG = {
+    "en": {"the", "of", "and", "in", "to", "for", "with", "that", "this", "how",
+           "what", "why", "from", "on", "is", "are", "you", "your", "life", "living"},
+    "es": {"de", "la", "el", "en", "los", "las", "que", "para", "con", "una", "del",
+           "por", "es", "un", "más", "cómo", "qué", "vida", "vivir", "país", "dónde"},
+    "vi": {"của", "và", "là", "trong", "cho", "với", "những", "người", "cuộc", "sống",
+           "thực", "quốc", "gia", "sự", "thật", "nhất", "này", "đất", "nước"},
+}
+
+
+def nhan_dien_ngon_ngu(title: str) -> str | None:
+    """Ma ngon ngu cua title, hoac None khi khong du can cu (KHONG doan bua)."""
+    if la_tieng_viet(title):
+        return "vi"                     # dau tieng Viet la bang chung du manh
+    tu = set(_TU_RX.findall((title or "").lower()))
+    if not tu:
+        return None
+    diem = {ma: len(tu & bo) for ma, bo in _TU_CHUC_NANG.items()}
+    tot = max(diem, key=lambda k: diem[k])
+    if diem[tot] == 0 or diem[tot] == sorted(diem.values())[-2]:
+        return None                     # hoa nhau hoac khong tu nao khop -> khong ket luan
+    return tot

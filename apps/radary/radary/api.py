@@ -1064,9 +1064,24 @@ def tra_cuu_ngoai(ws: int, body: TraCuuNgoaiIn, request: Request):
         quota = api_yt.used
     except RuntimeError as e:
         yt = {'co_du_lieu': False, 'ly_do': str(e)}
-    tr = (tra_cuu.google_trends(cum, geo=(vung or {}).get('regionCode') or 'US')
+    geo = (vung or {}).get('regionCode') or 'US'
+    lang = (vung or {}).get('relevanceLanguage') or 'en'
+    # Biến thể người ta GÕ quanh từ khoá — luôn có dữ liệu, kể cả khi Trends im lặng
+    # (từ khoá hẹp như 'life in alaska' thì Trends trả related rỗng). 0 quota, ~9s.
+    from . import discovery
+    bt = discovery.mo_rong(cum, discovery.BoDem(tran=9), vung=vung, tu_hoi=False)
+    bien_the = sorted(({'cum': k, 'do_phu': v['do_phu'], 'hang': v['hang_tot_nhat']}
+                       for k, v in bt.items() if k != cum.lower()),
+                      key=lambda m: (-m['do_phu'], m['hang']))[:10]
+    tr = (tra_cuu.google_trends(cum, geo=geo)
           if body.trends else {'co_du_lieu': False, 'ly_do': 'đã tắt Google Trends'})
-    return {'cum': cum, 'youtube': yt, 'trends': tr, 'quota_da_tieu': quota, 'vung': vung}
+    # Hai nguồn 0 key, nhanh (~1-2s): tin báo đang nói gì + mức quan tâm trên Wikipedia.
+    # Reddit đã thử cả .json lẫn .rss đều 403 từ IP này; X/Twitter cần bản trả phí.
+    return {'cum': cum, 'youtube': yt, 'trends': tr,
+            'bien_the': bien_the,
+            'news': tra_cuu.google_news(cum, geo=geo, lang=lang),
+            'wiki': tra_cuu.wikipedia(cum, lang=lang),
+            'quota_da_tieu': quota, 'vung': vung}
 
 
 class DoThiTruongIn(BaseModel):

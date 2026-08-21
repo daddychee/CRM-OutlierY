@@ -16,9 +16,10 @@ Kem velocity 46 ngay cho ngan han (user chot "ca hai").
 """
 from __future__ import annotations
 
+import json
 import statistics
 import time
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from . import mapping
 
@@ -73,7 +74,9 @@ def xu_huong_pool(kho: list[dict], cum: str, so_thang: int = SO_THANG,
     kenh: dict[str, dict] = {}
     for v in khop:
         if (v.get("pub_ts") or 0) >= bay_gio - 365 * 86400:
-            k = kenh.setdefault(v["kenh"] or v["kenh_yt"], {"kenh": v["kenh"], "so_video": 0, "views": 0})
+            k = kenh.setdefault(v["kenh"] or v["kenh_yt"],
+                                {"kenh": v["kenh"], "kenh_yt": v.get("kenh_yt") or "",
+                                 "so_video": 0, "views": 0})
             k["so_video"] += 1
             k["views"] += v.get("views") or 0
 
@@ -88,6 +91,7 @@ def xu_huong_pool(kho: list[dict], cum: str, so_thang: int = SO_THANG,
         "vph_giua_pool": round(statistics.median(vph_pool), 2) if vph_pool else None,
         "top_kenh": sorted(kenh.values(), key=lambda k: -k["so_video"])[:6],
         "moi_nhat": {"title": moi_nhat["title"], "kenh": moi_nhat["kenh"],
+                     "kenh_yt": moi_nhat.get("kenh_yt") or "",
                      "yt_id": moi_nhat["yt_id"], "pub_ts": moi_nhat["pub_ts"],
                      "views": moi_nhat.get("views") or 0},
         "ti_trong_video": round(100 * len(khop) / max(1, len(kho)), 1),
@@ -188,11 +192,13 @@ def ngoai_youtube(api, cum: str, vung: dict | None = None, so_kq: int = 20) -> d
     nho = {}
     for x in vids:
         if x.get("subs") is not None and x["subs"] < KENH_NHO_SUBS:
-            k = nho.setdefault(x["kenh_id"], {"kenh": x["kenh"], "subs": x["subs"],
-                                              "lap_luc": x.get("lap_luc"), "so_video_top": 0,
-                                              "view_tot_nhat": 0})
+            k = nho.setdefault(x["kenh_id"], {"kenh": x["kenh"], "kenh_id": x["kenh_id"],
+                                              "subs": x["subs"], "lap_luc": x.get("lap_luc"),
+                                              "so_video_top": 0, "view_tot_nhat": 0,
+                                              "video_tot_nhat": ""})
             k["so_video_top"] += 1
-            k["view_tot_nhat"] = max(k["view_tot_nhat"], x["views"])
+            if x["views"] >= k["view_tot_nhat"]:
+                k["view_tot_nhat"], k["video_tot_nhat"] = x["views"], x["yt_id"]
     return {
         "co_du_lieu": True,
         "so_ket_qua": len(vids),
@@ -200,3 +206,97 @@ def ngoai_youtube(api, cum: str, vung: dict | None = None, so_kq: int = 20) -> d
         "top_video": sorted(vids, key=lambda x: -x["views"])[:8],
         "kenh_moi_noi": sorted(nho.values(), key=lambda k: -k["view_tot_nhat"])[:6],
     }
+
+
+# ---- NGUON NGOAI BO SUNG (21/08, sau khi user hoi "co nguon nao khac Google Trends") --
+# Da KIEM THAT tu may nay:
+#   Reddit .json VA .rss  -> 403 Blocked (ca hai). Chi con duong OAuth (PRAW) — can
+#     client_id/secret do Owner tao o reddit.com/prefs/apps. Chua lam.
+#   X / Twitter           -> API free tier khong cho doc search; ban Basic ~100$/thang.
+#   Google News RSS       -> 200, khong key. Tin dang nong ve chu de.
+#   Wikipedia pageviews   -> 200, khong key, lich su theo THANG nhieu nam. Rat hop ngach
+#     dia danh ("life in <noi>"): do muc quan tam THAT, doc lap YouTube.
+import re as _re
+import urllib.parse as _up
+import urllib.request as _ur
+import xml.etree.ElementTree as _ET
+
+GNEWS = "https://news.google.com/rss/search"
+WIKI_API = "https://{lang}.wikipedia.org/w/api.php"
+WIKI_PV = ("https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/"
+           "{lang}.wikipedia/all-access/user/{bai}/monthly/{tu}/{den}")
+_UA = {"User-Agent": "OUTLIERY-RadarY/1.0 (noi bo; lien he Owner)"}
+
+
+def _tai_text(url: str, doc=None, het_gio: int = 12) -> str:
+    if doc is not None:
+        return doc(url)
+    with _ur.urlopen(_ur.Request(url, headers=_UA), timeout=het_gio) as r:
+        return r.read().decode("utf-8", "replace")
+
+
+def google_news(cum: str, geo: str = "US", lang: str = "en", doc=None, tran: int = 8) -> dict:
+    """Tin bao moi ve tu khoa — 0 key. Cho biet chu de co dang duoc noi den ngoai doi
+    khong (khac voi 'co video tren YouTube khong')."""
+    q = _up.urlencode({"q": f'"{cum}"', "hl": f"{lang}-{geo}", "gl": geo,
+                       "ceid": f"{geo}:{lang}"})
+    try:
+        xml = _tai_text(f"{GNEWS}?{q}", doc)
+        goc = _ET.fromstring(xml)
+    except Exception as e:                                   # noqa: BLE001
+        return {"co_du_lieu": False, "ly_do": f"Google News lỗi: {type(e).__name__}"}
+    bai = []
+    for it in goc.iterfind(".//item"):
+        tieu_de = (it.findtext("title") or "").strip()
+        if not tieu_de:
+            continue
+        nguon = (it.findtext("source") or "").strip()
+        bai.append({"tieu_de": tieu_de.rsplit(" - ", 1)[0] if " - " in tieu_de else tieu_de,
+                    "nguon": nguon or (tieu_de.rsplit(" - ", 1)[-1] if " - " in tieu_de else ""),
+                    "link": (it.findtext("link") or "").strip(),
+                    "ngay": (it.findtext("pubDate") or "")[:16]})
+        if len(bai) >= tran:
+            break
+    return ({"co_du_lieu": True, "so_bai": len(bai), "bai": bai} if bai
+            else {"co_du_lieu": False, "ly_do": "không có bài báo nào về từ khoá này"})
+
+
+def wikipedia(cum: str, lang: str = "en", doc=None, so_thang: int = 13) -> dict:
+    """Muc quan tam THAT theo thang, tu luot xem Wikipedia — 0 key, doc lap YouTube.
+
+    Hai buoc: tim bai khop tu khoa, roi lay pageviews cua bai dau. Bai khong khop chu
+    de thi so lieu vo nghia, nen tra ca TEN BAI de nguoi tu danh gia (luat A3).
+    """
+    try:
+        q = _up.urlencode({"action": "query", "list": "search", "srsearch": cum,
+                           "format": "json", "srlimit": 3})
+        d = json.loads(_tai_text(WIKI_API.format(lang=lang) + "?" + q, doc))
+        hits = (d.get("query") or {}).get("search") or []
+    except Exception as e:                                   # noqa: BLE001
+        return {"co_du_lieu": False, "ly_do": f"Wikipedia lỗi: {type(e).__name__}"}
+    if not hits:
+        return {"co_du_lieu": False, "ly_do": "Wikipedia không có bài nào khớp từ khoá"}
+
+    bai = hits[0]["title"]
+    den = datetime.now(timezone.utc).replace(day=1)
+    tu = den - timedelta(days=so_thang * 31)
+    url = WIKI_PV.format(lang=lang, bai=_up.quote(bai.replace(" ", "_"), safe=""),
+                         tu=tu.strftime("%Y%m0100"), den=den.strftime("%Y%m0100"))
+    try:
+        pv = json.loads(_tai_text(url, doc))
+    except Exception as e:                                   # noqa: BLE001
+        return {"co_du_lieu": False, "bai": bai, "ly_do": f"pageviews lỗi: {type(e).__name__}"}
+    diem = [{"ngay": i["timestamp"][:6], "gia_tri": i["views"]}
+            for i in (pv.get("items") or [])]
+    if len(diem) < 4:
+        return {"co_du_lieu": False, "bai": bai, "ly_do": "chưa đủ tháng để nói xu hướng"}
+    n = max(1, len(diem) // 4)
+    dau = statistics.mean([p["gia_tri"] for p in diem[:n]])
+    cuoi = statistics.mean([p["gia_tri"] for p in diem[-n:]])
+    lech = round(100 * (cuoi - dau) / dau) if dau else 0
+    return {"co_du_lieu": True, "bai": bai,
+            "link": f"https://{lang}.wikipedia.org/wiki/{_up.quote(bai.replace(' ', '_'))}",
+            "bai_lien_quan": [h["title"] for h in hits[1:3]],
+            "diem": diem, "xem_thang_cuoi": diem[-1]["gia_tri"],
+            "xu_huong": {"phan_tram": lech,
+                         "chieu": "lên" if lech > 15 else "xuống" if lech < -15 else "đi ngang"}}

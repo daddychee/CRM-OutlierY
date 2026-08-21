@@ -1643,47 +1643,87 @@ function NicheVolume({ ma, ten }) {
 
 // '+ New Niche' ĐÃ BỎ (user 19/08): niche sinh ở General, pool dựng từ nút ＋
 // trên dải tab thị trường, kênh nhập ở Data Pool — không còn cửa tạo tự do.
-// ---------- Mapping: TRA CỨU MỘT TỪ KHOÁ (21/08/2026, bản 2) ----------
-// Bản 1 (bản đồ 4 ô + 300 cụm) đã BỎ: user — "chỉ là duplicate của radary, không có
-// gì để make decision". Mô hình mới: nhập MỘT từ khoá → hai khối, đều theo THỊ TRƯỜNG
-// của pool đang mở:
-//   A · TRONG POOL  — xu hướng thật của thị trường mình theo dõi (0 quota, <1s)
-//   B · NGOÀI       — thiên hạ đang thịnh hành gì (YouTube ~102 units + Google Trends)
+// ---------- Mapping: TRA CỨU MỘT TỪ KHOÁ (21/08/2026, bản 3) ----------
+// Bản 1 (bản đồ 4 ô) đã bỏ. Bản 3 sửa 4 điểm user nêu:
+//   1) state reset khi đổi pool — trước đó tra ở US rồi sang Spain vẫn thấy kết quả cũ
+//   2) mọi kênh/video click ra được YouTube
+//   3) truy vấn đang lên vẽ thành biểu đồ, không còn là dòng chữ
+//   4) thêm nguồn ngoài Google Trends: Google News + Wikipedia (Reddit .json/.rss đều
+//      403 từ IP này; X cần bản trả phí)
 const soGon = n => n == null ? '—' : (n >= 1e6 ? (n / 1e6).toFixed(1) + 'M' : n >= 1e3 ? Math.round(n / 1e3) + 'k' : String(Math.round(n)));
 const ngayVN = ts => ts ? new Date(ts * 1000).toISOString().slice(0, 10) : '—';
+const linkKenh = id => id ? `https://www.youtube.com/channel/${id}` : null;
+const linkVideo = id => id ? `https://youtu.be/${id}` : null;
 
-function Sparkline({ diem }) {           // đường interest 12 tháng của Google Trends
+// Đường xu hướng: interest (Trends) hoặc lượt xem (Wikipedia)
+function DuongXuHuong({ diem, nhan }) {
   if (!diem || diem.length < 2) return null;
-  const w = 320, h = 44, max = Math.max(...diem.map(p => p.gia_tri)) || 1;
-  const b = diem.map((p, i) => `${(i / (diem.length - 1)) * w},${h - (p.gia_tri / max) * h}`).join(' ');
-  return html`<svg viewBox=${`0 0 ${w} ${h}`} style="width:100%;max-width:340px;height:44px">
-    <polyline points=${b} fill="none" stroke="var(--accent,#4C8FE0)" stroke-width="2"/></svg>`;
+  const w = 640, h = 90, pad = 4;
+  const gt = diem.map(p => p.gia_tri), max = Math.max(...gt) || 1;
+  const x = i => pad + (i / (diem.length - 1)) * (w - 2 * pad);
+  const y = v => h - pad - (v / max) * (h - 2 * pad);
+  const duong = diem.map((p, i) => `${x(i)},${y(p.gia_tri)}`).join(' ');
+  const nen = `${x(0)},${h - pad} ${duong} ${x(diem.length - 1)},${h - pad}`;
+  const moc = [0, Math.floor(diem.length / 2), diem.length - 1];
+  return html`<div style="margin:4px 0">
+    <svg viewBox=${`0 0 ${w} ${h + 16}`} style="width:100%;height:106px" preserveAspectRatio="none">
+      <polygon points=${nen} fill="var(--accent,#4C8FE0)" opacity="0.12"/>
+      <polyline points=${duong} fill="none" stroke="var(--accent,#4C8FE0)" stroke-width="2"/>
+      ${moc.map(i => html`<text x=${x(i)} y=${h + 12} font-size="10" fill="currentColor" opacity="0.6"
+        text-anchor=${i === 0 ? 'start' : i === diem.length - 1 ? 'end' : 'middle'}>${diem[i].ngay}</text>`)}
+    </svg>
+    <div class="note" style="margin:0">${nhan} · đỉnh ${soGon(max)}</div></div>`;
+}
+
+// Truy vấn đang lên: thanh ngang, dài theo mức tăng — yêu cầu 3 của user
+function ThanhTruyVan({ muc, mau, ghi }) {
+  if (!muc || !muc.length) return null;
+  const max = Math.max(...muc.map(m => Number(m.gia_tri) || 0)) || 1;
+  return html`<div style="margin:6px 0 10px">
+    <div class="note" style="margin:0 0 3px">${ghi}</div>
+    ${muc.map(m => { const v = Number(m.gia_tri) || 0; return html`
+      <div style="display:flex;align-items:center;gap:8px;padding:1px 0">
+        <div style="flex:0 0 46%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"
+          title=${m.cum}>${m.cum}</div>
+        <div style="flex:1;background:rgba(127,127,127,.15);border-radius:3px;height:14px">
+          <div style=${`width:${Math.max(3, (v / max) * 100)}%;height:14px;border-radius:3px;background:${mau}`}></div>
+        </div>
+        <div style="flex:0 0 58px;text-align:right;font-variant-numeric:tabular-nums">
+          ${v >= 5000 ? 'bùng nổ' : '+' + v + '%'}</div>
+      </div>`; })}
+  </div>`;
 }
 
 function Mapping({ ws, canEdit }) {
   const [cum, setCum] = useState('');
-  const [A, setA] = useState(null);       // khối trong pool
-  const [B, setB] = useState(null);       // khối ngoài
+  const [A, setA] = useState(null);
+  const [B, setB] = useState(null);
   const [pool, setPool] = useState({});
   const [goiY, setGoiY] = useState([]);
   const [busy, setBusy] = useState('');
   const [err, setErr] = useState('');
 
+  // ĐỔI POOL = xoá sạch kết quả cũ. Thiếu chỗ này thì tra ở US xong sang Spain vẫn
+  // thấy số của US — user báo 21/08 ("từ khoá thị trường US lọt sang Spain").
   useEffect(() => {
+    setA(null); setB(null); setCum(''); setErr(''); setBusy('');
     api('GET', `/workspaces/${ws}/discovery/goi-y-seed`).then(r => setGoiY(r.seed || [])).catch(() => setGoiY([]));
-    api('GET', `/workspaces/${ws}/mapping`).then(d => setPool(d.pool || {})).catch(() => {});
+    api('GET', `/workspaces/${ws}/mapping`).then(d => setPool(d.pool || {})).catch(() => setPool({}));
   }, [ws]);
 
   const traCuu = async (tu) => {
     const q = (tu || cum).trim();
     if (!q) return;
+    const wsLuc_do = ws;
     setCum(q); setErr(''); setB(null); setBusy('Đang đọc pool…');
     try {
       const a = await api('GET', `/workspaces/${ws}/tra-cuu?cum=${encodeURIComponent(q)}`);
+      if (wsLuc_do !== ws) return;              // người dùng đã đổi pool giữa chừng
       setA(a); setPool(a.pool || {});
       if (!canEdit) { setBusy(''); return; }
-      setBusy('Đang hỏi YouTube + Google Trends (~20 giây)…');
+      setBusy('Đang hỏi YouTube · Google Trends · News · Wikipedia (~20 giây)…');
       const b = await api('POST', `/workspaces/${ws}/tra-cuu/ngoai`, { cum: q });
+      if (wsLuc_do !== ws) return;
       setB(b); setBusy('');
     } catch (e) { setErr(String(e.message)); setBusy(''); }
   };
@@ -1691,21 +1731,23 @@ function Mapping({ ws, canEdit }) {
   const tp = A && A.trong_pool || {};
   const yt = B && B.youtube || {};
   const tr = B && B.trends || {};
+  const nw = B && B.news || {};
+  const wk = B && B.wiki || {};
 
   return html`
     <div class="panel" style="border-left:4px solid var(--accent,#4C8FE0)">
       <div class="eyebrow" style="margin-top:0">Pool đang mở${pool.ngach ? ` · ngách ${pool.ngach}` : ''}
-        ${pool.ngon_ngu ? html`<span style="color:var(--accent,#4C8FE0)"> · đo theo thị trường ${pool.market} / ${pool.ngon_ngu}</span>` : ''}</div>
+        ${pool.ngon_ngu ? html`<span style="color:var(--accent,#4C8FE0)"> · mọi số liệu đo theo thị trường ${pool.market} / ${pool.ngon_ngu}</span>` : ''}</div>
       <div class="row" style="gap:20px;flex-wrap:wrap;align-items:baseline">
         <b style="font-size:18px">${pool.ten || '—'}</b>
         <div><b>${(pool.so_video || 0).toLocaleString()}</b> <span class="note">video</span></div>
         <div><b>${pool.so_kenh || 0}</b> <span class="note">kênh</span></div>
         <div><b>${pool.video_moi_30_ngay || 0}</b> <span class="note">video mới 30 ngày</span></div>
-        ${pool.view_giua_moi ? html`<div><b>${soGon(pool.view_giua_moi)}</b> <span class="note">view/video mới (mốc của pool)</span></div>` : ''}
+        ${pool.view_giua_moi ? html`<div><b>${soGon(pool.view_giua_moi)}</b> <span class="note">view/video mới (mốc pool)</span></div>` : ''}
       </div>
       ${!pool.market ? html`<div style="margin-top:8px;padding:8px 10px;border-radius:8px;
         border:1px solid #ef6c00;background:rgba(239,108,0,.08);font-size:13px">
-        ⚠ Pool chưa gắn thị trường — máy không ép được vùng khi hỏi YouTube/Trends, kết quả sẽ
+        ⚠ Pool chưa gắn thị trường — không ép được vùng khi hỏi YouTube/Trends, kết quả sẽ
         theo IP máy chủ (Việt Nam). Mở pool theo thị trường (US/Spain…) ở dải tab.</div>` : ''}
     </div>
 
@@ -1713,7 +1755,7 @@ function Mapping({ ws, canEdit }) {
       <div class="row" style="gap:8px;flex-wrap:wrap;align-items:center">
         <input placeholder="nhập MỘT từ khoá, ví dụ: life in alaska" value=${cum}
           onInput=${e => setCum(e.target.value)}
-          onKeyDown=${e => { if (e.key === 'Enter') traCuu(); }} style="min-width:280px"/>
+          onKeyDown=${e => { if (e.key === 'Enter') traCuu(); }} style="min-width:290px"/>
         <button class="btn primary" onClick=${() => traCuu()} disabled=${!!busy}>🔍 Tra cứu</button>
         <span class="note" style="margin:0">${busy}${err ? html`<span style="color:#c62828">${err}</span>` : ''}</span>
       </div>
@@ -1725,60 +1767,99 @@ function Mapping({ ws, canEdit }) {
     </div>
 
     ${A ? html`<div class="panel">
-      <div class="eyebrow" style="margin-top:0">A · Trong pool — “${A.cum}”</div>
+      <div class="eyebrow" style="margin-top:0">A · Trong pool ${pool.ten} — “${A.cum}”</div>
       ${!tp.co_du_lieu ? html`<div class="note">${tp.ly_do}</div>` : html`
         <div class="row" style="gap:20px;flex-wrap:wrap;align-items:baseline">
           <div><b>${tp.so_video}</b> <span class="note">video</span></div>
           <div><b>${tp.so_kenh}</b> <span class="note">kênh</span></div>
           <div><b>${tp.ti_trong_video}%</b> <span class="note">số video của pool</span></div>
           <div><b>${tp.ti_trong_view}%</b> <span class="note">view của pool</span></div>
-          <div><b>${tp.vph_giua ?? '—'}</b> <span class="note">view/giờ hiện tại (pool ${tp.vph_giua_pool ?? '—'})</span></div>
+          <div><b>${tp.vph_giua ?? '—'}</b> <span class="note">view/giờ (toàn pool ${tp.vph_giua_pool ?? '—'})</span></div>
         </div>
-        <div class="eyebrow">Xu hướng theo lứa đăng — số video ra mỗi tháng và view/ngày của lứa đó</div>
+        <div class="eyebrow">Xu hướng theo lứa đăng — mỗi tháng ra bao nhiêu video, lứa đó ăn bao nhiêu view/ngày</div>
         <table class="tbl"><thead><tr><th>Tháng</th><th>Video mới</th><th>View/ngày (trung vị)</th></tr></thead>
           <tbody>${(tp.lua || []).slice(-12).map(l => html`<tr>
             <td>${l.thang}</td><td>${l.so_video}</td>
             <td>${l.du_mau ? l.view_moi_ngay : html`<span class="note">— ít mẫu</span>`}</td></tr>`)}
           </tbody></table>
         ${(tp.top_kenh || []).length ? html`<div style="margin-top:8px">
-          <span class="note">Kênh đẩy mạnh chủ đề này (12 tháng):</span>
-          ${(tp.top_kenh || []).map(k => html`<span style="margin-right:12px">${k.kenh}
-            <span class="note">${k.so_video} video</span></span>`)}</div>` : ''}
+          <div class="note" style="margin:0 0 2px">Kênh đẩy mạnh chủ đề này (12 tháng):</div>
+          ${(tp.top_kenh || []).map(k => html`<div style="padding:1px 0">
+            ${linkKenh(k.kenh_yt) ? html`<a href=${linkKenh(k.kenh_yt)} target="_blank" rel="noopener">${k.kenh}</a>`
+              : html`<span>${k.kenh}</span>`}
+            <span class="note"> · ${k.so_video} video · ${soGon(k.views)} view</span></div>`)}
+        </div>` : ''}
         ${tp.moi_nhat ? html`<div class="note" style="margin-top:6px">Bài gần nhất trong pool:
-          <a href=${'https://youtu.be/' + tp.moi_nhat.yt_id} target="_blank" rel="noopener">${tp.moi_nhat.title}</a>
-          · ${tp.moi_nhat.kenh} · ${soGon(tp.moi_nhat.views)} view · ${ngayVN(tp.moi_nhat.pub_ts)}</div>` : ''}`}
+          <a href=${linkVideo(tp.moi_nhat.yt_id)} target="_blank" rel="noopener">${tp.moi_nhat.title}</a>
+          · ${linkKenh(tp.moi_nhat.kenh_yt) ? html`<a href=${linkKenh(tp.moi_nhat.kenh_yt)} target="_blank" rel="noopener">${tp.moi_nhat.kenh}</a>` : tp.moi_nhat.kenh}
+          · ${soGon(tp.moi_nhat.views)} view · ${ngayVN(tp.moi_nhat.pub_ts)}</div>` : ''}`}
     </div>` : ''}
 
     ${B ? html`<div class="panel">
-      <div class="eyebrow" style="margin-top:0">B · Ngoài — thiên hạ đang làm gì
+      <div class="eyebrow" style="margin-top:0">B · Ngoài — thị trường ${pool.market || '(chưa gắn)'}
         <span class="note">${B.quota_da_tieu ? `· ${B.quota_da_tieu} units` : ''}</span></div>
 
-      ${tr.co_du_lieu ? html`<div style="margin-bottom:10px">
+      ${tr.co_du_lieu ? html`<div style="margin-bottom:12px">
         <div><b>Google Trends</b> <span class="note">${tr.geo} · ${tr.timeframe}</span>
           ${tr.xu_huong ? html` — <b style=${`color:${tr.xu_huong.chieu === 'lên' ? '#2e7d32' : tr.xu_huong.chieu === 'xuống' ? '#c62828' : '#546e7a'}`}>
             ${tr.xu_huong.chieu} ${tr.xu_huong.phan_tram > 0 ? '+' : ''}${tr.xu_huong.phan_tram}%</b>` : ''}</div>
-        <${Sparkline} diem=${tr.diem}/>
-        ${(tr.rising || []).length ? html`<div><span class="note">Truy vấn đang lên:</span>
-          ${(tr.rising || []).map(r => html`<span style="margin-right:10px">${r.cum}
-            <span class="note">${r.gia_tri}</span></span>`)}</div>` : ''}
-        ${(tr.top || []).length ? html`<div><span class="note">Truy vấn liên quan phổ biến:</span>
-          ${(tr.top || []).map(r => html`<span style="margin-right:10px">${r.cum}</span>`)}</div>` : ''}
+        <${DuongXuHuong} diem=${tr.diem} nhan="Mức quan tâm tương đối (Google Trends, 0–100)"/>
+        <${ThanhTruyVan} muc=${tr.rising} mau="#2e7d32" ghi="Truy vấn ĐANG LÊN (mức tăng so với kỳ trước)"/>
+        <${ThanhTruyVan} muc=${tr.top} mau="var(--accent,#4C8FE0)" ghi="Truy vấn liên quan phổ biến nhất (thang 0–100)"/>
+        ${!(tr.rising || []).length && !(tr.top || []).length ? html`<div class="note">
+          Google Trends không có truy vấn liên quan cho từ khoá này (thường vì từ khoá quá hẹp)
+          — xem phần “biến thể người ta gõ” bên dưới.</div>` : ''}
       </div>` : html`<div class="note">Google Trends: ${tr.ly_do || 'không có dữ liệu'}</div>`}
 
-      ${yt.co_du_lieu ? html`
-        <div><b>Video nổi 90 ngày qua</b> <span class="note">· view giữa ${soGon(yt.view_giua)}</span></div>
+      ${(B.bien_the || []).length ? html`<div style="margin-bottom:12px">
+        <div><b>Biến thể người ta gõ</b> <span class="note">· YouTube autocomplete,
+          thanh dài = lọt ra từ nhiều hướng gõ khác nhau</span></div>
+        ${(B.bien_the || []).map(m => { const max = Math.max(...B.bien_the.map(x => x.do_phu)) || 1;
+          return html`<div style="display:flex;align-items:center;gap:8px;padding:1px 0">
+            <div style="flex:0 0 46%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+              <a href="#" onClick=${e => { e.preventDefault(); traCuu(m.cum); }}>${m.cum}</a></div>
+            <div style="flex:1;background:rgba(127,127,127,.15);border-radius:3px;height:14px">
+              <div style=${`width:${Math.max(4, (m.do_phu / max) * 100)}%;height:14px;border-radius:3px;background:#7e57c2`}></div>
+            </div>
+            <div style="flex:0 0 58px;text-align:right" class="note">${m.do_phu} hướng</div>
+          </div>`; })}
+      </div>` : ''}
+
+      ${yt.co_du_lieu ? html`<div style="margin-bottom:12px">
+        <div><b>YouTube — video nổi 90 ngày qua</b> <span class="note">· view giữa ${soGon(yt.view_giua)}</span></div>
         ${(yt.top_video || []).map(v => html`<div style="padding:2px 0">
           <span style="font-weight:600;min-width:52px;display:inline-block">${soGon(v.views)}</span>
-          <a href=${'https://youtu.be/' + v.yt_id} target="_blank" rel="noopener">${v.title}</a>
-          <span class="note"> · ${v.kenh} · ${v.subs == null ? 'subs ẩn' : soGon(v.subs) + ' subs'}
+          <a href=${linkVideo(v.yt_id)} target="_blank" rel="noopener">${v.title}</a>
+          <span class="note"> · </span>
+          ${linkKenh(v.kenh_id) ? html`<a href=${linkKenh(v.kenh_id)} target="_blank" rel="noopener" class="note">${v.kenh}</a>` : html`<span class="note">${v.kenh}</span>`}
+          <span class="note"> · ${v.subs == null ? 'subs ẩn' : soGon(v.subs) + ' subs'}
             · ${v.tuoi_ngay} ngày · ${soGon(v.view_moi_ngay)}/ngày</span></div>`)}
         ${(yt.kenh_moi_noi || []).length ? html`<div style="margin-top:8px">
           <div><b>Kênh nhỏ đang thắng chủ đề này</b> <span class="note">(dưới 50k subs mà vẫn lọt top view)</span></div>
-          ${(yt.kenh_moi_noi || []).map(k => html`<div style="padding:2px 0">${k.kenh}
-            <span class="note"> · ${soGon(k.subs)} subs · ${k.so_video_top} video trong top
-              · bài tốt nhất ${soGon(k.view_tot_nhat)} view${k.lap_luc ? ` · lập ${k.lap_luc}` : ''}</span></div>`)}
-        </div>` : ''}`
-      : html`<div class="note">YouTube: ${yt.ly_do || 'không có dữ liệu'}</div>`}
+          ${(yt.kenh_moi_noi || []).map(k => html`<div style="padding:2px 0">
+            ${linkKenh(k.kenh_id) ? html`<a href=${linkKenh(k.kenh_id)} target="_blank" rel="noopener">${k.kenh}</a>` : k.kenh}
+            <span class="note"> · ${soGon(k.subs)} subs · ${k.so_video_top} video trong top · bài tốt nhất </span>
+            ${k.video_tot_nhat ? html`<a href=${linkVideo(k.video_tot_nhat)} target="_blank" rel="noopener">${soGon(k.view_tot_nhat)} view</a>`
+              : html`<span class="note">${soGon(k.view_tot_nhat)} view</span>`}
+            <span class="note">${k.lap_luc ? ` · lập ${k.lap_luc}` : ''}</span></div>`)}
+        </div>` : ''}
+      </div>` : html`<div class="note">YouTube: ${yt.ly_do || 'không có dữ liệu'}</div>`}
+
+      ${wk.co_du_lieu ? html`<div style="margin-bottom:12px">
+        <div><b>Wikipedia — mức quan tâm thật</b>
+          <span class="note"> · bài </span><a href=${wk.link} target="_blank" rel="noopener">${wk.bai}</a>
+          ${wk.xu_huong ? html` — <b style=${`color:${wk.xu_huong.chieu === 'lên' ? '#2e7d32' : wk.xu_huong.chieu === 'xuống' ? '#c62828' : '#546e7a'}`}>
+            ${wk.xu_huong.chieu} ${wk.xu_huong.phan_tram > 0 ? '+' : ''}${wk.xu_huong.phan_tram}%</b>` : ''}</div>
+        <${DuongXuHuong} diem=${wk.diem} nhan=${`Lượt xem/tháng · tháng gần nhất ${soGon(wk.xem_thang_cuoi)}`}/>
+        ${(wk.bai_lien_quan || []).length ? html`<div class="note">Bài liên quan: ${(wk.bai_lien_quan || []).join(' · ')}</div>` : ''}
+      </div>` : html`<div class="note">Wikipedia: ${wk.ly_do || 'không có dữ liệu'}${wk.bai ? ` (bài: ${wk.bai})` : ''}</div>`}
+
+      ${nw.co_du_lieu ? html`<div>
+        <div><b>Báo chí đang nói gì</b> <span class="note">· ${nw.so_bai} bài (Google News)</span></div>
+        ${(nw.bai || []).map(b => html`<div style="padding:2px 0">
+          <a href=${b.link} target="_blank" rel="noopener">${b.tieu_de}</a>
+          <span class="note"> · ${b.nguon} · ${b.ngay}</span></div>`)}
+      </div>` : html`<div class="note">Google News: ${nw.ly_do || 'không có dữ liệu'}</div>`}
     </div>` : ''}`;
 }
 

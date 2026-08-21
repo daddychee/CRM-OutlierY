@@ -244,3 +244,52 @@ chưa gắn thị trường thì **không đoán "US"** mà hiện banner cảnh
 Đã xoá 898 cụm + 898 dòng thống kê + 34 bản ghi thị trường của bản 1 (gồm các cụm tiếng
 Việt quét nhầm). Backup trước khi xoá: `data/radary/radary-truoc-don-keywords-*.db`.
 Schema 3 bảng giữ lại — `keyword_market` còn dùng làm cache đo thị trường.
+
+---
+
+## 11. BẢN 3 — bốn việc user nêu 21/08 (chiều muộn)
+
+### 1. Từ khoá thị trường US lọt sang Spain
+
+Không phải lỗi dữ liệu — **state UI không reset khi đổi pool**: tra ở US rồi chuyển
+sang Spain thì kết quả cũ vẫn nằm nguyên trên màn hình. Nay `useEffect([ws])` xoá sạch
+`A/B/cum`, và mỗi lời gọi ghi nhớ `ws` lúc bấm để bỏ kết quả về muộn sau khi đã đổi pool.
+
+Kèm sửa gốc thứ hai: `hop_ngon_ngu` ban đầu chỉ phân biệt Việt / không-Việt nên title
+**tiếng Anh vẫn lọt vào pool Spain**. Nay có `nhan_dien_ngon_ngu()` đếm từ chức năng
+(en/es/vi). **Bẫy đã dính:** dải ký tự tiếng Việt ban đầu gồm cả `à á è é ì í ò ó ù ú ý`
+nên `La vida en España — dónde vivir` bị nhận nhầm là tiếng Việt. Đã thu hẹp về ký tự
+chỉ tiếng Việt mới có (`ă â đ ê ô ơ ư` + thanh hỏi/ngã/nặng).
+
+### 2. Kênh và video phải click ra được
+
+Mọi tên kênh giờ là link `youtube.com/channel/<id>`, mọi video là `youtu.be/<id>` — ở
+cả khối A (kênh đang đẩy, bài gần nhất) lẫn khối B (video nổi, kênh nhỏ đang thắng, và
+"bài tốt nhất" của từng kênh nhỏ). Cần thêm `kenh_yt` / `kenh_id` / `video_tot_nhat`
+vào dữ liệu trả về.
+
+### 3. Truy vấn đang lên phải diễn hoạ rõ ràng
+
+- `DuongXuHuong` — đường interest 12 tháng có vùng tô + nhãn mốc thời gian (dùng chung
+  cho Google Trends và Wikipedia).
+- `ThanhTruyVan` — thanh ngang cho truy vấn đang lên (xanh) và truy vấn phổ biến (xanh
+  dương), dài theo mức tăng; ≥5000% hiện chữ "bùng nổ" thay vì số vô nghĩa.
+
+**Phát hiện khi làm:** Trends trả related **rỗng** với từ khoá hẹp (`life in alaska`).
+Nên bổ sung khối **"biến thể người ta gõ"** từ autocomplete — luôn có dữ liệu, 0 quota,
+~9 giây, và bấm vào là tra cứu luôn từ khoá đó. Đo thật: `life in alaska winter` (5
+hướng gõ) · `life in fairbanks alaska` (3) · `life in alaska cabin` · `… documentary`.
+
+### 4. Nguồn ngoài Google Trends — đã kiểm thật từ máy này
+
+| Nguồn | Kết quả | Quyết định |
+|---|---|---|
+| **Google News RSS** | **200**, không key, ~1s | **Đã thêm** — báo chí đang nói gì về chủ đề |
+| **Wikipedia pageviews** | **200**, không key, lịch sử theo tháng nhiều năm | **Đã thêm** — mức quan tâm thật, độc lập YouTube. Hiện kèm TÊN BÀI để người tự đánh giá bài có khớp chủ đề không |
+| **YouTube autocomplete** | sẵn có | **Đã thêm** vào khối B (biến thể) |
+| **Reddit** | `.json` **403**, `.rss` cũng **403** | Chỉ còn đường OAuth (PRAW) — cần Owner tạo app ở reddit.com/prefs/apps |
+| **X / Twitter** | free tier không cho đọc search | Bản Basic ~100$/tháng — **không khuyến nghị** |
+
+Ví dụ thật `life in alaska` (24s, 102 units): Trends **+65%** · Wikipedia bài
+*Life Below Zero* **−46%** · 8 bài báo · YouTube 90 ngày view giữa **726k** · kênh
+12.100 subs làm **2,48M view**.
