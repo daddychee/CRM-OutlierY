@@ -1678,19 +1678,58 @@ function DuongXuHuong({ diem, nhan }) {
 // Truy vấn đang lên: thanh ngang, dài theo mức tăng — yêu cầu 3 của user
 function ThanhTruyVan({ muc, mau, ghi }) {
   if (!muc || !muc.length) return null;
-  const max = Math.max(...muc.map(m => Number(m.gia_tri) || 0)) || 1;
+  const BUNG_NO = 5000;
+  const thuong = muc.map(m => Number(m.gia_tri) || 0).filter(v => v < BUNG_NO);
+  const max = Math.max(...(thuong.length ? thuong : [1]), 1);
   return html`<div style="margin:6px 0 10px">
     <div class="note" style="margin:0 0 3px">${ghi}</div>
-    ${muc.map(m => { const v = Number(m.gia_tri) || 0; return html`
+    ${muc.map(m => { const v = Number(m.gia_tri) || 0, no = v >= BUNG_NO; return html`
       <div style="display:flex;align-items:center;gap:8px;padding:1px 0">
-        <div style="flex:0 0 46%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"
+        <div style="flex:0 0 44%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"
           title=${m.cum}>${m.cum}</div>
         <div style="flex:1;background:rgba(127,127,127,.15);border-radius:3px;height:14px">
-          <div style=${`width:${Math.max(3, (v / max) * 100)}%;height:14px;border-radius:3px;background:${mau}`}></div>
+          <div style=${`width:${no ? 100 : Math.max(4, Math.min(100, (v / max) * 100))}%;height:14px;border-radius:3px;background:${no ? '#c62828' : mau}`}></div>
         </div>
-        <div style="flex:0 0 58px;text-align:right;font-variant-numeric:tabular-nums">
-          ${v >= 5000 ? 'bùng nổ' : '+' + v + '%'}</div>
+        <div style=${'flex:0 0 82px;text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums'
+          + (no ? ';color:#c62828;font-weight:600' : '')}>${no ? '🔥 bùng nổ' : '+' + v + '%'}</div>
       </div>`; })}
+    ${thuong.length !== muc.length ? html`<div class="note" style="margin:2px 0 0">
+      Thanh đỏ = mức tăng vượt 5.000% (Google gọi là "breakout") — không so tỉ lệ được
+      với các truy vấn còn lại nên vẽ riêng.</div>` : ''}
+  </div>`;
+}
+
+function CotVaDuong({ lua }) {
+  const d = (lua || []).slice(-12).filter(x => x.thang);
+  if (d.length < 2) return null;
+  const w = 640, h = 120, pad = 6, bw = (w - 2 * pad) / d.length;
+  const maxV = Math.max(...d.map(x => x.so_video)) || 1;
+  const co = d.filter(x => x.du_mau);
+  const maxR = Math.max(...co.map(x => x.view_moi_ngay), 1);
+  const x = i => pad + i * bw;
+  const yV = v => h - (v / maxV) * (h - 18);
+  const yR = v => h - (v / maxR) * (h - 18);
+  const duong = d.map((p, i) => p.du_mau ? `${x(i) + bw / 2},${yR(p.view_moi_ngay)}` : null)
+                 .filter(Boolean).join(' ');
+  return html`<div style="margin:6px 0 10px">
+    <svg viewBox=${`0 0 ${w} ${h + 18}`} style="width:100%;height:138px">
+      ${d.map((p, i) => html`<rect x=${x(i) + 2} y=${yV(p.so_video)} width=${bw - 4}
+        height=${h - yV(p.so_video)} fill="var(--accent,#4C8FE0)" opacity="0.55"
+        ><title>${p.thang}: ${p.so_video} video</title></rect>`)}
+      ${d.map((p, i) => p.so_video === maxV ? html`<text x=${x(i) + bw / 2} y=${yV(p.so_video) - 3}
+        font-size="10" font-weight="600" fill="var(--accent,#4C8FE0)" text-anchor="middle">${p.so_video}</text>` : '')}
+      ${duong ? html`<polyline points=${duong} fill="none" stroke="#2e7d32" stroke-width="2"
+        stroke-dasharray=${d.some(p => !p.du_mau) ? '5,3' : ''}/>` : ''}
+      ${d.map((p, i) => p.du_mau ? html`<circle cx=${x(i) + bw / 2} cy=${yR(p.view_moi_ngay)} r="3"
+        fill="#2e7d32"><title>${p.thang}: ${p.view_moi_ngay} view/ngày</title></circle>` : '')}
+      ${d.map((p, i) => (i % 2 === 0 || d.length <= 6) ? html`<text x=${x(i) + bw / 2} y=${h + 14}
+        font-size="9" fill="currentColor" opacity="0.6" text-anchor="middle">${p.thang.slice(2)}</text>` : '')}
+    </svg>
+    <div class="note" style="margin:0">
+      <span style="color:var(--accent,#4C8FE0)">▮</span> số video ra mỗi tháng (đỉnh ${maxV})
+      · <span style="color:#2e7d32">▬</span> view/ngày của lứa đó (đỉnh ${soGon(maxR)})
+      ${d.some(p => !p.du_mau) ? html`· <span class="note">đường đứt nét vì có tháng dưới 2 video,
+        không lấy trung vị được</span>` : ''}</div>
   </div>`;
 }
 
@@ -1777,11 +1816,13 @@ function Mapping({ ws, canEdit }) {
           <div><b>${tp.vph_giua ?? '—'}</b> <span class="note">view/giờ (toàn pool ${tp.vph_giua_pool ?? '—'})</span></div>
         </div>
         <div class="eyebrow">Xu hướng theo lứa đăng — mỗi tháng ra bao nhiêu video, lứa đó ăn bao nhiêu view/ngày</div>
+        <${CotVaDuong} lua=${tp.lua}/>
+        <details><summary class="note" style="cursor:pointer">Xem số chi tiết</summary>
         <table class="tbl"><thead><tr><th>Tháng</th><th>Video mới</th><th>View/ngày (trung vị)</th></tr></thead>
           <tbody>${(tp.lua || []).slice(-12).map(l => html`<tr>
             <td>${l.thang}</td><td>${l.so_video}</td>
             <td>${l.du_mau ? l.view_moi_ngay : html`<span class="note">— ít mẫu</span>`}</td></tr>`)}
-          </tbody></table>
+          </tbody></table></details>
         ${(tp.top_kenh || []).length ? html`<div style="margin-top:8px">
           <div class="note" style="margin:0 0 2px">Kênh đẩy mạnh chủ đề này (12 tháng):</div>
           ${(tp.top_kenh || []).map(k => html`<div style="padding:1px 0">
