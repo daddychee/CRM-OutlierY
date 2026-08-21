@@ -931,19 +931,59 @@ def discovery_scan(ws: int, body: QuetCauIn, request: Request):
 
 @app.get('/api/workspaces/{ws}/mapping')
 def mapping_api(ws: int, request: Request):
-    """Bản đồ cầu × cung. Viewer xem được (giống Board) — đây là thứ để ĐỌC, không sửa."""
+    """Bản đồ của POOL đang mở: tóm tắt pool + cầu + cung nội bộ + THỊ TRƯỜNG THẬT.
+
+    Viewer xem được (giống Board) — đây là thứ để ĐỌC, không sửa.
+    """
     from . import mapping
     with get_conn() as c:
         u = auth.require_user(c, request)
-        auth.ws_for_user(c, ws, u['id'])
+        w = auth.ws_for_user(c, ws, u['id'])
+        pool = db.tom_tat_pool(c, ws)
+        pool.update({'ten': w['name'], 'ngach': w['ngach'], 'market': w['market']})
         cums = db.kw_danh_sach(c, ws)
         if not cums:
-            return {'muc': [], 'du_mau': False, 'chua_quet': True,
+            return {'muc': [], 'du_mau': False, 'chua_quet': True, 'pool': pool,
                     'ly_do_thieu_mau': 'Chưa quét cầu lần nào — bấm "Quét cầu" với một seed.',
-                    'nhan_o': mapping.NHAN_O}
+                    'nhan_o': mapping.NHAN_O, 'nhan_qd': mapping.NHAN_QD}
         bd = mapping.ban_do(mapping.tai_kho(c, ws), cums)
+        bd = mapping.gan_thi_truong(bd, db.kw_thi_truong(c, ws), pool.get("view_giua_moi"))
         bd['nhan_o'] = mapping.NHAN_O
+        bd['pool'] = pool
         return bd
+
+
+class DoThiTruongIn(BaseModel):
+    cum: list[str] = []      # rỗng = tự lấy các cụm CHƯA đo, theo thứ tự cầu cao trước
+    tran: int = 10           # trần cụm mỗi lần bấm (~102 units/cụm)
+
+
+@app.post('/api/workspaces/{ws}/discovery/do-thi-truong')
+def do_thi_truong(ws: int, body: DoThiTruongIn, request: Request):
+    """Đo THỊ TRƯỜNG THẬT cho cụm: YouTube trả bao nhiêu view cho video mới, cụm còn
+    sống không, KÊNH NHỎ CÓ LỌT TOP KHÔNG. Đây là tầng thiếu của bản Mapping đầu tiên
+    (user chỉ ra 21/08: hai vế đều lấy từ thứ RadarY đã biết → không quyết định được gì).
+
+    Khoá lấy từ KÉT OUTLIERY (General › API Keys) — mọi khoá đều ở General.
+    """
+    from . import mapping, thi_truong
+    with get_conn() as c:
+        u = auth.require_user(c, request)
+        auth.ws_for_user(c, ws, u['id'], 'leader')      # tiêu quota → leader+
+        cums = [x.strip().lower() for x in body.cum if x.strip()]
+        if not cums:
+            da_do = set(db.kw_thi_truong(c, ws))
+            cums = [m['cum'] for m in db.kw_danh_sach(c, ws) if m['cum'] not in da_do]
+        if not cums:
+            return {'da_do': 0, 'ghi_chu': 'mọi cụm đã có số liệu thị trường hôm nay'}
+        tran = max(1, min(int(body.tran), thi_truong.TRAN_CUM))
+        try:
+            kq = thi_truong.do_nhieu_cum(cums, tran=tran)
+        except RuntimeError as e:                        # chưa cấp khoá / gateway chết
+            raise HTTPException(400, str(e))
+        ghi = db.kw_luu_thi_truong(c, ws, kq['ket_qua'])
+        return {**{k: v for k, v in kq.items() if k != 'ket_qua'}, **ghi,
+                'nhan_qd': mapping.NHAN_QD}
 
 
 class BoQuaIn(BaseModel):

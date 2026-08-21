@@ -289,3 +289,45 @@ def test_tu_la_bo_tu_seed_ra_khoi_phep_tinh():
     von = {"japan"}
     assert mapping.tu_la_voi_pool("life in japan", von, seed="life in") == 0.0
     assert mapping.tu_la_voi_pool("life in", von, seed="life in") is None
+
+
+# ------------------------------------------------- phân loại theo THỊ TRƯỜNG (21/08)
+
+
+def _tt(**kw):
+    d = {"so_ket_qua": 20, "ti_le_moi": 60, "tuoi_giua_ngay": 54,
+         "kenh_nho_lot_top": 11, "view_giua_moi": 30000}
+    d.update(kw)
+    return d
+
+
+def test_cum_chet_khong_con_la_khoang_trong():
+    """Ca thật `life in rio`: pool 0 video nên bản đồ cũ gọi là 'khoảng trống', nhưng
+    thị trường 0% video mới, tuổi trung vị 1.106 ngày = CỤM CHẾT."""
+    m = {"so_video": 0, "tt": _tt(ti_le_moi=0, tuoi_giua_ngay=1106, view_giua_moi=None)}
+    assert mapping.phan_loai_quyet_dinh(m) == "nguoi"
+
+
+def test_cum_song_co_cua_thi_dang_danh():
+    assert mapping.phan_loai_quyet_dinh({"so_video": 0, "tt": _tt()}) == "dang_danh"
+
+
+def test_cum_song_nhung_toan_kenh_lon_thi_kho():
+    assert mapping.phan_loai_quyet_dinh({"so_video": 0, "tt": _tt(kenh_nho_lot_top=1)}) == "kho"
+
+
+def test_pool_da_lam_thi_khong_goi_la_khoang_trong():
+    assert mapping.phan_loai_quyet_dinh({"so_video": 30, "tt": _tt()}) == "dang_lam"
+
+
+def test_chua_do_thi_truong_thi_KHONG_doan():
+    assert mapping.phan_loai_quyet_dinh({"so_video": 0}) == "chua_do"
+    assert mapping.phan_loai_quyet_dinh({"so_video": 0, "tt": {"so_ket_qua": 0}}) == "chua_do"
+
+
+def test_thi_truong_tra_duoi_muc_minh_thi_khong_dang_vao():
+    """Ca thật `life in the countryside`: sống 60% + 11/20 kênh nhỏ nhưng chỉ 4k
+    view/video mới, trong khi pool đang ở 30k → vào cũng không hơn cái mình đang có."""
+    m = {"so_video": 0, "tt": _tt(view_giua_moi=4000)}
+    assert mapping.phan_loai_quyet_dinh(m, pool_view_moi=30000) == "kho"
+    assert mapping.phan_loai_quyet_dinh(m, pool_view_moi=None) == "dang_danh"   # không có baseline thì không phán

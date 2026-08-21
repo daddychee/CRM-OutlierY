@@ -179,3 +179,63 @@ def ban_do(kho: list[dict], cums: list[dict]) -> dict:
         "so_video_trong_kho": len(kho),
         "quet_luc": time.time(),
     }
+
+
+# ---- PHAN LOAI QUYET DINH (21/08/2026) — dua tren THI TRUONG, khong phai pool ----
+# Ban dau phan o chi bang cau(autocomplete) x cung(pool). User chi ra dung: ca hai ve
+# deu la thu RadarY da biet -> "ban sao cua RadarY", khong quyet dinh duoc gi. Do that
+# lat nguoc ket luan: `life in rio` bi xep "khoang trong" nhung thi truong cho thay
+# 0% video moi, tuoi giua 1.106 ngay, top toan nhac phonk = CUM CHET; con `life in
+# vietnam` bi xep "do lua" thi 60% video moi, 11/20 kenh nho lot top = CO CUA.
+#
+# Nguong duoi la MUC KHOI DAU (chinh duoc), va UI luon hien SO THAT ben canh nhan —
+# nguoi doc tu danh gia, may khong quyet ho (luat A3).
+SONG_TI_LE_MOI = 30          # >= 30% video top dang trong 90 ngay = thi truong con san xuat
+SONG_TUOI_TOI_DA = 365       # tuoi trung vi top > 1 nam = cum da nguoi
+CUA_TI_LE_KENH_NHO = 20      # >= 20% ket qua la kenh nho = nguoi moi con lot duoc
+DUOI_MUC_MINH = 1 / 3        # thi truong tra < 1/3 view video moi cua pool = khong dang vao
+
+NHAN_QD = {
+    "dang_danh": ("Đáng đánh", "Thị trường còn sản xuất, kênh nhỏ vẫn lọt top, pool mình chưa làm"),
+    "dang_lam": ("Mình đang làm", "Thị trường sống và pool đã có video — so hiệu suất với thị trường"),
+    "kho": ("Khó", "Thị trường sống nhưng top toàn kênh lớn — vào phải có lợi thế riêng"),
+    "nguoi": ("Nguội", "Thị trường gần như không còn video mới — cung thấp là hệ quả, không phải cơ hội"),
+    "chua_do": ("Chưa đo", "Chưa có số liệu thị trường — bấm Đo thị trường"),
+}
+
+
+def phan_loai_quyet_dinh(m: dict, pool_view_moi: int | None = None) -> str:
+    """Nhan quyet dinh cho MOT cum. Chua do thi truong -> 'chua_do', KHONG doan.
+
+    `pool_view_moi` = view trung vi video MOI cua chinh pool (baseline tu minh). Thi
+    truong tra duoi 1/3 muc do thi vao cung khong hon duoc cai minh dang co -> 'kho'.
+    Do that 21/08: `life in the countryside` song 60% + 11/20 kenh nho nhung chi 4k
+    view/video moi, trong khi pool dang o muc cao hon han -> gan "Dang danh" la sai.
+    """
+    tt = m.get("tt")
+    if not tt or not tt.get("so_ket_qua"):
+        return "chua_do"
+    song = (tt.get("ti_le_moi", 0) >= SONG_TI_LE_MOI
+            and tt.get("tuoi_giua_ngay", 9999) <= SONG_TUOI_TOI_DA)
+    if not song:
+        return "nguoi"
+    if m.get("so_video", 0) > 0:
+        return "dang_lam"
+    vm = tt.get("view_giua_moi")
+    if pool_view_moi and vm is not None and vm < pool_view_moi * DUOI_MUC_MINH:
+        return "kho"
+    co_cua = (100 * tt.get("kenh_nho_lot_top", 0) / max(1, tt["so_ket_qua"])) >= CUA_TI_LE_KENH_NHO
+    return "dang_danh" if co_cua else "kho"
+
+
+def gan_thi_truong(bd: dict, tt_theo_cum: dict, pool_view_moi: int | None = None) -> dict:
+    """Gan so lieu thi truong da luu vao ban do + phan loai quyet dinh."""
+    for m in bd.get("muc", []):
+        m["tt"] = tt_theo_cum.get(m["cum"])
+        m["qd"] = phan_loai_quyet_dinh(m, pool_view_moi)
+    bd["dem_qd"] = {k: sum(1 for m in bd.get("muc", []) if m.get("qd") == k) for k in NHAN_QD}
+    bd["nhan_qd"] = NHAN_QD
+    bd["nguong_qd"] = {"song_ti_le_moi": SONG_TI_LE_MOI, "song_tuoi_toi_da": SONG_TUOI_TOI_DA,
+                       "cua_ti_le_kenh_nho": CUA_TI_LE_KENH_NHO,
+                       "duoi_muc_minh": DUOI_MUC_MINH, "pool_view_moi": pool_view_moi}
+    return bd

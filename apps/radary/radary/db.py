@@ -149,6 +149,18 @@ CREATE TABLE IF NOT EXISTS keyword_stats (             -- append-only theo NGÀY
   hn_bai INTEGER NOT NULL DEFAULT 0,
   hn_diem INTEGER NOT NULL DEFAULT 0,
   PRIMARY KEY (keyword_id, ngay));
+CREATE TABLE IF NOT EXISTS keyword_market (            -- ĐO THỊ TRƯỜNG THẬT (21/08/2026)
+  keyword_id INTEGER NOT NULL REFERENCES keywords(id),
+  ngay TEXT NOT NULL,                                  -- YYYY-MM-DD; đo lại trong ngày thì ghi đè
+  view_giua INTEGER, view_giua_moi INTEGER,            -- NULL = không đo được (KHÁC 0)
+  so_ket_qua INTEGER NOT NULL DEFAULT 0,
+  so_video_moi INTEGER NOT NULL DEFAULT 0,
+  ti_le_moi INTEGER NOT NULL DEFAULT 0,
+  tuoi_giua_ngay INTEGER NOT NULL DEFAULT 0,
+  kenh_nho_lot_top INTEGER NOT NULL DEFAULT 0,
+  subs_giua INTEGER,
+  top TEXT NOT NULL DEFAULT '[]',                      -- video thật để người soi (JSON)
+  PRIMARY KEY (keyword_id, ngay));
 CREATE INDEX IF NOT EXISTS idx_keywords_ws ON keywords(workspace_id, bo_qua);
 CREATE INDEX IF NOT EXISTS idx_cycles_ws ON cycles(workspace_id, ts);
 CREATE INDEX IF NOT EXISTS idx_videos_ws ON videos(workspace_id, dead);
@@ -406,3 +418,72 @@ def kw_bo_qua(conn, ws, cum, bo=True):
                        (1 if bo else 0, ws, (cum or '').strip().lower()))
     conn.commit()
     return cur.rowcount
+
+def kw_luu_thi_truong(conn, ws, ket_qua: dict, ngay=None):
+    """Ghi kết quả đo thị trường. Chỉ ghi cụm ĐO ĐƯỢC — cụm không có dữ liệu thì
+    không ghi dòng (khác với ghi 0: 0 view là số đo, không-đo-được là không có số)."""
+    ngay = ngay or time.strftime('%Y-%m-%d', time.localtime())
+    n = 0
+    for cum, r in (ket_qua or {}).items():
+        if not r.get('co_du_lieu'):
+            continue
+        row = conn.execute('SELECT id FROM keywords WHERE workspace_id=? AND cum=?',
+                           (ws, (cum or '').strip().lower())).fetchone()
+        if not row:
+            continue
+        conn.execute("""INSERT INTO keyword_market(keyword_id, ngay, view_giua, view_giua_moi,
+                          so_ket_qua, so_video_moi, ti_le_moi, tuoi_giua_ngay,
+                          kenh_nho_lot_top, subs_giua, top)
+                        VALUES(?,?,?,?,?,?,?,?,?,?,?)
+                        ON CONFLICT(keyword_id, ngay) DO UPDATE SET
+                          view_giua=excluded.view_giua, view_giua_moi=excluded.view_giua_moi,
+                          so_ket_qua=excluded.so_ket_qua, so_video_moi=excluded.so_video_moi,
+                          ti_le_moi=excluded.ti_le_moi, tuoi_giua_ngay=excluded.tuoi_giua_ngay,
+                          kenh_nho_lot_top=excluded.kenh_nho_lot_top,
+                          subs_giua=excluded.subs_giua, top=excluded.top""",
+                     (row['id'], ngay, r.get('view_giua'),
+                      int(r['view_giua_moi']) if r.get('view_giua_moi') is not None else None,
+                      r.get('so_ket_qua', 0), r.get('so_video_moi', 0), r.get('ti_le_moi', 0),
+                      r.get('tuoi_giua_ngay', 0), r.get('kenh_nho_lot_top', 0),
+                      int(r['subs_giua']) if r.get('subs_giua') is not None else None,
+                      json.dumps(r.get('top') or [], ensure_ascii=False)))
+        n += 1
+    conn.commit()
+    return {'da_ghi': n, 'ngay': ngay}
+
+def kw_thi_truong(conn, ws):
+    """Số liệu thị trường MỚI NHẤT của mỗi cụm trong workspace."""
+    ra = {}
+    for r in conn.execute("""
+        SELECT k.cum, m.* FROM keywords k JOIN keyword_market m ON m.keyword_id = k.id
+        WHERE k.workspace_id = ?
+          AND m.ngay = (SELECT MAX(ngay) FROM keyword_market WHERE keyword_id = k.id)""", (ws,)):
+        d = dict(r)
+        d['top'] = json.loads(d.get('top') or '[]')
+        ra[d['cum']] = d
+    return ra
+
+def tom_tat_pool(conn, ws):
+    """Ảnh chụp POOL đang mở — để tab Mapping nói được về chính ngách đang làm."""
+    now = time.time()
+    r = conn.execute("""SELECT COUNT(*) n, COUNT(DISTINCT channel_yt_id) k,
+                               MAX(pub_ts) moi_nhat
+                        FROM videos WHERE workspace_id=? AND dead=0""", (ws,)).fetchone()
+    moi30 = conn.execute("""SELECT COUNT(*) FROM videos
+                            WHERE workspace_id=? AND dead=0 AND pub_ts>=?""",
+                         (ws, now - 30 * 86400)).fetchone()[0]
+    top = [dict(x) for x in conn.execute("""
+        SELECT v.title, v.channel_title, v.pub_ts,
+               (SELECT MAX(t.views) FROM ticks t WHERE t.video_id=v.id) views
+        FROM videos v WHERE v.workspace_id=? AND v.dead=0 AND v.pub_ts>=?
+        ORDER BY views DESC LIMIT 5""", (ws, now - 90 * 86400))]
+    # BASELINE TỰ POOL: view trung vị của video pool đăng trong 90 ngày. Dùng làm mốc
+    # "thị trường có trả hơn mức mình đang đạt không" — đúng lệ baseline-tự-kênh 21/07.
+    vs = [x[0] for x in conn.execute('''
+        SELECT (SELECT MAX(t.views) FROM ticks t WHERE t.video_id=v.id) vw
+        FROM videos v WHERE v.workspace_id=? AND v.dead=0 AND v.pub_ts>=?''',
+        (ws, now - 90 * 86400)) if x[0]]
+    vs.sort()
+    return {'so_video': r['n'], 'so_kenh': r['k'], 'moi_nhat': r['moi_nhat'] or 0,
+            'video_moi_30_ngay': moi30, 'top_90_ngay': top,
+            'view_giua_moi': (vs[len(vs) // 2] if vs else None), 'so_mau_moi': len(vs)}

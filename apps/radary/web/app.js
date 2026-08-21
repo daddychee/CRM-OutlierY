@@ -1647,6 +1647,8 @@ function NicheVolume({ ma, ten }) {
 // Vế cung đọc SQLite sẵn có (0 quota); vế cầu là autocomplete đã quét và lưu theo ngày.
 // TRÌNH BẰNG CHỨNG — NGƯỜI CHỌN: bấm ô ra video thật, tool không "khuyên nên làm gì".
 const O_MAU = { khoang_trong: '#2e7d32', do_lua: '#c62828', bao_hoa: '#ef6c00', hoang: '#546e7a' };
+const QD_MAU = { dang_danh: '#2e7d32', dang_lam: '#1565c0', kho: '#ef6c00', nguoi: '#546e7a', chua_do: '#90a4ae' };
+const soGon = n => n == null ? '—' : (n >= 1e6 ? (n / 1e6).toFixed(1) + 'M' : n >= 1e3 ? Math.round(n / 1e3) + 'k' : String(n));
 const ngayVN = ts => ts ? new Date(ts * 1000).toISOString().slice(0, 10) : '—';
 
 function Mapping({ ws, canEdit }) {
@@ -1657,6 +1659,8 @@ function Mapping({ ws, canEdit }) {
   const [seed, setSeed] = useState('');
   const [chan, setChan] = useState('roblox, minecraft, gta, fortnite');
   const [dangQuet, setDangQuet] = useState('');
+  const [dangDo, setDangDo] = useState('');
+  const [qdChon, setQdChon] = useState(null);
   const load = useCallback(() =>
     api('GET', `/workspaces/${ws}/mapping`).then(x => { setD(x); setErr(''); })
       .catch(e => setErr(String(e.message))), [ws]);
@@ -1678,23 +1682,53 @@ function Mapping({ ws, canEdit }) {
     try { await api('POST', `/workspaces/${ws}/keywords/bo-qua`, { cum, bo: true }); load(); }
     catch (e) { alert(String(e.message)); }
   };
+  // Đo THỊ TRƯỜNG THẬT — tầng thiếu của bản đồ đầu tiên. Tiêu quota (~102 units/cụm)
+  // nên trần thấp và chỉ chạy khi người bấm.
+  const doThiTruong = async (cum) => {
+    setDangDo('Đang hỏi YouTube…');
+    try {
+      const r = await api('POST', `/workspaces/${ws}/discovery/do-thi-truong`,
+        cum ? { cum: [cum], tran: 1 } : { tran: 10 });
+      setDangDo(r.ghi_chu || `Đo xong ${r.da_do} cụm · ${r.quota_da_tieu} units`
+        + (r.bo_qua ? ` · còn ${r.bo_qua} cụm chưa đo` : ''));
+      load();
+    } catch (e) { setDangDo('Lỗi: ' + e.message); }
+  };
 
   if (err) return html`<div class="panel">Lỗi: ${err}</div>`;
   if (!d) return html`<div class="note">Đang tải…</div>`;
 
-  const muc = oChon ? d.muc.filter(m => m.o === oChon) : d.muc;
-  const oCard = k => {
-    const [ten, ghi] = (d.nhan_o && d.nhan_o[k]) || [k, ''];
-    const n = (d.dem_o && d.dem_o[k]) || 0;
-    return html`<button class=${'panel' + (oChon === k ? '' : ' ghost')}
-      style=${`flex:1;min-width:170px;text-align:left;border-left:4px solid ${O_MAU[k]}`}
-      title=${ghi} onClick=${() => setOChon(oChon === k ? null : k)}>
+  const muc = (qdChon ? d.muc.filter(m => m.qd === qdChon) : d.muc);
+  const qdCard = k => {
+    const [ten, ghi] = (d.nhan_qd && d.nhan_qd[k]) || [k, ''];
+    const n = (d.dem_qd && d.dem_qd[k]) || 0;
+    return html`<button class=${'panel' + (qdChon === k ? '' : ' ghost')}
+      style=${`flex:1;min-width:165px;text-align:left;border-left:4px solid ${QD_MAU[k]}`}
+      title=${ghi} onClick=${() => setQdChon(qdChon === k ? null : k)}>
       <div style="font-size:22px;font-weight:700">${n}</div>
       <div style="font-weight:600">${ten}</div>
       <div class="note" style="margin:0">${ghi}</div></button>`;
   };
+  const P = d.pool || {};
 
   return html`
+    <div class="panel" style="border-left:4px solid var(--accent, #4C8FE0)">
+      <div class="eyebrow" style="margin-top:0">Pool đang mở${P.ngach ? ` · ngách ${P.ngach}` : ''}${P.market ? ` · ${P.market}` : ''}</div>
+      <div class="row" style="gap:22px;flex-wrap:wrap;align-items:baseline">
+        <div><b style="font-size:19px">${P.ten || '—'}</b></div>
+        <div><b>${(P.so_video || 0).toLocaleString()}</b> <span class="note">video</span></div>
+        <div><b>${P.so_kenh || 0}</b> <span class="note">kênh theo dõi</span></div>
+        <div><b>${P.video_moi_30_ngay || 0}</b> <span class="note">video mới 30 ngày</span></div>
+        <div class="note">video gần nhất: ${ngayVN(P.moi_nhat)}</div>
+      </div>
+      ${(P.top_90_ngay || []).length ? html`<div style="margin-top:6px">
+        <span class="note">Đang chạy tốt nhất 90 ngày:</span>
+        ${(P.top_90_ngay || []).slice(0, 3).map(v => html`<div style="padding:1px 0">
+          <span style="font-weight:600">${soGon(v.views)}</span>
+          <span class="note"> · ${v.channel_title} · </span>${v.title}</div>`)}
+      </div>` : ''}
+    </div>
+
     <div class="panel">
       <div class="row" style="gap:8px;flex-wrap:wrap;align-items:center">
         <input placeholder="seed rộng, ví dụ: life in" value=${seed}
@@ -1702,7 +1736,10 @@ function Mapping({ ws, canEdit }) {
         <input placeholder="từ chặn, cách nhau dấu phẩy" value=${chan}
           onInput=${e => setChan(e.target.value)} style="min-width:260px"/>
         <button class="btn" disabled=${!canEdit} onClick=${quet}>🔎 Quét cầu</button>
-        <span class="note" style="margin:0">${dangQuet}</span>
+        <button class="btn" disabled=${!canEdit} onClick=${() => doThiTruong(null)}
+          title="Hỏi YouTube xem thị trường trả bao nhiêu view cho video mới, cụm còn sống không, kênh nhỏ có lọt top không (~102 units/cụm)">
+          📊 Đo thị trường (10 cụm)</button>
+        <span class="note" style="margin:0">${dangQuet} ${dangDo}</span>
       </div>
       <div class="note">Seed càng RỘNG càng ra nhiều tín hiệu — đo thật: “life in” → 10 gợi ý,
         “life in tuvalu” → 1. Autocomplete chỉ cho biết <b>có người gõ</b>, không cho biết
@@ -1711,8 +1748,8 @@ function Mapping({ ws, canEdit }) {
 
     ${d.chua_quet ? html`<div class="panel">${d.ly_do_thieu_mau}</div>` : ''}
     ${!d.chua_quet && !d.du_mau ? html`<div class="panel">${d.ly_do_thieu_mau}</div>` : ''}
-    ${d.du_mau ? html`<div class="row" style="gap:10px;flex-wrap:wrap;margin:10px 0">
-      ${['khoang_trong', 'do_lua', 'bao_hoa', 'hoang'].map(oCard)}</div>` : ''}
+    ${d.muc.length ? html`<div class="row" style="gap:10px;flex-wrap:wrap;margin:10px 0">
+      ${['dang_danh', 'dang_lam', 'kho', 'nguoi', 'chua_do'].map(qdCard)}</div>` : ''}
 
     ${d.muc.length ? html`<div class="panel">
       <div class="note" style="margin-top:0">
@@ -1721,29 +1758,53 @@ function Mapping({ ws, canEdit }) {
         cung ${d.nguong?.cung_so_video ?? '—'} video) — không phải ngưỡng cố định.
         ${oChon ? html` · đang lọc: <b>${(d.nhan_o[oChon] || [oChon])[0]}</b>` : ''}</div>
       <table class="tbl"><thead><tr>
-        <th>Cụm</th><th>Cầu</th><th>Video</th><th>Kênh</th><th>View giữa</th>
-        <th title="tỉ lệ từ chưa từng xuất hiện trong pool — đọc là MỨC MỚI LẠ, không phải mức lạc đề: máy không phân biệt được hai thứ đó">Mới lạ</th>
-        <th>Mới nhất</th><th>Ô</th><th></th></tr></thead><tbody>
-        ${muc.map(m => html`<tr>
+        <th>Cụm</th>
+        <th title="số biến thể seed mà cụm lọt ra — KHÔNG phải lượt tìm kiếm">Cầu</th>
+        <th colspan="3" style="text-align:center;border-bottom:1px solid var(--border)">THỊ TRƯỜNG (YouTube thật)</th>
+        <th colspan="2" style="text-align:center;border-bottom:1px solid var(--border)">POOL MÌNH</th>
+        <th>Quyết định</th><th></th></tr>
+        <tr><th></th><th></th>
+        <th title="view trung vị của video đăng trong 90 ngày">View/video mới</th>
+        <th title="bao nhiêu % video top đăng trong 90 ngày — cụm còn sống không">% mới</th>
+        <th title="số video top thuộc kênh dưới 50k subs — MÌNH CÓ CỬA KHÔNG">Kênh nhỏ lọt top</th>
+        <th>Video</th><th>View giữa</th><th></th><th></th></tr></thead><tbody>
+        ${muc.map(m => { const t = m.tt || {}; return html`<tr>
           <td><a href="#" onClick=${e => { e.preventDefault(); setCumMo(cumMo === m.cum ? null : m.cum); }}>${m.cum}</a></td>
-          <td>${m.do_phu}</td><td>${m.so_video}</td><td>${m.so_kenh}</td>
-          <td>${(m.view_trung_vi || 0).toLocaleString()}</td>
-          <td>${m.tu_la === null || m.tu_la === undefined ? '—' : Math.round(m.tu_la * 100) + '%'}</td>
-          <td>${ngayVN(m.moi_nhat)}</td>
-          <td style=${`color:${O_MAU[m.o] || 'inherit'}`}>${m.o ? (d.nhan_o[m.o] || [m.o])[0] : '—'}</td>
-          <td>${canEdit ? html`<button class="btn small ghost" title="gạt cụm nhiễu (bật lại được)"
-            onClick=${() => gat(m.cum)}>✕</button>` : ''}</td></tr>`)}
+          <td>${m.do_phu}</td>
+          <td>${t.so_ket_qua ? soGon(t.view_giua_moi) : '—'}</td>
+          <td>${t.so_ket_qua ? t.ti_le_moi + '%' : '—'}</td>
+          <td>${t.so_ket_qua ? `${t.kenh_nho_lot_top}/${t.so_ket_qua}` : '—'}</td>
+          <td>${m.so_video}</td>
+          <td>${m.so_video ? soGon(m.view_trung_vi) : '—'}</td>
+          <td style=${`color:${QD_MAU[m.qd] || 'inherit'};font-weight:600`}>
+            ${(d.nhan_qd && d.nhan_qd[m.qd] || [m.qd])[0]}</td>
+          <td style="white-space:nowrap">
+            ${!t.so_ket_qua && canEdit ? html`<button class="btn small" title="đo thị trường riêng cụm này (~102 units)"
+              onClick=${() => doThiTruong(m.cum)}>📊</button>` : ''}
+            ${canEdit ? html`<button class="btn small ghost" title="gạt cụm nhiễu (bật lại được)"
+              onClick=${() => gat(m.cum)}>✕</button>` : ''}</td></tr>`; })}
       </tbody></table>
-      ${cumMo ? html`<div style="margin-top:10px">
-        <div class="eyebrow">Video đang chiếm chỗ — “${cumMo}”</div>
-        ${(d.muc.find(m => m.cum === cumMo)?.vi_du || []).map(v => html`
-          <div style="padding:3px 0">
+      ${cumMo ? (() => {
+        const m = d.muc.find(x => x.cum === cumMo) || {}; const t = m.tt || {};
+        return html`<div style="margin-top:12px;border-top:1px solid var(--border);padding-top:10px">
+          <div class="eyebrow" style="margin-top:0">Trên YouTube — “${cumMo}”</div>
+          ${t.so_ket_qua ? html`
+            <div class="note">tuổi trung vị ${t.tuoi_giua_ngay} ngày · subs giữa ${soGon(t.subs_giua)}
+              · view giữa ${soGon(t.view_giua)}</div>
+            ${(t.top || []).map(v => html`<div style="padding:2px 0">
+              <span style="font-weight:600;min-width:56px;display:inline-block">${soGon(v.views)}</span>
+              <a href=${'https://youtu.be/' + v.yt_id} target="_blank" rel="noopener">${v.title}</a>
+              <span class="note"> · ${v.kenh} · ${v.subs == null ? 'subs ẩn' : soGon(v.subs) + ' subs'}
+                · ${Math.round(v.tuoi_ngay)} ngày</span></div>`)}`
+          : html`<div class="note">Chưa đo thị trường cho cụm này${canEdit ? ' — bấm 📊 ở cột cuối.' : '.'}</div>`}
+          <div class="eyebrow">Trong pool mình</div>
+          ${(m.vi_du || []).length ? (m.vi_du || []).map(v => html`<div style="padding:2px 0">
+            <span style="font-weight:600;min-width:56px;display:inline-block">${soGon(v.views)}</span>
             <a href=${'https://youtu.be/' + v.yt_id} target="_blank" rel="noopener">${v.title}</a>
-            <span class="note"> · ${v.kenh} · ${(v.views || 0).toLocaleString()} view · ${ngayVN(v.pub_ts)}</span>
-          </div>`)}
-        ${!(d.muc.find(m => m.cum === cumMo)?.vi_du || []).length
-          ? html`<div class="note">Không có video nào trong pool khớp cụm này.</div>` : ''}
-      </div>` : ''}
+            <span class="note"> · ${v.kenh} · ${ngayVN(v.pub_ts)}</span></div>`)
+            : html`<div class="note">Chưa có video nào trong pool khớp cụm này.</div>`}
+        </div>`;
+      })() : ''}
     </div>` : ''}`;
 }
 
