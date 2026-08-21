@@ -144,3 +144,47 @@ not a bot" trên VPS. Mặc định ≤ 1 lời gọi/giây, tổng ≤ 60/phiê
 
 Reddit (403) · trendspyg trong MVP · embedding cluster (dùng token overlap trước) ·
 điểm tổng/ngưỡng cứng · tự động đưa cụm vào outline (user tick).
+
+---
+
+## 9. NGHIỆM THU THẬT 21/08/2026 — pool LIFE IN — US (3.246 video)
+
+### Kết quả
+
+| Lần quét | Lời gọi | Cụm | Thời gian |
+|---|---|---|---|
+| Hẹp (trần 12, không từ hỏi) | 12 | 110 | 11 s |
+| Rộng (trần 40, có từ hỏi) | 36 | 332 | 35 s |
+
+Đầu bảng sau lần quét rộng — **tín hiệu dùng được**:
+
+| Cụm | Cầu | Video trong pool | View giữa | Ô |
+|---|---|---|---|---|
+| `life in rio` · `life in rural china` · `life in the countryside` · `life in adventure` | 2 | **0** | — | **Khoảng trống** |
+| `life in vietnam` | 2 | **30** (26 kênh) | 4.732 | Đỏ lửa |
+| `life in china` | 2 | 15 | 2.973 | Đỏ lửa |
+| `life in new zealand` | 2 | 9 | 5.140 | Đỏ lửa |
+
+### Ba bài học vận hành
+
+1. **Trần quét quyết định chất lượng trục cầu.** Trần 12 → gần như mọi cụm `do_phu = 1`,
+   trung vị = 1, phân ô vô nghĩa. Phải ≥ 27 lời gọi (seed + 26 chữ cái) thì `do_phu`
+   mới phân hoá. Đây là lý do trần mặc định của nút trên UI đặt ở 20 và nên nâng khi
+   quét nghiêm túc.
+
+2. **`tu_hoi` chỉ hợp với seed là DANH TỪ chủ đề, không hợp với seed dạng mẫu câu.**
+   Bật từ hỏi cho seed `life in` kéo về `can i cancel my life insurance`,
+   `a life sent in xenoblade 3`, `can i create life in 1 hour`. Với seed `jupiter`
+   thì `why jupiter…` lại đúng. UI để mặc định TẮT.
+
+3. **Chỉ số "mới lạ" KHÔNG phải bộ lọc lạc đề.** Đã thử dùng vốn từ pool để dìm cụm
+   lạc đề — dìm được `life incremental` (game) nhưng dìm luôn `life in rio`,
+   `life in kiev`, `life in the countryside`: hợp ngách hoàn hảo, chỉ là pool chưa có
+   video, tức đúng khoảng trống cần tìm. **Máy không phân biệt được "lạc đề" với
+   "mới lạ"** — cả hai đều là từ chưa có trong pool. Giữ làm cột thông tin, lọc nhiễu
+   là việc của người (nút ✕). Ghim bằng `test_tu_la_KHONG_duoc_dung_de_xep_hang`.
+
+### Trạng thái
+
+M1–M5 xong, đã chạy thật trên cổng 9111 (restart 21/08). **M6 (job theo lịch) chưa
+làm** — nên bật sau khi dùng tay vài lần để biết mỗi ngách cần seed nào và trần bao nhiêu.
