@@ -2262,5 +2262,17 @@ def harvest_discard(org: int, request: Request, confirm: str = ''):
         return {'discarded': job['id']}
 
 # ---------------- frontend (mount CUỐI CÙNG — mọi route /api ở trên thắng) ----------------
+class _StaticKhongCache(StaticFiles):
+    """HTML/JS giao dien phai luon tuoi: proxy cong chinh CAT ETag/Last-Modified
+    cua app viet-lai-duong-dan (nen/common/proxy.py) nen ban cache phia trinh
+    duyet KHONG co moc de het han — user tung thay UI cu (mau cam) sau khi da
+    deploy ban moi (22/08). no-cache = van duoc cache nhung moi lan dung phai
+    hoi lai server; file da bi cat validator thi hoi lai = tai moi, luon tuoi."""
+    async def get_response(self, path, scope):
+        resp = await super().get_response(path, scope)
+        if path.endswith(('.html', '.js')) or path == 'index.html':
+            resp.headers['Cache-Control'] = 'no-cache'
+        return resp
+
 if os.path.isdir(WEB_DIR):
-    app.mount('/', StaticFiles(directory=WEB_DIR, html=True), name='web')
+    app.mount('/', _StaticKhongCache(directory=WEB_DIR, html=True), name='web')
