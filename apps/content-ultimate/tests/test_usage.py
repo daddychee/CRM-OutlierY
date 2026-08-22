@@ -299,3 +299,32 @@ def test_run_cli_ghi_ly_do_loi_vao_job_22_08(monkeypatch):
     assert ok is False
     assert job.get("error"), "job phai mang ly do loi"
     assert "WRITE" in job["error"] and "het han muc API" in job["error"]
+
+
+def test_so_tac_gia_duong_dan_tuong_doi_va_cuu_di_san_22_08(tmp_path, monkeypatch):
+    """So dang ky phai song sot khi DOI MAY (di tru 22/08).
+
+    Benh that: index.json luu duong dan TUYET DOI; sau VPS -> o C -> o D thi 10/14 entry tro vao cho khong con, app chi thay 4
+    ho so du FILE VAN NAM NGUYEN trong kho. Luat moi: kho hien tai la NGUON SU
+    THAT — tim theo duoi duong dan trong kho truoc, ke ca khi duong cu con song
+    (A011-A013 tro he cu o o C, da tat va se xoa ~22/09).
+    """
+    import importlib
+    kho = tmp_path / "kho"
+    (kho / "uploads" / "A009_LeoKim").mkdir(parents=True)
+    (kho / "uploads" / "A009_LeoKim" / "profile.json").write_text("{}", encoding="utf-8")
+    dich = kho / "uploads" / "A009_LeoKim" / "profile.json"
+    monkeypatch.setenv("CU_DATA_DIR", str(kho))
+    import voiceprofile.library as lib
+    lib = importlib.reload(lib)
+
+    # (a) ban ghi di san POSIX cua VPS — tren Windows khong tinh la 'absolute'
+    assert lib.duong_that("/opt/content-ultimate/uploads/A009_LeoKim/profile.json") == dich
+    # (b) ban ghi di san Windows cua he cu
+    assert lib.duong_that("C:\\OutlierY\\apps\\content-ultimate\\uploads\\A009_LeoKim\\profile.json") == dich
+    # (c) duong tuong doi trong so
+    assert lib.duong_that("uploads/A009_LeoKim/profile.json") == dich
+    # (d) ghi vao so thi luu TUONG DOI
+    assert lib.duong_luu(dich) == "uploads/A009_LeoKim/profile.json"
+    # (e) khong tim thay o dau -> tra nguyen, list_authors tu loc
+    assert not lib.duong_that("/tmp/vfy2/Beta/out/profile.json").is_file()

@@ -21,6 +21,45 @@ def registry_path() -> Path:
     return _REGISTRY
 
 
+def duong_that(duong: str | Path | None) -> Path | None:
+    """Duong dan trong so -> duong dan THAT tren may nay.
+
+    So luu TUONG DOI theo kho du lieu (CU_DATA_DIR) de con di duoc khi doi may.
+    Ban ghi cu luu TUYET DOI van doc duoc: neu con ton tai thi dung nguyen, neu
+    khong thi thu tim lai theo DUOI duong dan trong kho hien tai (VPS /opt/...
+    va C:\\OutlierY\\... deu ket thuc bang uploads/<ma>_<slug>/profile.json).
+    """
+    if not duong:
+        return None
+    p = Path(duong)
+    if not p.is_absolute() and not str(duong)[:1] in ("/", "\\") and ":" not in str(duong)[:3]:
+        thu = _REPO_ROOT / p
+        if thu.exists():
+            return thu
+    # KHO HIEN TAI LA NGUON SU THAT: thu ghep duoi duong dan vao kho truoc, ke ca
+    # khi duong cu con song. Ban ghi A011-A013 tro C:\OutlierY (he V2 da tat, xoa
+    # ~22/09) trong khi ban giong het da nam san trong kho V3 — bam duong cu la
+    # hen gio mat ho so. Duoi 3 doan: uploads/<ma>_<slug>/profile.json.
+    phan = [x for x in p.parts if x not in ("/", "\\")]
+    for n in (3, 2):
+        if len(phan) >= n:
+            thu = _REPO_ROOT.joinpath(*phan[-n:])
+            if thu.exists():
+                return thu
+    return p
+
+
+def duong_luu(duong: str | Path | None) -> str:
+    """Duong dan THAT -> dang luu vao so (tuong doi khi nam trong kho du lieu)."""
+    if not duong:
+        return ""
+    p = Path(duong)
+    try:
+        return p.resolve().relative_to(_REPO_ROOT.resolve()).as_posix()
+    except (ValueError, OSError):
+        return str(p)
+
+
 def slugify(name: str) -> str:
     """Ten tac gia -> slug an toan cho ten folder: giu chu/so, space -> '-'."""
     s = re.sub(r"[^\w\s-]", "", name, flags=re.UNICODE).strip()
@@ -112,6 +151,11 @@ def list_authors(path: str | Path | None = None, existing_only: bool = True) -> 
     data = load_registry(path)
     out = []
     for a in data["authors"]:
+        a = dict(a)
+        for khoa in ("profile", "corpus"):
+            that = duong_that(a.get(khoa))
+            if that is not None:
+                a[khoa] = str(that)
         if existing_only:
             if not a.get("profile") or not Path(a["profile"]).is_file():
                 continue
