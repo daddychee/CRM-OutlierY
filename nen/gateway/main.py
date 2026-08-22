@@ -21,6 +21,7 @@ from fastapi.responses import (FileResponse, HTMLResponse, JSONResponse,
 from fastapi.templating import Jinja2Templates
 from itsdangerous import BadSignature, URLSafeTimedSerializer
 
+from nen.common import nas_sync
 from nen.common.hop_dong import doc_hop_dong, tim_app
 from nen.common.proxy import chuyen_tiep
 from nen.iam import iam
@@ -89,6 +90,19 @@ def user_hien_tai(request: Request) -> dict | None:
         conn.close()
 
 
+def _nas_dong_bo_sau(conn, claims: dict, mat_khau: str) -> None:
+    """Gọi NGAY SAU khi gateway biết mật khẩu thật (đăng nhập đúng / tự đổi mật
+    khẩu) — DUY NHẤT nơi ghép IAM + NAS: tính nhóm qua MỘT CỬA iam.co_quyen()
+    (ô tick lẻ + cấp truy cập tự ăn qua claims đã hieu_luc()) rồi bắn NAS đồng bộ
+    nền. nas_sync.py không biết gì về bảng quyền — giữ module đó thuần hạ tầng.
+    Việc treo (xem nen/common/nas_sync.py đầu file): Owner cấp/reset mật khẩu
+    người khác CHƯA gọi hàm này."""
+    nhom = (nas_sync.NHOM_TOAN_QUYEN
+            if iam.co_quyen(claims, "nas_cap_cao", "to-chuc", conn)
+            else nas_sync.NHOM_CHI_THEM)
+    nas_sync.dong_bo_nen(claims["ten"], mat_khau, nhom)
+
+
 def _ve_login() -> RedirectResponse:
     return RedirectResponse("/login", status_code=303)
 
@@ -132,6 +146,10 @@ def login_gui(request: Request, ten: str = Form(""), mat_khau: str = Form("")):
     conn = iam.ket_noi()
     try:
         claims = iam.xac_thuc(conn, ten, mat_khau)
+        if claims:
+            # Đăng nhập đúng = khoảnh khắc gateway biết mật khẩu thật → đồng bộ
+            # NAS nền (no-op nếu NAS_DONG_BO tắt — kiểm trong dong_bo_nen).
+            _nas_dong_bo_sau(conn, claims, mat_khau)
     finally:
         conn.close()
     if not claims:
@@ -214,6 +232,7 @@ def profile_doi_mk(request: Request, mk_hien_tai: str = Form(""),
     try:
         # Luật V1 (v2 từng thiếu): đổi mật khẩu CỦA MÌNH phải gõ mật khẩu hiện tại.
         iam.doi_mat_khau_ca_nhan(conn, user, mk_hien_tai, mk_moi)
+        _nas_dong_bo_sau(conn, user, mk_moi)   # mật khẩu mới → đồng bộ NAS nền
     except iam.LoiIam as e:
         return _render_profile(request, user, loi=str(e))
     finally:
@@ -242,6 +261,7 @@ def doi_mk_gui(request: Request, mk_moi: str = Form(""), mk_lai: str = Form(""))
     conn = iam.ket_noi()
     try:
         iam.doi_mat_khau(conn, user, user["ten"], mk_moi, ep_doi_lan_sau=False)
+        _nas_dong_bo_sau(conn, user, mk_moi)   # mật khẩu mới → đồng bộ NAS nền
     except iam.LoiIam as e:
         return templates.TemplateResponse(
             request, "doimatkhau.html", {"user": user, "loi": str(e), "xong": False})
@@ -280,6 +300,66 @@ _MAC_DINH_GIO = {"quan_tai_khoan": "Owner / Delegated admin",
 
 KE_TOAN_BO_PHAN = "Kế toán"
 
+# Khu General cấp theo TỪNG TRANG (Owner chốt 19/08 — cấp Director L4 mà không
+# trao chìa khóa Owner). Các hành động này KHÔNG thuộc giỏ nào → co_quyen
+# fail-closed = chỉ Owner; Owner tick lẻ mới mở. Permissions/API Keys/Vault vẫn
+# ở gio_owner_tuyet_doi: Manager không bao giờ ngang Owner (luật 04-05/08).
+_NHAN_GEN = {"general_tong_quan": "Overview", "general_niches": "Niches",
+             "general_channels": "Channels", "general_nhat_ky": "Audit Log",
+             "general_du_lieu": "Data & Backup",
+             "general_ung_dung": "Applications"}
+_MO_TA_GEN = {
+    "general_tong_quan": "Trang tổng quan: sức khỏe dịch vụ + thống kê đế",
+    "general_niches": "Danh bạ ngách + thị trường (mặc định Manager L4+)",
+    "general_channels": "Danh bạ kênh: hồ sơ, trạng thái, liên kết app (mặc định Manager L4+)",
+    "general_nhat_ky": "Nhật ký quyền toàn hệ (200 dòng gần nhất)",
+    "general_du_lieu": "Kho dữ liệu từng app + mốc backup gần nhất",
+    "general_ung_dung": "Danh sách app trong hợp đồng + trạng thái sống"}
+# Biến template cho nav (nen_base.html dùng 'la_owner or <biến>')
+_BIEN_NAV_GEN = {"general_tong_quan": "g_tong_quan", "general_niches": "g_niches",
+                 "general_channels": "g_channels", "general_nhat_ky": "g_nhat_ky",
+                 "general_du_lieu": "g_du_lieu", "general_ung_dung": "g_ung_dung"}
+_DUONG_GEN = {"general_tong_quan": "/general", "general_niches": "/general/niches",
+              "general_channels": "/general/channels",
+              "general_nhat_ky": "/general/audit-log",
+              "general_du_lieu": "/general/data-backup",
+              "general_ung_dung": "/general/applications"}
+# Hai trang danh bạ vốn mở cho Manager L4+ (không phải Owner-only): ô tick THẮNG
+# luật đó — mở cho team dưới L4, hoặc chặn đúng một người. KHÔNG dùng co_quyen
+# thẳng vì hành động lạ với co_quyen là fail-closed = sẽ TƯỚC quyền L4 đang có.
+_GEN_MUC_L4 = {"general_niches", "general_channels"}
+
+
+def _tick_gen(user: dict, hanh_dong: str, conn) -> bool | None:
+    """Ô tick lẻ của một trang General (None = chưa tick)."""
+    r = conn.execute(
+        "SELECT cho_phep FROM quyen_override WHERE ten_tai_khoan=? "
+        "AND app_slug='*' AND hanh_dong=?", (user["ten"], hanh_dong)).fetchone()
+    return None if r is None else bool(r["cho_phep"])
+
+
+def _duoc_trang_gen(user: dict, hanh_dong: str, conn) -> bool:
+    """MỘT cửa quyết định một trang khu General — dùng chung cho gate lẫn nav."""
+    if user["level"] >= iam.OWNER_LEVEL:
+        return True
+    if hanh_dong in _GEN_MUC_L4:
+        t = _tick_gen(user, hanh_dong, conn)
+        return t if t is not None else user["level"] >= 4
+    return iam.co_quyen(user, hanh_dong, conn=conn)
+
+
+def _nav_gen(user: dict) -> dict:
+    """Cờ hiện link nav khu General cho người KHÔNG phải Owner. Owner trả rỗng —
+    template đã có 'la_owner' nên không tốn thêm lượt đọc DB."""
+    if user["level"] >= iam.OWNER_LEVEL:
+        return {}
+    conn = iam.ket_noi()
+    try:
+        return {bien: _duoc_trang_gen(user, hd, conn)
+                for hd, bien in _BIEN_NAV_GEN.items()}
+    finally:
+        conn.close()
+
 
 def _gio_chuc_nang(u: dict, conn) -> list[str]:
     """Cờ khu chức năng HR/Finance phát vào X-Remote-Apps (DE.md mục 10) — GATEWAY
@@ -297,7 +377,7 @@ def _gio_chuc_nang(u: dict, conn) -> list[str]:
 
     co: list[str] = []
     t = _tick("nhan_su")
-    if t if t is not None else iam.quyen_nhan_su(u):
+    if t if t is not None else iam.quyen_nhan_su(u, conn):
         co.append("hr")
     t = _tick("ke_toan")
     if t if t is not None else (
@@ -317,12 +397,14 @@ def _gate_nen(request: Request, quyen: str | None = None,
         return user
     if user["level"] >= iam.OWNER_LEVEL:
         return user
-    if nhan_su and iam.quyen_nhan_su(user):
-        return user
-    if quyen:
+    if nhan_su or quyen:
+        # MỘT lần mở kết nối cho cả 2 nhánh — và quyen_nhan_su PHẢI có conn thì
+        # ô tick duyet_ho_so mới ăn (bản cũ gọi không conn = ô chết).
         conn = iam.ket_noi()
         try:
-            if iam.co_quyen(user, quyen, conn=conn):
+            if nhan_su and iam.quyen_nhan_su(user, conn):
+                return user
+            if quyen and iam.co_quyen(user, quyen, conn=conn):
                 return user
         finally:
             conn.close()
@@ -392,14 +474,24 @@ def _thong_ke_de() -> dict:
 @app.get("/general", response_class=HTMLResponse)
 async def nen_tong_quan(request: Request):
     from starlette.concurrency import run_in_threadpool
-    user = await run_in_threadpool(_gate_nen, request)
+    user = await run_in_threadpool(_gate_nen, request, "general_tong_quan")
     if isinstance(user, Response):
+        # Được cấp trang General KHÁC (vd chỉ Audit Log) thì '/general' là CỬA —
+        # đưa thẳng tới trang họ có quyền, đừng ném 403 vào mặt (nút sidebar chỉ
+        # về đây). Không có quyền nào mới thực sự 403.
+        u = _kiem(request)
+        if isinstance(u, dict):
+            nav = await run_in_threadpool(_nav_gen, u)
+            for hd, duong in _DUONG_GEN.items():
+                if hd != "general_tong_quan" and nav.get(_BIEN_NAV_GEN[hd]):
+                    return RedirectResponse(duong, status_code=303)
         return user
     dich_vu = await _do_dich_vu()
     de = await run_in_threadpool(_thong_ke_de)
+    nav = await run_in_threadpool(_nav_gen, user)
     return templates.TemplateResponse(
         request, "nen_tong_quan.html",
-        {"user": user, "trang": "tong-quan", "dich_vu": dich_vu, **de})
+        {"user": user, "trang": "tong-quan", "dich_vu": dich_vu, **de, **nav})
 
 
 # --- Tài khoản (tách từ /quan-tri cũ) ---
@@ -553,10 +645,13 @@ def nen_ns_sua(request: Request, ma: str = Form(...), ho_ten: str = Form(""),
                trang_thai: str = Form(""), ngay_sinh: str = Form(""),
                cccd: str = Form(""), dia_chi: str = Form(""),
                ngay_vao: str = Form(""), cap_bac: str = Form(""),
+               ngay_thoi_viec: str = Form(""), ly_do_thoi_viec: str = Form(""),
                ve: str = Form("")):
     """Sửa hồ sơ + đổi trạng thái (iam.sua_nguoi — trả nợ 'hồ sơ chỉ tạo được').
-    KHÔNG có xóa hồ sơ: nghỉ việc = trang_thai 'nghi' (gỡ mềm). Trường bỏ trống =
+    KHÔNG có xóa hồ sơ: nghỉ việc = trang_thai 'nghi' (gỡ mềm) + ngày/lý do thôi
+    việc → hồ sơ nằm ở mục 'Đã thôi việc' của HR Hub. Trường bỏ trống =
     giữ nguyên — riêng CCCD nhờ vậy form không bao giờ phải render giá trị đầy đủ.
+    Nhận lại làm = gửi trang_thai='hoat_dong' (iam tự xóa ngày+lý do thôi việc).
     Gate nhan_su=True như /general/people (Owner + HR L3+)."""
     user = _gate_nen(request, nhan_su=True)
     if isinstance(user, Response):
@@ -567,10 +662,52 @@ def nen_ns_sua(request: Request, ma: str = Form(...), ho_ten: str = Form(""),
                       bo_phan=bo_phan or None, vi_tri=vi_tri or None,
                       trang_thai=trang_thai or None, ngay_sinh=ngay_sinh or None,
                       cccd=cccd or None, dia_chi=dia_chi or None,
-                      ngay_vao=ngay_vao or None, cap_bac=cap_bac or None)
+                      ngay_vao=ngay_vao or None, cap_bac=cap_bac or None,
+                      ngay_thoi_viec=ngay_thoi_viec or None,
+                      ly_do_thoi_viec=ly_do_thoi_viec or None)
         if ve in _VE_HOP_LE:
             return _ve_hub("accounts", bao=f"Saved profile {ma}.")
         return _render_nhan_su(request, user, bao=f"Saved profile {ma}.")
+    except iam.LoiIam as e:
+        if ve in _VE_HOP_LE:
+            return _ve_hub("accounts", loi=str(e))
+        return _render_nhan_su(request, user, loi=str(e))
+    finally:
+        conn.close()
+
+
+@app.post("/general/people/terminate", response_class=HTMLResponse)
+def nen_ns_thoi_viec(request: Request, ma: str = Form(...),
+                     ngay_thoi_viec: str = Form(""),
+                     ly_do_thoi_viec: str = Form(""), ve: str = Form("")):
+    """THÔI VIỆC — nút Terminate THAY nút xóa tài khoản (Owner chốt 19/08: "không
+    muốn để nút delete account"). Một lượt bấm làm ĐÚNG HAI VIỆC và KHÔNG xóa gì:
+    hồ sơ về 'nghi' + ngày/lý do (rơi xuống mục 'Đã thôi việc') rồi KHÓA đăng nhập.
+    THỨ TỰ CÓ CHỦ ĐÍCH: hồ sơ TRƯỚC (sự thật nhân sự — gate nhan_su, HR L3+ làm
+    được); khóa tài khoản là bước 2 CÓ THỂ HỎNG (thiếu giỏ quan_tai_khoan, đụng
+    tài khoản Owner, tự khóa mình) → hỏng thì nói thẳng trong thông báo, hồ sơ vẫn
+    đã chuyển và mục thôi việc hiện badge 'login open' để HR biết còn việc phải làm.
+    Nhận lại làm = Reinstate (people/update trang_thai='hoat_dong') + mở khóa."""
+    user = _gate_nen(request, nhan_su=True)
+    if isinstance(user, Response):
+        return user
+    conn = iam.ket_noi()
+    try:
+        iam.sua_nguoi(conn, user, ma, trang_thai="nghi",
+                      ngay_thoi_viec=ngay_thoi_viec or None,
+                      ly_do_thoi_viec=ly_do_thoi_viec or None)
+        bao = f"Terminated {ma}."
+        tk = conn.execute("SELECT ten, khoa FROM tai_khoan WHERE nguoi_ma=?",
+                          (ma,)).fetchone()
+        if tk and not tk["khoa"]:
+            try:
+                iam.sua_tai_khoan(conn, user, tk["ten"], khoa=True)
+                bao += f" Login {tk['ten']} locked."
+            except iam.LoiIam as e:
+                bao += f" Login {tk['ten']} still open: {e}"
+        if ve in _VE_HOP_LE:
+            return _ve_hub("accounts", bao=bao)
+        return _render_nhan_su(request, user, bao=bao)
     except iam.LoiIam as e:
         if ve in _VE_HOP_LE:
             return _ve_hub("accounts", loi=str(e))
@@ -796,9 +933,11 @@ def _render_phan_quyen(request: Request, user: dict, ten: str = "",
             for r in conn.execute(
                     "SELECT * FROM quyen_override WHERE ten_tai_khoan=?", (ten,)):
                 overrides[(r["app_slug"], r["hanh_dong"])] = dict(r)
-            # P2 — MẶC ĐỊNH CHỈ ĐỌC per app (trên claims HIỆU LỰC)
+            # P2 — MẶC ĐỊNH CHỈ ĐỌC per app (trên claims HIỆU LỰC). App đã GỘP
+            # giao diện (gop_vao — Niche Research vào Data Analytics, Owner chốt
+            # 18/08) không đứng riêng: bảng phải phản ánh đúng app đang tồn tại.
             for a in doc_hop_dong():
-                if a["slug"] == "app-mau":
+                if a["slug"] == "app-mau" or a.get("gop_vao"):
                     continue
                 vao = iam.co_quyen(claims_hl, "vao", a["slug"], conn)
                 apps_p2.append({
@@ -811,7 +950,10 @@ def _render_phan_quyen(request: Request, user: dict, ten: str = "",
                             "vi_sao": _MAC_DINH_GIO["nhan_su"]})
             apps_p2.append({"ten": "Finance Hub", "vao": "finance" in co_hub,
                             "vai": "—", "vi_sao": _MAC_DINH_GIO["ke_toan"]})
-            # P4 — mỗi app một khối hành động thật (+ khối giỏ khu chức năng '*')
+            # P4 — mỗi app một khối hành động thật (+ khối giỏ khu chức năng '*').
+            # App có gop_vao NỐI HÀNG vào khối app chủ (không mất ô tick nào —
+            # mỗi HÀNG mang slug riêng nên form vẫn ghi đúng app).
+            khoi_map: dict[str, dict] = {}
             for a in doc_hop_dong():
                 cac_hd = iam.hanh_dong_cua_app(a["slug"])
                 if not cac_hd:
@@ -823,15 +965,24 @@ def _render_phan_quyen(request: Request, user: dict, ten: str = "",
                     hl = iam.co_quyen(claims_hl, ma, a["slug"], conn)
                     nguon = "override" if ov else \
                         ("acting" if acting and hl != mac_dinh_that else "default")
-                    hang.append({"ma": ma, "nhan": dk.get("nhan", ma),
+                    hang.append({"ma": ma, "slug": a["slug"],
+                                 "tu": a["ten"] if a.get("gop_vao") else "",
+                                 "nhan": dk.get("nhan", ma),
                                  "mo_ta": dk.get("mo_ta", ""),
                                  "mac_dinh": _mo_ta_dieu_kien(dk),
                                  "hieu_luc": hl, "nguon": nguon,
                                  "dat": "cho" if ov and ov["cho_phep"]
                                         else "chan" if ov else "ke_thua",
                                  "ly_do": ov["ly_do"] if ov else ""})
-                khoi_p4.append({"slug": a["slug"], "ten": a["ten"], "hang": hang,
-                                "so_le": sum(1 for h in hang if h["nguon"] == "override")})
+                chu = a.get("gop_vao") or a["slug"]
+                k = khoi_map.setdefault(chu, {"slug": chu, "ten": "", "hang": []})
+                if chu == a["slug"]:
+                    k["ten"] = a["ten"]
+                k["hang"] += hang
+            for k in khoi_map.values():
+                k["ten"] = k["ten"] or k["slug"]   # app chủ chưa khai hành động
+                k["so_le"] = sum(1 for h in k["hang"] if h["nguon"] == "override")
+                khoi_p4.append(k)
             hang_gio = []
             for hd in luat.get("gio_uy_quyen", []):
                 ov = overrides.get(("*", hd))
@@ -841,7 +992,8 @@ def _render_phan_quyen(request: Request, user: dict, ten: str = "",
                     hl = "finance" in co_hub
                 else:
                     hl = iam.co_quyen(claims_hl, hd, conn=conn)
-                hang_gio.append({"ma": hd, "nhan": _NHAN_GIO.get(hd, hd), "mo_ta": "",
+                hang_gio.append({"ma": hd, "slug": "*", "tu": "",
+                                 "nhan": _NHAN_GIO.get(hd, hd), "mo_ta": "",
                                  "mac_dinh": _MAC_DINH_GIO.get(hd, "Owner / Delegated admin"),
                                  "hieu_luc": hl,
                                  "nguon": "override" if ov else "default",
@@ -851,6 +1003,24 @@ def _render_phan_quyen(request: Request, user: dict, ten: str = "",
             khoi_p4.append({"slug": "*", "ten": "Function hubs & baskets",
                             "hang": hang_gio,
                             "so_le": sum(1 for h in hang_gio if h["nguon"] == "override")})
+            # Khu General — TỪNG TRANG một ô tick (Owner chốt 19/08, cấp Director
+            # L4). Mặc định fail-closed = chỉ Owner nên không tick gì thì hành vi
+            # y hệt trước. Permissions/API Keys KHÔNG có ở đây: giỏ tuyệt đối.
+            hang_gen = []
+            for hd in luat.get("gio_khu_general", []):
+                ov = overrides.get(("*", hd))
+                hang_gen.append({"ma": hd, "slug": "*", "tu": "",
+                                 "nhan": _NHAN_GEN.get(hd, hd),
+                                 "mo_ta": _MO_TA_GEN.get(hd, ""),
+                                 "mac_dinh": "Owner only (L5)",
+                                 "hieu_luc": iam.co_quyen(claims_hl, hd, conn=conn),
+                                 "nguon": "override" if ov else "default",
+                                 "dat": "cho" if ov and ov["cho_phep"]
+                                        else "chan" if ov else "ke_thua",
+                                 "ly_do": ov["ly_do"] if ov else ""})
+            khoi_p4.append({"slug": "*", "ten": "General — admin pages",
+                            "hang": hang_gen,
+                            "so_le": sum(1 for h in hang_gen if h["nguon"] == "override")})
         # P5 — sổ ngoại lệ TOÀN HỆ
         p5 = [dict(r) for r in conn.execute(
             "SELECT * FROM quyen_override ORDER BY ten_tai_khoan, app_slug, hanh_dong")]
@@ -1037,7 +1207,8 @@ def _render_api_keys(request: Request, user: dict, bao: str = "",
     # Template lặp {% for loai, ten in ten_loai.items() %} tra dict này để biết
     # loại nào cần nhóm theo nhà — thêm loại có nhà mới chỉ cần thêm một mục ở đây.
     nha_por_loai = {"llm": (ket.NHA_LLM, ket.NHA_LLM_INFO),
-                    "generate": (ket.NHA_GEN, ket.NHA_GEN_INFO)}
+                    "generate": (ket.NHA_GEN, ket.NHA_GEN_INFO),
+                    "serp": (ket.NHA_SERP, ket.NHA_SERP_INFO)}
     # Show-more SERVER-SIDE (18/08): JS ẩn/hiện cũ Owner báo không tác dụng trên
     # trình duyệt thật mà không tái hiện được — đổi sang server tự cắt danh sách
     # (>5 dòng render 5 + LINK GET thật), kiểm được 100% bằng TestClient.
@@ -1286,7 +1457,7 @@ def nen_cau_hinh_llm(request: Request, vai: str = Form(...),
 @app.get("/general/data-backup", response_class=HTMLResponse)
 def nen_du_lieu(request: Request):
     import json
-    user = _gate_nen(request)
+    user = _gate_nen(request, "general_du_lieu")
     if isinstance(user, Response):
         return user
     raw = json.loads((ROOT / "nen" / "rules" / "apps.json")
@@ -1303,12 +1474,12 @@ def nen_du_lieu(request: Request):
     return templates.TemplateResponse(
         request, "nen_du_lieu.html",
         {"user": user, "trang": "du-lieu", "khoi": khoi,
-         "backup_moi": de["backup_moi"], "bk_dir": de["bk_dir"]})
+         "backup_moi": de["backup_moi"], "bk_dir": de["bk_dir"], **_nav_gen(user)})
 
 
 @app.get("/general/audit-log", response_class=HTMLResponse)
 def nen_nhat_ky(request: Request):
-    user = _gate_nen(request)
+    user = _gate_nen(request, "general_nhat_ky")
     if isinstance(user, Response):
         return user
     conn = iam.ket_noi()
@@ -1318,20 +1489,21 @@ def nen_nhat_ky(request: Request):
         conn.close()
     return templates.TemplateResponse(
         request, "nen_nhat_ky.html",
-        {"user": user, "trang": "nhat-ky", "nhat_ky": nk})
+        {"user": user, "trang": "nhat-ky", "nhat_ky": nk, **_nav_gen(user)})
 
 
 @app.get("/general/applications", response_class=HTMLResponse)
 async def nen_ung_dung(request: Request):
     from starlette.concurrency import run_in_threadpool
-    user = await run_in_threadpool(_gate_nen, request)
+    user = await run_in_threadpool(_gate_nen, request, "general_ung_dung")
     if isinstance(user, Response):
         return user
     dich_vu = {d["ten"]: d["song"] for d in await _do_dich_vu()}
+    nav = await run_in_threadpool(_nav_gen, user)
     return templates.TemplateResponse(
         request, "nen_ung_dung.html",
         {"user": user, "trang": "ung-dung", "apps": doc_hop_dong(),
-         "dich_vu": dich_vu})
+         "dich_vu": dich_vu, **nav})
 
 
 # ---------- DANH BẠ THỰC THỂ — Niches + Channels (Đ1 khối đế, DE.md) ----------
@@ -1345,12 +1517,27 @@ _APP_LIEN_KET = ("seo-optimize", "plannery", "radary", "niche-research", "speaky
 
 
 def _gate_danh_ba(request: Request, chi_owner: bool = False):
+    """Cổng Niches/Channels. chi_owner (liên kết app · khai tử) VẪN chỉ Owner —
+    không ô tick nào mở. Còn lại: mặc định Manager L4+, ô tick khu General THẮNG
+    (Owner 19/08 — 'hai tab quan trọng nhất cho team dùng'). Trang nào suy từ
+    đường dẫn: /general/channels* → Channels, còn lại (gồm /general/markets*, là
+    khối trong trang Niches) → Niches."""
     user = _kiem(request)
     if isinstance(user, RedirectResponse):
         return user
-    if user["level"] < (5 if chi_owner else 4):
-        return Response("Owner/Manager only.", status_code=403)
-    return user
+    if user["level"] >= iam.OWNER_LEVEL:
+        return user
+    if chi_owner:
+        return Response("Owner only.", status_code=403)
+    hd = ("general_channels" if request.url.path.startswith("/general/channels")
+          else "general_niches")
+    conn = iam.ket_noi()
+    try:
+        if _duoc_trang_gen(user, hd, conn):
+            return user
+    finally:
+        conn.close()
+    return Response("Owner/Manager only.", status_code=403)
 
 
 def _audit_danh_ba(user: dict, chi_tiet: str) -> None:
@@ -1393,6 +1580,7 @@ def _render_niches(request, user, bao="", loi=""):
             so_kenh_tt[k["thi_truong_ma"]] = so_kenh_tt.get(k["thi_truong_ma"], 0) + 1
     ds_tt = [t for t in ds if t["loai"] == "thi_truong"]
     return templates.TemplateResponse(request, "nen_niches.html", {
+        **_nav_gen(user),
         "user": user, "trang": "niches", "la_owner": user["level"] >= 5,
         "ds_ngach": ngach, "ds_tt": ds_tt, "so_kenh_tt": so_kenh_tt,
         # tên thị trường theo mã — cột Markets của từng ngách (chip)
@@ -1538,6 +1726,7 @@ def _render_channels(request, user, bao="", loi=""):
     finally:
         conn.close()
     return templates.TemplateResponse(request, "nen_channels.html", {
+        **_nav_gen(user),
         "user": user, "trang": "channels", "la_owner": user["level"] >= 5,
         "ds_ngach": ngach, "ds_tt": tt, "ds_kenh": ds_kenh, "ds_kenh_moi": kenh,
         "chi_tiet": chi_tiet, "ds_loai": _LOAI_KENH, "ds_app": _APP_LIEN_KET,
@@ -1896,8 +2085,13 @@ async def proxy_app(request: Request, slug: str, duong_dan: str):
             # Cờ 'quan-tri': ai mở được mục Nhân sự/User trên sidebar — luật V1:
             # Owner + HR L3+ (iam.quyen_nhan_su) hoặc Admin ủy quyền tài khoản.
             quan_tk = iam.co_quyen(u, "quan_tai_khoan", conn=conn2)
-            if iam.quyen_nhan_su(u) or quan_tk:
+            if iam.quyen_nhan_su(u, conn2) or quan_tk:
                 duoc.append("quan-tri")
+            # Cờ 'general': được cấp ÍT NHẤT MỘT trang khu General (ô tick 19/08)
+            # → sidebar hiện nút General trỏ /general, route tự đưa tới trang họ
+            # có quyền. Owner đi nhánh is_owner sẵn có, không cần cờ này.
+            if any(_duoc_trang_gen(u, hd, conn2) for hd in _BIEN_NAV_GEN):
+                duoc.append("general")
             # Cờ khu chức năng 'hr'/'finance' (DE.md mục 10) — chỉ khi vào được
             # to-chuc (hub sống trong app đó); app CHỈ TIN cờ này, không tự tính.
             # Cờ 'accounts': tab Accounts trong HR Hub (một cửa nhân sự 16/08) —
@@ -1960,7 +2154,8 @@ def mo_app_khung(request: Request, slug: str):
                 if iam.co_quyen(user, "vao", a["slug"], conn)]
         co_nas = "to-chuc" in duoc and bool(os.getenv("NAS_DUONG_DAN", "").strip())
         co_hub = _gio_chuc_nang(user, conn) if "to-chuc" in duoc else []
-        quan_tri = iam.quyen_nhan_su(user) or iam.co_quyen(user, "quan_tai_khoan", conn=conn)
+        quan_tri = iam.quyen_nhan_su(user, conn) or iam.co_quyen(user, "quan_tai_khoan", conn=conn)
+        co_general = any(_duoc_trang_gen(user, hd, conn) for hd in _BIEN_NAV_GEN)
     finally:
         conn.close()
     from nen.common.sidebar import KHONG_LAP_TOOLS
@@ -1974,7 +2169,8 @@ def mo_app_khung(request: Request, slug: str):
         "user": user, "app": muc, "ds_tools": ds_tools,
         "sb_da": "data-analytics" in duoc, "sb_nas": co_nas,
         "sb_hr": "hr" in co_hub, "sb_fin": "finance" in co_hub,
-        "sb_ns": quan_tri, "la_owner": user["level"] >= iam.OWNER_LEVEL,
+        "sb_ns": quan_tri, "sb_general": co_general,
+        "la_owner": user["level"] >= iam.OWNER_LEVEL,
         "sb_ngay": _dt.now().strftime("%d/%m/%Y"),
         "level_chu": _TEN_LEVEL.get(user["level"], "")})
 

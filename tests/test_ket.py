@@ -310,3 +310,24 @@ def test_di_tru_llm_cu_idempotent_giu_base_url(conn):
     assert ket.cau_hinh_llm(conn, "ai-agent", "writer") == truoc
     # mục cũ GIỮ nguyên làm fallback
     assert ket.lay_bi_mat(conn, "llm.writer.api_key") == "sk-di-tru-4321"
+
+
+def test_loai_serp_mot_khoa_cho_moi_engine(conn):
+    """22/08 — Owner mở khối SERP trong General để nối Google Trends ổn định
+    (trendspyg đang hỏng 57%) + Reddit qua site:reddit.com.
+
+    MỘT khoá dùng cho MỌI engine của nhà đó (google / google_trends /
+    google_news / youtube) — quota trừ chung, không cần khoá riêng từng engine.
+    Dùng khuôn NHÀ như llm/generate vì còn đang so ba nhà.
+    """
+    assert "serp" in ket.LOAI_API
+    assert ket.TEN_LOAI_API["serp"] == "Search Results API (SERP)"
+    assert set(ket.NHA_SERP) == {"serpapi", "serper", "searchapi"}
+    assert set(ket.NHA_SERP_INFO) == set(ket.NHA_SERP)     # nhà nào cũng có nhãn
+
+    kid = ket.them_api_key(conn, "serp", "khoa-thu-serp-22-08", nha="serpapi")
+    assert kid.startswith("api-")
+    assert ket.lay_cau_hinh(conn, f"api.{kid}.nha") == "serpapi"
+    assert ket.lay_cau_hinh(conn, f"api.{kid}.loai") == "serp"
+    with pytest.raises(ValueError, match="Nhà SERP"):
+        ket.them_api_key(conn, "serp", "khoa-khac", nha="bing-lung-tung")
