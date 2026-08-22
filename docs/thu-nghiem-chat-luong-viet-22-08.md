@@ -82,12 +82,23 @@ Công thức viết chương, cách chia độ sâu, độ dài mục tiêu, c�
 | Độ lệch nhịp so với văn thật | 0,93 | **0,44** (giảm 53%) | 0 |
 | Bám giọng (7 chỉ số) | 86% | 57% | — |
 
-**Về chỉ số cuối tụt xuống** — cần nói thẳng chứ không giấu: bản mới trượt đúng 2 trong 7
-chỉ số, và cả hai đều là **hệ quả của việc câu dài hơn và ít dấu gạch ngang hơn**, tức đúng
-hai thứ đợt sửa này nhắm tới. Đáng chú ý nhất: một trong hai chỉ số đó **đếm cả dấu gạch
-ngang dài vào "mật độ dấu câu"**, nên bản sạch dấu gạch ngang bị chấm là "kém giống" — dù
-dấu gạch ngang chính là dấu vân tay của máy. Chỗ này thước đo đang sai, không phải bản văn
-sai. Đây cũng là lý do cần team đọc bằng mắt.
+**Về chỉ số cuối tụt xuống** — nói thẳng chứ không giấu, và nêu đích danh:
+
+| chỉ số | đích | khoảng cho phép | bản CŨ | bản MỚI |
+|---|---|---|---|---|
+| `punct_freq_total` (mật độ dấu câu) | 0,085 | 0,074–0,096 | 0,085 ✓ | **0,072 ✗** |
+| `function_word_freq` (tỉ lệ từ chức năng) | 0,327 | 0,309–0,345 | 0,337 ✓ | **0,364 ✗** |
+| `ttr` (độ đa dạng từ vựng) | 0,327 | 0,309–0,344 | 0,432 ✗ | 0,413 ✗ *(mới gần đích hơn)* |
+| 4 chỉ số còn lại | | | ✓ | ✓ |
+
+Cả hai chỉ số trượt đều là **hệ quả trực tiếp của câu dài hơn và ít dấu gạch ngang hơn** —
+tức đúng hai thứ đợt sửa này nhắm tới. Đáng chú ý nhất: `punct_freq_total` **đếm cả dấu gạch
+ngang dài vào mật độ dấu câu**, nên bản sạch dấu gạch ngang bị chấm là "kém giống", dù dấu
+gạch ngang chính là dấu vân tay của máy. Chỗ này thước đo sai chứ không phải bản văn sai.
+
+Thêm một điểm về cách chấm: trượt 2/7 chỉ số mà tổng tụt 29 điểm nghĩa là **thang quá thô**
+(mỗi chỉ số nặng ~14 điểm, ăn thua ở ngưỡng đóng/mở). Con số tổng % này nên bỏ, chỉ báo cáo
+từng chỉ số như bảng trên. Đây cũng là lý do cần team đọc bằng mắt.
 
 **Một điểm còn nợ**: 9,80 dấu gạch ngang/1.000 từ vẫn cao (mức "nặng" là từ 8,0). Truy ra
 thì nó **không đến từ đoạn mẫu mới** (đoạn mẫu có đúng 0 dấu), mà đi kèm câu dài — AI dùng
