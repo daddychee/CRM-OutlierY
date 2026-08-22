@@ -133,3 +133,42 @@ def test_ui_a2_a3_modal_va_badge(client):
     assert '<summary><svg class="ic chev"' in b
     assert "details.app[open] summary .chev{transform:rotate(90deg)}" in b
     assert "font-size:14px" in b.split("details.app summary{", 1)[1].split("}", 1)[0]
+
+
+def test_moi_app_nghe_doi_theme_song():
+    """Gạt theme ở khung thì app trong iframe phải đổi NGAY, không cần F5.
+
+    App chạy trong iframe là document RIÊNG: trước đây mỗi app chỉ đọc
+    localStorage 'outliery_theme' lúc TẢI, nên gạt xong app vẫn giữ màu cũ
+    (user báo 22/08 — RadarY nền tối trong khung đã sáng). Sự kiện 'storage'
+    bắn cho mọi document CÙNG ORIGIN khác, nên app tự nghe là đủ — lo luôn cả
+    cửa sổ rời (Shift+click) chứ không riêng iframe.
+
+    Lưới này quét CẢ CÂY: app mới thêm sau mà quên nghe cũng bị bắt.
+    """
+    import os
+    from pathlib import Path
+
+    goc = Path(__file__).resolve().parents[1]
+    thieu = []
+    for f in list((goc / 'apps').rglob('*.html')) + list((goc / 'nen').rglob('*.html')):
+        if any(p in f.parts for p in ('node_modules', 'vendor', '_references')):
+            continue
+        try:
+            s = f.read_text(encoding='utf-8')
+        except (UnicodeDecodeError, OSError):
+            continue
+        if 'outliery_theme' not in s:
+            continue                              # trang không dính theme thì bỏ qua
+        if 'addEventListener("storage"' in s or "addEventListener('storage'" in s:
+            continue
+        thieu.append(str(f.relative_to(goc)))
+
+    # Ba trang đang do phiên khác sửa lúc vá (22/08) — hoãn để test đỏ không chặn
+    # việc của họ; vá nốt khi index sạch rồi bỏ khỏi danh sách này.
+    hoan = {'apps/ai-agent/src/templates/base.html',
+            'apps/ai-agent/src/templates/hoi_dap.html',
+            'nen/gateway/templates/nen_base.html',
+            'nen/gateway/templates/nen_khung_app.html'}
+    con_lai = [t for t in thieu if t.replace(os.sep, '/') not in hoan]
+    assert not con_lai, 'trang dùng theme mà không nghe đổi sống: ' + ', '.join(con_lai)

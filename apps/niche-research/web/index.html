@@ -9,7 +9,7 @@
 {"imports":{"preact":"/web/vendor/preact.module.js","preact/hooks":"/web/vendor/hooks.module.js","htm":"/web/vendor/htm.module.js"}}
 </script>
 <link rel="stylesheet" href="/web/fonts/fonts.css">
-<script>(function(){var d=document.documentElement,t=null;try{t=new URLSearchParams(location.search).get("theme")||localStorage.getItem("outliery_theme")}catch(e){}if(t!=="light"&&t!=="dark"){t=(window.matchMedia&&matchMedia("(prefers-color-scheme: light)").matches)?"light":"dark"}d.setAttribute("data-theme",t)})()</script>
+<script>(function(){var d=document.documentElement,t=null;try{t=new URLSearchParams(location.search).get("theme")||localStorage.getItem("outliery_theme")}catch(e){}if(t!=="light"&&t!=="dark"){t=(window.matchMedia&&matchMedia("(prefers-color-scheme: light)").matches)?"light":"dark"}d.setAttribute("data-theme",t);addEventListener("storage",function(s){if(s.key==="outliery_theme"&&(s.newValue==="light"||s.newValue==="dark"))d.setAttribute("data-theme",s.newValue)})})()</script>
 <style>
 /* ── Content Ultimate palette (dark-first) ───────────────────────────────── */
 :root {
