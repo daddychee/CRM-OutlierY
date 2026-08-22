@@ -2275,15 +2275,17 @@ function Mapping({ ws, canEdit }) {
           <span class="note" style="text-transform:none;letter-spacing:0;font-weight:400">
           · sự quan tâm NGOÀI nền tảng YouTube — Google Trends · Google News · Wikipedia · 0 quota</span></div>
         <div class="exgrid">
-          <div class="excard">
+          <div class="excard rong">
             <h3>Google Trends <span class="note">· ${tr.geo || ''} · ${tr.timeframe || '12 tháng'}${tr.tu_cache ? ' · từ cache hôm nay' : ''}</span></h3>
             ${tr.co_du_lieu ? html`<div>
               ${tr.xu_huong ? html`<div class="big" style=${`color:${tr.xu_huong.chieu === 'lên' ? '#2e7d32' : tr.xu_huong.chieu === 'xuống' ? '#c62828' : 'inherit'}`}>
                 ${tr.xu_huong.chieu === 'lên' ? '↑' : tr.xu_huong.chieu === 'xuống' ? '↓' : '→'}
                 ${tr.xu_huong.phan_tram > 0 ? '+' : ''}${tr.xu_huong.phan_tram}%</div>` : ''}
               <${DuongXuHuong} diem=${tr.diem} nhan="Mức quan tâm tương đối (0–100)"/>
-              <${ThanhTruyVan} muc=${tr.rising} mau="#2e7d32" ghi="Truy vấn ĐANG LÊN (so kỳ trước)"/>
-              <${ThanhTruyVan} muc=${tr.top} mau="var(--accent,#4C8FE0)" ghi="Truy vấn phổ biến nhất (0–100)"/>
+              <div class="ex2cot">
+                <${ThanhTruyVan} muc=${tr.rising} mau="#2e7d32" ghi="Truy vấn ĐANG LÊN (so kỳ trước)"/>
+                <${ThanhTruyVan} muc=${tr.top} mau="var(--accent,#4C8FE0)" ghi="Truy vấn phổ biến nhất (0–100)"/>
+              </div>
               ${!(tr.rising || []).length && !(tr.top || []).length ? html`<div class="note">
                 Không có truy vấn liên quan (từ khoá hẹp) — xem "biến thể người ta gõ" ở khối B.</div>` : ''}
             </div>` : html`<div class="note">${tr.rate_limit ? '⏳ ' : ''}${tr.ly_do || 'không có dữ liệu'}</div>`}
