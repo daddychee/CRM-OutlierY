@@ -348,6 +348,12 @@ def wikipedia(cum: str, lang: str = "en", doc=None, so_thang: int = 13) -> dict:
         return {"co_du_lieu": False, "bai": bai, "ly_do": f"pageviews lỗi: {type(e).__name__}"}
     diem = [{"ngay": i["timestamp"][:6], "gia_tri": i["views"]}
             for i in (pv.get("items") or [])]
+    # THANG HIEN TAI chua tron — bo khoi chuoi va phep tinh, khong thi xu huong luon
+    # bao "xuong" oan (do that tajikistan 22/08: thang cut 2.524 vs thang tron ~90k
+    # -> -42% gia; bo thang cut con -14% that). Cung ho bai hoc khung-chua-chot.
+    thang_nay = datetime.now(timezone.utc).strftime("%Y%m")
+    if diem and diem[-1]["ngay"] == thang_nay:
+        diem = diem[:-1]
     if len(diem) < 4:
         return {"co_du_lieu": False, "bai": bai, "ly_do": "chưa đủ tháng để nói xu hướng"}
     n = max(1, len(diem) // 4)

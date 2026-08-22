@@ -800,7 +800,8 @@ def test_khong_tong_hop_so_giua_cac_PHIEN():
     js = goc.joinpath("web", "app.js").read_text(encoding="utf-8")
     assert "@app.get('/api/workspaces/{ws}/tra-cuu/so-sanh')" not in api_src
     assert "soSanh" not in js
-    assert "mỗi từ khoá là một phiên" in js.lower() or "mỗi từ khoá là một phiên" in js
+    # lich su la DROPDOWN (duyet mockup v2) — triet ly "moi phien rieng" giu o title
+    assert "Mỗi từ khoá là một phiên riêng" in js
     assert "/tra-cuu/lich-su" in api_src, "lịch sử vẫn phải còn để xem lại"
 
 
@@ -992,6 +993,9 @@ def test_route_tu_khoa_nong_va_tab_ui():
     # probe nền tắt trends (trình duyệt ~17s/cụm) và nuốt lỗi từng cụm
     assert "trends=False" in api_src.split("def _soi_nen_nong(")[1].split("\n@app")[0]
 
-    assert ">Đang nóng</button>" in js               # chip trơn, minimalist — không emoji
-    assert "tu-khoa-nong" in js and "đang soi…" in js
-    assert 'loaiCum === \'nong\'' in js or 'loaiCum === "nong"' in js
+    # Hot Topic nam trong OVERVIEW (duyet mockup v2), tai NGAY khi mo tab —
+    # khong con chip "Dang nong" trong Keyword
+    assert ">Hot Topic" in js and "tu-khoa-nong" in js and "đang soi…" in js
+    assert "Đang nóng" not in js
+    # cot cuoi bang Hot Topic ten External, khop ten khoi C
+    assert "<th>External</th>" in js

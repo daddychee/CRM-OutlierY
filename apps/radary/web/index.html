@@ -62,6 +62,14 @@ textarea { min-height:110px; font-family:ui-monospace,Menlo,monospace; font-size
 .formrow { display:grid; grid-template-columns:220px 1fr; gap:10px; align-items:center; margin-bottom:10px }
 .formrow label { color:var(--muted) }
 .note { color:var(--muted); font-size:12.5px; margin-top:8px }
+.ktab { border:1px solid var(--line); background:var(--panel); color:var(--text); border-radius:9px; padding:9px 18px; font-weight:600; font-size:14px; cursor:pointer }
+.ktab.on { background:var(--accent); border-color:var(--accent); color:#fff }
+.ktab small { display:block; font-weight:400; font-size:11px; color:var(--muted); margin-top:1px }
+.ktab.on small { color:rgba(255,255,255,.75) }
+.exgrid { display:grid; grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); gap:10px }
+.excard { border:1px solid var(--line); border-radius:10px; padding:12px 14px }
+.excard h3 { font-size:13px; margin:0 0 2px }
+.excard .big { font-size:21px; font-weight:700; font-variant-numeric:tabular-nums }
 .alertrow { display:flex; gap:10px; align-items:flex-start; padding:10px 4px; border-bottom:1px solid var(--line) }
 .alertrow time { color:var(--muted); font-size:12px; white-space:nowrap; padding-top:2px }
 .alertrow .body { flex:1 }

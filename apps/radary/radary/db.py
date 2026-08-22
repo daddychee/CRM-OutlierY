@@ -495,9 +495,12 @@ def tom_tat_pool(conn, ws):
         FROM videos v WHERE v.workspace_id=? AND v.dead=0 AND v.pub_ts>=?''',
         (ws, now - 90 * 86400)) if x[0]]
     vs.sort()
+    vph = sorted(x[0] for x in conn.execute(
+        'SELECT last_vph FROM videos WHERE workspace_id=? AND dead=0 AND last_vph>0', (ws,)))
     return {'so_video': r['n'], 'so_kenh': r['k'], 'moi_nhat': r['moi_nhat'] or 0,
             'video_moi_30_ngay': moi30, 'top_90_ngay': top,
-            'view_giua_moi': (vs[len(vs) // 2] if vs else None), 'so_mau_moi': len(vs)}
+            'view_giua_moi': (vs[len(vs) // 2] if vs else None), 'so_mau_moi': len(vs),
+            'vph_giua_pool': (round(vph[len(vph) // 2], 2) if vph else None)}
 
 def trends_doc(conn, cum, geo, ngay=None):
     """Trends của hôm nay (nếu đã hỏi). Google chặn theo IP nên hỏi lại là dính tiếp."""
