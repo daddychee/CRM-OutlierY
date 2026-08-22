@@ -648,3 +648,23 @@ def test_loi_o_buoc_hau_xu_ly_khong_lam_mat_ban_nhap_23_08():
     assert len(script.sections) == 4, "mat phan khi buoc cat loi"
     assert phan["Hook"], "mat ban nhap hook khi vong cat loi"
     assert all(v.strip() for v in phan.values())
+
+
+def test_khuon_end_theo_so_do_that_23_08():
+    """Ba con so cu (7%, 500, 1200) khong co can cu nao trong tai lieu app.
+
+    Do tren 59 ban Ket team DA NHAN: trung vi 1.512 ky tu, p10=696, p90=2.200,
+    ti le Ket/bai trung vi 5,9%. Tran 1.200 cu bi 68% ban that vuot qua — tuc no
+    dang cat oan nhung ban team von hai long.
+    """
+    from voiceprofile.generator import _end_chars, END_MIN, END_MAX, END_RATIO
+
+    assert END_RATIO == 0.07                     # gan trung vi that (5,9%), giu
+    assert END_MIN == 700                        # p10 that = 696
+    assert END_MAX == 2200                       # p90 that = 2.200
+    # bai co do dai DIEN HINH cua team (16k-34k) phai ra khuon quanh trung vi that
+    assert 1100 <= _end_chars(16_590) <= 2200
+    assert 1400 <= _end_chars(21_863) <= 1700    # bai Uzbekistan that
+    assert _end_chars(24_304) > 1200, "tran cu cat oan bai dai"
+    # bai rat ngan van co san du de viet mot ket tu te
+    assert _end_chars(4_200) == END_MIN

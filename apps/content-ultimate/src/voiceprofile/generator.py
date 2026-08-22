@@ -27,7 +27,15 @@ from .textutils import split_sentences, tokenize_words
 # truc dien, cau ngan nhip nhanh manh, bao quat title. Do dai 250-500 KY TU (~15-25 giay).
 HOOK_CHARS_MIN, HOOK_CHARS_MAX = 250, 500
 HOOK_CHARS = 375                 # giua khoang, dung cho allocate (tru khoi tong)
-END_RATIO, END_MIN, END_MAX = 0.07, 500, 1200
+# End: ba con so cu (7%, 500, 1200) khong co MOT DONG can cu nao trong toan bo tai
+# lieu app — chi duoc nhac lai. Do 23/08 tren 59 ban Ket team DA NHAN: trung vi 1.512
+# ky tu, p10=696, p90=2.200, ti le Ket/bai trung vi 5,9% (p75 7,2%).
+#   -> ti le 7% GAN DUNG (quang p70), GIU.
+#   -> tran 1.200 SAI NANG: 68% ban that vuot no. Nang len p90 = 2.200.
+#   -> san 500 thap hon p10 that (696). Nang len 700.
+# (5 ban Ket ngan nhat trong kho la 110-389 ky tu nhung do la ban CUT bat thuong,
+#  khong phai Ket viet gon — khong lay lam can cu ha san.)
+END_RATIO, END_MIN, END_MAX = 0.07, 700, 2200
 CHAPTER_MIN_CHARS = 600
 # Vung ngot chat luong cho 1 chuong: ~2500-4000 ky tu. Ngoai vung nay giong hong:
 #  - < QUALITY: chuong qua ngan -> LLM nen -> van phang.
@@ -1040,7 +1048,11 @@ def generate_script(
             else:
                 rs, ru = build_scope_cut_prompt(sec, profile, body, target, mis_line=mis_line)
             try:
-                revised = llm_text(rs, ru, max(4096, target * 3)).strip()
+                # Ngan sach token cua buoc CAT phai tinh theo BAN NHAP DAU VAO, khong
+                # theo do dai dau ra mong muon. Su co 23/08: cat End tu 2.701 ky tu ve
+                # 500 -> max(4096, 500*3) = 4.096 token, glm-5.3 (model reasoning) dot
+                # het vao phan suy nghi roi tra ve rong (finish_reason=length).
+                revised = llm_text(rs, ru, max(4096, len(body) // 2, target * 3)).strip()
             except Exception as e:  # noqa: BLE001
                 # GIU BAN NHAP. Loi hay gap: contentFilter cua nha cung cap (chu de
                 # nhay cam), het han muc, nghen toc do. Khong duoc de mat chu da viet.
