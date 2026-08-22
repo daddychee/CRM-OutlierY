@@ -1,4 +1,4 @@
-mau_regex,nhan,trong_so,goi_y_sua,ghi_chu
+﻿mau_regex,nhan,trong_so,goi_y_sua,ghi_chu
 "\bdelve[sd]? into\b",cum sao,3,"noi thang: 'look at' / bo han",dau hieu LLM kinh dien
 "\bin conclusion\b",chuyen y may,3,"ket bang mot hinh anh cu the",van noi khong ai noi cau nay
 "\bit(?:'s| is) worth noting that\b",cum sao,3,"bo han hoac noi thang dieu can noi",
@@ -20,3 +20,7 @@ mau_regex,nhan,trong_so,goi_y_sua,ghi_chu
 "\bnestled\b",tinh tu rong,0.5,"'sits' / 'lies'",
 "\bboasts?\b",tinh tu rong,0.5,"'has' / ta so lieu that",
 "\bwhat (?:if|makes)\b[^?]{0,60}\?",cau hoi tu tu,0.5,"giu toi da 1-2 moi chuong",PACING cho phep — chi dem
+"(?m)(?:^|(?<=[.!?] ))Not\s+[^.!?]{0,50}[.!?]",dong tac may,2,"gop vao cau truoc, hoac viet thanh cau du chu ngu vi ngu","manh cau phu dinh: do 22/08 gap 55 lan van nguoi (7,07 vs 0,128 /1000)"
+"\b[Hh]ere(?:.s| is| are) what\b",dong tac may,3,"bo cau dan, noi thang cai bat ngo ra","cau dan bao hieu: gap 51 lan van nguoi; TANG 0->3 sau khi cha em-dash"
+"\b[Bb]ut here(?:.s| is)\b",dong tac may,3,"bo cau dan, noi thang","bien the cua cau dan bao hieu: gap 18 lan van nguoi"
+"\b[Tt]hen there (?:is|are|was|were)\b",dong tac may,2,"noi thang vao vat the, bo keo noi","keo noi danh sach: gap 23 lan van nguoi; TANG 0->2 sau khi cha em-dash"

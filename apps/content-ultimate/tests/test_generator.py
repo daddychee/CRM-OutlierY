@@ -108,7 +108,11 @@ def test_generate_script_sequential_calls_and_assembly():
     assert script.title.startswith("What Is At The Edge")
     # 4 phan noi dung (hook + 2 chapter + end), title khong goi LLM
     assert len(script.sections) == 4
-    assert len(calls) == 4
+    # 23/08: HOOK sinh SO_PHUONG_AN ban roi MAY cham chon (hook.chon) — hook dung
+    # chung cong thuc voi chuong thi khong bao gio tot len (do that 22/08: sua neo
+    # giong lam than bai tot len nhung hook xau di). Hook ngan nen 3 ban rat re.
+    from voiceprofile.hook import SO_PHUONG_AN
+    assert len(calls) == 3 + SO_PHUONG_AN          # 3 phan thuong + N ban hook
     md = script.to_markdown()
     assert md.startswith("# What Is At The Edge")
     assert "## Hook" in md and "## End" in md
@@ -352,6 +356,10 @@ def test_hook_qua_dai_bi_cat_MOT_vong():
     assert len(hook) < 2000, "hook qua dai khong bi cat"
     assert len(hook) <= HOOK_CHARS_MAX * 1.15
     assert sum("TOO LONG" in c for c in calls) == 1   # dung MOT vong, khong lap vo han
+    # 23/08: ca SO_PHUONG_AN ban hook deu phinh -> may van chon mot ban, roi vong
+    # cat moi ha xuong. Cat van chay DUNG MOT lan (khong lap vo han).
+    from voiceprofile.hook import SO_PHUONG_AN
+    assert sum("HOOK" in c and "Material" in c for c in calls) == SO_PHUONG_AN
 
 
 def test_vong_cat_dung_chung_ngan_sach_voi_tang_2():

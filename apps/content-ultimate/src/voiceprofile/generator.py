@@ -418,7 +418,12 @@ def min_chapters_for(total_chars: int, has_hook: bool, has_end: bool) -> int:
     return max(1, math.ceil(body / CHAPTER_WARN_CHARS))
 
 
-TRAN_TU_NEO = 2600          # tran do day cua khoi neo giong (xem chon_neo.TRAN_TU)
+TRAN_TU_NEO = 2600
+# Vong SUA CAU (Dot 3, 23/08): tran ngan sach dong tac may tren 1.000 tu. Do that
+# van NGUOI ~0,2; ban may 19-28. Dat 4,0 lam tran de con duong lui, khong ep ve 0.
+NGAN_SACH_DONG_TAC = 4.0
+SUA_CAU_VONG = 2
+END_CUT_VONG = 2         # End no gap 3 lan khuon thi mot vong khong du          # tran do day cua khoi neo giong (xem chon_neo.TRAN_TU)
 
 
 def build_voice_block(profile: dict) -> str:
@@ -657,6 +662,36 @@ EXPAND_MAX_ROUNDS = 2     # 1 luot thuong du (do that ve -1%); luot 2 la bao hie
 EXPAND_STARVING = 10      # gian brief >10x = doi nguyen lieu -> NO = ep LLM bia -> KHONG no
 
 
+def build_end_cut_prompt(section: OutlineSection, profile: dict, draft: str,
+                        target: int, mis_line: str = "") -> tuple[str, str]:
+    """Cat RIENG cho End. Khac cat chuong o cho: khong "ha tang y" (End it y),
+    ma bo VAN NO — cau lap lai y da noi, cau tong ket cua chinh no, cau cam thanh
+    keo dai. Giu nguyen: cau tra loi truc tiep cua brief, hinh anh cu the manh
+    nhat, va cau chot cuoi cung.
+    """
+    parts = [build_voice_block(profile),
+             "",
+             f"Below is the ENDING of a YouTube script. It runs {len(draft)} characters "
+             f"and must come down to about {target}.",
+             "",
+             "CUT, do not rewrite:",
+             "- Keep the direct answer the ending owes the viewer, and keep the single "
+             "strongest concrete image. Keep the final line.",
+             "- Cut sentences that restate something already said, cut summing-up "
+             "sentences the ending makes about itself, cut sentences that only extend a "
+             "feeling already landed.",
+             "- Do NOT flatten the prose that stays. Do NOT drop a fact, a number or a "
+             "proper name that only appears once.",
+             "- No long dashes. Do not open with an announcing clause.",
+             ]
+    if mis_line:
+        parts.append(f'- The hook told the viewer this belief is FALSE: "{mis_line}". '
+                     "Never re-assert it.")
+    parts += ["", "Output prose only: no heading, no markdown, no notes.", "", draft]
+    return ("You are a script editor. You shorten by removing, not by compressing.",
+            "\n".join(parts))
+
+
 def build_expand_prompt(section: OutlineSection, profile: dict, draft: str,
                         pct: int, mis_line: str = "") -> tuple[str, str]:
     """MOT luot NO khi chuong hut: nang cac y dang nhac-luot len khai trien day du.
@@ -792,6 +827,86 @@ def write_partial_script(out: str | Path, outline: str, profile: dict) -> dict |
     return {"sections": len(script.sections), "chars": actual}
 
 
+def _chon_hook(system: str, user: str, llm_text, target: int, title: str,
+               brief: str, on_progress) -> str:
+    """Sinh SO_PHUONG_AN hook, cham bang MAY (hook.cham), chon ban dat nhieu luat nhat."""
+    try:
+        from . import hook as _hook
+    except ImportError:
+        return llm_text(system, user, max(4096, target * 3)).strip()
+    system = system + "\n\n" + _hook.khoi_luat()
+    ban = []
+    for _ in range(_hook.SO_PHUONG_AN):
+        try:
+            t = (llm_text(system, user, max(4096, target * 3)) or "").strip()
+        except Exception:                     # het luot/nghen — dung voi cai da co
+            break
+        if t:
+            ban.append(t)
+    if not ban:
+        return llm_text(system, user, max(4096, target * 3)).strip()
+    chon, diem = _hook.chon(ban, title=title, brief=brief,
+                            chars_min=HOOK_CHARS_MIN, chars_max=HOOK_CHARS_MAX)
+    if on_progress and len(ban) > 1:
+        bang = " · ".join(f"#{d['thu_tu'] + 1}: {d['diem']}/4" for d in diem)
+        tot = next(d for d in diem if ban[d["thu_tu"]] == chon)
+        on_progress(f"  Hook: cham {len(ban)} phuong an ({bang}) — chon #{tot['thu_tu'] + 1}"
+                    + (f", con truot: {', '.join(tot['truot'])}" if tot["truot"] else ", dat ca 4 luat"))
+    return chon
+
+
+def _dem_du_kien(text: str) -> tuple[int, int]:
+    """(so con so, so danh tu rieng) — van chong LOANG DU KIEN o cap chuong."""
+    from .sua_cau import _SO, _HOA
+    return len(_SO.findall(text)), len(_HOA.findall(text))
+
+
+def _sua_dong_tac(body: str, llm_text, profile: dict, ten: str, on_progress) -> str:
+    """Chay toi da SUA_CAU_VONG vong sua cau cho toi khi ngan sach dat.
+
+    Van o CAP CHUONG (ngoai van tung cau trong sua_cau): mat do con so va danh tu
+    rieng KHONG duoc giam — day dung la cai gia phai tra cua dot truoc khi viet lai
+    ca chuong. Giam thi TU CHOI ca luot sua, giu ban truoc.
+    """
+    try:
+        from . import deai, sua_cau
+    except ImportError:
+        return body
+    luat = deai.doc_luat()
+    giong = profile.get("author", "")
+    for vong in range(SUA_CAU_VONG):
+        r = deai.cham_dau_vet_may(body, luat)
+        if r["dong_tac_tren_1000_tu"] <= NGAN_SACH_DONG_TAC:
+            break
+        truoc_so, truoc_ten = _dem_du_kien(body)
+        moi, bao = sua_cau.sua(body, llm_text, luat, giong)
+        if bao.get("loi"):
+            if on_progress:
+                on_progress(f"  {ten}: vong sua cau loi ({bao['loi'][:80]}) — giu ban truoc.")
+            break
+        if not bao["so_cau_sua"]:
+            break
+        sau_so, sau_ten = _dem_du_kien(moi)
+        if sau_so < truoc_so or sau_ten < truoc_ten:
+            if on_progress:
+                on_progress(f"  {ten}: vong sua cau bi TU CHOI — lam roi du kien "
+                            f"(so {truoc_so}->{sau_so}, ten rieng {truoc_ten}->{sau_ten}). "
+                            "Giu ban truoc.")
+            break
+        r2 = deai.cham_dau_vet_may(moi, luat)
+        if r2["dong_tac_tren_1000_tu"] >= r["dong_tac_tren_1000_tu"]:
+            if on_progress:
+                on_progress(f"  {ten}: vong sua cau khong giam duoc dong tac "
+                            f"({r['dong_tac_tren_1000_tu']}->{r2['dong_tac_tren_1000_tu']}) — giu ban truoc.")
+            break
+        body = moi
+        if on_progress:
+            tc = f", tu choi {len(bao['tu_choi'])} cau" if bao["tu_choi"] else ""
+            on_progress(f"  {ten}: sua {bao['so_cau_sua']}/{bao['so_cau_vi_pham']} cau mang dong tac may"
+                        f"{tc} — dong tac {r['dong_tac_tren_1000_tu']} -> {r2['dong_tac_tren_1000_tu']}/1000 tu.")
+    return body
+
+
 def generate_script(
     outline: str,
     profile: dict,
@@ -877,7 +992,15 @@ def generate_script(
         system, user = build_section_prompt(sec, profile, outline_summary, prev_tail, target,
                                             title=script.title, mis_line=mis_line)
         # rong rai cho model thinking (vd GLM) + phan output
-        body = llm_text(system, user, max(4096, target * 3)).strip()
+        if sec.kind == "hook":
+            # HOOK sinh NHIEU PHUONG AN roi MAY cham chon (Dot 3, 23/08). Hook dang
+            # dung chung cong thuc voi chuong nen no khong bao gio tot len: dot 22/08
+            # lam than bai tot len nhung hook XAU DI (goi ten chu de ngay cau dau, tuc
+            # dong vong lap truoc khi mo). Hook ngan nen 3 phuong an rat re.
+            body = _chon_hook(system, user, llm_text, target, script.title,
+                              sec.brief, on_progress)
+        else:
+            body = llm_text(system, user, max(4096, target * 3)).strip()
         # Tang 3: Python do sau khi viet; vuot tran (kem dung sai) -> MOT vong cat.
         # HOOK cung co tran tu 2026-07-15: truoc day no bi loai khoi cho nay nen viet
         # dai bao nhieu cung khong ai chan (user bao hook phinh, pha quy uoc 250-500).
@@ -898,19 +1021,37 @@ def generate_script(
             ceiling = CHAPTER_WARN_CHARS
         else:
             ceiling = _end_chars(total_chars)      # end: vốn đã đo theo mục tiêu của nó
-        if len(body) > ceiling * REVISE_OVER_RATIO:
+        # End duoc CAT NHIEU VONG hon: do that 23/08 no no gap 3 lan khuon (1.625 vs
+        # 500) va mot vong chi ha 50 ky tu. Hook/chuong giu MOT vong nhu cu.
+        so_vong = END_CUT_VONG if sec.kind == "end" else 1
+        for _v in range(so_vong):
+            if len(body) <= ceiling * REVISE_OVER_RATIO:
+                break
             how = ("cat gon hook ve 250-500" if sec.kind == "hook"
+                   else "bo van no, giu du kien" if sec.kind == "end"
                    else "cat y (ha tang y, khong nen van, khong bo y)")
             if on_progress:
                 on_progress(f"  {sec.heading}: {len(body)} ky tu — vuot tran {ceiling}, "
-                            f"chay MOT vong {how}…")
+                            f"chay vong {how}…")
             if sec.kind == "hook":
                 rs, ru = build_hook_cut_prompt(script.title, body, keep_break=bool(mis_line))
+            elif sec.kind == "end":
+                rs, ru = build_end_cut_prompt(sec, profile, body, target, mis_line=mis_line)
             else:
                 rs, ru = build_scope_cut_prompt(sec, profile, body, target, mis_line=mis_line)
             revised = llm_text(rs, ru, max(4096, target * 3)).strip()
-            if revised and len(revised) < len(body):
+            # van: phai NGAN HON that. Rieng End con them chot "khong cat qua tay
+            # xuong duoi 60% khuon" — vi End chay NHIEU vong nen co the cat lem sang
+            # phan can giu; hook/chuong chay mot vong, giu nguyen hanh vi cu (chot
+            # 60% ap cho hook se tu choi ca ban cat dung, bat 23/08 bang test).
+            du_ngan = len(revised) >= target * 0.6 if sec.kind == "end" else True
+            if revised and len(revised) < len(body) and du_ngan:
                 body = revised
+            else:
+                if on_progress and revised:
+                    on_progress(f"  {sec.heading}: vong cat bi TU CHOI "
+                                f"({len(body)} -> {len(revised)} ky tu) — giu ban truoc.")
+                break
         # Vong NO: chuong HUT so khung -> keo len bang y con trong brief (nguoc vong cat).
         if sec.kind == "chapter" and len(body) < target * EXPAND_FLOOR:
             n_expand += 1                       # dem de canh bao ho so viet ngan he thong
@@ -941,6 +1082,12 @@ def generate_script(
                                         "mat van cu / vuot tran) — giu ban truoc.")
                         break
                     body = grown
+        # ---- VONG SUA CAU: go dong tac may, GIU NGUYEN du kien ----
+        # Chan bang LOI khong an (luat "toi da 1 em-dash/doan" bi vi pham 26-59%),
+        # nen do bang MAY sau khi sinh. Sua TUNG CAU chu khong viet lai ca chuong:
+        # dot truoc viet lai tu dau lam du kien loang di (mat so lieu, de ra loi sai).
+        body = _sua_dong_tac(body, llm_text, profile, sec.heading, on_progress)
+
         script.sections.append((sec.heading, body))
         written += len(body)
         prev_tail = _tail(body)

@@ -45,6 +45,9 @@ EM_DASH = re.compile(r"[—–]")
 # Nguong nhip — chi dung khi KHONG co exemplar de so (ho so hong). Deu tu so do that.
 CAU_CUT_TU = 8          # < 8 tu = cau cut
 CAU_DAI_TU = 25         # > 25 tu = cau dai
+NHAN_DONG_TAC = "dong tac may"   # nhan trong CSV cho cac cach thuc hien khac
+DONG_TAC_SACH = 4.0              # ngan sach GOP /1000 tu (van NGUOI do ra ~0,2)
+DONG_TAC_NANG = 8.0
 EM_DASH_SACH = 3.0      # <= 3/1000 tu: trong vung van nguoi (do: exemplar A013 = 1,4)
 EM_DASH_NANG = 8.0      # > 8/1000: dam dac may (do: ban that A011 = 8-13)
 MAT_DO_SACH = 2.0       # tong trong so cum sao tren 1000 tu
@@ -108,9 +111,17 @@ def cham_dau_vet_may(text: str, luat: list[dict] | None = None) -> dict:
     mat_do = tong_ts / ngan
     md_em = n_em / ngan
 
-    if an or md_em > EM_DASH_NANG or mat_do > MAT_DO_NANG:
+    # NGAN SACH DONG TAC (22/08): dem GOP ca ho — em-dash CONG voi cac cach thuc
+    # hien khac cua cung mot dong tac tu tu (nhan "dong tac may" trong CSV). Do
+    # that: cha em-dash o Dot 1 thi "Here is what" 0->3, "Then there is" 0->2,
+    # tuc nang luong chui sang cho khac. Dem tung ky tu thi bao cao thap hon
+    # thuc te; dem gop moi kiem duoc.
+    n_dt = n_em + sum(1 for h in hits if h["nhan"] == NHAN_DONG_TAC)
+    md_dt = n_dt / ngan
+
+    if an or md_dt > DONG_TAC_NANG or mat_do > MAT_DO_NANG:
         muc = "nang"
-    elif md_em > EM_DASH_SACH or mat_do > MAT_DO_SACH:
+    elif md_dt > DONG_TAC_SACH or mat_do > MAT_DO_SACH:
         muc = "canh_bao"
     else:
         muc = "dat"
@@ -121,6 +132,8 @@ def cham_dau_vet_may(text: str, luat: list[dict] | None = None) -> dict:
         "mat_do_cum": round(mat_do, 2),
         "em_dash_tren_1000_tu": round(md_em, 2),
         "em_dash_so_luong": n_em,
+        "dong_tac_tren_1000_tu": round(md_dt, 2),
+        "dong_tac_so_luong": n_dt,
         "ky_tu_an": len(an),
         "so_hit": len(hits),
         "hits": hits[:200],           # tran payload — bang UI khong can hon
