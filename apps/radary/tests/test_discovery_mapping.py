@@ -1216,3 +1216,31 @@ def test_reddit_qua_apify_chi_chay_khi_bam():
     assert '>\n                Hỏi Reddit</button>' in js or 'Hỏi Reddit</button>' in js
     assert 'tốn ~0,016 USD mỗi lần' in js
     assert 'tra-cuu/reddit' in js
+
+
+def test_serp_ep_so_va_bo_sung_trends_cho_ban_nen():
+    """22/08 — user báo hai ô Trends/News trống trên bản lưu của Hot Topic.
+
+    (1) Bản do probe NỀN tạo cố ý tắt Trends (nền 5 cụm/ngày × 3 lượt ≈ 450
+        lượt/tháng, vượt xa gói free 100) → phải nói rõ lý do + cho bổ sung khi
+        NGƯỜI mở xem thật, giữ nguyên tắc "quota chỉ tiêu khi người quyết định".
+    (2) SERP trả LẪN số và chuỗi ("100" / "<1%" / "Breakout") → sort theo giá trị
+        nổ `bad operand type for unary -: str`. Ép số an toàn, đọc không được
+        thì 0 (không đoán bừa).
+    """
+    from pathlib import Path as _P
+    from radary import serp
+
+    assert serp._so(100) == 100 and serp._so("100") == 100
+    assert serp._so("<1%") == 1 and serp._so("Breakout") == 0 and serp._so(None) == 0
+
+    goc = _P(__file__).resolve().parents[1]
+    api_src = (goc / 'radary' / 'api.py').read_text(encoding='utf-8')
+    r = api_src.split('def tra_cuu_trends(')[1].split('\nclass RedditIn')[0]
+    assert "auth.ws_for_user(c, ws, u['id'], 'leader')" in r      # tiêu quota → leader+
+    assert 'db.tra_cuu_luu' in r                                  # ghi lại, lần sau 0 lượt
+    assert 'tu_nen' in api_src and 'quét nền tạo' in api_src      # lý do rõ, không "đã tắt"
+
+    js = (goc / 'web' / 'app.js').read_text(encoding='utf-8')
+    assert 'Lấy Google Trends' in js and '(3 lượt SERP)' in js
+    assert 'tra-cuu/trends' in js

@@ -1954,7 +1954,7 @@ function Mapping({ ws, canEdit }) {
   // thấy số của US — user báo 21/08 ("từ khoá thị trường US lọt sang Spain").
   useEffect(() => {
     setA(null); setB(null); setCum(''); setErr(''); setBusy(''); setXemLai(null);
-    setLichSu([]); setNoi(null); setNong(null); setNongMo(false); setCuaSo(28); setRd(null);
+    setLichSu([]); setNoi(null); setNong(null); setNongMo(false); setCuaSo(28); setRd(null); setTrBu(null);
     api('GET', `/workspaces/${ws}/discovery/goi-y-seed`).then(r => setGoiY(r.seed || [])).catch(() => setGoiY([]));
     const nnLuu = (() => { try { return localStorage.getItem('mapping_nn_' + ws) || ''; } catch (e) { return ''; } })();
     api('GET', `/workspaces/${ws}/discovery/tu-khoa-noi`
@@ -1993,7 +1993,7 @@ function Mapping({ ws, canEdit }) {
       const a = await api('GET', `/workspaces/${ws}/tra-cuu?cum=${encodeURIComponent(q)}`
         + (lai ? '&xem_lai=1' : ''));
       if (wsLucDo !== ws) return;               // người dùng đã đổi pool giữa chừng
-      setRd(null);
+      setRd(null); setTrBu(null);
       if (a.khong_co_ban_luu) {                 // pool này chưa từng tra từ khoá đó
         setLichSu(a.lich_su || []); setPool(a.pool || {});
         setCum(''); setBusy(''); writeHash({ q: '', qws: '' });
@@ -2029,6 +2029,16 @@ function Mapping({ ws, canEdit }) {
   // hoi moi, nhung ban luu thi dong bang) -> loc + tinh lai xu huong o day de ban cu
   // het bao "xuong -42%" gia. Cung cong thuc voi server (mean quy dau vs quy cuoi).
   const gg = B && B.google || {};
+  const [trBu, setTrBu] = useState(null);    // Trends bổ sung cho bản lưu thiếu
+  const [trBan, setTrBan] = useState('');
+  const buTrends = async () => {
+    if (trBan) return;
+    setTrBan('Đang lấy Google Trends…');
+    try {
+      setTrBu(await api('POST', `/workspaces/${ws}/tra-cuu/trends`, { cum: A.cum }));
+    } catch (e) { setTrBu({ co_du_lieu: false, ly_do: String(e.message || e) }); }
+    setTrBan('');
+  };
   const [rd, setRd] = useState(null);        // Reddit — TỐN TIỀN nên chỉ chạy khi bấm
   const [rdBan, setRdBan] = useState('');
   const hoiReddit = async () => {
@@ -2297,28 +2307,34 @@ function Mapping({ ws, canEdit }) {
           (${sp.khoa_het.join(', ')})${sp.con_khoa ? ' — đã tự xoay sang khóa kế tiếp' : ''}` : ''}
           ${sp.loi ? html`<span> ${sp.loi}</span>` : ''}</div>` : ''}
         <div class="exgrid">
+          ${(() => { const tr2 = (trBu && trBu.co_du_lieu) ? trBu : tr; return html`
           <div class="excard rong">
-            <h3>Google Trends <span class="note">· ${tr.geo || ''} · ${tr.timeframe || '12 tháng'}${tr.tu_cache ? ' · từ cache hôm nay' : ''}</span></h3>
-            ${tr.co_du_lieu ? html`<div>
-              ${tr.xu_huong ? html`<div class="big" style=${`color:${tr.xu_huong.chieu === 'lên' ? '#2e7d32' : tr.xu_huong.chieu === 'xuống' ? '#c62828' : 'inherit'}`}>
-                ${tr.xu_huong.chieu === 'lên' ? '↑' : tr.xu_huong.chieu === 'xuống' ? '↓' : '→'}
-                ${tr.xu_huong.phan_tram > 0 ? '+' : ''}${tr.xu_huong.phan_tram}%</div>` : ''}
-              <${DuongXuHuong} diem=${tr.diem} nhan="Mức quan tâm tương đối (0–100)"/>
+            <h3>Google Trends <span class="note">· ${tr2.geo || ''} · ${tr2.timeframe || '12 tháng'}${tr2.tu_cache ? ' · từ cache hôm nay' : ''}</span></h3>
+            ${tr2.co_du_lieu ? html`<div>
+              ${tr2.xu_huong ? html`<div class="big" style=${`color:${tr2.xu_huong.chieu === 'lên' ? '#2e7d32' : tr2.xu_huong.chieu === 'xuống' ? '#c62828' : 'inherit'}`}>
+                ${tr2.xu_huong.chieu === 'lên' ? '↑' : tr2.xu_huong.chieu === 'xuống' ? '↓' : '→'}
+                ${tr2.xu_huong.phan_tram > 0 ? '+' : ''}${tr2.xu_huong.phan_tram}%</div>` : ''}
+              <${DuongXuHuong} diem=${tr2.diem} nhan="Mức quan tâm tương đối (0–100)"/>
               <div class="ex2cot">
-                <${ThanhTruyVan} muc=${tr.rising} mau="#2e7d32" ghi="Truy vấn ĐANG LÊN (so kỳ trước)"/>
-                <${ThanhTruyVan} muc=${tr.top} mau="var(--accent,#4C8FE0)" ghi="Truy vấn phổ biến nhất (0–100)"/>
+                <${ThanhTruyVan} muc=${tr2.rising} mau="#2e7d32" ghi="Truy vấn ĐANG LÊN (so kỳ trước)"/>
+                <${ThanhTruyVan} muc=${tr2.top} mau="var(--accent,#4C8FE0)" ghi="Truy vấn phổ biến nhất (0–100)"/>
               </div>
-              ${(tr.vung || []).length ? html`<div style="margin-top:6px">
+              ${(tr2.vung || []).length ? html`<div style="margin-top:6px">
                 <div class="note" style="margin:0 0 2px">Vùng quan tâm nhất (thang 0–100) —
                   dữ kiện chọn thị trường</div>
-                ${(tr.vung || []).slice(0, 8).map(v => html`<${HangThanh} nhan=${v.vung}
+                ${(tr2.vung || []).slice(0, 8).map(v => html`<${HangThanh} nhan=${v.vung}
                   tieu_de=${v.vung} phan_tram=${Math.max(4, v.gia_tri)}
                   mau="var(--accent,#4C8FE0)" phaiClass="note" phai=${v.gia_tri}/>`)}
               </div>` : ''}
-              ${!(tr.rising || []).length && !(tr.top || []).length ? html`<div class="note">
+              ${!(tr2.rising || []).length && !(tr2.top || []).length ? html`<div class="note">
                 Không có truy vấn liên quan (từ khoá hẹp) — xem "biến thể người ta gõ" ở khối B.</div>` : ''}
-            </div>` : html`<div class="note">${tr.rate_limit ? '⏳ ' : ''}${tr.ly_do || 'không có dữ liệu'}</div>`}
-          </div>
+            </div>` : html`<div>
+              <div class="note" style="margin:0 0 6px">${tr2.rate_limit ? '⏳ ' : ''}${tr2.ly_do || 'không có dữ liệu'}</div>
+              ${sp.co_khoa && canEdit ? html`<button class="btn small" onClick=${buTrends}
+                disabled=${!!trBan}>Lấy Google Trends <span class="note">(3 lượt SERP)</span></button>` : ''}
+              ${trBan ? html`<span class="note"> ${trBan}</span>` : ''}
+            </div>`}
+          </div>`; })()}
           ${gg.co_du_lieu ? html`<div class="excard rong">
             <h3>Câu hỏi thật người ta hỏi <span class="note">· People Also Ask + tìm kiếm
               liên quan · mỗi câu là một ý tưởng video kèm sẵn tiêu đề</span></h3>

@@ -80,6 +80,18 @@ def _so_ngay(chuoi: str) -> str:
     return (chuoi or "")[:10]
 
 
+def _so(x) -> int:
+    """Ep ve so nguyen — nha tra LAN so va chuoi ("100", "<1%", "Breakout").
+
+    Do that 22/08: sort theo gia tri no `bad operand type for unary -: str`.
+    Khong doc duoc thi 0 (khong doan bua, chi tut xuong cuoi bang).
+    """
+    if isinstance(x, (int, float)):
+        return int(x)
+    so = "".join(ch for ch in str(x or "") if ch.isdigit())
+    return int(so) if so else 0
+
+
 def trends(nha: str, khoa: str, cum: str, geo: str = "US",
            timeframe: str = "today 12-m") -> dict:
     """Google Trends: đường quan tâm + truy vấn lên/phổ biến + theo vùng.
@@ -93,7 +105,7 @@ def trends(nha: str, khoa: str, cum: str, geo: str = "US",
     for p in tho:
         gia = (p.get("values") or [{}])[0].get("extracted_value")
         if gia is not None:
-            diem.append({"ngay": _so_ngay(p.get("date") or ""), "gia_tri": gia})
+            diem.append({"ngay": _so_ngay(p.get("date") or ""), "gia_tri": _so(gia)})
     if not diem:
         return {"co_du_lieu": False, "geo": geo, "timeframe": timeframe,
                 "ly_do": "SERP không trả dữ liệu Trends cho từ khoá này"}
@@ -114,7 +126,7 @@ def truy_van_lien_quan(nha: str, khoa: str, cum: str, geo: str = "US") -> dict:
              {"q": cum, "geo": geo, "data_type": "RELATED_QUERIES"})
     rq = d.get("related_queries") or {}
     lay = lambda ds: [{"cum": x.get("query", ""),
-                       "gia_tri": x.get("extracted_value") or x.get("value") or 0}
+                       "gia_tri": _so(x.get("extracted_value") or x.get("value"))}
                       for x in (ds or []) if x.get("query")]
     return {"rising": lay(rq.get("rising")), "top": lay(rq.get("top"))}
 
@@ -125,7 +137,7 @@ def theo_vung(nha: str, khoa: str, cum: str, geo: str = "US") -> list[dict]:
              {"q": cum, "geo": geo, "data_type": "GEO_MAP_0"})
     ra = []
     for x in (d.get("interest_by_region") or []):
-        gia = x.get("extracted_value") or x.get("value")
+        gia = _so(x.get("extracted_value") or x.get("value"))
         if x.get("location") and gia:
             ra.append({"vung": x["location"], "gia_tri": gia})
     return sorted(ra, key=lambda r: -r["gia_tri"])[:10]

@@ -1310,7 +1310,8 @@ def _soi_khoi_b(ws: int, cum: str, vung: dict | None, trends: bool = True) -> di
                  if c not in da_co][:8]
     # Trends: đọc cache trong NGÀY trước — Google chặn theo IP, hỏi lại cùng từ khoá
     # vừa vô ích vừa làm dính rate limit lâu hơn.
-    tr = {'co_du_lieu': False, 'ly_do': 'đã tắt Google Trends'}
+    tr = {'co_du_lieu': False, 'tu_nen': True,
+          'ly_do': 'Bản này do quét nền tạo — Trends chưa lấy để khỏi đốt quota'}
     if trends:
         with get_conn() as c2:
             try:
@@ -1358,6 +1359,50 @@ def _soi_khoi_b(ws: int, cum: str, vung: dict | None, trends: bool = True) -> di
         except sqlite3.OperationalError:
             ra['lich_su'] = []
     return ra
+
+
+class TrendsIn(BaseModel):
+    cum: str = ""
+
+
+@app.post('/api/workspaces/{ws}/tra-cuu/trends')
+def tra_cuu_trends(ws: int, body: TrendsIn, request: Request):
+    """BỔ SUNG Google Trends cho bản lưu thiếu.
+
+    Bản lưu do probe nền của Hot Topic tạo thì Trends bị TẮT có chủ đích —
+    nền chạy 5 cụm/ngày, nếu mỗi cụm nuốt 3 lượt SERP thì riêng đường nền đã
+    ~450 lượt/tháng, vượt xa gói free 100. Giữ nguyên tắc "quota chỉ tiêu khi
+    NGƯỜI quyết định": ai mở xem thật thì bấm, 3 lượt SERP.
+    """
+    from . import serp as _serp
+    cum = body.cum.strip()
+    if not cum:
+        raise HTTPException(422, 'thiếu từ khoá')
+    with get_conn() as c:
+        u = auth.require_user(c, request)
+        w = auth.ws_for_user(c, ws, u['id'], 'leader')       # tiêu quota → leader+
+        vung, _ = _vung_cua_ws(w)
+    geo = (vung or {}).get('regionCode') or 'US'
+    bo = _serp.BoKhoa(khoa_v3.lay_khoa_day_du('tra_cuu_ngoai'))
+    if not bo.con_khoa():
+        return {'co_du_lieu': False,
+                'ly_do': 'Chưa cấp khóa SERP cho việc tra_cuu_ngoai — General › API Keys'}
+    try:
+        tr = bo.chay(_serp.trends, cum, geo=geo)
+        tr.update(bo.chay(_serp.truy_van_lien_quan, cum, geo=geo))
+        tr['vung'] = bo.chay(_serp.theo_vung, cum, geo=geo)
+    except Exception as e:                                   # noqa: BLE001
+        return {'co_du_lieu': False, 'ly_do': f'SERP: {e}'}
+    with get_conn() as c2:
+        if tr.get('co_du_lieu'):
+            _ghi_bo_qua_khoa(db.trends_ghi, c2, cum, geo, tr)
+        cu = db.tra_cuu_doc(c2, ws, cum) or {}
+        b = cu.get('b') if isinstance(cu.get('b'), dict) else {}
+        b = b or {'cum': cum}
+        b['trends'] = tr
+        _ghi_bo_qua_khoa(db.tra_cuu_luu, c2, ws, cum, b=b)
+    tr['da_tieu'] = bo.da_tieu
+    return tr
 
 
 class RedditIn(BaseModel):
