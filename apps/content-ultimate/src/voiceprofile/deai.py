@@ -45,6 +45,8 @@ EM_DASH = re.compile(r"[—–]")
 # Nguong nhip — chi dung khi KHONG co exemplar de so (ho so hong). Deu tu so do that.
 CAU_CUT_TU = 8          # < 8 tu = cau cut
 CAU_DAI_TU = 25         # > 25 tu = cau dai
+# Chi so KHONG dung de cham giong — xem ly do trong cham_giong().
+BO_KHOI_CHAM = {"punct_freq_total"}
 NHAN_DONG_TAC = "dong tac may"   # nhan trong CSV cho cac cach thuc hien khac
 DONG_TAC_SACH = 4.0              # ngan sach GOP /1000 tu (van NGUOI do ra ~0,2)
 DONG_TAC_NANG = 8.0
@@ -158,37 +160,56 @@ def do_nhip(text: str) -> dict:
     }
 
 
-def cham_nhip(text: str, profile: dict | None = None, soi: dict | None = None) -> dict:
-    """NHOM B — nhip, so voi exemplar cua CHINH ho so khi con tin duoc.
+def cham_nhip(text: str, profile: dict | None = None, soi: dict | None = None,
+              corpus: list[str] | None = None) -> dict:
+    """NHOM B — nhip, so voi giong cua CHINH tac gia khi con tin duoc.
+
+    CHUAN lay tu dau (23/08): CORPUS truoc, exemplar sau. Luc VIET, prompt dung neo
+    day rut tu corpus (chon_neo, ~1.800 tu khop nhip); luc CHAM ma lai so voi 3 doan
+    mau cu thi hai bo phan nhin hai thu khac nhau — va 3 mau do CHON LECH (do that:
+    A013 mau 33,3% cau dai trong khi corpus that chi 9,3%; A010 26,7% vs 15,0%).
+    Cho ca hai dung MOT nguon.
 
     Ho so hong (soi['do_duoc'] False) hoac khong co profile -> `chuan=None`:
     tra so do + nhan xet MO TA, tuyet doi khong phan "benh" (khong baseline thi
     khong ket luan — cung luat voi engine chan doan).
     """
     do = do_nhip(text)
-    chuan = None
-    if profile and (soi is None or soi.get("do_duoc")):
+    chuan, nguon = None, None
+    if corpus:
+        # Chi can NHIP cua van tac gia, khong can chon khoi toi uu — nen loc file
+        # thieu dau cau (tai dung nguong cua chon_neo) roi do thang. Goi ca thuat
+        # toan chon neo chi de lay mot con so la thua va cham tren corpus lon.
+        from .chon_neo import _mat_do_dau_ket, DAU_KET_TREN_1K
+        lanh = [t for t in corpus if _mat_do_dau_ket(t) >= DAU_KET_TREN_1K]
+        if lanh:
+            c = do_nhip("\n\n".join(lanh))
+            if c["so_cau"] >= 5:
+                chuan, nguon = c, "corpus"
+    if chuan is None and profile and (soi is None or soi.get("do_duoc")):
         mau = [e for e in (profile.get("exemplars") or []) if isinstance(e, str)][:3]
         if mau:
             c = do_nhip(" ".join(mau))
             if c["so_cau"] >= 5:      # duoi 5 cau thi chuan khong dang tin
-                chuan = c
+                chuan, nguon = c, "exemplar"
 
     nx: list[str] = []
     if chuan:
         lech = do["tu_moi_cau"] - chuan["tu_moi_cau"]
         if chuan["tu_moi_cau"] and abs(lech) / chuan["tu_moi_cau"] >= 0.25:
             huong = "VUN HON" if lech < 0 else "NHOI HON"
+            ten = "corpus tac gia" if nguon == "corpus" else "exemplar"
             nx.append(f"Cau {huong} giong tac gia: {do['tu_moi_cau']} tu/cau so voi "
-                      f"{chuan['tu_moi_cau']} cua exemplar ({lech:+.1f}).")
+                      f"{chuan['tu_moi_cau']} cua {ten} ({lech:+.1f}).")
         if do["ti_le_cut"] > chuan["ti_le_cut"] * 1.5 and do["ti_le_cut"] >= 20:
-            nx.append(f"Cau cut {do['ti_le_cut']}% — exemplar chi {chuan['ti_le_cut']}%. "
+            ten = "corpus tac gia" if nguon == "corpus" else "exemplar"
+            nx.append(f"Cau cut {do['ti_le_cut']}% — {ten} chi {chuan['ti_le_cut']}%. "
                       "Day la benh 'doc nhu liet ke'.")
     else:
         nx.append("Chua co chuan giong dang tin de doi chieu — cac so duoi chi la MO TA, "
                   "khong phai ket luan.")
 
-    return {"chi_so": do, "chuan": chuan, "nhan_xet": nx}
+    return {"chi_so": do, "chuan": chuan, "nguon_chuan": nguon, "nhan_xet": nx}
 
 
 def cham_giong(text: str, profile: dict | None = None, soi: dict | None = None) -> dict:
@@ -209,9 +230,20 @@ def cham_giong(text: str, profile: dict | None = None, soi: dict | None = None) 
     if not targets:
         return {"trang_thai": "khong_du_co_so", "ly_do": "Ho so chua co reproduction_targets."}
 
+    # BO punct_freq_total (23/08): no la TONG dau cau tren ky tu, va em-dash duoc
+    # tinh vao do — nen ban SACH em-dash bi cham la "kem giong tac gia" (dung cho
+    # lam diem tut 86% -> 57% hom 22/08), du em-dash chinh la dau van tay cua may.
+    # Dau phay van duoc cham rieng qua punct_comma_freq nen khong mat tin hieu that.
+    targets = {k: v for k, v in targets.items() if k not in BO_KHOI_CHAM}
+    if not targets:
+        return {"trang_thai": "khong_du_co_so", "ly_do": "Ho so khong con target nao dang cham."}
+
     from .validate import evaluate_script
     kq = evaluate_script(text, targets)
-    return {"trang_thai": "da_cham", "phan_tram": kq["percent"], "dat": kq["n_pass"],
+    # KHONG tra diem tong: truot 2/7 chi so ma tong tut 29 diem => thang qua tho,
+    # gay hieu nham hon la giup (cung lop loi voi bang diem da bi bac o Phu luc C).
+    # Tra TUNG chi so, nguoi doc tu thay lech o dau. Trung luat A3 cua app.
+    return {"trang_thai": "da_cham", "dat": kq["n_pass"],
             "tong": kq["n_total"], "targets": kq["targets"], "so_tu": kq["script_words"]}
 
 
@@ -233,7 +265,9 @@ def kiem_chung(text: str, profile: dict | None = None, luat: list[dict] | None =
         ket.append(f"Con dau vet may: {a['so_hit']} cum sao, em-dash {a['em_dash_tren_1000_tu']}/1000 tu.")
     ket += b["nhan_xet"]
     if c["trang_thai"] == "da_cham":
-        ket.append(f"Bam giong tac gia {c['phan_tram']}% ({c['dat']}/{c['tong']} target).")
+        truot = [t["name"] for t in c["targets"] if not t["pass"]]
+        ket.append(f"Bam giong: dat {c['dat']}/{c['tong']} chi so"
+                   + (f", truot {', '.join(truot)}." if truot else "."))
     else:
         ket.append(c["ly_do"])
     if soi and not soi.get("neo_du"):

@@ -128,7 +128,8 @@ def test_ho_so_hong_thi_KHONG_cham_giong():
 def test_ho_so_sach_thi_cham_that():
     r = deai.cham_giong(VAN_NGUOI, _profile([VAN_NGUOI], _TARGETS), {"do_duoc": True})
     assert r["trang_thai"] == "da_cham"
-    assert 0 <= r["phan_tram"] <= 100
+    # 23/08: bo diem tong % (thang qua tho) — gio cham TUNG chi so
+    assert 0 <= r["dat"] <= r["tong"] and r["targets"]
 
 
 def test_khong_co_target_thi_noi_thang():
@@ -238,3 +239,59 @@ def test_chan_van_ban_qua_dai():
     import contentultimate.server as srv
     ma, r = srv._kiem_chung({"text": "a b " * 200_000})
     assert ma == 400 and "qua dai" in r["error"]
+
+
+# ===================== BUOC 1 (23/08): sua thuoc bam giong =====================
+
+def test_khong_cham_punct_freq_total_23_08():
+    """Thuoc dang DEM DAU VAN TAY MAY vao diem giong.
+
+    punct_freq_total = tong dau cau tren ky tu, va em-dash duoc tinh vao do. Ban
+    SACH em-dash vi the bi cham la "kem giong tac gia" — dung cho lam diem tut
+    86% -> 57% hom 22/08, du em-dash chinh la dau van tay cua may. Dau phay van
+    duoc cham rieng qua punct_comma_freq nen khong mat tin hieu that.
+    """
+    from voiceprofile import deai
+
+    ho_so = {"reproduction_targets": {
+        "punct_freq_total": {"target": .085, "sd": .011, "range": [.074, .096]},
+        "punct_comma_freq": {"target": .061, "sd": .005, "range": [.051, .072]},
+        "ttr": {"target": .327, "sd": .018, "range": [.309, .344]}}}
+    r = deai.cham_giong("Mot cau don gian. Hai cau, co dau phay. Ba cau nua day.", ho_so)
+    ten = [t["name"] for t in r["targets"]]
+    assert "punct_freq_total" not in ten
+    assert "punct_comma_freq" in ten and "ttr" in ten
+
+
+def test_khong_con_diem_tong_phan_tram_23_08():
+    """Truot 2/7 chi so ma tong tut 29 diem => thang qua tho, gay hieu nham hon la
+    giup. Bo con so tong, tra TUNG chi so (trung luat A3: khong gop cot thanh diem)."""
+    from voiceprofile import deai
+
+    ho_so = {"reproduction_targets": {
+        "ttr": {"target": .327, "sd": .018, "range": [.309, .344]}}}
+    r = deai.cham_giong("Mot hai ba bon nam sau bay tam chin muoi.", ho_so)
+    assert "phan_tram" not in r
+    assert r["targets"] and "pass" in r["targets"][0]
+
+
+def test_cham_nhip_dung_cung_nguon_voi_prompt_23_08():
+    """Luc VIET dung neo day 1.840 tu chon khop nhip; luc CHAM lai so voi 3 doan
+    mau cu von CHON LECH (A013: mau 33,3% cau dai — corpus that chi 9,3%). Cung
+    mot ho so ma hai bo phan nhin hai thu khac nhau. Cho ca hai dung mot nguon."""
+    from voiceprofile import deai
+
+    # ho so co exemplar LECH (toan cau dai) nhung corpus that la cau ngan
+    ho_so = {"exemplars": ["Mot cau rat dai voi nhieu menh de noi tiep nhau khong "
+                           "dut ra duoc va cu keo di mai nhu the nay day. " * 6]}
+    corpus_ngan = ("Troi mua. Cho vang. Nguoi ta ve som. "
+                   "Quan nuoc dong cua. Den duong bat sang. Pho vang han.\n\n"
+                   "Sang hom sau nang len. Cho lai dong. Tieng rao vang khap ngo. "
+                   "Ai cung voi. Ngay moi bat dau.")
+    r_cu = deai.cham_nhip("Cau ngan. Rat ngan. Nhu the nay.", ho_so)
+    r_moi = deai.cham_nhip("Cau ngan. Rat ngan. Nhu the nay.", ho_so, corpus=[corpus_ngan])
+    assert r_cu["chuan"] is not None
+    assert r_moi["chuan"] is not None
+    # chuan tu corpus phai la cau NGAN, khong phai cau dai cua exemplar lech
+    assert r_moi["chuan"]["tu_moi_cau"] < r_cu["chuan"]["tu_moi_cau"]
+    assert r_moi.get("nguon_chuan") == "corpus"
