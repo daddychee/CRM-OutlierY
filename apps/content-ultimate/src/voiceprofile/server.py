@@ -309,7 +309,8 @@ def _run_extractor(job: dict, corpus: str, name: str, out: str, do_rhetoric: boo
 
 
 def _run_writer(job: dict, outline: str, profile: str, author_dir: str | None,
-                script_path: str, chars: int, provider: str, resume: bool) -> None:
+                script_path: str, chars: int, provider: str, resume: bool,
+                chi_phan: str | None = None, gop_y: str = "") -> None:
     status = "error"
     try:
         out_dir = Path(script_path).parent
@@ -321,7 +322,15 @@ def _run_writer(job: dict, outline: str, profile: str, author_dir: str | None,
                 "--continue" if resume else "--fresh"]
         if author_dir:
             args += ["--author-dir", author_dir]
-        ok = _run_cli(job, args, "TIEP TUC" if resume else "WRITE", True)
+        # Che do viet TUNG PHAN (23/08): viet dung mot phan roi dung, de nguoi kiem
+        # ngay thay vi cho ca bai 18 phut. gop_y chi co nghia khi viet lai mot phan.
+        if chi_phan:
+            args += ["--chi-phan", chi_phan]
+            if gop_y:
+                args += ["--gop-y", gop_y]
+        nhan = f"VIET LAI {chi_phan}" if (chi_phan and gop_y) else (
+            f"VIET {chi_phan}" if chi_phan else ("TIEP TUC" if resume else "WRITE"))
+        ok = _run_cli(job, args, nhan, True)
         if not ok and job["cancelled"].is_set():
             status = "cancelled"
             # Huy giua chung: ghep script.md tu cac chuong da xong (checkpoint) de tai ve
@@ -597,6 +606,8 @@ def make_handler():
                     "author_dir": b.get("author_dir"), "script_path": b["script_path"],
                     "chars": int(b.get("chars", 18000)), "provider": b["provider"],
                     "resume": b.get("resume", False),
+                    "chi_phan": (b.get("chi_phan") or None),
+                    "gop_y": str(b.get("gop_y") or ""),
                 }, daemon=True).start()
                 self._json(200, {"started": True})
             elif path == "/api/cancel":

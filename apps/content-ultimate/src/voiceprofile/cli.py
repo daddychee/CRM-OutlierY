@@ -274,6 +274,8 @@ def write(
     resume: bool = typer.Option(False, "--continue/--fresh",
                                 help="Tiep tuc tu checkpoint (bo qua cac phan da viet) thay vi viet lai tu dau"),
     no_validate: bool = typer.Option(False, "--no-validate", help="Bo qua buoc do sau khi viet"),
+    chi_phan: str = typer.Option(None, "--chi-phan", help="Chi viet DUNG phan nay (vd 'Chapter 2')"),
+    gop_y: str = typer.Option("", "--gop-y", help="Gop y cua nguoi viet, dung khi viet lai mot phan"),
 ):
     """Module 5: sinh kich ban YouTube theo giong tac gia (sinh theo chuong -> ghep 1 file).
 
@@ -341,6 +343,8 @@ def write(
             on_progress=lambda msg: typer.echo(msg),
             done_sections=done,
             on_section_done=on_done,
+            chi_phan=chi_phan,
+            gop_y=gop_y,
         )
     except (RuntimeError, ValueError) as e:
         from .generator import write_partial_script

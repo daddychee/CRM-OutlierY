@@ -11,16 +11,16 @@ from voiceprofile.llm import MODEL_CHOICES, available_model_choices  # noqa: E40
 
 
 def test_model_choices_theo_key():
-    # chỉ GLM có key -> đúng 2 lựa chọn GLM, thứ tự như catalog
+    # chỉ GLM có key -> đúng các lựa chọn GLM, thứ tự như catalog
     ids = [m["id"] for m in available_model_choices({"GLM_API_KEY": "x"})]
-    assert ids == ["glm:glm-5", "glm:glm-5.2"]
-    # đủ 2 key -> đủ 4 lựa chọn (yêu cầu team: Sonnet/Opus/GLM 5.0/GLM 5.2)
+    assert ids == ["glm:glm-5", "glm:glm-5.2", "glm:glm-5.3"]
+    # đủ 2 key -> đủ mọi lựa chọn (Sonnet/Opus/GLM 5.0/5.2/5.3)
     both = available_model_choices({"GLM_API_KEY": "x", "ANTHROPIC_API_KEY": "y"})
-    assert [m["label"] for m in both] == ["Claude Sonnet", "Claude Opus", "GLM 5.0", "GLM 5.2"]
+    assert [m["label"] for m in both] == ["Claude Sonnet", "Claude Opus", "GLM 5.0", "GLM 5.2", "GLM 5.3"]
     # không key nào -> rỗng
     assert available_model_choices({}) == []
     # id thật của "GLM 5.0" trên z.ai là glm-5 (đo endpoint /models 2026-07-08)
-    assert {m["model"] for m in MODEL_CHOICES if m["provider"] == "glm"} == {"glm-5", "glm-5.2"}
+    assert {m["model"] for m in MODEL_CHOICES if m["provider"] == "glm"} == {"glm-5", "glm-5.2", "glm-5.3"}
 
 
 def test_merge_env_update_them_va_tat():
@@ -168,3 +168,52 @@ if __name__ == "__main__":
     test_merge_env_update_them_va_tat()
     test_merge_env_khu_dong_trung_key()
     print("OK — 3 test contentultimate")
+
+
+# ========== BUOC 5 (23/08): duong HTTP + giao dien viet tung chuong ==========
+
+def test_cli_write_nhan_chi_phan_va_gop_y_23_08():
+    """Server chay CLI qua subprocess, nen tham so phai co o CLI truoc."""
+    import inspect
+    from voiceprofile import cli
+
+    ts = inspect.signature(cli.write).parameters
+    assert "chi_phan" in ts and "gop_y" in ts
+
+
+def test_run_writer_truyen_chi_phan_va_gop_y_23_08():
+    """_run_writer phai bo hai tham so do vao dong lenh, khong nuot mat."""
+    import pathlib as _pl
+    src = _pl.Path(__file__).resolve().parents[1].joinpath(
+        "src", "voiceprofile", "server.py").read_text(encoding="utf-8")
+    than = src.split("def _run_writer(")[1].split("\ndef ")[0]
+    assert "--chi-phan" in than and "--gop-y" in than
+    assert "chi_phan" in src.split('elif path == "/api/write"')[1][:900]
+
+
+def test_giao_dien_co_du_khoi_viet_tung_chuong_23_08():
+    """Kiem markup: danh sach phan, hang chip do, khoi duyet co o gop y, hai che do."""
+    import pathlib as _pl
+    html = _pl.Path(__file__).resolve().parents[1].joinpath(
+        "src", "voiceprofile", "board.html").read_text(encoding="utf-8")
+    for dau in ("w_sections",          # danh sach phan ben trai
+                "w_chips",             # hang chip do
+                "w_gopy",              # o gop y
+                "w_duyet",             # nut duyet
+                "w_vietlai",           # nut viet lai theo gop y
+                "w_mode"):             # chon che do viet-va-duyet / viet-full
+        assert dau in html, f"thieu {dau}"
+
+
+def test_giao_dien_khong_dung_emoji_23_08():
+    """Nguyen tac minimalist icon cua user: khong emoji trong khoi viet tung chuong."""
+    import re
+    import pathlib as _pl
+    html = _pl.Path(__file__).resolve().parents[1].joinpath(
+        "src", "voiceprofile", "board.html").read_text(encoding="utf-8")
+    # CHI quet khoi MOI. Cac nut cu cua app van dung emoji (tai ve, kiem chung,
+    # dau tick) — don ca app la "tien tay sua", ngoai pham vi mach nay.
+    kh = html.split("VIET TUNG CHUONG")[1]
+    khoi = kh[:kh.index("w_vietlai") + 120]      # dung dung o cuoi khoi moi
+    emoji = re.findall(r"[\U0001F300-\U0001FAFF\u2190-\u21FF\u2600-\u27BF]", khoi)
+    assert not emoji, f"con emoji: {set(emoji)}"

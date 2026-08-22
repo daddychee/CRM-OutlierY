@@ -68,6 +68,43 @@
   .progress{height:6px;background:var(--raised);border:1px solid var(--border);border-radius:99px;
     overflow:hidden;margin-top:12px}
   .progress>i{display:block;height:100%;background:var(--accent);width:0;transition:width .3s}
+  /* ===== Viet TUNG CHUONG (23/08) — minimalist icon: chi dung cham mau + chu ===== */
+  .wmode{display:flex;gap:9px;flex-wrap:wrap;margin:0 0 12px}
+  .wmode label{display:flex;align-items:center;gap:8px;border:1px solid var(--border);
+    border-radius:8px;padding:8px 12px;font-size:13px;font-weight:600;cursor:pointer;background:var(--raised)}
+  .wmode label:has(input:checked){border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
+  .wmode small{font-weight:400;color:var(--muted)}
+  .wmode label:has(input:checked) small{color:var(--accent)}
+  .wdesk{display:grid;grid-template-columns:236px minmax(0,1fr);gap:14px;align-items:start;margin-top:12px}
+  @media(max-width:960px){.wdesk{grid-template-columns:1fr}}
+  .wsec{border:1px solid var(--border);border-radius:10px;overflow:hidden}
+  .wsec .it{display:grid;grid-template-columns:9px minmax(0,1fr) auto;gap:8px;align-items:center;
+    padding:7px 11px;border-bottom:1px solid var(--border-soft);cursor:pointer;font-size:12.5px}
+  .wsec .it:last-child{border-bottom:0}
+  .wsec .it.on{background:var(--accent-soft)}
+  .wsec .nm{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .wsec .ky{font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
+  .wdot{width:7px;height:7px;border-radius:50%;display:inline-block;background:var(--faint);opacity:.4}
+  .wdot.ok{background:var(--ok);opacity:1}.wdot.now{background:var(--accent);opacity:1}
+  .wwork{border:1px solid var(--border);border-radius:10px;padding:14px 16px;background:var(--panel)}
+  .wchips{display:flex;gap:7px;flex-wrap:wrap;margin:0 0 11px}
+  .wch{border:1px solid var(--border);border-radius:7px;padding:4px 10px;background:var(--raised);
+    font-size:12px;display:flex;align-items:baseline;gap:6px;font-variant-numeric:tabular-nums}
+  .wch .l{color:var(--muted);font-size:11px}
+  .wch b{font-size:13.5px}
+  .wch .vs{color:var(--muted);font-size:11px}
+  .wch.ok b{color:var(--ok)}.wch.warn b{color:var(--danger)}
+  .wtxt{border:1px solid var(--border);border-radius:9px;background:var(--raised);
+    padding:18px 24px;font-size:16px;line-height:1.8;white-space:pre-wrap;max-width:74ch}
+  .wduyet{border:1px solid var(--accent);border-radius:9px;padding:11px 13px;margin-top:12px;
+    background:var(--accent-soft)}
+  .wduyet .q{font-size:13px;font-weight:600;margin:0 0 8px}
+  .wduyet textarea{background:var(--panel);min-height:54px}
+  .wgoi{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+  .wgoi span{border:1px solid var(--border);background:var(--panel);border-radius:16px;
+    padding:3px 10px;font-size:11.5px;color:var(--muted);cursor:pointer}
+  .wgoi span:hover{color:var(--text)}
+  .wacts{display:flex;gap:8px;flex-wrap:wrap;margin-top:9px;align-items:center}
   .pills{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}
   .pill{font-size:11.5px;font-weight:600;padding:4px 11px;border-radius:99px;
     border:1px solid var(--border);color:var(--muted);background:var(--raised)}
@@ -221,6 +258,38 @@ End: ..."></textarea>
       <div class="status" id="w_status"></div>
       <div class="progress"><i id="w_prog"></i></div>
       <div class="pills" id="w_pills"></div>
+
+      <!-- ===== VIET TUNG CHUONG (23/08) ===== -->
+      <div class="wmode" id="w_mode">
+        <label><input type="radio" name="wmode" value="duyet" checked onchange="doiCheDo()">
+          Viết và duyệt <small>· dừng sau mỗi chương</small></label>
+        <label><input type="radio" name="wmode" value="full" onchange="doiCheDo()">
+          Viết full <small>· chạy một mạch</small></label>
+      </div>
+      <div class="wdesk" id="w_desk">
+        <div class="wsec" id="w_sections"></div>
+        <div class="wwork">
+          <div class="row" style="grid-template-columns:1fr auto;margin-bottom:8px">
+            <b id="w_ten" style="font-size:15px">—</b>
+            <span class="note" id="w_y" style="margin:0"></span>
+          </div>
+          <div class="wchips" id="w_chips"></div>
+          <div class="wtxt" id="w_than">Chưa có phần nào. Bấm WRITE để viết phần đầu tiên.</div>
+          <div class="wduyet" id="w_duyetbox" hidden>
+            <p class="q">Phần này dùng được chưa?</p>
+            <textarea id="w_gopy" placeholder="Muốn sửa gì thì viết vào đây. Ví dụ: đoạn giữa còn khô, thêm một chi tiết cụ thể."></textarea>
+            <div class="wgoi">
+              <span onclick="themGopY('Câu còn vụn, viết liền mạch hơn')">Câu còn vụn</span>
+              <span onclick="themGopY('Thiếu chi tiết cụ thể')">Thiếu chi tiết cụ thể</span>
+              <span onclick="themGopY('Mở đầu chậm, vào việc ngay')">Mở đầu chậm</span>
+            </div>
+            <div class="wacts">
+              <button class="btn primary" id="w_duyet" onclick="duyetPhan()">Duyệt, viết phần sau</button>
+              <button class="btn" id="w_vietlai" onclick="vietLaiPhan()">Viết lại theo góp ý</button>
+            </div>
+          </div>
+        </div>
+      </div>
       <div class="verdict" id="w_verdict">
         <div><div class="pct" id="w_pct">—</div></div>
         <table class="tg" id="w_tg"></table>
@@ -502,9 +571,98 @@ async function startWrite(resume){
   let done = [];
   if(resume){ const c = await api('/api/checkpoint', {script, outline}); done = c.done||[]; }
   renderPills(outline, done);
+  W_PHAN = parseHeadings(outline); $('w_script').value = script;
+  await napBan(); veDanhSach();
+  if(cheDo()==='duyet'){                       // viet DUNG phan dau tien chua co
+    const ke = phanKeTiep();
+    if(!ke){ logLine('w_log','Moi phan trong outline da co ban viet.'); setRunning('w', false); return; }
+    setRunning('w', false);
+    await vietPhan(ke, '');
+    return;
+  }
   await api('/api/write', {outline, profile:a.profile, author_dir:a.corpus,
     script_path:script, chars:parseInt($('w_chars').value)||18000, provider:$('w_llm').value, resume});
   poll('w');
+}
+
+// ---------- Viet TUNG CHUONG (23/08) ----------
+// Tai dung parseHeadings / api / poll / logLine san co. Khong them route moi:
+// noi dung tung phan doc tu /api/download roi tach theo dong "## ".
+let W_PHAN = [], W_DANG = null, W_BAN = {};
+
+function cheDo(){ const r=document.querySelector('input[name=wmode]:checked'); return r?r.value:'duyet'; }
+function doiCheDo(){ $('w_desk').hidden = cheDo()!=='duyet'; }
+function themGopY(t){ const o=$('w_gopy'); o.value = (o.value.trim()? o.value.trim()+'. ':'')+t; o.focus(); }
+
+function veDanhSach(){
+  $('w_sections').innerHTML = W_PHAN.map(h=>{
+    const co = W_BAN[h], st = (h===W_DANG && !co) ? 'now' : (co ? 'ok' : '');
+    const ky = co ? co.length.toLocaleString('vi-VN') : '—';
+    return `<div class="it ${h===W_DANG?'on':''}" onclick="moPhan('${h.replace(/'/g,"")}')">
+      <i class="wdot ${st}"></i><span class="nm">${esc(h)}</span><span class="ky">${ky}</span></div>`;
+  }).join('');
+}
+
+async function napBan(){
+  const p = $('w_script').value.trim(); if(!p) return;
+  const r = await fetch('/api/download?path='+encodeURIComponent(p));
+  if(!r.ok) return;
+  const md = await r.text();
+  W_BAN = {};
+  const re = /^##\s+(.+?)\s*$/gm; let m, moc=[];
+  while((m=re.exec(md))) moc.push([m[1].trim(), m.index+m[0].length]);
+  moc.forEach(([h,i],k)=>{ W_BAN[h] = md.slice(i, k+1<moc.length? moc[k+1][1]-moc[k+1][0].length-3 : md.length).trim(); });
+}
+
+async function moPhan(h){
+  W_DANG = h; veDanhSach();
+  const t = W_BAN[h] || '';
+  $('w_ten').textContent = h;
+  $('w_than').textContent = t || 'Phần này chưa viết.';
+  $('w_duyetbox').hidden = !t;
+  $('w_chips').innerHTML = '';
+  $('w_y').textContent = t ? t.length.toLocaleString('vi-VN')+' ký tự' : '';
+  if(!t) return;
+  const a = selectedAuthor(); if(!a) return;
+  const r = await api('/api/kiem-chung', {code:a.code, text:t});
+  if(r.error) return;
+  const n = r.nhip && r.nhip.chi_so || {}, c = r.nhip && r.nhip.chuan || null;
+  const dt = r.dau_vet_may || {};
+  const chip = (l,v,vs,ok)=>`<span class="wch ${ok?'ok':'warn'}"><span class="l">${l}</span><b>${v}</b><span class="vs">${vs}</span></span>`;
+  $('w_chips').innerHTML = [
+    chip('ký tự', t.length.toLocaleString('vi-VN'), '', true),
+    chip('từ/câu', n.tu_moi_cau ?? '—', c?('tác giả '+c.tu_moi_cau):'', !c || Math.abs((n.tu_moi_cau||0)-c.tu_moi_cau) < c.tu_moi_cau*0.25),
+    chip('câu cụt', (n.ti_le_cut ?? '—')+'%', c?('tác giả '+c.ti_le_cut+'%'):'', !c || (n.ti_le_cut||0) <= c.ti_le_cut*1.5),
+    chip('động tác máy', dt.dong_tac_tren_1000_tu ?? '—', 'trên 1.000 từ', (dt.dong_tac_tren_1000_tu||0) <= 4),
+  ].join('');
+}
+
+function phanKeTiep(){
+  for(const h of W_PHAN) if(!W_BAN[h]) return h;
+  return null;
+}
+
+async function vietPhan(h, gopY){
+  const a = selectedAuthor(); if(!a){ logLine('w_log','LỖI: chưa chọn tác giả.'); return; }
+  const outline = $('w_outline').value.trim(); if(!outline){ logLine('w_log','LỖI: outline trống.'); return; }
+  const script = $('w_script').value.trim() || (a.output+'/script.md');
+  $('w_script').value = script;
+  W_DANG = h; veDanhSach(); setRunning('w', true);
+  await api('/api/write', {outline, profile:a.profile, author_dir:a.corpus, script_path:script,
+    chars:parseInt($('w_chars').value)||18000, provider:$('w_llm').value,
+    resume:true, chi_phan:h, gop_y:gopY||''});
+  poll('w');
+}
+
+async function duyetPhan(){
+  const ke = phanKeTiep();
+  if(!ke){ logLine('w_log','Đã viết hết các phần trong outline.'); return; }
+  $('w_gopy').value=''; await vietPhan(ke, '');
+}
+async function vietLaiPhan(){
+  const g = $('w_gopy').value.trim();
+  if(!W_DANG){ return; }
+  await vietPhan(W_DANG, g);
 }
 
 // ---------- Poll status ----------
@@ -542,6 +700,7 @@ function poll(tab){
       // Extractor xong -> tu nap lai thu vien Writer + chon luon tac gia vua tao
       if(tab==='ex' && !j.error) loadLibrary($('ex_name').value.trim());
       $(tab==='ex'?'ex_status':'w_status').innerHTML = j.error ? `<span style="color:var(--danger)">LỖI: ${esc(j.error)}</span>` : 'Xong.';
+      if(tab==='w' && cheDo()==='duyet'){ await napBan(); await moPhan(W_DANG || W_PHAN[0]); veDanhSach(); }
     }
   }, 800);
 }
