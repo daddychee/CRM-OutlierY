@@ -1276,3 +1276,42 @@ def test_khoi_A_luon_tuoi_va_doi_chieu_cum_rut_gon():
 
     js = (_P(__file__).resolve().parents[1] / 'web' / 'app.js').read_text(encoding='utf-8')
     assert 'Cụm rút gọn' in js and 'cụm NGẮN đo CHỦ ĐỀ' in js
+
+
+def test_trends_tach_nhom_nguoi_khoi_truy_van_chu_de():
+    """22/08 — user hỏi "lọt từ khoá Việt Nam có phải do sai thị trường không".
+
+    KHÔNG sai: tham số gửi đi đúng geo=US, status Success. Đó là bản chất
+    Google Trends — "rising related queries" là truy vấn tăng mạnh trong nhóm
+    NGƯỜI cùng tìm chủ đề, không phải truy vấn VỀ chủ đề; chủ đề ít người tìm
+    thì nhóm nhỏ nên 'openai news today', 'lidl near me' lọt vào (RELATED_TOPICS
+    còn nhiễu hơn: National Health Service, GitHub).
+
+    Không vứt dữ liệu — gắn nhãn đúng bản chất, tách hai nhóm.
+    """
+    from radary import serp
+
+    class GiaNha:
+        def __call__(self, nha, khoa, engine, tham_so):
+            return {'related_queries': {
+                'rising': [{'query': 'victory peak kyrgyzstan', 'extracted_value': 11750},
+                           {'query': 'u23 việt nam vs u23 kyrgyzstan', 'extracted_value': 7550},
+                           {'query': 'kyrgyz republic', 'extracted_value': 300},
+                           {'query': 'openai news today', 'extracted_value': 15450},
+                           {'query': 'lidl near me', 'extracted_value': 14600}],
+                'top': [{'query': 'kazakhstan', 'extracted_value': 100}]}}
+
+    goc = serp._goi
+    serp._goi = GiaNha()
+    try:
+        d = serp.truy_van_lien_quan('serpapi', 'k', 'kyrgyzstan', geo='US')
+    finally:
+        serp._goi = goc
+
+    lq = [m['cum'] for m in d['rising']]
+    nn = [m['cum'] for m in d['nhom_nguoi']]
+    assert 'victory peak kyrgyzstan' in lq
+    assert 'u23 việt nam vs u23 kyrgyzstan' in lq        # sự kiện THẬT, giữ đúng nhóm
+    assert 'kyrgyz republic' in lq                       # biến thể rút gọn cũng bắt được
+    assert set(nn) == {'openai news today', 'lidl near me'}
+    assert d['top'][0]['cum'] == 'kazakhstan'            # cột phổ biến vốn sạch, không đụng

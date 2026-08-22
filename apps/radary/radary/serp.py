@@ -121,14 +121,36 @@ def trends(nha: str, khoa: str, cum: str, geo: str = "US",
 
 
 def truy_van_lien_quan(nha: str, khoa: str, cum: str, geo: str = "US") -> dict:
-    """Truy vấn ĐANG LÊN / PHỔ BIẾN — SerpAPI tách thành data_type riêng."""
+    """Truy vấn ĐANG LÊN / PHỔ BIẾN — SerpAPI tách thành data_type riêng.
+
+    TÁCH HAI NHÓM cho phần "đang lên" (user 22/08 hỏi "lọt từ khoá Việt Nam có
+    phải do sai thị trường không"): KHÔNG sai thị trường — tham số gửi đi đúng
+    geo=US, status Success. Đó là bản chất Google Trends: "rising related
+    queries" nghĩa là truy vấn tăng mạnh trong nhóm NGƯỜI cùng tìm chủ đề đó,
+    không phải truy vấn về chủ đề. Chủ đề volume thấp như 'kyrgyzstan' ở Mỹ thì
+    nhóm người rất nhỏ, nên thứ họ cũng tìm ('openai news today', 'lidl near
+    me') lọt vào. RELATED_TOPICS còn nhiễu hơn (National Health Service,
+    GitHub). Cột "phổ biến nhất" thì sạch — nó là truy vấn CÙNG CHỦ ĐỀ thật.
+
+    Không vứt dữ liệu (nhóm-người đôi khi lộ tín hiệu thật, vd trận U23 Việt Nam
+    vs Kyrgyzstan là sự kiện có thật người Việt ở Mỹ tìm), chỉ GẮN NHÃN đúng bản
+    chất để người đọc không hiểu nhầm.
+    """
     d = _goi(nha, khoa, "google_trends",
              {"q": cum, "geo": geo, "data_type": "RELATED_QUERIES"})
     rq = d.get("related_queries") or {}
     lay = lambda ds: [{"cum": x.get("query", ""),
                        "gia_tri": _so(x.get("extracted_value") or x.get("value"))}
                       for x in (ds or []) if x.get("query")]
-    return {"rising": lay(rq.get("rising")), "top": lay(rq.get("top"))}
+    goc = {t for t in (cum or "").lower().split() if len(t) > 2}
+    rising, nhom_nguoi = [], []
+    for m in lay(rq.get("rising")):
+        tu = set(m["cum"].lower().split())
+        # dinh la LIEN QUAN khi cham tu goc, hoac la bien the cua no (kyrgyz <->
+        # kyrgyzstan) — so tien to 5 ky tu de bat ca dang rut gon/tinh tu
+        cham = any(any(t.startswith(g[:5]) or g.startswith(t[:5]) for g in goc) for t in tu)
+        (rising if cham else nhom_nguoi).append(m)
+    return {"rising": rising, "nhom_nguoi": nhom_nguoi, "top": lay(rq.get("top"))}
 
 
 def theo_vung(nha: str, khoa: str, cum: str, geo: str = "US") -> list[dict]:

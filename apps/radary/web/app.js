@@ -2322,9 +2322,20 @@ function Mapping({ ws, canEdit }) {
                 ${tr2.xu_huong.phan_tram > 0 ? '+' : ''}${tr2.xu_huong.phan_tram}%</div>` : ''}
               <${DuongXuHuong} diem=${tr2.diem} nhan="Mức quan tâm tương đối (0–100)"/>
               <div class="ex2cot">
-                <${ThanhTruyVan} muc=${tr2.rising} mau="#2e7d32" ghi="Truy vấn ĐANG LÊN (so kỳ trước)"/>
-                <${ThanhTruyVan} muc=${tr2.top} mau="var(--accent,#4C8FE0)" ghi="Truy vấn phổ biến nhất (0–100)"/>
+                <${ThanhTruyVan} muc=${tr2.rising} mau="#2e7d32"
+                  ghi="Truy vấn ĐANG LÊN về chủ đề này (so kỳ trước)"/>
+                <${ThanhTruyVan} muc=${tr2.top} mau="var(--accent,#4C8FE0)"
+                  ghi="Truy vấn phổ biến nhất cùng chủ đề (0–100)"/>
               </div>
+              ${(tr2.nhom_nguoi || []).length ? html`<details style="margin-top:6px">
+                <summary class="note" style="cursor:pointer">Người tìm chủ đề này cũng tìm gì
+                  (${tr2.nhom_nguoi.length} truy vấn — KHÔNG phải về chủ đề)</summary>
+                <div class="note" style="margin:2px 0 4px">Google Trends xếp "đang lên" theo nhóm
+                  NGƯỜI cùng tìm, không theo chủ đề. Chủ đề ít người tìm ở thị trường này thì nhóm
+                  đó nhỏ, nên thứ họ tìm hằng ngày lọt vào. Để riêng cho khỏi đọc nhầm thành nhu
+                  cầu của ngách — thỉnh thoảng vẫn lộ tín hiệu thật, tự đọc mà lọc.</div>
+                <${ThanhTruyVan} muc=${tr2.nhom_nguoi} mau="#8d6e63" ghi=""/>
+              </details>` : ''}
               ${(tr2.vung || []).length ? html`<div style="margin-top:6px">
                 <div class="note" style="margin:0 0 2px">Vùng quan tâm nhất (thang 0–100) —
                   dữ kiện chọn thị trường</div>
