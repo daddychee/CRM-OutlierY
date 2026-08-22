@@ -16,11 +16,13 @@
   --bg:#f5f5f5; --panel:#fff; --line:#e6e6e6; --text:#16181c; --muted:#6c6c72;
   --accent:#2c6fc4; --accent-soft:#e8f0fb; --good:#16a34a; --warn:#d97706; --bad:#dc2626;
   --t1:#64748b; --t2:#d97706; --t3:#ea580c; --t4:#dc2626;
+  --hot:#d84315; --hot-soft:rgba(216,67,21,.08);
 }
 :root[data-theme="dark"] {
   color-scheme:dark;
   --bg:#090c12; --panel:#121826; --line:#243149; --text:#e8edf4; --muted:#8b96a8;
   --accent:#4c8fe0; --accent-soft:rgba(76,143,224,.14);
+  --hot:#ff8a65; --hot-soft:rgba(255,138,101,.10);
 }
 * { box-sizing:border-box; margin:0 }
 body { background:var(--bg); color:var(--text); font:14px/1.5 'Inter',-apple-system,'Segoe UI',Roboto,sans-serif }
@@ -62,6 +64,37 @@ textarea { min-height:110px; font-family:ui-monospace,Menlo,monospace; font-size
 .formrow { display:grid; grid-template-columns:220px 1fr; gap:10px; align-items:center; margin-bottom:10px }
 .formrow label { color:var(--muted) }
 .note { color:var(--muted); font-size:12.5px; margin-top:8px }
+/* khoi Topic hot / Hook hot trong Overview (mockup Owner duyet 22/08) */
+.hotwrap { margin-top:14px; display:grid; grid-template-columns:1fr 1fr; gap:14px }
+@media(max-width:840px){ .hotwrap { grid-template-columns:1fr } }
+.hotcol { border:1px solid var(--line); border-radius:10px; overflow:hidden }
+.hothead { display:flex; align-items:baseline; gap:8px; padding:9px 13px; background:var(--hot-soft); border-bottom:1px solid var(--line) }
+.hothead b { font-size:13px; letter-spacing:.05em; text-transform:uppercase; color:var(--hot) }
+.hrow { border-bottom:1px solid var(--line) }
+.hrow:last-child { border-bottom:0 }
+.hmain { display:grid; grid-template-columns:26px 1fr auto; gap:8px; align-items:center; padding:9px 13px; cursor:pointer }
+.hmain:hover { background:var(--accent-soft) }
+.hrank { color:var(--muted); font-size:12px; font-variant-numeric:tabular-nums }
+.hname { font-weight:600 }
+.hsub { font-size:12px; color:var(--muted); margin-top:1px }
+.hsub .tag { color:var(--accent) }
+.hno { text-align:right; font-variant-numeric:tabular-nums }
+.hno b { font-size:16px; color:var(--hot) }
+.hno small { display:block; color:var(--muted); font-size:11px }
+.hdrawer { background:var(--bg); border-top:1px dashed var(--line); padding:11px 13px 13px }
+.hvid { display:grid; grid-template-columns:88px 1fr; gap:10px; padding:7px 0; border-bottom:1px solid var(--line); align-items:center }
+.hvid:last-of-type { border-bottom:0 }
+.hvid img { width:88px; height:50px; object-fit:cover; border-radius:6px; background:#000 }
+.hvt { font-size:13px; font-weight:500; line-height:1.35 }
+.hvt a { color:var(--text); text-decoration:none }
+.hvt a:hover { color:var(--accent) }
+.hvm { font-size:12px; color:var(--muted); font-variant-numeric:tabular-nums; margin-top:2px }
+.hvm b { color:var(--hot); font-weight:600 }
+.klabel { font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); margin:10px 0 5px }
+.kchips { display:flex; gap:6px; flex-wrap:wrap }
+.kchip { background:var(--panel); border:1px solid var(--line); border-radius:7px; padding:5px 9px; font-size:12px }
+.kchip b { font-weight:600 }
+.kchip .no { color:var(--hot) }
 .ktab { border:1px solid var(--line); background:var(--panel); color:var(--text); border-radius:9px; padding:9px 18px; font-weight:600; font-size:14px; cursor:pointer }
 .ktab.on { background:var(--accent); border-color:var(--accent); color:#fff }
 .ktab small { display:block; font-weight:400; font-size:11px; color:var(--muted); margin-top:1px }

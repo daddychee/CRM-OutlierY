@@ -458,6 +458,36 @@ def tu_khoa_nong(kho: list[dict], bay_gio: float | None = None,
         chung = [(h["cum"], len(vids & no_theo_cum.get(h["cum"], set())))
                  for h in hooks]
         r["hook"] = [c for c, n in sorted(chung, key=lambda x: -x[1]) if n > 0][:2]
+    # DRILL-DOWN cho khoi hot Overview (Owner duyet mockup 22/08): top 5 moi loai
+    # kem video NO dung sau con so + kenh dang day — nhin la hieu vi sao cum nong;
+    # thumbnail/link YouTube ghep client-side tu yt_id (0 quota)
+    x_theo_id = {v["yt_id"]: x for v, x in moi}
+    dem_drill = {"doi_tuong": 0, "mau_cau": 0}
+    for r in giu:
+        if dem_drill.get(r["loai"], 9) >= 5:
+            continue
+        dem_drill[r["loai"]] += 1
+        vids = sorted(no_theo_cum.get(r["cum"], set()),
+                      key=lambda i: -(video_theo_id[i].get("views") or 0))
+        r["video_no"] = []
+        for i in vids[:6]:
+            v = video_theo_id[i]
+            x = x_theo_id.get(i) or 0
+            r["video_no"].append({"yt_id": v["yt_id"], "title": v["title"],
+                                  "views": v.get("views") or 0, "vpd": round(x),
+                                  "tuoi": round((v.get("views") or 0) / x) if x else None,
+                                  "kenh": v.get("kenh") or ""})
+        kenh_gop: dict[str, dict] = {}
+        for i in moi_theo_cum.get(r["cum"], set()):
+            v = video_theo_id[i]
+            k = kenh_gop.setdefault(v.get("kenh") or "?",
+                                    {"ten": v.get("kenh") or "?", "so": 0, "view": 0, "no": 0})
+            k["so"] += 1
+            k["view"] += v.get("views") or 0
+            if i in no_ids:
+                k["no"] += 1
+        r["kenh_day"] = sorted(kenh_gop.values(), key=lambda k: -k["view"])[:5]
+
     # MA TRAN Topic x Hook (mockup v3 Owner duyet 22/08):
     #   CAP DANG NO — bang chung that: video MOI chua ca topic lan hook, >=2 video
     #   dung va >=1 video no; xep theo ti le no cua cap.

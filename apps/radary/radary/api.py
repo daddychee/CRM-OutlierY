@@ -1249,7 +1249,16 @@ def tu_khoa_noi(ws: int, request: Request, so_cum: int = 30, ngon_ngu: str = '',
                          key=lambda m: -m['ti_le_no'])
         teaser = {'topic': [m['cum'] for m in theo_no if m['loai'] == 'doi_tuong'][:3],
                   'hook': [m['cum'] for m in theo_no if m['loai'] == 'mau_cau'][:2]}
-        return {'cum': xh, 'teaser': teaser,
+        # KHOI HOT Overview: lay tu lop nong (co drill-down), khong lay tu xh
+        # (xh da merge/doi ten theo bang xu huong)
+        hot = {'topic': [], 'hook': []}
+        for r in (nong.get('cum') or []):
+            if 'video_no' not in r:
+                continue
+            muc = {k: r.get(k) for k in ('cum', 'so_moi', 'so_no', 'ti_le_no',
+                                         'hook', 'video_no', 'kenh_day')}
+            (hot['topic'] if r['loai'] == 'doi_tuong' else hot['hook']).append(muc)
+        return {'cum': xh, 'teaser': teaser, 'hot': hot,
                 'cap_no': nong.get('cap_no') or [], 'cap_goi_y': nong.get('cap_goi_y') or [],
                 'nong_meta': {k: nong.get(k) for k in
                               ('nen', 'nguong_no_view_ngay', 'so_video_moi', 'cua_so_ngay')},

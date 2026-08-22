@@ -1010,10 +1010,12 @@ def test_route_tu_khoa_nong_va_tab_ui():
     # probe nền tắt trends (trình duyệt ~17s/cụm) và nuốt lỗi từng cụm
     assert "trends=False" in api_src.split("def _soi_nen_nong(")[1].split("\n@app")[0]
 
-    # v3 (mockup Owner duyet): Hot Topic tan vao route /tu-khoa-noi; Overview con
-    # TEASER "Dang nong" + van goi /tu-khoa-nong fire-and-forget de giu ngan sach
-    # tu-soi External 5 cum/ngay
-    assert "Đang nóng:" in js and "tu-khoa-nong" in js
+    # v3 (mockup Owner duyet): Hot Topic tan vao route /tu-khoa-noi; Overview co
+    # khoi Topic hot / Hook hot (thay teaser 22/08) + van goi /tu-khoa-nong
+    # fire-and-forget de giu ngan sach tu-soi External 5 cum/ngay
+    assert "Topic hot" in js and "Hook hot" in js and "tu-khoa-nong" in js
+    # drill-down: thumbnail ghep tu yt_id (0 quota) + link YouTube + nut tra cuu
+    assert "i.ytimg.com/vi/" in js and "youtu.be/" in js
     assert "<th>External</th>" in js          # cot External o bang Topic
 
 
@@ -1571,3 +1573,29 @@ def test_don_topic_go_so_huu_va_tu_dong_khung_22_08():
     assert mapping.loai_cum("cheap living", phieu) == "mau_cau"
     assert mapping.loai_cum("living", phieu) == "mau_cau"
     assert mapping.loai_cum("reality", phieu) == "mau_cau"
+
+
+def test_tu_khoa_nong_drill_video_kenh_22_08():
+    """Khoi hot Overview (Owner duyet mockup 22/08): top cum phai kem video_no
+    (yt_id/title/views/vpd/kenh de UI ghep thumbnail + link) va kenh_day."""
+    import time
+    from radary import mapping
+    now = time.time()
+    r = mapping.tu_khoa_nong(_kho_nong(now), bay_gio=now)
+    assert r['co_du_lieu']
+    top = r['cum'][0]
+    assert top['video_no'], top
+    v = top['video_no'][0]
+    for khoa in ('yt_id', 'title', 'views', 'vpd', 'kenh'):
+        assert khoa in v, v
+    # video xep theo view giam dan, chi video NO (vpd vuot nguong)
+    views = [x['views'] for x in top['video_no']]
+    assert views == sorted(views, reverse=True)
+    assert all(x['vpd'] > 0 for x in top['video_no'])
+    assert top['kenh_day'] and all(k['so'] >= 1 for k in top['kenh_day'])
+    # chi drill top 5 moi loai — cum thu 6 tro di cua mot loai khong mang payload nang
+    tung_loai = {}
+    for m in r['cum']:
+        tung_loai.setdefault(m['loai'], []).append(m)
+    for ds in tung_loai.values():
+        assert all('video_no' not in m for m in ds[5:])

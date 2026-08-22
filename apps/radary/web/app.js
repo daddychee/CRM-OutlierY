@@ -1946,6 +1946,7 @@ function Mapping({ ws, canEdit }) {
                                               // 22/08): nhìn gần trước, nới ra khi cần
   const [moBang, setMoBang] = useState(false); // bảng cụm: 5 dòng đầu hay tất cả
   const [loaiCum, setLoaiCum] = useState('doi_tuong');   // đối tượng trước — thứ quyết định làm video về CÁI GÌ
+  const [moHot, setMoHot] = useState(null);              // dòng đang mở trong khối Topic/Hook hot
   const [busy, setBusy] = useState('');
   const [err, setErr] = useState('');
   const [lichSu, setLichSu] = useState([]);
@@ -2165,17 +2166,40 @@ function Mapping({ ws, canEdit }) {
         border:1px solid #ef6c00;background:rgba(239,108,0,.08);font-size:13px">
         ⚠ Pool chưa gắn thị trường — không ép được vùng khi hỏi YouTube/Trends, kết quả sẽ
         theo IP máy chủ (Việt Nam). Mở pool theo thị trường (US/Spain…) ở dải tab.</div>` : ''}
-      ${noi && noi.teaser && ((noi.teaser.topic || []).length || (noi.teaser.hook || []).length)
-        ? html`<div style="margin-top:12px;padding:9px 12px;border-radius:9px;background:var(--accent-soft,rgba(76,143,224,.12))">
-          <b>Đang nóng:</b>
-          ${(noi.teaser.topic || []).length ? html`<span> Topic —
-            ${(noi.teaser.topic || []).map((t, i) => html`${i ? ' · ' : ' '}<a href="#"
-              onClick=${e => { e.preventDefault(); setLoaiCum('doi_tuong'); }}>${t}</a>`)}</span>` : ''}
-          ${(noi.teaser.hook || []).length ? html`<span> · Hook —
-            ${(noi.teaser.hook || []).map((t, i) => html`${i ? ' · ' : ' '}<a href="#"
-              onClick=${e => { e.preventDefault(); setLoaiCum('mau_cau'); }}>${t}</a>`)}</span>` : ''}
-          <span class="note"> · bấm là mở đúng tab bên dưới</span>
-        </div>` : ''}
+      ${noi && noi.hot && ((noi.hot.topic || []).length || (noi.hot.hook || []).length)
+        ? html`<div class="hotwrap">
+          ${[['topic', 'Topic hot', 'chủ thể đang nóng', 'doi_tuong'],
+             ['hook', 'Hook hot', 'cách đặt tiêu đề đang ăn', 'mau_cau']].map(([k, ten, ghi, tab]) =>
+            (noi.hot[k] || []).length ? html`<div class="hotcol">
+            <div class="hothead"><b>${ten}</b><span class="note" style="margin:0">${ghi}</span></div>
+            ${(noi.hot[k] || []).map((it, i) => { const id = k + '|' + it.cum;
+              const nenH = noi.nong_meta && noi.nong_meta.nen; return html`
+            <div class=${'hrow' + (moHot === id ? ' open' : '')}>
+              <div class="hmain" onClick=${() => setMoHot(moHot === id ? null : id)}>
+                <span class="hrank">${i + 1}</span>
+                <span><span class="hname">${it.cum}</span><div class="hsub">${it.so_no}/${it.so_moi} video mới nổ${
+                  (it.hook || []).length ? html` · hook đang ăn: <span class="tag">${it.hook.join(' · ')}</span>` : ''}</div></span>
+                <span class="hno"><b>${Math.round((it.ti_le_no || 0) * 100)}%</b><small>${nenH ? '×' + (it.ti_le_no / nenH).toFixed(1) + ' nền' : 'tỉ lệ nổ'}</small></span>
+              </div>
+              ${moHot === id ? html`<div class="hdrawer">
+                <div class="klabel">Video nổ (${(it.video_no || []).length})</div>
+                ${(it.video_no || []).map(v => html`<div class="hvid">
+                  <a href=${'https://youtu.be/' + v.yt_id} target="_blank" rel="noopener">
+                    <img loading="lazy" src=${'https://i.ytimg.com/vi/' + v.yt_id + '/mqdefault.jpg'} alt=""/></a>
+                  <div><div class="hvt"><a href=${'https://youtu.be/' + v.yt_id} target="_blank" rel="noopener">${v.title}</a></div>
+                  <div class="hvm"><b>${soGon(v.views)} view</b> · ${soGon(v.vpd)}/ngày${v.tuoi ? ' · ' + v.tuoi + ' ngày tuổi' : ''} · ${v.kenh}</div></div>
+                </div>`)}
+                <div class="klabel">Kênh đang đẩy</div>
+                <div class="kchips">${(it.kenh_day || []).map(kk => html`<span class="kchip"><b>${kk.ten}</b> · ${kk.so} video · ${soGon(kk.view)} view${kk.no ? html` · <span class="no">${kk.no} nổ</span>` : ''}</span>`)}</div>
+                <div class="row" style="gap:8px;margin-top:11px">
+                  <button class="btn small primary" onClick=${() => traCuu(it.cum)}>Tra cứu từ khóa này</button>
+                  <button class="btn small ghost" onClick=${() => setLoaiCum(tab)}>Mở tab ${k === 'topic' ? 'Topic' : 'Hook'}</button>
+                </div>
+              </div>` : ''}
+            </div>`; })}
+          </div>` : '')}
+        </div>
+        <div class="note" style="margin-top:9px">Đang nóng · cửa sổ ${(noi.nong_meta && noi.nong_meta.cua_so_ngay) || 60} ngày · nền nổ chung của pool ${noi.nong_meta && noi.nong_meta.nen ? Math.round(noi.nong_meta.nen * 100) + '%' : '—'} — bấm một dòng để xem video và kênh đứng sau con số.</div>` : ''}
     </div>
 
     <div class="panel">
