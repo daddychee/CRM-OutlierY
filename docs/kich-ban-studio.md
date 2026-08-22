@@ -563,3 +563,66 @@ chương 5; đã so cùng phạm vi 5 chương của bản A cho công bằng.
 
 **Cổng cuối là người**: bản đọc song song 5 chương ở artifact `59bc7dd6`, file gốc tại
 `scratchpad/nghiemthu/C_full_neo_day.md`. Chưa có kết luận cuối cho tới khi Owner đọc.
+
+## 12. ĐỢT 3 + A/B MODEL — 23/08/2026
+
+### 12.1. Ba việc của Đợt 3 (commit `fcc3c58`, suite 310 pass)
+
+**Ngân sách ĐỘNG TÁC, không đếm ký tự.** Đo 210.760 từ văn NGƯỜI làm đối chứng:
+`Not X.` gấp **55 lần**, `Here is what` gấp 51, `Then there is` gấp 23, `But here is` gấp 18.
+Và bằng chứng quyết định: chặn em-dash ở Đợt 1 thì `Here is what` **0 → 3**, `Then there is`
+**0 → 2** — năng lượng chui sang cách thực hiện khác của **cùng một động tác tu từ**. Thêm 4
+luật vào `rules/deai_en.csv` (luật ngoài code) + chỉ số `dong_tac_tren_1000_tu`.
+
+**Vòng sửa ở CẤP CÂU** (`src/voiceprofile/sua_cau.py`). Chặn bằng LỜI không ăn (luật "tối đa
+một em-dash mỗi đoạn" bị vi phạm 26–59%), nên đo bằng MÁY sau khi sinh. Sửa từng câu chứ
+không viết lại cả chương — vì đợt trước viết lại từ đầu làm rơi "hai nghìn tấn vàng", rơi tên
+Ulugh Beg và đẻ ra lỗi Afghanistan. **Van**: mọi con số và tên riêng phải còn nguyên, độ dài
+chênh ≤35%, và ở cấp chương mật độ số/tên riêng **không được giảm**. Đo thật trên Uzbekistan:
+động tác **30,19 → 0,00**/1000; tên riêng **21 → 26** (dày hơn, không loãng).
+
+**Hook thành mô-đun riêng** (`src/voiceprofile/hook.py`): sinh 3 phương án, MÁY chấm 4 luật,
+chọn bản đạt nhiều nhất. Hook dùng chung công thức với chương nên nó không bao giờ tốt lên —
+Đợt 22/08 làm thân bài tốt lên nhưng hook **xấu đi** (gọi tên chủ đề ngay câu đầu = đóng vòng
+lặp trước khi mở).
+
+### 12.2. Bug: lỗi ở bước hậu xử lý làm MẤT bản nháp (commit `88505fc`)
+
+Phần Kết bài Kristin Nelson **đã viết ra 2.907 ký tự**, rồi vòng cắt gọi API dính
+`contentFilter` của GLM (mã 1301, "nội dung nhạy cảm") → ngoại lệ bay lên runner, bài chỉ lưu
+2 phần. Trả tiền cho 2.907 ký tự rồi mất trắng. Van cũ chỉ bảo vệ trường hợp bản sửa **tệ
+hơn**, không bảo vệ trường hợp lời gọi **ném lỗi**. Nay bọc cả vòng cắt lẫn vòng nở: hỏng thì
+giữ bản nháp, ghi lý do, đi tiếp. Thân phần đã sinh là TÀI SẢN; cắt/nở chỉ là CẢI THIỆN.
+
+⚠ **Phát hiện vận hành kèm theo**: GLM có thể **từ chối viết** chủ đề chuyện đời (hôn nhân
+tuổi teen, cái chết). Hồ sơ A012 Old-story chuyên loại này ⇒ cả một nhánh nội dung của team có
+nguy cơ dính. Chưa đủ dữ liệu để kết luận là do chủ đề hay do lượt gọi cụ thể.
+
+### 12.3. A/B MODEL — trả lời câu hỏi treo từ 26/07
+
+Bài **Kristin Nelson** (hồ sơ A012, thể loại chuyện đời) chọn có chủ đích vì **bệnh khác** bài
+Uzbekistan: bản cũ ở đây gần như sạch động tác máy (2,11/1000) nhưng **vụn nặng** (7,7 từ/câu,
+58,1% câu cụt). Và đích **ngược chiều**: tác giả A012 vốn viết câu ngắn (corpus 10,6 từ/câu,
+36,5% cụt), nên phép thử là neo có biết **dừng đúng nhịp tác giả** thay vì kéo dài như bài kia.
+
+| chương 1 | từ/câu | % cụt | lệch nhịp |
+|---|---|---|---|
+| văn NGƯỜI (đích) | 10,6 | 36,5 | 0 |
+| A. team 04/08, glm-5.2, chưa sửa | 7,7 | 58,1 | 1,19 |
+| E. đã sửa + **glm-5.2** | 8,0 | 55,4 | **1,11** |
+| F. đã sửa + **glm-5.3** | **10,4** | **35,7** | **0,01** |
+
+⇒ **Với glm-5.2 cách sửa gần như KHÔNG ăn ở bài này** (nhích 0,3 từ/câu), dù neo đã rút đúng
+2.039 từ nhịp 10,6 khớp y hệt corpus. **Cùng cái neo đó, glm-5.3 trúng đích gần như hoàn hảo.**
+
+Đây là câu trả lời cho §11 Master Brief *"nhịp ngắn-vụn là register của GLM dưới stack prompt
+này"*: **đúng với 5.2, và 5.3 đã thoát khỏi nó**. Neo giọng đúng chỉ có tác dụng khi model chịu
+nghe theo neo.
+
+**Điểm chưa giải thích được (không giấu)**: ở bài Uzbekistan chính glm-5.2 lại kéo nhịp 9,1 →
+14,0. Tức 5.2 viết **dài hơn** đích ở bài tả cảnh nhưng **ngắn hơn** đích ở bài kể chuyện đời —
+nó bị **thể loại** chi phối mạnh hơn neo, còn 5.3 thì bám neo. Muốn chắc phải chạy 5.3 cho cả
+bài Uzbekistan.
+
+Hook cả hai model đều đạt: mở bằng nghịch lý, không gọi tên nhân vật ở câu đầu. Mô-đun chấm 3
+phương án ra 3/4 · 3/4 · 2/4 rồi chọn bản cao nhất.
