@@ -1392,3 +1392,26 @@ def test_advance_mapping_tach_duoc_tung_phan():
     js = (goc / 'web' / 'app.js').read_text(encoding='utf-8')
     assert 'if (!advPool && !advSerp && !advReddit) return' in js   # không tick gì thì thôi
     assert "api('POST', `/workspaces/${ws}/tra-cuu/reddit`" in js   # Reddit đi route riêng
+
+
+def test_advance_mapping_la_popup_rieng():
+    """22/08 — user: "không muốn box show more như hiện tại, muốn box popup riêng".
+
+    Ba ô tick trước đây xổ ngay trong dòng nhắc, đẩy hết nội dung bên dưới xuống.
+    Nay là hộp nổi giữa màn hình, đóng bằng ✕ / bấm nền / Esc — cùng khuôn với
+    popup xác nhận tra cứu đã có. Luồng không đổi: trong pool vẫn chạy ngay.
+    """
+    from pathlib import Path as _P
+    js = (_P(__file__).resolve().parents[1] / 'web' / 'app.js').read_text(encoding='utf-8')
+
+    khoi = js.split('${xacNhanNgoai && A ?')[1].split('${hoiCum ?')[0]
+    assert 'position:fixed;inset:0;z-index:50' in khoi        # hộp nổi, không inline
+    assert 'setXacNhanNgoai(false)' in khoi                   # bấm nền đóng
+    assert 'aria-label="Đóng"' in khoi                        # nút ✕
+    for tick in ('advPool', 'advSerp', 'advReddit'):
+        assert f'checked=${{{tick}}}' in khoi, tick
+
+    assert "e.key === 'Escape'" in js                         # Esc đóng cả hai popup
+    # dòng nhắc inline chỉ còn MỘT nút, không còn nhánh xổ tick
+    nhac = js.split('Muốn soi ra ngoài')[1].split('</div>` : \'\'}')[0]
+    assert 'checkbox' not in nhac

@@ -1989,6 +1989,11 @@ function Mapping({ ws, canEdit }) {
   // chay khi nguoi bam Tra cuu. Tranh bam nham — nhat la tren ban do bong bong
   // noi cac bong bong nam sat nhau. `khongHoiLai` chi song trong PHIEN.
   const [hoiCum, setHoiCum] = useState(null);     // {cum, lai} dang cho xac nhan
+  useEffect(() => {                              // Esc dong popup dang mo
+    const f = e => { if (e.key === 'Escape') { setHoiCum(null); setXacNhanNgoai(false); } };
+    addEventListener('keydown', f);
+    return () => removeEventListener('keydown', f);
+  }, []);
   const [khongHoiLai, setKhongHoiLai] = useState(false);
   const traCuu = (tu, lai) => {
     const q = (tu || cum).trim();
@@ -2108,6 +2113,37 @@ function Mapping({ ws, canEdit }) {
   })();
 
   return html`
+    ${xacNhanNgoai && A ? html`<div style="position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.45);
+      display:flex;align-items:center;justify-content:center;padding:20px"
+      onClick=${e => { if (e.target === e.currentTarget) setXacNhanNgoai(false); }}>
+      <div class="panel" style="max-width:520px;margin:0;box-shadow:0 18px 48px rgba(0,0,0,.3)">
+        <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:4px">
+          <div style="font-size:16px;font-weight:600">Advance Mapping — “${A.cum}”</div>
+          <button class="btn small ghost" style="margin-left:auto;padding:2px 9px"
+            onClick=${() => setXacNhanNgoai(false)} aria-label="Đóng">✕</button>
+        </div>
+        <div class="note" style="margin:0 0 10px">Chọn phần muốn soi. Bỏ tick nào thì phần đó
+          không chạy và không tốn gì.</div>
+        <label style="display:flex;gap:9px;align-items:flex-start;padding:5px 0;cursor:pointer">
+          <input type="checkbox" checked=${advPool} onChange=${e => setAdvPool(e.target.checked)}/>
+          <span><b>Ngoài Pool</b> — video nổi 90 ngày, kênh nhỏ lọt top, biến thể người ta gõ
+            <span class="note">· 102 units YouTube</span></span></label>
+        <label style="display:flex;gap:9px;align-items:flex-start;padding:5px 0;cursor:pointer">
+          <input type="checkbox" checked=${advSerp} onChange=${e => setAdvSerp(e.target.checked)}/>
+          <span><b>Google Trends</b> — đường 12 tháng, truy vấn đang lên, vùng quan tâm,
+            câu hỏi thật <span class="note">· 4 lượt SERP</span></span></label>
+        <label style="display:flex;gap:9px;align-items:flex-start;padding:5px 0;cursor:pointer">
+          <input type="checkbox" checked=${advReddit} onChange=${e => setAdvReddit(e.target.checked)}/>
+          <span><b>Reddit</b> — upvote, bình luận, cộng đồng đang bàn
+            <span class="note">· ~0,016 USD Apify</span></span></label>
+        <div class="row" style="gap:8px;margin-top:14px;align-items:center">
+          <button class="btn primary" onClick=${hoiNgoaiLanDau}
+            disabled=${!!busy || (!advPool && !advSerp && !advReddit)}>Chạy</button>
+          <button class="btn ghost" onClick=${() => setXacNhanNgoai(false)}>Huỷ</button>
+          <span class="note" style="margin:0">Kết quả được lưu — lần sau mở lại 0 đồng.</span>
+        </div>
+      </div>
+    </div>` : ''}
     ${hoiCum ? html`<div style="position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.45);
       display:flex;align-items:center;justify-content:center;padding:20px"
       onClick=${e => { if (e.target === e.currentTarget) setHoiCum(null); }}>
@@ -2283,31 +2319,10 @@ function Mapping({ ws, canEdit }) {
       ${!B && canEdit ? html`<div class="note" style="margin:0 0 12px;padding:9px 12px;
         border-radius:9px;border:1px dashed var(--line,#243149);display:flex;gap:10px;
         align-items:center;flex-wrap:wrap">
-        ${!xacNhanNgoai ? html`<span>Phần <b>trong pool</b> ở dưới là <b>miễn phí</b> và đã
-            chạy. Muốn soi ra ngoài thì bấm <b>Advance Mapping</b>.</span>
-          <button class="btn small" onClick=${() => setXacNhanNgoai(true)} disabled=${!!busy}>
-            Advance Mapping</button>`
-        : html`<div style="width:100%">
-          <div style="font-weight:600;margin-bottom:6px">Advance Mapping cho “${A.cum}”</div>
-          <label style="display:flex;gap:8px;align-items:flex-start;padding:3px 0;cursor:pointer">
-            <input type="checkbox" checked=${advPool} onChange=${e => setAdvPool(e.target.checked)}/>
-            <span><b>Ngoài Pool</b> — video nổi 90 ngày, kênh nhỏ lọt top, biến thể người ta gõ
-              <span class="note">· 102 units YouTube</span></span></label>
-          <label style="display:flex;gap:8px;align-items:flex-start;padding:3px 0;cursor:pointer">
-            <input type="checkbox" checked=${advSerp} onChange=${e => setAdvSerp(e.target.checked)}/>
-            <span><b>Google Trends</b> — đường 12 tháng, truy vấn đang lên, vùng quan tâm,
-              câu hỏi thật <span class="note">· 4 lượt SERP</span></span></label>
-          <label style="display:flex;gap:8px;align-items:flex-start;padding:3px 0;cursor:pointer">
-            <input type="checkbox" checked=${advReddit} onChange=${e => setAdvReddit(e.target.checked)}/>
-            <span><b>Reddit</b> — upvote, bình luận, cộng đồng đang bàn
-              <span class="note">· ~0,016 USD Apify</span></span></label>
-          <div class="row" style="gap:8px;margin-top:10px">
-            <button class="btn small" onClick=${hoiNgoaiLanDau}
-              disabled=${!!busy || (!advPool && !advSerp && !advReddit)}>Chạy</button>
-            <button class="btn small ghost" onClick=${() => setXacNhanNgoai(false)}>Huỷ</button>
-            <span class="note" style="margin:0">Kết quả được lưu — lần sau mở lại 0 đồng.</span>
-          </div>
-        </div>`}
+        <span>Phần <b>trong pool</b> ở dưới là <b>miễn phí</b> và đã chạy. Muốn soi ra ngoài
+          thì bấm <b>Advance Mapping</b>.</span>
+        <button class="btn small" onClick=${() => setXacNhanNgoai(true)} disabled=${!!busy}>
+          Advance Mapping</button>
         ${busy ? html`<span>${busy}</span>` : ''}
       </div>` : ''}
 
