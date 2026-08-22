@@ -2220,25 +2220,25 @@ function Mapping({ ws, canEdit }) {
         ${xemLai && canEdit ? html`<button class="btn small ghost" style="margin-left:8px"
           onClick=${hoiLaiNgoai} disabled=${!!busy}>↻ Hỏi lại (102 units)</button>` : ''}</div>
 
-      <div class="eyebrow" style="color:var(--accent,#4C8FE0)">A · In pool — ${pool.ten}</div>
-      ${!tp.co_du_lieu ? html`<div class="note">${tp.ly_do}</div>` : html`
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
-          <div class="chip"><b>${tp.so_video}</b><span>video</span></div>
-          <div class="chip"><b>${tp.so_kenh}</b><span>kênh</span></div>
-          <div class="chip"><b>${tp.ti_trong_video}%</b><span>số video của pool</span></div>
-          <div class="chip"><b>${tp.ti_trong_view}%</b><span>view của pool</span></div>
-          <div class="chip"><b>${tp.vph_giua ?? '—'}</b><span>view/giờ${
-            tp.vph_giua && tp.vph_giua_pool ? html` · <b style=${`color:${tp.vph_giua >= tp.vph_giua_pool ? '#2e7d32' : '#c62828'}`}>${(tp.vph_giua / tp.vph_giua_pool).toFixed(1)}× pool</b>` : ''}</span></div>
-        </div>
-        ${tp.doi_chieu ? html`<div class="note" style="margin:-4px 0 10px">
-          Cụm rút gọn <a href="#" onClick=${e => { e.preventDefault(); traCuu(tp.doi_chieu.cum); }}>
-          <b>${tp.doi_chieu.cum}</b></a>: <b>${tp.doi_chieu.so_video}</b> video ·
-          ${tp.doi_chieu.so_kenh} kênh · ${tp.doi_chieu.ti_trong_view}% view pool
-          — cụm DÀI đo cạnh tranh trong CÔNG THỨC ngách, cụm NGẮN đo CHỦ ĐỀ
-          (và hợp hơn khi hỏi External: người ta gõ tên chủ đề, không gõ "life in…").</div>` : ''}`}
-
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(380px,1fr));gap:14px">
-        ${tp.co_du_lieu ? html`<div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(380px,1fr));gap:14px;
+        align-items:start">
+        <div>
+          <div class="eyebrow" style="margin-top:0;color:var(--accent,#4C8FE0)">A · In pool — ${pool.ten}</div>
+          ${!tp.co_du_lieu ? html`<div class="note">${tp.ly_do}</div>` : html`
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+            <div class="chip"><b>${tp.so_video}</b><span>video</span></div>
+            <div class="chip"><b>${tp.so_kenh}</b><span>kênh</span></div>
+            <div class="chip"><b>${tp.ti_trong_video}%</b><span>số video của pool</span></div>
+            <div class="chip"><b>${tp.ti_trong_view}%</b><span>view của pool</span></div>
+            <div class="chip"><b>${tp.vph_giua ?? '—'}</b><span>view/giờ${
+              tp.vph_giua && tp.vph_giua_pool ? html` · <b style=${`color:${tp.vph_giua >= tp.vph_giua_pool ? '#2e7d32' : '#c62828'}`}>${(tp.vph_giua / tp.vph_giua_pool).toFixed(1)}× pool</b>` : ''}</span></div>
+          </div>
+          ${tp.doi_chieu ? html`<div class="note" style="margin:-4px 0 10px">
+            Cụm rút gọn <a href="#" onClick=${e => { e.preventDefault(); traCuu(tp.doi_chieu.cum); }}>
+            <b>${tp.doi_chieu.cum}</b></a>: <b>${tp.doi_chieu.so_video}</b> video ·
+            ${tp.doi_chieu.so_kenh} kênh · ${tp.doi_chieu.ti_trong_view}% view pool
+            — cụm DÀI đo cạnh tranh trong CÔNG THỨC ngách, cụm NGẮN đo CHỦ ĐỀ
+            (và hợp hơn khi hỏi External: người ta gõ tên chủ đề, không gõ "life in…").</div>` : ''}
           <div class="note" style="margin:0 0 4px">Xu hướng theo lứa đăng — mỗi tháng ra bao
           nhiêu video, lứa đó ăn bao nhiêu view/ngày</div>
           <${CotVaDuong} lua=${tp.lua}/>
@@ -2247,8 +2247,8 @@ function Mapping({ ws, canEdit }) {
             <tbody>${(tp.lua || []).slice(-12).map(l => html`<tr>
               <td>${l.thang}</td><td>${l.so_video}</td>
               <td>${l.du_mau ? l.view_moi_ngay : html`<span class="note">— ít mẫu</span>`}</td></tr>`)}
-            </tbody></table></details>
-        </div>` : ''}
+            </tbody></table></details>`}
+        </div>
 
         <div>
           <div class="eyebrow" style="margin-top:0;color:var(--accent,#4C8FE0)">B · YouTube market — ${pool.market || '(chưa gắn)'}
