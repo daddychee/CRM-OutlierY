@@ -1010,3 +1010,45 @@ def test_bong_bong_tach_mau_theo_loai():
     assert "r.loai === 'mau_cau' ? '#7e57c2' : '#2e7d32'" in than
     assert "xuong ? '#c62828'" in than               # giảm không tách loại
     assert 'CẶP KẾT HỢP' in than                     # chú giải nói rõ cách dùng
+
+
+def test_ban_do_dung_lai_qua_khu_va_cua_so_canh_tranh():
+    """22/08 — user: tracking theo thời gian + 'chia cho lifetime thì pha loãng'.
+
+    (1) Cạnh tranh đo trong CỬA SỔ 180 ngày (video_cua_so), không phải tổng trọn đời.
+    (2) Dựng lại tại mốc quá khứ: video đăng SAU mốc không được lọt vào — lọt là
+        "nhìn thấy tương lai".
+    (3) Xem quá khứ thì cột view/ngày tắt (views là của hôm nay) — van chống bịa.
+    """
+    import time
+    from pathlib import Path as _P
+    from radary import tra_cuu
+
+    now = time.time()
+    kho = []
+    # 5 video cũ 3 năm trước + 4 video mới 20 ngày — cùng một cụm
+    for i in range(5):
+        kho.append({'yt_id': f'cu{i}', 'title': f'Life in Georgia old {i}',
+                    'title_l': f'life in georgia old {i}', 'kenh': 'K', 'kenh_yt': 'U',
+                    'views': 100, 'vph': 0, 'pub_ts': now - 86400 * 1100})
+    for i in range(4):
+        kho.append({'yt_id': f'moi{i}', 'title': f'Life in Georgia new {i}',
+                    'title_l': f'life in georgia new {i}', 'kenh': 'K', 'kenh_yt': 'U',
+                    'views': 100, 'vph': 0, 'pub_ts': now - 86400 * 20})
+
+    r = tra_cuu.xu_huong_cum(kho, ['georgia'], bay_gio=now)[0]
+    assert r['tong_video'] == 9
+    assert r['video_cua_so'] == 4          # 5 video 3-năm-trước KHÔNG pha loãng cửa sổ
+
+    # dựng lại tại mốc 2 tháng trước: 4 video mới (20 ngày tuổi) CHƯA tồn tại
+    r2 = tra_cuu.xu_huong_cum(kho, ['georgia'], bay_gio=now - 60 * 86400)[0]
+    assert r2['tong_video'] == 5 and r2['video_cua_so'] == 0
+
+    api_src = (_P(__file__).resolve().parents[1] / 'radary' / 'api.py').read_text(encoding='utf-8')
+    than = api_src.split('def tu_khoa_noi(')[1].split('\ndef ')[0]
+    assert 'lui_thang' in than and "m['view_moi_ngay'] = None" in than
+
+    js = (_P(__file__).resolve().parents[1] / 'web' / 'app.js').read_text(encoding='utf-8')
+    assert 'r.video_cua_so ?? r.tong_video' in js    # trục đọc cửa sổ, fallback dữ liệu cũ
+    assert 'transition:cx .6s' in js                 # kéo mốc là bong bóng trượt, không nhảy
+    assert 'lui_thang=${lui}' in js

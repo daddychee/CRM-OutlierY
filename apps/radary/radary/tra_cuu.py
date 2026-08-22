@@ -378,6 +378,10 @@ def wikipedia(cum: str, lang: str = "en", doc=None, so_thang: int = 13) -> dict:
 #   CHAT   — view/ngay trung vi cua video 90 ngay gan day dung cum do
 CUA_SO_NGAY = 30
 TOI_THIEU_SO_SANH = 3        # duoi 3 video/cua so thi khong tinh % (mau qua nho)
+# Cua so do MUC CANH TRANH cua ban do bong bong (22/08, user: "chia cho lifetime thi
+# nong do pha loang qua lon"): tong video tron doi lam cum chet-5-nam-truoc van hien
+# "dong nguoi lam". 180 ngay = du dai de on dinh, du ngan de phan anh hien tai.
+CUA_SO_CANH_TRANH_NGAY = 180
 
 
 def xu_huong_cum(kho: list[dict], cums: list[str], bay_gio: float | None = None,
@@ -388,13 +392,18 @@ def xu_huong_cum(kho: list[dict], cums: list[str], bay_gio: float | None = None,
     m90 = bay_gio - 90 * 86400
     moc_thang = bay_gio - so_thang * 30 * 86400
     ra = []
+    m180 = bay_gio - CUA_SO_CANH_TRANH_NGAY * 86400
     for cum in cums:
         rx = mapping._rx(cum)
-        khop = [v for v in kho if rx.search(v["title_l"])]
+        # pub_ts <= bay_gio: khi dung lai ban do TAI MOT MOC QUA KHU, video dang sau
+        # moc do chua ton tai — de lot vao la "nhin thay tuong lai" (22/08).
+        khop = [v for v in kho
+                if (v.get("pub_ts") or 0) <= bay_gio and rx.search(v["title_l"])]
         if not khop:
             continue
         nay = [v for v in khop if (v.get("pub_ts") or 0) >= m30]
         truoc = [v for v in khop if m60 <= (v.get("pub_ts") or 0) < m30]
+        cua_so = [v for v in khop if (v.get("pub_ts") or 0) >= m180]
         vpd = [x for x in (_view_moi_ngay(v, bay_gio) for v in khop
                            if (v.get("pub_ts") or 0) >= m90) if x]
         # Chi can KY TRUOC du mau (no la mau so). Ban dau doi ca hai ky >= 3 nen cum
@@ -409,6 +418,7 @@ def xu_huong_cum(kho: list[dict], cums: list[str], bay_gio: float | None = None,
                 thang[_thang(v["pub_ts"])] = thang.get(_thang(v["pub_ts"]), 0) + 1
         ra.append({
             "cum": cum, "tong_video": len(khop),
+            "video_cua_so": len(cua_so),           # canh tranh HIEN TAI (180 ngay toi moc)
             "video_30n": len(nay), "video_30n_truoc": len(truoc),
             "phan_tram": pt,
             "chieu": None if pt is None else ("lên" if pt > 15 else "xuống" if pt < -15 else "đi ngang"),

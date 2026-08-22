@@ -1118,7 +1118,8 @@ def tu_khoa_nong_api(ws: int, request: Request, nhiem_vu_nen: BackgroundTasks,
 
 
 @app.get('/api/workspaces/{ws}/discovery/tu-khoa-noi')
-def tu_khoa_noi(ws: int, request: Request, so_cum: int = 30, ngon_ngu: str = ''):
+def tu_khoa_noi(ws: int, request: Request, so_cum: int = 30, ngon_ngu: str = '',
+                lui_thang: int = 0):
     """Cụm nào trong pool ĐANG LÊN / ĐANG GIẢM — 0 quota, đọc dữ liệu sẵn có.
 
     Không phải chờ tích luỹ: `pub_ts` của video trong pool có từ 2009 nên mật độ cụm
@@ -1149,15 +1150,25 @@ def tu_khoa_noi(ws: int, request: Request, so_cum: int = 30, ngon_ngu: str = '')
             ma = mapping.nhan_dien_ngon_ngu(v['title'])
             if ma:
                 dem_nn[ma] = dem_nn.get(ma, 0) + 1
-        xh = tra_cuu.xu_huong_cum(kho, cums)
+        # lui_thang > 0: DUNG LAI ban do tai moc qua khu (22/08 — tracking theo thoi
+        # gian). pub_ts la su that bat bien nen luong/canh-tranh dung lai duoc; VIEWS
+        # la cua HOM NAY, khong co lich su theo cum -> cot view/ngay tat khi xem qua
+        # khu (van chong bia: khong ve so khong do duoc).
+        lui_thang = max(0, min(int(lui_thang or 0), 24))
+        moc = time.time() - lui_thang * 30 * 86400
+        xh = tra_cuu.xu_huong_cum(kho, cums, bay_gio=moc)
         for m in xh:
             m['loai'] = loai.get(m['cum'], 'mau_cau')
+            if lui_thang:
+                m['view_moi_ngay'] = None
         return {'cum': xh,
                 'cach_lay': ('Đếm trên tiêu đề video trong chính pool này. MẪU CÂU = cụm '
                              '2-3 từ lặp lại nhiều nhất. ĐỐI TƯỢNG = từ đứng ngay sau giới '
                              'từ (in/to/of…) và ≥75% số lần xuất hiện là ở vị trí đó — '
                              'cách tách tên nước/địa danh khỏi tính từ mô tả.'),
                 'cua_so_ngay': tra_cuu.CUA_SO_NGAY, 'so_video_pool': len(kho),
+                'cua_so_canh_tranh': tra_cuu.CUA_SO_CANH_TRANH_NGAY,
+                'lui_thang': lui_thang, 'moc_ts': moc,
                 'ngon_ngu_loc': loc, 'tu_de': bool(tu_de),
                 'ngon_ngu_trong_pool': sorted(dem_nn.items(), key=lambda x: -x[1])}
 

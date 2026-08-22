@@ -1800,11 +1800,15 @@ function BanDoCum({ cum, onChon }) {
   // lay tran rieng nen cung mot bong bong nhay vi tri khi doi tab. Phan vi tinh TRONG
   // loai: vi tri on dinh giua cac tab, hai loai so cong bang, dung le "so voi chinh
   // phien". So tuyet doi van o tooltip + bang duoi.
+  // Canh tranh do trong CUA SO 180 ngay (video_cua_so), khong phai tong tron doi —
+  // user 22/08: "chia cho lifetime thi nong do pha loang qua lon" (cum chet 5 nam
+  // truoc van hien "dong nguoi lam"). Fallback tong_video cho du lieu cu thieu truong.
+  const canhTranh = r => r.video_cua_so ?? r.tong_video;
   const theoLoai = {};
-  d.forEach(r => (theoLoai[r.loai] = theoLoai[r.loai] || []).push(r.tong_video));
+  d.forEach(r => (theoLoai[r.loai] = theoLoai[r.loai] || []).push(canhTranh(r)));
   Object.values(theoLoai).forEach(a => a.sort((x2, y2) => x2 - y2));
   const pv = r => { const a = theoLoai[r.loai] || [];
-    return a.length < 2 ? 50 : 100 * a.indexOf(r.tong_video) / (a.length - 1); };
+    return a.length < 2 ? 50 : 100 * a.indexOf(canhTranh(r)) / (a.length - 1); };
   const ys = d.map(r => r.phan_tram);
   const yHi = Math.max(20, ...ys), yLo = Math.min(-20, ...ys);
   const X = v => L + (v / 100) * (w - L - R);
@@ -1830,7 +1834,7 @@ function BanDoCum({ cum, onChon }) {
       ${cotX.map(v => html`<text x=${X(v)} y=${h - B + 15} font-size="11" fill="currentColor"
         opacity="0.7" text-anchor="middle">${v === 0 ? 'ít nhất loại' : v === 100 ? 'đông nhất loại' : v + '%'}</text>`)}
       <text x=${(w + L) / 2} y=${h - 6} font-size="11" fill="currentColor" opacity="0.75" text-anchor="middle">
-        TRỤC NGANG — MỨC CẠNH TRANH TƯƠNG ĐỐI: phân vị số-video SO VỚI CÁC CỤM CÙNG LOẠI → càng phải càng đông người làm trong loại đó</text>
+        TRỤC NGANG — MỨC CẠNH TRANH 180 NGÀY: phân vị số-video SO VỚI CÁC CỤM CÙNG LOẠI → càng phải càng đông người làm gần đây</text>
       <text x="12" y=${(h - B + T) / 2} font-size="11" fill="currentColor" opacity="0.75"
         text-anchor="middle" transform=${`rotate(-90 12 ${(h - B + T) / 2})`}>
         TRỤC DỌC — XU HƯỚNG: % video mới so kỳ trước</text>
@@ -1848,8 +1852,9 @@ function BanDoCum({ cum, onChon }) {
                         : xuong ? '#c62828' : '#5b6b7c';
         return html`<g style="cursor:pointer" onClick=${() => onChon && onChon(r.cum)}>
           <circle cx=${X(pv(r))} cy=${Y(r.phan_tram)} r=${bk(r.video_30n)}
+            style="transition:cx .6s ease,cy .6s ease,r .6s ease"
             fill=${mau} fill-opacity="0.55" stroke=${mau} stroke-width="1.8" stroke-opacity="0.95"/>
-          <title>${r.cum} · ${r.loai === 'mau_cau' ? 'mẫu câu' : 'đối tượng'} · ${r.tong_video} video · ${r.phan_tram > 0 ? '+' : ''}${r.phan_tram}% (${r.video_30n_truoc}→${r.video_30n})${r.view_moi_ngay ? ` · ${r.view_moi_ngay} view/ngày` : ''}</title>
+          <title>${r.cum} · ${r.loai === 'mau_cau' ? 'mẫu câu' : 'đối tượng'} · ${r.video_cua_so ?? '?'} video 180 ngày (${r.tong_video} trọn đời) · ${r.phan_tram > 0 ? '+' : ''}${r.phan_tram}% (${r.video_30n_truoc}→${r.video_30n})${r.view_moi_ngay ? ` · ${r.view_moi_ngay} view/ngày` : ''}</title>
         </g>`; })}
 
       ${d.filter(r => ten.has(r.cum)).map(r => {
@@ -1929,6 +1934,7 @@ function Mapping({ ws, canEdit }) {
   const [noi, setNoi] = useState(null);
   const [nong, setNong] = useState(null);     // Hot Topic — tải ngay khi mở tab
   const [nongMo, setNongMo] = useState(false); // Hot Topic: 5 dòng đầu hay cả danh sách
+  const [luiThang, setLuiThang] = useState(0); // bản đồ tại quá khứ: 0 = hôm nay
   const [loaiCum, setLoaiCum] = useState('doi_tuong');   // đối tượng trước — thứ quyết định làm video về CÁI GÌ
   const [busy, setBusy] = useState('');
   const [err, setErr] = useState('');
@@ -1939,7 +1945,7 @@ function Mapping({ ws, canEdit }) {
   // thấy số của US — user báo 21/08 ("từ khoá thị trường US lọt sang Spain").
   useEffect(() => {
     setA(null); setB(null); setCum(''); setErr(''); setBusy(''); setXemLai(null);
-    setLichSu([]); setNoi(null); setNong(null); setNongMo(false);
+    setLichSu([]); setNoi(null); setNong(null); setNongMo(false); setLuiThang(0);
     api('GET', `/workspaces/${ws}/discovery/goi-y-seed`).then(r => setGoiY(r.seed || [])).catch(() => setGoiY([]));
     const nnLuu = (() => { try { return localStorage.getItem('mapping_nn_' + ws) || ''; } catch (e) { return ''; } })();
     api('GET', `/workspaces/${ws}/discovery/tu-khoa-noi`
@@ -2123,6 +2129,24 @@ function Mapping({ ws, canEdit }) {
           </span>` : ''}</div>
         ${noi.cach_lay ? html`<div class="note" style="margin:2px 0 6px">
           <b>Từ khoá lấy ở đâu ra:</b> ${noi.cach_lay}</div>` : ''}
+        <div class="row" style="gap:10px;align-items:center;flex-wrap:wrap;margin-top:8px">
+          <span class="note" style="margin:0">Bản đồ tại thời điểm:</span>
+          <input type="range" min="0" max="12" step="1" value=${12 - luiThang}
+            style="width:220px;accent-color:var(--accent,#4C8FE0)"
+            onChange=${e => {
+              const lui = 12 - Number(e.target.value);
+              setLuiThang(lui);
+              const nn = noi.ngon_ngu_loc || '';
+              api('GET', `/workspaces/${ws}/discovery/tu-khoa-noi?lui_thang=${lui}`
+                + (nn ? `&ngon_ngu=${encodeURIComponent(nn)}` : ''))
+                .then(setNoi).catch(() => {});
+            }}/>
+          <b style="font-variant-numeric:tabular-nums">${luiThang
+            ? new Date((noi.moc_ts || 0) * 1000).toLocaleDateString('vi-VN') + ` (lùi ${luiThang} tháng)`
+            : 'hôm nay'}</b>
+          ${luiThang ? html`<span class="note" style="margin:0">· dựng lại từ ngày đăng video —
+            cột View/ngày tắt (views là của hôm nay, không có lịch sử theo cụm)</span>` : ''}
+        </div>
         <${BanDoCum} cum=${(noi.cum || []).filter(r => !loaiCum || r.loai === loaiCum)}
           onChon=${c => traCuu(c)}/>
         <table class="tbl"><thead><tr><th>Cụm</th><th>Xu hướng</th>
