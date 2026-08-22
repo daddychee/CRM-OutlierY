@@ -138,11 +138,17 @@ def google(nha: str, khoa: str, cum: str, geo: str = "US", lang: str = "en") -> 
     một ý tưởng video kèm sẵn tiêu đề — autocomplete chỉ cho cụm ngắn.
     """
     d = _goi(nha, khoa, "google", {"q": cum, "gl": geo.lower(), "hl": lang, "num": 10})
+    # Ten khoi PAA khac nhau theo nha (do that 22/08 tren phan hoi SerpAPI: khoi
+    # nay ten `related_questions`, KHONG phai `people_also_ask` nhu tai lieu
+    # thuong ghi) -> nhan het cac ten da biet, thieu ten nao chi mat khoi do.
     hoi = [x.get("question") or x.get("title") or ""
-           for x in (d.get("people_also_ask") or d.get("peopleAlsoAsk") or [])]
-    lq = [x.get("query") or x.get("title") or x
+           for x in (d.get("related_questions") or d.get("people_also_ask")
+                     or d.get("peopleAlsoAsk") or [])]
+    # DA THU `things_to_know` (di kem cung loi goi, 0 quota them) nhung do that
+    # 22/08 no tra ra phan tu giao dien ("buttons") chu khong phai goc chu de —
+    # bo, khong nhoi du lieu rac vao UI.
+    lq = [(x if isinstance(x, str) else (x.get("query") or x.get("title") or ""))
           for x in (d.get("related_searches") or d.get("relatedSearches") or [])]
-    lq = [x if isinstance(x, str) else (x.get("query") or "") for x in lq]
     web = []
     for x in (d.get("organic_results") or d.get("organic") or [])[:10]:
         link = x.get("link") or ""
