@@ -777,10 +777,37 @@ def pulse(ws: int, request: Request, days: int = 7, start: str = '', end: str = 
         rows = c.execute('SELECT bucket_ts, dviews, vph_avg, n_young FROM pool_stats '
                          'WHERE workspace_id=? AND bucket_ts>=? AND bucket_ts<? ORDER BY bucket_ts',
                          (ws, t0, t1)).fetchall()
+        w0 = c.execute('SELECT config FROM workspaces WHERE id=?', (ws,)).fetchone()
         since = c.execute('SELECT MIN(bucket_ts) FROM pool_stats WHERE workspace_id=?', (ws,)).fetchone()[0]
         if (t1 - t0) <= 14 * 86400 + 1:
-            pts = [{'ts': r['bucket_ts'], 'dviews': r['dviews'], 'vph_avg': r['vph_avg'], 'n': r['n_young']}
-                   for r in rows]
+            # Hai lý do KHÁC NHAU làm khung gần nhất trông như "pool đang tụt":
+            #  dang_chay — khung 6 giờ hiện tại mới trôi được một phần, dviews tất nhiên
+            #    thấp hơn; vẫn là số thật của phần thời gian đã qua nên đánh dấu chứ
+            #    không xóa.
+            #  chua_chot — video cũ chỉ được quét 1 lần/24h (cadence 'allages'), mà
+            #    dviews = chênh lệch giữa HAI lần quét chia đều cho khoảng giữa. Phần
+            #    views của nhóm video cũ vì thế CHỈ được phân bổ vào một khung SAU khi
+            #    có lần quét kế tiếp — mọi khung chưa qua vòng quét toàn pool đều còn
+            #    thiếu và sẽ tự đầy lên.
+            # Mốc chốt lấy từ LỊCH JOB thật, không đoán "24 giờ qua": ngưỡng cứng loại
+            # nhầm cả khung đã đầy. Đo thật ws20 (user báo 22/08): allages due 23/08
+            # 00:59 → lần gần nhất 22/08 00:59; khung 21/08 18h (hết lúc 00:00) đã được
+            # điền bù 122.852 trong khi khung 22/08 00h mới 53.831.
+            B6 = 6 * 3600
+            cfg_ws = json.loads(w0['config'] or '{}') if w0 else {}
+            cad = ((cfg_ws.get('cadence') or {}).get('allages')
+                   or db.DEFAULT_CFG['cadence']['allages'])
+            due_all = (db.get_jobs(c, ws) or {}).get('allages') or 0
+            moc_chot = (due_all - cad) if due_all else (now - cad)
+            pts = []
+            for r in rows:
+                het = r['bucket_ts'] + B6
+                pts.append({'ts': r['bucket_ts'], 'dviews': r['dviews'],
+                            'vph_avg': r['vph_avg'], 'n': r['n_young'],
+                            'dang_chay': het > now,
+                            'chua_chot': het > moc_chot,
+                            'phan_tram_da_troi': (round(100 * (now - r['bucket_ts']) / B6)
+                                                  if het > now else 100)})
             res = '6h'
         else:                                          # gộp ngày: views cộng dồn, VPH TB trọng số theo n video trẻ
             byday = {}
@@ -790,9 +817,15 @@ def pulse(ws: int, request: Request, days: int = 7, start: str = '', end: str = 
                 a['dviews'] += r['dviews']
                 a['wsum'] += r['vph_avg'] * r['n_young']; a['nsum'] += r['n_young']
                 a['n'] = max(a['n'], r['n_young'])
-            pts = [{'ts': a['ts'], 'dviews': a['dviews'],
-                    'vph_avg': round(a['wsum'] / a['nsum'], 1) if a['nsum'] else 0, 'n': a['n']}
-                   for _, a in sorted(byday.items())]
+            hom_nay = datetime.fromtimestamp(now, tz).strftime('%Y-%m-%d')
+            pts = []
+            for ngay, a in sorted(byday.items()):
+                pts.append({'ts': a['ts'], 'dviews': a['dviews'],
+                            'vph_avg': round(a['wsum'] / a['nsum'], 1) if a['nsum'] else 0,
+                            'n': a['n'], 'dang_chay': ngay == hom_nay,
+                            'chua_chot': ngay == hom_nay,
+                            'phan_tram_da_troi': (round(100 * (now - a['ts']) / 86400)
+                                                  if ngay == hom_nay else 100)})
             res = 'day'
         return {'res': res, 'points': pts, 'since_ts': since}
 

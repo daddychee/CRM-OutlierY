@@ -613,6 +613,18 @@ function PulsePanel({ ws }) {
     const h0 = dt.getHours() - dt.getHours() % 6;
     return `${dt.getDate()}/${dt.getMonth()+1} · ${String(h0).padStart(2,'0')}h–${h0+6}h`; };
   const nAvg = pts.length ? Math.round(pts.reduce((a, p) => a + p.n, 0) / pts.length) : 0;
+  // Điểm CUỐI đang chạy dở (bucket 6 giờ / ngày chưa trọn) KHÔNG vẽ lên đường: nó thấp
+  // vì mới tích được một phần thời gian, vẽ vào là lần nào cũng thấy "pool đang tụt"
+  // (user báo 22/08). Biểu đồ "Sóng views cả ngách" đã xử lý đúng cách này từ trước —
+  // đây là áp lại cho Nhịp pool. Số vẫn hiện đầy đủ ở dòng ghi chú bên dưới.
+  // Hai mức khác nhau, đều làm đường tụt giả:
+  //   dang_chay = khung hiện tại, mới trôi được một phần thời gian
+  //   chua_chot = còn thiếu phần views của nhóm video cũ (quét 1 lần/24h), sẽ được
+  //               điền bù sau vòng quét toàn pool kế tiếp
+  const dangChay = pts.length && pts[pts.length - 1].dang_chay ? pts[pts.length - 1] : null;
+  const soChuaChot = pts.filter(p => p.chua_chot).length;
+  const ptsVe = soChuaChot ? pts.slice(0, pts.length - soChuaChot) : pts;
+  const ptsChuaChot = soChuaChot ? pts.slice(pts.length - soChuaChot) : [];
   return html`
     <div class="panel">
       <h2>Nhịp pool <small>· toàn pool gộp · ${d?.res === 'day' ? 'điểm theo ngày' : 'điểm 6 giờ'}</small></h2>
@@ -632,12 +644,22 @@ function PulsePanel({ ws }) {
         : html`
           <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:0 14px">
             <${LineChart} title="Sóng views — views cộng thêm của cả pool mỗi ${d.res === 'day' ? 'ngày' : '6 giờ'}"
-              height=${180} pts=${pts.map(p => [hx(p), p.dviews])} bands=${[]} markers=${[]}
+              height=${180} pts=${ptsVe.map(p => [hx(p), p.dviews])} bands=${[]} markers=${[]}
               yfmt=${kfmt} xfmt=${xf} xstep=${step} xtipfmt=${xtf}/>
             <${LineChart} title="Sóng VPH trung bình — views/giờ/video của video 0-6 ngày tuổi (TB ${nAvg} video)"
-              height=${180} pts=${pts.map(p => [hx(p), p.vph_avg])} bands=${[]} markers=${[]}
+              height=${180} pts=${ptsVe.map(p => [hx(p), p.vph_avg])} bands=${[]} markers=${[]}
               yfmt=${kfmt} xfmt=${xf} xstep=${step} xtipfmt=${xtf}/>
           </div>
+          ${ptsChuaChot.length ? html`<div class="note" style="margin-top:4px;padding:6px 8px;
+            border-left:3px solid #ef6c00;background:rgba(239,108,0,.07)">
+            <b>${ptsChuaChot.length} khung gần nhất chưa chốt — không vẽ lên đường</b> (tránh
+            đọc nhầm thành sụt):
+            ${ptsChuaChot.map(p => html`<span style="margin-right:10px">${xtf(hx(p))}:
+              <b>${kfmt(p.dviews)}</b> views · VPH ${p.vph_avg}${p.dang_chay
+                ? ` (mới qua ${p.phan_tram_da_troi}% khung)` : ''}</span>`)}
+            <br/>Lý do: video cũ chỉ được quét 1 lần/24 giờ, nên phần views của chúng chỉ
+            được phân bổ vào một khung SAU khi có lần quét kế tiếp. Các khung trong 24 giờ
+            gần nhất vì thế còn thiếu và sẽ tự đầy lên — không phải pool đang tụt.</div>` : ''}
           <div class="note">Lịch sử tích lũy từ ${fmtTs(d.since_ts)} · range dài gộp theo ngày ·
             VPH TB chỉ tính video 0-6 ngày tuổi · views chia đều giữa 2 lần quét (ước lượng phân bổ —
             YouTube không có log từng view; khung giờ chính xác dựng được cho 14 ngày gần)</div>`}

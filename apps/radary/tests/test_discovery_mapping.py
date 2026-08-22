@@ -819,3 +819,28 @@ def test_bing_loi_mang_khong_giet_phien():
     def doc_no(url):
         raise OSError("chet")
     assert discovery.goi_y_bing("x", doc_no) == []
+
+
+# ------------- NHỊP POOL: bucket chưa chốt (user 22/08) -------------------------
+
+
+def test_bucket_dang_chay_va_chua_chot_duoc_danh_dau():
+    """User 22/08: 'pool theo ngày tăng nhưng theo giờ luôn giảm'. HAI nguyên nhân,
+    cả hai đều làm đường tụt giả:
+      dang_chay — bucket hiện tại mới qua một phần thời gian
+      chua_chot — video cũ chỉ quét 1 lần/24h nên phần views của chúng chỉ được phân
+                  bổ vào một bucket SAU khi có lần quét kế tiếp; mọi bucket trong 24h
+                  gần nhất còn thiếu và sẽ tự đầy lên.
+    Đo thật ws20: bucket đã chốt 118-135k, bucket 22/08 00:00 mới 53.831."""
+    from pathlib import Path
+    goc = Path(__file__).resolve().parents[1]
+    api_src = goc.joinpath("radary", "api.py").read_text(encoding="utf-8")
+    js = goc.joinpath("web", "app.js").read_text(encoding="utf-8")
+    assert "'chua_chot': het > moc_chot" in api_src
+    # mốc chốt phải lấy từ LỊCH JOB thật (allages), không đoán "24h qua": ngưỡng cứng
+    # loại nhầm cả bucket đã đầy (đo thật: 21/08 18h = 122.852 đã được điền bù)
+    assert "due_all = (db.get_jobs(c, ws) or {}).get('allages')" in api_src
+    assert "moc_chot = (due_all - cad)" in api_src
+    # UI phải LOẠI các điểm chưa chốt khỏi đường, không chỉ điểm cuối
+    assert "ptsVe = soChuaChot ? pts.slice(0, pts.length - soChuaChot) : pts" in js
+    assert "chưa chốt — không vẽ lên đường" in js
