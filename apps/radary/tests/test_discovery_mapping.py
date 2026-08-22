@@ -872,7 +872,8 @@ def test_tu_khoa_khong_ro_ri_sang_pool_khac(tmp_path):
 
     # Tầng SERVER: "xem lại" mà chưa có bản lưu thì KHÔNG được tính mới rồi lưu.
     than = api_src.split("def tra_cuu_pool(")[1].split("def _ghi_bo_qua_khoa")[0]
-    nhanh = than.split("if xem_lai")[1].split("a = tra_cuu.xu_huong_pool")[0]
+    # tach dung nhanh xem_lai (22/08 them buoc va khoi A tuoi truoc do — bo qua no)
+    nhanh = than.split("if xem_lai:")[1].split("a = tra_cuu.xu_huong_pool")[0]
     assert "if not cu:" in nhanh and "'khong_co_ban_luu': True" in nhanh
     assert "db.tra_cuu_luu" not in nhanh          # nhánh xem lại tuyệt đối không ghi
 
@@ -1244,3 +1245,34 @@ def test_serp_ep_so_va_bo_sung_trends_cho_ban_nen():
     js = (goc / 'web' / 'app.js').read_text(encoding='utf-8')
     assert 'Lấy Google Trends' in js and '(3 lượt SERP)' in js
     assert 'tra-cuu/trends' in js
+
+
+def test_khoi_A_luon_tuoi_va_doi_chieu_cum_rut_gon():
+    """22/08 — user: "in pool không có video nào về kyrgyzstan, tôi không tin nổi".
+
+    Đúng là bug: bản lưu do PROBE NỀN của Hot Topic tạo chỉ có khối B, cột `a`
+    rỗng '{}' → xem lại thấy khối A trắng dù pool có 12 video thật. Khối A đọc
+    SQLite <1s và 0 quota nên cache nó vừa vô ích vừa đẻ bản thiếu — luôn tính
+    tươi, cache CHỈ dành cho khối B (nơi tốn units/tiền).
+
+    Kèm đối chiếu cụm rút gọn: cụm DÀI đo cạnh tranh trong công thức ngách,
+    cụm NGẮN đo chủ đề (đo thật: kyrgyzstan 12 video/10 kênh vs life in
+    kyrgyzstan 7/7 — khớp ranh giới từ nên "Real Life in KYRGYZSTAN" rơi ra).
+    """
+    from pathlib import Path as _P
+    from radary import tra_cuu
+
+    assert tra_cuu.cum_rut_gon('life in kyrgyzstan') == 'kyrgyzstan'
+    assert tra_cuu.cum_rut_gon('real life in tajikistan') == 'tajikistan'
+    assert tra_cuu.cum_rut_gon('kyrgyzstan') == ''          # đã ngắn thì không đối chiếu
+    assert tra_cuu.cum_rut_gon('stunning women') == ''      # không phải cụm khung
+
+    api_src = (_P(__file__).resolve().parents[1] / 'radary' / 'api.py').read_text(encoding='utf-8')
+    than = api_src.split('def tra_cuu_pool(')[1].split('def _ghi_bo_qua_khoa')[0]
+    # xem lại mà khối A rỗng → tính tươi + vá luôn bản lưu
+    assert "not (cu.get('a') or {}).get('co_du_lieu')" in than
+    assert 'db.tra_cuu_luu(c, ws, q, a=a_tuoi)' in than
+    assert "a['doi_chieu']" in than and 'cum_rut_gon' in than
+
+    js = (_P(__file__).resolve().parents[1] / 'web' / 'app.js').read_text(encoding='utf-8')
+    assert 'Cụm rút gọn' in js and 'cụm NGẮN đo CHỦ ĐỀ' in js

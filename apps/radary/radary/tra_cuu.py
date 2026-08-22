@@ -49,6 +49,25 @@ def _view_moi_ngay(v: dict, bay_gio: float) -> float | None:
 SO_VIDEO_MOI_KENH = 8
 
 
+# Tu chuc nang khong mang chu de — bo khi rut gon cum de doi chieu.
+_TU_KHUNG = {"life", "real", "living", "live", "in", "the", "a", "of", "day",
+             "documentary", "vlog", "travel", "video", "full", "story"}
+
+
+def cum_rut_gon(cum: str) -> str:
+    """Bo tu khung, giu phan CHU DE — "life in kyrgyzstan" -> "kyrgyzstan".
+
+    Ly do (user 22/08): cum DAI do canh tranh TRONG NGACH (bao nhieu kenh lam
+    dung cong thuc), cum NGAN do CAU NGOAI THI TRUONG (nguoi ta go ten nuoc,
+    khong go "life in..."). Do that: kyrgyzstan 12 video/10 kenh trong pool,
+    life in kyrgyzstan chi 7/7 — khop ranh gioi tu nen "Real Life in KYRGYZSTAN"
+    roi khoi cum dai.
+    """
+    tu = [t for t in (cum or "").lower().split() if t not in _TU_KHUNG]
+    gon = " ".join(tu).strip()
+    return gon if gon and gon != (cum or "").lower().strip() else ""
+
+
 def xu_huong_pool(kho: list[dict], cum: str, so_thang: int = SO_THANG,
                   bay_gio: float | None = None) -> dict:
     """KHOI A — pool dang theo doi lam gi voi tu khoa nay, va xu huong ra sao."""

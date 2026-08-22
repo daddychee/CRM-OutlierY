@@ -1215,6 +1215,26 @@ def tra_cuu_pool(ws: int, request: Request, cum: str = '', xem_lai: int = 0):
                      'ngon_ngu': ngon_ngu, 'vung': vung})
         q = cum.strip()
         cu = db.tra_cuu_doc(c, ws, q)
+        # KHỐI A LUÔN TÍNH TƯƠI, không bao giờ đọc cache (22/08 — user báo "in pool
+        # không có video nào về kyrgyzstan, không tin nổi"): bản do PROBE NỀN của
+        # Hot Topic tạo chỉ có khối B, cột a rỗng '{}' → xem lại thấy khối A trắng
+        # trong khi pool có 12 video thật. Khối A đọc SQLite dưới 1 giây và 0 quota
+        # nên cache nó vừa vô ích vừa đẻ ra bản thiếu; cache CHỈ dành cho khối B
+        # (nơi tốn units/tiền). Tính tươi còn được thêm: luật/pool đổi thì số đổi theo.
+        if xem_lai and cu and not (cu.get('a') or {}).get('co_du_lieu'):
+            kho_t = mapping.tai_kho(c, ws)
+            a_tuoi = tra_cuu.xu_huong_pool(kho_t, q)
+            gon_t = tra_cuu.cum_rut_gon(q)
+            if gon_t and a_tuoi.get('co_du_lieu'):
+                ag_t = tra_cuu.xu_huong_pool(kho_t, gon_t)
+                if ag_t.get('co_du_lieu'):
+                    a_tuoi['doi_chieu'] = {'cum': gon_t, 'so_video': ag_t['so_video'],
+                                           'so_kenh': ag_t['so_kenh'],
+                                           'ti_trong_view': ag_t['ti_trong_view'],
+                                           'vph_giua': ag_t.get('vph_giua')}
+            if a_tuoi.get('co_du_lieu'):
+                db.tra_cuu_luu(c, ws, q, a=a_tuoi)      # vá luôn bản lưu thiếu
+                cu = db.tra_cuu_doc(c, ws, q)
         if xem_lai:                           # xem lại: KHÔNG tính lại, KHÔNG gọi gì
             if not cu:
                 # Không có bản lưu thì "xem lại" KHÔNG được biến thành tra mới: làm vậy
@@ -1227,7 +1247,18 @@ def tra_cuu_pool(ws: int, request: Request, cum: str = '', xem_lai: int = 0):
             return {'cum': q, 'pool': pool, 'trong_pool': cu['a'], 'ngoai': cu['b'],
                     'tu_lich_su': True, 'ts': cu['ts'],
                     'lich_su': db.tra_cuu_danh_sach(c, ws)}
-        a = tra_cuu.xu_huong_pool(mapping.tai_kho(c, ws), q)
+        kho_q = mapping.tai_kho(c, ws)
+        a = tra_cuu.xu_huong_pool(kho_q, q)
+        # ĐỐI CHIẾU cụm rút gọn: cùng chủ đề nhưng bỏ từ khung ("life in X" → "X").
+        # 0 quota — chỉ đọc pool. Cho biết mình đang nhìn CÔNG THỨC hay CHỦ ĐỀ.
+        gon = tra_cuu.cum_rut_gon(q)
+        if gon:
+            ag = tra_cuu.xu_huong_pool(kho_q, gon)
+            if ag.get('co_du_lieu'):
+                a['doi_chieu'] = {'cum': gon, 'so_video': ag['so_video'],
+                                  'so_kenh': ag['so_kenh'],
+                                  'ti_trong_view': ag['ti_trong_view'],
+                                  'vph_giua': ag.get('vph_giua')}
         db.tra_cuu_luu(c, ws, q, a=a)         # khối B giữ nguyên bản cũ nếu đã có
         return {'cum': q, 'pool': pool, 'trong_pool': a,
                 'ngoai': (cu or {}).get('b'), 'ts': time.time(),

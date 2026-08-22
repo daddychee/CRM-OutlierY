@@ -2223,7 +2223,13 @@ function Mapping({ ws, canEdit }) {
           <div class="chip"><b>${tp.ti_trong_view}%</b><span>view của pool</span></div>
           <div class="chip"><b>${tp.vph_giua ?? '—'}</b><span>view/giờ${
             tp.vph_giua && tp.vph_giua_pool ? html` · <b style=${`color:${tp.vph_giua >= tp.vph_giua_pool ? '#2e7d32' : '#c62828'}`}>${(tp.vph_giua / tp.vph_giua_pool).toFixed(1)}× pool</b>` : ''}</span></div>
-        </div>`}
+        </div>
+        ${tp.doi_chieu ? html`<div class="note" style="margin:-4px 0 10px">
+          Cụm rút gọn <a href="#" onClick=${e => { e.preventDefault(); traCuu(tp.doi_chieu.cum); }}>
+          <b>${tp.doi_chieu.cum}</b></a>: <b>${tp.doi_chieu.so_video}</b> video ·
+          ${tp.doi_chieu.so_kenh} kênh · ${tp.doi_chieu.ti_trong_view}% view pool
+          — cụm DÀI đo cạnh tranh trong CÔNG THỨC ngách, cụm NGẮN đo CHỦ ĐỀ
+          (và hợp hơn khi hỏi External: người ta gõ tên chủ đề, không gõ "life in…").</div>` : ''}`}
 
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(380px,1fr));gap:14px">
         ${tp.co_du_lieu ? html`<div>

@@ -126,3 +126,90 @@ Tool phục vụ mọi ngách và đích đến là web/app — hai ràng buộc
 1. **Code trước khi hỏi dù yêu cầu mơ hồ (23/07/2026):** user nói "muốn biết thêm mốc giờ" trên đồ thị Nhịp pool — Claude tự chọn một cách hiểu (thêm giờ vào tooltip), code + deploy luôn, và hiểu SAI ý (user muốn khung giờ THỰC theo giờ VN + số đo thực). User phải nhắc "vi phạm nguyên tắc, hỏi trước khi code". **LUẬT: yêu cầu có >1 cách hiểu → trình bày các cách hiểu cho user chọn TRƯỚC (nguyên tắc 1), kể cả khi sửa chỉ vài dòng.** Với thay đổi hiển thị số liệu, dựng bản xem trước bằng dữ liệu thật để user duyệt trước khi chạm code production đã chứng minh hiệu quả.
 2. **Khóa phiên gần 20 phút bằng lệnh chờ (23/07/2026):** để xác nhận pool quét xong, Claude nhúng `sleep 420` vào lệnh ssh → vượt trần timeout của tool, lệnh rơi xuống nền, rồi tiếp tục poll chờ thêm ~11 phút — user bị treo, không dừng được, trong khi truy vấn tức thời chỉ mất vài giây và kết quả vốn đã đạt. **LUẬT: không `sleep` dài trong lệnh chờ xác nhận — kiểm ngay; chưa đạt thì BÁO trạng thái trung thực ("sẽ tự xong trong nhịp quét tới") và trả quyền cho user, kiểm lại lượt sau.**
 3. **Hiển thị số kỳ vọng như số thật (phát hiện 23/07/2026, user bắt lỗi):** VPD của video <24h tuổi = VPH×24 (kỳ vọng) nhưng bảng không đánh dấu — user tưởng toàn bộ chỉ số là tam suất. Đã sửa: cờ `est_vpd` + dấu `~`. **LUẬT: mọi con số ước lượng/kỳ vọng đưa lên UI phải mang dấu hiệu phân biệt với số đo thật (`~`, ghi chú) — trung thực dữ liệu là nguyên tắc sống còn của radar.**
+
+## Mapping / External traffic (22/08/2026) — logic từ khoá & nguồn ngoài
+
+Sổ chi tiết: `docs/discovery-mapping.md` (repo gốc). Phần này chỉ ghi những gì
+người sửa code phải biết trước khi chạm.
+
+### Phân loại từ khoá = TỪ LOẠI (Owner chốt)
+
+**Danh từ / tên riêng = ĐỐI TƯỢNG · tính-động-trạng từ = MẪU CÂU.** Cài bằng
+nltk perceptron, hai tầng (mỗi tầng vá một điểm chết đo được):
+
+1. Từ **ngoài từ điển EN** (`words`, 234k) = tên riêng = đối tượng — cứu
+   `tajikistan` (tagger đoán JJ vì đuôi -an) và `webb` (đoán VB).
+2. Từ trong từ điển → tag POS trên **chữ thường** (trung hoà title ALL-CAPS vốn
+   biến mọi từ thành NNP), phiếu đa số NN = đối tượng.
+
+Cụm nhiều từ lấy loại theo **từ cuối** (`solar system`, `james webb` = đối
+tượng). Một luật dùng chung ba nơi: tab Keyword, Hot Topic, màu bong bóng.
+Luật cũ (từ đứng sau giới từ ≥75%) là khuôn của ngách Life-in-X: sang SPACE nó
+nhận `to Replace` (to nguyên mẫu) và `a piece` (a = mạo từ, nằm trong bộ vì là
+giới từ tiếng TBN) thành đối tượng.
+
+**Van an toàn:** nltk nạp LƯỜI; thiếu thư viện/data → `bang_pos` trả None → nơi
+gọi tự về luật sau-giới-từ cũ, app không chết. Tiếng TBN đi nhánh cũ (chỉ có
+tagger tiếng Anh). Data ở `data/nltk_data`, máy mới chạy
+`tools/scripts/tai_nltk_data.py`.
+
+**BẪY đã dính:** hệ truyền tên ngôn ngữ ĐẦY ĐỦ từ đế (`"English"`) trong khi
+`bang_pos` so mã `"en"` → luôn None → **cả hệ lặng lẽ về luật cũ dù 100 test
+xanh** (test truyền thẳng `'en'`). Chuẩn hoá qua `MA_NGON_NGU`; đổi chỗ nào
+nhận ngôn ngữ cũng phải chuẩn hoá.
+
+### Cửa sổ đo & ứng viên (chống pha loãng)
+
+Bộ chọn 7 / 28 / 90 ngày / toàn thời gian. Hai điều buộc phải đúng cùng lúc:
+
+- **Ứng viên trích từ VÙNG ĐANG ĐO** (video trong 2×W ngày), không phải top tần
+  suất toàn lịch sử — cụm mới nhú không lọt top tích luỹ nên vô hình ở cửa sổ 7
+  (đo: LIFE IN 28 → 49 cụm vẽ được, lộ `kyrgyzstan` 0→5).
+- **Đủ mẫu ĐỐI XỨNG**: một bên ≥3 là đủ nói (kỳ trước đủ → báo *giảm* kể cả về
+  0; kỳ này đủ → báo *lên* kể cả từ 0). Đòi kỳ trước ≥3 thì cửa sổ ngắn chết.
+
+Trục cạnh tranh của bong bóng = **phân vị TRONG LOẠI** (không phải số tuyệt
+đối): mẫu câu nhiều video gấp hàng chục lần đối tượng, đo chung một trần thì
+đối tượng bẹp hết về trái và bong bóng nhảy vị trí khi đổi tab.
+
+### Cụm DÀI vs cụm NGẮN — hai câu hỏi khác nhau
+
+Khớp theo **ranh giới từ**, nên `life in kyrgyzstan` (7 video/7 kênh) ≠
+`kyrgyzstan` (12/10) — `Real Life in KYRGYZSTAN` rơi khỏi cụm dài. Cụm **dài đo
+cạnh tranh trong CÔNG THỨC ngách**, cụm **ngắn đo CHỦ ĐỀ** và hợp hơn khi hỏi
+External (người ta gõ tên nước, không gõ "life in…"). Khối A tự hiện dòng đối
+chiếu cụm rút gọn (`tra_cuu.cum_rut_gon`, 0 quota).
+
+### External traffic — bốn nguồn, hai loại quota
+
+| Khối | Nguồn | Chi phí |
+|---|---|---|
+| Trends + vùng quan tâm | SERP `google_trends` | 3 lượt/cụm |
+| Câu hỏi thật + liên quan + kết quả web | SERP `google` — MỘT lời gọi ba khối | 1 lượt |
+| News · Wikipedia | RSS / pageviews | 0 |
+| Reddit (upvote, bình luận, subreddit) | Apify actor | ~$0,016/lần |
+
+**Nguyên tắc quota:** chỉ tiêu khi NGƯỜI quyết định. Probe nền của Hot Topic
+(5 cụm/ngày) cố ý **không** gọi Trends — 5×3 lượt/ngày ≈ 450/tháng, vượt xa gói
+free 100. Bản lưu nền thiếu Trends thì hiện nút "Lấy Google Trends (3 lượt)".
+Reddit là nút bấm riêng, báo giá trước, chỉ leader+.
+
+**Khối A LUÔN tính tươi, không bao giờ đọc cache** — bản do probe nền tạo chỉ
+có khối B, cột `a` rỗng nên xem lại thấy khối A trắng dù pool có video thật
+(user báo 22/08: "in pool không có video nào về kyrgyzstan"). Khối A đọc SQLite
+<1s và 0 quota; cache CHỈ dành cho khối B nơi tốn tiền.
+
+### Bài học nguồn ngoài
+
+1. **Reddit chặn IP máy chủ ở MỌI đường** — `www json` 403, `oauth.reddit.com`
+   403, `old.reddit` trả 200 nhưng body là HTML login-wall. Nên phải đi qua
+   Apify. **Kiểm nguồn ngoài phải soi `Content-Type` + parse thật, đừng tin mã
+   200.**
+2. **Chọn actor/nhà bằng ĐO, không đọc quảng cáo:** ba actor Reddit —
+   `trudax/reddit-scraper-lite` ($0,004, 36s, KHÔNG trả upvote) ·
+   `practicaltools` ($0,004) · `clearpath/reddit-search-scraper` ($0,00099, 9s,
+   CÓ score + commentCount). Cái nổi tiếng nhất là cái không dùng được.
+3. **Phản hồi thật ≠ tài liệu:** khối People Also Ask của SerpAPI tên
+   `related_questions`; `related_searches` trả LẪN chuỗi và object; giá trị trả
+   lẫn số và chuỗi (`"<1%"`, `"Breakout"`) làm sort nổ. Luôn ép kiểu phòng thủ
+   và nghiệm thu bằng lời gọi thật — test không bắt được nhóm lỗi này.
