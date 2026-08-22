@@ -999,3 +999,14 @@ def test_route_tu_khoa_nong_va_tab_ui():
     assert "Đang nóng" not in js
     # cot cuoi bang Hot Topic ten External, khop ten khoi C
     assert "<th>External</th>" in js
+
+
+def test_bong_bong_tach_mau_theo_loai():
+    """Bong bóng TĂNG tách màu theo loại (user 22/08): đối tượng xanh, mẫu câu tím —
+    mở tab Tất cả là nhìn ra cặp kết hợp cùng đang lên. Giảm giữ một màu đỏ."""
+    from pathlib import Path as _P
+    js = (_P(__file__).resolve().parents[1] / 'web' / 'app.js').read_text(encoding='utf-8')
+    than = js.split('function BanDoCum(')[1].split('\nfunction ')[0]
+    assert "r.loai === 'mau_cau' ? '#7e57c2' : '#2e7d32'" in than
+    assert "xuong ? '#c62828'" in than               # giảm không tách loại
+    assert 'CẶP KẾT HỢP' in than                     # chú giải nói rõ cách dùng

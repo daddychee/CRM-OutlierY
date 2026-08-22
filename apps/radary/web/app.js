@@ -1825,11 +1825,16 @@ function BanDoCum({ cum, onChon }) {
       <text x=${14} y=${h - B} font-size="11" fill="currentColor" opacity="0.75">${Math.round(yLo)}%</text>
 
       ${d.map(r => { const len = r.phan_tram > 15, xuong = r.phan_tram < -15;
-        const mau = len ? '#2e7d32' : xuong ? '#c62828' : '#5b6b7c';
+        // Cụm TĂNG tách màu theo LOẠI (user 22/08): mở tab "Tất cả" là nhìn ra ngay
+        // cặp kết hợp đối-tượng × mẫu-câu cùng đang lên ở góc trên-trái. Tím = cùng
+        // màu sparkline mật-độ của mẫu câu, sẵn trong hệ. Giảm giữ MỘT màu đỏ —
+        // ngữ nghĩa cảnh báo mạnh hơn nhu cầu phân loại.
+        const mau = len ? (r.loai === 'mau_cau' ? '#7e57c2' : '#2e7d32')
+                        : xuong ? '#c62828' : '#5b6b7c';
         return html`<g style="cursor:pointer" onClick=${() => onChon && onChon(r.cum)}>
           <circle cx=${X(r.tong_video)} cy=${Y(r.phan_tram)} r=${bk(r.video_30n)}
             fill=${mau} fill-opacity="0.55" stroke=${mau} stroke-width="1.8" stroke-opacity="0.95"/>
-          <title>${r.cum} · ${r.tong_video} video · ${r.phan_tram > 0 ? '+' : ''}${r.phan_tram}% (${r.video_30n_truoc}→${r.video_30n})${r.view_moi_ngay ? ` · ${r.view_moi_ngay} view/ngày` : ''}</title>
+          <title>${r.cum} · ${r.loai === 'mau_cau' ? 'mẫu câu' : 'đối tượng'} · ${r.tong_video} video · ${r.phan_tram > 0 ? '+' : ''}${r.phan_tram}% (${r.video_30n_truoc}→${r.video_30n})${r.view_moi_ngay ? ` · ${r.view_moi_ngay} view/ngày` : ''}</title>
         </g>`; })}
 
       ${d.filter(r => ten.has(r.cum)).map(r => {
@@ -1848,9 +1853,10 @@ function BanDoCum({ cum, onChon }) {
       })}
     </svg>
     <div class="note" style="margin:0">${d.length} cụm · cỡ bong bóng = số video mới 30 ngày ·
-      <b style="color:#2e7d32">xanh</b> đang lên · <b style="color:#c62828">đỏ</b> đang giảm ·
-      góc TRÊN-TRÁI = đang lên mà còn ít người làm. Rê chuột lên bong bóng để xem tên và số;
-      bấm để tra cứu cụm đó.</div>
+      <b style="color:#2e7d32">xanh</b> đối tượng đang lên · <b style="color:#7e57c2">tím</b> mẫu
+      câu đang lên · <b style="color:#c62828">đỏ</b> đang giảm ·
+      góc TRÊN-TRÁI = đang lên mà còn ít người làm — ở tab Tất cả, một cặp xanh + tím cùng góc
+      này là một CẶP KẾT HỢP đáng thử. Rê chuột xem tên và số; bấm để tra cứu cụm đó.</div>
   </div>`;
 }
 
