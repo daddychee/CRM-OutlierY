@@ -360,6 +360,7 @@ def tu_khoa_nong(kho: list[dict], bay_gio: float | None = None,
     nen = len(no_ids) / len(moi)
 
     dem_moi, dem_no, vi_du = {}, {}, {}
+    no_theo_cum: dict[str, set] = {}       # cum -> tap video NO chua no (de gan hook)
     sau_gioi_tu: dict[str, int] = {}
     for v, _x in moi:
         tu = _TU_RX.findall(v["title_l"])
@@ -370,6 +371,7 @@ def tu_khoa_nong(kho: list[dict], bay_gio: float | None = None,
             dem_moi[c] = dem_moi.get(c, 0) + 1
             if v["yt_id"] in no_ids:
                 dem_no[c] = dem_no.get(c, 0) + 1
+                no_theo_cum.setdefault(c, set()).add(v["yt_id"])
                 vd = vi_du.get(c)
                 if not vd or v["views"] > vd["views"]:
                     vi_du[c] = {"yt_id": v["yt_id"], "title": v["title"],
@@ -408,15 +410,49 @@ def tu_khoa_nong(kho: list[dict], bay_gio: float | None = None,
     tap_sau = {t for t, n in sau_gioi_tu.items() if n >= 2}
     phieu = bang_pos([v for v, _x in moi], "en")
     for r in giu:
-        # nhan HIEN THI (khong tham gia xep hang) — cung luat tu-loai voi tab Keyword;
-        # thieu nltk thi ve luat sau-gioi-tu cu
+        # MOT luat phan loai dung chung (loai_cum) — topic='doi_tuong', hook='mau_cau'
         if phieu is not None:
-            r["loai"] = "doi_tuong" if la_doi_tuong(r["cum"].split()[-1], phieu) else "cong_thuc"
+            r["loai"] = loai_cum(r["cum"], phieu)
         else:
             r["loai"] = ("doi_tuong" if any(t in tap_sau for t in r["cum"].split())
-                         else "cong_thuc")
+                         else "mau_cau")
         r["vi_du"] = vi_du.get(r["cum"])
     giu.sort(key=lambda r: (-r["ti_le_no"], -r["so_no"], -r["so_moi"]))
+    # HOOK DANG AN cua tung DOI TUONG (Owner chot 22/08: "hot topic la cac chu de
+    # dang nong GAN VOI doi tuong"): cai dang no thuong la CAP doi-tuong x goc-ke —
+    # video 1,5M khong no vi "tribe" ma vi tribe x scientists-can't-explain. Voi moi
+    # doi tuong, tim cong-thuc-nong xuat hien trong CHINH cac video no cua no.
+    # hook don tu vo nghia (Owner 22/08) — loai han truoc khi gan hook/tra ve
+    giu = [r for r in giu if r["loai"] != "mau_cau" or hook_hop_le(r["cum"], phieu)]
+    # topic: don ria tu-tro ("sri lanka the" -> "sri lanka") roi GOP ban trung —
+    # giu ban co ti le no cao hon; cap nhat ca no_theo_cum de ma tran khop
+    theo_ten: dict[str, dict] = {}
+    gon_giu = []
+    for r in giu:
+        if r["loai"] == "doi_tuong":
+            gon = don_topic(r["cum"])
+            if not gon:
+                continue
+            if gon != r["cum"]:
+                no_theo_cum.setdefault(gon, set()).update(no_theo_cum.get(r["cum"], set()))
+                vi_du.setdefault(gon, vi_du.get(r["cum"]))
+                r = {**r, "cum": gon}
+            cu_r = theo_ten.get(gon)
+            if cu_r:
+                if r["ti_le_no"] > cu_r["ti_le_no"]:
+                    cu_r.update(r)
+                continue
+            theo_ten[gon] = r
+        gon_giu.append(r)
+    giu = gon_giu
+    hooks = [r for r in giu if r["loai"] == "mau_cau"]
+    for r in giu:
+        if r["loai"] != "doi_tuong":
+            continue
+        vids = no_theo_cum.get(r["cum"], set())
+        chung = [(h["cum"], len(vids & no_theo_cum.get(h["cum"], set())))
+                 for h in hooks]
+        r["hook"] = [c for c, n in sorted(chung, key=lambda x: -x[1]) if n > 0][:2]
     return {"co_du_lieu": True, "cum": giu[:so_muc],
             "nen": round(nen, 3), "so_video_moi": len(moi),
             "nguong_no_view_ngay": round(nguong_no),
@@ -579,14 +615,17 @@ def bang_pos(kho: list[dict], ngon_ngu: str | None = "en") -> dict | None:
             tags = tuple(pos_tag(tu)) if tu else ()
             _POS_CACHE[tl] = tags
         for w, t in tags:
+            # rut gon tag[:2] TRU nhom so sanh JJR/JJS/RBR/RBS — cat con 'JJ'/'RB'
+            # thi 'most' (JJS) lot luoi tu-noi-dung cua hook_hop_le (bat 22/08)
+            t2 = t if t in ("JJR", "JJS", "RBR", "RBS") else t[:2]
             d = phieu.setdefault(w, {})
-            d[t[:2]] = d.get(t[:2], 0) + 1
+            d[t2] = d.get(t2, 0) + 1
     return phieu
 
 
 def la_doi_tuong(w: str, phieu: dict | None) -> bool:
     """Mot TU la doi tuong? — ten rieng (ngoai tu dien) hoac danh tu (phieu NN)."""
-    if len(w) < 3 or w in _TU_TRO or w.isdigit():
+    if len(w) < 3 or w in _TU_TRO or w.isdigit() or w in _TU_DINH_DANG:
         return False
     # tu co dau nhay ("can't", "world's") khong bao gio la ten rieng — chung roi
     # ngoai tu dien vi dau nhay, khong phai vi la danh tu rieng (do that 22/08:
@@ -601,9 +640,65 @@ def la_doi_tuong(w: str, phieu: dict | None) -> bool:
     return bool(ph) and max(ph, key=ph.get) == "NN"
 
 
+# TU DINH DANG / THE LOAI (Owner chot 22/08: "nature documentary, vlog, 4k, travel
+# la hook vi nhung tu nay khong phai chu the quyet dinh noi dung video"). La danh
+# tu nhung mo ta HINH THUC/the loai — moi video trong ngach deu co the mang chung
+# nen khong phan biet noi dung. Cum chi con nhung tu nay -> HOOK.
+_TU_DINH_DANG = {"documentary", "vlog", "video", "videos", "film", "footage",
+                 "compilation", "episode", "shorts", "4k", "hd", "uhd",
+                 "travel", "nature", "documentaries", "vlogs",
+                 # 'life' la chu cua chinh ngach (Life in X) — khong phan biet noi dung;
+                 # user liet ke objective la women/countries/island/moon nen country GIU
+                 "life"}
+
+
+def don_topic(cum: str) -> str:
+    """Don RIA cum TOPIC: bo tu-tro/dinh-dang o hai dau ("sri lanka the" -> "sri
+    lanka", "culture and" -> "culture"). CHI ap cho topic — hook giu duoi gioi tu
+    vi do la dac trung khuon ("life in", "land of")."""
+    tu = cum.split()
+    while tu and (tu[0] in _TU_TRO or tu[0] in _TU_DINH_DANG):
+        tu.pop(0)
+    while tu and (tu[-1] in _TU_TRO or tu[-1] in _TU_DINH_DANG):
+        tu.pop()
+    return " ".join(tu)
+
+
+def hook_hop_le(cum: str, phieu: dict | None = None) -> bool:
+    """Hook don tu chi hop le khi TU CO NGHIA dung mot minh (Owner tinh chinh 22/08:
+    'khong nen ghep luat cung ve so tu — shock, hot 1 tu van co nghia; tu don KHONG
+    co nghia moi khong tinh la hook').
+
+    May kiem duoc bang POS (do that tren pool): tu NOI DUNG {NN danh, VB dong,
+    JJ tinh} -> giu (shock VB, hot JJ, shameless JJ); tu CHUC NANG -> loai
+    (who WP, most/never/just RB, billion CD). Tu co dau nhay ("can't") loai —
+    tro dong tu cut. Cum >= 2 tu luon hop le (da loc toan-tu-tro tu truoc).
+    """
+    tu = cum.split()
+    if len(tu) >= 2:
+        return True
+    w = tu[0] if tu else ""
+    if not w or "'" in w or w in _TU_DINH_DANG:
+        return False          # 'vlog'/'4k' don le la nhan the loai, khong phai hook
+    ph = (phieu or {}).get(w)
+    return bool(ph) and max(ph, key=ph.get) in ("NN", "VB", "JJ")
+
+
 def loai_cum(cum: str, phieu: dict | None) -> str:
-    """Nhan loai cho MOT cum bat ky: cum danh tu (tu cuoi la doi tuong) = doi_tuong."""
-    return "doi_tuong" if la_doi_tuong(cum.split()[-1], phieu) else "mau_cau"
+    """TOPIC hay HOOK cho mot cum (luat Owner 22/08).
+
+    Duyet tu CUOI len, bo qua tu-tro va tu-dinh-dang; tu co nghia dau tien quyet
+    dinh: danh tu / ten rieng -> topic, con lai -> hook. Khong con tu nao -> hook.
+      vietnam travel      -> vietnam (ten rieng)   -> topic
+      nature documentary  -> het tu (ca hai dinh dang) -> hook
+      stunning women      -> women (danh tu)       -> topic
+      scientists can't explain -> explain (dong tu) -> hook
+    """
+    for w in reversed(cum.split()):
+        if w in _TU_TRO or w in _TU_DINH_DANG:
+            continue
+        return "doi_tuong" if la_doi_tuong(w, phieu) else "mau_cau"
+    return "mau_cau"
 
 
 GIOI_TU = {"in", "to", "of", "from", "about", "across", "around", "en", "de", "a"}

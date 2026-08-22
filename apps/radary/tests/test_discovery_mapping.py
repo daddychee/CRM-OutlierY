@@ -1508,3 +1508,46 @@ def test_hot_topic_tach_chu_de_khoi_cong_thuc():
     assert 'CHỦ ĐỀ đang nóng' in js and 'CÔNG THỨC TIÊU ĐỀ đang nóng' in js
     assert 'KHÁN GIẢ đang thưởng cho gì' in js            # phụ đề lộ câu hỏi của khối
     assert "m.loai === loai" in js                        # hai bảng lọc theo loại
+
+
+def test_loai_cum_luat_topic_hook_chot_22_08():
+    """Luật phân loại Owner chốt 22/08 — mỗi ví dụ dưới đây là một ca đã bàn:
+
+    TOPIC = chủ thể quyết định nội dung (danh từ / tên riêng). HOOK = mọi thứ
+    còn lại, KỂ CẢ danh từ định-dạng/thể-loại (documentary, vlog, 4k, travel,
+    nature, life) — "không phải chủ thể quyết định nội dung của video".
+    Duyệt từ CUỐI cụm lên, bỏ từ trợ + từ định dạng; từ có nghĩa đầu tiên quyết.
+    """
+    import pytest
+    from radary import mapping
+
+    if not mapping._nap_nltk():
+        pytest.skip('thiếu nltk/data')
+
+    kho = ([{'title': 'Real Life in Tajikistan Nature Documentary 4K Travel Vlog',
+             'title_l': 'real life in tajikistan nature documentary 4k travel vlog'}] * 3
+           + [{'title': "Stunning Women Who Live on Mountains — Scientists Can't Explain",
+               'title_l': "stunning women who live on mountains — scientists can't explain"}] * 3
+           + [{'title': 'This Country of Islands Will Shock You — an Island of Women',
+               'title_l': 'this country of islands will shock you — an island of women'}] * 3
+           + [{'title': 'The Hot Shock That Most People Never See',
+               'title_l': 'the hot shock that most people never see'}] * 3)
+    phieu = mapping.bang_pos(kho, 'en')
+
+    TOPIC = ('tajikistan', 'mountains', 'island', 'stunning women', 'vietnam travel',
+             'country of')
+    HOOK = ('nature documentary', 'documentary vlog', '4k travel', 'vlog', 'travel',
+            'life in', 'real life in', "scientists can't explain", 'will shock you',
+            'women who', "can't")
+    for c in TOPIC:
+        assert mapping.loai_cum(c, phieu) == 'doi_tuong', c
+    for c in HOOK:
+        assert mapping.loai_cum(c, phieu) == 'mau_cau', c
+
+    # HOOK don tu: chi giu khi TU CO NGHIA dung mot minh (Owner tinh chinh 22/08 —
+    # khong luat cung theo so tu). Noi dung NN/VB/JJ giu; chuc nang WP/RB/CD loai.
+    assert mapping.hook_hop_le('will shock you', phieu) and mapping.hook_hop_le('life in', phieu)
+    assert mapping.hook_hop_le('shock', phieu) and mapping.hook_hop_le('hot', phieu)
+    assert not mapping.hook_hop_le('who', phieu)
+    assert not mapping.hook_hop_le('most', phieu)
+    assert not mapping.hook_hop_le("can't", phieu)
