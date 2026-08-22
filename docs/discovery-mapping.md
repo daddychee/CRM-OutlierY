@@ -418,3 +418,36 @@ ghi nhận `database is locked` và cả request **500** — người dùng vừ
 units, rồi mất trắng kết quả chỉ vì không ghi nổi cache. Nay mọi đường ghi cache/lịch sử
 đi qua `_ghi_bo_qua_khoa`: hỏng thì bỏ qua và **vẫn trả kết quả** (mất cache thì lần sau
 hỏi lại, không mất gì khác).
+
+### 22/08 — Từ khoá của pool này chui sang lịch sử pool khác
+
+User báo: *"từ khoá ở thị trường nào thì giữ nguyên ở thị trường đó, không nhét chung"*.
+Trong bảng lịch sử của **LIFE IN — US** có `áfrica` (đã tra ở **LIFE IN — Spain** 8 phút
+trước), `life in vietnam`, `Faroe`… Soi `tra_cuu_log` ra dấu vết rất đặc trưng — cùng một
+cụm nằm ở hai pool, bản sau cách bản trước vài phút:
+
+| Cụm | Pool trước | Pool sau | Cách nhau |
+|---|---|---|---|
+| `UZBEKISTAN` | ws1 LIFE IN 10:05 | ws20 LIFE IN — US 10:06 | 1 phút |
+| `áfrica` | ws18 LIFE IN — Spain 10:35 | ws20 LIFE IN — US 10:43 | 7 phút |
+| `indonesia` | ws20 LIFE IN — US 10:06 | ws22 SPACE — US 10:33 | 26 phút |
+| `Faroe` | ws20 LIFE IN — US 17:41 | ws21 SPACE — Spain 18:28 | 47 phút |
+
+**Gốc:** khi đổi pool, `App` ghi `writeHash({ tab, ws })` — `ws` trong hash thành pool
+MỚI, còn `q` của pool cũ **vẫn nằm nguyên**. `useEffect([ws])` của Mapping kiểm "từ khoá
+này có thuộc pool đang mở không" bằng cách so `h0.ws` với `ws` — mà `h0.ws` vừa bị ghi
+thành chính pool mới, nên phép so **luôn đúng**. Nó tự gọi `traCuu(q, true)`; server thấy
+`xem_lai=1` nhưng pool mới chưa có bản lưu nên rơi xuống nhánh tính mới và `tra_cuu_luu`
+ghi thẳng vào lịch sử pool đó. Người dùng không bấm gì cả.
+
+**Vá hai tầng** (mỗi tầng tự đứng được):
+
+- **Server** — `xem_lai=1` mà không có bản lưu thì trả cờ `khong_co_ban_luu`, **không tính
+  mới, không ghi**. "Xem lại" theo đúng nghĩa đen. Chốt ở server nên link chia sẻ,
+  bookmark, hay bất kỳ đường nào khác cũng không lách được.
+- **UI** — hash/localStorage nhớ thêm `qws` = pool **sinh ra** từ khoá, và so với nó thay
+  vì so với pool đang mở. Đổi pool thì `qws` vẫn trỏ pool cũ → không tự tra.
+
+**Bài học:** khi một khoá trong URL/state dùng để kiểm "dữ liệu này có thuộc ngữ cảnh hiện
+tại không", nó phải là khoá **của dữ liệu**, không phải khoá của ngữ cảnh — nếu ngữ cảnh
+tự cập nhật khoá đó thì phép kiểm thành vô hiệu và luôn trả về đúng.

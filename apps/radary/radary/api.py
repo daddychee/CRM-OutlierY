@@ -1133,7 +1133,15 @@ def tra_cuu_pool(ws: int, request: Request, cum: str = '', xem_lai: int = 0):
                      'ngon_ngu': ngon_ngu, 'vung': vung})
         q = cum.strip()
         cu = db.tra_cuu_doc(c, ws, q)
-        if xem_lai and cu:                    # xem lại: KHÔNG tính lại, KHÔNG gọi gì
+        if xem_lai:                           # xem lại: KHÔNG tính lại, KHÔNG gọi gì
+            if not cu:
+                # Không có bản lưu thì "xem lại" KHÔNG được biến thành tra mới: làm vậy
+                # là từ khoá của pool khác tự chui vào lịch sử pool này (user báo 22/08 —
+                # "từ khoá ở thị trường nào giữ nguyên thị trường đó"). Chốt ở SERVER nên
+                # mọi đường vào đều chặn, không chỉ nút bấm.
+                return {'cum': q, 'pool': pool, 'trong_pool': None,
+                        'khong_co_ban_luu': True,
+                        'lich_su': db.tra_cuu_danh_sach(c, ws)}
             return {'cum': q, 'pool': pool, 'trong_pool': cu['a'], 'ngoai': cu['b'],
                     'tu_lich_su': True, 'ts': cu['ts'],
                     'lich_su': db.tra_cuu_danh_sach(c, ws)}

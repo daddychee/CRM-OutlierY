@@ -1875,9 +1875,14 @@ function Mapping({ ws, canEdit }) {
     // 0 quota. Chỉ tự mở khi hash thuộc ĐÚNG pool này.
     const h0 = readHash(), nho = nhoDoc();
     const q0 = h0.q || nho.q || '';
-    const wsCuaQ = String(h0.ws || nho.ws || '');
+    // `qws` = pool SINH RA từ khoá này, không phải pool đang mở. Trước đây so với
+    // `h0.ws` — mà đổi pool thì chính `ws` trong hash vừa bị ghi thành pool MỚI, nên
+    // phép so luôn đúng và từ khoá của pool cũ tự được tra lại trong pool mới, ghi
+    // thẳng vào lịch sử pool đó (user báo 22/08: dấu vết UZBEKISTAN ws1 10:05 -> ws20
+    // 10:06, áfrica ws18 10:35 -> ws20 10:43).
+    const wsCuaQ = String(h0.qws || nho.qws || '');
     if (q0 && wsCuaQ === String(ws)) traCuu(q0, true);
-    else if (q0) writeHash({ q: '' });        // đổi pool -> bỏ từ khoá của pool cũ
+    else if (q0) writeHash({ q: '', qws: '' });   // đổi pool -> bỏ từ khoá của pool cũ
   }, [ws]);
 
   // `lai` = xem lại bản đã lưu: KHÔNG gọi lại nguồn ngoài (mỗi lần hỏi tốn 102 units).
@@ -1891,8 +1896,13 @@ function Mapping({ ws, canEdit }) {
       const a = await api('GET', `/workspaces/${ws}/tra-cuu?cum=${encodeURIComponent(q)}`
         + (lai ? '&xem_lai=1' : ''));
       if (wsLucDo !== ws) return;               // người dùng đã đổi pool giữa chừng
+      if (a.khong_co_ban_luu) {                 // pool này chưa từng tra từ khoá đó
+        setLichSu(a.lich_su || []); setPool(a.pool || {});
+        setCum(''); setBusy(''); writeHash({ q: '', qws: '' });
+        return;
+      }
       setA(a); setPool(a.pool || {}); setLichSu(a.lich_su || []);
-      writeHash({ q });                        // F5 giữ nguyên từ khoá đang xem
+      writeHash({ q, qws: String(ws) });       // F5 giữ nguyên từ khoá đang xem
       if (a.ngoai) setB(a.ngoai);               // kết quả ngoài đã lưu từ lần trước
       if (lai) { setXemLai(a.ts || null); setBusy(''); return; }
       if (!canEdit) { setBusy(''); return; }

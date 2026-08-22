@@ -684,12 +684,12 @@ def test_route_lich_su_doc_lap_va_hash_giu_tu_khoa():
     js = goc.joinpath("web", "app.js").read_text(encoding="utf-8")
     assert "'/api/workspaces/{ws}/tra-cuu/lich-su'" in api_src
     assert "/tra-cuu/lich-su`).then(r => setLichSu" in js
-    assert "writeHash({ q })" in js
+    assert "writeHash({ q, qws: String(ws) })" in js   # kèm pool sinh ra từ khoá
     # Ghim Ý NGHĨA, không ghim mặt chữ: phải SO pool của từ khoá với pool đang mở
     # trước khi tự mở lại, và đổi pool thì bỏ từ khoá cũ. (Bản đầu ghim nguyên câu
     # lệnh nên vỡ ngay khi đổi cách viết — cùng lớp lỗi self-test ghim hằng số.)
     assert "wsCuaQ" in js and "=== String(ws)" in js
-    assert "writeHash({ q: '' })" in js
+    assert "writeHash({ q: '', qws: '' })" in js
 
 
 # ------------------- TỪ KHOÁ ĐANG NỔI trong pool (user 21/08) -------------------
@@ -844,3 +844,27 @@ def test_bucket_dang_chay_va_chua_chot_duoc_danh_dau():
     # UI phải LOẠI các điểm chưa chốt khỏi đường, không chỉ điểm cuối
     assert "ptsVe = soChuaChot ? pts.slice(0, pts.length - soChuaChot) : pts" in js
     assert "chưa chốt — không vẽ lên đường" in js
+
+
+def test_tu_khoa_khong_ro_ri_sang_pool_khac(tmp_path):
+    """Từ khoá tra ở pool nào phải NẰM YÊN ở pool đó.
+
+    Bug 22/08: đổi pool thì `ws` trong hash bị ghi thành pool MỚI trong khi `q` của
+    pool cũ còn nguyên, nên phép kiểm "từ khoá này có thuộc pool đang mở không" luôn
+    đúng -> tự tra lại -> ghi thẳng vào lịch sử pool mới (UZBEKISTAN ws1 10:05 ->
+    ws20 10:06; áfrica ws18 10:35 -> ws20 10:43). Chặn hai tầng.
+    """
+    from pathlib import Path as _P
+    goc = _P(__file__).resolve().parents[1]
+    api_src = (goc / 'radary' / 'api.py').read_text(encoding='utf-8')
+    js = (goc / 'web' / 'app.js').read_text(encoding='utf-8')
+
+    # Tầng SERVER: "xem lại" mà chưa có bản lưu thì KHÔNG được tính mới rồi lưu.
+    than = api_src.split("def tra_cuu_pool(")[1].split("def _ghi_bo_qua_khoa")[0]
+    nhanh = than.split("if xem_lai")[1].split("a = tra_cuu.xu_huong_pool")[0]
+    assert "if not cu:" in nhanh and "'khong_co_ban_luu': True" in nhanh
+    assert "db.tra_cuu_luu" not in nhanh          # nhánh xem lại tuyệt đối không ghi
+
+    # Tầng UI: so với pool SINH RA từ khoá (qws), không phải pool đang mở (ws).
+    assert "const wsCuaQ = String(h0.qws || nho.qws || '')" in js
+    assert "if (a.khong_co_ban_luu)" in js
