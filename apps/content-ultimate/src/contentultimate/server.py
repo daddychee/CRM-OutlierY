@@ -355,6 +355,14 @@ def _save_cookies(content: str) -> tuple[bool, str]:
         tmp = COOKIES_PATH.with_suffix(".txt.tmp")
         tmp.write_text(content + "\n", encoding="utf-8")
         tmp.chmod(0o600)
+        # Windows: os.replace len file co co CHI DOC bi tu choi, trong khi POSIX chi
+        # can quyen ghi THU MUC (dung y do o tren). Bo co chi-doc cua dich truoc khi
+        # thay de hai he hanh xu giong nhau (bat 22/08 tren may Windows cua cong ty).
+        try:
+            if COOKIES_PATH.exists():
+                COOKIES_PATH.chmod(0o600)
+        except OSError:
+            pass
         os.replace(tmp, COOKIES_PATH)
     except OSError as e:
         return False, (f"không ghi được cookies trên server ({e.strerror or e}) — "
@@ -618,7 +626,11 @@ def _history_files() -> set[str]:
         v = j.get("version")
         if v:
             out.add(v)
-            out.add(str(Path(v).with_suffix("")) + ".outline.txt")
+            # cat duoi bang CHUOI, khong qua Path: tren Windows Path("/opt/x/a.md")
+            # doi "/" thanh "\\" nen ban ghi di san VPS trong so khong bao gio khop
+            # voi duong dan client gui -> nut tai outline 404 oan (bat 22/08).
+            goc = v[:v.rfind(".")] if "." in v.rsplit("/", 1)[-1].rsplit("\\", 1)[-1] else v
+            out.add(goc + ".outline.txt")
     return out
 
 

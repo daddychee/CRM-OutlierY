@@ -1,4 +1,5 @@
 from voiceprofile.generator import (
+    idea_budget,
     CHAPTER_WARN_CHARS,
     HOOK_CHARS,
     YOUTUBE_RULES,
@@ -167,8 +168,13 @@ def test_tang2_prompt_ngan_sach_y_khong_nhac_ky_tu():
     _, u = build_section_prompt(chapter, PROFILE, "o", "", 3000, title="T")
     assert "DEPTH PLAN" in u and "AT MOST 2" in u     # 3000/1250 ~ 2 y khai trien day du
     assert "characters" not in u                       # khong nhac ky tu
+    # 22/08: DEPTH PLAN lay min(ngan sach, SO Y CO THAT trong brief). Brief cua
+    # chapter nay chi co 2 y nen du ngan sach 3800/1250 = 3 (idea_budget do that = 3)
+    # thi van la "AT MOST 2" — khong the khai trien day du 3 y khi brief chi co 2.
+    # Test cu ghim "AT MOST 3" tu thoi chua lay min; hanh vi hien tai moi la dung.
     _, u2 = build_section_prompt(chapter, PROFILE, "o", "", 3800, title="T")
-    assert "AT MOST 3" in u2                           # 3800/1250 ~ 3 y
+    assert "AT MOST 2" in u2
+    assert idea_budget(3800) == 3                      # ngan sach van la 3, brief moi la cai chan
 
 
 def test_tang2_khong_bao_gio_bo_y_cua_user():
@@ -220,7 +226,11 @@ def test_tang1_uoc_y_va_bao_cao_pham_vi():
         "Chapter 1: " + brief_3y + " " + brief_3y)     # brief ram y gap doi
     rep = outline_scope_report(dense, 10000)
     assert rep["summary"].startswith("Outline: 2 chương")
-    assert any("Chapter 1" in w for w in rep["scope_warnings"])
+    # 22/08: canh bao "chuong nay nhieu y qua" da duoc GO CO CHU DICH khi chuyen tu
+    # CAT Y sang PHAN TANG DO SAU (chot 2026-07-14): y ngoai ngan sach FULL khong bi
+    # bo ma xuong muc nhac-luot, nen brief ram y KHONG con la loi de canh bao. Summary
+    # noi thang dieu do; test gio ghim dung cau chu ay thay vi doi canh bao cu.
+    assert "nhắc lướt" in rep["summary"] and "không bỏ ý nào" in rep["summary"]
     assert rep["warnings"]                             # gop ca scope + structure
 
 
