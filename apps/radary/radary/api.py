@@ -1196,12 +1196,39 @@ def tu_khoa_noi(ws: int, request: Request, so_cum: int = 30, ngon_ngu: str = '',
         # hook don tu khong co nghia -> loai khoi danh sach (luat Owner)
         xh = [m for m in xh
               if m['loai'] != 'mau_cau' or mapping.hook_hop_le(m['cum'], phieu_kw)]
-        # topic: don ria ten cho khop lop nong ("sri lanka the" -> "sri lanka")
+        # topic: don ria ten cho khop lop nong ("sri lanka the" -> "sri lanka",
+        # "world's" -> "world") roi GOP ban trung — hai nguon ung vien (n-gram +
+        # danh tu don) co the ra cung mot topic ("land of" don thanh "land" trung
+        # voi "land"); giu ban co lop no, roi ban nhieu video hon (user bao 22/08:
+        # "land lap lai 2 lan lien tiep")
+        theo_ten = {}
+        xh_gon = []
         for m in xh:
-            if m['loai'] == 'doi_tuong':
-                gon = mapping.don_topic(m['cum'])
-                if gon:
-                    m['cum'] = gon
+            if m['loai'] != 'doi_tuong':
+                xh_gon.append(m)
+                continue
+            gon = mapping.don_topic(m['cum'])
+            if not gon:
+                m['loai'] = 'mau_cau'
+                if mapping.hook_hop_le(m['cum'], phieu_kw):
+                    xh_gon.append(m)
+                continue
+            m['cum'] = gon
+            cu_m = theo_ten.get(gon)
+            if cu_m is None:
+                theo_ten[gon] = m
+                xh_gon.append(m)
+            else:
+                tot_hon = ((m.get('so_no') is not None, m.get('tong_video') or 0)
+                           > (cu_m.get('so_no') is not None, cu_m.get('tong_video') or 0))
+                if tot_hon:
+                    cu_m.update(m)
+        xh = xh_gon
+        # SAP XEP LAI sau khi merge lop no: cum nong bo sung bi append cuoi danh
+        # sach nen 'mountains +500%' tung nam duoi day (user bao 22/08) — xep lai
+        # dung luat cu: dang len truoc, it mau xuong cuoi
+        xh.sort(key=lambda r: (r.get('phan_tram') is None,
+                               -(r.get('phan_tram') or 0), -(r.get('tong_video') or 0)))
         # TRANG THAI hook (2 chieu No x Cung, nguong minh bach — mockup v3):
         nen_no = 2 * (nong.get('nen') or 0.1)
         for m in xh:

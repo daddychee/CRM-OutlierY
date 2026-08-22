@@ -1554,3 +1554,20 @@ def test_loai_cum_luat_topic_hook_chot_22_08():
     assert not mapping.hook_hop_le('who', phieu)
     assert not mapping.hook_hop_le('most', phieu)
     assert not mapping.hook_hop_le("can't", phieu)
+
+
+def test_don_topic_go_so_huu_va_tu_dong_khung_22_08():
+    """Owner 22/08: world/world's la MOT topic; living/reality/cheap living khong phai topic."""
+    from radary import mapping
+    # so huu 's go truoc khi don ria -> trung ten thi route gop lai
+    assert mapping.don_topic("world's") == "world"
+    assert mapping.don_topic("world") == "world"
+    # danh tu truu tuong dong khung khong dung mot minh lam topic
+    assert mapping.don_topic("living") == ""
+    assert mapping.don_topic("reality") == ""
+    assert mapping.don_topic("cheap living") == "cheap"  # con "cheap" JJ -> se roi sang hook o loai_cum
+    # loai_cum: duyet tu cuoi bo qua tu dong khung -> "cheap living" xet "cheap" (JJ) = hook
+    phieu = {"cheap": {"JJ": 5}, "living": {"NN": 3, "VBG": 2}, "reality": {"NN": 5}}
+    assert mapping.loai_cum("cheap living", phieu) == "mau_cau"
+    assert mapping.loai_cum("living", phieu) == "mau_cau"
+    assert mapping.loai_cum("reality", phieu) == "mau_cau"

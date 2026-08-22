@@ -693,14 +693,20 @@ _TU_DINH_DANG = {"documentary", "vlog", "video", "videos", "film", "footage",
                  "travel", "nature", "documentaries", "vlogs",
                  # 'life' la chu cua chinh ngach (Life in X) — khong phan biet noi dung;
                  # user liet ke objective la women/countries/island/moon nen country GIU
-                 "life"}
+                 "life", "living",
+                 # danh tu TRUU TUONG dong khung (Owner 22/08: "cheap living, living,
+                 # reality khong phai topic") — chung dong khung cau chuyen chu khong
+                 # phai chu the: reality of X, facts about X, the truth about X
+                 "reality", "facts", "truth", "story", "stories"}
 
 
 def don_topic(cum: str) -> str:
     """Don RIA cum TOPIC: bo tu-tro/dinh-dang o hai dau ("sri lanka the" -> "sri
     lanka", "culture and" -> "culture"). CHI ap cho topic — hook giu duoi gioi tu
     vi do la dac trung khuon ("life in", "land of")."""
-    tu = cum.split()
+    # go duoi so huu 's TRUOC khi don ria — "world's" va "world" la mot topic,
+    # de hai dong la trung lap kho hieu (Owner bao 22/08)
+    tu = [w[:-2] if w.endswith("'s") else w for w in cum.split()]
     while tu and (tu[0] in _TU_TRO or tu[0] in _TU_DINH_DANG):
         tu.pop(0)
     while tu and (tu[-1] in _TU_TRO or tu[-1] in _TU_DINH_DANG):
