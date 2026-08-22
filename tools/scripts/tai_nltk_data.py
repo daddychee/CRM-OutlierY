@@ -2,7 +2,7 @@
 """Tai du lieu nltk cho phan loai tu loai cua RadarY Mapping (22/08/2026).
 
 data/ nam ngoai git nen may moi (hoac sau khi don data) chay script nay MOT lan:
-    .venv\Scripts\python.exe tools\scripts\tai_nltk_data.py
+    .venv/Scripts/python.exe tools/scripts/tai_nltk_data.py
 Thieu data khong lam app chet — mapping.bang_pos co van an toan tu ve luat
 sau-gioi-tu cu — nhung phan loai doi-tuong/mau-cau se kem hon han o ngach
 khong-phai-Life-in-X (vi du SPACE).
