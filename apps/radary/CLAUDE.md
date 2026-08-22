@@ -143,7 +143,21 @@ nltk perceptron, hai tầng (mỗi tầng vá một điểm chết đo được)
    biến mọi từ thành NNP), phiếu đa số NN = đối tượng.
 
 Cụm nhiều từ lấy loại theo **từ cuối** (`solar system`, `james webb` = đối
-tượng). Một luật dùng chung ba nơi: tab Keyword, Hot Topic, màu bong bóng.
+tượng). Audit mọi ngách có thị trường 22/08 thêm 4 luật con (đều có test ghim
+`test_contraction_khong_bao_gio_la_topic_22_08` + `test_audit_cac_ngach_22_08…`):
+- **Từ có dấu nháy**: nltk tag MỌI contraction đứng một mình là NN (`don't`/
+  `can't`/`you're` đều NN — phiếu của chính token nháy là rác). Đuôi sau dấu
+  nháy quyết định: chỉ `'s` (sở hữu — `world's`) mới xét POS phần gốc,
+  `'t/'re/'ve/'ll/'d/'m` loại thẳng.
+- **Ngoài từ điển nhưng phiếu VB đa số** = dạng biến tố (-ed/-ing) từ điển
+  thiếu (`expected`/`moved`/`breathtaking`) — KHÔNG phải tên riêng. Địa danh
+  không bao giờ VB đa số nên tầng cứu-tajikistan vẫn nguyên.
+- **Đại từ bất định** (`something`… — 307 phiếu NN ở SPACE) + giới từ thời
+  gian (`after`…) nằm trong `_TU_TRO`; từ trợ đơn lẻ cũng không là hook.
+- **Động từ mời gọi đầu tiêu đề** (`discover`/`explore`/`watch`… — tagger tag
+  NN vì đứng đầu câu) nằm trong `_TU_DINH_DANG` (nhóm từ đóng khung, cùng chỗ
+  với `living`/`reality`/`facts`/`story`). Thêm từ đóng khung mới = thêm vào
+  set này, một chỗ. Một luật dùng chung ba nơi: tab Keyword, Hot Topic, màu bong bóng.
 Luật cũ (từ đứng sau giới từ ≥75%) là khuôn của ngách Life-in-X: sang SPACE nó
 nhận `to Replace` (to nguyên mẫu) và `a piece` (a = mạo từ, nằm trong bộ vì là
 giới từ tiếng TBN) thành đối tượng.
