@@ -607,6 +607,8 @@ def build_section_prompt(
     target_chars: int,
     title: str = "",
     mis_line: str = "",
+    gop_y: str = "",
+    ban_truoc: str = "",
 ) -> tuple[str, str]:
     """Tra ve (system, user) cho mot phan.
 
@@ -659,6 +661,14 @@ def build_section_prompt(
     v2 = _v2_section_block(question, mis_line)
     if v2:
         parts += ["", v2]
+    # VIET LAI THEO GOP Y (23/08): nguoi doc xong bam "viet lai", gop y cua ho di
+    # thang vao day. Khong co gop y thi prompt KHONG doi mot byte (test hoi quy).
+    if gop_y:
+        parts += ["", "REVISION NOTE from the writer, follow it exactly: " + gop_y.strip()]
+        if ban_truoc:
+            parts += ["", "PREVIOUS DRAFT of this same section, for reference. Keep what "
+                          "works, fix what the note asks for, keep every fact and number:",
+                      ban_truoc.strip()]
     parts += [
         "",
         scope_rule,
@@ -974,6 +984,8 @@ def generate_script(
     should_stop: Callable[[], bool] | None = None,
     done_sections: dict[str, str] | None = None,
     on_section_done: Callable[[str, str], None] | None = None,
+    chi_phan: str | None = None,
+    gop_y: str = "",
 ) -> Script:
     """Sinh kich ban tuan tu theo cac phan cua outline. Ghep vao mot Script.
 
@@ -1032,13 +1044,21 @@ def generate_script(
     n_ch = sum(1 for s in content_sections if s.kind == "chapter")
     for i, (sec, target) in enumerate(zip(content_sections, allocs), 1):
         # Resume: phan da co trong checkpoint -> dung lai, khong goi LLM
-        if sec.heading in done_sections:
+        # chi_phan = phan duoc yeu cau viet (lai). No CO trong done_sections vi do la
+        # ban truoc, nhung khong duoc coi la "da xong" — neu khong thi bam "viet lai"
+        # se khong viet gi ca (bat 23/08 luc nghiem thu).
+        if sec.heading in done_sections and sec.heading != chi_phan:
             body = done_sections[sec.heading]
             script.sections.append((sec.heading, body))
             written += len(body)
             prev_tail = _tail(body)
             if on_progress:
                 on_progress(f"  {sec.heading} ({i}/{n_total}): da co tu checkpoint ({len(body)} ky tu)")
+            continue
+        # CHI VIET MOT PHAN (23/08): vong phan hoi hien tai la 18 phut cho ca bai;
+        # cho phep viet dung mot phan de nguoi kiem ngay roi viet lai neu chua ung.
+        # Cac phan da co van duoc dua vao lam ngu canh (prev_tail) o vong tren.
+        if chi_phan and sec.heading != chi_phan:
             continue
         if should_stop and should_stop():
             if on_progress:
@@ -1048,7 +1068,10 @@ def generate_script(
             on_progress(f"Dang viet {sec.heading} ({i}/{n_total}, ~{target} ky tu) · "
                         f"da {written}/{total_chars} ky tu…")
         system, user = build_section_prompt(sec, profile, outline_summary, prev_tail, target,
-                                            title=script.title, mis_line=mis_line)
+                                            title=script.title, mis_line=mis_line,
+                                            gop_y=gop_y if chi_phan else "",
+                                            ban_truoc=(done_sections or {}).get(sec.heading, "")
+                                                      if (chi_phan and gop_y) else "")
         # rong rai cho model thinking (vd GLM) + phan output
         if sec.kind == "hook":
             # HOOK sinh NHIEU PHUONG AN roi MAY cham chon (Dot 3, 23/08). Hook dang

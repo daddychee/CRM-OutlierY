@@ -731,3 +731,105 @@ def test_canh_bao_khi_giong_khac_ngon_ngu_bai_23_08():
     assert "vi" in canh_bao_ngon_ngu("vi", {"output_language": "en"}).lower() or True
     assert canh_bao_ngon_ngu("en", {"output_language": "en"}) == ""
     assert canh_bao_ngon_ngu("en", {}) == ""            # ho so khong khai -> khong doan bua
+
+
+# ========== BUOC 4 (23/08): viet TUNG PHAN + viet lai kem gop y ==========
+
+def test_viet_dung_MOT_phan_khong_dung_phan_khac_23_08():
+    """Vong phan hoi hien tai la 18 phut: bam nut roi cho ca bai, thay do thi mat
+    ca luot. Cho phep viet dung mot phan de nguoi kiem ngay."""
+    from voiceprofile.generator import generate_script
+
+    goi = []
+
+    def llm(system, user, max_tokens=None):
+        goi.append(user)
+        return "Than phan vua viet ra. " * 30
+
+    s = generate_script(OUTLINE, PROFILE, llm, total_chars=8000, chi_phan="Chapter 2")
+    assert [h for h, _ in s.sections] == ["Chapter 2"], "phai chi viet dung phan duoc yeu cau"
+    assert len(goi) == 1, "khong duoc goi model cho phan khac"
+
+
+def test_viet_mot_phan_van_ke_thua_phan_da_co_23_08():
+    """Phan da viet phai duoc dua vao lam ngu canh (prev_tail) chu khong bo qua."""
+    from voiceprofile.generator import generate_script
+
+    goi = []
+
+    def llm(system, user, max_tokens=None):
+        goi.append(user)
+        return "Than phan moi. " * 30
+
+    generate_script(OUTLINE, PROFILE, llm, total_chars=8000, chi_phan="Chapter 2",
+                    done_sections={"Hook": "Doan hook cu.",
+                                   "Chapter 1": "Chuong mot ket thuc bang cau nay."})
+    assert "Chuong mot ket thuc bang cau nay" in goi[0], "thieu duoi chuong truoc lam ngu canh"
+
+
+def test_gop_y_cua_nguoi_di_vao_prompt_viet_lai_23_08():
+    """Nguoi doc xong bam 'viet lai theo gop y' — gop y phai toi duoc model."""
+    from voiceprofile.generator import build_section_prompt, parse_outline
+
+    ch = next(s for s in parse_outline(OUTLINE) if s.kind == "chapter")
+    _, u = build_section_prompt(ch, PROFILE, "o", "", 3000, title="T",
+                                gop_y="Doan Tashkent con kho, them mot chi tiet doi song.",
+                                ban_truoc="Ban truoc cua chuong nay.")
+    assert "Tashkent con kho" in u
+    assert "Ban truoc cua chuong nay" in u
+    # khong gop y -> prompt KHONG doi mot byte (hoi quy)
+    _, u0 = build_section_prompt(ch, PROFILE, "o", "", 3000, title="T")
+    assert "REVISION" not in u0 and "PREVIOUS DRAFT" not in u0
+
+
+def test_moi_phan_duoc_LUU_NGAY_truoc_khi_phan_sau_loi_23_08():
+    """Moi phan la mot lan tra tien, nen phai duoc luu NGAY khi viet xong.
+
+    generate_script CO Y de loi sinh bay len (nuot o day se che loi that); cho giu
+    phan da viet la CHECKPOINT — on_section_done goi ngay sau moi phan. Bat bien
+    can ghim: phan sau loi KHONG duoc xoa phan truoc.
+    """
+    import pytest
+    from voiceprofile import hook as _hook
+    from voiceprofile.generator import generate_script
+
+    n, luu = {"i": 0}, []
+
+    def llm(system, user, max_tokens=None):
+        n["i"] += 1
+        # Hook ton SO_PHUONG_AN luot (may sinh nhieu ban roi cham chon), nen loi
+        # phai dat SAU do thi moi kiem duoc dung y do: phan da viet co bi xoa khong.
+        if n["i"] >= _hook.SO_PHUONG_AN + 2:
+            raise RuntimeError("GLM API (400): contentFilter code 1301")
+        return "Hook ngan." if "HOOK" in user else "Than phan da viet. " * 30
+
+    with pytest.raises(RuntimeError):
+        generate_script(OUTLINE, PROFILE, llm, total_chars=8000,
+                        on_section_done=lambda h, t: luu.append((h, t)))
+    assert len(luu) >= 2, "phan da viet chua duoc luu truoc khi phan sau loi"
+    assert all(t.strip() for _, t in luu)
+
+
+def test_viet_lai_mot_phan_da_co_thi_van_viet_23_08():
+    """Bam 'viet lai theo gop y' phai THAT SU viet lai.
+
+    Ban truoc nam trong done_sections, nen neu khong tru chi_phan ra thi vong lap
+    coi phan do la 'da xong' va bo qua — nguoi bam nut ma khong co gi xay ra.
+    Bat duoc luc nghiem thu 23/08, test cu khong phu duong nay vi chi kiem
+    build_section_prompt truc tiep.
+    """
+    from voiceprofile.generator import generate_script
+
+    goi = []
+
+    def llm(system, user, max_tokens=None):
+        goi.append(user)
+        return "Ban viet lai. " * 30
+
+    s = generate_script(OUTLINE, PROFILE, llm, total_chars=8000, chi_phan="Chapter 1",
+                        gop_y="Doan nay con kho, them chi tiet.",
+                        done_sections={"Chapter 1": "Ban truoc cua chuong mot."})
+    assert len(goi) == 1, "khong viet lai gi ca"
+    assert "con kho, them chi tiet" in goi[0]
+    assert "Ban truoc cua chuong mot" in goi[0]
+    assert dict(s.sections)["Chapter 1"].startswith("Ban viet lai")
