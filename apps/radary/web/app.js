@@ -1726,6 +1726,45 @@ function HangThanh({ nhan, tieu_de, phan_tram, mau, phai, phaiStyle, phaiClass }
     </div>`;
 }
 
+// THẺ KÊNH — kênh nào đẩy chủ đề này, và họ đẩy BẰNG VIDEO GÌ.
+// Trước đây chỉ liệt kê "tên · N video · X view": biết kênh nào đang làm nhưng muốn
+// xem họ làm bài gì thì phải tự mở YouTube dò từng kênh (user báo 22/08). Video đã
+// có sẵn trong dữ liệu pool nên đính vào không tốn thêm quota nào.
+function TheKenh({ k, maxView }) {
+  const [mo, setMo] = useState(false);
+  const vids = k.video || [];
+  const hien = mo ? vids : vids.slice(0, 3);
+  const ten = linkKenh(k.kenh_yt)
+    ? html`<a href=${linkKenh(k.kenh_yt)} target="_blank" rel="noopener">${k.kenh}</a>`
+    : html`<span>${k.kenh}</span>`;
+  return html`<div style="border:1px solid var(--line);border-radius:10px;padding:10px 12px">
+    <div style="display:flex;align-items:baseline;gap:8px">
+      <div style="font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"
+        title=${k.kenh}>${ten}</div>
+      <div class="note" style="margin:0 0 0 auto;white-space:nowrap"
+        title=${`${k.so_video} video về từ khoá này trong 12 tháng · ${(k.views || 0).toLocaleString('vi-VN')} view`
+          + (k.view_tb != null ? ` · trung bình ${(k.view_tb).toLocaleString('vi-VN')} view/video` : '')}>
+        ${k.so_video} video · ${soGon(k.views)} view${k.view_tb != null ? ` · TB ${soGon(k.view_tb)}/video` : ''}</div>
+    </div>
+    <div style="height:4px;border-radius:2px;background:rgba(127,127,127,.15);margin:7px 0 8px">
+      <div style=${`width:${Math.max(3, Math.round(100 * (k.views || 0) / (maxView || 1)))}%;`
+        + 'height:4px;border-radius:2px;background:var(--accent,#4C8FE0)'}></div>
+    </div>
+    ${vids.length ? html`<div>
+      ${hien.map(v => html`<div style="display:flex;gap:8px;padding:2px 0;align-items:baseline">
+        <span style="flex:0 0 46px;text-align:right;font-weight:600;font-variant-numeric:tabular-nums">
+          ${soGon(v.views)}</span>
+        <a href=${linkVideo(v.yt_id)} target="_blank" rel="noopener" title=${v.title}
+          style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${v.title}</a>
+        <span class="note" style="margin:0 0 0 auto;white-space:nowrap">${ngayVN(v.pub_ts)}</span>
+      </div>`)}
+      ${vids.length > 3 ? html`<a href="#" class="note" style="display:inline-block;margin-top:4px"
+        onClick=${e => { e.preventDefault(); setMo(!mo); }}>
+        ${mo ? '▴ Thu gọn' : `▾ ${vids.length - 3} video nữa`}</a>` : ''}
+    </div>` : html`<div class="note" style="margin:0">Bản lưu cũ chưa kèm video — tra lại để có</div>`}
+  </div>`;
+}
+
 // Truy vấn đang lên: thanh ngang, dài theo mức tăng — yêu cầu 3 của user
 function ThanhTruyVan({ muc, mau, ghi }) {
   if (!muc || !muc.length) return null;
@@ -2048,14 +2087,15 @@ function Mapping({ ws, canEdit }) {
             <td>${l.thang}</td><td>${l.so_video}</td>
             <td>${l.du_mau ? l.view_moi_ngay : html`<span class="note">— ít mẫu</span>`}</td></tr>`)}
           </tbody></table></details>
-        ${(tp.top_kenh || []).length ? html`<div style="margin-top:8px">
-          <div class="note" style="margin:0 0 2px">Kênh đẩy mạnh chủ đề này (12 tháng):</div>
-          ${(tp.top_kenh || []).map(k => html`<div style="padding:1px 0">
-            ${linkKenh(k.kenh_yt) ? html`<a href=${linkKenh(k.kenh_yt)} target="_blank" rel="noopener">${k.kenh}</a>`
-              : html`<span>${k.kenh}</span>`}
-            <span class="note"> · ${k.so_video} video · ${soGon(k.views)} view</span></div>`)}
+        ${(tp.top_kenh || []).length ? html`<div style="margin-top:10px">
+          <div class="eyebrow">Kênh đẩy mạnh chủ đề này (12 tháng) ${' '}
+            <span class="note">· thanh = view của kênh so với kênh mạnh nhất · bấm tiêu đề mở video</span></div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(420px,1fr));gap:10px">
+            ${(tp.top_kenh || []).map(k => html`<${TheKenh} k=${k}
+              maxView=${Math.max(...tp.top_kenh.map(x => x.views || 0), 1)}/>`)}
+          </div>
         </div>` : ''}
-        ${tp.moi_nhat ? html`<div class="note" style="margin-top:6px">Bài gần nhất trong pool:
+        ${tp.moi_nhat ? html`<div class="note" style="margin-top:6px">Bài gần nhất trong pool: ${' '}
           <a href=${linkVideo(tp.moi_nhat.yt_id)} target="_blank" rel="noopener">${tp.moi_nhat.title}</a>
           · ${linkKenh(tp.moi_nhat.kenh_yt) ? html`<a href=${linkKenh(tp.moi_nhat.kenh_yt)} target="_blank" rel="noopener">${tp.moi_nhat.kenh}</a>` : tp.moi_nhat.kenh}
           · ${soGon(tp.moi_nhat.views)} view · ${ngayVN(tp.moi_nhat.pub_ts)}</div>` : ''}`}

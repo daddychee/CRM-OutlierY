@@ -884,3 +884,34 @@ def test_ba_khoi_thanh_ngang_dung_chung_mot_luoi():
     for cu in ('flex:0 0 44%', 'flex:0 0 46%', 'flex:0 0 82px', 'flex:0 0 92px'):
         assert cu not in js, f'còn khai lưới riêng: {cu}'
     assert js.count('<${HangThanh}') >= 2      # Trends + biến thể cùng dùng
+
+
+def test_the_kenh_kem_video_cua_kenh_do():
+    """Kênh đẩy mạnh chủ đề phải kèm LUÔN video của chính kênh đó nói về từ khoá.
+
+    User 22/08: "hiện luôn video nói về từ khóa trong kênh đó, cần UI dễ nhìn thay vì
+    liệt kê". Video đã nằm sẵn trong dữ liệu pool nên đính vào là 0 quota.
+    """
+    import time
+    from pathlib import Path as _P
+    from radary import tra_cuu
+
+    now = time.time()
+    kho = [{'yt_id': f'v{i}', 'title': f'Life in Tajikistan {i}',
+            'title_l': f'life in tajikistan {i}',
+            'kenh': 'A' if i % 2 else 'B', 'kenh_yt': 'UCA' if i % 2 else 'UCB',
+            'views': 1000 * (i + 1), 'pub_ts': now - 86400 * 10 * (i + 1), 'vph': 1.0}
+           for i in range(6)]
+    r = tra_cuu.xu_huong_pool(kho, 'tajikistan', bay_gio=now)
+    for k in r['top_kenh']:
+        assert k['video'], 'kênh nào cũng phải kèm video'
+        assert len(k['video']) <= tra_cuu.SO_VIDEO_MOI_KENH
+        views = [v['views'] for v in k['video']]
+        assert views == sorted(views, reverse=True)          # video khoẻ nhất trước
+        assert k['view_tb'] == round(k['views'] / k['so_video'])
+        assert set(k['video'][0]) >= {'yt_id', 'title', 'views', 'pub_ts'}
+
+    # UI: thẻ, không phải liệt kê phẳng; và chịu được bản lưu CŨ chưa có trường video
+    js = (_P(__file__).resolve().parents[1] / 'web' / 'app.js').read_text(encoding='utf-8')
+    assert 'function TheKenh(' in js and '<${TheKenh}' in js
+    assert 'Bản lưu cũ chưa kèm video' in js

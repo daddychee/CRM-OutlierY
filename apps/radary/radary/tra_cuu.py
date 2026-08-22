@@ -44,6 +44,11 @@ def _view_moi_ngay(v: dict, bay_gio: float) -> float | None:
     return v["views"] / tuoi
 
 
+# Mỗi kênh chỉ đính tối đa ngần này video (bản tra cứu được LƯU vào tra_cuu_log —
+# đính hết là sổ phình theo số video của pool).
+SO_VIDEO_MOI_KENH = 8
+
+
 def xu_huong_pool(kho: list[dict], cum: str, so_thang: int = SO_THANG,
                   bay_gio: float | None = None) -> dict:
     """KHOI A — pool dang theo doi lam gi voi tu khoa nay, va xu huong ra sao."""
@@ -73,14 +78,22 @@ def xu_huong_pool(kho: list[dict], cum: str, so_thang: int = SO_THANG,
     # velocity ngan han (ticks 46 ngay) — so voi TOAN POOL de biet nhanh/cham tuong doi
     vph_cum = [v["vph"] for v in khop if v.get("vph")]
     vph_pool = [v["vph"] for v in kho if v.get("vph")]
+    # Kênh nào đẩy chủ đề này — kèm LUÔN video của kênh đó nói về từ khoá. Danh sách
+    # video đã nằm sẵn trong `khop` nên đính vào là 0 quota, không thêm lời gọi nào.
     kenh: dict[str, dict] = {}
     for v in khop:
         if (v.get("pub_ts") or 0) >= bay_gio - 365 * 86400:
             k = kenh.setdefault(v["kenh"] or v["kenh_yt"],
                                 {"kenh": v["kenh"], "kenh_yt": v.get("kenh_yt") or "",
-                                 "so_video": 0, "views": 0})
+                                 "so_video": 0, "views": 0, "video": []})
             k["so_video"] += 1
             k["views"] += v.get("views") or 0
+            k["video"].append({"yt_id": v["yt_id"], "title": v["title"],
+                               "views": v.get("views") or 0, "pub_ts": v.get("pub_ts") or 0})
+    for k in kenh.values():
+        k["video"].sort(key=lambda x: -x["views"])
+        k["video"] = k["video"][:SO_VIDEO_MOI_KENH]        # chặn payload phình
+        k["view_tb"] = round(k["views"] / max(1, k["so_video"]))
 
     moi_nhat = max(khop, key=lambda v: v.get("pub_ts") or 0)
     tong_view_pool = sum(v.get("views") or 0 for v in kho) or 1
