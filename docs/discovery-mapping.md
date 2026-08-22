@@ -488,3 +488,31 @@ minimalist icon, không emoji); bảng riêng vì hệ quy chiếu khác hai tab
 view ≠ số video đăng): Cụm · Loại · Video mới · Nổ k/n=% · Video nổ nhất (link) ·
 Thị trường ngoài (view 90n / đang soi… / —). Nghiệm thu sống ws20: 40 cụm,
 `scientists can't explain` 3/4=75% đứng đầu, probe nền điền 7,2M view 90n.
+
+## 22/08 (tiếp) — Phân loại từ khoá đổi sang luật TỪ LOẠI (user chốt)
+
+User soi pool SPACE thấy `replace` được gợi ý là đối tượng → mổ ra ba bệnh trong luật
+sau-giới-từ (khuôn của ngách Life-in-X): "to Replace" = **to nguyên mẫu** không phải
+giới từ; "a piece" = **a mạo từ** (nằm trong bộ vì là giới từ tiếng TBN); "in front" =
+giới từ ghép. Chiều ngược: `universe` trượt vì "of THE universe" (mạo từ chen giữa),
+`solar system` trượt vì 2 từ.
+
+User chốt luật đơn giản hơn: **danh từ = đối tượng, còn lại (tính/động/trạng từ) =
+mẫu câu.** Cài bằng nltk perceptron tagger + hai tầng, mỗi tầng vá một điểm chết đo
+được: (1) từ **ngoài từ điển EN** (words 234k, chấp nhận dạng số nhiều) = tên riêng =
+đối tượng — cứu `tajikistan` (tagger đoán JJ vì đuôi -an) và `webb` (đoán VB);
+(2) từ trong từ điển → tag POS trên **chữ thường** (trung hoà title ALL-CAPS vốn làm
+mọi từ thành NNP), phiếu đa số NN = đối tượng. Cụm n-gram lấy loại theo TỪ CUỐI
+(`solar system`, `james webb`, `stunning women` → đối tượng). Ba nơi dùng chung một
+luật: tab Keyword, Hot Topic, bản đồ bong bóng.
+
+**Van an toàn**: nltk nạp LƯỜI, thiếu thư viện/data → `bang_pos` trả None → nơi gọi
+tự về luật sau-giới-từ cũ, app không chết (kiểu van Qdrant). Tiếng TBN đi nhánh cũ
+(luật en/de/a vốn hợp: albania, nicaragua, tayikistán vẫn sạch). POS cache theo
+title — lần đầu 2-4s/pool, sau ~0. Data tại `data/nltk_data` (NLTK_DATA override được).
+
+**Đinh suýt lọt**: ngôn ngữ trong hệ là TÊN ĐẦY ĐỦ từ đế ("English") mà `bang_pos` so
+mã "en" → luôn None → CẢ HỆ lặng lẽ về luật cũ dù 100 test xanh (test truyền thẳng
+'en' nên không bắt được). Chuẩn hoá qua MA_NGON_NGU + test ghim cả 'English'/'Spanish'.
+Kết quả sống: SPACE đối tượng = nasa/moon/voyager/james webb/solar system, mẫu câu =
+webb just/explained slowly; `replace` biến mất đúng chỗ.

@@ -406,11 +406,15 @@ def tu_khoa_nong(kho: list[dict], bay_gio: float | None = None,
         giu.append(r)
 
     tap_sau = {t for t, n in sau_gioi_tu.items() if n >= 2}
+    phieu = bang_pos([v for v, _x in moi], "en")
     for r in giu:
-        # nhan HIEN THI (khong tham gia xep hang): doi_tuong neu co tu tung dung sau
-        # gioi tu (dia danh/chu the), con lai la cong_thuc (kieu dat title)
-        r["loai"] = ("doi_tuong" if any(t in tap_sau for t in r["cum"].split())
-                     else "cong_thuc")
+        # nhan HIEN THI (khong tham gia xep hang) — cung luat tu-loai voi tab Keyword;
+        # thieu nltk thi ve luat sau-gioi-tu cu
+        if phieu is not None:
+            r["loai"] = "doi_tuong" if la_doi_tuong(r["cum"].split()[-1], phieu) else "cong_thuc"
+        else:
+            r["loai"] = ("doi_tuong" if any(t in tap_sau for t in r["cum"].split())
+                         else "cong_thuc")
         r["vi_du"] = vi_du.get(r["cum"])
     giu.sort(key=lambda r: (-r["ti_le_no"], -r["so_no"], -r["so_moi"]))
     return {"co_du_lieu": True, "cum": giu[:so_muc],
@@ -513,6 +517,88 @@ def nhan_dien_ngon_ngu(title: str) -> str | None:
 # Khong nhan dien duoc bang "chu viet hoa": title YouTube viet Hoa Moi Tu.
 # Cach dung: doi tuong gan nhu LUON dung sau gioi tu ("life IN vietnam", "travel TO
 # norway"), con tinh tu mo ta thi khong ("extremely beautiful"). Do ti le de tach.
+# ---- PHAN LOAI TU LOAI (22/08 — user chot luat don gian thay luat sau-gioi-tu):
+#   DANH TU / TEN RIENG = doi tuong · con lai (tinh/dong/trang tu) = mau cau.
+# Luat sau-gioi-tu la khuon cua ngach Life-in-X: sang SPACE no nhan "to Replace"
+# (to nguyen mau) va "a piece" (a = mao tu — nam trong bo vi la gioi tu tieng TBN)
+# thanh doi tuong, con mars/universe (chu ngu, "of THE universe") thi truot.
+# HAI TANG do that 22/08 tren ca 2 pool:
+#   (1) tu KHONG co trong tu dien EN (nltk words 234k) = ten rieng -> doi tuong
+#       (tajikistan bi tagger doan JJ vi duoi -an; webb doan VB — tu dien cuu ca hai)
+#   (2) tu trong tu dien -> tag POS tren CHU THUONG (trung hoa title ALL-CAPS von
+#       lam moi tu thanh NNP), phieu da so NN -> doi tuong.
+# nltk LUOI + co van an toan: thieu thu vien/data -> tra None, noi goi tu dung luat
+# sau-gioi-tu cu — app khong bao gio chet vi tagger (bai hoc van-an-toan Qdrant).
+_NLTK_SAN_SANG = None          # None = chua thu · False = khong co · True = ok
+_TU_DIEN: frozenset | None = None
+_POS_CACHE: dict[str, tuple] = {}
+_POS_RX = re.compile(r"[a-z][a-z']*")
+
+
+def _nap_nltk() -> bool:
+    global _NLTK_SAN_SANG, _TU_DIEN
+    if _NLTK_SAN_SANG is not None:
+        return _NLTK_SAN_SANG
+    try:
+        import os
+        from pathlib import Path
+        import nltk
+        duong = os.environ.get("NLTK_DATA") or str(
+            Path(__file__).resolve().parents[3] / "data" / "nltk_data")
+        if duong not in nltk.data.path:
+            nltk.data.path.insert(0, duong)
+        from nltk import pos_tag
+        from nltk.corpus import words as _w
+        _TU_DIEN = frozenset(x.lower() for x in _w.words())
+        pos_tag(["thu"])                       # cham data ngay — thieu thi nem o day
+        _NLTK_SAN_SANG = True
+    except Exception:                          # noqa: BLE001 — thieu gi cung ve luat cu
+        _NLTK_SAN_SANG = False
+    return _NLTK_SAN_SANG
+
+
+def bang_pos(kho: list[dict], ngon_ngu: str | None = "en") -> dict | None:
+    """Phieu POS cua moi tu trong kho (tag chu thuong, cache theo title).
+
+    Chi ho tro tieng Anh — ngach khac tra None de noi goi dung luat sau-gioi-tu.
+    """
+    # ngon_ngu trong he la TEN DAY DU tu de ("English") — chuan hoa ve ma qua bang
+    # MA_NGON_NGU truoc khi so, khong thi "English" != "en" lam PHIEU luon None va
+    # ca he lang le ve luat cu (dinh that 22/08: SPACE tra 'replace' la doi tuong
+    # tro lai du test xanh — test truyen thang 'en' nen khong bat duoc).
+    nn = (ngon_ngu or "en").strip().lower()
+    if MA_NGON_NGU.get(nn, nn) != "en" or not _nap_nltk():
+        return None
+    from nltk import pos_tag
+    phieu: dict[str, dict[str, int]] = {}
+    for v in kho:
+        tl = v["title_l"]
+        tags = _POS_CACHE.get(tl)
+        if tags is None:
+            tu = _POS_RX.findall(tl)
+            tags = tuple(pos_tag(tu)) if tu else ()
+            _POS_CACHE[tl] = tags
+        for w, t in tags:
+            d = phieu.setdefault(w, {})
+            d[t[:2]] = d.get(t[:2], 0) + 1
+    return phieu
+
+
+def la_doi_tuong(w: str, phieu: dict | None) -> bool:
+    """Mot TU la doi tuong? — ten rieng (ngoai tu dien) hoac danh tu (phieu NN)."""
+    if len(w) < 3 or w in _TU_TRO or w.isdigit():
+        return False
+    if _TU_DIEN is not None and w not in _TU_DIEN and w.rstrip("s") not in _TU_DIEN:
+        return True                            # ngoai tu dien (ke ca dang so nhieu) = ten rieng
+    ph = (phieu or {}).get(w)
+    return bool(ph) and max(ph, key=ph.get) == "NN"
+
+
+def loai_cum(cum: str, phieu: dict | None) -> str:
+    """Nhan loai cho MOT cum bat ky: cum danh tu (tu cuoi la doi tuong) = doi_tuong."""
+    return "doi_tuong" if la_doi_tuong(cum.split()[-1], phieu) else "mau_cau"
+
+
 GIOI_TU = {"in", "to", "of", "from", "about", "across", "around", "en", "de", "a"}
 # Do that 21/08: nguong 0.5 van cho lot "extremely" (0,64 — vi "of extremely beautiful
 # women" rat pho bien trong ngach nay). 0.75 loai duoc no ma van giu het dia danh
@@ -522,7 +608,23 @@ TI_LE_SAU_GIOI_TU = 0.75
 
 def doi_tuong(kho: list[dict], so_muc: int = 20, toi_thieu_video: int = 3,
               ngon_ngu: str | None = None) -> list[dict]:
-    """Doi tuong (nuoc / dia danh / chu the) ma pool dang lam, kem so video."""
+    """Doi tuong (danh tu / ten rieng) ma pool dang lam, kem so video.
+
+    Tieng Anh: luat tu-loai (la_doi_tuong). Ngon ngu khac / thieu nltk: luat
+    sau-gioi-tu cu (van hop tieng TBN: "vida en Espana").
+    """
+    phieu = bang_pos(kho, ngon_ngu)
+    if phieu is not None:
+        dem: dict[str, int] = {}
+        for v in kho:
+            if not hop_ngon_ngu(v["title"], ngon_ngu):
+                continue
+            for t in {x for x in _TU_RX.findall(v["title_l"])}:
+                dem[t] = dem.get(t, 0) + 1
+        ra = [{"cum": t, "so_video": n} for t, n in dem.items()
+              if n >= toi_thieu_video and la_doi_tuong(t, phieu)]
+        ra.sort(key=lambda r: -r["so_video"])
+        return ra[:so_muc]
     sau, tong = {}, {}
     for v in kho:
         if not hop_ngon_ngu(v["title"], ngon_ngu):

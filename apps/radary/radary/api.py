@@ -1152,7 +1152,14 @@ def tu_khoa_noi(ws: int, request: Request, so_cum: int = 30, ngon_ngu: str = '',
         dt = [d['cum'] for d in mapping.doi_tuong(kho_uv, so_muc=max(1, min(so_cum, 40)),
                                                   ngon_ngu=loc)]
         cums = mau + [x for x in dt if x not in mau]
-        loai = {**{m: 'mau_cau' for m in mau}, **{x: 'doi_tuong' for x in dt}}
+        # Nhan LOAI theo luat tu-loai (user chot 22/08): cum danh tu = doi tuong —
+        # "solar system"/"james webb" tu goi_y_seed cung la doi tuong, khong chi
+        # danh sach dt. Thieu nltk -> phieu None -> ve nhan theo nguon nhu cu.
+        phieu = mapping.bang_pos(kho_uv, loc)
+        if phieu is not None:
+            loai = {c: mapping.loai_cum(c, phieu) for c in cums}
+        else:
+            loai = {**{m: 'mau_cau' for m in mau}, **{x: 'doi_tuong' for x in dt}}
         dem_nn = {}
         for v in kho:
             ma = mapping.nhan_dien_ngon_ngu(v['title'])
@@ -1164,10 +1171,10 @@ def tu_khoa_noi(ws: int, request: Request, so_cum: int = 30, ngon_ngu: str = '',
         for m in xh:
             m['loai'] = loai.get(m['cum'], 'mau_cau')
         return {'cum': xh,
-                'cach_lay': ('Đếm trên tiêu đề video trong chính pool này. MẪU CÂU = cụm '
-                             '2-3 từ lặp lại nhiều nhất. ĐỐI TƯỢNG = từ đứng ngay sau giới '
-                             'từ (in/to/of…) và ≥75% số lần xuất hiện là ở vị trí đó — '
-                             'cách tách tên nước/địa danh khỏi tính từ mô tả.'),
+                'cach_lay': ('Đếm trên tiêu đề video trong chính pool này. ĐỐI TƯỢNG = danh '
+                             'từ hoặc tên riêng (nhận diện TỪ LOẠI — tag chữ thường + đối '
+                             'chiếu từ điển 234k từ). MẪU CÂU = cụm lặp lại còn lại (tính '
+                             'từ / động từ / trạng từ).'),
                 'cua_so_ngay': cua_so or tra_cuu.CUA_SO_NGAY, 'so_video_pool': len(kho),
                 'cua_so': cua_so,
                 'ngon_ngu_loc': loc, 'tu_de': bool(tu_de),

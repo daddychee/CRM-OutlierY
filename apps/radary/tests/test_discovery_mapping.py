@@ -1088,3 +1088,46 @@ def test_ung_vien_trich_tu_vung_do_theo_cua_so():
     assert '2 * cua_so * 86400' in than              # vùng đo = kỳ này + kỳ trước
     assert 'goi_y_seed(kho_uv' in than and 'doi_tuong(kho_uv' in than
     assert 'xu_huong_cum(kho, cums' in than          # ĐO vẫn trên trọn kho (tổng trọn đời)
+
+
+def test_phan_loai_tu_loai_danh_tu_la_doi_tuong():
+    """22/08 — user chốt luật đơn giản: DANH TỪ = đối tượng, còn lại = mẫu câu.
+
+    Hai tầng: ngoài từ điển EN = tên riêng = đối tượng (cứu tajikistan bị tagger
+    đoán JJ vì đuôi -an); trong từ điển → phiếu POS trên CHỮ THƯỜNG (trung hoà
+    ALL-CAPS). Ca gốc user chỉ ra: 'replace' (sau "to" nguyên mẫu) hết là đối tượng.
+    """
+    import pytest
+    from radary import mapping
+
+    if not mapping._nap_nltk():
+        pytest.skip('máy này thiếu nltk/data — nhánh fallback giới-từ đã có test riêng')
+
+    kho = mapping.tai_kho.__wrapped__ if False else None      # không cần DB — kho tay
+    kho = ([{'title': 'Scientists Want To Replace The ISS', 'title_l': 'scientists want to replace the iss'}] * 4
+           + [{'title': 'LIFE IN TAJIKISTAN! EXTREMELY BEAUTIFUL WOMEN', 'title_l': 'life in tajikistan! extremely beautiful women'}] * 4
+           + [{'title': 'Journey Of The Universe In Deep Space', 'title_l': 'journey of the universe in deep space'}] * 4)
+    phieu = mapping.bang_pos(kho, 'en')
+    assert phieu is not None
+    assert not mapping.la_doi_tuong('replace', phieu)      # động từ — ca user báo
+    assert not mapping.la_doi_tuong('extremely', phieu)    # trạng từ, dù title ALL-CAPS
+    assert not mapping.la_doi_tuong('beautiful', phieu)    # tính từ
+    assert not mapping.la_doi_tuong('deep', phieu)
+    assert mapping.la_doi_tuong('tajikistan', phieu)       # tên riêng ngoài từ điển
+    assert mapping.la_doi_tuong('universe', phieu)         # danh từ thường
+    assert mapping.loai_cum('deep space', phieu) == 'doi_tuong'    # cụm danh từ
+    assert mapping.loai_cum('want to', phieu) == 'mau_cau'
+
+    # doi_tuong() nhánh EN dùng luật mới: replace không bao giờ lọt nữa
+    for v in kho:
+        v.setdefault('kenh', 'K'); v.setdefault('kenh_yt', 'U')
+        v.setdefault('yt_id', 'x'); v.setdefault('pub_ts', 0)
+        v.setdefault('views', 0); v.setdefault('vph', 0)
+    dt = {d['cum'] for d in mapping.doi_tuong(kho, so_muc=30, ngon_ngu='en')}
+    assert 'replace' not in dt and 'tajikistan' in dt
+
+    # ngôn ngữ khác → None → nơi gọi về luật sau-giới-từ cũ (van an toàn)
+    assert mapping.bang_pos(kho, 'es') is None
+    # tên ĐẦY ĐỦ từ đế phải hiểu như mã — 'English' từng làm cả hệ lặng lẽ về luật cũ
+    assert mapping.bang_pos(kho, 'English') is not None
+    assert mapping.bang_pos(kho, 'Spanish') is None

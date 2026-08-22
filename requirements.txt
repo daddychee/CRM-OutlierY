@@ -9,3 +9,4 @@ bcrypt
 pytest
 python-dotenv
 cryptography
+nltk
