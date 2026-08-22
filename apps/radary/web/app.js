@@ -1992,7 +1992,10 @@ function Mapping({ ws, canEdit }) {
   const traCuu = (tu, lai) => {
     const q = (tu || cum).trim();
     if (!q) return;
-    if (khongHoiLai || !tu) return chayTraCuu(q, lai);   // gõ tay + Enter thì khỏi hỏi
+    // KHÔNG hỏi khi: gõ tay + Enter · đã tắt hỏi trong phiên · XEM LẠI bản đã lưu
+    // (lai=true đi route xem_lai=1 — server không tính lại, không ghi, 0 quota
+    // tuyệt đối; hỏi ở đây chỉ làm phiền, user báo 22/08 khi mở từ dropdown lịch sử).
+    if (khongHoiLai || !tu || lai) return chayTraCuu(q, lai);
     setHoiCum({ cum: q, lai: !!lai });
   };
   const chayTraCuu = async (tu, lai) => {

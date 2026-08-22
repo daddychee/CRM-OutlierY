@@ -1356,3 +1356,6 @@ def test_click_tu_khoa_khong_tu_tieu_quota():
     assert 'setHoiCum({ cum: q, lai: !!lai })' in js
     assert 'Không hỏi lại trong phiên này' in js
     assert 'chayTraCuu(cum)' in js          # gõ tay + Enter thì đi thẳng, khỏi hỏi
+    # XEM LẠI bản đã lưu (lai=true) cũng đi thẳng — route xem_lai=1 là 0 quota
+    # tuyệt đối, hỏi chỉ làm phiền (user báo khi mở từ dropdown lịch sử)
+    assert 'if (khongHoiLai || !tu || lai) return chayTraCuu(q, lai)' in js
