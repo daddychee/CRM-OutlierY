@@ -2168,35 +2168,43 @@ function Mapping({ ws, canEdit }) {
         theo IP máy chủ (Việt Nam). Mở pool theo thị trường (US/Spain…) ở dải tab.</div>` : ''}
       <div class="eyebrow" style="margin-top:14px">Hot Topic
         ${nong && nong.co_du_lieu ? html`<span class="note" style="text-transform:none;letter-spacing:0;font-weight:400">
+          · KHÁN GIẢ đang thưởng cho gì (hiệu suất view — khác bảng Keyword bên dưới:
+          kênh đang đổ vào đâu, số video đăng)
           · video "nổ" = top ${100 - (nong.phan_vi || 90)}% view/ngày của ${nong.so_video_moi}
-          video 2-${nong.cua_so_ngay} ngày tuổi (nền ${Math.round((nong.nen || 0) * 100)}%)
-          · cụm nóng = tỉ lệ nổ ≥ 2× nền · xếp theo HIỆU SUẤT VIEW
+          video 2-${nong.cua_so_ngay} ngày tuổi
           ${nong.duoc_soi ? ` · tự soi External tối đa ${nong.ngan_sach_ngay} cụm/ngày (hôm nay ${nong.da_soi_hom_nay})` : ''}</span>` : ''}</div>
       ${!nong ? html`<div class="note">Đang tải…</div>`
         : !nong.co_du_lieu ? html`<div class="note">${nong.ly_do}</div>`
-        : html`<div>
-          <table class="tbl"><thead><tr><th>Cụm</th><th>Loại</th>
-            <th title="video 2-60 ngày tuổi chứa cụm">Video mới</th>
-            <th title="bao nhiêu trong số đó là video nổ">Nổ</th>
-            <th>Video nổ nhất</th><th>External</th></tr></thead>
-            <tbody>${(nong.cum || []).slice(0, nongMo ? undefined : 5).map(m => html`<tr>
-              <td><a href="#" onClick=${e => { e.preventDefault(); traCuu(m.cum); }}>${m.cum}</a></td>
-              <td class="note">${m.loai === 'doi_tuong' ? 'đối tượng' : 'công thức'}</td>
-              <td>${m.so_moi}</td>
-              <td style="white-space:nowrap"><b>${m.so_no}/${m.so_moi}</b>
-                <span class="note"> = ${Math.round(m.ti_le_no * 100)}%</span></td>
-              <td>${m.vi_du ? html`<a href=${linkVideo(m.vi_du.yt_id)} target="_blank"
-                  rel="noopener" title=${m.vi_du.title}
-                  style="display:inline-block;max-width:340px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:bottom">
-                  ${m.vi_du.title}</a>
-                <span class="note"> ${soGon(m.vi_du.views)}</span>` : html`<span class="note">—</span>`}</td>
-              <td class="note" style="white-space:nowrap">${m.ngoai
-                ? `${m.ngoai.tong_view_90n != null ? soGon(m.ngoai.tong_view_90n) + ' view 90n' : 'đã soi'}`
-                : m.dang_soi ? 'đang soi…' : '—'}</td>
-            </tr>`)}</tbody></table>
-          ${(nong.cum || []).length > 5 ? html`<a href="#" class="note" style="display:inline-block;margin-top:4px"
-            onClick=${e => { e.preventDefault(); setNongMo(!nongMo); }}>
-            ${nongMo ? '▴ Thu gọn' : `▾ Xem cả ${nong.cum.length} cụm`}</a>` : ''}
+        : html`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(430px,1fr));gap:0 18px">
+          ${[['doi_tuong', 'CHỦ ĐỀ đang nóng', 'làm video về cái gì'],
+             ['cong_thuc', 'CÔNG THỨC TIÊU ĐỀ đang nóng', 'đặt tiêu đề thế nào']].map(([loai, ten, phu]) => {
+            const ds = (nong.cum || []).filter(m => m.loai === loai);
+            return html`<div>
+              <div class="note" style="margin:0 0 3px"><b style="color:var(--text,inherit)">${ten}</b>
+                · ${phu} · ${ds.length} cụm</div>
+              ${!ds.length ? html`<div class="note">Không có cụm nào đạt ngưỡng nổ.</div>`
+              : html`<div>
+              <table class="tbl"><thead><tr><th>Cụm</th>
+                <th title="bao nhiêu video nổ / video mới dùng cụm">Nổ</th>
+                <th>Video nổ nhất</th><th>External</th></tr></thead>
+                <tbody>${ds.slice(0, nongMo ? undefined : 5).map(m => html`<tr>
+                  <td><a href="#" onClick=${e => { e.preventDefault(); traCuu(m.cum); }}>${m.cum}</a></td>
+                  <td style="white-space:nowrap"><b>${m.so_no}/${m.so_moi}</b>
+                    <span class="note"> = ${Math.round(m.ti_le_no * 100)}%</span></td>
+                  <td>${m.vi_du ? html`<a href=${linkVideo(m.vi_du.yt_id)} target="_blank"
+                      rel="noopener" title=${m.vi_du.title}
+                      style="display:inline-block;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:bottom">
+                      ${m.vi_du.title}</a>
+                    <span class="note"> ${soGon(m.vi_du.views)}</span>` : html`<span class="note">—</span>`}</td>
+                  <td class="note" style="white-space:nowrap">${m.ngoai
+                    ? `${m.ngoai.tong_view_90n != null ? soGon(m.ngoai.tong_view_90n) + ' view 90n' : 'đã soi'}`
+                    : m.dang_soi ? 'đang soi…' : '—'}</td>
+                </tr>`)}</tbody></table>
+              ${ds.length > 5 ? html`<a href="#" class="note" style="display:inline-block;margin-top:4px"
+                onClick=${e => { e.preventDefault(); setNongMo(!nongMo); }}>
+                ${nongMo ? '▴ Thu gọn' : `▾ Xem cả ${ds.length} cụm`}</a>` : ''}
+              </div>`}
+            </div>`; })}
         </div>`}
     </div>
 

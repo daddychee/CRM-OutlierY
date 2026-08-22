@@ -1480,3 +1480,31 @@ def test_xuat_report_mot_tu_khoa():
         assert cam not in r, cam
     js = (goc / 'web' / 'app.js').read_text(encoding='utf-8')
     assert 'Xuất report' in js and 'tra-cuu/report' in js
+
+
+def test_hot_topic_tach_chu_de_khoi_cong_thuc():
+    """22/08 — user: Hot Topic và Mẫu câu nhìn như nhau vì "cả hai cùng không đề
+    cập đến một đối tượng nào cả mà chỉ là cách setup của tiêu đề".
+
+    Đúng hai bệnh: (1) hiển thị TRỘN nên công thức tích luỹ nhanh hơn (một hook
+    lặp qua nhiều chủ đề) đè chủ đề xuống dưới — Hot TOPIC mà mặt tiền toàn công
+    thức; (2) từ có dấu nháy ("can't") rơi ngoài từ điển nên bị xếp "tên riêng"
+    = đối tượng oan. Sửa: tách HAI bảng (Chủ đề trái · Công thức phải) + từ có
+    dấu nháy phân loại theo POS phần gốc, không bao giờ là tên riêng.
+    """
+    import pytest
+    from pathlib import Path as _P
+    from radary import mapping
+
+    if not mapping._nap_nltk():
+        pytest.skip('thiếu nltk/data')
+
+    kho = [{'title': "Scientists Can't Explain This", 'title_l': "scientists can't explain this"}] * 4
+    phieu = mapping.bang_pos(kho, 'en')
+    assert not mapping.la_doi_tuong("can't", phieu)      # dấu nháy ≠ tên riêng
+    assert not mapping.la_doi_tuong("won't", phieu)
+
+    js = (_P(__file__).resolve().parents[1] / 'web' / 'app.js').read_text(encoding='utf-8')
+    assert 'CHỦ ĐỀ đang nóng' in js and 'CÔNG THỨC TIÊU ĐỀ đang nóng' in js
+    assert 'KHÁN GIẢ đang thưởng cho gì' in js            # phụ đề lộ câu hỏi của khối
+    assert "m.loai === loai" in js                        # hai bảng lọc theo loại

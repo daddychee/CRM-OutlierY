@@ -588,6 +588,13 @@ def la_doi_tuong(w: str, phieu: dict | None) -> bool:
     """Mot TU la doi tuong? — ten rieng (ngoai tu dien) hoac danh tu (phieu NN)."""
     if len(w) < 3 or w in _TU_TRO or w.isdigit():
         return False
+    # tu co dau nhay ("can't", "world's") khong bao gio la ten rieng — chung roi
+    # ngoai tu dien vi dau nhay, khong phai vi la danh tu rieng (do that 22/08:
+    # "can't" bi xep DOI TUONG trong Hot Topic). Phan loai theo POS cua phan goc.
+    if "'" in w:
+        goc = w.split("'")[0]
+        ph = (phieu or {}).get(w) or (phieu or {}).get(goc)
+        return bool(ph) and max(ph, key=ph.get) == "NN"
     if _TU_DIEN is not None and w not in _TU_DIEN and w.rstrip("s") not in _TU_DIEN:
         return True                            # ngoai tu dien (ke ca dang so nhieu) = ten rieng
     ph = (phieu or {}).get(w)
