@@ -1944,6 +1944,7 @@ function Mapping({ ws, canEdit }) {
   const [nong, setNong] = useState(null);     // Hot Topic — tải ngay khi mở tab
   const [nongMo, setNongMo] = useState(false); // Hot Topic: 5 dòng đầu hay cả danh sách
   const [cuaSo, setCuaSo] = useState(28);      // cửa sổ đo: 7/28/90 ngày, 0 = toàn thời gian
+  const [moBang, setMoBang] = useState(false); // bảng cụm: 5 dòng đầu hay tất cả
   const [loaiCum, setLoaiCum] = useState('doi_tuong');   // đối tượng trước — thứ quyết định làm video về CÁI GÌ
   const [busy, setBusy] = useState('');
   const [err, setErr] = useState('');
@@ -1954,7 +1955,7 @@ function Mapping({ ws, canEdit }) {
   // thấy số của US — user báo 21/08 ("từ khoá thị trường US lọt sang Spain").
   useEffect(() => {
     setA(null); setB(null); setCum(''); setErr(''); setBusy(''); setXemLai(null);
-    setLichSu([]); setNoi(null); setNong(null); setNongMo(false); setCuaSo(28); setRd(null); setTrBu(null);
+    setLichSu([]); setNoi(null); setNong(null); setNongMo(false); setCuaSo(28); setRd(null); setTrBu(null); setMoBang(false);
     api('GET', `/workspaces/${ws}/discovery/goi-y-seed`).then(r => setGoiY(r.seed || [])).catch(() => setGoiY([]));
     const nnLuu = (() => { try { return localStorage.getItem('mapping_nn_' + ws) || ''; } catch (e) { return ''; } })();
     api('GET', `/workspaces/${ws}/discovery/tu-khoa-noi`
@@ -2186,7 +2187,8 @@ function Mapping({ ws, canEdit }) {
         <table class="tbl"><thead><tr><th>Cụm</th><th>Xu hướng</th>
           <th>Video ${noi.cua_so_ngay}n</th><th>View/ngày</th>
           <th title="số video mới mỗi tháng — khoảng thời gian khác cột Xu hướng">Mật độ theo tháng</th></tr></thead>
-          <tbody>${(noi.cum || []).filter(r => !loaiCum || r.loai === loaiCum)
+          <tbody>${(() => { const ds = (noi.cum || []).filter(r => !loaiCum || r.loai === loaiCum);
+            return moBang ? ds : ds.slice(0, 5); })()
             .map(r => { const len = r.chieu === 'lên', xuong = r.chieu === 'xuống';
             return html`<tr>
             <td><a href="#" onClick=${e => { e.preventDefault(); traCuu(r.cum); }}>${r.cum}</a>
@@ -2199,6 +2201,10 @@ function Mapping({ ws, canEdit }) {
             <td style="width:120px" title="mật độ theo THÁNG — khác cột xu hướng (30 ngày)">
               <${Sparkline} chuoi=${r.chuoi} mau="#7e57c2"/></td>
           </tr>`; })}</tbody></table>
+        ${(() => { const n = (noi.cum || []).filter(r => !loaiCum || r.loai === loaiCum).length;
+          return n > 5 ? html`<a href="#" class="note" style="display:inline-block;margin-top:4px"
+            onClick=${e => { e.preventDefault(); setMoBang(!moBang); }}>
+            ${moBang ? '▴ Thu gọn' : `▾ Xem tất cả ${n} cụm`}</a>` : ''; })()}
       </div>` : (goiY.length ? html`<div style="margin-top:6px">
         <span class="note">Từ khoá phổ biến trong pool này:</span>
         ${goiY.map(g => html`<button class="btn small ghost" style="margin:2px 4px 2px 0"

@@ -1315,3 +1315,17 @@ def test_trends_tach_nhom_nguoi_khoi_truy_van_chu_de():
     assert 'kyrgyz republic' in lq                       # biến thể rút gọn cũng bắt được
     assert set(nn) == {'openai news today', 'lidl near me'}
     assert d['top'][0]['cum'] == 'kazakhstan'            # cột phổ biến vốn sạch, không đụng
+
+
+def test_bang_cum_mac_dinh_5_dong():
+    """22/08 — user: bảng cụm chỉ cần hiện 5 từ khoá + nút show more/less.
+
+    Cùng luật với bảng Hot Topic ở Overview: trang phải quét được trong một màn
+    hình, 50+ dòng đẩy phần dưới xuống quá sâu. Bản đồ bong bóng vẫn vẽ TẤT CẢ
+    (nó là hình, không tốn chiều dọc theo số dòng).
+    """
+    from pathlib import Path as _P
+    js = (_P(__file__).resolve().parents[1] / 'web' / 'app.js').read_text(encoding='utf-8')
+    assert 'moBang ? ds : ds.slice(0, 5)' in js
+    assert 'Xem tất cả ${n} cụm' in js and '▴ Thu gọn' in js
+    assert 'setMoBang(false)' in js                 # đổi pool là thu lại
