@@ -32,3 +32,52 @@
 ## Sau thay thế 1 tuần
 - Theo dõi logs + sức khỏe hàng ngày; backup chạy đêm có ket-qua sạch.
 - Hệ cũ giữ nguyên KHÔNG XÓA tối thiểu 30 ngày (đường lùi dài hạn).
+
+## NHẬT KÝ THỰC HIỆN — CUTOVER 22/08/2026 (chạy sớm hơn mốc 00:00 23/08 theo lệnh Owner "chạy luôn")
+
+Owner chốt: bỏ SpeakY (không đưa vào V3) · cutover · phương án điện B1 (bật 9:00 / tắt 20:00).
+
+1. **Backup 3 lớp trước khi đụng** (18:05–18:15): OUTLIERY-Backup V2 chạy tay Result 0;
+   backup V3 chạy sạch 38 mục ok / 6 thieu-nguon (vault, cham-cong-chot, kpi, so-thu-chi,
+   muc-tieu, ho-so-tai-lieu — tính năng chưa có trong V3, không phải lỗi); bản đóng băng
+   `D:\OUTLIERY-backup\CUTOVER-20260823\` (agent-app, plannery, seo, content, niche,
+   radary-data, speaky — ~590MB). Bug tìm ra: backup.ps1 thiếu Set-Location root
+   (ModuleNotFoundError khi gọi từ ngoài) — đã vá, commit ee45e01.
+2. **Tác vụ V3** : `OUTLIERY-V3` (SYSTEM, at-startup + lặp 30 phút — start-all idempotent
+   kiêm tự hồi phục app chết; đã nghiệm thu chạy dưới SYSTEM, Result 0, 13 cổng sống),
+   `OUTLIERY-V3-Backup` (hằng ngày 19:00).
+3. **Đóng băng V2** : 8 tác vụ Stop + Disable (OUTLIERY, PlannerY, SEOOptimize,
+   ContentUltimate, NicheResearch, Qdrant, SpeakY, OUTLIERY-Backup; RadarY đã tắt trước
+   đó trong ngày — hết đốt đôi quota). Cổng 8000/8123/8760/8770/8780/7860/6333 xác nhận tắt.
+4. **Đồng bộ lần cuối V2→V3** (đo diff từng vùng trước khi chép):
+   - plan.json: KHÔNG chép — delta 908→909 của V2 là bản ghi rỗng (diff nội dung = 0),
+     V3 _rev 945 là nguồn đầy đủ.
+   - Chấm công 2026-08: GỘP (min vào / max ra từng người-ngày) — +14 ngày từ V2, 33 bản
+     ghi bổ sung; bản V3 trước gộp lưu trong CUTOVER-20260823.
+   - SEO Optimize: +17 episodes, 1 episode bản V2 mới hơn đè (bản V3 cũ lưu
+     v3-seo-bi-de), +22 runs. Cache LLM bỏ qua.
+   - Data Analytics: +8 bao-cao-goc → kho\bao-cao-goc, +2 file lịch sử (thanh,
+     kh-ch-56827845). Lịch sử chat: +15 file → data\ai-agent\db\lich-su.
+   - KHÔNG cần đồng bộ: kho tài liệu (catalog 19=19), users (iam.db 20 tài khoản phủ đủ
+     18 của users.txt), hồ sơ nhân sự (không đổi sau di trú 19/08), niche (30/07),
+     content history (07/08 < snapshot), RadarY (V3 là nguồn chuẩn từ 19/08).
+5. **Redirect bookmark cũ**: Caddy thêm site :8000 → 301 `http://192.168.1.250:9000{uri}`
+   (nghiệm thu sống); giữ 2–4 tuần rồi gỡ khi log hết truy cập.
+6. **Phương án điện B1**: hibernate đã bật, wake timers đã bật; tác vụ `OUTLIERY-TatMay`
+   20:00 (script tat-may.ps1 — ghi log + cảnh báo nếu backup cũ) + `OUTLIERY-BatMay`
+   9:00 (WakeToRun, chạy start-all). Hiệu lực từ 23/08 — đêm 22/08 máy vẫn bật theo dõi.
+   Lần thức-từ-hibernate THẬT đầu tiên: 9:00 sáng 24/08 — PHẢI kiểm sáng đó; nếu máy
+   không tự dậy → bật BIOS RTC alarm 9:00 làm đường chính, wake timer làm dự phòng.
+
+### Việc treo sau cutover
+- [ ] **Vault chưa có trong V3** — dữ liệu két (bản mã) an toàn trong freeze + mirror;
+      cần gấp thì Enable lại tác vụ OUTLIERY (V2) tạm để mở vault, xong Disable lại.
+- [ ] Kiểm sáng 24/08: máy tự dậy 9:00? (xem logs\tat-may.log + giờ boot).
+- [ ] Nghiệm thu 1 vòng restart máy thật (OUTLIERY-V3 at-startup đã test bằng Start-Task,
+      chưa test boot lạnh thật).
+- [ ] Sau 2–4 tuần: gỡ khối :8000 trong Caddyfile khi hết truy cập.
+- [ ] **Sau 30 ngày (~22/09) mới xóa C:\OutlierY**; TRƯỚC khi xóa: chuyển
+      `C:\OutlierY\tools\ffmpeg` sang D:\ + sửa VR_FFPROBE trong start-all.ps1
+      (video-review đang trỏ vào đó); nén dữ liệu vận hành thành V2-ARCHIVE.
+- [ ] VPS Vultr 45.32.107.108 KHÔNG dùng cho phương án này (B1 đủ) — cất mật khẩu
+      trong VPS.txt vào vault + đổi mật khẩu root (đang nằm plaintext).
