@@ -1792,7 +1792,7 @@ function ThanhTruyVan({ muc, mau, ghi }) {
 function BanDoCum({ cum, onChon }) {
   const d = (cum || []).filter(r => r.phan_tram != null && r.tong_video > 0);
   if (d.length < 2) return null;
-  const w = 720, h = 360, L = 52, R = 30, T = 22, B = 40;
+  const w = 720, h = 360, L = 66, R = 30, T = 22, B = 40;
   const lg = v => Math.log10(Math.max(1, v));
   const xMax = Math.max(...d.map(r => lg(r.tong_video))) || 1;
   const ys = d.map(r => r.phan_tram);
@@ -1820,9 +1820,14 @@ function BanDoCum({ cum, onChon }) {
       ${cotX.map(v => html`<text x=${X(v)} y=${h - B + 15} font-size="11" fill="currentColor"
         opacity="0.7" text-anchor="middle">${v}</text>`)}
       <text x=${(w + L) / 2} y=${h - 6} font-size="11" fill="currentColor" opacity="0.75" text-anchor="middle">
-        số video trong pool (thang log) → càng phải càng đông người làm</text>
-      <text x=${14} y=${T + 10} font-size="11" fill="currentColor" opacity="0.75">+${Math.round(yHi)}%</text>
-      <text x=${14} y=${h - B} font-size="11" fill="currentColor" opacity="0.75">${Math.round(yLo)}%</text>
+        TRỤC NGANG — MỨC CẠNH TRANH: tổng số video trong pool về cụm này (thang log) → càng phải càng đông người làm</text>
+      <text x="12" y=${(h - B + T) / 2} font-size="11" fill="currentColor" opacity="0.75"
+        text-anchor="middle" transform=${`rotate(-90 12 ${(h - B + T) / 2})`}>
+        TRỤC DỌC — XU HƯỚNG: % video mới so kỳ trước</text>
+      <text x=${L - 4} y=${T + 10} font-size="11" fill="#2e7d32" text-anchor="end" font-weight="600">+${Math.round(yHi)}%</text>
+      <text x=${L - 4} y=${T + 22} font-size="10" fill="#2e7d32" text-anchor="end">đang lên</text>
+      <text x=${L - 4} y=${h - B - 12} font-size="10" fill="#c62828" text-anchor="end">đang giảm</text>
+      <text x=${L - 4} y=${h - B} font-size="11" fill="#c62828" text-anchor="end" font-weight="600">${Math.round(yLo)}%</text>
 
       ${d.map(r => { const len = r.phan_tram > 15, xuong = r.phan_tram < -15;
         // Cụm TĂNG tách màu theo LOẠI (user 22/08): mở tab "Tất cả" là nhìn ra ngay
