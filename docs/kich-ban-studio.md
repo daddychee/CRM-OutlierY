@@ -683,3 +683,26 @@ ghi ra `profile.moi.json` cạnh bản cũ, backup riêng ở
 **Kiểm chứng mù**: hai bản của cùng một chương, một bản hồ sơ cũ một bản hồ sơ mới, **không
 ghi bản nào là bản nào**. Luật A1 cấm tự kết luận bằng văn do chính hệ thống sinh ra, nên
 quyết định dùng hồ sơ nào là của Owner.
+
+### 13.1. Bẫy vận hành lộ ra khi chạy kiểm chứng mù (23/08, ~03:30)
+
+**glm-5.3 là model reasoning nên hay đốt hết ngân sách token ở các vòng phụ.** Hai bản chạy
+thử đều dính, ở hai chỗ khác nhau:
+
+- bản dùng hồ sơ cũ: **vòng CẮT** phần Kết trả về rỗng (`finish_reason=length`, đã thử tới
+  16.384 token) ⇒ Kết giữ nguyên 2.641 ký tự thay vì về khuôn 700.
+- bản dùng hồ sơ mới: **vòng NỞ** chương 1 trả về rỗng (đã thử tới 37.500 token) ⇒ chương
+  giữ nguyên 1.537 ký tự thay vì kéo lên 3.125.
+
+⇒ **Bản vá "giữ bản nháp khi bước hậu xử lý lỗi" (`88505fc`) làm đúng việc ở CẢ HAI ca**:
+không mất một chữ nào đã trả tiền. Nhưng hệ quả là hai bản lệch độ dài (6.271 so với 2.756
+ký tự) nên **không so tổng thể được** — chênh lệch đó là do lỗi kỹ thuật, không phải do hồ sơ.
+
+So riêng chương 1 thì hai hồ sơ cho kết quả **gần như nhau**: 17,3 so với 16,9 từ mỗi câu
+(đích của corpus là 14,0), câu cụt 20,0% so với 18,8% (đích 15,8%), và **cả hai đều sạch
+động tác máy (0,0/1000)**. Chênh lệch quá nhỏ để kết luận trên một mẫu.
+
+**Việc còn lại**: ngân sách token của vòng **nở** vẫn tính theo `target × 3` như cũ; vòng
+**cắt** đã sửa để tính theo độ dài bản nháp đầu vào. Nhưng log cho thấy có cơ chế tự nâng
+tới 37.500 mà vẫn không đủ, nên đây là giới hạn của model chứ không chỉ là con số cấu hình.
+Cần đo riêng trước khi nâng tiếp.
