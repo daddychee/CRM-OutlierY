@@ -468,3 +468,53 @@ cảnh báo "chương nhiều ý quá" đã gỡ có chủ đích khi chuyển t
   trước đây. Tốn tiền (~600–800đ/kịch bản) nên chờ Owner duyệt.
 - Bẫy vận hành tái xác nhận: khởi động tay app V3 **phải đủ bộ env của `start-all.ps1`** —
   thiếu `CU_DATA_DIR` thì `/api/soi-ho-so` trả rỗng dù kho có hồ sơ.
+
+## 11. DI TRÚ SỔ TÁC GIẢ + ĐỢT 2 (C3b) — 22/08/2026 (295 pass / 0 fail)
+
+### 11.1. Di trú sổ đăng ký (commit `fdad6d1`)
+
+`library/index.json` lưu **đường dẫn tuyệt đối**. Qua hai lần đổi máy (VPS `/opt` → ổ C
+hệ V2 → ổ D hệ V3) thì 10/14 entry trỏ vào chỗ không còn ⇒ **app chỉ thấy 4/12 hồ sơ**,
+dù file vẫn nằm nguyên trong kho V3. Nặng hơn: A011/A012/A013 còn trỏ vào ổ C — hệ V2 đã
+tắt 22/08 và sẽ xóa ~22/09, tức 3 hồ sơ team dùng nhiều nhất tháng 8 sắp biến mất.
+
+Sửa **gốc**, không chỉ vá dữ liệu: `duong_that()` giải đường dẫn với luật **kho hiện tại
+là nguồn sự thật** — thử ghép 3 rồi 2 đoạn đuôi vào `CU_DATA_DIR` TRƯỚC, kể cả khi đường
+cũ còn sống; `duong_luu()` ghi vào sổ bằng đường tương đối. Bẫy đã bắt: đường POSIX di sản
+(`/opt/...`) trên Windows **không tính là absolute** nên nhánh cũ không bao giờ chạm tới.
+Đã ghi lại index (24 trường, nguyên tử, backup `data/backup/index.json.truoc-di-tru-20260822`).
+A005/A006 (rác thử nghiệm `/tmp/vfy2`) **giữ trong sổ**, `list_authors` tự lọc — không xóa
+dữ liệu của user. Nghiệm thu qua API thật: 4 → **12 hồ sơ**; UI nhận **12/12 corpus tồn tại**.
+
+### 11.2. C3b — neo giọng dày và ĐÚNG NHỊP (commit `d32915e`)
+
+Module mới `src/voiceprofile/chon_neo.py`, **0 LLM, 0 token, tất định**: cắt corpus thành
+khối 60–400 từ ở ranh đoạn → loại khối/file thiếu dấu câu → chọn **tham lam sao cho nhịp
+gộp (từ/câu · %câu cụt · %câu dài) gần corpus nhất** → dừng ở ~1.800 từ → loại khối trùng
+bằng shingle 8 từ. Nối vào luồng: `build_voice_block` lấy theo **tổng từ** (`TRAN_TU_NEO`)
+thay vì đếm 3 mẫu; CLI `write` khi có `--author-dir` thì nạp neo dày, **chỉ đổi biến trong
+bộ nhớ, không ghi đè `profile.json`** (bài học 16/07: dựng lại hồ sơ từ transcript đã bị
+user bác). Đường web đã sẵn: frontend gửi `author_dir: a.corpus`.
+
+**Đo trên 12 hồ sơ thật — 12/12 khớp nhịp corpus tốt hơn:**
+
+| | neo cũ | neo mới |
+|---|---|---|
+| Độ dày | 200–330 từ (A003: 4.403 từ transcript thô) | **1.832–2.064 từ** |
+| Lệch nhịp so corpus | 0,36 – **65,35** | **0,01 – 0,07** |
+
+Ca rõ nhất là Carl Sagan: 3 mẫu cũ đo 30,2 từ/câu · 0% cụt · 36,4% dài, trong khi corpus
+thật là 18,0 · 21,4 · 8,5 — **mẫu cũ lệch hoàn toàn**; neo mới 18,0 · 21,4 · 8,7.
+
+**Phát hiện phụ quan trọng**: ba hồ sơ "hỏng" (A003/A008/A011) có corpus **3/5 file lành**,
+chỉ 2 file là transcript thô — exemplar cũ vô tình lấy từ 2 file thô đó. Module tự bỏ 2 file
+và dùng 3 file lành (lệch 65,35 → 0,03). Kèm bẫy đã bắt: **lọc theo từng file, không đo gộp**
+— corpus A003 đo gộp ra 9,3 dấu kết/1000 (qua ngưỡng) trong khi 2 file thật sự là 0,1.
+
+Khối neo mới có **0 em-dash** (văn tác giả vốn không dùng) — cộng hưởng với Đợt 1.
+
+### 11.3. Còn lại
+
+- **Nghiệm thu thật cả Đợt 1 + Đợt 2**: chạy 1 chương bằng LLM, đo em-dash/1000 và % câu
+  cụt so mốc cũ, rồi **người đọc chốt**. Cổng cuối cùng là người, không phải số.
+- B3 đã đo xong và kết luận không thêm luật (mục 10.2). Van thứ 5 vẫn chờ sau nghiệm thu.
