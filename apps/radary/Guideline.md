@@ -122,13 +122,13 @@ kênh đó làm *bao nhiêu bài*, ăn *bao nhiêu view*, và **chính xác nh�
   thước lượng đáng tin duy nhất.
 - **Kênh nhỏ lọt top** — **> 0 là tín hiệu tốt**: chủ đề không bị kênh lớn khoá
   cửa, người mới vẫn chen được.
-- **Biến thể người ta gõ** — YouTube autocomplete (tím) + Bing (nâu). Thanh dài =
+- **YouTube Autocomplete** — cụm người ta gõ thật (tím) + Bing (nâu). Thanh dài =
   lọt ra từ nhiều hướng gõ khác nhau.
 
 ![Khối A và B](docs/guideline/03-phan-a-b.jpg)
 
 *A · In pool (trái: chips, dòng đối chiếu cụm rút gọn, biểu đồ lứa đăng) và
-B · YouTube market (phải: view 90 ngày, kênh nhỏ lọt top, biến thể người ta gõ) —
+B · YouTube market (phải: view 90 ngày, kênh nhỏ lọt top, YouTube Autocomplete) —
 đặt cạnh nhau để so trong-pool với ngoài-pool trong một tầm mắt. Dưới cùng là thẻ
 kênh đối thủ.*
 

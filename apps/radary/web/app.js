@@ -2374,8 +2374,8 @@ function Mapping({ ws, canEdit }) {
             </div>` : ''}
           </div>` : html`<div class="note">YouTube: ${yt.ly_do || 'không có dữ liệu'}</div>`}
           ${B && (B.bien_the || []).length ? html`<div style="margin-top:10px">
-            <div><b>Biến thể người ta gõ</b> <span class="note">· YouTube autocomplete (thanh dài
-              = lọt ra từ nhiều hướng gõ) + Bing (gợi ý tìm kiếm web, cụm YouTube không có)</span></div>
+            <div><b>YouTube Autocomplete</b> <span class="note">· cụm người ta gõ thật (thanh
+              dài = lọt ra từ nhiều hướng gõ) + Bing (gợi ý tìm kiếm web, cụm YouTube không có)</span></div>
             ${(B.bien_the || []).map(m => { const max = Math.max(...B.bien_the.map(x => x.do_phu || 0)) || 1;
               return html`<${HangThanh} tieu_de=${m.cum}
                 nhan=${html`<a href="#" onClick=${e => { e.preventDefault(); traCuu(m.cum); }}>${m.cum}</a>`}
