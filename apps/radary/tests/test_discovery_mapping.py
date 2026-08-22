@@ -1243,7 +1243,7 @@ def test_serp_ep_so_va_bo_sung_trends_cho_ban_nen():
     r = api_src.split('def tra_cuu_trends(')[1].split('\nclass RedditIn')[0]
     assert "auth.ws_for_user(c, ws, u['id'], 'leader')" in r      # tiêu quota → leader+
     assert 'db.tra_cuu_luu' in r                                  # ghi lại, lần sau 0 lượt
-    assert 'tu_nen' in api_src and 'quét nền tạo' in api_src      # lý do rõ, không "đã tắt"
+    assert 'tu_nen' in api_src and 'quét nền tạo' in api_src  # lý do rõ, không 'đã tắt'      # lý do rõ, không "đã tắt"
 
     js = (goc / 'web' / 'app.js').read_text(encoding='utf-8')
     assert 'Lấy Google Trends' in js and '(3 lượt SERP)' in js
@@ -1350,7 +1350,11 @@ def test_click_tu_khoa_khong_tu_tieu_quota():
     assert "api('POST', `/workspaces/${ws}/tra-cuu/ngoai`" not in than   # hết tự gọi
     assert 'KHÔNG tự hỏi thị trường ngoài' in than
 
-    assert 'Chắc chắn hỏi' in js and '102 units YouTube' in js           # báo giá rõ
+    # ADVANCE MAPPING (user 22/08): mot nut, ba o tick — moi o mot loai chi phi
+    assert 'Advance Mapping' in js
+    assert '102 units YouTube' in js and '4 lượt SERP' in js and '0,016 USD Apify' in js
+    assert 'setAdvPool' in js and 'setAdvSerp' in js and 'setAdvReddit' in js
+    assert 'ngoai_pool: advPool' in js and 'serp_google: advSerp' in js
     assert 'setXacNhanNgoai(true)' in js and 'hoiNgoaiLanDau' in js
     assert 'setXacNhanNgoai(false)' in js                                # đổi cụm là reset
 
@@ -1362,3 +1366,29 @@ def test_click_tu_khoa_khong_tu_tieu_quota():
     # XEM LẠI bản đã lưu (lai=true) cũng đi thẳng — route xem_lai=1 là 0 quota
     # tuyệt đối, hỏi chỉ làm phiền (user báo khi mở từ dropdown lịch sử)
     assert 'if (khongHoiLai || !tu || lai) return chayTraCuu(q, lai)' in js
+
+
+def test_advance_mapping_tach_duoc_tung_phan():
+    """22/08 — Owner chốt tên "Advance Mapping" với ba ô tick.
+
+    Chọn phương án TICK thay vì nút chạy-hết, và bật sẵn cả ba: ai bấm thẳng thì
+    y hệt chạy-hết, ai muốn tiết kiệm thì bỏ tick. Lý do: quota SERP free ~100
+    lượt/tháng, full mỗi cụm ăn 4 lượt → chỉ 25 cụm/tháng.
+    """
+    from pathlib import Path as _P
+    goc = _P(__file__).resolve().parents[1]
+    api_src = (goc / 'radary' / 'api.py').read_text(encoding='utf-8')
+
+    # ba cờ độc lập, mặc định BẬT (bỏ tick nào thì phần đó không chạy, không tốn)
+    mo = api_src.split('class TraCuuNgoaiIn')[1].split('@app.post')[0]
+    for co in ('ngoai_pool: bool = True', 'trends: bool = True', 'serp_google: bool = True'):
+        assert co in mo, co
+
+    than = api_src.split('def _soi_khoi_b(')[1].split('\ndef ')[0]
+    assert 'if ngoai_pool:' in than                    # không tick → không gọi YouTube
+    assert 'if not serp_google:' in than               # không tick → không tiêu lượt SERP
+    assert 'bỏ tick Ngoài Pool' in than                # nói rõ vì sao trống, không im lặng
+
+    js = (goc / 'web' / 'app.js').read_text(encoding='utf-8')
+    assert 'if (!advPool && !advSerp && !advReddit) return' in js   # không tick gì thì thôi
+    assert "api('POST', `/workspaces/${ws}/tra-cuu/reddit`" in js   # Reddit đi route riêng

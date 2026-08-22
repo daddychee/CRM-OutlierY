@@ -2030,13 +2030,28 @@ function Mapping({ ws, canEdit }) {
       setBusy('');
     } catch (e) { setErr(String(e.message)); setBusy(''); }
   };
+  // ADVANCE MAPPING (user 22/08): một nút, ba ô tick — mỗi ô một loại chi phí
+  // khác nhau nên phải tách được. Bật sẵn cả ba: bấm thẳng thì y hệt chạy-hết.
   const [xacNhanNgoai, setXacNhanNgoai] = useState(false);
+  const [advPool, setAdvPool] = useState(true);
+  const [advSerp, setAdvSerp] = useState(true);
+  const [advReddit, setAdvReddit] = useState(true);
   const hoiNgoaiLanDau = async () => {
+    if (!advPool && !advSerp && !advReddit) return;
     setXacNhanNgoai(false);
-    setBusy('Đang hỏi YouTube · Google Trends · News · Wikipedia (~20 giây)…');
+    const viec = [advPool && 'YouTube market', advSerp && 'Google Trends + câu hỏi thật',
+                  advReddit && 'Reddit'].filter(Boolean).join(' · ');
+    setBusy(`Đang chạy Advance Mapping: ${viec}…`);
     try {
-      const b = await api('POST', `/workspaces/${ws}/tra-cuu/ngoai`, { cum: A.cum });
-      setB(b); setLichSu(b.lich_su || []);
+      if (advPool || advSerp) {
+        const b = await api('POST', `/workspaces/${ws}/tra-cuu/ngoai`,
+          { cum: A.cum, ngoai_pool: advPool, trends: advSerp, serp_google: advSerp });
+        setB(b); setLichSu(b.lich_su || []);
+      }
+      if (advReddit) {
+        setBusy('Đang hỏi Reddit (~20-40 giây)…');
+        setRd(await api('POST', `/workspaces/${ws}/tra-cuu/reddit`, { cum: A.cum, ky: 'year' }));
+      }
     } catch (e) { setErr(String(e.message)); }
     setBusy('');
   };
@@ -2268,14 +2283,31 @@ function Mapping({ ws, canEdit }) {
       ${!B && canEdit ? html`<div class="note" style="margin:0 0 12px;padding:9px 12px;
         border-radius:9px;border:1px dashed var(--line,#243149);display:flex;gap:10px;
         align-items:center;flex-wrap:wrap">
-        ${!xacNhanNgoai ? html`<span>Chưa hỏi thị trường ngoài cho từ khoá này —
-            phần trong pool ở dưới là <b>miễn phí</b>, hỏi ngoài mới tốn.</span>
+        ${!xacNhanNgoai ? html`<span>Phần <b>trong pool</b> ở dưới là <b>miễn phí</b> và đã
+            chạy. Muốn soi ra ngoài thì bấm <b>Advance Mapping</b>.</span>
           <button class="btn small" onClick=${() => setXacNhanNgoai(true)} disabled=${!!busy}>
-            Hỏi thị trường ngoài</button>`
-        : html`<span><b>Chắc chắn hỏi “${A.cum}”?</b> Tốn <b>102 units YouTube</b> +
-            <b>4 lượt SERP</b>. Kết quả được lưu, lần sau mở lại 0 đồng.</span>
-          <button class="btn small" onClick=${hoiNgoaiLanDau} disabled=${!!busy}>Hỏi ngay</button>
-          <button class="btn small ghost" onClick=${() => setXacNhanNgoai(false)}>Huỷ</button>`}
+            Advance Mapping</button>`
+        : html`<div style="width:100%">
+          <div style="font-weight:600;margin-bottom:6px">Advance Mapping cho “${A.cum}”</div>
+          <label style="display:flex;gap:8px;align-items:flex-start;padding:3px 0;cursor:pointer">
+            <input type="checkbox" checked=${advPool} onChange=${e => setAdvPool(e.target.checked)}/>
+            <span><b>Ngoài Pool</b> — video nổi 90 ngày, kênh nhỏ lọt top, biến thể người ta gõ
+              <span class="note">· 102 units YouTube</span></span></label>
+          <label style="display:flex;gap:8px;align-items:flex-start;padding:3px 0;cursor:pointer">
+            <input type="checkbox" checked=${advSerp} onChange=${e => setAdvSerp(e.target.checked)}/>
+            <span><b>Google Trends</b> — đường 12 tháng, truy vấn đang lên, vùng quan tâm,
+              câu hỏi thật <span class="note">· 4 lượt SERP</span></span></label>
+          <label style="display:flex;gap:8px;align-items:flex-start;padding:3px 0;cursor:pointer">
+            <input type="checkbox" checked=${advReddit} onChange=${e => setAdvReddit(e.target.checked)}/>
+            <span><b>Reddit</b> — upvote, bình luận, cộng đồng đang bàn
+              <span class="note">· ~0,016 USD Apify</span></span></label>
+          <div class="row" style="gap:8px;margin-top:10px">
+            <button class="btn small" onClick=${hoiNgoaiLanDau}
+              disabled=${!!busy || (!advPool && !advSerp && !advReddit)}>Chạy</button>
+            <button class="btn small ghost" onClick=${() => setXacNhanNgoai(false)}>Huỷ</button>
+            <span class="note" style="margin:0">Kết quả được lưu — lần sau mở lại 0 đồng.</span>
+          </div>
+        </div>`}
         ${busy ? html`<span>${busy}</span>` : ''}
       </div>` : ''}
 

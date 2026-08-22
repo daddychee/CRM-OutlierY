@@ -1281,8 +1281,16 @@ def _ghi_bo_qua_khoa(ham, *a, **kw):
 
 
 class TraCuuNgoaiIn(BaseModel):
+    """Advance Mapping — người dùng tick từng phần (22/08).
+
+    Mỗi phần một loại chi phí khác nhau nên phải tách được: ngoai_pool tiêu
+    units YouTube, serp tiêu lượt SERP, Reddit tiêu tiền Apify (route riêng).
+    Mặc định BẬT hết để bấm thẳng vẫn ra đầy đủ như trước.
+    """
     cum: str
-    trends: bool = True        # Google Trends (~17s, 0 quota) — tắt được khi cần nhanh
+    ngoai_pool: bool = True    # YouTube market — 102 units
+    trends: bool = True        # Google Trends + vùng quan tâm — 3 lượt SERP
+    serp_google: bool = True   # Câu hỏi thật + liên quan + web — 1 lượt SERP
 
 
 @app.post('/api/workspaces/{ws}/tra-cuu/ngoai')
@@ -1301,21 +1309,24 @@ def tra_cuu_ngoai(ws: int, body: TraCuuNgoaiIn, request: Request):
         u = auth.require_user(c, request)
         w = auth.ws_for_user(c, ws, u['id'], 'leader')      # tiêu quota → leader+
         vung, _ = _vung_cua_ws(w)
-    return _soi_khoi_b(ws, cum, vung, trends=body.trends)
+    return _soi_khoi_b(ws, cum, vung, trends=body.trends,
+                       ngoai_pool=body.ngoai_pool, serp_google=body.serp_google)
 
 
-def _soi_khoi_b(ws: int, cum: str, vung: dict | None, trends: bool = True) -> dict:
+def _soi_khoi_b(ws: int, cum: str, vung: dict | None, trends: bool = True,
+                ngoai_pool: bool = True, serp_google: bool = True) -> dict:
     """Thân khối B — tách khỏi route để tab Đang nóng soi NỀN dùng lại y nguyên
     (cùng dữ liệu, cùng chỗ lưu; bấm cụm là mở được bản đầy đủ)."""
     from . import thi_truong, tra_cuu
-    yt = {'co_du_lieu': False, 'ly_do': ''}
+    yt = {'co_du_lieu': False, 'ly_do': 'chưa hỏi (bỏ tick Ngoài Pool)'}
     quota = 0
-    try:
-        api_yt = scan.API(khoa_v3.lay_khoa(thi_truong.VIEC_KHOA))
-        yt = tra_cuu.ngoai_youtube(api_yt, cum, vung)
-        quota = api_yt.used
-    except RuntimeError as e:
-        yt = {'co_du_lieu': False, 'ly_do': str(e)}
+    if ngoai_pool:
+        try:
+            api_yt = scan.API(khoa_v3.lay_khoa(thi_truong.VIEC_KHOA))
+            yt = tra_cuu.ngoai_youtube(api_yt, cum, vung)
+            quota = api_yt.used
+        except RuntimeError as e:
+            yt = {'co_du_lieu': False, 'ly_do': str(e)}
     geo = (vung or {}).get('regionCode') or 'US'
     lang = (vung or {}).get('relevanceLanguage') or 'en'
     # SERP (Owner chốt 22/08): 2 lời gọi/cụm — Trends ổn định (thay trendspyg chạy
@@ -1328,7 +1339,10 @@ def _soi_khoi_b(ws: int, cum: str, vung: dict | None, trends: bool = True) -> di
     # Biến thể người ta GÕ quanh từ khoá — luôn có dữ liệu, kể cả khi Trends im lặng
     # (từ khoá hẹp như 'life in alaska' thì Trends trả related rỗng). 0 quota, ~9s.
     from . import discovery
-    bt = discovery.mo_rong(cum, discovery.BoDem(tran=9), vung=vung, tu_hoi=False)
+    if not ngoai_pool:
+        bt = {}
+    else:
+        bt = discovery.mo_rong(cum, discovery.BoDem(tran=9), vung=vung, tu_hoi=False)
     bien_the = sorted(({'cum': k, 'do_phu': v['do_phu'], 'hang': v['hang_tot_nhat'],
                         'nguon': 'youtube'}
                        for k, v in bt.items() if k != cum.lower()),
@@ -1341,8 +1355,11 @@ def _soi_khoi_b(ws: int, cum: str, vung: dict | None, trends: bool = True) -> di
                  if c not in da_co][:8]
     # Trends: đọc cache trong NGÀY trước — Google chặn theo IP, hỏi lại cùng từ khoá
     # vừa vô ích vừa làm dính rate limit lâu hơn.
+    # Hai đường dẫn tới đây: probe nền của Hot Topic (cố ý tắt để khỏi đốt quota)
+    # và người bỏ tick Google Trends trong Advance Mapping. Cùng một cách chữa —
+    # bấm nút "Lấy Google Trends" — nên nói chung một câu, khỏi phân biệt vô ích.
     tr = {'co_du_lieu': False, 'tu_nen': True,
-          'ly_do': 'Bản này do quét nền tạo — Trends chưa lấy để khỏi đốt quota'}
+          'ly_do': 'Chưa lấy Google Trends (bỏ tick, hoặc bản do quét nền tạo)'}
     if trends:
         with get_conn() as c2:
             try:
@@ -1369,7 +1386,9 @@ def _soi_khoi_b(ws: int, cum: str, vung: dict | None, trends: bool = True) -> di
     # Hai nguồn 0 key, nhanh (~1-2s): tin báo đang nói gì + mức quan tâm trên Wikipedia.
     # Reddit đã thử cả .json lẫn .rss đều 403 từ IP này; X/Twitter cần bản trả phí.
     gg = {'co_du_lieu': False, 'ly_do': 'chưa cấp khóa SERP cho việc tra_cuu_ngoai'}
-    if bo_serp.con_khoa():
+    if not serp_google:
+        gg = {'co_du_lieu': False, 'ly_do': 'chưa hỏi (bỏ tick Google Trends/SERP)'}
+    elif bo_serp.con_khoa():
         try:
             gg = bo_serp.chay(_serp.google, cum, geo=geo, lang=lang)
         except Exception as e:                               # noqa: BLE001
