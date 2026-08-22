@@ -1708,6 +1708,24 @@ function DuongXuHuong({ diem, nhan }) {
     <div class="note" style="margin:0">${nhan} · đỉnh ${soGon(max)}</div></div>`;
 }
 
+// LƯỚI CHUNG cho mọi hàng thanh ngang (Trends đang lên / phổ biến / biến thể người
+// ta gõ). Trước đây mỗi khối tự khai flex riêng — 44% vs 46% cho cột nhãn, 82px vs
+// 92px cho cột số — nên thanh và số không thẳng hàng giữa các khối (user báo 22/08).
+// Sửa hằng số ở đây là cả ba khối đổi theo, không khối nào lệch lại được.
+const COT_NHAN = '46%', COT_SO = '92px';
+function HangThanh({ nhan, tieu_de, phan_tram, mau, phai, phaiStyle, phaiClass }) {
+  return html`
+    <div style="display:flex;align-items:center;gap:8px;padding:1px 0">
+      <div style=${`flex:0 0 ${COT_NHAN};overflow:hidden;text-overflow:ellipsis;white-space:nowrap`}
+        title=${tieu_de}>${nhan}</div>
+      <div style="flex:1;background:rgba(127,127,127,.15);border-radius:3px;height:14px">
+        <div style=${`width:${phan_tram}%;height:14px;border-radius:3px;background:${mau}`}></div>
+      </div>
+      <div class=${phaiClass || ''} style=${`flex:0 0 ${COT_SO};text-align:right;`
+        + 'white-space:nowrap;font-variant-numeric:tabular-nums' + (phaiStyle || '')}>${phai}</div>
+    </div>`;
+}
+
 // Truy vấn đang lên: thanh ngang, dài theo mức tăng — yêu cầu 3 của user
 function ThanhTruyVan({ muc, mau, ghi }) {
   if (!muc || !muc.length) return null;
@@ -1717,15 +1735,11 @@ function ThanhTruyVan({ muc, mau, ghi }) {
   return html`<div style="margin:6px 0 10px">
     <div class="note" style="margin:0 0 3px">${ghi}</div>
     ${muc.map(m => { const v = Number(m.gia_tri) || 0, no = v >= BUNG_NO; return html`
-      <div style="display:flex;align-items:center;gap:8px;padding:1px 0">
-        <div style="flex:0 0 44%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"
-          title=${m.cum}>${m.cum}</div>
-        <div style="flex:1;background:rgba(127,127,127,.15);border-radius:3px;height:14px">
-          <div style=${`width:${no ? 100 : Math.max(4, Math.min(100, (v / max) * 100))}%;height:14px;border-radius:3px;background:${no ? '#c62828' : mau}`}></div>
-        </div>
-        <div style=${'flex:0 0 82px;text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums'
-          + (no ? ';color:#c62828;font-weight:600' : '')}>${no ? '🔥 bùng nổ' : '+' + v + '%'}</div>
-      </div>`; })}
+      <${HangThanh} nhan=${m.cum} tieu_de=${m.cum}
+        phan_tram=${no ? 100 : Math.max(4, Math.min(100, (v / max) * 100))}
+        mau=${no ? '#c62828' : mau}
+        phai=${no ? '🔥 bùng nổ' : '+' + v + '%'}
+        phaiStyle=${no ? ';color:#c62828;font-weight:600' : ''}/>`; })}
     ${thuong.length !== muc.length ? html`<div class="note" style="margin:2px 0 0">
       Thanh đỏ = mức tăng vượt 5.000% (Google gọi là "breakout") — không so tỉ lệ được
       với các truy vấn còn lại nên vẽ riêng.</div>` : ''}
@@ -2085,15 +2099,11 @@ function Mapping({ ws, canEdit }) {
         <div><b>Biến thể người ta gõ</b> <span class="note">· YouTube autocomplete (thanh dài
           = lọt ra từ nhiều hướng gõ) + Bing (gợi ý tìm kiếm web, cụm YouTube không có)</span></div>
         ${(B.bien_the || []).map(m => { const max = Math.max(...B.bien_the.map(x => x.do_phu || 0)) || 1;
-          return html`<div style="display:flex;align-items:center;gap:8px;padding:1px 0">
-            <div style="flex:0 0 46%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
-              <a href="#" onClick=${e => { e.preventDefault(); traCuu(m.cum); }}>${m.cum}</a></div>
-            <div style="flex:1;background:rgba(127,127,127,.15);border-radius:3px;height:14px">
-              <div style=${`width:${m.nguon === "bing" ? 26 : Math.max(4, (m.do_phu / max) * 100)}%;height:14px;border-radius:3px;background:${m.nguon === "bing" ? "#8d6e63" : "#7e57c2"}`}></div>
-            </div>
-            <div style="flex:0 0 92px;text-align:right;white-space:nowrap" class="note">
-              ${m.nguon === 'bing' ? 'Bing' : m.do_phu + ' hướng'}</div>
-          </div>`; })}
+          return html`<${HangThanh} tieu_de=${m.cum}
+            nhan=${html`<a href="#" onClick=${e => { e.preventDefault(); traCuu(m.cum); }}>${m.cum}</a>`}
+            phan_tram=${m.nguon === 'bing' ? 26 : Math.max(4, (m.do_phu / max) * 100)}
+            mau=${m.nguon === 'bing' ? '#8d6e63' : '#7e57c2'}
+            phaiClass="note" phai=${m.nguon === 'bing' ? 'Bing' : m.do_phu + ' hướng'}/>`; })}
       </div>` : ''}
 
       ${yt.co_du_lieu ? html`<div style="margin-bottom:12px">

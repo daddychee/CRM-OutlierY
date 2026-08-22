@@ -868,3 +868,19 @@ def test_tu_khoa_khong_ro_ri_sang_pool_khac(tmp_path):
     # Tầng UI: so với pool SINH RA từ khoá (qws), không phải pool đang mở (ws).
     assert "const wsCuaQ = String(h0.qws || nho.qws || '')" in js
     assert "if (a.khong_co_ban_luu)" in js
+
+
+def test_ba_khoi_thanh_ngang_dung_chung_mot_luoi():
+    """Cột nhãn / thanh / số của ba khối thanh ngang phải thẳng hàng.
+
+    Trước đây mỗi khối tự khai flex: Trends dùng 44% + 82px, "Biến thể người ta gõ"
+    dùng 46% + 92px -> nhìn là thấy lệch (user báo 22/08). Nay cả ba đi qua HangThanh
+    nên chỉ còn MỘT nơi khai bề rộng cột.
+    """
+    from pathlib import Path as _P
+    js = (_P(__file__).resolve().parents[1] / 'web' / 'app.js').read_text(encoding='utf-8')
+    assert "const COT_NHAN = '46%', COT_SO = '92px'" in js
+    # Không khối nào được tự khai lại bề rộng cột nhãn/số của hàng thanh
+    for cu in ('flex:0 0 44%', 'flex:0 0 46%', 'flex:0 0 82px', 'flex:0 0 92px'):
+        assert cu not in js, f'còn khai lưới riêng: {cu}'
+    assert js.count('<${HangThanh}') >= 2      # Trends + biến thể cùng dùng
