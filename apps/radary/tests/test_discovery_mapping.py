@@ -1012,13 +1012,11 @@ def test_bong_bong_tach_mau_theo_loai():
     assert 'CẶP KẾT HỢP' in than                     # chú giải nói rõ cách dùng
 
 
-def test_ban_do_dung_lai_qua_khu_va_cua_so_canh_tranh():
-    """22/08 — user: tracking theo thời gian + 'chia cho lifetime thì pha loãng'.
+def test_ban_do_cua_so_do_7_28_90_toan_thoi_gian():
+    """22/08 — user chốt bộ mẫu cửa sổ 7/28/90/toàn thời gian (thay thanh trượt):
 
-    (1) Cạnh tranh đo trong CỬA SỔ 180 ngày (video_cua_so), không phải tổng trọn đời.
-    (2) Dựng lại tại mốc quá khứ: video đăng SAU mốc không được lọt vào — lọt là
-        "nhìn thấy tương lai".
-    (3) Xem quá khứ thì cột view/ngày tắt (views là của hôm nay) — van chống bịa.
+    xu hướng + cạnh tranh cùng đo trong cửa sổ; toàn thời gian = cạnh tranh trọn đời
+    (xu hướng giữ 30 ngày); lifetime không còn pha loãng cửa sổ ngắn.
     """
     import time
     from pathlib import Path as _P
@@ -1026,29 +1024,30 @@ def test_ban_do_dung_lai_qua_khu_va_cua_so_canh_tranh():
 
     now = time.time()
     kho = []
-    # 5 video cũ 3 năm trước + 4 video mới 20 ngày — cùng một cụm
-    for i in range(5):
+    for i in range(5):      # 5 video cũ 3 năm — chỉ được tính ở "toàn thời gian"
         kho.append({'yt_id': f'cu{i}', 'title': f'Life in Georgia old {i}',
                     'title_l': f'life in georgia old {i}', 'kenh': 'K', 'kenh_yt': 'U',
                     'views': 100, 'vph': 0, 'pub_ts': now - 86400 * 1100})
-    for i in range(4):
+    for i in range(4):      # 4 video 20 ngày tuổi
         kho.append({'yt_id': f'moi{i}', 'title': f'Life in Georgia new {i}',
                     'title_l': f'life in georgia new {i}', 'kenh': 'K', 'kenh_yt': 'U',
                     'views': 100, 'vph': 0, 'pub_ts': now - 86400 * 20})
 
-    r = tra_cuu.xu_huong_cum(kho, ['georgia'], bay_gio=now)[0]
-    assert r['tong_video'] == 9
-    assert r['video_cua_so'] == 4          # 5 video 3-năm-trước KHÔNG pha loãng cửa sổ
-
-    # dựng lại tại mốc 2 tháng trước: 4 video mới (20 ngày tuổi) CHƯA tồn tại
-    r2 = tra_cuu.xu_huong_cum(kho, ['georgia'], bay_gio=now - 60 * 86400)[0]
-    assert r2['tong_video'] == 5 and r2['video_cua_so'] == 0
+    r7 = tra_cuu.xu_huong_cum(kho, ['georgia'], bay_gio=now, cua_so=7)[0]
+    r28 = tra_cuu.xu_huong_cum(kho, ['georgia'], bay_gio=now, cua_so=28)[0]
+    r0 = tra_cuu.xu_huong_cum(kho, ['georgia'], bay_gio=now, cua_so=0)[0]
+    assert r7['video_cua_so'] == 0          # video 20 ngày tuổi ngoài cửa sổ 7 ngày
+    assert r28['video_cua_so'] == 4         # lọt cửa sổ 28 — 5 video cũ KHÔNG pha loãng
+    assert r0['video_cua_so'] == 9          # toàn thời gian = trọn đời
+    assert r0['tong_video'] == 9
 
     api_src = (_P(__file__).resolve().parents[1] / 'radary' / 'api.py').read_text(encoding='utf-8')
-    than = api_src.split('def tu_khoa_noi(')[1].split('\ndef ')[0]
-    assert 'lui_thang' in than and "m['view_moi_ngay'] = None" in than
+    than = api_src.split('def tu_khoa_noi(')[1].split('def _ghi_bo_qua_khoa')[0]
+    assert 'cua_so' in than and 'tra_cuu.CUA_SO_HOP_LE' in than
+    assert 'lui_thang' not in than          # máy thời gian đã gỡ theo lệnh user
 
     js = (_P(__file__).resolve().parents[1] / 'web' / 'app.js').read_text(encoding='utf-8')
-    assert 'r.video_cua_so ?? r.tong_video' in js    # trục đọc cửa sổ, fallback dữ liệu cũ
-    assert 'transition:cx .6s' in js                 # kéo mốc là bong bóng trượt, không nhảy
-    assert 'lui_thang=${lui}' in js
+    assert '<option value="7">7 ngày</option>' in js
+    assert '<option value="0">Toàn thời gian</option>' in js
+    assert 'cua_so=${cs}' in js and 'type="range"' not in js
+    assert 'r.video_cua_so ?? r.tong_video' in js    # trục đọc cửa sổ

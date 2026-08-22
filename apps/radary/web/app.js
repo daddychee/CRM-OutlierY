@@ -1789,7 +1789,7 @@ function ThanhTruyVan({ muc, mau, ghi }) {
 // X = số video trong pool (mức cạnh tranh, thang log vì lệch hàng trăm lần)
 // Y = % thay đổi 30 ngày (xu hướng)   ·   cỡ bong bóng = số video mới 30 ngày
 // Góc TRÊN-TRÁI = đang lên mà ít người làm = chỗ đáng nhìn trước.
-function BanDoCum({ cum, onChon }) {
+function BanDoCum({ cum, onChon, nhanCuaSo = '' }) {
   const d = (cum || []).filter(r => r.phan_tram != null && r.tong_video > 0);
   if (d.length < 2) return null;
   const w = 720, h = 360, L = 66, R = 30, T = 22, B = 40;
@@ -1834,7 +1834,7 @@ function BanDoCum({ cum, onChon }) {
       ${cotX.map(v => html`<text x=${X(v)} y=${h - B + 15} font-size="11" fill="currentColor"
         opacity="0.7" text-anchor="middle">${v === 0 ? 'ít nhất loại' : v === 100 ? 'đông nhất loại' : v + '%'}</text>`)}
       <text x=${(w + L) / 2} y=${h - 6} font-size="11" fill="currentColor" opacity="0.75" text-anchor="middle">
-        TRỤC NGANG — MỨC CẠNH TRANH 180 NGÀY: phân vị số-video SO VỚI CÁC CỤM CÙNG LOẠI → càng phải càng đông người làm gần đây</text>
+        TRỤC NGANG — MỨC CẠNH TRANH${nhanCuaSo ? ` (${nhanCuaSo.toUpperCase()})` : ''}: phân vị số-video SO VỚI CÁC CỤM CÙNG LOẠI → càng phải càng đông người làm</text>
       <text x="12" y=${(h - B + T) / 2} font-size="11" fill="currentColor" opacity="0.75"
         text-anchor="middle" transform=${`rotate(-90 12 ${(h - B + T) / 2})`}>
         TRỤC DỌC — XU HƯỚNG: % video mới so kỳ trước</text>
@@ -1854,7 +1854,7 @@ function BanDoCum({ cum, onChon }) {
           <circle cx=${X(pv(r))} cy=${Y(r.phan_tram)} r=${bk(r.video_30n)}
             style="transition:cx .6s ease,cy .6s ease,r .6s ease"
             fill=${mau} fill-opacity="0.55" stroke=${mau} stroke-width="1.8" stroke-opacity="0.95"/>
-          <title>${r.cum} · ${r.loai === 'mau_cau' ? 'mẫu câu' : 'đối tượng'} · ${r.video_cua_so ?? '?'} video 180 ngày (${r.tong_video} trọn đời) · ${r.phan_tram > 0 ? '+' : ''}${r.phan_tram}% (${r.video_30n_truoc}→${r.video_30n})${r.view_moi_ngay ? ` · ${r.view_moi_ngay} view/ngày` : ''}</title>
+          <title>${r.cum} · ${r.loai === 'mau_cau' ? 'mẫu câu' : 'đối tượng'} · ${r.video_cua_so ?? '?'} video trong cửa sổ (${r.tong_video} trọn đời) · ${r.phan_tram > 0 ? '+' : ''}${r.phan_tram}% (${r.video_30n_truoc}→${r.video_30n})${r.view_moi_ngay ? ` · ${r.view_moi_ngay} view/ngày` : ''}</title>
         </g>`; })}
 
       ${d.filter(r => ten.has(r.cum)).map(r => {
@@ -1934,7 +1934,7 @@ function Mapping({ ws, canEdit }) {
   const [noi, setNoi] = useState(null);
   const [nong, setNong] = useState(null);     // Hot Topic — tải ngay khi mở tab
   const [nongMo, setNongMo] = useState(false); // Hot Topic: 5 dòng đầu hay cả danh sách
-  const [luiThang, setLuiThang] = useState(0); // bản đồ tại quá khứ: 0 = hôm nay
+  const [cuaSo, setCuaSo] = useState(28);      // cửa sổ đo: 7/28/90 ngày, 0 = toàn thời gian
   const [loaiCum, setLoaiCum] = useState('doi_tuong');   // đối tượng trước — thứ quyết định làm video về CÁI GÌ
   const [busy, setBusy] = useState('');
   const [err, setErr] = useState('');
@@ -1945,7 +1945,7 @@ function Mapping({ ws, canEdit }) {
   // thấy số của US — user báo 21/08 ("từ khoá thị trường US lọt sang Spain").
   useEffect(() => {
     setA(null); setB(null); setCum(''); setErr(''); setBusy(''); setXemLai(null);
-    setLichSu([]); setNoi(null); setNong(null); setNongMo(false); setLuiThang(0);
+    setLichSu([]); setNoi(null); setNong(null); setNongMo(false); setCuaSo(28);
     api('GET', `/workspaces/${ws}/discovery/goi-y-seed`).then(r => setGoiY(r.seed || [])).catch(() => setGoiY([]));
     const nnLuu = (() => { try { return localStorage.getItem('mapping_nn_' + ws) || ''; } catch (e) { return ''; } })();
     api('GET', `/workspaces/${ws}/discovery/tu-khoa-noi`
@@ -2116,7 +2116,7 @@ function Mapping({ ws, canEdit }) {
           ${!noi.tu_de ? html`<span> · lọc ngôn ngữ:
             <select value=${noi.ngon_ngu_loc || ''} onChange=${e => {
               try { localStorage.setItem('mapping_nn_' + ws, e.target.value); } catch (err) {}
-              api('GET', `/workspaces/${ws}/discovery/tu-khoa-noi?ngon_ngu=${encodeURIComponent(e.target.value)}`)
+              api('GET', `/workspaces/${ws}/discovery/tu-khoa-noi?cua_so=${cuaSo}&ngon_ngu=${encodeURIComponent(e.target.value)}`)
                 .then(setNoi).catch(() => {});
             }}>
               <option value="">(không lọc — pool trộn ngôn ngữ)</option>
@@ -2129,26 +2129,28 @@ function Mapping({ ws, canEdit }) {
           </span>` : ''}</div>
         ${noi.cach_lay ? html`<div class="note" style="margin:2px 0 6px">
           <b>Từ khoá lấy ở đâu ra:</b> ${noi.cach_lay}</div>` : ''}
-        <div class="row" style="gap:10px;align-items:center;flex-wrap:wrap;margin-top:8px">
-          <span class="note" style="margin:0">Bản đồ tại thời điểm:</span>
-          <input type="range" min="0" max="12" step="1" value=${12 - luiThang}
-            style="width:220px;accent-color:var(--accent,#4C8FE0)"
+        <div class="row" style="gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px">
+          <span class="note" style="margin:0">Cửa sổ đo:</span>
+          <select style="background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:4px 8px;font:inherit;font-size:13px;cursor:pointer"
+            value=${cuaSo}
             onChange=${e => {
-              const lui = 12 - Number(e.target.value);
-              setLuiThang(lui);
+              const cs = Number(e.target.value);
+              setCuaSo(cs);
               const nn = noi.ngon_ngu_loc || '';
-              api('GET', `/workspaces/${ws}/discovery/tu-khoa-noi?lui_thang=${lui}`
+              api('GET', `/workspaces/${ws}/discovery/tu-khoa-noi?cua_so=${cs}`
                 + (nn ? `&ngon_ngu=${encodeURIComponent(nn)}` : ''))
                 .then(setNoi).catch(() => {});
-            }}/>
-          <b style="font-variant-numeric:tabular-nums">${luiThang
-            ? new Date((noi.moc_ts || 0) * 1000).toLocaleDateString('vi-VN') + ` (lùi ${luiThang} tháng)`
-            : 'hôm nay'}</b>
-          ${luiThang ? html`<span class="note" style="margin:0">· dựng lại từ ngày đăng video —
-            cột View/ngày tắt (views là của hôm nay, không có lịch sử theo cụm)</span>` : ''}
+            }}>
+            <option value="7">7 ngày</option>
+            <option value="28">28 ngày</option>
+            <option value="90">90 ngày</option>
+            <option value="0">Toàn thời gian</option>
+          </select>
+          <span class="note" style="margin:0">· xu hướng = ${noi.cua_so_ngay} ngày qua so ${noi.cua_so_ngay} ngày
+            liền trước · cạnh tranh = ${cuaSo === 0 ? 'video trọn đời' : `video ${cuaSo} ngày qua`}</span>
         </div>
         <${BanDoCum} cum=${(noi.cum || []).filter(r => !loaiCum || r.loai === loaiCum)}
-          onChon=${c => traCuu(c)}/>
+          nhanCuaSo=${cuaSo === 0 ? 'trọn đời' : `${cuaSo} ngày`} onChon=${c => traCuu(c)}/>
         <table class="tbl"><thead><tr><th>Cụm</th><th>Xu hướng</th>
           <th>Video ${noi.cua_so_ngay}n</th><th>View/ngày</th>
           <th title="số video mới mỗi tháng — khoảng thời gian khác cột Xu hướng">Mật độ theo tháng</th></tr></thead>

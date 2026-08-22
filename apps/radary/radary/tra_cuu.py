@@ -378,21 +378,26 @@ def wikipedia(cum: str, lang: str = "en", doc=None, so_thang: int = 13) -> dict:
 #   CHAT   — view/ngay trung vi cua video 90 ngay gan day dung cum do
 CUA_SO_NGAY = 30
 TOI_THIEU_SO_SANH = 3        # duoi 3 video/cua so thi khong tinh % (mau qua nho)
-# Cua so do MUC CANH TRANH cua ban do bong bong (22/08, user: "chia cho lifetime thi
-# nong do pha loang qua lon"): tong video tron doi lam cum chet-5-nam-truoc van hien
-# "dong nguoi lam". 180 ngay = du dai de on dinh, du ngan de phan anh hien tai.
-CUA_SO_CANH_TRANH_NGAY = 180
+# CUA SO DO cua ban do bong bong (22/08, user chot bo mau: 7 / 28 / 90 / toan thoi
+# gian, kieu YouTube Studio — thay cho thanh truot thoi gian va cua so 180 co dinh):
+# xu huong = W ngay qua so W ngay lien truoc; canh tranh = so video trong W ngay.
+# W=0 (toan thoi gian): canh tranh = tron doi, xu huong giu cua so 30 mac dinh.
+CUA_SO_HOP_LE = (0, 7, 28, 90)
 
 
 def xu_huong_cum(kho: list[dict], cums: list[str], bay_gio: float | None = None,
-                 so_thang: int = 12) -> list[dict]:
-    """Cum nao trong pool dang LEN / DANG GIAM. 0 quota, doc du lieu san co."""
+                 so_thang: int = 12, cua_so: int | None = None) -> list[dict]:
+    """Cum nao trong pool dang LEN / DANG GIAM. 0 quota, doc du lieu san co.
+
+    cua_so: 7/28/90 = do xu huong VA canh tranh trong W ngay; 0 = canh tranh tron
+    doi (xu huong giu 30 ngay); None = 30 ngay (tuong thich cu).
+    """
     bay_gio = bay_gio or time.time()
-    m30, m60 = bay_gio - CUA_SO_NGAY * 86400, bay_gio - 2 * CUA_SO_NGAY * 86400
+    cs = cua_so if cua_so else CUA_SO_NGAY
+    m30, m60 = bay_gio - cs * 86400, bay_gio - 2 * cs * 86400
     m90 = bay_gio - 90 * 86400
     moc_thang = bay_gio - so_thang * 30 * 86400
     ra = []
-    m180 = bay_gio - CUA_SO_CANH_TRANH_NGAY * 86400
     for cum in cums:
         rx = mapping._rx(cum)
         # pub_ts <= bay_gio: khi dung lai ban do TAI MOT MOC QUA KHU, video dang sau
@@ -403,7 +408,6 @@ def xu_huong_cum(kho: list[dict], cums: list[str], bay_gio: float | None = None,
             continue
         nay = [v for v in khop if (v.get("pub_ts") or 0) >= m30]
         truoc = [v for v in khop if m60 <= (v.get("pub_ts") or 0) < m30]
-        cua_so = [v for v in khop if (v.get("pub_ts") or 0) >= m180]
         vpd = [x for x in (_view_moi_ngay(v, bay_gio) for v in khop
                            if (v.get("pub_ts") or 0) >= m90) if x]
         # Chi can KY TRUOC du mau (no la mau so). Ban dau doi ca hai ky >= 3 nen cum
@@ -418,7 +422,8 @@ def xu_huong_cum(kho: list[dict], cums: list[str], bay_gio: float | None = None,
                 thang[_thang(v["pub_ts"])] = thang.get(_thang(v["pub_ts"]), 0) + 1
         ra.append({
             "cum": cum, "tong_video": len(khop),
-            "video_cua_so": len(cua_so),           # canh tranh HIEN TAI (180 ngay toi moc)
+            # canh tranh: tron doi khi cua_so=0, con lai = so video trong W ngay
+            "video_cua_so": len(khop) if cua_so == 0 else len(nay),
             "video_30n": len(nay), "video_30n_truoc": len(truoc),
             "phan_tram": pt,
             "chieu": None if pt is None else ("lên" if pt > 15 else "xuống" if pt < -15 else "đi ngang"),
