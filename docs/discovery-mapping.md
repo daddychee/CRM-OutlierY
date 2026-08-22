@@ -405,7 +405,7 @@ User hỏi còn nguồn nào đưa vào được nữa. Kiểm thật từ máy 
 | YouTube comments (`commentThreads`) | ✓ 1 unit/video | **Thấp** — 150 comment ở 5 video top chỉ ra 2 câu hỏi, đều lạc đề (*"didn't get served one ad"*). Khác ngách khoa học nơi khán giả hỏi nhiều | bỏ qua |
 | Google Trends daily RSS | ✓ 1 giây, có số traffic | **Thấp** — trả tin tức chung của cả nước (`fidelity crypto`, `voting`, `tesla autopilot`), không thuộc ngách | bỏ qua |
 | Wikipedia related pages | **403** | — | bỏ qua |
-| Reddit (OAuth/PRAW) | cần Owner tạo app ở reddit.com/prefs/apps | chưa đo được | chờ, chỉ làm khi có credentials |
+| Reddit | **IP server bị chặn hoàn toàn** (đo 22/08, xem dưới) | — | **BỎ HẲN** — key có cũng vô dụng |
 
 **Ghi nhớ khi đọc kết quả:** Bing là gợi ý của **tìm kiếm web**, không phải YouTube — dùng
 để MỞ RỘNG ý tưởng, không thay tín hiệu YouTube. Giao diện phân biệt bằng màu (tím =
@@ -516,3 +516,29 @@ mã "en" → luôn None → CẢ HỆ lặng lẽ về luật cũ dù 100 test x
 'en' nên không bắt được). Chuẩn hoá qua MA_NGON_NGU + test ghim cả 'English'/'Spanish'.
 Kết quả sống: SPACE đối tượng = nasa/moon/voyager/james webb/solar system, mẫu câu =
 webb just/explained slowly; `replace` biến mất đúng chỗ.
+
+
+## 22/08 — Reddit: đóng hồ sơ, IP server bị chặn ở mọi đường
+
+Owner định tạo app OAuth để nối Reddit vào External traffic. Trước khi Owner mất công,
+đo THẬT khả năng kết nối từ chính server chạy RadarY — và đó là điều đáng làm, vì kết
+quả cho thấy **app có tạo được cũng vô dụng**:
+
+| Đường | Kết quả đo | Nghĩa |
+|---|---|---|
+| `www.reddit.com/…/.json` | 403 | chặn (đã biết từ đợt khảo sát nguồn) |
+| `oauth.reddit.com` | **403** | **API chính thức chặn — đây là đường duy nhất mà key dùng tới** |
+| `old.reddit.com/…/.json` | 200 nhưng trả **HTML login-wall** ("Welcome to Reddit"), không phải JSON | chặn trá hình |
+| `www.reddit.com/api/v1/access_token` | 401 | endpoint token thông, nhưng lấy được token rồi cũng không gọi được API |
+
+Owner cũng bị `You've been blocked by network security` khi mở `reddit.com/prefs/apps`
+từ mạng công ty — Reddit chặn ở tầng mạng, không phải tầng tài khoản (email đã verified,
+2FA bật, tài khoản bình thường).
+
+**Chốt: bỏ Reddit.** Muốn nối lại thì phải cho server đi qua proxy/VPN — thêm một tầng
+hạ tầng phải nuôi, cho một nguồn chưa chứng minh giá trị với ngách documentary dài.
+Đúng lệ Owner đặt 21/08: *"nếu không có giá trị thì bỏ qua"*. Ghi lại đây để lần sau
+không ai đào lại đường này.
+
+**Bảng trạng thái ổ khoá `status 200` mà body là HTML**: bài học nhỏ nhưng hay dính —
+kiểm nguồn ngoài phải soi `Content-Type` + parse thật, đừng tin mã 200.
