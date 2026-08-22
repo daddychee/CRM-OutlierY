@@ -152,3 +152,61 @@ def test_luat_nen_tang_KHONG_ep_do_dai_cau():
     assert "long, clause-rich" not in r
     assert "long sentences ARE the voice" not in r
     assert "rises and falls" in r          # nhip len xuong — thu user goi la "cao trao"
+
+
+# ========== BUOC 3 (23/08): cua nhap tu loai file thieu dau cau ==========
+
+VAN_LANH = ("The market opens before dawn. Vendors set out their crates in the half "
+            "dark, and nobody hurries. A woman builds a pyramid of tomatoes that will "
+            "collapse twice before the sun is up. She rebuilds it both times. By seven "
+            "the street is loud, and by nine it is over.\n\n"
+            "Further along, the bread stalls. Flour dusts everything. The baker talks "
+            "while he works, and he works fast. His hands know the dough better than he "
+            "does, a thing he says himself, laughing.\n\n"
+            "Winter changes the rhythm. Stalls close by two. The fog does not lift some "
+            "days, and the whole street works inside a soft grey box.") * 3
+
+TRANSCRIPT_THO = ("imagine a country where the winters last half the year and the people "
+                  "are calm about it they wake up early they go to work they come home and "
+                  "nobody complains about the cold because complaining does not make the "
+                  "cold go away this is just how life works there ") * 8
+
+
+def test_load_corpus_tu_loai_file_thieu_dau_cau_23_08(tmp_path):
+    """Cua canh bao co tu 16/07 nhung CHO TICK BO QUA — va da co nguoi tick, nen
+    sinh ra 3 ho so dung tren corpus khong dau cau (sentence_len_mean = 1085) va
+    duoc dung de viet suot 3 tuan. Doi thanh TU LOAI file hong roi bao ro, thay vi
+    bat nguoi chon giua 'bo het' va 'nham mat di tiep'.
+    """
+    from voiceprofile.corpus import load_corpus_dir
+
+    (tmp_path / "lanh1.txt").write_text(VAN_LANH, encoding="utf-8")
+    (tmp_path / "lanh2.txt").write_text(VAN_LANH, encoding="utf-8")
+    (tmp_path / "tho.txt").write_text(TRANSCRIPT_THO, encoding="utf-8")
+
+    works, bo = load_corpus_dir(tmp_path, bao_file_bo=True)
+    assert len(works) == 2, "file transcript tho phai bi loai"
+    assert len(bo) == 1 and "tho.txt" in bo[0]
+    assert all("imagine a country where" not in w for w in works)
+
+
+def test_corpus_toan_file_tho_thi_KHONG_tu_loai_23_08(tmp_path):
+    """Loai het thi khong con gi de dung ho so — luc do phai BAO LOI ro rang chu
+    khong tra corpus rong (khong bao gio tra ban hong)."""
+    import pytest
+    from voiceprofile.corpus import load_corpus_dir
+
+    (tmp_path / "a.txt").write_text(TRANSCRIPT_THO, encoding="utf-8")
+    (tmp_path / "b.txt").write_text(TRANSCRIPT_THO, encoding="utf-8")
+    with pytest.raises(ValueError, match="dau cau"):
+        load_corpus_dir(tmp_path)
+
+
+def test_giu_nguyen_hanh_vi_khi_corpus_deu_lanh_23_08(tmp_path):
+    """Hoi quy: corpus sach thi khong loai gi ca."""
+    from voiceprofile.corpus import load_corpus_dir
+
+    (tmp_path / "a.txt").write_text(VAN_LANH, encoding="utf-8")
+    (tmp_path / "b.txt").write_text(VAN_LANH, encoding="utf-8")
+    works, bo = load_corpus_dir(tmp_path, bao_file_bo=True)
+    assert len(works) == 2 and bo == []

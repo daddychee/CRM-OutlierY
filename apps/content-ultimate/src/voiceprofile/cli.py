@@ -61,6 +61,10 @@ def build(
     """
     author_corpus = build_corpus(author_dir, name=author)
     typer.echo(f"Corpus tac gia: {author_corpus.n_works} file, {author_corpus.n_tokens} tu.")
+    if author_corpus.file_bo:
+        # Noi RO da bo gi — nguoi dung phai biet ho so duoc dung tren nhung file nao.
+        typer.echo(f"  DA BO {len(author_corpus.file_bo)} file thieu dau cau (transcript "
+                   "chua cham cau): " + "; ".join(author_corpus.file_bo))
 
     baseline_corpus = None
     if baseline_dir:

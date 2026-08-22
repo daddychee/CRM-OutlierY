@@ -29,6 +29,7 @@ class Corpus:
     works: list[str] = field(default_factory=list)  # raw text per file
     train: list[str] = field(default_factory=list)
     heldout: list[str] = field(default_factory=list)
+    file_bo: list[str] = field(default_factory=list)   # file bi loai vi thieu dau cau
 
     @property
     def n_works(self) -> int:
@@ -44,6 +45,7 @@ class Corpus:
 #   transcript  : 0.1 / 1000                      (ca file = 1 "cau" 14.799 ky tu)
 # Nguong 4 nam giua hai cum, cach xa ca hai.
 MIN_ENDERS_PER_1K = 4.0
+MIN_CHARS_KIEM_DAU = 500      # duoi nguong nay khong du mau de ket luan thieu dau cau
 
 
 def punctuation_density(text: str) -> float:
@@ -81,25 +83,50 @@ def transcript_warnings(path: str | Path) -> list[str]:
     return out
 
 
-def load_corpus_dir(path: str | Path, name: str | None = None) -> list[str]:
-    """Doc tat ca file .txt/.md trong thu muc, tra ve danh sach noi dung (1 phan tu / file)."""
+def load_corpus_dir(path: str | Path, name: str | None = None,
+                    bao_file_bo: bool = False):
+    """Doc file .txt/.md trong thu muc, TU LOAI file thieu dau cau (23/08).
+
+    Vi sao tu loai chu khong canh bao: canh bao suong co tu 16/07 nhung bi bo qua
+    100%, va cua chan 21/08 lai cho tick di tiep — da co nguoi tick, nen sinh ra 3
+    ho so dung tren corpus khong dau cau (sentence_len_mean = 1085) va duoc dung de
+    viet suot 3 tuan. Bat nguoi chon giua "bo het" va "nham mat di tiep" la lua
+    chon sai; may loc duoc thi may loc, roi noi ro da loc gi.
+
+    bao_file_bo=True -> tra (works, [ten file bi bo]). Mac dinh tra works nhu cu.
+    """
     p = Path(path)
     if not p.is_dir():
         raise FileNotFoundError(f"Khong tim thay thu muc corpus: {p}")
-    works = []
+    works, bo = [], []
     for f in sorted(p.iterdir()):
         if f.suffix.lower() in TEXT_EXTENSIONS:
             text = read_text_any(f).strip()
-            if text:
-                works.append(text)
+            if not text:
+                continue
+            if len(text) >= MIN_CHARS_KIEM_DAU and punctuation_density(text) < MIN_ENDERS_PER_1K:
+                bo.append(f"{f.name} ({punctuation_density(text):.1f} dau ket/1000 ky tu)")
+                continue
+            works.append(text)
+    if not works and bo:
+        raise ValueError(
+            f"Moi file trong {p} deu thieu dau cau (transcript chua cham cau): "
+            + "; ".join(bo) + ". Cham cau lai roi nap lai — dung ho so tren van "
+            "khong dau cau thi moi so do giong deu la rac.")
     if not works:
         raise ValueError(f"Thu muc {p} khong co file .txt/.md nao co noi dung")
+    if bao_file_bo:
+        return works, bo
     return works
 
 
 def build_corpus(path: str | Path, name: str, heldout_ratio: float = 0.2, seed: int = 42) -> Corpus:
-    """Nap corpus va chia train/held-out theo file (khong tron lan trong cung 1 tac pham)."""
-    works = load_corpus_dir(path, name)
+    """Nap corpus va chia train/held-out theo file (khong tron lan trong cung 1 tac pham).
+
+    File thieu dau cau bi TU LOAI o load_corpus_dir; ten chung nam trong
+    Corpus.file_bo de nguoi dung hoi doi hoc thay may da bo gi.
+    """
+    works, bo = load_corpus_dir(path, name, bao_file_bo=True)
     rng = random.Random(seed)
     indices = list(range(len(works)))
     rng.shuffle(indices)
@@ -107,4 +134,4 @@ def build_corpus(path: str | Path, name: str, heldout_ratio: float = 0.2, seed: 
     heldout_idx = set(indices[:n_heldout])
     train = [w for i, w in enumerate(works) if i not in heldout_idx]
     heldout = [w for i, w in enumerate(works) if i in heldout_idx]
-    return Corpus(name=name, works=works, train=train or works, heldout=heldout)
+    return Corpus(name=name, works=works, train=train or works, heldout=heldout, file_bo=bo)
