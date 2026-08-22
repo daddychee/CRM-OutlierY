@@ -1639,3 +1639,21 @@ def test_audit_cac_ngach_22_08_phieu_truoc_tu_dien_sau():
     # (4) dong tu moi goi dau tieu de: tagger tag NN vi dung dau cau — khong topic
     assert mapping.loai_cum("discover", {"discover": {"NN": 30, "VB": 3}}) == "mau_cau"
     assert mapping.don_topic("discover beauty") == "beauty"
+
+
+def test_mapping_bo_qua_pool_chua_phan_loai_mac_dinh_us_22_08():
+    """User 22/08: "bo qua thi truong khong xac dinh, mo mapping mac dinh vao US".
+
+    O chon ngach o topbar luon tro pool GOC (khong thi truong) — vao Mapping tu do
+    la roi vao pool tron nhieu vung, moi so do lech. Mapping tu chuyen sang pool
+    thi truong cung ngach theo thu tu UU_TT (US truoc). Ghim CA hai: co hieu ung
+    tu chuyen, va thu tu uu tien la MOT nguon dung chung voi dai tab.
+    """
+    import pathlib as _pl
+    js = (_pl.Path(__file__).resolve().parents[1] / 'web' / 'app.js').read_text(encoding='utf-8')
+    assert "const UU_TT = ma => ma === 'TT-US' ? 0" in js      # mot nguon thu tu
+    assert js.count('UU_TT(') >= 2                              # dai tab + Mapping cung dung
+    than = js.split("if (tab !== 'mapping' || !wss.length) return;")[1].split('}, [tab, ws, wss]);')[0]
+    assert 'cur0.market' in than and 'cur0.ngach' in than       # da co thi truong / khong ngach -> khong dung
+    assert 'UU_TT(a.market) - UU_TT(b.market)' in than          # chon US truoc
+    assert 'if (!cung.length) return;' in than                  # ngach chua co pool TT -> de nguyen

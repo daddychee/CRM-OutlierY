@@ -2590,6 +2590,9 @@ function Mapping({ ws, canEdit }) {
 
 const TABS = [['board', 'Board'], ['alerts', 'Alerts'], ['mapping', 'Mapping'], ['reports', 'Report'],
               ['pool', 'Data Pool'], ['harvest', 'Harvest'], ['settings', 'Tuning'], ['admin', 'Setting']];
+// thứ tự ưu tiên thị trường (user 19/08): US trước → Tây Ban Nha → còn lại.
+// MỘT nguồn cho cả dải tab lẫn bước tự chọn pool của Mapping.
+const UU_TT = ma => ma === 'TT-US' ? 0 : ma === 'TT-SPAIN' ? 1 : 2;
 function App() {
   const h0 = readHash();
   const [me, setMe] = useState(undefined);       // undefined = đang kiểm tra, null = chưa đăng nhập
@@ -2625,6 +2628,21 @@ function App() {
       || (tab === 'admin' && role0 === 'owner');
     if (!ok) setTab('board');
   }, [me, wss, ws, tab]);
+  // MAPPING BỎ QUA POOL CHƯA PHÂN LOẠI, MẶC ĐỊNH VÀO US (user 22/08). Pool gốc
+  // trộn video nhiều vùng nên mọi số đo (nền nổ, cung theo kỳ, đối thủ) đều lệch;
+  // ô chọn ngách ở topbar lại luôn trỏ pool gốc, nên mở Mapping từ đó là rơi vào
+  // pool vô nghĩa. Tự chuyển sang pool thị trường CÙNG ngách theo thứ tự UU_TT
+  // (US → Tây Ban Nha → còn lại). Ngách chưa dựng pool thị trường nào thì để
+  // nguyên — banner "Pool chưa gắn thị trường" nói thẳng, không giấu.
+  useEffect(() => {
+    if (tab !== 'mapping' || !wss.length) return;
+    const cur0 = wss.find(w => w.id === ws);
+    if (!cur0 || cur0.market || !cur0.ngach) return;
+    const cung = wss.filter(w => w.ngach === cur0.ngach && w.market);
+    if (!cung.length) return;
+    const chon = cung.slice().sort((a, b) => UU_TT(a.market) - UU_TT(b.market))[0];
+    setNicheView(false); setWs(chon.id);
+  }, [tab, ws, wss]);
   const loadWs = useCallback(async keep => {
     const list = await api('GET', '/workspaces');
     setWss(list);
@@ -2650,12 +2668,10 @@ function App() {
   // Data Pool quản kênh); tab chưa có pool = nút ＋ dựng ngay (leader trở lên).
   const niche = cur && nganhs.find(n => n.ma === cur.ngach);
   const goc = niche && wss.find(w => w.ngach === niche.ma && !w.market);
-  // thứ tự ưu tiên user 19/08: US trước → Tây Ban Nha → thị trường khác;
   // "Chưa phân loại" sau các thị trường; Σ Cả ngách xếp CUỐI dải
-  const _uu = ma => ma === 'TT-US' ? 0 : ma === 'TT-SPAIN' ? 1 : 2;
   const dai = niche ? niche.thi_truong.map(tt => ({
     tt, w: wss.find(x => x.ngach === niche.ma && x.market === tt.ma) }))
-    .sort((a, b) => _uu(a.tt.ma) - _uu(b.tt.ma)) : [];
+    .sort((a, b) => UU_TT(a.tt.ma) - UU_TT(b.tt.ma)) : [];
   const taoPoolTT = async tt => {
     try {
       const w = await api('POST', '/workspaces', { name: `${niche.ten} — ${tt.ten}`, ngach: niche.ma, market: tt.ma });
