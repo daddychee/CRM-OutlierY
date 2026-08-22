@@ -1954,7 +1954,7 @@ function Mapping({ ws, canEdit }) {
   // thấy số của US — user báo 21/08 ("từ khoá thị trường US lọt sang Spain").
   useEffect(() => {
     setA(null); setB(null); setCum(''); setErr(''); setBusy(''); setXemLai(null);
-    setLichSu([]); setNoi(null); setNong(null); setNongMo(false); setCuaSo(28);
+    setLichSu([]); setNoi(null); setNong(null); setNongMo(false); setCuaSo(28); setRd(null);
     api('GET', `/workspaces/${ws}/discovery/goi-y-seed`).then(r => setGoiY(r.seed || [])).catch(() => setGoiY([]));
     const nnLuu = (() => { try { return localStorage.getItem('mapping_nn_' + ws) || ''; } catch (e) { return ''; } })();
     api('GET', `/workspaces/${ws}/discovery/tu-khoa-noi`
@@ -1993,6 +1993,7 @@ function Mapping({ ws, canEdit }) {
       const a = await api('GET', `/workspaces/${ws}/tra-cuu?cum=${encodeURIComponent(q)}`
         + (lai ? '&xem_lai=1' : ''));
       if (wsLucDo !== ws) return;               // người dùng đã đổi pool giữa chừng
+      setRd(null);
       if (a.khong_co_ban_luu) {                 // pool này chưa từng tra từ khoá đó
         setLichSu(a.lich_su || []); setPool(a.pool || {});
         setCum(''); setBusy(''); writeHash({ q: '', qws: '' });
@@ -2028,6 +2029,16 @@ function Mapping({ ws, canEdit }) {
   // hoi moi, nhung ban luu thi dong bang) -> loc + tinh lai xu huong o day de ban cu
   // het bao "xuong -42%" gia. Cung cong thuc voi server (mean quy dau vs quy cuoi).
   const gg = B && B.google || {};
+  const [rd, setRd] = useState(null);        // Reddit — TỐN TIỀN nên chỉ chạy khi bấm
+  const [rdBan, setRdBan] = useState('');
+  const hoiReddit = async () => {
+    if (rdBan) return;
+    setRdBan('Đang hỏi Reddit (~20-40 giây)…');
+    try {
+      setRd(await api('POST', `/workspaces/${ws}/tra-cuu/reddit`, { cum: A.cum, ky: 'year' }));
+    } catch (e) { setRd({ co_du_lieu: false, ly_do: String(e.message || e) }); }
+    setRdBan('');
+  };
   const sp = B && B.serp || {};
   const wkTho = B && B.wiki || {};
   const wk = (() => {
@@ -2341,6 +2352,29 @@ function Mapping({ ws, canEdit }) {
                 <span class="note" style="display:block;margin:0">${b.nguon} · ${b.ngay}</span></div>`)}
             </div>` : html`<div class="note">${nw.ly_do || 'không có dữ liệu'}</div>`}
           </div>
+          ${(() => { const r = rd || (B && B.reddit) || null; return html`<div class="excard">
+            <h3>Reddit <span class="note">· thảo luận thật · upvote &amp; bình luận</span></h3>
+            ${!r ? html`<div>
+              <div class="note" style="margin:0 0 6px">Chưa hỏi. Reddit chặn IP máy chủ nên phải
+                đi qua Apify — <b>tốn ~0,016 USD mỗi lần</b> (gói free 5 USD/tháng ≈ 300 lượt).</div>
+              ${canEdit ? html`<button class="btn small" onClick=${hoiReddit} disabled=${!!rdBan}>
+                Hỏi Reddit</button>` : html`<span class="note">Cần quyền leader trở lên.</span>`}
+              ${rdBan ? html`<div class="note">${rdBan}</div>` : ''}
+            </div>`
+            : !r.co_du_lieu ? html`<div class="note">${r.ly_do}</div>`
+            : html`<div>
+              <div class="big">${soGon(r.tong_upvote)}<span style="font-size:13px;font-weight:400;
+                color:var(--muted,#8B96A8)"> upvote · ${soGon(r.tong_binh_luan)} bình luận</span></div>
+              <div class="note" style="margin:0 0 6px">${(r.bai || []).length} bài trong ${r.ky === 'year' ? '1 năm' : r.ky} qua
+                ${r.credit && r.credit.tran_usd ? ` · Apify ${r.credit.goi} $${r.credit.tran_usd}/tháng` : ''}</div>
+              ${(r.sub || []).length ? html`<div class="note" style="margin:0 0 4px">Cộng đồng bàn nhiều nhất:
+                ${(r.sub || []).map(x => `r/${x.sub} (${soGon(x.upvote)})`).join(' · ')}</div>` : ''}
+              ${(r.bai || []).slice(0, 8).map(b => html`<div style="padding:3px 0;border-bottom:1px solid var(--line,#243149)">
+                <a href=${b.link} target="_blank" rel="noopener">${b.tieu_de}</a>
+                <span class="note" style="display:block;margin:0">r/${b.sub} · ${soGon(b.upvote)} upvote
+                  · ${b.binh_luan} bình luận · ${b.ngay}</span></div>`)}
+            </div>`}
+          </div>`; })()}
           <div class="excard">
             <h3>Wikipedia <span class="note">· lượt xem bài/tháng</span></h3>
             ${wk.co_du_lieu ? html`<div>

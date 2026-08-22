@@ -1179,3 +1179,40 @@ def test_serp_hai_loi_goi_va_canh_bao_quota():
     assert 'Chưa cấp khóa SERP' in js and 'Hạn mức SERP' in js
     assert 'Câu hỏi thật người ta hỏi' in js
     assert 'Vùng quan tâm nhất' in js
+
+
+def test_reddit_qua_apify_chi_chay_khi_bam():
+    """22/08 — Owner: "tôi muốn Reddit đủ nghĩa vì Apify cũng có free user".
+
+    Reddit chặn IP máy chủ nên đi qua Apify (scraper thuê). Vì TỐN TIỀN nên
+    KHÔNG gọi tự động mỗi lần tra cứu — phải là nút bấm, đúng khuôn "Hỏi lại
+    (102 units)" của khối B; và chỉ leader+ được bấm.
+    """
+    from pathlib import Path as _P
+    from radary import reddit
+
+    goc = _P(__file__).resolve().parents[1]
+
+    # actor chọn theo ĐO THẬT: rẻ gấp 4 và là cái duy nhất trả upvote
+    assert reddit.ACTOR == 'clearpath~reddit-search-scraper'
+    src = (goc / 'radary' / 'reddit.py').read_text(encoding='utf-8')
+    assert 'KHONG tra upvote' in src          # ghi lại vì sao loại actor kia
+
+    # dịch dữ liệu: giữ đúng thứ SERP không có — upvote, bình luận, subreddit
+    than = src.split('def tim(')[1].split('def du_credit')[0]
+    for truong in ('upvote', 'binh_luan', 'sub', 'ngay', 'link'):
+        assert f'"{truong}"' in than, truong
+    assert 'bai.sort(key=lambda b: -b["upvote"])' in than       # bài mạnh nhất trước
+
+    # route: leader+, và không có khóa thì nói thẳng
+    api_src = (goc / 'radary' / 'api.py').read_text(encoding='utf-8')
+    r = api_src.split('def tra_cuu_reddit(')[1].split('\nclass DoThiTruongIn')[0]
+    assert "auth.ws_for_user(c, ws, u['id'], 'leader')" in r
+    assert 'Chưa cấp khóa Apify' in r and 'hết credit tháng' in r
+    assert 'db.tra_cuu_luu' in r                                # lưu để mở lại 0 đồng
+
+    # UI: nút bấm + báo giá trước khi bấm, KHÔNG tự gọi
+    js = (goc / 'web' / 'app.js').read_text(encoding='utf-8')
+    assert '>\n                Hỏi Reddit</button>' in js or 'Hỏi Reddit</button>' in js
+    assert 'tốn ~0,016 USD mỗi lần' in js
+    assert 'tra-cuu/reddit' in js

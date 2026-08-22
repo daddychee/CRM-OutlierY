@@ -1360,6 +1360,45 @@ def _soi_khoi_b(ws: int, cum: str, vung: dict | None, trends: bool = True) -> di
     return ra
 
 
+class RedditIn(BaseModel):
+    cum: str = ""
+    ky: str = "year"                 # year | month | week | all
+
+
+@app.post('/api/workspaces/{ws}/tra-cuu/reddit')
+def tra_cuu_reddit(ws: int, body: RedditIn, request: Request):
+    """Reddit ĐÚNG NGHĨA (upvote/bình luận/subreddit) qua Apify — TỐN TIỀN nên
+    chỉ chạy khi người bấm, đúng khuôn nút "Hỏi lại (102 units)" của khối B.
+    Kết quả ghi vào bản lưu để mở lại 0 đồng."""
+    from . import reddit as _rd
+    cum = body.cum.strip()
+    if not cum:
+        raise HTTPException(422, 'thiếu từ khoá')
+    with get_conn() as c:
+        u = auth.require_user(c, request)
+        auth.ws_for_user(c, ws, u['id'], 'leader')          # tiêu tiền → leader+
+    ks = khoa_v3.lay_khoa_day_du('reddit')
+    if not ks:
+        return {'co_du_lieu': False,
+                'ly_do': 'Chưa cấp khóa Apify cho việc reddit — General › API Keys'}
+    try:
+        ra = _rd.tim(ks[0]['key'], cum, ky=(body.ky or 'year'))
+    except _rd.HetCredit:
+        ra = {'co_du_lieu': False,
+              'ly_do': 'Apify hết credit tháng (gói FREE $5) — đợi sang tháng hoặc nâng gói'}
+    except Exception as e:                                   # noqa: BLE001
+        ra = {'co_du_lieu': False, 'ly_do': f'Apify: {e}'}
+    ra['credit'] = _rd.du_credit(ks[0]['key'])
+    # nhap vao ban luu khoi B de mo lai khong ton dong nao
+    with get_conn() as c2:
+        cu = db.tra_cuu_doc(c2, ws, cum) or {}
+        b = (cu.get('b') or {}) if isinstance(cu.get('b'), dict) else {}
+        b['reddit'] = ra
+        b.setdefault('cum', cum)
+        _ghi_bo_qua_khoa(db.tra_cuu_luu, c2, ws, cum, b=b)
+    return ra
+
+
 class DoThiTruongIn(BaseModel):
     cum: list[str] = []      # rỗng = tự lấy các cụm CHƯA đo, theo thứ tự cầu cao trước
     tran: int = 10           # trần cụm mỗi lần bấm (~102 units/cụm)
