@@ -410,11 +410,13 @@ def xu_huong_cum(kho: list[dict], cums: list[str], bay_gio: float | None = None,
         truoc = [v for v in khop if m60 <= (v.get("pub_ts") or 0) < m30]
         vpd = [x for x in (_view_moi_ngay(v, bay_gio) for v in khop
                            if (v.get("pub_ts") or 0) >= m90) if x]
-        # Chi can KY TRUOC du mau (no la mau so). Ban dau doi ca hai ky >= 3 nen cum
-        # dang CHET han (truoc 6 video, nay 0) bi xep "it mau" — mat dung tin hieu
-        # giam manh nhat. Do that 21/08: '15 mind' 6 -> 0.
-        du = len(truoc) >= TOI_THIEU_SO_SANH
-        pt = round(100 * (len(nay) - len(truoc)) / len(truoc)) if du else None
+        # DOI XUNG hai chieu (21/08 + 22/08): ky truoc >= 3 du de noi "giam" (cum chet
+        # 6 -> 0 la tin hieu giam manh nhat); ky NAY >= 3 cung du de noi "len" (cum
+        # moi noi 0 -> 8 trong tuan la tin hieu nong nhat — cua so 7 ngay ma doi ky
+        # truoc du mau thi moi thu moi deu "it mau"). Mau so san 1 de 0 -> n tinh
+        # duoc; nguong TOI_THIEU_SO_SANH van chan cum 1-2 video nhieu.
+        du = len(truoc) >= TOI_THIEU_SO_SANH or len(nay) >= TOI_THIEU_SO_SANH
+        pt = round(100 * (len(nay) - len(truoc)) / max(1, len(truoc))) if du else None
 
         thang: dict[str, int] = {}
         for v in khop:

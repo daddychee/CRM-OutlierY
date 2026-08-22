@@ -1136,12 +1136,20 @@ def tu_khoa_noi(ws: int, request: Request, so_cum: int = 30, ngon_ngu: str = '',
         # được; pool có thị trường thì vẫn tự động theo đế.
         loc = ngon_ngu.strip() or tu_de
         kho = mapping.tai_kho(c, ws)
+        if cua_so not in tra_cuu.CUA_SO_HOP_LE:
+            cua_so = 28
+        # UNG VIEN trich tu VUNG DANG DO (ky nay + ky truoc), khong phai top tan suat
+        # toan lich su (user 22/08: "khong co ly do gi ma khong tong hop duoc tu khoa
+        # cua hang nghin video"). Top tich luy la tieu chi nguoc voi cum dang noi —
+        # cung goc benh voi Hot Topic (98% sot): cua so 7 ngay ma ung vien lay tu
+        # tron doi thi cum moi nhu tuan nay vo hinh. Toan-thoi-gian (0) giu tron kho.
+        kho_uv = kho if cua_so == 0 else             [v for v in kho if (v.get('pub_ts') or 0) >= time.time() - 2 * cua_so * 86400]
         # HAI LOAI từ khoá, user 21/08 chỉ ra thiếu loại thứ hai:
         #   mẫu câu  — cụm 2-3 từ lặp lại ("life in", "travel documentary")
         #   ĐỐI TƯỢNG — nước/địa danh/chủ thể, thường MỘT từ nên n-gram bỏ sót
-        mau = [g['seed'] for g in mapping.goi_y_seed(kho, so_goi_y=max(1, min(so_cum, 60)),
+        mau = [g['seed'] for g in mapping.goi_y_seed(kho_uv, so_goi_y=max(1, min(so_cum, 60)),
                                                      ngon_ngu=loc, moi_vi_tri=True)]
-        dt = [d['cum'] for d in mapping.doi_tuong(kho, so_muc=max(1, min(so_cum, 40)),
+        dt = [d['cum'] for d in mapping.doi_tuong(kho_uv, so_muc=max(1, min(so_cum, 40)),
                                                   ngon_ngu=loc)]
         cums = mau + [x for x in dt if x not in mau]
         loai = {**{m: 'mau_cau' for m in mau}, **{x: 'doi_tuong' for x in dt}}
@@ -1150,10 +1158,8 @@ def tu_khoa_noi(ws: int, request: Request, so_cum: int = 30, ngon_ngu: str = '',
             ma = mapping.nhan_dien_ngon_ngu(v['title'])
             if ma:
                 dem_nn[ma] = dem_nn.get(ma, 0) + 1
-        # cua_so: 7/28/90 ngay hoac 0 = toan thoi gian (user chot 22/08, thay thanh
-        # truot thoi gian) — xu huong + canh tranh cung do trong cua so nay.
-        if cua_so not in tra_cuu.CUA_SO_HOP_LE:
-            cua_so = 28
+        # xu huong + canh tranh do trong cua so; do tren TRON kho (tong_video can
+        # tron doi), chi UNG VIEN la trich tu vung do.
         xh = tra_cuu.xu_huong_cum(kho, cums, cua_so=cua_so)
         for m in xh:
             m['loai'] = loai.get(m['cum'], 'mau_cau')

@@ -726,11 +726,21 @@ def test_bat_cum_dang_chet_du_ky_nay_bang_khong():
     assert r["phan_tram"] == -100 and r["chieu"] == "xuống"
 
 
-def test_ky_truoc_qua_it_thi_noi_thang_khong_doan():
+def test_du_mau_doi_xung_hai_chieu():
+    """22/08 (thay test 'ky truoc it thi cam' cu): mot BEN >= 3 la du noi.
+
+    Cum MOI NOI 1 -> 9 la tin hieu len that (cua so 7 ngay ma doi ky truoc du mau
+    thi moi thu moi deu "it mau" — user: bong bong 7 ngay trong). Cum CHET 6 -> 0
+    van bao giam (bai hoc 21/08). Ca hai ky deu < 3 thi van noi thang khong doan.
+    """
     from radary import tra_cuu
     now = time.time()
     r = tra_cuu.xu_huong_cum(_kho_theo_ngay([("x y", 45, 1), ("x y", 5, 9)], now), ["x y"], bay_gio=now)[0]
-    assert r["phan_tram"] is None and r["chieu"] is None and r["du_mau"] is False
+    assert r["chieu"] == "lên" and r["phan_tram"] == 800 and r["du_mau"]
+    r2 = tra_cuu.xu_huong_cum(_kho_theo_ngay([("c d", 45, 6)], now), ["c d"], bay_gio=now)[0]
+    assert r2["chieu"] == "xuống" and r2["phan_tram"] == -100
+    r3 = tra_cuu.xu_huong_cum(_kho_theo_ngay([("e f", 45, 2), ("e f", 5, 2)], now), ["e f"], bay_gio=now)[0]
+    assert r3["phan_tram"] is None and r3["du_mau"] is False
 
 
 def test_xep_cum_dang_len_truoc_it_mau_xuong_cuoi():
@@ -1065,3 +1075,16 @@ def test_ban_do_khong_bien_mat_trong_im_lang():
     assert 'return null' not in than.split('d.length < 2')[1].split('const w')[0]
     assert 'Không đủ cụm để vẽ bản đồ' in than
     assert 'Không phải pool chưa quét' in than
+
+
+def test_ung_vien_trich_tu_vung_do_theo_cua_so():
+    """22/08 — user: "không có lý do gì mà không tổng hợp được từ khoá của hàng
+    nghìn video". Ứng viên phải trích từ VÙNG ĐANG ĐO (kỳ này + kỳ trước), không
+    phải top tần suất toàn lịch sử — cụm mới nhú tuần này phải hiện ở cửa sổ 7."""
+    from pathlib import Path as _P
+    api_src = (_P(__file__).resolve().parents[1] / 'radary' / 'api.py').read_text(encoding='utf-8')
+    than = api_src.split('def tu_khoa_noi(')[1].split('def _ghi_bo_qua_khoa')[0]
+    assert 'kho_uv = kho if cua_so == 0 else' in than
+    assert '2 * cua_so * 86400' in than              # vùng đo = kỳ này + kỳ trước
+    assert 'goi_y_seed(kho_uv' in than and 'doi_tuong(kho_uv' in than
+    assert 'xu_huong_cum(kho, cums' in than          # ĐO vẫn trên trọn kho (tổng trọn đời)
