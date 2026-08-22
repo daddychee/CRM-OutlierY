@@ -1343,10 +1343,16 @@ def test_click_tu_khoa_khong_tu_tieu_quota():
     from pathlib import Path as _P
     js = (_P(__file__).resolve().parents[1] / 'web' / 'app.js').read_text(encoding='utf-8')
 
-    than = js.split('const traCuu = async')[1].split('const [xacNhanNgoai')[0]
+    than = js.split('const chayTraCuu = async')[1].split('const [xacNhanNgoai')[0]
     assert "api('POST', `/workspaces/${ws}/tra-cuu/ngoai`" not in than   # hết tự gọi
     assert 'KHÔNG tự hỏi thị trường ngoài' in than
 
     assert 'Chắc chắn hỏi' in js and '102 units YouTube' in js           # báo giá rõ
     assert 'setXacNhanNgoai(true)' in js and 'hoiNgoaiLanDau' in js
     assert 'setXacNhanNgoai(false)' in js                                # đổi cụm là reset
+
+    # CỬA HỎI TRƯỚC (user nhắc lần 2): click từ khoá KHÔNG chạy ngay, phải xác nhận
+    assert 'const [hoiCum, setHoiCum]' in js
+    assert 'setHoiCum({ cum: q, lai: !!lai })' in js
+    assert 'Không hỏi lại trong phiên này' in js
+    assert 'chayTraCuu(cum)' in js          # gõ tay + Enter thì đi thẳng, khỏi hỏi

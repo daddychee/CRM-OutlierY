@@ -1955,7 +1955,7 @@ function Mapping({ ws, canEdit }) {
   // thấy số của US — user báo 21/08 ("từ khoá thị trường US lọt sang Spain").
   useEffect(() => {
     setA(null); setB(null); setCum(''); setErr(''); setBusy(''); setXemLai(null);
-    setLichSu([]); setNoi(null); setNong(null); setNongMo(false); setCuaSo(28); setRd(null); setTrBu(null); setMoBang(false); setXacNhanNgoai(false);
+    setLichSu([]); setNoi(null); setNong(null); setNongMo(false); setCuaSo(28); setRd(null); setTrBu(null); setMoBang(false); setXacNhanNgoai(false); setHoiCum(null);
     api('GET', `/workspaces/${ws}/discovery/goi-y-seed`).then(r => setGoiY(r.seed || [])).catch(() => setGoiY([]));
     const nnLuu = (() => { try { return localStorage.getItem('mapping_nn_' + ws) || ''; } catch (e) { return ''; } })();
     api('GET', `/workspaces/${ws}/discovery/tu-khoa-noi`
@@ -1979,12 +1979,23 @@ function Mapping({ ws, canEdit }) {
     // thẳng vào lịch sử pool đó (user báo 22/08: dấu vết UZBEKISTAN ws1 10:05 -> ws20
     // 10:06, áfrica ws18 10:35 -> ws20 10:43).
     const wsCuaQ = String(h0.qws || nho.qws || '');
-    if (q0 && wsCuaQ === String(ws)) traCuu(q0, true);
+    if (q0 && wsCuaQ === String(ws)) chayTraCuu(q0, true);
     else if (q0) writeHash({ q: '', qws: '' });   // đổi pool -> bỏ từ khoá của pool cũ
   }, [ws]);
 
   // `lai` = xem lại bản đã lưu: KHÔNG gọi lại nguồn ngoài (mỗi lần hỏi tốn 102 units).
-  const traCuu = async (tu, lai) => {
+  // CUA HOI TRUOC (user 22/08): moi click tu khoa deu qua day, tra cuu that chi
+  // chay khi nguoi bam Tra cuu. Tranh bam nham — nhat la tren ban do bong bong
+  // noi cac bong bong nam sat nhau. `khongHoiLai` chi song trong PHIEN.
+  const [hoiCum, setHoiCum] = useState(null);     // {cum, lai} dang cho xac nhan
+  const [khongHoiLai, setKhongHoiLai] = useState(false);
+  const traCuu = (tu, lai) => {
+    const q = (tu || cum).trim();
+    if (!q) return;
+    if (khongHoiLai || !tu) return chayTraCuu(q, lai);   // gõ tay + Enter thì khỏi hỏi
+    setHoiCum({ cum: q, lai: !!lai });
+  };
+  const chayTraCuu = async (tu, lai) => {
     const q = (tu || cum).trim();
     if (!q) return;
     const wsLucDo = ws;
@@ -2078,6 +2089,25 @@ function Mapping({ ws, canEdit }) {
   })();
 
   return html`
+    ${hoiCum ? html`<div style="position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.45);
+      display:flex;align-items:center;justify-content:center;padding:20px"
+      onClick=${e => { if (e.target === e.currentTarget) setHoiCum(null); }}>
+      <div class="panel" style="max-width:440px;margin:0;box-shadow:0 18px 48px rgba(0,0,0,.3)">
+        <div style="font-size:16px;font-weight:600;margin-bottom:6px">Tra cứu “${hoiCum.cum}”?</div>
+        <div class="note" style="margin:0 0 12px">Phần <b>trong pool</b> miễn phí, chạy ngay.
+          Hỏi thị trường ngoài (102 units + 4 lượt SERP) vẫn là một nút riêng sau đó —
+          không tự chạy.</div>
+        <label class="note" style="display:flex;gap:7px;align-items:center;margin:0 0 12px;cursor:pointer">
+          <input type="checkbox" checked=${khongHoiLai}
+            onChange=${e => setKhongHoiLai(e.target.checked)}/>
+          Không hỏi lại trong phiên này</label>
+        <div class="row" style="gap:8px">
+          <button class="btn primary" onClick=${() => { const h = hoiCum; setHoiCum(null);
+            chayTraCuu(h.cum, h.lai); }}>Tra cứu ngay</button>
+          <button class="btn ghost" onClick=${() => setHoiCum(null)}>Huỷ</button>
+        </div>
+      </div>
+    </div>` : ''}
     <div class="panel" style="border-left:4px solid var(--accent,#4C8FE0)">
       <div class="eyebrow" style="margin-top:0">Overview${pool.ngach ? ` · ngách ${pool.ngach}` : ''}
         ${pool.ngon_ngu ? html`<span style="color:var(--accent,#4C8FE0)"> · mọi số liệu đo theo thị trường ${pool.market} / ${pool.ngon_ngu}</span>` : ''}</div>
@@ -2141,8 +2171,8 @@ function Mapping({ ws, canEdit }) {
       <div class="ksearch">
         <input type="text" placeholder="tra MỘT từ khoá bất kỳ, ví dụ: life in alaska" value=${cum}
           onInput=${e => setCum(e.target.value)}
-          onKeyDown=${e => { if (e.key === 'Enter') traCuu(); }}/>
-        <button class="btn primary" onClick=${() => traCuu()} disabled=${!!busy}>Tra cứu</button>
+          onKeyDown=${e => { if (e.key === 'Enter') chayTraCuu(cum); }}/>
+        <button class="btn primary" onClick=${() => chayTraCuu(cum)} disabled=${!!busy}>Tra cứu</button>
         <span class="note" style="margin:0">${busy}${err ? html`<span style="color:#c62828">${err}</span>` : ''}</span>
         ${lichSu.length ? html`<select value=""
           title="Mỗi từ khoá là một phiên riêng, đo tại thời điểm ghi bên cạnh — không so số giữa các phiên (chúng đo ở những thời điểm khác nhau)"
