@@ -2301,7 +2301,11 @@ function Mapping({ ws, canEdit }) {
           ${xemLai ? ` · phiên đo ${new Date(xemLai * 1000).toLocaleString()}` : ''}
           ${B && B.quota_da_tieu ? ` · ${B.quota_da_tieu} units` : ''}</span>
         ${xemLai && canEdit ? html`<button class="btn small ghost" style="margin-left:8px"
-          onClick=${hoiLaiNgoai} disabled=${!!busy}>↻ Hỏi lại (102 units)</button>` : ''}</div>
+          onClick=${hoiLaiNgoai} disabled=${!!busy}>↻ Hỏi lại (102 units)</button>` : ''}
+        <a class="btn small ghost" style="margin-left:8px;text-decoration:none"
+          href=${`/api/workspaces/${ws}/tra-cuu/report?cum=${encodeURIComponent(A.cum)}`}
+          download title="Tải báo cáo Markdown — gồm cả A/B/C, 0 quota, đưa cho AI đọc được ngay"
+          >⤓ Xuất report</a></div>
 
       ${canEdit ? html`<div class="note" style="margin:0 0 12px;padding:9px 12px;
         border-radius:9px;border:1px dashed var(--line,#243149);display:flex;gap:10px;

@@ -1426,3 +1426,57 @@ def test_advance_mapping_la_popup_rieng():
     assert 'setAdvPool(!(yt && yt.co_du_lieu))' in js
     assert 'setAdvReddit(!coReddit)' in js
     assert '<b>đã có</b>' in js
+
+
+def test_xuat_report_mot_tu_khoa():
+    """22/08 — Owner: "cần tính năng xuất report của báo cáo từ khoá", và sẽ ĐƯA
+    CHO AI ĐỌC nên chọn Markdown (rẻ token nhất mà vẫn giữ bảng; PDF hay vỡ bảng
+    lúc trích xuất, HTML tốn 2-3× token cho markup).
+
+    Van chống bịa cho báo cáo: nguồn chưa hỏi phải ghi rõ, và có mục RANH GIỚI
+    liệt kê thứ báo cáo KHÔNG trả lời được — để người (hay AI) đọc không suy diễn.
+    """
+    from radary import report_cum
+
+    pool = {'ten': 'LIFE IN — US', 'ngach': 'N-LIFE-IN', 'market': 'TT-US',
+            'so_video': 3269, 'so_kenh': 63, 'video_moi_30_ngay': 669}
+    a = {'co_du_lieu': True, 'so_video': 29, 'so_kenh': 21, 'ti_trong_video': 0.9,
+         'ti_trong_view': 0.4, 'vph_giua': 18.91, 'vph_giua_pool': 4.61,
+         'lua': [{'thang': '2026-08', 'so_video': 14, 'view_moi_ngay': 391, 'du_mau': True}],
+         'top_kenh': [{'kenh': 'The Global Truth', 'so_video': 2, 'views': 18505,
+                       'view_tb': 9252,
+                       'video': [{'yt_id': 'abc', 'title': 'Real Life in Tajikistan',
+                                  'views': 16215, 'ngay': '2026-08-04'}]}],
+         'doi_chieu': {'cum': 'tajikistan', 'so_video': 12, 'so_kenh': 10, 'ti_trong_view': 0.6}}
+    md = report_cum.dung('life in tajikistan', pool, a, None, ts=1_700_000_000)
+
+    assert md.startswith('# Báo cáo từ khoá — "life in tajikistan"')
+    assert 'A · Trong pool' in md and 'B · YouTube market' in md and 'C · External traffic' in md
+    assert '4.1× trung vị pool' in md or '4.1× trung vị pool (4.61)' in md   # quy chiếu, không số trần
+    assert 'The Global Truth' in md and 'Real Life in Tajikistan' in md
+    assert 'Đối chiếu cụm rút gọn' in md
+
+    # nguồn CHƯA hỏi phải nói thẳng, không để trống
+    assert md.count('Chưa hỏi.') >= 3
+    assert 'Chưa hỏi:' in md and 'không phải vì không có dữ liệu' in md
+
+    # ranh giới dữ liệu — chống suy diễn
+    assert 'Ranh giới dữ liệu' in md
+    assert 'Lượng tìm kiếm trên YouTube' in md and 'số giả' in md
+
+    # JSON thô KHÔNG nhét mặc định — đo thật: nó chiếm 29k/42k ký tự, nặng gấp đôi
+    # phần đọc, phản tác dụng khi đưa cho AI. Ai cần số chính xác thì ?json=1.
+    assert '```json' not in md
+    md2 = report_cum.dung('life in tajikistan', pool, a, None, ts=1_700_000_000, kem_json=True)
+    assert '```json' in md2 and '"trong_pool"' in md2
+
+    from pathlib import Path as _P
+    goc = _P(__file__).resolve().parents[1]
+    api_src = (goc / 'radary' / 'api.py').read_text(encoding='utf-8')
+    r = api_src.split('def tra_cuu_report(')[1].split('\nclass TrendsIn')[0]
+    assert "auth.ws_for_user(c, ws, u['id'])" in r          # xem được thì xuất được
+    assert 'text/markdown' in r and 'attachment' in r
+    for cam in ('_soi_khoi_b', 'serp.', 'reddit.tim'):      # 0 quota: không gọi nguồn nào
+        assert cam not in r, cam
+    js = (goc / 'web' / 'app.js').read_text(encoding='utf-8')
+    assert 'Xuất report' in js and 'tra-cuu/report' in js

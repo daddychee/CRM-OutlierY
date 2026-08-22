@@ -4,7 +4,7 @@ Phase 4: mọi route workspace/org đều yêu cầu đăng nhập và phân tá
 (user chỉ thấy workspace thuộc org mình là thành viên). API key lưu mã hóa Fernet.
 Chạy: .venv/bin/python server.py → http://127.0.0.1:8000 (docs: /docs).
 """
-import json, os, secrets, sqlite3, time
+import json, os, secrets, sqlite3, time, urllib.parse
 from contextlib import contextmanager
 from fastapi import BackgroundTasks, FastAPI, HTTPException, Request, Response
 from fastapi.responses import PlainTextResponse
@@ -1409,6 +1409,44 @@ def _soi_khoi_b(ws: int, cum: str, vung: dict | None, trends: bool = True,
         except sqlite3.OperationalError:
             ra['lich_su'] = []
     return ra
+
+
+@app.get('/api/workspaces/{ws}/tra-cuu/report')
+def tra_cuu_report(ws: int, request: Request, cum: str = '', json: int = 0):
+    """Xuất báo cáo MỘT từ khoá (khối A/B/C) ra Markdown — 0 quota.
+
+    Dựng từ BẢN LƯU, không gọi nguồn nào; khối A tính tươi như mọi khi (đọc
+    SQLite dưới 1 giây). Markdown vì Owner đưa cho AI đọc: rẻ token nhất mà vẫn
+    giữ cấu trúc bảng, không như PDF hay vỡ bảng lúc trích xuất.
+    """
+    from . import mapping, report_cum, tra_cuu
+    q = cum.strip()
+    if not q:
+        raise HTTPException(422, 'thiếu từ khoá')
+    with get_conn() as c:
+        u = auth.require_user(c, request)
+        w = auth.ws_for_user(c, ws, u['id'])          # xem được thì xuất được
+        vung, ngon_ngu = _vung_cua_ws(w)
+        pool = db.tom_tat_pool(c, ws)
+        pool.update({'ten': w['name'], 'ngach': w['ngach'], 'market': w['market'],
+                     'ngon_ngu': ngon_ngu})
+        kho = mapping.tai_kho(c, ws)
+        a = tra_cuu.xu_huong_pool(kho, q)
+        gon = tra_cuu.cum_rut_gon(q)
+        if gon:
+            ag = tra_cuu.xu_huong_pool(kho, gon)
+            if ag.get('co_du_lieu'):
+                a['doi_chieu'] = {'cum': gon, 'so_video': ag['so_video'],
+                                  'so_kenh': ag['so_kenh'],
+                                  'ti_trong_view': ag['ti_trong_view']}
+        cu = db.tra_cuu_doc(c, ws, q) or {}
+    md = report_cum.dung(q, pool, a, cu.get('b'), ts=cu.get('ts') or time.time(),
+                         kem_json=bool(json))
+    ten = ''.join(ch if ch.isalnum() or ch in ' -_' else '' for ch in q).strip() or 'tu-khoa'
+    ten = f"radary-{ten.replace(' ', '-')}.md"
+    return Response(md, media_type='text/markdown; charset=utf-8',
+                    headers={'Content-Disposition':
+                             f'attachment; filename="{urllib.parse.quote(ten)}"'})
 
 
 class TrendsIn(BaseModel):
