@@ -10,6 +10,12 @@
 # SNI, Caddy cần site address có tên/IP để phát cert internal kèm SAN tương ứng —
 # để trống là handshake fail (dính thật 16/08, curl exit 35).
 # Khi nghiệm thu LAN: thêm https://<IP-LAN>:9443 vào danh sách này.
+# CUTOVER 23/08/2026: cong 8000 (bookmark he cu) chuyen huong ve gateway V3.
+# Giu it nhat 2-4 tuan roi go khi het truy cap (xem log caddy).
+http://:8000 {
+	redir http://192.168.1.250:9000{uri} permanent
+}
+
 https://localhost:9443, https://127.0.0.1:9443 {
 	tls internal
 	reverse_proxy 127.0.0.1:9000
