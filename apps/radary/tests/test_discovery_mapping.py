@@ -1131,3 +1131,51 @@ def test_phan_loai_tu_loai_danh_tu_la_doi_tuong():
     # tên ĐẦY ĐỦ từ đế phải hiểu như mã — 'English' từng làm cả hệ lặng lẽ về luật cũ
     assert mapping.bang_pos(kho, 'English') is not None
     assert mapping.bang_pos(kho, 'Spanish') is None
+
+
+def test_serp_hai_loi_goi_va_canh_bao_quota():
+    """22/08 — Owner chốt SERP: 2 lời gọi/cụm, có cảnh báo quota.
+
+    Ràng buộc là quota free (~100/tháng) nên MỘT lời gọi google phải vắt ba khối
+    (câu hỏi thật / liên quan / web). Hết quota khóa này thì xoay khóa kế; hết
+    sạch thì NÓI THẲNG, không trả khối rỗng như thể không có dữ liệu.
+    """
+    from pathlib import Path as _P
+    from radary import serp
+
+    goc = _P(__file__).resolve().parents[1]
+
+    # xoay khóa: khóa 1 hết → tự sang khóa 2, đếm đúng số lượt đã tiêu
+    goi = []
+    def gia(nha, khoa, *a, **kw):
+        goi.append(khoa)
+        if khoa == 'k1':
+            raise serp.HetQuota('HTTP 429')
+        return {'co_du_lieu': True}
+    bo = serp.BoKhoa([{'id': 'api-1', 'key': 'k1', 'nha': 'serpapi'},
+                      {'id': 'api-2', 'key': 'k2', 'nha': 'serper'}])
+    assert bo.chay(gia, 'cum thu')['co_du_lieu']
+    assert goi == ['k1', 'k2'] and bo.het == ['api-1'] and bo.da_tieu == 1
+
+    # hết sạch khóa → ném lỗi có chữ, KHÔNG trả rỗng im lặng
+    bo2 = serp.BoKhoa([{'id': 'api-1', 'key': 'k1', 'nha': 'serpapi'}])
+    try:
+        bo2.chay(gia, 'cum thu')
+        raise AssertionError('phải ném khi hết mọi khóa')
+    except RuntimeError as e:
+        assert 'hết hạn mức' in str(e) and 'api-1' in str(e)
+
+    # không có khóa nào → con_khoa False (nơi gọi bỏ qua êm, không giết trang)
+    assert not serp.BoKhoa([]).con_khoa()
+
+    # MỘT lời gọi google trả ba khối
+    src = (goc / 'radary' / 'serp.py').read_text(encoding='utf-8')
+    than = src.split('def google(')[1].split('# ---- XOAY VONG')[0]
+    for khoi in ('cau_hoi', 'lien_quan', 'web'):
+        assert khoi in than, khoi
+
+    # UI: cảnh báo thiếu khóa + hết hạn mức, và card câu hỏi thật
+    js = (goc / 'web' / 'app.js').read_text(encoding='utf-8')
+    assert 'Chưa cấp khóa SERP' in js and 'Hạn mức SERP' in js
+    assert 'Câu hỏi thật người ta hỏi' in js
+    assert 'Vùng quan tâm nhất' in js

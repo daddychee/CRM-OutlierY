@@ -215,6 +215,16 @@
           "ma": "dien_giai",
           "ten": "Diễn giải kết quả (LLM)",
           "loai": "llm"
+        },
+        {
+          "ma": "tra_cuu_ngoai",
+          "ten": "External traffic — Trends + Google (SERP)",
+          "loai": "serp"
+        },
+        {
+          "ma": "reddit",
+          "ten": "External traffic — Reddit (Apify)",
+          "loai": "apify"
         }
       ],
       "giao_dien": "khung"

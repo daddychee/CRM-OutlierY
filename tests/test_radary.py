@@ -89,7 +89,10 @@ def test_tick_toan_quyen_phat_manager_khong_len_admin(conn):
 def test_viec_api_radary_khai_dung():
     a = tim_app("radary")
     assert [(v["ma"], v["loai"]) for v in a["viec_api"]] == \
-        [("harvest", "youtube"), ("quet_dinh_ky", "youtube"), ("dien_giai", "llm")]
+        [("harvest", "youtube"), ("quet_dinh_ky", "youtube"), ("dien_giai", "llm"),
+         # 22/08 — External traffic: SERP (Trends + Google gop PAA/related/organic)
+         # va Reddit dung nghia qua Apify (SERP khong cho upvote/comment)
+         ("tra_cuu_ngoai", "serp"), ("reddit", "apify")]
 
 
 @pytest.fixture()

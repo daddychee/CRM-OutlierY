@@ -1287,6 +1287,13 @@ def _soi_khoi_b(ws: int, cum: str, vung: dict | None, trends: bool = True) -> di
         yt = {'co_du_lieu': False, 'ly_do': str(e)}
     geo = (vung or {}).get('regionCode') or 'US'
     lang = (vung or {}).get('relevanceLanguage') or 'en'
+    # SERP (Owner chốt 22/08): 2 lời gọi/cụm — Trends ổn định (thay trendspyg chạy
+    # trình duyệt, đo thật chỉ 43% thành công) + MỘT lời gọi google gộp ba khối
+    # (câu hỏi thật / tìm kiếm liên quan / kết quả web). Chưa cấp khóa → bỏ qua
+    # êm, khối cũ chạy nguyên như trước.
+    from . import serp as _serp
+    bo_serp = _serp.BoKhoa(khoa_v3.lay_khoa_day_du('tra_cuu_ngoai'))
+    sp = {'co_khoa': bo_serp.con_khoa(), 'da_tieu': 0, 'loi': ''}
     # Biến thể người ta GÕ quanh từ khoá — luôn có dữ liệu, kể cả khi Trends im lặng
     # (từ khoá hẹp như 'life in alaska' thì Trends trả related rỗng). 0 quota, ~9s.
     from . import discovery
@@ -1312,13 +1319,34 @@ def _soi_khoi_b(ws: int, cum: str, vung: dict | None, trends: bool = True) -> di
                 tr = {}
             if tr:
                 tr['tu_cache'] = True
+            elif bo_serp.con_khoa():
+                try:
+                    tr = bo_serp.chay(_serp.trends, cum, geo=geo)
+                    lq = bo_serp.chay(_serp.truy_van_lien_quan, cum, geo=geo)
+                    tr.update(lq)
+                    tr['vung'] = bo_serp.chay(_serp.theo_vung, cum, geo=geo)
+                except Exception as e:                       # noqa: BLE001
+                    sp['loi'] = str(e)
+                    tr = {'co_du_lieu': False, 'ly_do': f'SERP: {e}'}
+                if tr.get('co_du_lieu'):
+                    _ghi_bo_qua_khoa(db.trends_ghi, c2, cum, geo, tr)
             else:
                 tr = tra_cuu.google_trends(cum, geo=geo)
                 if tr.get('co_du_lieu'):
                     _ghi_bo_qua_khoa(db.trends_ghi, c2, cum, geo, tr)
     # Hai nguồn 0 key, nhanh (~1-2s): tin báo đang nói gì + mức quan tâm trên Wikipedia.
     # Reddit đã thử cả .json lẫn .rss đều 403 từ IP này; X/Twitter cần bản trả phí.
-    ra = {'cum': cum, 'youtube': yt, 'trends': tr,
+    gg = {'co_du_lieu': False, 'ly_do': 'chưa cấp khóa SERP cho việc tra_cuu_ngoai'}
+    if bo_serp.con_khoa():
+        try:
+            gg = bo_serp.chay(_serp.google, cum, geo=geo, lang=lang)
+        except Exception as e:                               # noqa: BLE001
+            sp['loi'] = str(e)
+            gg = {'co_du_lieu': False, 'ly_do': f'SERP: {e}'}
+    sp['da_tieu'] = bo_serp.da_tieu
+    sp['khoa_het'] = bo_serp.het
+    sp['con_khoa'] = bo_serp.con_khoa()
+    ra = {'cum': cum, 'youtube': yt, 'trends': tr, 'google': gg, 'serp': sp,
           'bien_the': bien_the,
           'news': tra_cuu.google_news(cum, geo=geo, lang=lang),
           'wiki': tra_cuu.wikipedia(cum, lang=lang),

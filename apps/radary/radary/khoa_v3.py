@@ -12,6 +12,23 @@ import os
 import urllib.request
 
 
+def lay_khoa_day_du(viec: str) -> list[dict]:
+    """Như lay_khoa nhưng giữ NGUYÊN {id, key, loai, nha}.
+
+    SERP mỗi nhà gọi một kiểu (serpapi/serper/searchapi) nên nơi gọi cần biết
+    nhà; YouTube thì không cần — giữ lay_khoa cũ cho đường đang chạy.
+    Trả [] khi chưa cấp khóa (KHÔNG ném) — External traffic là tính năng phụ,
+    thiếu khóa thì báo trong khối chứ không giết cả trang tra cứu.
+    """
+    goc = os.environ.get('GATEWAY_URL', 'http://127.0.0.1:9000')
+    try:
+        with urllib.request.urlopen(f"{goc}/api/cau-hinh/api-khoa/radary", timeout=5) as r:
+            data = json.load(r)
+    except Exception:
+        return []
+    return [k for k in ((data or {}).get(viec) or {}).get('khoa', []) if k.get('key')]
+
+
 def lay_khoa(viec: str) -> list[str]:
     """Danh sách khóa YouTube cho một VIỆC của radary, thứ tự như cấp phát.
 

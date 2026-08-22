@@ -172,7 +172,10 @@ def backfill_dau_khoa(conn: sqlite3.Connection) -> int:
 # cua nha do (google / google_trends / google_news / youtube...) — quota tru chung,
 # khong can khoa rieng tung engine. Dung khuon NHA nhu llm/generate vi dang so ba
 # nha; doi nha chi doi cap phat, khong sua code app.
-LOAI_API = ("youtube", "llm", "generate", "transcript", "serp")
+# apify: nen chay scraper thue (Owner 22/08) — dung lay du lieu Reddit DUNG NGHIA
+# (upvote / so binh luan / thoi gian), thu ma SERP khong co vi SERP chi doc trang
+# ket qua Google. Token duy nhat cho moi actor, tinh tien theo credit.
+LOAI_API = ("youtube", "llm", "generate", "transcript", "serp", "apify")
 NHA_LLM = ("claude", "glm", "gemini", "chatgpt", "deepseek")
 # provider/base_url suy từ NHÀ khi khóa không mang override riêng (migration giữ
 # nguyên giá trị cũ per-khóa nên hệ đang chạy resolve ra ĐÚNG như trước).
@@ -201,7 +204,8 @@ NHA_GEN_INFO = {"veo": {"ten": "VEO (Google Flow)"}, "seedream": {"ten": "Seedre
 TEN_LOAI_API = {"youtube": "YouTube Data API v3", "llm": "LLM",
                 "generate": "Generate Video/Image API",
                 "transcript": "YouTube Transcript",
-                "serp": "Search Results API (SERP)"}
+                "serp": "Search Results API (SERP)",
+                "apify": "Apify (scraper thuê)"}
 # Model gợi ý cho dropdown (mockup K2-K3) — gợi ý thôi, giá trị hiện hành luôn giữ.
 MODEL_GOI_Y = {
     "claude": ["claude-fable-5", "claude-sonnet-5", "claude-haiku-4-5"],

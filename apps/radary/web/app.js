@@ -2027,6 +2027,8 @@ function Mapping({ ws, canEdit }) {
   // Wikipedia: BAN LUU CU con thang-dang-chay trong chuoi (server da va 22/08 cho lan
   // hoi moi, nhung ban luu thi dong bang) -> loc + tinh lai xu huong o day de ban cu
   // het bao "xuong -42%" gia. Cung cong thuc voi server (mean quy dau vs quy cuoi).
+  const gg = B && B.google || {};
+  const sp = B && B.serp || {};
   const wkTho = B && B.wiki || {};
   const wk = (() => {
     if (!wkTho.co_du_lieu || !(wkTho.diem || []).length) return wkTho;
@@ -2273,7 +2275,16 @@ function Mapping({ ws, canEdit }) {
       ${B ? html`<div>
         <div class="eyebrow" style="margin-top:14px;color:var(--accent,#4C8FE0)">C · External traffic
           <span class="note" style="text-transform:none;letter-spacing:0;font-weight:400">
-          · sự quan tâm NGOÀI nền tảng YouTube — Google Trends · Google News · Wikipedia · 0 quota</span></div>
+          · sự quan tâm NGOÀI nền tảng YouTube${sp.da_tieu ? ` · ${sp.da_tieu} lượt SERP` : ''}</span></div>
+        ${!sp.co_khoa ? html`<div class="note" style="margin:0 0 8px;padding:7px 10px;border-radius:8px;
+          border:1px dashed var(--line,#243149)">Chưa cấp khóa SERP cho việc <b>tra_cuu_ngoai</b> —
+          Trends đang chạy đường cũ (trình duyệt, hay lỗi). Cấp ở
+          <b>General › API Keys › Per-app config › radary</b>.</div>` : ''}
+        ${sp.loi || (sp.khoa_het || []).length ? html`<div class="note" style="margin:0 0 8px;padding:7px 10px;
+          border-radius:8px;border-left:3px solid #ef6c00;background:rgba(239,108,0,.08)">
+          <b>Hạn mức SERP:</b> ${(sp.khoa_het || []).length ? `${sp.khoa_het.length} khóa đã hết
+          (${sp.khoa_het.join(', ')})${sp.con_khoa ? ' — đã tự xoay sang khóa kế tiếp' : ''}` : ''}
+          ${sp.loi ? html`<span> ${sp.loi}</span>` : ''}</div>` : ''}
         <div class="exgrid">
           <div class="excard rong">
             <h3>Google Trends <span class="note">· ${tr.geo || ''} · ${tr.timeframe || '12 tháng'}${tr.tu_cache ? ' · từ cache hôm nay' : ''}</span></h3>
@@ -2286,10 +2297,41 @@ function Mapping({ ws, canEdit }) {
                 <${ThanhTruyVan} muc=${tr.rising} mau="#2e7d32" ghi="Truy vấn ĐANG LÊN (so kỳ trước)"/>
                 <${ThanhTruyVan} muc=${tr.top} mau="var(--accent,#4C8FE0)" ghi="Truy vấn phổ biến nhất (0–100)"/>
               </div>
+              ${(tr.vung || []).length ? html`<div style="margin-top:6px">
+                <div class="note" style="margin:0 0 2px">Vùng quan tâm nhất (thang 0–100) —
+                  dữ kiện chọn thị trường</div>
+                ${(tr.vung || []).slice(0, 8).map(v => html`<${HangThanh} nhan=${v.vung}
+                  tieu_de=${v.vung} phan_tram=${Math.max(4, v.gia_tri)}
+                  mau="var(--accent,#4C8FE0)" phaiClass="note" phai=${v.gia_tri}/>`)}
+              </div>` : ''}
               ${!(tr.rising || []).length && !(tr.top || []).length ? html`<div class="note">
                 Không có truy vấn liên quan (từ khoá hẹp) — xem "biến thể người ta gõ" ở khối B.</div>` : ''}
             </div>` : html`<div class="note">${tr.rate_limit ? '⏳ ' : ''}${tr.ly_do || 'không có dữ liệu'}</div>`}
           </div>
+          ${gg.co_du_lieu ? html`<div class="excard rong">
+            <h3>Câu hỏi thật người ta hỏi <span class="note">· People Also Ask + tìm kiếm
+              liên quan · mỗi câu là một ý tưởng video kèm sẵn tiêu đề</span></h3>
+            <div class="ex2cot">
+              <div>
+                ${(gg.cau_hoi || []).length ? (gg.cau_hoi || []).map(h => html`<div style="padding:2px 0">
+                  <a href="#" onClick=${e => { e.preventDefault(); traCuu(h); }}>${h}</a></div>`)
+                  : html`<div class="note">Google không trả câu hỏi liên quan cho từ khoá này.</div>`}
+              </div>
+              <div>
+                <div class="note" style="margin:0 0 2px">Tìm kiếm liên quan</div>
+                ${(gg.lien_quan || []).map(x => html`<div style="padding:2px 0">
+                  <a href="#" onClick=${e => { e.preventDefault(); traCuu(x); }}>${x}</a></div>`)}
+              </div>
+            </div>
+            ${(gg.web || []).length ? html`<details style="margin-top:8px">
+              <summary class="note" style="cursor:pointer">Ai đang xếp hạng cho từ khoá này
+                (${gg.web.length} kết quả web)</summary>
+              ${gg.web.map(w => html`<div style="padding:3px 0">
+                <a href=${w.link} target="_blank" rel="noopener">${w.tieu_de}</a>
+                <span class="note"> · ${w.nguon}</span>
+                <div class="note" style="margin:0">${w.mo_ta}</div></div>`)}
+            </details>` : ''}
+          </div>` : ''}
           <div class="excard">
             <h3>Google News <span class="note">· tin gần nhất</span></h3>
             ${nw.co_du_lieu ? html`<div>
