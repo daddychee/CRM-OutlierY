@@ -1055,12 +1055,15 @@ def test_ban_do_cua_so_do_7_28_90_toan_thoi_gian():
     api_src = (_P(__file__).resolve().parents[1] / 'radary' / 'api.py').read_text(encoding='utf-8')
     than = api_src.split('def tu_khoa_noi(')[1].split('def _ghi_bo_qua_khoa')[0]
     assert 'cua_so' in than and 'tra_cuu.CUA_SO_HOP_LE' in than
+    # MAC DINH 7 ngay (user chot 22/08) — ca server lan client phai khop
+    assert 'cua_so: int = 7' in than and 'cua_so = 7' in than
     assert 'lui_thang' not in than          # máy thời gian đã gỡ theo lệnh user
 
     js = (_P(__file__).resolve().parents[1] / 'web' / 'app.js').read_text(encoding='utf-8')
     assert '<option value="7">7 ngày</option>' in js
     assert '<option value="0">Toàn thời gian</option>' in js
     assert 'cua_so=${cs}' in js and 'type="range"' not in js
+    assert 'useState(7);       // cửa sổ đo mặc định 7 ngày' in js
     assert 'r.video_cua_so ?? r.tong_video' in js    # trục đọc cửa sổ
 
 

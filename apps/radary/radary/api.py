@@ -1119,7 +1119,7 @@ def tu_khoa_nong_api(ws: int, request: Request, nhiem_vu_nen: BackgroundTasks,
 
 @app.get('/api/workspaces/{ws}/discovery/tu-khoa-noi')
 def tu_khoa_noi(ws: int, request: Request, so_cum: int = 30, ngon_ngu: str = '',
-                cua_so: int = 28):
+                cua_so: int = 7):
     """Cụm nào trong pool ĐANG LÊN / ĐANG GIẢM — 0 quota, đọc dữ liệu sẵn có.
 
     Không phải chờ tích luỹ: `pub_ts` của video trong pool có từ 2009 nên mật độ cụm
@@ -1137,7 +1137,7 @@ def tu_khoa_noi(ws: int, request: Request, so_cum: int = 30, ngon_ngu: str = '',
         loc = ngon_ngu.strip() or tu_de
         kho = mapping.tai_kho(c, ws)
         if cua_so not in tra_cuu.CUA_SO_HOP_LE:
-            cua_so = 28
+            cua_so = 7           # user chốt 22/08: mặc định NHÌN GẦN, nới ra khi cần
         # UNG VIEN trich tu VUNG DANG DO (ky nay + ky truoc), khong phai top tan suat
         # toan lich su (user 22/08: "khong co ly do gi ma khong tong hop duoc tu khoa
         # cua hang nghin video"). Top tich luy la tieu chi nguoc voi cum dang noi —

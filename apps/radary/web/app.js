@@ -1943,7 +1943,8 @@ function Mapping({ ws, canEdit }) {
   const [noi, setNoi] = useState(null);
   const [nong, setNong] = useState(null);     // Hot Topic — tải ngay khi mở tab
   const [nongMo, setNongMo] = useState(false); // Hot Topic: 5 dòng đầu hay cả danh sách
-  const [cuaSo, setCuaSo] = useState(28);      // cửa sổ đo: 7/28/90 ngày, 0 = toàn thời gian
+  const [cuaSo, setCuaSo] = useState(7);       // cửa sổ đo mặc định 7 ngày (user chốt
+                                              // 22/08): nhìn gần trước, nới ra khi cần
   const [moBang, setMoBang] = useState(false); // bảng cụm: 5 dòng đầu hay tất cả
   const [loaiCum, setLoaiCum] = useState('doi_tuong');   // đối tượng trước — thứ quyết định làm video về CÁI GÌ
   const [busy, setBusy] = useState('');
@@ -1955,7 +1956,7 @@ function Mapping({ ws, canEdit }) {
   // thấy số của US — user báo 21/08 ("từ khoá thị trường US lọt sang Spain").
   useEffect(() => {
     setA(null); setB(null); setCum(''); setErr(''); setBusy(''); setXemLai(null);
-    setLichSu([]); setNoi(null); setNong(null); setNongMo(false); setCuaSo(28); setRd(null); setTrBu(null); setMoBang(false); setXacNhanNgoai(false); setHoiCum(null);
+    setLichSu([]); setNoi(null); setNong(null); setNongMo(false); setCuaSo(7); setRd(null); setTrBu(null); setMoBang(false); setXacNhanNgoai(false); setHoiCum(null);
     api('GET', `/workspaces/${ws}/discovery/goi-y-seed`).then(r => setGoiY(r.seed || [])).catch(() => setGoiY([]));
     const nnLuu = (() => { try { return localStorage.getItem('mapping_nn_' + ws) || ''; } catch (e) { return ''; } })();
     api('GET', `/workspaces/${ws}/discovery/tu-khoa-noi`
