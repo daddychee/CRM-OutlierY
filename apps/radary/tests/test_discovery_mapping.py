@@ -795,7 +795,13 @@ def test_nho_tab_qua_localStorage_vi_iframe_mat_hash():
     js = Path(__file__).resolve().parents[1].joinpath("web", "app.js").read_text(encoding="utf-8")
     assert "localStorage.setItem(NHO_KEY" in js and "nhoGhi(patch)" in js
     # khởi tạo phải đọc hash TRƯỚC rồi mới tới localStorage (link chia sẻ vẫn thắng)
-    assert "h0.tab || nho0.tab || 'board'" in js
+    # 22/08: trí nhớ tab có HẠN GIỜ — F5/chuyển qua lại (vài phút) thì giữ tab, mở
+    # RadarY buổi khác thì về Board như user muốn. Hai ca này không phân biệt được
+    # bằng hash, chỉ bằng thời gian.
+    assert "h0.tab || tabCu || 'board'" in js
+    assert 'TAB_NHO_PHUT' in js and 'nho0.tab_luc' in js
+    assert "nhoGhi({ tab_luc: Date.now() })" in js       # dấu giờ chỉ ở localStorage
+    assert 'tab_luc: Date.now() }); }, [tab, ws])' not in js   # không đẩy vào URL
     assert "h0.ws ? Number(h0.ws) : (nho0.ws ? Number(nho0.ws) : null)" in js
     assert "h0.q || nho.q || ''" in js
 

@@ -2526,12 +2526,23 @@ function App() {
   const [wss, setWss] = useState([]);
   const nho0 = nhoDoc();
   const [ws, setWs] = useState(h0.ws ? Number(h0.ws) : (nho0.ws ? Number(nho0.ws) : null));
-  const [tab, setTab] = useState(h0.tab || nho0.tab || 'board');
+  // MO RADARY thi vao BOARD (user 22/08). Nhung khong bo han tri nho tab: bug cu
+  // 21/08 la "dang o Mapping, F5 lai ve Board" — RadarY chay trong iframe nen F5
+  // trang cha lam mat hash, phai co localStorage cuu. Hai ca do KHONG phan biet
+  // duoc bang hash, chi bang THOI GIAN: F5/chuyen qua lai thi cach nhau vai phut,
+  // con mo lai buoi khac thi lau hon. Nho tab trong TAB_NHO_PHUT roi thoi.
+  const TAB_NHO_PHUT = 15;
+  const tabCu = (nho0.tab && nho0.tab_luc
+    && Date.now() - nho0.tab_luc < TAB_NHO_PHUT * 60000) ? nho0.tab : '';
+  const [tab, setTab] = useState(h0.tab || tabCu || 'board');
   const [nganhs, setNganhs] = useState([]);      // ngách + thị trường CỦA ngách — sinh ở General (18/08)
   const [nicheView, setNicheView] = useState(false);   // Board: xem VOLUME CẢ NGÁCH thay vì 1 pool
   useEffect(() => { api('GET', '/auth/me').then(setMe).catch(() => setMe(null)); }, []);
   useEffect(() => { if (me) api('GET', '/ngach').then(setNganhs).catch(() => setNganhs([])); }, [me]);
-  useEffect(() => { writeHash({ tab, ws: ws ?? '' }); }, [tab, ws]);
+  useEffect(() => {
+    writeHash({ tab, ws: ws ?? '' });
+    nhoGhi({ tab_luc: Date.now() });   // dấu thời gian CHỈ ở localStorage, không bẩn URL
+  }, [tab, ws]);
   useEffect(() => {                              // tab trong hash không hợp lệ với vai → về board
     if (!me) return;
     const cur0 = wss.find(w => w.id === ws);
