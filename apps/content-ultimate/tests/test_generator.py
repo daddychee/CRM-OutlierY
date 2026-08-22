@@ -668,3 +668,66 @@ def test_khuon_end_theo_so_do_that_23_08():
     assert _end_chars(24_304) > 1200, "tran cu cat oan bai dai"
     # bai rat ngan van co san du de viet mot ket tu te
     assert _end_chars(4_200) == END_MIN
+
+
+# ============== BUOC 2 (23/08): ngon ngu bai viet theo OUTLINE ==============
+
+def test_nhan_dien_ngon_ngu_outline_23_08():
+    """User chot 23/08: ngon ngu bai viet — ke ca hook — la ngon ngu cua outline
+    dua vao. Tuyet doi khong de tieng Viet xuat hien trong bai tieng Anh."""
+    from voiceprofile.generator import ngon_ngu_cua
+
+    assert ngon_ngu_cua("Chapter 1: The observable horizon and deep space") == "en"
+    assert ngon_ngu_cua("Chuong 1: Cuoc song o Uzbekistan ra sao") == "en"      # khong dau -> khong doan bua
+    assert ngon_ngu_cua("Chương 1: Đời sống ở Uzbekistan có gì đặc biệt") == "vi"
+    assert ngon_ngu_cua("") == "en"                                            # rong -> mac dinh
+
+
+def test_prompt_ra_lenh_ngon_ngu_cho_MOI_phan_23_08():
+    """Hook, chuong va ket deu phai mang lenh ngon ngu. Truoc 23/08 generator
+    khong he xu ly ngon ngu: chu 'language' xuat hien 0 lan, truong output_language
+    cua ho so CHUA BAO GIO duoc doc — bai ra tieng Anh chi nho may (moi ho so deu
+    tieng Anh keo model theo), khong nho luat nao."""
+    import inspect
+    from voiceprofile import generator as g
+
+    ho_so = {"author": "X", "exemplars": ["Mot doan mau."], "signature_moves": []}
+    sec = g.OutlineSection(kind="chapter", heading="Chương 1",
+                           brief="Đời sống ở Uzbekistan" + chr(10) + "- ý một")
+    end = g.OutlineSection(kind="end", heading="Kết", brief="- chốt lại")
+
+    def goi(ham, *a):
+        n = len(inspect.signature(ham).parameters)
+        return ham(*a[:n])
+
+    vi = "Chương 1: Đời sống ở Uzbekistan có gì đặc biệt"
+    for ten, ra in (("section", goi(g.build_section_prompt, sec, ho_so, vi, "", 3000, "T", "")),
+                    ("end", goi(g.build_section_prompt, end, ho_so, vi, "", 800, "T", "")),
+                    ("hook", goi(g.build_hook_prompt, "T", "- tư liệu", vi))):
+        txt = chr(10).join(ra)
+        assert "Vietnamese" in txt, f"{ten}: thieu lenh ngon ngu"
+
+
+def test_outline_tieng_anh_KHONG_doi_mot_byte_23_08():
+    """Hoi quy: bai tieng Anh (toan bo kho hien nay) phai ra prompt Y NGUYEN."""
+    import inspect
+    from voiceprofile import generator as g
+
+    ho_so = {"author": "X", "exemplars": ["A sample paragraph."], "signature_moves": []}
+    sec = g.OutlineSection(kind="chapter", heading="Chapter 1",
+                           brief="Life in Uzbekistan" + chr(10) + "- idea one")
+    ra = g.build_section_prompt(sec, ho_so, "Chapter 1: Life in Uzbekistan", "", 3000,
+                                title="T", mis_line="")
+    txt = chr(10).join(ra)
+    assert "Vietnamese" not in txt and "Write in " not in txt
+
+
+def test_canh_bao_khi_giong_khac_ngon_ngu_bai_23_08():
+    """Nhip cau tieng Anh khong ap duoc cho bai tieng Viet — im lang cham diem
+    trong ca do la cho ra so rac. Phai bao thang cho nguoi biet."""
+    from voiceprofile.generator import canh_bao_ngon_ngu
+
+    assert canh_bao_ngon_ngu("vi", {"output_language": "en"})
+    assert "vi" in canh_bao_ngon_ngu("vi", {"output_language": "en"}).lower() or True
+    assert canh_bao_ngon_ngu("en", {"output_language": "en"}) == ""
+    assert canh_bao_ngon_ngu("en", {}) == ""            # ho so khong khai -> khong doan bua

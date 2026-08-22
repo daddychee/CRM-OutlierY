@@ -464,7 +464,51 @@ def build_voice_block(profile: dict) -> str:
     return "\n".join(parts)
 
 
-def build_hook_prompt(title: str, brief: str) -> tuple[str, str]:
+# Ngon ngu bai viet = ngon ngu cua OUTLINE (user chot 23/08). Truoc do generator
+# KHONG he xu ly ngon ngu: chu "language" xuat hien 0 lan, truong output_language cua
+# ho so CHUA BAO GIO duoc doc — bai ra tieng Anh chi nho may (moi ho so trong kho deu
+# tieng Anh nen mau van keo model theo), khong nho luat nao.
+#
+# ponytail: nhan dien bang DAU tieng Viet, khong keo them thu vien nhan dien ngon ngu.
+# Tran: chi phan biet duoc vi/en, va outline tieng Viet KHONG DAU se bi coi la "en".
+# Nang cap khi thuc su can them ngon ngu: doi _DAU_VI thanh bang ky tu theo ngon ngu.
+_DAU_VI = "ăâđêôơưáàảãạấầẩẫậéèẻẽẹếềểễệíìỉĩịóòỏõọốồổỗộớờởỡợúùủũụứừửữựýỳỷỹỵ"
+TEN_NGON_NGU = {"vi": "Vietnamese", "en": "English"}
+
+
+def ngon_ngu_cua(outline: str) -> str:
+    """Ngon ngu cua outline. Khong nhan ra -> 'en' (mac dinh cua ca kho hien nay)."""
+    t = (outline or "").lower()
+    return "vi" if any(c in t for c in _DAU_VI) else "en"
+
+
+def khoi_ngon_ngu(ma: str) -> str:
+    """Cau lenh ngon ngu cho prompt. Rong voi 'en' de bai tieng Anh KHONG doi mot byte."""
+    if ma == "en":
+        return ""
+    ten = TEN_NGON_NGU.get(ma, ma)
+    return (f"LANGUAGE: write the entire piece in {ten}. Every sentence, including the "
+            f"opening line, must be in {ten}. Do not mix in another language, and do not "
+            f"translate the outline back into English.")
+
+
+def canh_bao_ngon_ngu(ma_bai: str, profile: dict | None) -> str:
+    """Giong tac gia KHONG di qua duoc ranh gioi ngon ngu.
+
+    Neo giong do bang so tu moi cau, ti le cau cut, mat do tu chuc nang — toan
+    nhung thu gan chat voi ngon ngu cua corpus. Lay nhip van tieng Anh ap cho bai
+    tieng Viet la vo nghia, va thuoc bam giong se cho so rac. Bao thang cho nguoi,
+    khong im lang cham diem.
+    """
+    ho = (profile or {}).get("output_language")
+    if not ho or not ma_bai or ho == ma_bai:
+        return ""
+    return (f"Outline la {TEN_NGON_NGU.get(ma_bai, ma_bai)} nhung ho so giong dung tren "
+            f"corpus {TEN_NGON_NGU.get(ho, ho)}. Giong chi con tac dung mot phan: nhip cau "
+            "va cac chi so giong do tren corpus khac ngon ngu khong ap duoc cho bai nay.")
+
+
+def build_hook_prompt(title: str, brief: str, outline: str = "") -> tuple[str, str]:
     """Hook YouTube thuan — KHONG dung giong tac gia. Ngan, truc dien, cau ngan nhip nhanh.
 
     V2: brief co dong Misconception: -> khoi THE FALSE BELIEF (3 luat, chot sau 2 ban
@@ -522,6 +566,9 @@ def build_hook_prompt(title: str, brief: str) -> tuple[str, str]:
                "introducing the topic, setting a scene), IGNORE that start: the break "
                "is the only opening. You are NOT covering the material's ideas: one "
                "belief broken, one question opened, done.\n" if brief else ""))
+    lenh = khoi_ngon_ngu(ngon_ngu_cua(outline or title))
+    if lenh:
+        user_parts.append("\n" + lenh)
     user_parts.append("\nOutput prose only: no heading, no markdown, no notes.")
     return system, "".join(user_parts)
 
@@ -568,7 +615,7 @@ def build_section_prompt(
     moi chuong — luat BREAK STANDS); Question: cua chinh phan nay tach tu brief.
     """
     if section.kind == "hook":
-        return build_hook_prompt(title, section.brief)
+        return build_hook_prompt(title, section.brief, outline_summary)
     question, _own_mis, clean_brief = _v2_meta(section.brief)
 
     system = build_voice_block(profile)
@@ -619,6 +666,9 @@ def build_section_prompt(
         "Output prose only: no heading, no markdown, no bullet points, no notes, no "
         "stage directions.",
     ]
+    lenh = khoi_ngon_ngu(ngon_ngu_cua(outline_summary or section.brief))
+    if lenh:
+        parts += ["", lenh]
     return system, "\n".join(parts)
 
 
