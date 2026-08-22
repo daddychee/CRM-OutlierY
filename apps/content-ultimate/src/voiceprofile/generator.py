@@ -1039,7 +1039,15 @@ def generate_script(
                 rs, ru = build_end_cut_prompt(sec, profile, body, target, mis_line=mis_line)
             else:
                 rs, ru = build_scope_cut_prompt(sec, profile, body, target, mis_line=mis_line)
-            revised = llm_text(rs, ru, max(4096, target * 3)).strip()
+            try:
+                revised = llm_text(rs, ru, max(4096, target * 3)).strip()
+            except Exception as e:  # noqa: BLE001
+                # GIU BAN NHAP. Loi hay gap: contentFilter cua nha cung cap (chu de
+                # nhay cam), het han muc, nghen toc do. Khong duoc de mat chu da viet.
+                if on_progress:
+                    on_progress(f"  {sec.heading}: vong cat GOI LOI ({str(e)[:120]}) — "
+                                "giu nguyen ban nhap, khong cat.")
+                break
             # van: phai NGAN HON that. Rieng End con them chot "khong cat qua tay
             # xuong duoi 60% khuon" — vi End chay NHIEU vong nen co the cat lem sang
             # phan can giu; hook/chuong chay mot vong, giu nguyen hanh vi cu (chot
@@ -1072,7 +1080,13 @@ def generate_script(
                                     f"khung {target}, chay MOT luot no (nang y nhac luot "
                                     "len day du, khong don chu)…")
                     es, eu = build_expand_prompt(sec, profile, body, pct, mis_line=mis_line)
-                    grown = llm_text(es, eu, max(4096, target * 3)).strip()
+                    try:
+                        grown = llm_text(es, eu, max(4096, target * 3)).strip()
+                    except Exception as e:  # noqa: BLE001
+                        if on_progress:
+                            on_progress(f"  {sec.heading}: vong no GOI LOI ({str(e)[:120]}) — "
+                                        "giu nguyen ban truoc.")
+                        break
                     ok = (grown and len(grown) > len(body)
                           and kept_ratio(body, grown) >= EXPAND_KEPT_MIN
                           and len(grown) <= CHAPTER_WARN_CHARS * REVISE_OVER_RATIO)

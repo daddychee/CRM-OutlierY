@@ -624,3 +624,27 @@ def test_prompt_khong_chua_em_dash_22_08():
     for ten, ra in prompts.items():
         txt = chr(10).join(ra) if isinstance(ra, tuple) else str(ra)
         assert "—" not in txt, f"{ten}: prompt van con em-dash"
+
+
+def test_loi_o_buoc_hau_xu_ly_khong_lam_mat_ban_nhap_23_08():
+    """Su co that 23/08: phan Ket da viet 2.907 ky tu, vong CAT goi API dinh
+    contentFilter cua GLM (ma 1301) -> ngoai le bay len runner, bai chi luu 2 phan.
+    Da tra tien cho 2.907 ky tu roi mat trang.
+
+    Bat bien cua app: than phan da sinh la TAI SAN; cat/no chi la CAI THIEN, hong
+    thi bo qua chu khong duoc lam mat.
+    """
+    from voiceprofile.generator import generate_script
+
+    def llm_hong_o_buoc_cat(system, user, max_tokens=None):
+        if "TOO LONG" in user or "must come down to" in user or "SHORTEN" in user.upper():
+            raise RuntimeError("GLM API (400): contentFilter code 1301")
+        if "HOOK" in user and "Material" in user:
+            return "x" * 3000              # hook phinh -> se kich hoat vong cat
+        return "than bai da viet ra roi. " * 40
+
+    script = generate_script(OUTLINE, PROFILE, llm_hong_o_buoc_cat, total_chars=8000)
+    phan = dict(script.sections)
+    assert len(script.sections) == 4, "mat phan khi buoc cat loi"
+    assert phan["Hook"], "mat ban nhap hook khi vong cat loi"
+    assert all(v.strip() for v in phan.values())
