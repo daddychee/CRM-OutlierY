@@ -385,3 +385,86 @@ Smoke thật: server tạm cổng 8799 + `CU_DATA_DIR` tạm — `/write` render
 - **Siết luật em-dash trong PACING** (`generator.py` ~dòng 177) — việc rẻ, đo lại được
   ngay bằng chính bộ vừa dựng.
 - Van thứ 5 (chặn theo `evaluate_script`) — bật sau C3.
+
+## 10. ĐỢT 1 — 22/08/2026 (đo trước, sửa sau; suite 288 pass / 0 fail)
+
+**Bối cảnh đổi**: sổ ghi "team ngừng dùng từ 07/08" đã hết đúng — **22/08 namtn quay lại**,
+tạo hồ sơ mới A014_Amazing (11:59) rồi viết một kịch bản (12:19, 21.863/23.000 ký tự,
+19,8 phút). Bản mới **vẫn mắc đúng bệnh**: 46,6% câu cụt (exemplar 23,8%), em-dash
+16,63/1000, 12,3 từ/câu. Đồng hồ "team dùng lại đều 2 tuần" (điều kiện bật V3 research
+layer) bắt đầu chạy từ 22/08.
+
+### 10.1. Em-dash: chẩn đoán ĐỔI sau khi đo (commit `425f4d8`)
+
+Đề xuất ban đầu là *siết luật PACING*. Đo trước khi sửa cho kết quả khác:
+
+| Bằng chứng | Số |
+|---|---|
+| Model có tuân "tối đa 1 em-dash/đoạn" không? | **KHÔNG** — 26–59% đoạn có ≥2 (A013 1,59/đoạn · A014 1,33 · A011 1,47) |
+| Khối `_v2_section_block` (PACING…) | **28,6 em-dash/1000 từ** |
+| Cả prompt chương | **11,2/1000** |
+| Bản model viết ra | 13–17/1000 |
+| Corpus NGƯỜI của chính tác giả | **0,00–1,30/1000** |
+
+⇒ Model **sao lại mật độ của vật liệu dạy**, không tuân câu lệnh. Siết chữ luật sẽ không
+ăn. Đã gỡ em-dash khỏi **25 chuỗi prompt** tiếng Anh trong `generator.py`.
+**Không đụng**: regex nhận diện mốc (`_SECTION_MARK`/`_IDEA_SEG`), thông báo tiếng Việt
+cho UI, và **exemplar của tác giả** (dữ liệu — tác giả dùng em-dash thật thì giữ).
+Kiểm chứng: gọi thẳng 6 hàm `build_*_prompt` trước/sau → em-dash 15/9/12/2/10/9 → **0
+hết**, và so khớp **từng từ**: không đổi một từ nào, chỉ đổi dấu. Test ghim
+`test_prompt_khong_chua_em_dash_22_08`.
+
+*(MASTER §11 ghi luật này từng đo ra "em-dash 2,9 → 0/1000". Số đó đúng ở thí nghiệm
+tay hồi 26/07 nhưng KHÔNG còn đúng trên bài đầy đủ: luật cho phép 1/đoạn nên ~40 đoạn =
+~11/1000 vẫn "đúng luật", chưa kể model vượt luật.)*
+
+### 10.2. B3 nuôi bộ luật: ĐO XONG → **không thêm dòng nào** (kết luận, không phải bỏ dở)
+
+Khai thác n-gram trên **260k từ văn máy (59 bài) vs 148k từ văn người (722 đoạn)**:
+
+- Khai thác mù chỉ ra cụm tiếng Anh phổ thông (`one of the`, `in the world`) — có mặt cả
+  ở văn người, không phải dấu vết máy.
+- Đo có định hướng 19 khuôn tu từ máy đã biết: **0 khuôn đạt ngưỡng** (≥5 tác giả, ≥15 lần,
+  ≥4× văn người).
+- Các ứng viên mạnh nhất (`refuses to` 90 lần · `if you walk/stand/spend` 142 · `not simply`
+  81 · `this is not just` 54 · `woven into` 28) **dồn gần như toàn bộ vào A003_Ventures**
+  (78/90 · 88/142 · 66/81 · 42/54 · 26/28). A003 chính là hồ sơ **neo hỏng** (corpus 1085
+  từ/câu, exemplar là cục transcript thô 27k ký tự).
+
+⇒ Đây là **register mặc định của GLM khi neo giọng hỏng**, không phải bệnh chung. Thêm vào
+CSV sẽ đánh oan tác giả khác. Giữ nguyên 21 luật. Hiệu lực bộ luật hiện tại đo được: trung
+vị **2 hit/bài**, 18/59 bài **0 hit**; 47/59 bài xếp mức "nặng" **gần như hoàn toàn do
+em-dash** (trung vị 11,0/1000). ⇒ **B4 rewrite tự động vẫn chưa cần** — tín hiệu thật nằm
+ở em-dash (đã xử) và nhịp (C3), không nằm ở cụm sáo.
+
+### 10.3. Ghi lý do lỗi vào sổ (commit `7f9e3b6`)
+
+`history.jsonl` có 10/53 lượt hỏng, trong đó **4 lượt writer `error: None`** — không truy
+được nguyên nhân. Gốc: `_run_cli` khi bước CLI thất bại chỉ ghi vào **log tiến trình sống
+trong RAM**, không set `job["error"]`, mà `_finish_job` chỉ chép vào sổ khi trường đó có
+giá trị. Nay giữ 8 dòng cuối của CLI, thất bại thì ghi tên bước + mã thoát + 3 dòng cuối.
+*(2 lượt extractor hỏng còn lại là rác VPS Linux: `Permission denied: /tmp/...`; 4 lượt là
+người tự hủy. Chờ 12–40 phút thì đo ra tỉ lệ thuận độ dài: trung vị 18,1 phút, bài 51k ký
+tự mất 39,9 phút — chậm chứ không treo.)*
+
+### 10.4. Dọn 4 test đỏ baseline → suite xanh thật (commit `8acdb80`)
+
+Hai cái là **bug thật trên Windows** (sửa code, không sửa test cho xanh): `_history_files`
+cắt đuôi bằng `Path` làm đổi `/` thành `\` nên bản ghi di sản VPS trong sổ không bao giờ
+khớp đường dẫn client gửi → nút tải outline 404 oan; `_save_cookies` dùng `os.replace` lên
+file mang cờ chỉ-đọc bị Windows từ chối trong khi POSIX chỉ cần quyền ghi thư mục. Hai cái
+là **test lệch pha** với quyết định đã chốt (DEPTH PLAN lấy `min(ngân sách, số ý có thật)`;
+cảnh báo "chương nhiều ý quá" đã gỡ có chủ đích khi chuyển từ CẮT Ý sang PHÂN TẦNG ĐỘ SÂU
+14/07).
+
+### 10.5. Việc lộ ra, chưa làm
+
+- ⚠ **Bom hẹn giờ kho hồ sơ**: `library/index.json` lưu **đường dẫn tuyệt đối**. A001–A010
+  trỏ `/opt/content-ultimate/…` (VPS, đã mất) nên app **chỉ thấy 4/10 hồ sơ**; A011/A012/A013
+  trỏ `C:\OutlierY\…` — hệ V2 **đã tắt 22/08 và sẽ xóa ~22/09**. Đến ngày đó ba hồ sơ team
+  dùng nhiều nhất tháng 8 sẽ biến mất khỏi app. Cần di trú (chép hồ sơ + corpus sang
+  `data/content-ultimate`, cập nhật index) **trước 22/09**, có backup trước.
+- **Nghiệm thu thật Đợt 1**: chạy 1 chương bằng LLM, đo em-dash bản ra so với 13–17/1000
+  trước đây. Tốn tiền (~600–800đ/kịch bản) nên chờ Owner duyệt.
+- Bẫy vận hành tái xác nhận: khởi động tay app V3 **phải đủ bộ env của `start-all.ps1`** —
+  thiếu `CU_DATA_DIR` thì `/api/soi-ho-so` trả rỗng dù kho có hồ sơ.
