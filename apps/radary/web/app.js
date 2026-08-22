@@ -1955,7 +1955,7 @@ function Mapping({ ws, canEdit }) {
   // thấy số của US — user báo 21/08 ("từ khoá thị trường US lọt sang Spain").
   useEffect(() => {
     setA(null); setB(null); setCum(''); setErr(''); setBusy(''); setXemLai(null);
-    setLichSu([]); setNoi(null); setNong(null); setNongMo(false); setCuaSo(28); setRd(null); setTrBu(null); setMoBang(false);
+    setLichSu([]); setNoi(null); setNong(null); setNongMo(false); setCuaSo(28); setRd(null); setTrBu(null); setMoBang(false); setXacNhanNgoai(false);
     api('GET', `/workspaces/${ws}/discovery/goi-y-seed`).then(r => setGoiY(r.seed || [])).catch(() => setGoiY([]));
     const nnLuu = (() => { try { return localStorage.getItem('mapping_nn_' + ws) || ''; } catch (e) { return ''; } })();
     api('GET', `/workspaces/${ws}/discovery/tu-khoa-noi`
@@ -1994,7 +1994,7 @@ function Mapping({ ws, canEdit }) {
       const a = await api('GET', `/workspaces/${ws}/tra-cuu?cum=${encodeURIComponent(q)}`
         + (lai ? '&xem_lai=1' : ''));
       if (wsLucDo !== ws) return;               // người dùng đã đổi pool giữa chừng
-      setRd(null); setTrBu(null);
+      setRd(null); setTrBu(null); setXacNhanNgoai(false);
       if (a.khong_co_ban_luu) {                 // pool này chưa từng tra từ khoá đó
         setLichSu(a.lich_su || []); setPool(a.pool || {});
         setCum(''); setBusy(''); writeHash({ q: '', qws: '' });
@@ -2006,13 +2006,24 @@ function Mapping({ ws, canEdit }) {
       if (lai) { setXemLai(a.ts || null); setBusy(''); return; }
       if (!canEdit) { setBusy(''); return; }
       if (a.ngoai) {                            // đã có bản cũ -> hỏi lại là quyết định của người
-        setXemLai(a.ngoai.ts || null); setBusy(''); return;
+        setXemLai(a.ngoai.ts || null);
       }
-      setBusy('Đang hỏi YouTube · Google Trends · News · Wikipedia (~20 giây)…');
-      const b = await api('POST', `/workspaces/${ws}/tra-cuu/ngoai`, { cum: q });
-      if (wsLucDo !== ws) return;
-      setB(b); setLichSu(b.lich_su || []); setBusy('');
+      // KHÔNG tự hỏi thị trường ngoài nữa (user 22/08): trước đây từ khoá chưa
+      // từng tra là tự gọi khối B = 102 units + 4 lượt SERP, bấm nhầm một bong
+      // bóng là mất thật. Khối A vốn 0 quota nên vẫn chạy ngay — đó là thứ người
+      // ta muốn xem; phần tốn tiền để người bấm, đúng khuôn Reddit/Trends.
+      setBusy('');
     } catch (e) { setErr(String(e.message)); setBusy(''); }
+  };
+  const [xacNhanNgoai, setXacNhanNgoai] = useState(false);
+  const hoiNgoaiLanDau = async () => {
+    setXacNhanNgoai(false);
+    setBusy('Đang hỏi YouTube · Google Trends · News · Wikipedia (~20 giây)…');
+    try {
+      const b = await api('POST', `/workspaces/${ws}/tra-cuu/ngoai`, { cum: A.cum });
+      setB(b); setLichSu(b.lich_su || []);
+    } catch (e) { setErr(String(e.message)); }
+    setBusy('');
   };
   const hoiLaiNgoai = async () => {
     setBusy('Đang hỏi lại nguồn ngoài (~20 giây, 102 units)…'); setXemLai(null);
@@ -2220,6 +2231,20 @@ function Mapping({ ws, canEdit }) {
         ${xemLai && canEdit ? html`<button class="btn small ghost" style="margin-left:8px"
           onClick=${hoiLaiNgoai} disabled=${!!busy}>↻ Hỏi lại (102 units)</button>` : ''}</div>
 
+      ${!B && canEdit ? html`<div class="note" style="margin:0 0 12px;padding:9px 12px;
+        border-radius:9px;border:1px dashed var(--line,#243149);display:flex;gap:10px;
+        align-items:center;flex-wrap:wrap">
+        ${!xacNhanNgoai ? html`<span>Chưa hỏi thị trường ngoài cho từ khoá này —
+            phần trong pool ở dưới là <b>miễn phí</b>, hỏi ngoài mới tốn.</span>
+          <button class="btn small" onClick=${() => setXacNhanNgoai(true)} disabled=${!!busy}>
+            Hỏi thị trường ngoài</button>`
+        : html`<span><b>Chắc chắn hỏi “${A.cum}”?</b> Tốn <b>102 units YouTube</b> +
+            <b>4 lượt SERP</b>. Kết quả được lưu, lần sau mở lại 0 đồng.</span>
+          <button class="btn small" onClick=${hoiNgoaiLanDau} disabled=${!!busy}>Hỏi ngay</button>
+          <button class="btn small ghost" onClick=${() => setXacNhanNgoai(false)}>Huỷ</button>`}
+        ${busy ? html`<span>${busy}</span>` : ''}
+      </div>` : ''}
+
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(380px,1fr));gap:14px;
         align-items:start">
         <div>
@@ -2253,7 +2278,7 @@ function Mapping({ ws, canEdit }) {
         <div>
           <div class="eyebrow" style="margin-top:0;color:var(--accent,#4C8FE0)">B · YouTube market — ${pool.market || '(chưa gắn)'}
             <span class="note" style="text-transform:none;letter-spacing:0;font-weight:400"> · ngoài pool, trong YouTube</span></div>
-          ${!B ? html`<div class="note">Chưa hỏi thị trường cho từ khoá này${canEdit ? ' — bấm ↻ Hỏi lại phía trên' : ''}.</div>`
+          ${!B ? html`<div class="note">Chưa hỏi thị trường cho từ khoá này${canEdit ? ' — bấm nút phía trên để hỏi.' : '.'}</div>`
             : yt.co_du_lieu ? html`<div>
             <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
               <div class="chip"><b>${soGon(yt.tong_view_90n)}</b><span>view 90 ngày (top ${yt.so_ket_qua} video)</span></div>

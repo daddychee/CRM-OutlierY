@@ -1329,3 +1329,24 @@ def test_bang_cum_mac_dinh_5_dong():
     assert 'moBang ? ds : ds.slice(0, 5)' in js
     assert 'Xem tất cả ${n} cụm' in js and '▴ Thu gọn' in js
     assert 'setMoBang(false)' in js                 # đổi pool là thu lại
+
+
+def test_click_tu_khoa_khong_tu_tieu_quota():
+    """22/08 — user: "click vào từ khoá phải hỏi xác nhận để tránh click nhầm và
+    lãng phí token".
+
+    Đúng: trước đây traCuu() cho từ khoá CHƯA từng tra thì tự gọi khối B = 102
+    units YouTube + 4 lượt SERP; bấm nhầm một bong bóng là mất thật. Nay khối A
+    (0 quota, đọc SQLite) vẫn chạy ngay — đó là thứ người ta muốn xem — còn khối
+    B thành nút có BÁO GIÁ + XÁC NHẬN HAI BƯỚC, cùng khuôn Reddit/Trends.
+    """
+    from pathlib import Path as _P
+    js = (_P(__file__).resolve().parents[1] / 'web' / 'app.js').read_text(encoding='utf-8')
+
+    than = js.split('const traCuu = async')[1].split('const [xacNhanNgoai')[0]
+    assert "api('POST', `/workspaces/${ws}/tra-cuu/ngoai`" not in than   # hết tự gọi
+    assert 'KHÔNG tự hỏi thị trường ngoài' in than
+
+    assert 'Chắc chắn hỏi' in js and '102 units YouTube' in js           # báo giá rõ
+    assert 'setXacNhanNgoai(true)' in js and 'hoiNgoaiLanDau' in js
+    assert 'setXacNhanNgoai(false)' in js                                # đổi cụm là reset
