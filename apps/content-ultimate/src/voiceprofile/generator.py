@@ -418,6 +418,9 @@ def min_chapters_for(total_chars: int, has_hook: bool, has_end: bool) -> int:
     return max(1, math.ceil(body / CHAPTER_WARN_CHARS))
 
 
+TRAN_TU_NEO = 2600          # tran do day cua khoi neo giong (xem chon_neo.TRAN_TU)
+
+
 def build_voice_block(profile: dict) -> str:
     """Khoi huong dan giong dung chung cho moi phan: exemplar + signature moves."""
     author = profile.get("author", "the author")
@@ -427,7 +430,15 @@ def build_voice_block(profile: dict) -> str:
         "sentence-length variation, imagery, and stance toward the reader. Do NOT copy "
         "their sentences.",
     ]
-    exemplars = profile.get("exemplars", [])[:3]
+    # Tran theo TONG TU chu khong dem mau (C3b 22/08): neo cu = 3 mau ~200-330 tu,
+    # qua mong so voi ca tram dong luat trong prompt (con lac 16/07). Ho so nao da
+    # duoc nap neo day (chon_neo) thi vao het; ho so chi co 3 mau thi hanh vi y cu.
+    exemplars, _dem = [], 0
+    for ex in profile.get("exemplars", []):
+        exemplars.append(ex)
+        _dem += len(str(ex).split())
+        if _dem >= TRAN_TU_NEO:
+            break
     if exemplars:
         parts.append("\nEXEMPLARS (voice ground truth):")
         for i, ex in enumerate(exemplars, 1):

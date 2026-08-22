@@ -287,6 +287,23 @@ def write(
     profile = json.loads(Path(profile_path).read_text(encoding="utf-8"))
     outline = Path(outline_path).read_text(encoding="utf-8")
 
+    # NEO DAY (C3b 22/08): thay 3 exemplar ~200 tu bang tap chon tu corpus that,
+    # day ~1.800 tu VA khop nhip corpus. Chi doi bien trong bo nho — KHONG ghi de
+    # profile.json (bai hoc 16/07: dung lai ho so tu transcript da bi user bac).
+    # Corpus thieu dau cau -> giu nguyen neo cu, noi ro ly do.
+    if author_dir:
+        from .chon_neo import neo_day
+        _r = neo_day(author_dir)
+        if _r["neo"]:
+            _cu = len(" ".join(str(e) for e in profile.get("exemplars") or []).split())
+            profile = {**profile, "exemplars": _r["neo"]}
+            typer.echo(f"Neo giong: {_r['tong_tu']} tu tu corpus ({len(_r['neo'])} khoi) "
+                       f"thay cho {_cu} tu — nhip neo {_r['nhip_neo']['tu_moi_cau']} tu/cau "
+                       f"vs corpus {_r['nhip_corpus']['tu_moi_cau']}"
+                       + (f", bo qua {_r['file_bo_qua']} file thieu dau cau" if _r.get("file_bo_qua") else ""))
+        else:
+            typer.echo(f"Neo giong: giu 3 mau cu — {_r['ly_do']}")
+
     try:
         cfg = _pick_provider(provider, model)
     except RuntimeError as e:
