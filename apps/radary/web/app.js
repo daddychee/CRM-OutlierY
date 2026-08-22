@@ -1791,7 +1791,16 @@ function ThanhTruyVan({ muc, mau, ghi }) {
 // Góc TRÊN-TRÁI = đang lên mà ít người làm = chỗ đáng nhìn trước.
 function BanDoCum({ cum, onChon, nhanCuaSo = '' }) {
   const d = (cum || []).filter(r => r.phan_tram != null && r.tong_video > 0);
-  if (d.length < 2) return null;
+  // KHONG bien mat trong im lang (user 22/08 tuong pool SPACE "khong quet duoc"):
+  // pool quet tot, chi la tab dang mo it cum du mau — noi ro vi sao + chi loi ra.
+  // Ngach kieu SPACE dat title "Mars Is Hiding..." (doi tuong lam chu ngu, khong sau
+  // gioi tu) nen bo do doi-tuong bat duoc rat it; doi tuong that cua ngach do (james
+  // webb, solar system) la cum 2 tu — nam o tab Mau cau / Tat ca.
+  if (d.length < 2) return html`<div class="note" style="margin:8px 0;padding:8px 10px;
+    border:1px dashed var(--line,#243149);border-radius:8px">
+    Không đủ cụm để vẽ bản đồ ở tab này: ${(cum || []).length} cụm nhưng chỉ ${d.length} cụm
+    đủ mẫu so kỳ (cần ≥ 2). Không phải pool chưa quét — thử tab <b>Tất cả</b>, nới
+    <b>Cửa sổ đo</b> dài hơn, hoặc xem bảng dưới (cụm "ít mẫu" vẫn liệt kê đủ).</div>`;
   const w = 720, h = 360, L = 66, R = 30, T = 22, B = 40;
   // TRUC NGANG = PHAN VI TRONG LOAI, khong phai so tuyet doi (user 22/08: "cac tab
   // dang cung 1 he quy chieu ve tran muc canh tranh"). Mau cau von nhieu video gap

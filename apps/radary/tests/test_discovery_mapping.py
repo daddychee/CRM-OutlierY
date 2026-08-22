@@ -1051,3 +1051,17 @@ def test_ban_do_cua_so_do_7_28_90_toan_thoi_gian():
     assert '<option value="0">Toàn thời gian</option>' in js
     assert 'cua_so=${cs}' in js and 'type="range"' not in js
     assert 'r.video_cua_so ?? r.tong_video' in js    # trục đọc cửa sổ
+
+
+def test_ban_do_khong_bien_mat_trong_im_lang():
+    """22/08 — pool SPACE mở tab Đối tượng không thấy bong bóng, user tưởng "pool
+    nhiều video quá nên không quét được". Sự thật: quét tốt (48 cụm), nhưng bộ dò
+    đối-tượng (từ sau giới từ — khuôn của ngách Life-in-X) chỉ bắt được 4 cụm đủ mẫu
+    ở ngách SPACE (title kiểu "Mars Is Hiding..." — đối tượng làm chủ ngữ). Biểu đồ
+    dưới 2 cụm phải NÓI LÝ DO, không return null lặng lẽ."""
+    from pathlib import Path as _P
+    js = (_P(__file__).resolve().parents[1] / 'web' / 'app.js').read_text(encoding='utf-8')
+    than = js.split('function BanDoCum(')[1].split('\nfunction ')[0]
+    assert 'return null' not in than.split('d.length < 2')[1].split('const w')[0]
+    assert 'Không đủ cụm để vẽ bản đồ' in than
+    assert 'Không phải pool chưa quét' in than
