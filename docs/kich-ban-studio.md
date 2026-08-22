@@ -626,3 +626,60 @@ bài Uzbekistan.
 
 Hook cả hai model đều đạt: mở bằng nghịch lý, không gọi tên nhân vật ở câu đầu. Mô-đun chấm 3
 phương án ra 3/4 · 3/4 · 2/4 rồi chọn bản cao nhất.
+
+## 13. SÁU BƯỚC ĐÊM 23/08 — làm tuần tự, mỗi bước xanh mới sang bước sau
+
+Owner chốt danh sách trước khi đi ngủ, yêu cầu bám sát và không bỏ bước. Mỗi bước một
+commit riêng, test viết TRƯỚC, đo lại trên dữ liệu thật. Suite **330 pass / 0 fail**.
+
+| bước | việc | commit |
+|---|---|---|
+| 1 | Sửa thước bám giọng | `029b866` |
+| 2 | Ngôn ngữ bài viết theo outline | `20da894` |
+| 3 | Cửa nhập tự loại file hỏng | `24107bb` |
+| 4 | Lõi viết từng chương | `52c90d7` |
+| 5 | Giao diện viết từng chương | `1559657` |
+| 6 | Dựng lại chỉ số giọng corpus Ventures | `1ab1290` |
+
+**B1 — thước đang đếm dấu vân tay máy vào điểm giọng.** Bỏ `punct_freq_total` (nó là tổng
+dấu câu trên ký tự và **em-dash được tính vào đó**, nên bản sạch em-dash bị chấm là kém
+giống tác giả — đúng chỗ làm điểm tụt 86% → 57%). Bỏ luôn điểm tổng phần trăm, trả từng
+chỉ số. Và chuẩn **nhịp** lấy từ corpus tác giả thay vì ba đoạn mẫu chọn lệch — cho thước
+dùng **cùng nguồn với prompt**. Đo thật: chuẩn đổi từ 13,0/23,8% (exemplar) sang 13,6/27,5%
+(corpus). *Ponytail: chỉ đo nhịp trên văn lành, không gọi cả thuật toán chọn neo cho một
+con số.*
+
+**B2 — hiện trạng đáng lo hơn tưởng**: generator **không có một dòng nào xử lý ngôn ngữ**,
+chữ `language` xuất hiện 0 lần và `output_language` chưa bao giờ được đọc. Bài ra tiếng Anh
+hoàn toàn nhờ may. Nay lệnh ngôn ngữ chèn cho **cả hook, chương và kết**; với tiếng Anh khối
+lệnh RỖNG nên bài hiện có không đổi một byte (có test hồi quy). Kèm **cảnh báo khi giọng
+khác ngôn ngữ bài**: nhịp câu tiếng Anh không áp được cho bài tiếng Việt, im lặng chấm điểm
+trong ca đó là cho ra số rác.
+
+**B3 — cửa nhập tự loại thay vì cho tick bỏ qua.** Cảnh báo suông có từ 16/07 bị bỏ qua
+100%; cửa chặn 21/08 cho tick đi tiếp và **đã có người tick** — đó là gốc của ba hồ sơ hỏng.
+Nay tự loại file dưới ngưỡng rồi báo rõ đã loại gì. Loại hết thì báo lỗi chứ không trả
+corpus rỗng. Kiểm thật: Ventures giữ 3 file / 14.252 từ, bỏ đúng 2 file transcript thô.
+
+**B4 — lõi viết từng chương.** Tái dùng toàn bộ `done_sections` / `on_section_done` /
+checkpoint; diff chỉ là `chi_phan` và `gop_y`. **Bug bắt được lúc nghiệm thu chứ không phải
+lúc chạy test**: bản trước nằm trong `done_sections` nên vòng lặp coi phần đó "đã xong" và
+bỏ qua — bấm *viết lại* mà không có gì xảy ra. Đã trừ `chi_phan` ra và thêm test phủ đúng
+đường đó.
+
+**B5 — giao diện** theo mockup vòng 4: hai chế độ, cột trái danh sách phần, hàng chip đo đặt
+cạnh **số của chính tác giả**, khối duyệt có ô góp ý và ba góp ý bấm nhanh. Không route mới:
+nội dung từng phần đọc qua `/api/download` sẵn có. Màn thứ hai (chọn chương, nút lưu)
+**không làm** — Owner chốt chuyển sang module khác. Minimalist icon: khối mới không dùng
+một emoji nào; test emoji **chỉ quét khối mới** vì dọn cả app là "tiện tay sửa".
+
+**B6 — dựng lại chỉ số giọng, 0 token.** Khác thí nghiệm 16/07 đã bị Owner bác ở chỗ dữ liệu
+vào **đã lọc**. Kết quả: chỉ số giọng **3 → 8**, từ mỗi câu **1085 → 13,4**. **Không ghi đè**:
+ghi ra `profile.moi.json` cạnh bản cũ, backup riêng ở
+`data/backup/profiles-truoc-b6-20260823`.
+
+### Việc để lại cho Owner sáng 24/08
+
+**Kiểm chứng mù**: hai bản của cùng một chương, một bản hồ sơ cũ một bản hồ sơ mới, **không
+ghi bản nào là bản nào**. Luật A1 cấm tự kết luận bằng văn do chính hệ thống sinh ra, nên
+quyết định dùng hồ sơ nào là của Owner.
