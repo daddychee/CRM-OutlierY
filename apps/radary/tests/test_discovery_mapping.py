@@ -1599,3 +1599,43 @@ def test_tu_khoa_nong_drill_video_kenh_22_08():
         tung_loai.setdefault(m['loai'], []).append(m)
     for ds in tung_loai.values():
         assert all('video_no' not in m for m in ds[5:])
+
+
+def test_contraction_khong_bao_gio_la_topic_22_08():
+    """Ngach nghi huu: "don't" bi xep TOPIC vi nltk tag moi contraction don le la
+    NN (don't/can't/you're deu NN) -> phieu cua token nhay la rac. Luat: duoi sau
+    dau nhay quyet dinh — chi 's (so huu) xet POS phan goc, con lai loai thang."""
+    from radary import mapping
+    phieu_rac = {"don't": {"NN": 9}, "can't": {"NN": 7}, "you're": {"NN": 3},
+                 "world's": {"NN": 2}, "world": {"NN": 5}, "don": {"NN": 4}}
+    for w in ("don't", "can't", "won't", "isn't", "you're", "they'll", "i'd", "i'm"):
+        assert not mapping.la_doi_tuong(w, phieu_rac), w
+    # so huu 's van di theo POS phan goc: world's -> world NN -> doi tuong
+    assert mapping.la_doi_tuong("world's", phieu_rac)
+    # goc khong phai danh tu thi 's cung khong cuu: he's -> he (PRP)
+    assert not mapping.la_doi_tuong("he's", {"he": {"PR": 5}})
+
+
+def test_audit_cac_ngach_22_08_phieu_truoc_tu_dien_sau():
+    """Audit moi ngach co thi truong 22/08 lo 3 benh: (1) tu ngoai tu dien vi
+    thieu dang bien to (-ed/-ing) auto thanh 'ten rieng' du phieu VB ro rang;
+    (2) dai tu bat dinh NN ('something' 307 phieu) thanh topic; (3) 'after
+    hurricane' mang nguyen 'after' vi _TU_TRO thieu gioi tu thoi gian."""
+    from radary import mapping
+    phieu = {"expected": {"VB": 9}, "moved": {"VB": 31},
+             "breathtaking": {"JJ": 9, "NN": 4, "VB": 16}, "dreaming": {"VB": 4, "NN": 1},
+             "found": {"VB": 342}, "hurricane": {"NN": 50}, "states": {"NN": 56}}
+    # (1) phieu VB thang — khong con auto ten-rieng theo tu dien
+    for w in ("expected", "moved", "breathtaking", "dreaming"):
+        assert not mapping.la_doi_tuong(w, phieu), w
+    # ten rieng that: tagger chua thay + ngoai tu dien -> van la doi tuong
+    if mapping._TU_DIEN is not None:
+        assert mapping.la_doi_tuong("kyrgyzstan", phieu)
+    # (2) dai tu bat dinh la tu tro: khong thanh topic, don le khong thanh hook
+    assert mapping.loai_cum("found something", phieu) == "mau_cau"
+    assert not mapping.hook_hop_le("something", {"something": {"NN": 307}})
+    # (3) gioi tu thoi gian don ria topic
+    assert mapping.don_topic("after hurricane") == "hurricane"
+    # (4) dong tu moi goi dau tieu de: tagger tag NN vi dung dau cau — khong topic
+    assert mapping.loai_cum("discover", {"discover": {"NN": 30, "VB": 3}}) == "mau_cau"
+    assert mapping.don_topic("discover beauty") == "beauty"

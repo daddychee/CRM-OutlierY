@@ -94,7 +94,15 @@ _TU_RX = re.compile(r"[^\W_]+(?:'[^\W_]+)?", re.UNICODE)
 # Từ quá phổ biến, có mặt ở mọi title nên không nói lên ngách nào cả.
 _TU_TRO = {"the", "a", "an", "of", "in", "on", "at", "to", "for", "and", "or", "is",
            "are", "was", "were", "be", "with", "from", "by", "that", "this", "it",
-           "you", "your", "my", "we", "i", "how", "what", "why", "when", "where"}
+           "you", "your", "my", "we", "i", "how", "what", "why", "when", "where",
+           # gioi tu thoi gian/vi tri con thieu — "after hurricane" tung ra topic
+           # mang nguyen chu "after" (audit cac ngach 22/08)
+           "after", "before", "during", "under", "over", "into",
+           # dai tu bat dinh: tagger tag NN nhung khong mang noi dung — "something"
+           # 307 phieu NN o pool SPACE lam "found something" thanh topic
+           "something", "anything", "everything", "nothing", "someone", "anyone",
+           "everyone", "nobody", "somebody", "anybody", "everybody",
+           "somewhere", "anywhere", "everywhere", "nowhere"}
 
 
 def von_tu_ngach(kho: list[dict], toi_thieu: int = 2) -> set[str]:
@@ -701,16 +709,25 @@ def la_doi_tuong(w: str, phieu: dict | None) -> bool:
     """Mot TU la doi tuong? — ten rieng (ngoai tu dien) hoac danh tu (phieu NN)."""
     if len(w) < 3 or w in _TU_TRO or w.isdigit() or w in _TU_DINH_DANG:
         return False
-    # tu co dau nhay ("can't", "world's") khong bao gio la ten rieng — chung roi
-    # ngoai tu dien vi dau nhay, khong phai vi la danh tu rieng (do that 22/08:
-    # "can't" bi xep DOI TUONG trong Hot Topic). Phan loai theo POS cua phan goc.
+    # tu co dau nhay khong bao gio la ten rieng. DUOI sau dau nhay quyet dinh
+    # (do that 22/08 ngach nghi huu: "don't" bi xep TOPIC vi nltk tag MOI
+    # contraction dung mot minh la NN — phieu cua chinh token nhay la rac):
+    # chi 's (so huu — "world's") moi xet tiep POS phan goc; 't/'re/'ve/'ll/'d/'m
+    # la tro dong tu cut, loai thang.
     if "'" in w:
-        goc = w.split("'")[0]
-        ph = (phieu or {}).get(w) or (phieu or {}).get(goc)
+        goc, _, duoi = w.partition("'")
+        if duoi != "s":
+            return False
+        ph = (phieu or {}).get(goc)
         return bool(ph) and max(ph, key=ph.get) == "NN"
-    if _TU_DIEN is not None and w not in _TU_DIEN and w.rstrip("s") not in _TU_DIEN:
-        return True                            # ngoai tu dien (ke ca dang so nhieu) = ten rieng
     ph = (phieu or {}).get(w)
+    if _TU_DIEN is not None and w not in _TU_DIEN and w.rstrip("s") not in _TU_DIEN:
+        # ngoai tu dien = ten rieng (cuu dia danh bi tagger doan JJ: tajikistan
+        # duoi -an), TRU khi phieu da so la DONG TU — tu dien 234k thieu dang bien
+        # to -ed/-ing nen expected/moved/breathtaking/dreaming tung auto thanh
+        # "ten rieng" du tagger bo phieu VB ro rang (audit cac ngach 22/08); dia
+        # danh khong bao gio VB da so nen van an toan.
+        return not (ph and max(ph, key=ph.get).startswith("VB"))
     return bool(ph) and max(ph, key=ph.get) == "NN"
 
 
@@ -727,7 +744,12 @@ _TU_DINH_DANG = {"documentary", "vlog", "video", "videos", "film", "footage",
                  # danh tu TRUU TUONG dong khung (Owner 22/08: "cheap living, living,
                  # reality khong phai topic") — chung dong khung cau chuyen chu khong
                  # phai chu the: reality of X, facts about X, the truth about X
-                 "reality", "facts", "truth", "story", "stories"}
+                 "reality", "facts", "truth", "story", "stories",
+                 # DONG TU MOI GOI dau tieu de ("Discover the hidden...") — tagger
+                 # tag NN da so vi dung dau cau (audit 22/08: 'discover' 30 phieu NN
+                 # o pool Travel US thanh topic); chung dong khung loi moi, khong
+                 # phai chu the
+                 "discover", "explore", "watch", "meet", "visit"}
 
 
 def don_topic(cum: str) -> str:
@@ -758,8 +780,8 @@ def hook_hop_le(cum: str, phieu: dict | None = None) -> bool:
     if len(tu) >= 2:
         return True
     w = tu[0] if tu else ""
-    if not w or "'" in w or w in _TU_DINH_DANG:
-        return False          # 'vlog'/'4k' don le la nhan the loai, khong phai hook
+    if not w or "'" in w or w in _TU_DINH_DANG or w in _TU_TRO:
+        return False          # 'vlog'/'4k' la nhan the loai; 'something' la tu tro
     ph = (phieu or {}).get(w)
     return bool(ph) and max(ph, key=ph.get) in ("NN", "VB", "JJ")
 
