@@ -1215,11 +1215,12 @@ def test_reddit_qua_apify_chi_chay_khi_bam():
     assert 'Chưa cấp khóa Apify' in r and 'hết credit tháng' in r
     assert 'db.tra_cuu_luu' in r                                # lưu để mở lại 0 đồng
 
-    # UI: nút bấm + báo giá trước khi bấm, KHÔNG tự gọi
+    # UI: đi qua MỘT cửa Advance Mapping (22/08 gộp ba đường), có báo giá,
+    # KHÔNG tự gọi và không còn nút Reddit riêng
     js = (goc / 'web' / 'app.js').read_text(encoding='utf-8')
-    assert '>\n                Hỏi Reddit</button>' in js or 'Hỏi Reddit</button>' in js
-    assert 'tốn ~0,016 USD mỗi lần' in js
-    assert 'tra-cuu/reddit' in js
+    assert 'Hỏi Reddit</button>' not in js
+    assert '0,016 USD Apify' in js and 'tra-cuu/reddit' in js
+    assert 'advReddit' in js
 
 
 def test_serp_ep_so_va_bo_sung_trends_cho_ban_nen():
@@ -1245,9 +1246,11 @@ def test_serp_ep_so_va_bo_sung_trends_cho_ban_nen():
     assert 'db.tra_cuu_luu' in r                                  # ghi lại, lần sau 0 lượt
     assert 'tu_nen' in api_src and 'quét nền tạo' in api_src  # lý do rõ, không 'đã tắt'      # lý do rõ, không "đã tắt"
 
+    # nút "Lấy Google Trends" riêng đã bỏ — lấy bổ sung qua Advance Mapping
     js = (goc / 'web' / 'app.js').read_text(encoding='utf-8')
-    assert 'Lấy Google Trends' in js and '(3 lượt SERP)' in js
-    assert 'tra-cuu/trends' in js
+    assert 'Lấy Google Trends' not in js
+    assert 'bấm Advance Mapping ở đầu khối để lấy' in js
+    assert 'advSerp' in js
 
 
 def test_khoi_A_luon_tuoi_va_doi_chieu_cum_rut_gon():
@@ -1412,6 +1415,8 @@ def test_advance_mapping_la_popup_rieng():
         assert f'checked=${{{tick}}}' in khoi, tick
 
     assert "e.key === 'Escape'" in js                         # Esc đóng cả hai popup
-    # dòng nhắc inline chỉ còn MỘT nút, không còn nhánh xổ tick
-    nhac = js.split('Muốn soi ra ngoài')[1].split('</div>` : \'\'}')[0]
-    assert 'checkbox' not in nhac
+    # MỘT CỬA: nút luôn hiện (không chỉ khi thiếu khối B) và tự tick theo trạng
+    # thái — phần đã có thì bỏ tick sẵn kèm nhãn "đã có", khỏi tốn lại
+    assert 'setAdvPool(!(yt && yt.co_du_lieu))' in js
+    assert 'setAdvReddit(!coReddit)' in js
+    assert '<b>đã có</b>' in js

@@ -2076,26 +2076,12 @@ function Mapping({ ws, canEdit }) {
   // hoi moi, nhung ban luu thi dong bang) -> loc + tinh lai xu huong o day de ban cu
   // het bao "xuong -42%" gia. Cung cong thuc voi server (mean quy dau vs quy cuoi).
   const gg = B && B.google || {};
-  const [trBu, setTrBu] = useState(null);    // Trends bổ sung cho bản lưu thiếu
-  const [trBan, setTrBan] = useState('');
-  const buTrends = async () => {
-    if (trBan) return;
-    setTrBan('Đang lấy Google Trends…');
-    try {
-      setTrBu(await api('POST', `/workspaces/${ws}/tra-cuu/trends`, { cum: A.cum }));
-    } catch (e) { setTrBu({ co_du_lieu: false, ly_do: String(e.message || e) }); }
-    setTrBan('');
-  };
-  const [rd, setRd] = useState(null);        // Reddit — TỐN TIỀN nên chỉ chạy khi bấm
-  const [rdBan, setRdBan] = useState('');
-  const hoiReddit = async () => {
-    if (rdBan) return;
-    setRdBan('Đang hỏi Reddit (~20-40 giây)…');
-    try {
-      setRd(await api('POST', `/workspaces/${ws}/tra-cuu/reddit`, { cum: A.cum, ky: 'year' }));
-    } catch (e) { setRd({ co_du_lieu: false, ly_do: String(e.message || e) }); }
-    setRdBan('');
-  };
+  // Trends/Reddit lấy bổ sung QUA Advance Mapping (22/08 — gộp ba đường về một
+  // cửa), nên hai nút riêng cũ đã bỏ; chỉ giữ state để hiển thị kết quả.
+  const [trBu, setTrBu] = useState(null);
+  const [rd, setRd] = useState(null);
+  // phải khai SAU `rd` — đọc trước là ReferenceError giết cả component (dính 22/08)
+  const coReddit = !!((rd && rd.co_du_lieu) || (B && B.reddit && B.reddit.co_du_lieu));
   const sp = B && B.serp || {};
   const wkTho = B && B.wiki || {};
   const wk = (() => {
@@ -2123,19 +2109,20 @@ function Mapping({ ws, canEdit }) {
             onClick=${() => setXacNhanNgoai(false)} aria-label="Đóng">✕</button>
         </div>
         <div class="note" style="margin:0 0 10px">Chọn phần muốn soi. Bỏ tick nào thì phần đó
-          không chạy và không tốn gì.</div>
+          không chạy và không tốn gì. Phần <b>đã có</b> được bỏ tick sẵn — tick lại là
+          <b>hỏi mới, tốn lại</b>.</div>
         <label style="display:flex;gap:9px;align-items:flex-start;padding:5px 0;cursor:pointer">
           <input type="checkbox" checked=${advPool} onChange=${e => setAdvPool(e.target.checked)}/>
           <span><b>Ngoài Pool</b> — video nổi 90 ngày, kênh nhỏ lọt top, biến thể người ta gõ
-            <span class="note">· 102 units YouTube</span></span></label>
+            <span class="note">· 102 units YouTube</span>${yt && yt.co_du_lieu ? html`<span class="note"> · <b>đã có</b></span>` : ''}</span></label>
         <label style="display:flex;gap:9px;align-items:flex-start;padding:5px 0;cursor:pointer">
           <input type="checkbox" checked=${advSerp} onChange=${e => setAdvSerp(e.target.checked)}/>
           <span><b>Google Trends</b> — đường 12 tháng, truy vấn đang lên, vùng quan tâm,
-            câu hỏi thật <span class="note">· 4 lượt SERP</span></span></label>
+            câu hỏi thật <span class="note">· 4 lượt SERP</span>${tr && tr.co_du_lieu ? html`<span class="note"> · <b>đã có</b></span>` : ''}</span></label>
         <label style="display:flex;gap:9px;align-items:flex-start;padding:5px 0;cursor:pointer">
           <input type="checkbox" checked=${advReddit} onChange=${e => setAdvReddit(e.target.checked)}/>
           <span><b>Reddit</b> — upvote, bình luận, cộng đồng đang bàn
-            <span class="note">· ~0,016 USD Apify</span></span></label>
+            <span class="note">· ~0,016 USD Apify</span>${coReddit ? html`<span class="note"> · <b>đã có</b></span>` : ''}</span></label>
         <div class="row" style="gap:8px;margin-top:14px;align-items:center">
           <button class="btn primary" onClick=${hoiNgoaiLanDau}
             disabled=${!!busy || (!advPool && !advSerp && !advReddit)}>Chạy</button>
@@ -2316,13 +2303,14 @@ function Mapping({ ws, canEdit }) {
         ${xemLai && canEdit ? html`<button class="btn small ghost" style="margin-left:8px"
           onClick=${hoiLaiNgoai} disabled=${!!busy}>↻ Hỏi lại (102 units)</button>` : ''}</div>
 
-      ${!B && canEdit ? html`<div class="note" style="margin:0 0 12px;padding:9px 12px;
+      ${canEdit ? html`<div class="note" style="margin:0 0 12px;padding:9px 12px;
         border-radius:9px;border:1px dashed var(--line,#243149);display:flex;gap:10px;
         align-items:center;flex-wrap:wrap">
-        <span>Phần <b>trong pool</b> ở dưới là <b>miễn phí</b> và đã chạy. Muốn soi ra ngoài
-          thì bấm <b>Advance Mapping</b>.</span>
-        <button class="btn small" onClick=${() => setXacNhanNgoai(true)} disabled=${!!busy}>
-          Advance Mapping</button>
+        <span>Phần <b>trong pool</b> ở dưới <b>miễn phí</b> và đã chạy. Ba nguồn ngoài
+          (YouTube market · Google Trends · Reddit) gom trong một cửa:</span>
+        <button class="btn small" onClick=${() => { setAdvPool(!(yt && yt.co_du_lieu));
+          setAdvSerp(!(tr && tr.co_du_lieu)); setAdvReddit(!coReddit);
+          setXacNhanNgoai(true); }} disabled=${!!busy}>Advance Mapping</button>
         ${busy ? html`<span>${busy}</span>` : ''}
       </div>` : ''}
 
@@ -2457,11 +2445,9 @@ function Mapping({ ws, canEdit }) {
               </div>` : ''}
               ${!(tr2.rising || []).length && !(tr2.top || []).length ? html`<div class="note">
                 Không có truy vấn liên quan (từ khoá hẹp) — xem "biến thể người ta gõ" ở khối B.</div>` : ''}
-            </div>` : html`<div>
-              <div class="note" style="margin:0 0 6px">${tr2.rate_limit ? '⏳ ' : ''}${tr2.ly_do || 'không có dữ liệu'}</div>
-              ${sp.co_khoa && canEdit ? html`<button class="btn small" onClick=${buTrends}
-                disabled=${!!trBan}>Lấy Google Trends <span class="note">(3 lượt SERP)</span></button>` : ''}
-              ${trBan ? html`<span class="note"> ${trBan}</span>` : ''}
+            </div>` : html`<div class="note" style="margin:0">
+              ${tr2.rate_limit ? '⏳ ' : ''}${tr2.ly_do || 'không có dữ liệu'}${
+                sp.co_khoa && canEdit ? ' — bấm Advance Mapping ở đầu khối để lấy.' : ''}
             </div>`}
           </div>`; })()}
           ${gg.co_du_lieu ? html`<div class="excard rong">
@@ -2499,13 +2485,10 @@ function Mapping({ ws, canEdit }) {
           </div>
           ${(() => { const r = rd || (B && B.reddit) || null; return html`<div class="excard">
             <h3>Reddit <span class="note">· thảo luận thật · upvote &amp; bình luận</span></h3>
-            ${!r ? html`<div>
-              <div class="note" style="margin:0 0 6px">Chưa hỏi. Reddit chặn IP máy chủ nên phải
-                đi qua Apify — <b>tốn ~0,016 USD mỗi lần</b> (gói free 5 USD/tháng ≈ 300 lượt).</div>
-              ${canEdit ? html`<button class="btn small" onClick=${hoiReddit} disabled=${!!rdBan}>
-                Hỏi Reddit</button>` : html`<span class="note">Cần quyền leader trở lên.</span>`}
-              ${rdBan ? html`<div class="note">${rdBan}</div>` : ''}
-            </div>`
+            ${!r ? html`<div class="note" style="margin:0">Chưa hỏi. Reddit chặn IP máy chủ
+              nên phải đi qua Apify (~0,016 USD mỗi lần)${canEdit
+                ? ' — bấm Advance Mapping ở đầu khối để lấy.'
+                : '. Cần quyền leader trở lên.'}</div>`
             : !r.co_du_lieu ? html`<div class="note">${r.ly_do}</div>`
             : html`<div>
               <div class="big">${soGon(r.tong_upvote)}<span style="font-size:13px;font-weight:400;
