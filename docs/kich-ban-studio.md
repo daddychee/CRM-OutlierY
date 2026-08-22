@@ -518,3 +518,48 @@ Khối neo mới có **0 em-dash** (văn tác giả vốn không dùng) — cộ
 - **Nghiệm thu thật cả Đợt 1 + Đợt 2**: chạy 1 chương bằng LLM, đo em-dash/1000 và % câu
   cụt so mốc cũ, rồi **người đọc chốt**. Cổng cuối cùng là người, không phải số.
 - B3 đã đo xong và kết luận không thêm luật (mục 10.2). Van thứ 5 vẫn chờ sau nghiệm thu.
+
+### 11.4. NGHIỆM THU THẬT — 22/08/2026 (glm-5.2, cùng outline Uzbekistan của bản team 22/08)
+
+Ba nhánh, chỉ tốn 2 lượt gọi model (nhánh A đã có sẵn là bản team viết 22/08):
+
+**Cấp chương (522 từ, tách hiệu ứng từng đợt):**
+
+| nhánh | em-dash/1k | từ/câu | %cụt | bám giọng |
+|---|---|---|---|---|
+| A. prompt cũ + neo cũ | 15,09 | 9,1 | 58,6 | 29% |
+| B. prompt MỚI + neo cũ | **6,11** | 9,6 | 52,9 | 43% |
+| C. prompt MỚI + neo DÀY | 19,42 | 17,2 | 40,0 | 71% |
+
+⇒ **Đợt 1 ăn, đo sạch**: A và B cùng nhịp câu (9,1 vs 9,6 từ/câu) nên so được trực tiếp —
+em-dash **giảm 59%** chỉ nhờ gỡ em-dash khỏi prompt. Giả thuyết "model sao lại mật độ của
+vật liệu dạy" được xác nhận bằng số.
+
+**Cả bài, 5 chương (1.544–1.567 từ — mẫu gấp 3):**
+
+| chỉ số | A (cũ) | C (mới) | văn người |
+|---|---|---|---|
+| em-dash/1.000 từ | 18,04 | **9,80** (−46%) | 0,04 |
+| câu cụt | 45,9% | **37,5%** (−8,4 điểm) | 29,5% |
+| từ/câu | 11,7 | **12,8** | 13,2 |
+| lệch nhịp so corpus | 0,93 | **0,44** (−53%) | 0 |
+| bám giọng (7 chỉ số) | 86% | **57%** ⚠ | — |
+
+**Bám giọng tụt — soi từng chỉ số** thay vì bỏ qua: C trượt đúng hai target
+`function_word_freq` (0,364 vs khoảng 0,309–0,345) và `punct_freq_total` (0,072 vs
+0,074–0,096). Cả hai là **hệ quả trực tiếp của câu dài hơn và ít em-dash hơn** — tức chính
+hai thứ đợt này nhắm tới. Đáng chú ý: `punct_freq_total` của hồ sơ **đếm cả em-dash**, nên
+bản sạch em-dash bị thước giọng đánh trượt, dù em-dash là dấu vân tay máy. Hai thước mâu
+thuẫn nhau ở đúng điểm này. (`ttr` cả hai bản đều trượt, nhưng C gần đích hơn: 0,413 vs 0,432.)
+
+**Truy nguồn em-dash của nhánh C** (thay vì đoán): neo dày đo ra **0 em-dash**, corpus tác
+giả 0,04/1000 ⇒ em-dash KHÔNG đến từ neo. Nó **tương quan với độ dài câu**: nhánh B viết câu
+ngắn (9,6 từ) ra 6,11; nhánh C câu dài (17,2 từ) ra 19,42. Đây là register mặc định của GLM
+khi nối mệnh đề trong câu dài. Bản cả bài (12,8 từ/câu) ra 9,80 — vẫn trên ngưỡng "nặng" 8,0.
+
+**Sự cố giữa chừng**: chạy tới chương 6 thì **tài khoản GLM hết tiền** (app nhận diện đúng,
+không nhầm với nghẽn tốc độ — bài học "z.ai dùng 429 cho cả hai" vẫn giữ). Bản C dừng ở
+chương 5; đã so cùng phạm vi 5 chương của bản A cho công bằng.
+
+**Cổng cuối là người**: bản đọc song song 5 chương ở artifact `59bc7dd6`, file gốc tại
+`scratchpad/nghiemthu/C_full_neo_day.md`. Chưa có kết luận cuối cho tới khi Owner đọc.
