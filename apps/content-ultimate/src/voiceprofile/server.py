@@ -223,14 +223,28 @@ def _run_cli(job: dict, args: list[str], label: str, abort_on_fail: bool) -> boo
     with _LOCK:
         job["proc"] = proc
     assert proc.stdout is not None
+    duoi: list[str] = []                    # vai dong cuoi — lam LY DO khi that bai
     for line in proc.stdout:
         _log(job, line)
+        d = line.strip()
+        if d:
+            duoi.append(d)
+            del duoi[:-8]
     code = proc.wait()
     with _LOCK:
         job["proc"] = None
     if job["cancelled"].is_set():
         _log(job, f"(Buoc '{label}' da bi HUY)")
         return False
+    if code != 0:
+        # GHI LY DO vao job (so nhat ky doc tu day). Log tien trinh song trong RAM
+        # nen mat khi restart — do that 22/08: 4/8 luot writer hong co error=None,
+        # khong truy duoc nguyen nhan. Giu nguyen van vai dong cuoi cua CLI.
+        ly_do = f"buoc '{label}' that bai (ma {code})"
+        if duoi:
+            ly_do += ": " + " | ".join(duoi[-3:])
+        with _LOCK:
+            job["error"] = ly_do
     if code != 0 and abort_on_fail:
         _log(job, f"LOI: buoc '{label}' that bai — dung.")
         return False

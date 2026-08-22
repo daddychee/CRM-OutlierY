@@ -272,3 +272,30 @@ def test_trang_403_noi_ro_ban_la_ai_va_ai_moi_la_admin(cu, monkeypatch):
     assert "Ngoc" in html                      # ban dang la ai
     assert "thanh" in html                     # ai moi la admin
     assert "/logout" in html                   # loi ra
+
+
+def test_run_cli_ghi_ly_do_loi_vao_job_22_08(monkeypatch):
+    """Buoc CLI that bai PHAI de lai ly do trong job (so nhat ky doc tu day).
+
+    Do that 22/08 tren history.jsonl: 4/8 luot writer hong co error=None, vi
+    _run_cli chi ghi vao LOG TIEN TRINH (song trong RAM, mat khi restart).
+    Hong ma khong truy duoc nguyen nhan la mat luon duong chan doan.
+    """
+    import subprocess, threading
+    import voiceprofile.server as vs
+
+    class ProcGia:
+        def __init__(self):
+            NL = chr(10)
+            self.stdout = iter(["dang chay" + NL,
+                                "Traceback (most recent call last):" + NL,
+                                "RuntimeError: het han muc API" + NL])
+        def wait(self): return 1
+
+    monkeypatch.setattr(vs.subprocess, "Popen", lambda *a, **k: ProcGia())
+    job = {"cancelled": threading.Event(), "log": [], "proc": None,
+           "user": "u", "job_id": "j"}
+    ok = vs._run_cli(job, ["write"], "WRITE", True)
+    assert ok is False
+    assert job.get("error"), "job phai mang ly do loi"
+    assert "WRITE" in job["error"] and "het han muc API" in job["error"]
