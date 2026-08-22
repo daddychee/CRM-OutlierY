@@ -361,14 +361,18 @@ def tu_khoa_nong(kho: list[dict], bay_gio: float | None = None,
 
     dem_moi, dem_no, vi_du = {}, {}, {}
     no_theo_cum: dict[str, set] = {}       # cum -> tap video NO chua no (de gan hook)
+    moi_theo_cum: dict[str, set] = {}      # cum -> tap video MOI (dem "dung cap" ma tran)
+    video_theo_id: dict[str, dict] = {}
     sau_gioi_tu: dict[str, int] = {}
     for v, _x in moi:
         tu = _TU_RX.findall(v["title_l"])
         for i, t in enumerate(tu):
             if i and tu[i - 1] in GIOI_TU and len(t) > 2 and t not in _TU_TRO:
                 sau_gioi_tu[t] = sau_gioi_tu.get(t, 0) + 1
+        video_theo_id[v["yt_id"]] = v
         for c in _ngram_nong(v["title_l"]):
             dem_moi[c] = dem_moi.get(c, 0) + 1
+            moi_theo_cum.setdefault(c, set()).add(v["yt_id"])
             if v["yt_id"] in no_ids:
                 dem_no[c] = dem_no.get(c, 0) + 1
                 no_theo_cum.setdefault(c, set()).add(v["yt_id"])
@@ -435,6 +439,7 @@ def tu_khoa_nong(kho: list[dict], bay_gio: float | None = None,
                 continue
             if gon != r["cum"]:
                 no_theo_cum.setdefault(gon, set()).update(no_theo_cum.get(r["cum"], set()))
+                moi_theo_cum.setdefault(gon, set()).update(moi_theo_cum.get(r["cum"], set()))
                 vi_du.setdefault(gon, vi_du.get(r["cum"]))
                 r = {**r, "cum": gon}
             cu_r = theo_ten.get(gon)
@@ -453,7 +458,46 @@ def tu_khoa_nong(kho: list[dict], bay_gio: float | None = None,
         chung = [(h["cum"], len(vids & no_theo_cum.get(h["cum"], set())))
                  for h in hooks]
         r["hook"] = [c for c, n in sorted(chung, key=lambda x: -x[1]) if n > 0][:2]
+    # MA TRAN Topic x Hook (mockup v3 Owner duyet 22/08):
+    #   CAP DANG NO — bang chung that: video MOI chua ca topic lan hook, >=2 video
+    #   dung va >=1 video no; xep theo ti le no cua cap.
+    #   CAP GOI Y — khoang trong: top topic x top hook chua ai ghep (0 video),
+    #   dan nhan "to hop chua kiem chung" o UI (suy luan, khong phai bang chung).
+    topics = [r for r in giu if r["loai"] == "doi_tuong"][:8]
+    cap_no, cap_goi_y = [], []
+    for t in topics:
+        for h in hooks[:8]:
+            # cap TRUNG HO (chong chu nhau: "many beautiful women" x "so many
+            # beautiful") la chinh no chu khong phai ket hop — bo
+            if set(t["cum"].split()) & set(h["cum"].split()):
+                continue
+            dung = moi_theo_cum.get(t["cum"], set()) & moi_theo_cum.get(h["cum"], set())
+            no = no_theo_cum.get(t["cum"], set()) & no_theo_cum.get(h["cum"], set())
+            if len(dung) >= 2 and no:
+                vd_id = max(no, key=lambda i: video_theo_id[i].get("views") or 0)
+                vd = video_theo_id[vd_id]
+                cap_no.append({"topic": t["cum"], "hook": h["cum"],
+                               "so_dung": len(dung), "so_no": len(no),
+                               "vi_du": {"yt_id": vd["yt_id"], "title": vd["title"],
+                                         "views": vd.get("views") or 0}})
+            elif not dung and t["ti_le_no"] >= 2 * nen and h["ti_le_no"] >= 2 * nen:
+                cap_goi_y.append({"topic": t["cum"], "hook": h["cum"],
+                                  "no_topic": t["ti_le_no"], "no_hook": h["ti_le_no"]})
+    cap_no.sort(key=lambda c: (-c["so_no"] / max(1, c["so_dung"]), -c["so_no"]))
+    cap_goi_y.sort(key=lambda c: -(c["no_topic"] + c["no_hook"]))
+    # da dang goi y: moi hook toi da 2 dong, khoi mot hook manh chiem het bang
+    dem_hook: dict[str, int] = {}
+    dem_topic: dict[str, int] = {}
+    goi_y_gon = []
+    for cgy in cap_goi_y:
+        if dem_hook.get(cgy["hook"], 0) >= 2 or dem_topic.get(cgy["topic"], 0) >= 2:
+            continue
+        dem_hook[cgy["hook"]] = dem_hook.get(cgy["hook"], 0) + 1
+        dem_topic[cgy["topic"]] = dem_topic.get(cgy["topic"], 0) + 1
+        goi_y_gon.append(cgy)
+    cap_goi_y = goi_y_gon
     return {"co_du_lieu": True, "cum": giu[:so_muc],
+            "cap_no": cap_no[:8], "cap_goi_y": cap_goi_y[:5],
             "nen": round(nen, 3), "so_video_moi": len(moi),
             "nguong_no_view_ngay": round(nguong_no),
             "cua_so_ngay": NGAY_NONG, "phan_vi": PHAN_VI_NO}

@@ -443,6 +443,9 @@ def xu_huong_cum(kho: list[dict], cums: list[str], bay_gio: float | None = None,
                 thang[_thang(v["pub_ts"])] = thang.get(_thang(v["pub_ts"]), 0) + 1
         ra.append({
             "cum": cum, "tong_video": len(khop),
+            # kenh lam cum nay trong ky NAY — 19 video tu 2 kenh la mot kenh spam,
+            # tu 15 kenh la ca ngach do vao (cot Kenh + nhan "tap trung", Owner 22/08)
+            "so_kenh_ky": len({v.get("kenh_yt") or v.get("kenh") for v in nay}),
             # canh tranh: tron doi khi cua_so=0, con lai = so video trong W ngay
             "video_cua_so": len(khop) if cua_so == 0 else len(nay),
             "video_30n": len(nay), "video_30n_truoc": len(truoc),

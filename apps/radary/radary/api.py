@@ -1168,9 +1168,64 @@ def tu_khoa_noi(ws: int, request: Request, so_cum: int = 30, ngon_ngu: str = '',
         # xu huong + canh tranh do trong cua so; do tren TRON kho (tong_video can
         # tron doi), chi UNG VIEN la trich tu vung do.
         xh = tra_cuu.xu_huong_cum(kho, cums, cua_so=cua_so)
+        # ---- GOP voi lop NO (tu_khoa_nong, POS da cache nen re): mot bang du ca
+        # Cung (cua so chon) lan No (60 ngay co dinh) — hai thuoc ghi ro, khong tron.
+        nong = mapping.tu_khoa_nong(kho, ngon_ngu=loc)
+        nong_map = {m['cum']: m for m in (nong.get('cum') or [])} if nong.get('co_du_lieu') else {}
+        phieu_kw = mapping.bang_pos(kho, loc)
+        da_them = set()
         for m in xh:
             m['loai'] = loai.get(m['cum'], 'mau_cau')
-        return {'cum': xh,
+            da_them.add(m['cum'])
+            n = nong_map.get(m['cum'])
+            if n:
+                m.update({'so_no': n['so_no'], 'so_moi_60n': n['so_moi'],
+                          'ti_le_no': n['ti_le_no'], 'vi_du_no': n.get('vi_du'),
+                          'hook_dang_an': n.get('hook') or [], 'ngoai_nong': n.get('ngoai')})
+        # cum nong chua co trong bang xu huong (ung vien khac nhau) -> them dong,
+        # do xu huong cho no de bang Topic/Hook dung mot danh sach thong nhat
+        thieu = [c for c in nong_map if c not in da_them]
+        if thieu:
+            for m2 in tra_cuu.xu_huong_cum(kho, thieu, cua_so=cua_so):
+                n = nong_map[m2['cum']]
+                m2.update({'loai': n['loai'], 'so_no': n['so_no'],
+                           'so_moi_60n': n['so_moi'], 'ti_le_no': n['ti_le_no'],
+                           'vi_du_no': n.get('vi_du'), 'hook_dang_an': n.get('hook') or [],
+                           'ngoai_nong': n.get('ngoai')})
+                xh.append(m2)
+        # hook don tu khong co nghia -> loai khoi danh sach (luat Owner)
+        xh = [m for m in xh
+              if m['loai'] != 'mau_cau' or mapping.hook_hop_le(m['cum'], phieu_kw)]
+        # topic: don ria ten cho khop lop nong ("sri lanka the" -> "sri lanka")
+        for m in xh:
+            if m['loai'] == 'doi_tuong':
+                gon = mapping.don_topic(m['cum'])
+                if gon:
+                    m['cum'] = gon
+        # TRANG THAI hook (2 chieu No x Cung, nguong minh bach — mockup v3):
+        nen_no = 2 * (nong.get('nen') or 0.1)
+        for m in xh:
+            if m['loai'] != 'mau_cau':
+                continue
+            no_cao = (m.get('ti_le_no') or 0) >= nen_no
+            len_ = m.get('chieu') == 'lên'
+            if no_cao and not len_:
+                m['trang_thai'] = 'an_vang'        # DANG AN — chua ai do vao
+            elif no_cao:
+                m['trang_thai'] = 'an_dong'        # dang an, dong dan
+            elif len_ and (m.get('so_no') is not None):
+                m['trang_thai'] = 'do_xo'          # do xo ma khong no
+            elif (m.get('phan_tram') or 0) <= -50:
+                m['trang_thai'] = 'chet'
+        # TEASER Overview: top-3 topic + top-2 hook theo ti le no
+        theo_no = sorted([m for m in xh if m.get('ti_le_no')],
+                         key=lambda m: -m['ti_le_no'])
+        teaser = {'topic': [m['cum'] for m in theo_no if m['loai'] == 'doi_tuong'][:3],
+                  'hook': [m['cum'] for m in theo_no if m['loai'] == 'mau_cau'][:2]}
+        return {'cum': xh, 'teaser': teaser,
+                'cap_no': nong.get('cap_no') or [], 'cap_goi_y': nong.get('cap_goi_y') or [],
+                'nong_meta': {k: nong.get(k) for k in
+                              ('nen', 'nguong_no_view_ngay', 'so_video_moi', 'cua_so_ngay')},
                 'cach_lay': ('Đếm trên tiêu đề video trong chính pool này. ĐỐI TƯỢNG = danh '
                              'từ hoặc tên riêng (nhận diện TỪ LOẠI — tag chữ thường + đối '
                              'chiếu từ điển 234k từ). MẪU CÂU = cụm lặp lại còn lại (tính '

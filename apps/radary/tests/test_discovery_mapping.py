@@ -1010,12 +1010,11 @@ def test_route_tu_khoa_nong_va_tab_ui():
     # probe nền tắt trends (trình duyệt ~17s/cụm) và nuốt lỗi từng cụm
     assert "trends=False" in api_src.split("def _soi_nen_nong(")[1].split("\n@app")[0]
 
-    # Hot Topic nam trong OVERVIEW (duyet mockup v2), tai NGAY khi mo tab —
-    # khong con chip "Dang nong" trong Keyword
-    assert ">Hot Topic" in js and "tu-khoa-nong" in js and "đang soi…" in js
-    assert "Đang nóng" not in js
-    # cot cuoi bang Hot Topic ten External, khop ten khoi C
-    assert "<th>External</th>" in js
+    # v3 (mockup Owner duyet): Hot Topic tan vao route /tu-khoa-noi; Overview con
+    # TEASER "Dang nong" + van goi /tu-khoa-nong fire-and-forget de giu ngan sach
+    # tu-soi External 5 cum/ngay
+    assert "Đang nóng:" in js and "tu-khoa-nong" in js
+    assert "<th>External</th>" in js          # cot External o bang Topic
 
 
 def test_bong_bong_tach_mau_theo_loai():
@@ -1339,7 +1338,8 @@ def test_bang_cum_mac_dinh_5_dong():
     from pathlib import Path as _P
     js = (_P(__file__).resolve().parents[1] / 'web' / 'app.js').read_text(encoding='utf-8')
     assert 'moBang ? ds : ds.slice(0, 5)' in js
-    assert 'Xem tất cả ${n} cụm' in js and '▴ Thu gọn' in js
+    assert "Xem tất cả ${ds.length} ${loaiCum === 'doi_tuong' ? 'topic' : 'hook'}" in js
+    assert '▴ Thu gọn' in js
     assert 'setMoBang(false)' in js                 # đổi pool là thu lại
 
 
@@ -1504,10 +1504,13 @@ def test_hot_topic_tach_chu_de_khoi_cong_thuc():
     assert not mapping.la_doi_tuong("can't", phieu)      # dấu nháy ≠ tên riêng
     assert not mapping.la_doi_tuong("won't", phieu)
 
+    # v3: hai bang do nghi huu — cau truc moi la 3 tab Topic/Hook/Ma tran
     js = (_P(__file__).resolve().parents[1] / 'web' / 'app.js').read_text(encoding='utf-8')
-    assert 'CHỦ ĐỀ đang nóng' in js and 'CÔNG THỨC TIÊU ĐỀ đang nóng' in js
-    assert 'KHÁN GIẢ đang thưởng cho gì' in js            # phụ đề lộ câu hỏi của khối
-    assert "m.loai === loai" in js                        # hai bảng lọc theo loại
+    assert '>Topic<small>' in js and '>Hook<small>' in js and '>Ma trận<small>' in js
+    assert 'Cặp ĐANG NỔ' in js and 'Cặp GỢI Ý' in js
+    assert 'tổ hợp chưa kiểm chứng' in js                 # van chong bia cua goi y
+    assert 'Hook đang ăn' in js                            # cot trong bang Topic
+    assert 'ĐANG ĂN — chưa ai đổ vào' in js               # trang thai hook
 
 
 def test_loai_cum_luat_topic_hook_chot_22_08():
