@@ -6,7 +6,7 @@ Chạy: .venv/bin/python server.py → http://127.0.0.1:8000 (docs: /docs).
 """
 import json, os, secrets, sqlite3, time
 from contextlib import contextmanager
-from fastapi import FastAPI, HTTPException, Request, Response
+from fastapi import BackgroundTasks, FastAPI, HTTPException, Request, Response
 from fastapi.responses import PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -1054,6 +1054,69 @@ def mapping_api(ws: int, request: Request):
         return bd
 
 
+# Tab DANG NONG (22/08 — user: "qua nhieu tu khoa hot bi bo qua", chot "cho phep
+# tieu quota"): danh sach 0 quota tu mapping.tu_khoa_nong; kem NGAN SACH tu soi
+# thi truong ngoai cho cum nong chua co ban luu — toi da NGAN_SACH_NONG cum/ngay/
+# pool, chay NEN sau khi tra response (khong bat user cho 102 units x N). Cum da
+# soi thi ban B nam trong tra_cuu_log -> lan sau doc lai 0 quota, bam cum la mo
+# ban day du. Dem ca ban B do tay trong ngay vao ngan sach: dem thua an toan hon
+# dem thieu (quota la tien).
+NGAN_SACH_NONG = 5
+
+
+def _soi_nen_nong(ws: int, cums: list[str], vung: dict | None):
+    for cum in cums:
+        try:
+            _soi_khoi_b(ws, cum, vung, trends=False)   # trends chay trinh duyet ~17s/cum
+        except Exception:                               # noqa: BLE001 — nen: lo thi bo cum do
+            pass
+
+
+@app.get('/api/workspaces/{ws}/discovery/tu-khoa-nong')
+def tu_khoa_nong_api(ws: int, request: Request, nhiem_vu_nen: BackgroundTasks,
+                     ngon_ngu: str = ''):
+    from . import mapping
+    with get_conn() as c:
+        u = auth.require_user(c, request)
+        w = auth.ws_for_user(c, ws, u['id'])
+        duoc_soi = auth.ROLE_RANK.get(w['member_role'], -1) >= auth.ROLE_RANK['leader']
+        vung, tu_de = _vung_cua_ws(w)
+        loc = ngon_ngu.strip() or tu_de
+        ra = mapping.tu_khoa_nong(mapping.tai_kho(c, ws), ngon_ngu=loc)
+        if not ra.get('co_du_lieu'):
+            return ra
+        # dinh ket qua ngoai da luu + dem ngan sach hom nay
+        dau_ngay = time.time() - (time.time() % 86400)
+        da_soi_hom_nay = 0
+        for r in c.execute("SELECT b FROM tra_cuu_log WHERE workspace_id=? AND b!=''", (ws,)):
+            try:
+                if (json.loads(r['b']).get('ts') or 0) >= dau_ngay:
+                    da_soi_hom_nay += 1
+            except ValueError:
+                pass
+        chua_soi = []
+        for m in ra['cum']:
+            luu = db.tra_cuu_doc(c, ws, m['cum'])
+            b = (luu or {}).get('b')
+            if b:
+                yt = (b.get('youtube') or {})
+                m['ngoai'] = {'ts': b.get('ts'),
+                              'tong_view_90n': yt.get('tong_view_90n'),
+                              'so_ket_qua': yt.get('so_ket_qua')}
+            else:
+                chua_soi.append(m['cum'])
+    con = max(0, NGAN_SACH_NONG - da_soi_hom_nay)
+    soi_ngay = chua_soi[:con] if duoc_soi else []
+    if soi_ngay:
+        nhiem_vu_nen.add_task(_soi_nen_nong, ws, soi_ngay, vung)
+        for m in ra['cum']:
+            if m['cum'] in soi_ngay:
+                m['dang_soi'] = True
+    ra.update({'ngan_sach_ngay': NGAN_SACH_NONG, 'da_soi_hom_nay': da_soi_hom_nay,
+               'dang_soi': soi_ngay, 'duoc_soi': duoc_soi})
+    return ra
+
+
 @app.get('/api/workspaces/{ws}/discovery/tu-khoa-noi')
 def tu_khoa_noi(ws: int, request: Request, so_cum: int = 30, ngon_ngu: str = ''):
     """Cụm nào trong pool ĐANG LÊN / ĐANG GIẢM — 0 quota, đọc dữ liệu sẵn có.
@@ -1188,7 +1251,13 @@ def tra_cuu_ngoai(ws: int, body: TraCuuNgoaiIn, request: Request):
         u = auth.require_user(c, request)
         w = auth.ws_for_user(c, ws, u['id'], 'leader')      # tiêu quota → leader+
         vung, _ = _vung_cua_ws(w)
+    return _soi_khoi_b(ws, cum, vung, trends=body.trends)
 
+
+def _soi_khoi_b(ws: int, cum: str, vung: dict | None, trends: bool = True) -> dict:
+    """Thân khối B — tách khỏi route để tab Đang nóng soi NỀN dùng lại y nguyên
+    (cùng dữ liệu, cùng chỗ lưu; bấm cụm là mở được bản đầy đủ)."""
+    from . import thi_truong, tra_cuu
     yt = {'co_du_lieu': False, 'ly_do': ''}
     quota = 0
     try:
@@ -1216,7 +1285,7 @@ def tra_cuu_ngoai(ws: int, body: TraCuuNgoaiIn, request: Request):
     # Trends: đọc cache trong NGÀY trước — Google chặn theo IP, hỏi lại cùng từ khoá
     # vừa vô ích vừa làm dính rate limit lâu hơn.
     tr = {'co_du_lieu': False, 'ly_do': 'đã tắt Google Trends'}
-    if body.trends:
+    if trends:
         with get_conn() as c2:
             try:
                 tr = db.trends_doc(c2, cum, geo) or {}

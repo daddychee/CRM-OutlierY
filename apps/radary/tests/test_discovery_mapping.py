@@ -915,3 +915,83 @@ def test_the_kenh_kem_video_cua_kenh_do():
     js = (_P(__file__).resolve().parents[1] / 'web' / 'app.js').read_text(encoding='utf-8')
     assert 'function TheKenh(' in js and '<${TheKenh}' in js
     assert 'Bản lưu cũ chưa kèm video' in js
+
+
+def _kho_nong(now):
+    """Kho tổng hợp: 1 cụm nóng thật, 1 cụm phổ biến mà nguội, họ cụm trùng."""
+    kho = []
+    # 40 video nền nguội: view/ngày ~ 10 (tuổi 10 ngày, 100 view)
+    for i in range(40):
+        kho.append({'yt_id': f'nen{i}', 'title': f'Life in Nowhere part {i}',
+                    'title_l': f'life in nowhere part {i}',
+                    'kenh': 'K', 'kenh_yt': 'UCK', 'views': 100, 'vph': 0,
+                    'pub_ts': now - 86400 * 10})
+    # cụm NÓNG "hidden villages": 4 video mới, 3 video nổ (view/ngày rất cao)
+    for i, v in enumerate((90000, 80000, 70000, 120)):
+        kho.append({'yt_id': f'hot{i}', 'title': f'Hidden Villages of Georgia {i}',
+                    'title_l': f'hidden villages of georgia {i}',
+                    'kenh': 'K2', 'kenh_yt': 'UCK2', 'views': v, 'vph': 0,
+                    'pub_ts': now - 86400 * 9})
+    return kho
+
+
+def test_tu_khoa_nong_do_bang_hieu_suat_khong_phai_tan_suat():
+    """Cụm 4 video nổ phải THẮNG cụm 40 video nguội — đúng bệnh user chỉ ra 22/08:
+
+    chọn ứng viên theo tần suất tích luỹ thì 'life in nowhere' (40 video) đè chết
+    'hidden villages' (4 video, 3 nổ, max 90k view/ngày); đo thật ws20 sót 98% cụm
+    lift cao, có cụm max 1,53 triệu view.
+    """
+    import time
+    from radary import mapping
+
+    now = time.time()
+    r = mapping.tu_khoa_nong(_kho_nong(now), bay_gio=now)
+    assert r['co_du_lieu']
+    cums = [m['cum'] for m in r['cum']]
+    # dai dien cua ho co the la bat ky n-gram nao cua title nong — ghim theo TU,
+    # khong ghim mat chu ca cum
+    assert any(('villages' in c) or ('georgia' in c) for c in cums), cums
+    # cụm nguội 40 video KHÔNG được vào danh sách nóng (tỉ lệ nổ ~0)
+    assert not any('nowhere' in c for c in cums), cums
+    top = r['cum'][0]
+    assert top['so_no'] >= mapping.TOI_THIEU_NO and top['ti_le_no'] >= 2 * r['nen']
+    assert top['vi_du']['views'] == 90000          # ví dụ = video nổ to nhất, để bấm xem
+
+
+def test_tu_khoa_nong_gop_ho_cum_va_van_chong_bia():
+    import time
+    from radary import mapping
+
+    now = time.time()
+    r = mapping.tu_khoa_nong(_kho_nong(now), bay_gio=now)
+    # GỘP HỌ: 'hidden villages' đẻ nhiều n-gram con ('hidden', 'villages of georgia'…)
+    # cùng (so_moi, so_no, video ví dụ) — chỉ được giữ MỘT dòng đại diện
+    ho = [m for m in r['cum'] if 'hidden' in m['cum'] or 'villages' in m['cum']
+          or 'georgia' in m['cum']]
+    assert len(ho) == 1, [m['cum'] for m in ho]
+    # VAN CHỐNG BỊA: phiên < 30 video mới → nói thẳng, không kết luận
+    it = mapping.tu_khoa_nong(_kho_nong(now)[:10], bay_gio=now)
+    assert not it['co_du_lieu'] and 'chưa đủ mẫu' in it['ly_do']
+
+
+def test_route_tu_khoa_nong_va_tab_ui():
+    """Route + ngân sách soi ngoài + tab Đang nóng — ghim theo ý nghĩa."""
+    from pathlib import Path as _P
+
+    goc = _P(__file__).resolve().parents[1]
+    api_src = (goc / 'radary' / 'api.py').read_text(encoding='utf-8')
+    js = (goc / 'web' / 'app.js').read_text(encoding='utf-8')
+
+    than = api_src.split("def tu_khoa_nong_api(")[1].split("\ndef tu_khoa_noi(")[0]
+    # danh sách ai xem cũng được, nhưng TIÊU QUOTA (soi nền) phải leader+
+    assert "duoc_soi = auth.ROLE_RANK.get(w['member_role'], -1) >= auth.ROLE_RANK['leader']" in than
+    # ngân sách: chỉ soi cụm CHƯA có bản lưu, trần theo ngày, chạy NỀN sau response
+    assert "NGAN_SACH_NONG - da_soi_hom_nay" in than
+    assert "nhiem_vu_nen.add_task(_soi_nen_nong" in than
+    # probe nền tắt trends (trình duyệt ~17s/cụm) và nuốt lỗi từng cụm
+    assert "trends=False" in api_src.split("def _soi_nen_nong(")[1].split("\n@app")[0]
+
+    assert ">Đang nóng</button>" in js               # chip trơn, minimalist — không emoji
+    assert "tu-khoa-nong" in js and "đang soi…" in js
+    assert 'loaiCum === \'nong\'' in js or 'loaiCum === "nong"' in js

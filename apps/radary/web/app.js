@@ -1904,6 +1904,7 @@ function Mapping({ ws, canEdit }) {
   const [pool, setPool] = useState({});
   const [goiY, setGoiY] = useState([]);
   const [noi, setNoi] = useState(null);
+  const [nong, setNong] = useState(null);     // tab Đang nóng — tải lười khi bấm
   const [loaiCum, setLoaiCum] = useState('doi_tuong');   // đối tượng trước — thứ quyết định làm video về CÁI GÌ
   const [busy, setBusy] = useState('');
   const [err, setErr] = useState('');
@@ -1914,7 +1915,7 @@ function Mapping({ ws, canEdit }) {
   // thấy số của US — user báo 21/08 ("từ khoá thị trường US lọt sang Spain").
   useEffect(() => {
     setA(null); setB(null); setCum(''); setErr(''); setBusy(''); setXemLai(null);
-    setLichSu([]); setNoi(null);
+    setLichSu([]); setNoi(null); setNong(null);
     api('GET', `/workspaces/${ws}/discovery/goi-y-seed`).then(r => setGoiY(r.seed || [])).catch(() => setGoiY([]));
     const nnLuu = (() => { try { return localStorage.getItem('mapping_nn_' + ws) || ''; } catch (e) { return ''; } })();
     api('GET', `/workspaces/${ws}/discovery/tu-khoa-noi`
@@ -2027,7 +2028,12 @@ function Mapping({ ws, canEdit }) {
           <button class=${'btn small' + (loaiCum === 'mau_cau' ? '' : ' ghost')}
             onClick=${() => setLoaiCum('mau_cau')}>Mẫu câu</button>
           <button class=${'btn small' + (loaiCum === '' ? '' : ' ghost')}
-            onClick=${() => setLoaiCum('')}>Tất cả</button></span>
+            onClick=${() => setLoaiCum('')}>Tất cả</button>
+          <button class=${'btn small' + (loaiCum === 'nong' ? '' : ' ghost')}
+            onClick=${() => { setLoaiCum('nong');
+              if (!nong) api('GET', `/workspaces/${ws}/discovery/tu-khoa-nong`)
+                .then(setNong).catch(() => setNong({ co_du_lieu: false, ly_do: 'không tải được' })); }}
+            >Đang nóng</button></span>
           ${!noi.tu_de ? html`<span> · lọc ngôn ngữ:
             <select value=${noi.ngon_ngu_loc || ''} onChange=${e => {
               try { localStorage.setItem('mapping_nn_' + ws, e.target.value); } catch (err) {}
@@ -2042,6 +2048,38 @@ function Mapping({ ws, canEdit }) {
             ${(noi.ngon_ngu_trong_pool || []).length ? html`<span> · pool có:
               ${(noi.ngon_ngu_trong_pool || []).map(([ma, n]) => `${ma} ${n}`).join(' · ')}</span>` : ''}
           </span>` : ''}</div>
+        ${loaiCum === 'nong' ? html`
+          ${!nong ? html`<div class="note">Đang tải…</div>`
+            : !nong.co_du_lieu ? html`<div class="note">${nong.ly_do}</div>`
+            : html`<div>
+              <div class="note" style="margin:2px 0 6px">
+                <b>Đang nóng đo thế nào:</b> video "nổ" = top ${100 - (nong.phan_vi || 90)}%
+                view/ngày của ${nong.so_video_moi} video 2-${nong.cua_so_ngay} ngày tuổi
+                (ngưỡng phiên này: ${soGon(nong.nguong_no_view_ngay)} view/ngày, nền
+                ${Math.round((nong.nen || 0) * 100)}%). Cụm nóng = tỉ lệ video nổ ≥ 2× nền.
+                Xếp theo HIỆU SUẤT VIEW, không theo số video đăng — khác hai tab kia.
+                ${nong.duoc_soi ? html` · Tự soi thị trường ngoài tối đa ${nong.ngan_sach_ngay}
+                cụm/ngày (hôm nay đã ${nong.da_soi_hom_nay}).` : ''}</div>
+              <table class="tbl"><thead><tr><th>Cụm</th><th>Loại</th>
+                <th title="video 2-60 ngày tuổi chứa cụm">Video mới</th>
+                <th title="bao nhiêu trong số đó là video nổ">Nổ</th>
+                <th>Video nổ nhất</th><th>Thị trường ngoài</th></tr></thead>
+                <tbody>${(nong.cum || []).map(m => html`<tr>
+                  <td><a href="#" onClick=${e => { e.preventDefault(); traCuu(m.cum); }}>${m.cum}</a></td>
+                  <td class="note">${m.loai === 'doi_tuong' ? 'đối tượng' : 'công thức'}</td>
+                  <td>${m.so_moi}</td>
+                  <td style="white-space:nowrap"><b>${m.so_no}/${m.so_moi}</b>
+                    <span class="note"> = ${Math.round(m.ti_le_no * 100)}%</span></td>
+                  <td>${m.vi_du ? html`<a href=${linkVideo(m.vi_du.yt_id)} target="_blank"
+                      rel="noopener" title=${m.vi_du.title}
+                      style="display:inline-block;max-width:340px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:bottom">
+                      ${m.vi_du.title}</a>
+                    <span class="note"> ${soGon(m.vi_du.views)}</span>` : html`<span class="note">—</span>`}</td>
+                  <td class="note" style="white-space:nowrap">${m.ngoai
+                    ? `${m.ngoai.tong_view_90n != null ? soGon(m.ngoai.tong_view_90n) + ' view 90n' : 'đã soi'}`
+                    : m.dang_soi ? 'đang soi…' : '—'}</td>
+                </tr>`)}</tbody></table>
+            </div>`}` : html`
         ${noi.cach_lay ? html`<div class="note" style="margin:2px 0 6px">
           <b>Từ khoá lấy ở đâu ra:</b> ${noi.cach_lay}</div>` : ''}
         <${BanDoCum} cum=${(noi.cum || []).filter(r => !loaiCum || r.loai === loaiCum)}
@@ -2061,7 +2099,7 @@ function Mapping({ ws, canEdit }) {
             <td>${r.view_moi_ngay ?? '—'}</td>
             <td style="width:120px" title="mật độ theo THÁNG — khác cột xu hướng (30 ngày)">
               <${Sparkline} chuoi=${r.chuoi} mau="#7e57c2"/></td>
-          </tr>`; })}</tbody></table>
+          </tr>`; })}</tbody></table>`}
       </div>` : (goiY.length ? html`<div style="margin-top:6px">
         <span class="note">Từ khoá phổ biến trong pool này:</span>
         ${goiY.map(g => html`<button class="btn small ghost" style="margin:2px 4px 2px 0"

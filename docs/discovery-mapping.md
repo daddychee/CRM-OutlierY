@@ -451,3 +451,40 @@ ghi thẳng vào lịch sử pool đó. Người dùng không bấm gì cả.
 **Bài học:** khi một khoá trong URL/state dùng để kiểm "dữ liệu này có thuộc ngữ cảnh hiện
 tại không", nó phải là khoá **của dữ liệu**, không phải khoá của ngữ cảnh — nếu ngữ cảnh
 tự cập nhật khoá đó thì phép kiểm thành vô hiệu và luôn trả về đúng.
+
+## 22/08 — Tab "Đang nóng": sửa gốc cách chọn ứng viên từ khoá
+
+User (kinh nghiệm niche LIFE IN — US): *"còn quá nhiều từ khóa hot đang bị bỏ qua"*.
+Đo thật xác nhận, nặng hơn dự đoán: lấy 1.132 video 60 ngày của ws20, "video nổ" =
+vượt trội view/ngày → **177 cụm bị video nổ thiên vị (lift ≥2× nền) thì 173 cụm KHÔNG
+nằm trong danh sách ứng viên hiện tại — sót 98%**, trong đó `scientists can't explain`
+max 1,53 triệu view.
+
+**Ba lỗi gốc:**
+1. Ứng viên chọn theo TẦN SUẤT TÍCH LUỸ (top-60 mẫu câu + top-40 đối tượng trên toàn
+   lịch sử) rồi mới đo xu hướng — cụm đang nóng thì tích luỹ thấp, bị cắt TRƯỚC khi
+   được đo. Tiêu chí chọn ngược với thứ cần tìm.
+2. "Nóng" định nghĩa bằng nguồn cung (số video đăng) thay vì hiệu suất view.
+3. Đối tượng đa từ bị băm nát (faroe islands → faroe).
+
+**Logic mới (`mapping.tu_khoa_nong`, 0 quota):** ứng viên = MỌI n-gram 1-3 từ trong
+video 2-60 ngày tuổi; video "nổ" = top 10% **view/ngày của chính phiên** (đo phân phối
+thật 3 pool: p90 = 21-30× trung vị, đuôi rất dài → cắt theo phân vị bền hơn hệ số
+nhân); cụm nóng = ≥4 video mới, ≥2 video nổ, tỉ lệ nổ ≥2× nền. Ngưỡng nổ so sánh
+NGHIÊM NGẶT `>` (test bắt được: phân phối bết làm `>=` gom cả nhóm phổ biến vào "nổ",
+nền phồng 100%). Gộp họ cụm hai tầng: substring cùng support + vân tay (số mới, số nổ,
+video ví dụ) — một title Belarus từng đẻ 4 dòng. Nhãn hiển thị đối_tượng/công_thức
+(từ từng đứng sau giới từ hay không), phiên <30 video mới → nói thẳng không kết luận.
+
+**Ngân sách thị trường (user chốt "cho phép tiêu quota"):** mở tab → tối đa
+`NGAN_SACH_NONG=5` cụm nóng CHƯA có bản lưu được tự soi khối B **chạy nền** sau
+response (102 units/cụm, tắt Trends vì trình duyệt ~17s/cụm); bản B ghi vào
+`tra_cuu_log` nên bấm cụm là mở bản đầy đủ, lần sau 0 quota. Đếm cả bản B tra tay
+trong ngày vào ngân sách — đếm thừa an toàn hơn đếm thiếu. Chỉ leader+ kích được
+probe (viewer vẫn xem danh sách + bản đã lưu).
+
+**UI:** chip thứ tư "Đang nóng" cạnh Đối tượng/Mẫu câu/Tất cả (chip trơn — nguyên tắc
+minimalist icon, không emoji); bảng riêng vì hệ quy chiếu khác hai tab cũ (hiệu suất
+view ≠ số video đăng): Cụm · Loại · Video mới · Nổ k/n=% · Video nổ nhất (link) ·
+Thị trường ngoài (view 90n / đang soi… / —). Nghiệm thu sống ws20: 40 cụm,
+`scientists can't explain` 3/4=75% đứng đầu, probe nền điền 7,2M view 90n.

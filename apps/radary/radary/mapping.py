@@ -296,6 +296,129 @@ def goi_y_seed(kho: list[dict], so_goi_y: int = 8, toi_thieu_video: int = 3,
     return ra[:so_goi_y]
 
 
+# ---- TU KHOA NONG (22/08/2026) --------------------------------------------------
+# User: "con qua nhieu tu khoa hot dang bi bo qua". Do that ws20: lay ung vien theo
+# TAN SUAT TICH LUY (top-60 mau cau + top-40 doi tuong tren toan lich su) roi moi do
+# xu huong -> 173/177 cum lift cao KHONG lot vao danh sach (98% sot), trong do
+# 'scientists can't explain' max 1,53 TRIEU view. Cum dang nong thi tich luy thap nen
+# bi cat TRUOC khi duoc do — tieu chi chon nguoc voi thu can tim.
+#
+# Logic moi: ung vien = MOI n-gram 1-3 tu trong video 60 ngay gan nhat (san rat thap),
+# "nong" do bang HIEU SUAT VIEW chu khong phai so video dang:
+#   video NO = top (100-PHAN_VI_NO)% view/ngay cua CHINH phien (khong nguong tuyet
+#   doi — cung luat "chia o bang trung vi cua chinh phien quet" o dau file);
+#   cum nong = ti le video no cua cum >= HE_SO_LIFT x nen.
+# View/ngay (views/tuoi) thay view tho de video 3 ngay tuoi khong thiet truoc video
+# 50 ngay. Do phan phoi that 22/08 (ws20/22/18): p90 = 21-30x trung vi, p75 ~5.5x —
+# duoi rat dai, nen cat theo PHAN VI cua phien ben hon he so nhan trung vi.
+NGAY_NONG = 60           # cua so "video moi"
+TUOI_ON_DINH = 2         # duoi 2 ngay tuoi view/ngay chua on dinh, bo
+PHAN_VI_NO = 90          # video no = top 10% view/ngay cua phien
+TOI_THIEU_MOI_NONG = 4   # cum can >= 4 video moi
+TOI_THIEU_NO = 2         # va >= 2 video no (1 video co the la may rui)
+HE_SO_LIFT = 2.0         # ti le no cua cum >= 2x nen
+
+
+def _ngram_nong(title_l: str) -> set[str]:
+    """N-gram 1-3 tu, bo cum toan tu tro / mo dau bang tu tro; moi title dem 1 lan."""
+    tu = [t for t in _TU_RX.findall(title_l) if len(t) > 1 and not t.isdigit()]
+    thay = set()
+    for n in (1, 2, 3):
+        for i in range(len(tu) - n + 1):
+            cum = tu[i:i + n]
+            if all(t in _TU_TRO for t in cum) or cum[0] in _TU_TRO:
+                continue
+            if n == 1 and (len(cum[0]) <= 2 or cum[0] in _TU_TRO):
+                continue
+            thay.add(" ".join(cum))
+    return thay
+
+
+def tu_khoa_nong(kho: list[dict], bay_gio: float | None = None,
+                 ngon_ngu: str | None = None, so_muc: int = 40) -> dict:
+    """Cum tu bi video NO thien vi — tu khoa dang nong theo HIEU SUAT, khong theo
+    tan suat. 0 quota, doc du lieu san co."""
+    bay_gio = bay_gio or time.time()
+    moc = bay_gio - NGAY_NONG * 86400
+
+    moi = []
+    for v in kho:
+        tuoi = (bay_gio - (v.get("pub_ts") or 0)) / 86400
+        if TUOI_ON_DINH <= tuoi <= NGAY_NONG and (v.get("views") or 0) > 0                 and hop_ngon_ngu(v["title"], ngon_ngu):
+            moi.append((v, v["views"] / tuoi))
+    if len(moi) < 30:                      # phien qua nho de lay phan vi tin duoc
+        return {"co_du_lieu": False,
+                "ly_do": f"Pool chỉ có {len(moi)} video {TUOI_ON_DINH}-{NGAY_NONG} ngày tuổi "
+                         "— chưa đủ mẫu để tách nhóm video nổ (cần ≥30)."}
+
+    vpd = sorted(x for _, x in moi)
+    nguong_no = vpd[min(len(vpd) - 1, int(len(vpd) * PHAN_VI_NO / 100))]
+    # NGHIEM NGAT > (khong >=): phan phoi bet (nhieu video cung view/ngay — pool nho,
+    # video 0-view) lam phan tu p90 TRUNG gia tri pho bien; >= gom ca dam do vao nhom
+    # "no", nen phong len ~100% va cum nong that bi chim. Test _kho_nong bat ca nay.
+    no_ids = {v["yt_id"] for v, x in moi if x > nguong_no}
+    nen = len(no_ids) / len(moi)
+
+    dem_moi, dem_no, vi_du = {}, {}, {}
+    sau_gioi_tu: dict[str, int] = {}
+    for v, _x in moi:
+        tu = _TU_RX.findall(v["title_l"])
+        for i, t in enumerate(tu):
+            if i and tu[i - 1] in GIOI_TU and len(t) > 2 and t not in _TU_TRO:
+                sau_gioi_tu[t] = sau_gioi_tu.get(t, 0) + 1
+        for c in _ngram_nong(v["title_l"]):
+            dem_moi[c] = dem_moi.get(c, 0) + 1
+            if v["yt_id"] in no_ids:
+                dem_no[c] = dem_no.get(c, 0) + 1
+                vd = vi_du.get(c)
+                if not vd or v["views"] > vd["views"]:
+                    vi_du[c] = {"yt_id": v["yt_id"], "title": v["title"],
+                                "views": v["views"], "kenh": v["kenh"]}
+
+    ung = []
+    for c, n in dem_moi.items():
+        k = dem_no.get(c, 0)
+        if n < TOI_THIEU_MOI_NONG or k < TOI_THIEU_NO:
+            continue
+        if k / n < HE_SO_LIFT * nen:
+            continue
+        ung.append({"cum": c, "so_moi": n, "so_no": k, "ti_le_no": round(k / n, 2)})
+
+    # GOP HO CUM: mot hook de nhieu bien the ("scientists can't" / "can't explain
+    # their"...) — cum ngan nam TRON trong cum dai voi CUNG (so_moi, so_no) la cung
+    # mot ho, giu ban dai nhat (cu the nhat). Do 22/08: 1 hook -> 7 dong trung.
+    ung.sort(key=lambda r: (-len(r["cum"].split()), -len(r["cum"])))
+    giu, van_tay = [], set()
+    for r in ung:
+        dem = f' {r["cum"]} '
+        if any(dem in f' {g["cum"]} ' and g["so_moi"] == r["so_moi"]
+               and g["so_no"] == r["so_no"] for g in giu):
+            continue
+        # cung (so_moi, so_no, video vi du) = cung mot ho title du khong long nhau
+        # ("so many beautiful" / "cheap so safe" deu tu mot title Belarus) — giu ban
+        # dai nhat da gap. N-gram tran 3 tu nen ho 4 tu bi cat thanh 2 cum lech nhau,
+        # substring khong bat duoc; van tay nay bat.
+        vd = vi_du.get(r["cum"]) or {}
+        vt = (r["so_moi"], r["so_no"], vd.get("yt_id"))
+        if vt in van_tay:
+            continue
+        van_tay.add(vt)
+        giu.append(r)
+
+    tap_sau = {t for t, n in sau_gioi_tu.items() if n >= 2}
+    for r in giu:
+        # nhan HIEN THI (khong tham gia xep hang): doi_tuong neu co tu tung dung sau
+        # gioi tu (dia danh/chu the), con lai la cong_thuc (kieu dat title)
+        r["loai"] = ("doi_tuong" if any(t in tap_sau for t in r["cum"].split())
+                     else "cong_thuc")
+        r["vi_du"] = vi_du.get(r["cum"])
+    giu.sort(key=lambda r: (-r["ti_le_no"], -r["so_no"], -r["so_moi"]))
+    return {"co_du_lieu": True, "cum": giu[:so_muc],
+            "nen": round(nen, 3), "so_video_moi": len(moi),
+            "nguong_no_view_ngay": round(nguong_no),
+            "cua_so_ngay": NGAY_NONG, "phan_vi": PHAN_VI_NO}
+
+
 # ---- NGON NGU / VUNG CUA POOL (21/08/2026 — user: "khong lam thi truong Viet Nam") --
 # Su co: pool goc LIFE IN chua ca kenh Viet -> goi_y_seed rut "cuộc sống thực" -> quet
 # ra cum Viet -> do thi truong Viet. Toan bo chuoi lech thi truong, tieu 816 units cho
