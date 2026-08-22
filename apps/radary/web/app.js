@@ -2065,17 +2065,17 @@ function Mapping({ ws, canEdit }) {
         <button class=${'ktab' + (loaiCum === '' ? ' on' : '')}
           onClick=${() => setLoaiCum('')}>Tất cả<small>gộp hai loại</small></button>
       </div>
-      <div class="row" style="gap:8px;flex-wrap:wrap;align-items:center;margin-top:12px">
-        <input placeholder="tra MỘT từ khoá bất kỳ, ví dụ: life in alaska" value=${cum}
+      <div class="ksearch">
+        <input type="text" placeholder="tra MỘT từ khoá bất kỳ, ví dụ: life in alaska" value=${cum}
           onInput=${e => setCum(e.target.value)}
-          onKeyDown=${e => { if (e.key === 'Enter') traCuu(); }} style="min-width:290px"/>
+          onKeyDown=${e => { if (e.key === 'Enter') traCuu(); }}/>
         <button class="btn primary" onClick=${() => traCuu()} disabled=${!!busy}>Tra cứu</button>
         <span class="note" style="margin:0">${busy}${err ? html`<span style="color:#c62828">${err}</span>` : ''}</span>
-        ${lichSu.length ? html`<select style="margin-left:auto;min-width:230px" value=""
+        ${lichSu.length ? html`<select value=""
           title="Mỗi từ khoá là một phiên riêng, đo tại thời điểm ghi bên cạnh — không so số giữa các phiên (chúng đo ở những thời điểm khác nhau)"
           onChange=${e => { if (e.target.value) traCuu(e.target.value, true); e.target.value = ''; }}>
           <option value="">Lịch sử tra cứu (${lichSu.length}) — chọn để mở lại, 0 quota</option>
-          ${lichSu.map(l => html`<option value=${l.cum}>${l.cum} · ${new Date(l.ts * 1000).toLocaleString()} · ${l.co_ngoai ? 'đã hỏi External' : 'chưa hỏi External'}</option>`)}
+          ${lichSu.map(l => html`<option value=${l.cum}>${l.cum} · ${new Date(l.ts * 1000).toLocaleString('vi-VN')} · ${l.co_ngoai ? 'đã hỏi External' : 'chưa hỏi External'}</option>`)}
         </select>` : ''}
       </div>
 

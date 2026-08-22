@@ -66,6 +66,11 @@ textarea { min-height:110px; font-family:ui-monospace,Menlo,monospace; font-size
 .ktab.on { background:var(--accent); border-color:var(--accent); color:#fff }
 .ktab small { display:block; font-weight:400; font-size:11px; color:var(--muted); margin-top:1px }
 .ktab.on small { color:rgba(255,255,255,.75) }
+.ksearch { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:12px }
+.ksearch input { flex:1 1 290px; max-width:520px; background:var(--bg); color:var(--text); border:1px solid var(--line); border-radius:9px; padding:9px 12px; font:inherit }
+.ksearch input:focus { outline:2px solid var(--accent); outline-offset:-1px; border-color:var(--accent) }
+.ksearch select { margin-left:auto; max-width:360px; background:var(--panel); color:var(--muted); border:1px solid var(--line); border-radius:9px; padding:9px 10px; font:inherit; font-size:13px; cursor:pointer }
+.ksearch .btn.primary { padding:9px 20px; border-radius:9px }
 .exgrid { display:grid; grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); gap:10px }
 .excard { border:1px solid var(--line); border-radius:10px; padding:12px 14px }
 .excard h3 { font-size:13px; margin:0 0 2px }
