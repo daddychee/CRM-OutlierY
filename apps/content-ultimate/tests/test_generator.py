@@ -570,3 +570,39 @@ def test_kept_ratio_do_dung():
     # khoi khong dau cham van la MOT cau do duoc — mat no trong ban moi thi 0.0 (tu choi dung)
     assert kept_ratio("x" * 3000, "anything") == 0.0
     assert kept_ratio("ngan.", "anything") == 1.0           # khong co cau >40 ky tu -> 1.0
+
+
+def test_prompt_khong_chua_em_dash_22_08():
+    """Prompt KHONG duoc mang em-dash — do that 22/08 (Dot 1, viec 1).
+
+    Bang chung: khoi luat prompt do ra 11,2 em-dash/1000 tu, ban model viet ra
+    13-17/1000, van NGUOI 0,00-1,30/1000. Model SAO LAI mat do cua prompt chu
+    khong tuan cau lenh "toi da mot em-dash moi doan" (26-59% doan co >=2 em-dash).
+    Chua benh o VAT LIEU DAY, khong siet chu luat.
+
+    Ngoai le co chu dich: EXEMPLAR la van cua TAC GIA (du lieu, khong phai van app)
+    — tac gia dung em-dash that thi giu nguyen, test nay khong dung ho so co exemplar
+    mang em-dash de ghim.
+    """
+    import inspect
+    from voiceprofile import generator as g
+
+    ho_so = {"author": "X", "exemplars": ["A short exemplar sentence.", "Another one."],
+             "signature_moves": [{"move": "short blunt corrective", "example": "Not X. Not Y."}]}
+    sec = g.OutlineSection(kind="chapter", heading="Chapter 1",
+                           brief="Question: Why here?" + chr(10) + "- idea one" + chr(10) + "- idea two")
+
+    def goi(ham, *a):
+        n = len(inspect.signature(ham).parameters)
+        return ham(*a[:n])
+
+    prompts = {
+        "section": goi(g.build_section_prompt, sec, ho_so, "outline", "prev", 3000, "T", ""),
+        "hook": goi(g.build_hook_prompt, "T", "- material"),
+        "hook_cut": goi(g.build_hook_cut_prompt, "T", "draft"),
+        "expand": goi(g.build_expand_prompt, sec, ho_so, "draft", 3000, "T", ""),
+        "scope_cut": goi(g.build_scope_cut_prompt, sec, ho_so, "draft", 3000, "T", ""),
+    }
+    for ten, ra in prompts.items():
+        txt = chr(10).join(ra) if isinstance(ra, tuple) else str(ra)
+        assert "—" not in txt, f"{ten}: prompt van con em-dash"

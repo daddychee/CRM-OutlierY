@@ -96,7 +96,7 @@ YOUTUBE_RULES = {
     "chapter": (
         "PLATFORM (YouTube retention): carry ONE idea through this chapter and end on a "
         "small open loop that pulls the viewer into the next. It is voiceover, so it must "
-        "read well aloud. Match the AUTHOR'S rhythm as shown in the examples above — "
+        "read well aloud. Match the AUTHOR'S rhythm as shown in the examples above, "
         "including how long their sentences run and how that length rises and falls. "
         "Do not smooth every sentence to the same length: that flatness is what kills a "
         "voice."
@@ -104,7 +104,7 @@ YOUTUBE_RULES = {
     "end": (
         "PLATFORM (YouTube ending): close the curiosity loop opened in the hook and land "
         "the emotional beat. NO 'thanks for watching / like and subscribe'. Hold the "
-        "author's voice to the final line — end on resonance, not a sign-off."
+        "author's voice to the final line: end on resonance, not a sign-off."
     ),
     "title": (
         "PLATFORM (YouTube title): one line, high-curiosity, no quotes around it."
@@ -163,30 +163,30 @@ def _v2_section_block(question: str, mis_line: str) -> str:
         blocks.append(
             "OPENING (Question-first): begin this section by RAISING this real viewer "
             f"question:\n\"{question}\"\n"
-            "Rephrase it naturally in the author's voice — or quote the viewer's wording "
+            "Rephrase it naturally in the author's voice: or quote the viewer's wording "
             "if it lands harder. Your FIRST sentence must not answer it. Let the section "
-            "build to the answer — the explanation is the reward, not the greeting."
+            "build to the answer: the explanation is the reward, not the greeting."
         )
     blocks.append(
-        "PACING — only two rules; the author's examples above set everything else:\n"
+        "PACING: only two rules; the author's examples above set everything else:\n"
         "- Rhetorical questions inside the section: at most one or two, and only at a "
         "true turn in the argument. Do not open consecutive paragraphs with a question "
         "or an imperative ('Consider...', 'Think...'). Paragraphs connect through their "
-        "content, each flowing out of the last — not by restarting.\n"
+        "content, each flowing out of the last, not by restarting.\n"
         "- ONE idea per sentence. A long sentence is welcome when a single idea gathers "
         "momentum; never lengthen one by packing in a list or a second aside. At most "
-        "one em-dash insertion per paragraph — if a sentence needs two, split it."
+        "one em-dash insertion per paragraph, if a sentence needs two, split it."
     )
     blocks.append(
         "LOOP DISCIPLINE: the outline above assigns each reveal to its own chapter. Do "
         "NOT pay off another chapter's reveal here. If your material builds toward "
-        "something a LATER chapter owns, gesture toward it and leave it unopened — "
+        "something a LATER chapter owns, gesture toward it and leave it unopened: "
         "tension you hand to the next chapter is a gift, not a debt."
     )
     if mis_line:
         blocks.append(
             "THE HOOK'S BREAK STANDS: the hook has already told the viewer this belief "
-            f"is FALSE — \"{mis_line}\". Never re-assert that belief as fact, not even "
+            f"is FALSE: \"{mis_line}\". Never re-assert that belief as fact, not even "
             "in passing. Every chapter lives downstream of that break."
         )
     return "\n\n".join(blocks)
@@ -423,7 +423,7 @@ def build_voice_block(profile: dict) -> str:
     author = profile.get("author", "the author")
     parts = [
         f"You are ghost-writing in the exact prose voice of {author}. The exemplar "
-        "passages below are the ground truth for this voice — match their rhythm, "
+        "passages below are the ground truth for this voice: match their rhythm, "
         "sentence-length variation, imagery, and stance toward the reader. Do NOT copy "
         "their sentences.",
     ]
@@ -449,7 +449,7 @@ def build_hook_prompt(title: str, brief: str) -> tuple[str, str]:
     system = (
         "You are an elite YouTube scriptwriter. Your only job here is to write HOOKS that "
         "stop the scroll and make viewers unable to look away. You write hooks, not "
-        "literary prose — punchy, direct, propulsive."
+        "literary prose, punchy, direct, propulsive."
     )
     user_parts = []
     if title:
@@ -458,14 +458,14 @@ def build_hook_prompt(title: str, brief: str) -> tuple[str, str]:
         user_parts.append("Write ONLY the HOOK for a YouTube video.\n")
     user_parts.append(
         "The hook must:\n"
-        "- Grab attention in the very first line — open on the single most gripping idea.\n"
+        "- Grab attention in the very first line: open on the single most gripping idea.\n"
         "- Use short, direct, punchy sentences with fast, strong rhythm (vary length, but "
-        "lean SHORT — this is the opposite of long literary prose).\n"
+        "lean SHORT, this is the opposite of long literary prose).\n"
         "- Deliver on the promise of the TITLE above; make the viewer feel its stakes.\n"
         "- Open a curiosity loop the rest of the video will pay off.\n"
         "- NO channel intro, NO 'hello everyone', NO 'in this video'.\n"
         f"- VERY SHORT: about {HOOK_CHARS_MIN}-{HOOK_CHARS_MAX} characters "
-        "(~15-25 seconds of narration). A few tight, hard-hitting sentences — no more.\n"
+        "(~15-25 seconds of narration). A few tight, hard-hitting sentences, no more.\n"
     )
     if brief:
         # KHONG goi la "Points to hit": hook mo DUNG MOT vong to mo, khong phai bang kiem
@@ -473,9 +473,9 @@ def build_hook_prompt(title: str, brief: str) -> tuple[str, str]:
         # => "points to hit" bat LLM noi het ca chung, hook phinh vuot xa 250-500 (user bao
         # 2026-07-15). Day la NGUYEN LIEU de chon, khong phai danh sach phai phu kin.
         user_parts.append(
-            f"\nMaterial you may draw from — NOT a checklist:\n{brief}\n"
+            f"\nMaterial you may draw from, NOT a checklist:\n{brief}\n"
             "\nTake ONLY the single most gripping thread from that material and open the "
-            "loop with it. Deliberately LEAVE OUT everything else — the video itself pays "
+            "loop with it. Deliberately LEAVE OUT everything else: the video itself pays "
             "the rest off, and a hook that covers every point is not a hook. Ignore any "
             "'Angle:' or 'CTA:' line except as background for choosing that one thread.\n")
     if mis_line:
@@ -483,22 +483,22 @@ def build_hook_prompt(title: str, brief: str) -> tuple[str, str]:
             "\nTHE FALSE BELIEF (top priority). The audience believes this:\n"
             f'"{mis_line}"\n'
             "Build the hook around BREAKING it:\n"
-            "1. Your FIRST sentence must BE the break — open on the negation itself "
+            "1. Your FIRST sentence must BE the break: open on the negation itself "
             "(the \"my life is a lie\" moment hits at second zero). Do NOT warm up by "
             "restating or explaining the belief first: the viewer already holds it, "
             "hearing it again reads as something they already know.\n"
-            "2. Immediately after, in one short breath, name the belief being broken — "
+            "2. Immediately after, in one short breath, name the belief being broken, "
             "so the viewer knows exactly which rug was pulled.\n"
             "3. That break creates ONE question. Open that question and leave it open. "
-            "Do NOT reveal the answer — that reveal is the video's payoff; saying it "
+            "Do NOT reveal the answer: that reveal is the video's payoff; saying it "
             "here kills the loop.\n"
-            "Break ONLY this one belief — do not claim everything they know is wrong.\n"
+            "Break ONLY this one belief, do not claim everything they know is wrong.\n"
             + ("4. The material above is BACKGROUND ONLY, never a second opening. If it "
                "suggests starting another way (asking the audience a warm-up question, "
-               "introducing the topic, setting a scene), IGNORE that start — the break "
+               "introducing the topic, setting a scene), IGNORE that start: the break "
                "is the only opening. You are NOT covering the material's ideas: one "
                "belief broken, one question opened, done.\n" if brief else ""))
-    user_parts.append("\nOutput prose only — no heading, no markdown, no notes.")
+    user_parts.append("\nOutput prose only: no heading, no markdown, no notes.")
     return system, "".join(user_parts)
 
 
@@ -516,14 +516,14 @@ def build_hook_cut_prompt(title: str, draft: str, keep_break: bool = False) -> t
         f'Here is a draft HOOK{f" for the video titled: \"{title}\"" if title else ""}:'
         f"\n\n{draft}\n\n"
         f"It is TOO LONG. Cut it to about {HOOK_CHARS_MIN}-{HOOK_CHARS_MAX} characters "
-        "— a few tight, hard-hitting sentences.\n"
+        ", a few tight, hard-hitting sentences.\n"
         "- Keep the single strongest opening line and the curiosity loop; cut everything "
         "that merely explains, sets up, or covers extra points.\n"
         "- Do not summarise the video. Do not add anything new.\n"
         "- Keep the punchy, short-sentence rhythm.\n"
         + ("- Keep the false-belief break AND the unanswered question intact.\n"
            if keep_break else "")
-        + "Output prose only — no heading, no markdown, no notes."
+        + "Output prose only: no heading, no markdown, no notes."
     )
     return system, user
 
@@ -556,7 +556,7 @@ def build_section_prompt(
     ]
     if prev_tail:
         parts += ["", f"The previous section ended with:\n…{prev_tail}\n"
-                  "Continue naturally from there — do not repeat it, keep the thread unbroken."]
+                  "Continue naturally from there, do not repeat it, keep the thread unbroken."]
     # Tang 2 — NGAN SACH Y thay cho so ky tu (chot 2026-07-09): LLM khong dem duoc
     # ky tu nhung dem y rat tot; do dai la he qua cua so y x khai trien day du.
     # k lay tu depth_plan (KHONG phai idea_budget tho): nhac luot phai an vao ngan sach,
@@ -569,12 +569,12 @@ def build_section_prompt(
     # entirely" -> vut y cua user; do dai van kiem soat duoc ma khong can bo y nao.
     scope_rule = (
         f"DEPTH PLAN: develop AT MOST {k} distinct idea{'s' if k > 1 else ''} from the "
-        f"brief FULLY — choose the {k} most central. EVERY OTHER idea in the brief MUST "
+        f"brief FULLY: choose the {k} most central. EVERY OTHER idea in the brief MUST "
         "STILL APPEAR: condense each of them into ONE clear sentence woven into the flow "
-        "— a passing mention, not a full treatment. NEVER drop an idea from the brief, "
+        ", a passing mention, not a full treatment. NEVER drop an idea from the brief, "
         "and never add ideas beyond it. Develop each chosen idea FULLY in the author's "
-        "voice — vivid, concrete, unhurried. Never compress the prose flat or drop the "
-        "long sweeping sentences and concrete imagery of the FULL ideas — that richness "
+        "voice, vivid, concrete, unhurried. Never compress the prose flat or drop the "
+        "long sweeping sentences and concrete imagery of the FULL ideas: that richness "
         "IS the voice (a one-sentence mention is a deliberate short form, not compressed "
         "prose). When the last idea has landed, close the section as the platform rule "
         "above describes, then STOP."
@@ -582,7 +582,7 @@ def build_section_prompt(
     parts += [
         "",
         f"Now write ONLY the section \"{section.heading}\".",
-        "This is the outline brief for it — a SKELETON of bullet points to expand, NOT "
+        "This is the outline brief for it: a SKELETON of bullet points to expand, NOT "
         f"text to copy. Write full flowing prose that develops these points:\n{clean_brief}",
     ]
     v2 = _v2_section_block(question, mis_line)
@@ -591,7 +591,7 @@ def build_section_prompt(
     parts += [
         "",
         scope_rule,
-        "Do NOT restate the brief or list its points — turn them into narrated writing. "
+        "Do NOT restate the brief or list its points: turn them into narrated writing. "
         "Output prose only: no heading, no markdown, no bullet points, no notes, no "
         "stage directions.",
     ]
@@ -619,7 +619,7 @@ def build_scope_cut_prompt(section: OutlineSection, profile: dict, draft: str,
         f"It runs long because too many ideas are developed at full length. Rewrite it "
         f"keeping ONLY the {k} most central idea{'s' if k > 1 else ''} at FULL "
         "development. Every OTHER idea must STILL APPEAR, each demoted to ONE single "
-        "sentence woven into the flow — do NOT delete any idea, only shorten its form. "
+        "sentence woven into the flow: do NOT delete any idea, only shorten its form. "
         "Do NOT compress or flatten the ideas that stay at full development: keep the "
         "author's voice, rhythm and the strongest passages intact. "
         "Keep the section's closing (the open loop or landing) intact.\n"
@@ -656,14 +656,14 @@ def build_expand_prompt(section: OutlineSection, profile: dict, draft: str,
     system = build_voice_block(profile)
     user = (
         f'Here is a draft of a chapter you wrote:\n\n{draft}\n\n'
-        f"It runs about {pct}% SHORTER than needed. Expand it by about {pct}% — by "
+        f"It runs about {pct}% SHORTER than needed. Expand it by about {pct}%, by "
         "developing MORE ideas from the brief below into FULL passages. Choose the ideas "
         "currently covered in only one passing line and develop each fully in the "
         "author's voice: vivid, concrete, unhurried. Do NOT pad or inflate existing "
         "sentences; do NOT repeat anything; keep every existing passage intact (smoothing "
         "transitions is fine). Never compress the prose flat.\n\n"
         f"The chapter's brief:\n{clean_brief}\n\n"
-        "Output the FULL expanded chapter, prose only — no heading, no markdown, no notes."
+        "Output the FULL expanded chapter, prose only: no heading, no markdown, no notes."
     )
     # V2: ban no chay mu = nguon ro payoff + van kham (bai hoc lieu 2, 2026-07-26).
     v2 = _v2_section_block(question, mis_line)
