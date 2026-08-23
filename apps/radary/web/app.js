@@ -2041,6 +2041,70 @@ function DemGiay({ tu }) {
   return html`<b> ${n}s</b>`;
 }
 
+// Nút "Vì sao nóng" — bốn trạng thái nhìn là biết, không phải đoán:
+// chưa hỏi · ĐANG CHẠY (chấm nhấp nháy + số giây) · xong (mở giải thích) · hỏng.
+// Nhấp nháy chạy bằng CSS animation nhưng có kèm CHỮ, nên người tắt hiệu ứng
+// chuyển động vẫn đọc được trạng thái.
+function NutViSao({ v, onBam }) {
+  if (v && v.xep_hang) return html`<button class="btn small dangchay" onClick=${onBam} disabled>
+    <i class="tr-nhay"></i>${v.vi_tri === 0 ? 'đang hỏi' : `xếp hàng ${v.vi_tri}`}
+    <${DemGiay} tu=${v.tu}/></button>`;
+  if (v && v.co_du_lieu) return html`<button class="btn small primary" onClick=${onBam}>Xem giải thích</button>`;
+  if (v && v.co_du_lieu === false) return html`<button class="btn small canhbao" onClick=${onBam}
+    title=${v.ly_do || ''}>Thử lại</button>`;
+  return html`<button class="btn small" onClick=${onBam}>Vì sao nóng</button>`;
+}
+
+// Đường khối lượng tin 30 ngày của GDELT. Trước chỉ hiện mỗi con số đỉnh — trong
+// khi HÌNH DẠNG đường mới là thứ trả lời "nóng từ bao giờ, còn nóng không".
+function DuongTin({ diem, dinh }) {
+  const d = (diem || []).filter(x => x && typeof x.phan_tram === 'number');
+  if (d.length < 2) return null;
+  const W = 620, H = 120, L = 6, B = 18, T = 8;
+  const m = Math.max(...d.map(x => x.phan_tram)) || 1;
+  const X = i => L + (i / (d.length - 1)) * (W - L * 2);
+  const Y = v => H - B - (v / m) * (H - T - B);
+  const duong = d.map((x, i) => `${X(i)},${Y(x.phan_tram)}`).join(' ');
+  const nhan = k => k ? `${+k.slice(6, 8)}/${+k.slice(4, 6)}` : '';
+  return html`<svg viewBox=${`0 0 ${W} ${H}`} style="width:100%;height:auto" class="tr-duong">
+    <polygon points=${`${L},${H - B} ${duong} ${W - L},${H - B}`} fill="var(--accent)" opacity=".13"/>
+    <polyline points=${duong} fill="none" stroke="var(--accent)" stroke-width="1.8" stroke-linejoin="round"/>
+    ${d.map((x, i) => x.ngay === dinh ? html`<g>
+      <circle cx=${X(i)} cy=${Y(x.phan_tram)} r="3.6" fill="var(--accent)"/>
+      <line x1=${X(i)} y1=${Y(x.phan_tram) + 5} x2=${X(i)} y2=${H - B} stroke="var(--accent)"
+        opacity=".45" stroke-dasharray="3,3"/></g>` : null)}
+    <text x=${L} y=${H - 5} font-size="10" fill="currentColor" opacity=".55">${nhan(d[0].ngay)}</text>
+    <text x=${W - L} y=${H - 5} font-size="10" fill="currentColor" opacity=".55" text-anchor="end">${nhan(d[d.length - 1].ngay)}</text>
+  </svg>`;
+}
+
+// Câu trả lời phải DÍNH với từ khoá được hỏi (Owner 23/08). Trước để chung một
+// khối trên đỉnh trang: hỏi cụm này, đọc lại tưởng của cụm kia; mở nhóm khác là
+// mất. Kết quả nằm trong cache server nên đóng rồi mở lại là có ngay, 0 lời gọi.
+function ViSaoModal({ cum, v, onDong }) {
+  useEffect(() => {
+    const esc = e => { if (e.key === 'Escape') onDong(); };
+    window.addEventListener('keydown', esc);
+    return () => window.removeEventListener('keydown', esc);
+  }, [onDong]);
+  return html`
+    <div class="modalback" onClick=${e => { if (e.target === e.currentTarget) onDong(); }}>
+      <div class="modal" style="max-width:720px">
+        <button class="close" onClick=${onDong}>×</button>
+        <div class="tr-h2" style="padding-right:26px">Vì sao “${cum}” nóng</div>
+        <p class="mut" style="font-size:12px;margin:2px 0 10px">
+          GDELT · 0 khoá, 0 đồng · đỉnh <b>${v.dinh_ngay}</b> · ${v.dinh_phan_tram} ${v.don_vi}
+          ${v.tu_cache ? html` · <span title="Đọc lại từ bộ nhớ, không gọi lại GDELT">đã lưu</span>` : ''}</p>
+        <${DuongTin} diem=${v.diem} dinh=${v.dinh_ngay}/>
+        <div class="klabel">Bài báo tạo ra đỉnh ${v.dinh_ngay}</div>
+        <ul class="tr-bai">${(v.bai || []).map(b => html`<li>
+          <a href=${b.link} target="_blank" rel="noopener">${b.tieu_de}</a>
+          <span class="mut"> ${b.nguon}</span></li>`)}</ul>
+        ${v.ghi_chu ? html`<p class="mut">${v.ghi_chu}</p>` : null}
+      </div>
+    </div>`;
+}
+
 function Trending({ ws, canEdit }) {
   const [d, setD] = useState(null);
   const [busy, setBusy] = useState('');
@@ -2074,13 +2138,14 @@ function Trending({ ws, canEdit }) {
       const r = await api('POST', `/workspaces/${ws}/trending/vi-sao`,
         lamMoi ? { cum, lam_moi: true } : { cum });
       setViSao(v => ({ ...v, [cum]: r.xep_hang ? { ...r, tu: (v[cum] || {}).tu || Date.now() } : r }));
+      if (r.co_du_lieu) setChon(cum);                     // vừa xong thì mở luôn cho xem
     } catch (e) { setViSao(v => ({ ...v, [cum]: { co_du_lieu: false, ly_do: String(e.message) } })); }
   };
   const hoiViSao = cum => {
     const cu = viSao[cum];
-    setChon(cum);
-    if (cu && cu.co_du_lieu) return;                 // đã có kết quả thì chỉ mở lại
-    xinViSao(cum, !!(cu && cu.co_du_lieu === false)); // đang hiện lỗi -> bấm là thử lại
+    if (cu && cu.co_du_lieu) { setChon(cum); return; }   // đã có -> mở popup, 0 lời gọi
+    setChon(null);                                        // chưa có -> chưa mở gì
+    xinViSao(cum, !!(cu && cu.co_du_lieu === false));     // đang hỏng -> bấm là thử lại
   };
 
   // Còn cụm nào đang trong hàng thì hỏi lại — hỏi lại là luỹ đẳng ở server.
@@ -2149,30 +2214,8 @@ function Trending({ ws, canEdit }) {
         })}</dl>
       </div>
 
-      ${chon ? html`<div class="card tr-vs">
-        <div class="tr-h2">Vì sao “${chon}” nóng — GDELT (0 khoá, 0 đồng)</div>
-        ${(() => {
-          const v = viSao[chon];
-          if (!v) return html`<p class="mut">Đang xin…</p>`;
-          if (v.xep_hang) return html`<p class="mut">
-            ${v.vi_tri === 0
-              ? html`Đang hỏi GDELT<${DemGiay} tu=${v.tu}/> — nguồn này thường mất 12–17 giây.`
-              : html`Đang xếp hàng — còn <b>${v.vi_tri - 1}</b> lượt trước<${DemGiay} tu=${v.tu}/>.
-                     Cứ bấm tiếp cụm khác, không phải chờ ở đây.`}
-            ${v.cho_giay > 0 ? html`<br/>GDELT đang chặn nhịp gọi — tự chờ <b>${v.cho_giay}s</b> rồi làm tiếp.` : ''}
-            ${v.thu_lai > 0 ? html`<br/>Đã bị chặn ${v.thu_lai}/${v.thu_lai_toi_da} lần, vẫn đang thử lại.` : ''}
-          </p>`;
-          if (!v.co_du_lieu) return html`<p class="mut">${v.ly_do}</p>`;
-          return html`<div>
-            <p class="mut">Đỉnh ${v.dinh_ngay} · ${v.dinh_phan_tram} <span class="mut">(${v.don_vi})</span> · chuỗi ${v.diem.length} mốc${
-              v.tu_cache ? html` · <span title="Không gọi lại GDELT — kết quả đã hỏi trước đó">đọc lại từ bộ nhớ</span>` : ''}</p>
-            <ul class="tr-bai">${(v.bai || []).map(b => html`<li>
-              <a href=${b.link} target="_blank" rel="noopener">${b.tieu_de}</a>
-              <span class="mut"> ${b.nguon}</span></li>`)}</ul>
-            ${v.ghi_chu ? html`<p class="mut">${v.ghi_chu}</p>` : null}
-          </div>`;
-        })()}
-      </div>` : null}
+      ${chon && viSao[chon] && viSao[chon].co_du_lieu
+        ? html`<${ViSaoModal} cum=${chon} v=${viSao[chon]} onDong=${() => setChon(null)}/>` : null}
 
       ${O_THU_TU.map(o => {
         const ds = (kq.ung_vien || []).filter(u => u.o === o)
@@ -2202,12 +2245,7 @@ function Trending({ ws, canEdit }) {
             <td class="tr-n mut">${u.moi_nhat_ngay}n</td>
             <td class="tr-vs">${(u.vi_sao || []).join(' · ') || html`<span class="mut">chưa rõ</span>`}</td>
             <td class="tr-n mut">${u.luong}</td>
-            <td><button class="btn small" onClick=${() => hoiViSao(u.cum)}>${
-              (() => { const v = viSao[u.cum];
-                if (v && v.xep_hang) return v.vi_tri === 0 ? 'đang hỏi…' : `xếp hàng ${v.vi_tri}`;
-                if (v && v.co_du_lieu) return 'Xem lại';
-                if (v && v.co_du_lieu === false) return 'Thử lại';
-                return 'Vì sao nóng'; })()}</button></td>
+            <td class="tr-vsq"><${NutViSao} v=${viSao[u.cum]} onBam=${() => hoiViSao(u.cum)}/></td>
           </tr>
           ${moVid === u.cum ? html`<tr class="tr-vhang"><td colspan="9">
             <div class="klabel">Video của pool nói về “${u.cum}” (${u.n} video, hiện ${(u.video || []).length} chạy nhất)</div>

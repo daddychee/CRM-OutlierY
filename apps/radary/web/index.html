@@ -308,6 +308,20 @@ table.tr-bang tbody tr:last-child td{border-bottom:0}
 .tr-buoc li.dang { color:var(--text); font-weight:600 }
 .tr-buoc li.dang i { background:var(--accent); border-color:var(--accent);
   box-shadow:0 0 0 3px var(--accent-soft) }
+/* Nut "vi sao nong": trang thai dang chay phai NHIN LA BIET. Cham nhap nhay chi
+   la lop phu — chu "dang hoi 4s" van la nguon su that, nen tat hieu ung chuyen
+   dong khong mat thong tin. */
+.btn.small.dangchay { opacity:1; cursor:default }
+.btn.small.dangchay[disabled] { opacity:.95 }
+.tr-nhay { display:inline-block; width:6px; height:6px; border-radius:50%;
+  background:var(--accent); margin-right:6px; vertical-align:middle;
+  animation:trNhay 1s ease-in-out infinite }
+@keyframes trNhay { 0%,100% { opacity:1 } 50% { opacity:.22 } }
+@media (prefers-reduced-motion:reduce) { .tr-nhay { animation:none } }
+.btn.small.canhbao { border-color:var(--bad); color:var(--bad) }
+.tr-vsq { white-space:nowrap }
+.tr-duong { display:block; margin:2px 0 4px }
+
 /* Chu giai duoi ban do: moi o mot the, vien trai mang mau cua chinh o do nen
    mat noi duoc mau tren ban do voi doan giai thich. */
 .tr-chu { display:grid; grid-template-columns:repeat(auto-fit,minmax(228px,1fr)); gap:9px;
