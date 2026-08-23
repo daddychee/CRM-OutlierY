@@ -125,3 +125,64 @@ def test_ban_ghi_doi_cu_khong_co_nut_don_ca_khoi(client):
                 data={"duong": "Life In/US/LI037/LI037 fix lần 1.mp4"}, headers=h())
     kho_video.doi_trang_thai("VR-0001", "da_duyet")
     assert "Clean up feedback folder" not in client.get("/danh-sach", headers=_mgr()).text
+
+
+def test_xoa_cung_tap_quet_sach_so_va_giu_file_neu_khong_tich(client, khoi):
+    """Nút 'Delete permanently' ở nhóm Approved: bản ghi + bình luận biến mất khỏi
+    sổ (khác gỡ mềm). KHÔNG tích ô file thì file trên NAS vẫn còn."""
+    kho_video.them_binh_luan("VR-0001", "an", "note 1", ts_giay=2)
+    kho_video.them_binh_luan("VR-0001", "binh", "note 2")
+    kho_video.doi_trang_thai("VR-0002", "da_duyet")
+    r = client.post("/api-vr/xoa-cung-tap",
+                    data={"ma_tap": "LI001", "xac_nhan": "LI001"}, headers=_mgr())
+    assert r.status_code == 200
+    du = r.json()
+    assert du["so_ban_ghi"] == 2 and du["so_binh_luan"] == 2 and du["nas"] is None
+    assert kho_video.lay_video("VR-0001") is None       # xóa CỨNG, không phải gỡ mềm
+    assert kho_video.ds_binh_luan("VR-0001") == []
+    assert (khoi / "LI001.mp4").is_file()               # không tích ô → file còn nguyên
+    f = kho_video.kho_dir().parent / "db" / "nhat_ky_xoa_ban_ghi.csv"
+    dong = list(csv.DictReader(f.read_text(encoding="utf-8-sig").splitlines()))
+    assert [d["ma_video"] for d in dong] == ["VR-0001", "VR-0002"]
+    assert dong[0]["so_binh_luan"] == "2" and dong[0]["ma_tap"] == "LI001"
+
+
+def test_xoa_cung_kem_file_thi_don_ca_khoi(client, khoi):
+    kho_video.doi_trang_thai("VR-0002", "da_duyet")
+    r = client.post("/api-vr/xoa-cung-tap",
+                    data={"ma_tap": "LI001", "xac_nhan": "LI001", "xoa_file": "1"},
+                    headers=_mgr())
+    assert r.status_code == 200 and r.json()["nas"]["so_file"] == 2
+    assert not khoi.exists()
+    assert (khoi.parent / "LI001_master.mp4").is_file()   # master vẫn không bị đụng
+    assert kho_video.cac_video_cua_tap("LI001") == []
+
+
+def test_xoa_cung_can_approved_va_dung_ma_va_quyen(client, khoi):
+    du = {"ma_tap": "LI001", "xac_nhan": "LI001"}
+    assert client.post("/api-vr/xoa-cung-tap", data=du, headers=_mgr()).status_code == 403
+    kho_video.doi_trang_thai("VR-0002", "da_duyet")
+    assert client.post("/api-vr/xoa-cung-tap", data=du, headers=h()).status_code == 403
+    assert client.post("/api-vr/xoa-cung-tap",
+                       data={"ma_tap": "LI001", "xac_nhan": "LI002"},
+                       headers=_mgr()).status_code == 422
+    assert len(kho_video.cac_video_cua_tap("LI001")) == 2   # chưa mất bản ghi nào
+
+
+def test_xoa_cung_quet_ca_ban_ghi_da_go_mem(client, khoi):
+    """Bản đã gỡ mềm trước đó vẫn phải bị quét — không để lại bản ghi ẩn cùng tập."""
+    kho_video.doi_trang_thai("VR-0001", "da_xoa")
+    kho_video.doi_trang_thai("VR-0002", "da_duyet")
+    r = client.post("/api-vr/xoa-cung-tap",
+                    data={"ma_tap": "LI001", "xac_nhan": "LI001"}, headers=_mgr())
+    assert r.status_code == 200 and r.json()["so_ban_ghi"] == 2
+    assert kho_video.cac_video_cua_tap("LI001") == []
+
+
+def test_nut_xoa_cung_chi_hien_o_tap_da_duyet(client, khoi):
+    # soi CLASS của nút, không soi chữ — chữ còn nằm trong khối <script> luôn có mặt
+    NUT = 'class="nut nho nguy xoa-cung-nut"'      # markup nút, không phải chuỗi trong <script>
+    assert NUT not in client.get("/danh-sach", headers=_mgr()).text
+    kho_video.doi_trang_thai("VR-0002", "da_duyet")
+    assert NUT in client.get("/danh-sach", headers=_mgr()).text
+    assert NUT not in client.get("/danh-sach", headers=h()).text

@@ -151,6 +151,24 @@
   giao diện sạch chữ 'Changes requested', LI037 hiện 'episode signed off' nhưng
   KHÔNG có nút dọn — đúng, vì tập đó theo cấu trúc cũ, chưa có khối Feedback.
 
+- 20/08/2026 (tiếp 3) — **NÚT XÓA CỨNG Ở NHÓM ĐÃ NGHIỆM THU** (user yêu cầu).
+  Phân biệt rành mạch BA mức dọn, đừng gộp lại:
+  1. **Gỡ mềm** (`trang_thai='da_xoa'`) — bản ghi ẩn khỏi danh sách, bình luận còn,
+     file NAS còn. Vẫn là hành vi mặc định khi xóa một video lẻ.
+  2. **Clean up feedback folder** — xóa FILE trong `<tập>/Feedback` trên NAS, bản
+     ghi + bình luận GIỮ NGUYÊN (chỉ gỡ mềm) để còn lịch sử duyệt.
+  3. **Delete permanently** (mới) — xóa CỨNG: bản ghi + bình luận biến mất khỏi sổ,
+     kèm ô tích tùy chọn dọn luôn khối Feedback. Chỉ hiện ở nhóm ĐÃ Approved và chỉ
+     Manager+; hai lớp xác nhận = **gõ lại đúng mã tập** + tích ô (khuôn xóa cứng
+     của kho tài liệu hệ cũ). `cac_video_cua_tap` quét CẢ bản đã gỡ mềm — không để
+     lại bản ghi ẩn cùng tập trong sổ.
+  Nhật ký riêng `db/nhat_ky_xoa_ban_ghi.csv` (chỉ-thêm, đã khai apps.json): ai, bản
+  ghi nào, MẤT BAO NHIÊU BÌNH LUẬN — vì đây là đường duy nhất làm bình luận biến
+  mất, không có nó thì mất trắng không dấu vết. 69 test pass; kiểm sống 4 chốt trả
+  403/422/403/403 mà sổ vẫn nguyên 15 bản ghi + 80 bình luận.
+  **Ca đã lường:** tập đời cũ (không có khối Feedback) tích ô xóa file → 403 nói rõ
+  "file trên NAS phải tự dọn", KHÔNG bao giờ mở đường xóa thư mục tập.
+
 ## Quyết định thiết kế (đừng phá)
 
 - **NAS CHỈ ĐỌC TUYỆT ĐỐI**: app không chép/ghi/xóa/đổi tên gì trong `VR_NAS_DIR`

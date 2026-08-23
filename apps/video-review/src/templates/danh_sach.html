@@ -115,9 +115,14 @@
     {%- if tap.canh %}<span class="canh mat">needs attention</span>{% endif %}
     {%- if tap.xong %}<span class="canh xong">episode signed off</span>{% endif %}
     <span class="tap-so">{{ tap.so }} cut{{ 's' if tap.so > 1 else '' }}</span>
-    {%- if tap.don_duoc and user.co_xoa %}
+    {%- if tap.xong and user.co_xoa %}
+    {%- if tap.don_duoc %}
     <button class="nut nho nguy don-nut" type="button"
             data-tap="{{ tap.ma }}" data-khoi="{{ tap.khoi_feedback }}">Clean up feedback folder</button>
+    {%- endif %}
+    <button class="nut nho nguy xoa-cung-nut" type="button"
+            data-tap="{{ tap.ma }}" data-so="{{ tap.so }}"
+            data-khoi="{{ tap.khoi_feedback }}">Delete permanently</button>
     {%- endif %}
   </summary>
   <table class="vr"><tbody class="vr-than">
@@ -343,6 +348,64 @@
           });
       });
       hop.appendChild(nhan); hop.appendChild(ok); hop.appendChild(huy);
+      khoiEl.open = true;
+      khoiEl.appendChild(hop); khoiEl.appendChild(loi);
+    });
+  });
+
+  // XÓA CỨNG cả tập đã Approved: bản ghi + bình luận biến mất khỏi sổ (khác gỡ
+  // mềm). Hai lớp: gõ lại MÃ TẬP + tích ô — cùng khuôn xóa cứng của kho tài liệu.
+  document.querySelectorAll(".xoa-cung-nut").forEach(function (nut) {
+    nut.addEventListener("click", function (e) {
+      e.preventDefault(); e.stopPropagation();
+      var khoiEl = nut.closest("details.tap");
+      if (khoiEl.querySelector(".don-hop")) return;
+      var tap = nut.dataset.tap;
+      var hop = document.createElement("div");
+      hop.className = "don-hop";
+      var mo = document.createElement("div");
+      mo.style.flexBasis = "100%";
+      mo.textContent = "Deleting " + tap + " for good: " + nut.dataset.so
+        + " entr" + (nut.dataset.so === "1" ? "y" : "ies") + " and every note on them "
+        + "disappear from the log. This cannot be undone.";
+      var oMa = document.createElement("input");
+      oMa.type = "text"; oMa.placeholder = "type " + tap + " to confirm";
+      oMa.style.cssText = "padding:5px 10px;border:1px solid var(--chip-line);border-radius:8px;"
+        + "background:var(--th-182233);color:var(--ink);font-family:inherit;font-size:12.5px";
+      var nhanF = document.createElement("label");
+      var tickF = document.createElement("input"); tickF.type = "checkbox";
+      nhanF.appendChild(tickF);
+      nhanF.appendChild(document.createTextNode(
+        nut.dataset.khoi ? " also delete the files in " + nut.dataset.khoi
+                         : " (no Feedback folder for this episode — files stay on the NAS)"));
+      if (!nut.dataset.khoi) { tickF.disabled = true; }
+      var ok = document.createElement("button");
+      ok.className = "nut nho nguy"; ok.type = "button"; ok.textContent = "Delete permanently";
+      ok.disabled = true;
+      var huy = document.createElement("button");
+      huy.className = "nut nho phu"; huy.type = "button"; huy.textContent = "Cancel";
+      var loi = document.createElement("div"); loi.className = "don-loi";
+      oMa.addEventListener("input", function () {
+        ok.disabled = oMa.value.trim().toUpperCase() !== tap.toUpperCase();
+      });
+      huy.addEventListener("click", function () { hop.remove(); loi.remove(); });
+      ok.addEventListener("click", function () {
+        ok.disabled = true; ok.textContent = "Deleting…";
+        var fd = new FormData();
+        fd.append("ma_tap", tap);
+        fd.append("xac_nhan", oMa.value.trim());
+        fd.append("xoa_file", tickF.checked ? "1" : "");
+        fetch("/api-vr/xoa-cung-tap", { method: "POST", body: fd })
+          .then(function (r) { if (!r.ok) return r.json().then(function (j) { throw j; }); return r.json(); })
+          .then(function () { location.reload(); })
+          .catch(function (j) {
+            ok.disabled = false; ok.textContent = "Delete permanently";
+            loi.textContent = (j && j.detail) || "Could not delete this episode.";
+            loi.style.display = "block";
+          });
+      });
+      hop.appendChild(mo); hop.appendChild(oMa); hop.appendChild(nhanF);
+      hop.appendChild(ok); hop.appendChild(huy);
       khoiEl.open = true;
       khoiEl.appendChild(hop); khoiEl.appendChild(loi);
     });

@@ -38,7 +38,7 @@ from fastapi.templating import Jinja2Templates
 from src import don_nas, kho_video, nap_nas
 
 _APP_DIR = Path(__file__).resolve().parents[1]
-PHIEN_BAN = "0.2.0"
+PHIEN_BAN = "0.3.0"
 app = FastAPI(title="Video Review v3")
 from nen.common.sidebar import ctx_sidebar  # noqa: E402 — cờ sidebar UI_FLOW.md mục 2
 templates = Jinja2Templates(directory=str(_APP_DIR / "src" / "templates"),
@@ -337,6 +337,22 @@ async def api_nas_xoa_file(duong: str = Form(...), xac_nhan: str = Form(...),
         raise HTTPException(403, str(e))
     except (FileNotFoundError, OSError):
         raise HTTPException(404, "Không thấy file trên NAS (có thể vừa bị xóa).")
+
+
+@app.post("/api-vr/xoa-cung-tap")
+async def api_xoa_cung_tap(ma_tap: str = Form(...), xac_nhan: str = Form(...),
+                           xoa_file: str = Form(""), user: dict = Depends(yeu_cau_xoa)):
+    """XÓA CỨNG cả tập đã Approved: bản ghi + bình luận biến mất khỏi sổ (khác gỡ
+    mềm), tùy chọn dọn luôn khối Feedback trên NAS. Nút nằm ở nhóm đã nghiệm thu."""
+    try:
+        return don_nas.xoa_cung_tap(ma_tap, xac_nhan, user["ten"],
+                                    xoa_file_nas=xoa_file in ("1", "true", "on"))
+    except ValueError as e:
+        raise HTTPException(422, str(e))
+    except PermissionError as e:
+        raise HTTPException(403, str(e))
+    except (FileNotFoundError, KeyError):
+        raise HTTPException(404, "Không thấy tập này trong sổ.")
 
 
 @app.post("/api-vr/nas-xoa-feedback")

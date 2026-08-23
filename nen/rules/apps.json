@@ -379,7 +379,7 @@
         "/xem"
       ],
       "health": "/health",
-      "phien_ban": "0.2.0",
+      "phien_ban": "0.3.0",
       "chay": {
         "kieu": "uvicorn",
         "app_dir": "apps/video-review",
@@ -412,6 +412,15 @@
           "backup": "copy",
           "giu": "vinh-vien",
           "ghi_chu": "Nhật ký CHỈ-THÊM mọi lệnh xóa file trên NAS phát từ app (ai, file nào, lúc nào, bao nhiêu byte) — đây là đường duy nhất app được ghi/xóa trên NAS nên phải có vết vĩnh viễn."
+        },
+        {
+          "ten": "nhat-ky-xoa-ban-ghi",
+          "loai": "csv",
+          "duong": "data/video-review/db/nhat_ky_xoa_ban_ghi.csv",
+          "muc_quy": "vang",
+          "backup": "copy",
+          "giu": "vinh-vien",
+          "ghi_chu": "Nhật ký CHỈ-THÊM mọi lệnh XÓA CỨNG tập đã nghiệm thu (ai, bản ghi nào, mất bao nhiêu bình luận) — xóa cứng làm bình luận biến mất khỏi sổ nên phải còn vết ở đây."
         }
       ]
     },

@@ -178,3 +178,57 @@ def xoa_khoi_feedback(duong_thu_muc: str, xac_nhan_ma_tap: str, nguoi: str) -> d
     for ma in ma_go:
         kho_video.doi_trang_thai(ma, "da_xoa")   # bình luận vẫn giữ trong sổ
     return {"tap": tap, "so_file": len(cac_file), "byte": tong, "ma_go": ma_go}
+
+
+def _nhat_ky_ban_ghi() -> Path:
+    return kho_video.kho_dir().parent / "db" / "nhat_ky_xoa_ban_ghi.csv"
+
+
+def ghi_nhat_ky_ban_ghi(nguoi: str, ma: str, ten: str, so_bl: int, tap: str) -> None:
+    """Chỉ-THÊM: xóa cứng làm bình luận biến mất khỏi sổ nên phải còn vết là ai xóa,
+    xóa bản ghi nào, mất bao nhiêu bình luận."""
+    f = _nhat_ky_ban_ghi()
+    f.parent.mkdir(parents=True, exist_ok=True)
+    moi = not f.exists()
+    with open(f, "a", newline="", encoding="utf-8-sig") as ra:
+        w = csv.writer(ra)
+        if moi:
+            w.writerow(["luc", "nguoi", "ma_video", "ten", "so_binh_luan", "ma_tap"])
+        w.writerow([datetime.now().strftime("%Y-%m-%d %H:%M:%S"), nguoi, ma, ten, so_bl, tap])
+
+
+def xoa_cung_tap(ma_tap: str, xac_nhan: str, nguoi: str, xoa_file_nas: bool) -> dict:
+    """XÓA CỨNG cả tập đã nghiệm thu: bản ghi + bình luận biến mất khỏi sổ; tùy chọn
+    dọn luôn khối Feedback trên NAS (user chốt 20/08 — nút ở phần Approved).
+
+    Chốt: cờ 'xoa' (route lo) · mã tập echo phải khớp · TẬP PHẢI ĐÃ APPROVED ·
+    mọi bản ghi ghi nhật ký TRƯỚC khi xóa · file NAS đi qua xoa_khoi_feedback nên
+    vẫn đủ chốt riêng của nó (chỉ thư mục tên 'Feedback').
+    """
+    ma_tap = (ma_tap or "").strip().upper()
+    if (xac_nhan or "").strip().upper() != ma_tap:
+        raise ValueError("Mã tập xác nhận không khớp.")
+    if not kho_video.tap_da_duyet(ma_tap):
+        raise PermissionError(f"Tập {ma_tap or 'này'} chưa có bản Approved — chưa được xóa.")
+    cac = kho_video.cac_video_cua_tap(ma_tap)
+    if not cac:
+        raise FileNotFoundError(ma_tap)
+
+    ket_nas = None
+    if xoa_file_nas:
+        khoi = next((kho_video.thu_muc_feedback(v) for v in cac
+                     if kho_video.thu_muc_feedback(v)), "")
+        if not khoi:
+            raise PermissionError("Tập này không có khối Feedback riêng (bản ghi đời cũ "
+                                  "trỏ thẳng thư mục tập) — file trên NAS phải tự dọn.")
+        ket_nas = xoa_khoi_feedback(khoi, ma_tap, nguoi)
+
+    da_xoa, tong_bl = [], 0
+    for v in cac:
+        ghi_nhat_ky_ban_ghi(nguoi, v["ma"], v["ten"],
+                            len(kho_video.ds_binh_luan(v["ma"])), ma_tap)
+        ket = kho_video.xoa_cung_video(v["ma"])
+        da_xoa.append(ket["ma"])
+        tong_bl += ket["so_binh_luan"]
+    return {"tap": ma_tap, "so_ban_ghi": len(da_xoa), "so_binh_luan": tong_bl,
+            "ma_da_xoa": da_xoa, "nas": ket_nas}

@@ -329,6 +329,36 @@ def doi_trang_thai(ma: str, trang_thai: str) -> None:
         conn.close()
 
 
+def xoa_cung_video(ma: str) -> dict:
+    """XÓA CỨNG một bản ghi: bình luận + dòng video biến mất khỏi sổ, không khôi
+    phục được (khác GỠ MỀM vốn chỉ ẩn khỏi danh sách). Chỉ dùng cho tập đã nghiệm
+    thu xong — route lo phần quyền + xác nhận. Trả số bình luận đã xóa để ghi sổ."""
+    conn = ket_noi()
+    try:
+        hang = conn.execute("SELECT ten FROM video WHERE ma=?", (ma,)).fetchone()
+        if hang is None:
+            raise KeyError(ma)
+        so_bl = conn.execute("SELECT COUNT(*) FROM binh_luan WHERE video_ma=?",
+                             (ma,)).fetchone()[0]
+        conn.execute("DELETE FROM binh_luan WHERE video_ma=?", (ma,))
+        conn.execute("DELETE FROM video WHERE ma=?", (ma,))
+        conn.commit()
+    finally:
+        conn.close()
+    return {"ma": ma, "ten": hang["ten"], "so_binh_luan": so_bl}
+
+
+def cac_video_cua_tap(ma_tap_can_tim: str) -> list[dict]:
+    """MỌI bản ghi của một tập, kể cả đã gỡ mềm — xóa cứng phải quét sạch, không
+    để lại bản ghi ẩn của cùng tập đó trong sổ."""
+    conn = ket_noi()
+    try:
+        hang = [dict(h) for h in conn.execute("SELECT * FROM video ORDER BY id").fetchall()]
+    finally:
+        conn.close()
+    return [v for v in hang if ma_tap(v) == ma_tap_can_tim]
+
+
 # ---------- bình luận ----------
 
 def them_binh_luan(video_ma: str, nguoi: str, noi_dung: str,
