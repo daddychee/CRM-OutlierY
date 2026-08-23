@@ -267,12 +267,10 @@
        tính whoami là position:fixed góc phải mọi trang, nav để chung hàng header là bị đè.
        padding-right chừa sẵn góc phải để tab không bao giờ chui gầm dải kể cả màn hẹp. -->
   <nav class="topnav">
-    <a class="newbtn" href="/" style="text-decoration:none">⌂ Trang chủ</a>
+    <button class="newbtn" id="newWaveBtn">＋ Video Outlier</button>
     <a class="newbtn here" href="/outline" style="text-decoration:none">Outline Board</a>
     <a class="newbtn" href="/write" style="text-decoration:none">Writing</a>
     <a class="newbtn" href="/author" style="text-decoration:none">Author Extract</a>
-    <button class="newbtn" id="cookieBtn" title="Dán cookies YouTube khi bị chặn IP (Sign in to confirm you're not a bot)">🍪 Cookies</button>
-    <button class="newbtn" id="newWaveBtn">＋ Video Outlier</button>
   </nav>
   <header>
     <div>
@@ -428,7 +426,7 @@
     </div>
     <div class="run-log" id="runLog"></div>
     <div style="margin-top:14px;border-top:1px solid var(--border-soft);padding-top:12px">
-      <p class="slot-label" style="margin:0 0 4px">🍪 COOKIES YOUTUBE <span id="ckSt" style="text-transform:none;letter-spacing:0;color:var(--ok)"></span></p>
+      <p class="slot-label" style="margin:0 0 4px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true" style="vertical-align:-2px;margin-right:5px"><path d="M12 3a9 9 0 1 0 9 9 4 4 0 0 1-5-5 4 4 0 0 1-4-4Z"/><circle cx="9.5" cy="10.5" r="1"/><circle cx="14" cy="15" r="1"/><circle cx="8.5" cy="15.5" r="1"/></svg>COOKIES YOUTUBE <span id="ckSt" style="text-transform:none;letter-spacing:0;color:var(--ok)"></span></p>
       <p class="s-sub" style="margin:0 0 8px">Pipeline báo "bot-check / chặn IP"? Trên máy bạn: cài extension
         <b>"Get cookies.txt LOCALLY"</b> → đăng nhập YouTube trong <b>cửa sổ ẩn danh</b> → Export →
         đóng cửa sổ ẩn danh → dán nguyên văn vào đây → Lưu → bấm ↻ Tiếp tục.</p>
@@ -446,22 +444,6 @@
 </div>
 <div class="ctaov" id="qModal" hidden></div>
 <div class="ctaov" id="ctaModal" hidden></div>
-<div class="ctaov" id="cookieModal" hidden>
-  <div class="ctacard">
-    <div class="ctahead"><span>🍪 Cookies YouTube <span id="ckmSt" style="font-weight:400;color:var(--muted);font-size:12px"></span></span>
-      <button class="ctaclose" id="ckmClose" title="đóng (Esc)">✕</button></div>
-    <div class="ctascroll">
-      <p style="font-size:12px;color:var(--muted);line-height:1.5;margin:2px 0 10px">
-        Khi ingest báo bị chặn (<i>Sign in to confirm you're not a bot</i>): cài tiện ích
-        <b>"Get cookies.txt LOCALLY"</b> → đăng nhập YouTube ở <b>cửa sổ ẩn danh</b> → Export →
-        dán nguyên văn file cookies.txt vào ô dưới. Cookies từ IP máy chủ hết hạn nhanh, dán lại khi cần.</p>
-      <textarea id="ckmTxt" placeholder="# Netscape HTTP Cookie File…  (dán nguyên văn cookies.txt)"
-        style="width:100%;min-height:150px;background:var(--raised);border:1px solid var(--border);border-radius:7px;color:var(--text);padding:9px 12px;font:11.5px var(--mono);line-height:1.4"></textarea>
-    </div>
-    <div class="ctafoot"><button class="ctacancel" id="ckmCancel">Đóng</button>
-      <button class="mb-gen" id="ckmSave" style="margin-left:8px">Lưu cookies</button></div>
-  </div>
-</div>
 <div class="toast" id="toast" role="status"></div>
 
 <script>
@@ -1311,34 +1293,16 @@ $('#ckSaveBtn').addEventListener('click',async()=>{
   $('#ckTxt').value='';ckLoad();toast(d.notice||'Đã lưu cookies — bấm ↻ Tiếp tục để chạy lại từ bước dở.');
 });
 
-// ── modal cookies mở từ nút header (truy cập nhanh, không phải vào màn Video Outlier) ──
-async function ckmStatus(){
-  try{const d=await(await fetch('/api/cookies')).json();
-    $('#ckmSt').textContent=d.exists?`· đang có ${d.n_lines} dòng (${new Date(d.mtime*1000).toLocaleDateString('vi-VN')})`:'· chưa có';
-  }catch(e){}
-}
-function openCookie(){$('#cookieModal').hidden=false;$('#ckmTxt').value='';ckmStatus();setTimeout(()=>$('#ckmTxt').focus(),0);}
-function closeCookie(){$('#cookieModal').hidden=true;}
-$('#cookieBtn').addEventListener('click',openCookie);
-$('#ckmClose').addEventListener('click',closeCookie);
-$('#ckmCancel').addEventListener('click',closeCookie);
-$('#cookieModal').addEventListener('click',e=>{if(e.target===$('#cookieModal'))closeCookie();});
-$('#ckmSave').addEventListener('click',async()=>{
-  const v=$('#ckmTxt').value.trim();
-  if(!v){toast('Ô trống — dán nội dung cookies.txt trước.');return;}
-  const b=$('#ckmSave');b.disabled=true;b.textContent='Đang lưu…';
-  try{
-    const r=await fetch('/api/cookies',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({content:v})});
-    const d=await r.json();
-    if(d.error){toast(d.error);b.disabled=false;b.textContent='Lưu cookies';return;}
-    toast(d.notice||'Đã lưu cookies — chạy lại pipeline để lấy đủ duration/heatmap.');closeCookie();
-  }catch(e){toast('Lỗi lưu cookies: '+e.message);b.disabled=false;b.textContent='Lưu cookies';}
-});
-
 // ── màn nhập video (Video Outlier) ──
 function openSetup(){$('#setup').hidden=false;ckLoad();}
 function closeSetup(){$('#setup').hidden=true;}
 $('#newWaveBtn').addEventListener('click',openSetup);
+// Sang day tu nut "+ Video Outlier" cua trang khac (?new=1) -> mo luon hop nhap.
+// Don duong dan sau khi mo, de F5 khong mo lai.
+if(new URLSearchParams(location.search).get('new')==='1'){
+  openSetup();
+  history.replaceState(null,'',location.pathname);
+}
 $('#cancelBtn').addEventListener('click',()=>{if(!$('#runBar').classList.contains('on'))closeSetup();else toast('Đang chạy — chờ xong hoặc để chạy nền');});
 $('#openBoardBtn').addEventListener('click',()=>{closeSetup();loadBoard();});
 

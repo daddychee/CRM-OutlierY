@@ -724,22 +724,21 @@ HOME = """<!doctype html>
 <div class="wrap">
   <div class="eyebrow">Bộ công cụ kịch bản YouTube</div>
   <h1>Content <em>Ultimate</em></h1>
-  <p class="flow">① Outline Board (bằng chứng từ video → outline.txt) → ② Author Extract
-    (bản thảo → hồ sơ giọng) → ③ Writing (outline × giọng → kịch bản).</p>
+  <p class="flow">① Outline Board (bằng chứng từ video → outline.txt) → ② Writing
+    (outline × giọng → kịch bản) · ③ Author Extract (bản thảo → hồ sơ giọng).</p>
   <div class="cards">
     <a class="card" href="/outline"><h2><span>①</span> Outline Board</h2>
       <p>Dán URL các video cùng sóng → pipeline đo bằng chứng → tick chọn cluster → outline.txt tự xuất.</p></a>
-    <a class="card" href="/author"><h2><span>②</span> Author Extract</h2>
-      <p>Bản thảo tác giả → hồ sơ giọng văn (profile, clone-kit, dataset).</p></a>
-    <a class="card" href="/write"><h2><span>③</span> Writing</h2>
+    <a class="card" href="/write"><h2><span>②</span> Writing</h2>
       <p>Nạp outline từ board × tác giả từ library → kịch bản theo giọng, đo % giống.</p></a>
+    <a class="card" href="/author"><h2><span>③</span> Author Extract</h2>
+      <p>Bản thảo tác giả → hồ sơ giọng văn (profile, clone-kit, dataset).</p></a>
     <!--SETTINGS-->
   </div>
 </div></body></html>"""
 
-# Thẻ trang chủ theo VAI (phân quyền 2026-07-16): Quản lý cho leader+, Cài đặt chỉ admin.
-MANAGE_CARD = """<a class="card" href="/manage"><h2><span>👥</span> Quản lý</h2>
-      <p>Nhật ký làm việc từng người, token đã tiêu, dấu hiệu IP lạ — Leader trở lên.</p></a>"""
+# Thẻ trang chủ theo VAI: Cài đặt chỉ admin. (Thẻ Quản lý gỡ 23/08 — quản lý
+# người dùng gom về khối General của OUTLIERY; route /manage vẫn sống.)
 SETTINGS_CARD = """<a class="card" href="/settings"><h2><span>⚙</span> Cài đặt</h2>
       <p>API key · thành viên & phân quyền · cookies — chỉ quản trị viên.</p></a>"""
 
@@ -1579,9 +1578,10 @@ def make_handler(run_name: str):
                 return
             _touch(self)
             if path in ("/", "/index.html"):
-                card = ((MANAGE_CARD if _can_manage(self) else "")
-                        + (SETTINGS_CARD if (_is_admin(self)
-                                             and not _sso_quan_tri_dong(self)) else ""))
+                # The "Quan ly" da go 23/08: quan ly nguoi dung / nhat ky gio nam o
+                # khoi General cua OUTLIERY. Route /manage van song cho ai co link.
+                card = ((SETTINGS_CARD if (_is_admin(self)
+                                            and not _sso_quan_tri_dong(self)) else ""))
                 self._send(200, self._page(HOME.replace("<!--SETTINGS-->", card)),
                            "text/html; charset=utf-8")
             elif path == "/logout":
