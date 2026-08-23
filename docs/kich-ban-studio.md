@@ -885,6 +885,55 @@ diễn "đời sau chắc cũng thế".
 ngân sách token ở vòng cắt/nở rồi trả rỗng — bản vá 88505fc giữ được bản nháp nhưng chương
 sẽ không về đúng khuôn độ dài). `contentFilter` GLM vẫn dính ở hồ sơ A012, cả 5.2 lẫn 5.3.
 
+### 14.8. UI tab Author + mô tả giọng (24/08, theo yêu cầu Owner)
+
+**Chạy lại toàn kho.** Backup `data/content-ultimate/backup/profiles-truoc-c1c5-20260823/`
+trước, rồi dựng lại 12/12 hồ sơ có corpus bằng C1–C5 (A005/A006 bỏ qua — corpus trỏ
+`/tmp` từ thí nghiệm 16/07). `signature_moves` giữ nguyên toàn bộ, không gọi lại LLM.
+
+Chỉ **A009** (12.167 từ) và **A014** (25.392 từ) là sạch. Còn lại cần Owner bổ sung:
+
+| hồ sơ | có | cần thêm |
+|---|---:|---:|
+| A013 Derek Muller | 3.726 từ | ~8.300 |
+| A010 Tribes | 6.853 | ~5.100 |
+| A007 / A012 | 8.244 | ~3.800 |
+
+Và một vấn đề chung dễ sửa: **10/12 corpus là văn bản một khối, không có dòng trống
+nào** — chiều "số câu mỗi đoạn" vì thế không dùng được. Khi nạp thêm bản thảo, giữ
+được ranh giới đoạn thì hệ đo thêm một chiều mà không tốn gì.
+
+**Báo cáo lên UI.** Bốn nhóm số Owner yêu cầu, mỗi nhóm trả lời một câu khác nhau:
+mức độ (theo *điểm đo*, không theo số từ) · số từ · độ giãn câu (±SD, kèm từ/câu và %
+câu cụt) · giống tác giả khác (Delta + cảnh báo trùng). Route `GET /api/ho-so?ma=`
+chạy 0,5 giây, 0 token, **chỉ nhận mã** — không nhận đường dẫn từ client (cùng luật
+với `/api/kiem-chung`). Bảng Delta đọc 20.000 từ đầu mỗi corpus thay vì trọn: A001 có
+149.240 từ, đọc hết chỉ để lấy một con số thì UI phải chờ.
+
+Bố cục tab Author về đúng khuôn Writing: trái = kết quả đọc được + log, phải = thiết
+lập dính màn hình. **Hai tab vẫn tách bạch** (Owner nhắc) — `/author` và `/write` là
+hai trang riêng, cơ chế `CU_MODE` không bị chạm. Bỏ luôn trần riêng `#p1{max-width:1140px}`
+có từ hồi tab này là form một cột: nay cả ba pane cùng `.app` 1460px.
+
+**Gộp trường nhập.** "Folder bản thảo" + "Bộ văn bản" là hai ô cho cùng một việc (chọn
+thư mục, rồi chọn thư mục con của chính nó) → một ô **Tác phẩm**. Bỏ "Folder kết quả":
+đường dẫn đó máy tự biết, không bắt người dùng khai. `ex_dir`/`ex_out` thành input ẩn
+nên hợp đồng với server không đổi.
+
+**`mo_ta_giong.py` — chỗ duy nhất LLM nói thành lời.** Báo cáo trả lời được "giọng này
+đo ra bao nhiêu" nhưng không trả lời được "nên giao việc gì cho giọng này". Năm phần:
+giọng nghe thế nào · dùng cho nội dung gì · mood cần set · atmosphere · không hợp với.
+Van chặt hơn mọi chỗ khác: hồ sơ **chưa đủ điểm đo thì không gọi model**; LLM chỉ nhận
+số đã đo + đoạn văn thật + moves đã kiểm chứng; prompt cấm bịa số; hồ sơ lưu kèm
+`so_do_neo` để đối chiếu từng con số trong lời văn; phần nào rỗng thì bỏ hẳn; lỗi model
+không được làm hỏng extract. Mặc định **không tick** (luật A6 — luồng cũ không tự tiêu
+thêm một lượt LLM), UI có checkbox bật sẵn cho người chạy thấy.
+
+Bản chạy thật đầu tiên (A014) lộ ngay một lỗi kiểu chữ: model viết *"Câu trung bình
+14,2936 từ nhưng biến thiên mạnh (9,1934)"* — bốn chữ số thập phân đi thẳng vào báo cáo
+cho người biên tập. Nay làm tròn trước khi đưa cho model, và tỉ lệ đổi sang phần trăm
+kèm tên trường nói rõ đơn vị.
+
 ### 14.7. Còn lại của mạch này
 
 - **Chạy lại extract cho 12 hồ sơ trong kho thật.** Toàn bộ số đo ở mục này dựng trong
