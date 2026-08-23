@@ -14,6 +14,20 @@ import pytest
 from radary import trending as tr
 
 
+@pytest.fixture
+def dat_lai_hang(monkeypatch):
+    """Hàng đợi + sổ lỗi là biến TOÀN CỤC tiến trình (đúng ý đồ: GDELT là tài
+    nguyên CHUNG của cả app, không phải của từng pool).
+
+    Khoá luôn luồng nền: chạy thật thì luồng phải tự vét hàng, nhưng trong test
+    thì nó vét mất trước khi ta kịp kiểm hàng — và test có luồng là test bấp bênh.
+    Ở đây gọi tay `_vs_mot_luot()` để biết CHÍNH XÁC lượt nào chạy lúc nào."""
+    tr._vs_hang.clear(); tr._vs_loi.clear(); tr._vs_dang[0] = None
+    monkeypatch.setattr(tr, "_vs_bat_luong", lambda: None)
+    yield
+    tr._vs_hang.clear(); tr._vs_loi.clear(); tr._vs_dang[0] = None
+
+
 @pytest.fixture(autouse=True)
 def _dat_lai_nhip_gdelt():
     """Nhịp gọi + cờ nghỉ-sau-429 là biến TOÀN CỤC của tiến trình (đúng ý đồ: một
@@ -397,3 +411,99 @@ def test_bi_429_thi_tu_choi_NGAY_thay_vi_bat_cho_them_mot_luot():
     assert r2["bi_chan_nhip"] is True
     assert len(dem) == 1, "lời gọi thứ hai vẫn chạm mạng"
     assert r2["cho_giay"] > 0 and str(r2["cho_giay"]) in r2["ly_do"]
+
+
+# ============================== hang doi "vi sao nong" (Owner chot 23/08)
+
+def _gdelt_gia(dem=None):
+    def _f(url):
+        if dem is not None:
+            dem.append(url)
+        return json.dumps({"timeline": [{"data": [
+            {"date": "20260816T120000Z", "value": 0.65,
+             "toparts": [{"title": "Bai 1", "url": "https://x.com/a"}]}]}]})
+    return _f
+
+
+def test_hang_doi_khong_bat_nguoi_dung_ngoi_cho(dat_lai_hang):
+    """GDELT tốn 12-17s/lời gọi và chặn nhịp gắt. Bấm xong phải được trả lời NGAY
+    (đã xếp hàng, đứng thứ mấy), việc chạy nền — thay vì giữ request 12s."""
+    from radary import db as _db
+    conn = _db.connect()
+    dem = []
+    r = tr.xin_vi_sao(conn, 11, "guyana", doc=_gdelt_gia(dem))
+    assert r["xep_hang"] is True and r["vi_tri"] == 1
+    assert dem == [], "đã chạm mạng ngay trong request — đúng cái cần tránh"
+
+    assert tr._vs_mot_luot() is True            # worker làm một lượt
+    assert len(dem) == 1
+    xong = tr.xin_vi_sao(conn, 11, "guyana")
+    assert xong["co_du_lieu"] is True and xong["tu_cache"] is True
+    assert tr._vs_mot_luot() is False           # hàng rỗng
+
+
+def test_hoi_lai_khi_dang_xep_hang_khong_nhan_doi_luot(dat_lai_hang):
+    """UI hỏi lại mỗi 3s để xem xong chưa — mỗi lần hỏi mà đẩy thêm một lượt vào
+    hàng thì hàng phình vô hạn và GDELT bị gọi lặp cùng một cụm."""
+    from radary import db as _db
+    conn = _db.connect()
+    tr.xin_vi_sao(conn, 12, "guyana", doc=_gdelt_gia())
+    for _ in range(4):
+        r = tr.xin_vi_sao(conn, 12, "guyana")
+        assert r["xep_hang"] is True
+    assert len(tr._vs_hang) == 1
+
+
+def test_xep_hang_theo_thu_tu_va_bao_dung_vi_tri(dat_lai_hang):
+    from radary import db as _db
+    conn = _db.connect()
+    for i, c in enumerate(["guyana", "niger", "haiti"], 1):
+        assert tr.xin_vi_sao(conn, 13, c, doc=_gdelt_gia())["vi_tri"] == i
+    assert tr.xin_vi_sao(conn, 13, "haiti")["vi_tri"] == 3
+
+
+def test_loi_tra_ve_mot_lan_va_bam_lai_thi_thu_lai(dat_lai_hang):
+    """Lỗi KHÔNG vào cache (van chống bịa), nhưng phải giữ lại đủ lâu để người dùng
+    đọc được — nếu quên ngay thì lần hỏi lại kế tiếp trông như chưa từng chạy."""
+    from radary import db as _db
+    conn = _db.connect()
+
+    def _hong(url):
+        raise RuntimeError("mang hong")
+
+    tr.xin_vi_sao(conn, 2, "guyana", doc=_hong)
+    tr._vs_mot_luot()
+    r = tr.xin_vi_sao(conn, 2, "guyana")
+    assert r["co_du_lieu"] is False and not r.get("xep_hang")
+    assert tr.xin_vi_sao(conn, 2, "guyana")["co_du_lieu"] is False   # vẫn đọc lại được
+
+    dem = []
+    r2 = tr.xin_vi_sao(conn, 2, "guyana", lam_moi=True, doc=_gdelt_gia(dem))
+    assert r2["xep_hang"] is True                                     # bấm lại thì thử lại
+    tr._vs_mot_luot()
+    assert len(dem) == 1
+    assert tr.xin_vi_sao(conn, 2, "guyana")["co_du_lieu"] is True
+
+
+def test_bi_chan_nhip_thi_xep_LAI_hang_chu_khong_bao_hong(dat_lai_hang):
+    """Sự cố ngay lượt nghiệm thu đầu: bấm 3 cụm, cả 3 báo lỗi trong 1 giây. Vì
+    worker vét cạn hàng trong lúc GDELT đang chặn — mỗi lượt bị từ chối ngay rồi
+    ghi thành lỗi. Hàng đợi mà không biết CHỜ thì vô nghĩa: bị chặn nhịp là xếp
+    LẠI, để vòng lặp nền chờ hết cữ rồi làm tiếp. Chỉ bỏ cuộc sau vài lần."""
+    import urllib.error as ue
+    from radary import db as _db
+    conn = _db.connect()
+
+    def _429(url):
+        raise ue.HTTPError(url, 429, "Too Many Requests", {}, None)
+
+    tr.xin_vi_sao(conn, 15, "guyana", doc=_429)
+    tr._vs_mot_luot()
+    assert len(tr._vs_hang) == 1, "bị chặn nhịp mà không xếp lại hàng"
+    assert (15, "guyana") not in tr._vs_loi, "vội báo hỏng trong khi mới chỉ bị chặn"
+
+    for _ in range(tr.VS_THU_LAI):
+        tr._chan_toi[0] = 0.0
+        tr._vs_mot_luot()
+    assert tr._vs_hang == []
+    assert tr._vs_loi[(15, "guyana")]["co_du_lieu"] is False    # hết lượt thì nói thật

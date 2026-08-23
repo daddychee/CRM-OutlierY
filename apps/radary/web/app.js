@@ -2067,15 +2067,29 @@ function Trending({ ws, canEdit }) {
     setBusy('');
   };
 
-  const hoiViSao = async cum => {
-    setChon(cum);
-    if (viSao[cum] && !viSao[cum].dang_hoi) return;
-    setViSao(v => ({ ...v, [cum]: { dang_hoi: true, tu: Date.now() } }));
+  // Bấm = XIN, không phải CHỜ. Server trả ngay (cache / vị trí trong hàng), việc
+  // hỏi GDELT chạy nền. Bấm cụm thứ hai không phải đợi cụm thứ nhất xong.
+  const xinViSao = async (cum, lamMoi) => {
     try {
-      const r = await api('POST', `/workspaces/${ws}/trending/vi-sao`, { cum });
-      setViSao(v => ({ ...v, [cum]: r }));
+      const r = await api('POST', `/workspaces/${ws}/trending/vi-sao`,
+        lamMoi ? { cum, lam_moi: true } : { cum });
+      setViSao(v => ({ ...v, [cum]: r.xep_hang ? { ...r, tu: (v[cum] || {}).tu || Date.now() } : r }));
     } catch (e) { setViSao(v => ({ ...v, [cum]: { co_du_lieu: false, ly_do: String(e.message) } })); }
   };
+  const hoiViSao = cum => {
+    const cu = viSao[cum];
+    setChon(cum);
+    if (cu && cu.co_du_lieu) return;                 // đã có kết quả thì chỉ mở lại
+    xinViSao(cum, !!(cu && cu.co_du_lieu === false)); // đang hiện lỗi -> bấm là thử lại
+  };
+
+  // Còn cụm nào đang trong hàng thì hỏi lại — hỏi lại là luỹ đẳng ở server.
+  const dangCho = Object.keys(viSao).filter(c => viSao[c] && viSao[c].xep_hang);
+  useEffect(() => {
+    if (!dangCho.length) return;
+    const t = setTimeout(() => dangCho.forEach(c => xinViSao(c)), 2500);
+    return () => clearTimeout(t);
+  }, [viSao, ws]);
 
   const tick = async (u, on) => {
     try {
@@ -2139,8 +2153,15 @@ function Trending({ ws, canEdit }) {
         <div class="tr-h2">Vì sao “${chon}” nóng — GDELT (0 khoá, 0 đồng)</div>
         ${(() => {
           const v = viSao[chon];
-          if (!v || v.dang_hoi) return html`<p class="mut">Đang hỏi GDELT
-            <${DemGiay} tu=${v && v.tu}/> — nguồn này thường mất 12–17 giây.</p>`;
+          if (!v) return html`<p class="mut">Đang xin…</p>`;
+          if (v.xep_hang) return html`<p class="mut">
+            ${v.vi_tri === 0
+              ? html`Đang hỏi GDELT<${DemGiay} tu=${v.tu}/> — nguồn này thường mất 12–17 giây.`
+              : html`Đang xếp hàng — còn <b>${v.vi_tri - 1}</b> lượt trước<${DemGiay} tu=${v.tu}/>.
+                     Cứ bấm tiếp cụm khác, không phải chờ ở đây.`}
+            ${v.cho_giay > 0 ? html`<br/>GDELT đang chặn nhịp gọi — tự chờ <b>${v.cho_giay}s</b> rồi làm tiếp.` : ''}
+            ${v.thu_lai > 0 ? html`<br/>Đã bị chặn ${v.thu_lai}/${v.thu_lai_toi_da} lần, vẫn đang thử lại.` : ''}
+          </p>`;
           if (!v.co_du_lieu) return html`<p class="mut">${v.ly_do}</p>`;
           return html`<div>
             <p class="mut">Đỉnh ${v.dinh_ngay} · ${v.dinh_phan_tram} <span class="mut">(${v.don_vi})</span> · chuỗi ${v.diem.length} mốc${
@@ -2181,7 +2202,12 @@ function Trending({ ws, canEdit }) {
             <td class="tr-n mut">${u.moi_nhat_ngay}n</td>
             <td class="tr-vs">${(u.vi_sao || []).join(' · ') || html`<span class="mut">chưa rõ</span>`}</td>
             <td class="tr-n mut">${u.luong}</td>
-            <td><button class="btn small" onClick=${() => hoiViSao(u.cum)}>Vì sao nóng</button></td>
+            <td><button class="btn small" onClick=${() => hoiViSao(u.cum)}>${
+              (() => { const v = viSao[u.cum];
+                if (v && v.xep_hang) return v.vi_tri === 0 ? 'đang hỏi…' : `xếp hàng ${v.vi_tri}`;
+                if (v && v.co_du_lieu) return 'Xem lại';
+                if (v && v.co_du_lieu === false) return 'Thử lại';
+                return 'Vì sao nóng'; })()}</button></td>
           </tr>
           ${moVid === u.cum ? html`<tr class="tr-vhang"><td colspan="9">
             <div class="klabel">Video của pool nói về “${u.cum}” (${u.n} video, hiện ${(u.video || []).length} chạy nhất)</div>

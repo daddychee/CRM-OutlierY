@@ -540,3 +540,137 @@ def _chay(ws: int, geo: str, gio: int, tai=None, doc=None) -> None:
         _ghi_tt(conn, ws, state="error", ly_do=f"{type(e).__name__}: {e}"[:300])
     finally:
         conn.close()
+
+
+# ------------------------------------------------ HANG DOI "vi sao nong"
+# GDELT ton 12-17s moi loi goi va chan nhip gat. Giu request lai cho la sai: nguoi
+# dung ngoi khong, bam them cum khac thi cang tac. Nen XEP HANG.
+#
+# Hang la CUA CA APP, khong phai cua tung workspace — vi nhip GDELT la tai nguyen
+# CHUNG. Hai pool cung bam thi van phai lan luot, neu khong ca hai deu an 429.
+#
+# Phan xep hang tach hoan toan khoi phan chay nen: _vs_mot_luot() lam DUNG mot
+# luot roi ve, luong nen chi la vong lap goi no. Nho vay test chay duoc khong can
+# luong (bai hoc: viec chay nen ma khong tach duoc thi chi test duoc bang sleep).
+_vs_hang: list[dict] = []            # [{ws, cum, doc}] — cho toi luot
+_vs_dang: list = [None]              # (ws, cum) dang chay, hoac None
+_vs_loi: dict[tuple, dict] = {}      # (ws, cum) -> ket qua hong lan gan nhat
+_vs_khoa = threading.Lock()
+_vs_luong: list = [None]
+# Do that 23/08 tren hang 3 cum: GDELT chan nhip lien tuc, mot cum can toi 3 luot
+# (~200s) moi qua. Cho khong con ton gi cua nguoi dung (ho da di lam viec khac)
+# nen bo cuoc som la mat khong — noi rong ra 5.
+VS_THU_LAI = 5
+
+
+def _vs_vi_tri(ws: int, cum: str) -> int | None:
+    """1 = ke tiep, 0 = dang chay. None = khong co trong hang."""
+    if _vs_dang[0] == (ws, cum):
+        return 0
+    for i, m in enumerate(_vs_hang):
+        if m["ws"] == ws and m["cum"] == cum:
+            return i + 1 + (1 if _vs_dang[0] else 0)
+    return None
+
+
+def _vs_muc(ws: int, cum: str) -> dict | None:
+    for m in _vs_hang:
+        if m["ws"] == ws and m["cum"] == cum:
+            return m
+    return None
+
+
+def xin_vi_sao(conn, ws: int, cum: str, lam_moi: bool = False, doc=None) -> dict:
+    """Xin ket qua "vi sao nong". TRA LOI NGAY — khong bao gio giu request cho mang.
+
+    Bon duong ve: co cache -> ket qua luon; dang trong hang -> vi tri; vua chay
+    hong -> ly do (giu lai de nguoi dung doc duoc, KHONG vao cache theo van chong
+    bia); con lai -> xep hang.
+
+    UI hoi lai moi vai giay bang chinh ham nay, nen no phai LUY DANG: hoi lai khi
+    dang xep hang thi khong duoc day them mot luot nua.
+    """
+    from . import db
+    khoa = (ws, cum)
+    if lam_moi:
+        _vs_loi.pop(khoa, None)
+    else:
+        so = db.kv_get(conn, ws, KHOA_VS, None) or {}
+        cu = so.get(cum)
+        if cu and time.time() - cu.get("luc", 0) < VS_HAN:
+            return {**cu["kq"], "tu_cache": True, "cache_luc": cu["luc"]}
+        if khoa in _vs_loi:
+            return _vs_loi[khoa]
+    with _vs_khoa:
+        vt = _vs_vi_tri(ws, cum)
+        if vt is None:
+            _vs_hang.append({"ws": ws, "cum": cum, "doc": doc})
+            vt = _vs_vi_tri(ws, cum)
+    _vs_bat_luong()
+    # Noi ro VI SAO cham. Khong co hai dong nay thi hang doi chay dung ma nguoi
+    # dung van tuong treo — dung cai benh dang di chua.
+    m = _vs_muc(ws, cum)
+    cho = max(0, int(_chan_toi[0] - time.time()))
+    return {"xep_hang": True, "vi_tri": vt,
+            "hang_dai": len(_vs_hang) + (1 if _vs_dang[0] else 0),
+            "thu_lai": (m or {}).get("lan", 0), "thu_lai_toi_da": VS_THU_LAI,
+            "cho_giay": cho}
+
+
+def _vs_mot_luot() -> bool:
+    """Lam dung MOT luot trong hang. False neu hang rong. Tach rieng de test duoc."""
+    from . import db
+    with _vs_khoa:
+        if not _vs_hang:
+            return False
+        m = _vs_hang.pop(0)
+        _vs_dang[0] = (m["ws"], m["cum"])
+    conn = None
+    try:
+        conn = db.connect()
+        kq = vi_sao_co_cache(conn, m["ws"], m["cum"], doc=m["doc"])
+        if kq.get("bi_chan_nhip") and m.get("lan", 0) + 1 < VS_THU_LAI:
+            # BI CHAN != HONG. Xep LAI hang de vong lap nen cho het cu roi lam tiep
+            # — day dung la ly do co hang doi. Vet can hang trong luc dang bi chan
+            # thi moi luot deu "hong" trong mot giay (dinh that luot nghiem thu dau).
+            m["lan"] = m.get("lan", 0) + 1
+            with _vs_khoa:
+                _vs_hang.insert(0, m)
+        elif not kq.get("co_du_lieu"):
+            _vs_loi[(m["ws"], m["cum"])] = kq
+    except Exception as e:                                       # noqa: BLE001
+        _vs_loi[(m["ws"], m["cum"])] = {"co_du_lieu": False,
+                                        "ly_do": f"Lỗi nền: {type(e).__name__}"}
+    finally:
+        _vs_dang[0] = None
+        if conn is not None:
+            try:
+                conn.close()
+            except Exception:                                    # noqa: BLE001
+                pass
+    return True
+
+
+def _vs_bat_luong() -> None:
+    """Bat luong nen neu chua co. Luong tu chet khi hang rong — khong nuoi luong
+    ngu suot doi app."""
+    with _vs_khoa:
+        t = _vs_luong[0]
+        if t is not None and t.is_alive():
+            return
+
+        def _vong():
+            while True:
+                # Cho het cu chan nhip TRUOC khi lay luot ke tiep. Ngu tung 1s de
+                # con thoat duoc, va de moc _chan_toi doi giua chung van an.
+                while True:
+                    cho = _chan_toi[0] - time.time()
+                    if cho <= 0:
+                        break
+                    time.sleep(min(1.0, cho))
+                if not _vs_mot_luot():
+                    return
+
+        t = threading.Thread(target=_vong, daemon=True, name="trending-vi-sao")
+        _vs_luong[0] = t
+    t.start()
