@@ -75,3 +75,18 @@ def test_failing_targets_sorted_first():
     assert verdict["targets"][0]["pass"] is False  # truot len dau
     report = format_report(verdict)
     assert "%" in report and "target" in report
+
+
+def test_evaluate_script_bo_qua_target_chua_do_duoc():
+    """C1: target sinh tu corpus mong (do_duoc False) khong duoc cham — sd=0.0 gia
+    lam band = 5% gia tri, vua chat vo ly vua doi tra ket luan cho thu chua do."""
+    from voiceprofile.validate import evaluate_script
+    van = "We looked up. The sky was clear and very wide. Nobody spoke for a while."
+    targets = {
+        "sentence_len_mean": {"target": 7.0, "sd": 1.5, "do_duoc": True},
+        "ttr": {"target": 0.9, "sd": None, "range": None, "do_duoc": False},
+    }
+    kq = evaluate_script(van, targets)
+    ten = [r["name"] for r in kq["targets"]]
+    assert "ttr" not in ten and "sentence_len_mean" in ten
+    assert kq["n_khong_do_duoc"] == 1

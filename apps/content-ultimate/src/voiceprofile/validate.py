@@ -69,9 +69,15 @@ def evaluate_script(script_text: str, targets: dict[str, dict], sd_tol: float = 
     measured = compute_features([script_text])
     rows = []
     n_pass = 0
+    n_bo = 0
     for name, t in targets.items():
         val = measured.get(name)
         if val is None:
+            continue
+        # C1: target dung tren corpus chua du diem do (sd khong do duoc) thi KHONG cham.
+        # Cham no bang band 5% la doi tra ket luan cho thu chua he do duoc.
+        if t.get("do_duoc") is False:
+            n_bo += 1
             continue
         sd = t.get("sd") or 0.0
         target = t["target"]
@@ -94,6 +100,7 @@ def evaluate_script(script_text: str, targets: dict[str, dict], sd_tol: float = 
     return {
         "n_pass": n_pass,
         "n_total": total,
+        "n_khong_do_duoc": n_bo,
         "percent": pct,
         "script_words": len(tokenize_words(script_text)),
         "targets": rows,

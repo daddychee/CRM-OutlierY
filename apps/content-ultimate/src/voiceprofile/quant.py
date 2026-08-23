@@ -34,6 +34,7 @@ class QuantFeature:
     spread: float | None = None  # do lech chuan qua cac van ban tac gia (self-profile mode)
     stable_on_heldout: bool | None = None
     keep: bool = True
+    do_duoc: bool = True         # co DU diem do de noi duoc gi ve do on dinh khong (C1)
 
     def to_dict(self) -> dict:
         return {
@@ -44,6 +45,7 @@ class QuantFeature:
             "spread": round(self.spread, 4) if self.spread is not None else None,
             "stable_on_heldout": self.stable_on_heldout,
             "keep": self.keep,
+            "do_duoc": self.do_duoc,
         }
 
 
@@ -180,10 +182,15 @@ def per_work_feature_values(texts: list[str]) -> dict[str, list[float]]:
     return {k: [f[k] for f in per_text] for k in per_text[0]}
 
 
+# Duoi nguong nay "spread = 0" khong phai on dinh ma la CHUA DO DUOC (C1).
+MIN_DON_VI_DO = 3
+
+
 def build_self_features(
     author_train: list[str],
     author_heldout: list[str],
     stability_cv: float = 0.30,
+    min_units: int = MIN_DON_VI_DO,
 ) -> list[QuantFeature]:
     """Self-profile mode (KHONG can baseline): giu dac trung ON DINH noi tai tac gia.
 
@@ -193,16 +200,20 @@ def build_self_features(
     "nam trong +-1 SD vung tac gia" (dung tieu chi nghiem thu Muc 9 brief).
     """
     values = per_work_feature_values(author_train)
+    # MOT diem do khong tao ra phuong sai, va pstdev tra 0.0 — con so do khong co nghia
+    # "khong bien thien", no co nghia "chua biet". Giu cach cu thi corpus cang mong cang
+    # giu duoc nhieu dac trung (do that: A013 3.726 tu giu 17/17; A014 25.392 tu giu 7/17).
+    du = len(author_train) >= min_units
     features = []
     for name, vals in values.items():
         mean = statistics.mean(vals)
         spread = statistics.pstdev(vals) if len(vals) > 1 else 0.0
         cv = spread / abs(mean) if mean else float("inf")
         stable = cross_validate_stability(author_train, author_heldout, name)
-        keep = cv <= stability_cv and stable is not False
+        keep = du and cv <= stability_cv and stable is not False
         features.append(QuantFeature(
-            name=name, value=mean, spread=spread,
-            stable_on_heldout=stable, keep=keep,
+            name=name, value=mean, spread=spread if du else None,
+            stable_on_heldout=stable, keep=keep, do_duoc=du,
         ))
     return features
 

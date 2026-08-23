@@ -27,6 +27,16 @@ from .textutils import split_sentences, tokenize_words
 CAU_QUA_DAI = 60.0      # > nguong nay = gan nhu chac chan thieu dau ket cau
 CAU_QUA_NGAN = 8.0      # < nguong nay = van ban vun bat thuong (hoac tach cau hong)
 NEO_DU_TU = 800         # tong tu exemplar toi thieu de goi la neo day
+# C1 (24/08): duoi 3 diem do thi do on dinh CHUA DO DUOC (xem profile.MIN_DON_VI_DO).
+# Diem do nho nhat la 800 tu, nen corpus duoi 2.400 tu khong the co 3 diem do.
+MIN_DON_VI_DO = 3
+CORPUS_DU_TU = 2400
+
+# Co nao lam SO DO SAI (khong tin duoc mot con so nao) — liet ke TUONG MINH thay vi
+# do tien to "corpus_": cua so mong (corpus_mong, C1) cung bat dau bang "corpus_" nhung
+# so do cua no VAN DUNG, chi la chua chung minh duoc on dinh. Gop hai chuyen do lam mot
+# thi ho so mong bi coi nhu ho so transcript hong.
+CO_LAM_SO_DO_SAI = {"corpus_thieu_dau_cau", "corpus_cau_qua_vun", "exemplar_thieu_dau_cau"}
 NGUONG_TRUNG = 0.30     # >=30% shingle cua mau nay nam trong mau kia = ke lai cung mot doan
 # generator.build_voice_block chi lay 3 exemplar dau -> do dung 3 mau do, khong do ca kho
 SO_EXEMPLAR_VAO_PROMPT = 3
@@ -114,13 +124,30 @@ def soi_profile(profile: dict) -> dict:
             f"Neo giong chi {ex['tong_tu']} tu ({ex['so_mau']} mau) — qua mong so voi "
             "ca tram dong luat trong prompt; model se roi ve nhip mac dinh cua no."
         )
+    # Corpus mong: SO DO van dung (van ban co dau cau), nhung KHONG the noi dac trung
+    # nao la on dinh — mot diem do khong co phuong sai. Bao rieng, khong lam do_duoc
+    # False: hai chuyen khac nhau (so do sai vs so do dung nhung chua chung minh duoc).
+    cs = profile.get("corpus_stats") or {}
+    n_units = cs.get("n_stability_units")
+    n_tu = cs.get("n_tokens")
+    if isinstance(n_units, int) and n_units < MIN_DON_VI_DO:
+        co.append("corpus_mong")
+        thieu = (f", nap them ~{CORPUS_DU_TU - n_tu:,} tu nua"
+                 if isinstance(n_tu, int) and n_tu < CORPUS_DU_TU else "")
+        canh_bao.append(
+            f"Corpus chi cat duoc {n_units} diem do"
+            + (f" ({n_tu:,} tu)" if isinstance(n_tu, int) else "")
+            + f" — duoi {MIN_DON_VI_DO} diem thi do on dinh CHUA do duoc, moi con so "
+            f"'sai so 0' deu la gia. So do van dung, nhung dung tin do chac chan{thieu}."
+        )
+
     if ex["trung_lap"]:
         co.append("exemplar_trung_lap")
         canh_bao.append("Cac mau exemplar trung noi dung nhau — neo thuc te con mong hon so tu.")
 
     return {
         "ten": ten,
-        "do_duoc": not any(c.startswith("corpus_") or c == "exemplar_thieu_dau_cau" for c in co),
+        "do_duoc": not (set(co) & CO_LAM_SO_DO_SAI),
         "neo_du": "neo_mong" not in co and "exemplar_trung_lap" not in co,
         "co": co,
         "chi_so": {
@@ -129,6 +156,8 @@ def soi_profile(profile: dict) -> dict:
             "exemplar_tong_tu": ex["tong_tu"],
             "exemplar_tu_moi_cau": ex["tu_moi_cau"],
             "so_target": len(profile.get("reproduction_targets") or {}),
+            "n_stability_units": n_units,
+            "corpus_tu": n_tu,
         },
         "canh_bao": canh_bao,
     }

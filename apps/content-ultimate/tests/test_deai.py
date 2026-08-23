@@ -295,3 +295,19 @@ def test_cham_nhip_dung_cung_nguon_voi_prompt_23_08():
     # chuan tu corpus phai la cau NGAN, khong phai cau dai cua exemplar lech
     assert r_moi["chuan"]["tu_moi_cau"] < r_cu["chuan"]["tu_moi_cau"]
     assert r_moi.get("nguon_chuan") == "corpus"
+
+
+# --- C1 (24/08): corpus mong -> bao rieng, KHONG lan sang do_duoc ------------------
+def test_bat_corpus_mong_chua_du_diem_do():
+    p = _profile([VAN_NGUOI])
+    p["corpus_stats"] = {"n_works": 1, "n_tokens": 3726, "n_stability_units": 1}
+    r = soi_profile(p)
+    assert "corpus_mong" in r["co"]
+    assert r["do_duoc"] is True, "so do van dung — chi la chua chung minh duoc on dinh"
+    assert any("diem do" in c for c in r["canh_bao"])
+
+
+def test_corpus_du_diem_do_thi_khong_bao_mong():
+    p = _profile([VAN_NGUOI])
+    p["corpus_stats"] = {"n_works": 6, "n_tokens": 25392, "n_stability_units": 6}
+    assert "corpus_mong" not in soi_profile(p)["co"]
