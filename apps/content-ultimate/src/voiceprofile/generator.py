@@ -444,8 +444,13 @@ END_CUT_VONG = 2         # End no gap 3 lan khuon thi mot vong khong du         
 # truu tuong: dua CON SO CUA CHINH TAC GIA NAY, va noi ro cac doan mau ngay ben duoi da
 # nam o dung nhung con so do. Model co ca tell lan show cung tro mot huong.
 #
-# Cong tac CU_NHIP_PROMPT=0 de tat (mac dinh bat). Ho so chua do duoc so nao -> khoi RONG
-# -> prompt y het truoc, khong doi mot byte (co test hoi quy ghim).
+# KET QUA A/B 24/08 — MAC DINH TAT. Do that 15 luot (glm-5.2, hai ho so nguoc chieu
+# nhau, cung outline cung neo, khac dung bien nay): lech nhip TRUNG BINH tat 0,53 vs
+# bat 0,72; bat kem hon o 5/7 cap va bai NGAN hon ~9% (A014 350 -> 318 tu; A012 418 ->
+# 376). Tuc noi con so ra khong lam model bam hon, ma lam no viet cau chung hon va it
+# chu hon. Giu nguyen co che + test: bang chung 23/08 cho thay glm-5.3 BAM NEO con 5.2
+# thi khong, nen dang thu lai voi 5.3 la viec cua dot sau, khong phai bo di lam lai.
+# Bat bang CU_NHIP_PROMPT=1. Ho so chua do duoc so nao -> khoi RONG (test hoi quy ghim).
 def _nhip_tu_target(profile: dict) -> dict:
     """Lay so do di vao prompt. Uu tien target do tren CORPUS, lui ve do tren chinh
     cac doan mau se hien trong prompt — de con so noi ra luon khop van nguoi doc thay."""
@@ -475,7 +480,7 @@ DOAN_HOP_LY = (2.0, 8.0)   # ngoai khoang nay thi so do doan la artefact dinh da
 def build_nhip_block(profile: dict) -> str:
     """Khoi VOICE TARGETS — rong khi khong do duoc gi hoac khi bi tat."""
     import os
-    if (os.environ.get("CU_NHIP_PROMPT") or "1").strip() == "0":
+    if (os.environ.get("CU_NHIP_PROMPT") or "0").strip() != "1":
         return ""
     n = _nhip_tu_target(profile)
     if not n.get("tu_moi_cau"):

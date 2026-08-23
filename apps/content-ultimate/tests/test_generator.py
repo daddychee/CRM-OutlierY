@@ -852,7 +852,8 @@ _HS_DO_DUOC = {
 }
 
 
-def test_nhip_di_vao_prompt_bang_con_so_cua_chinh_tac_gia():
+def test_nhip_di_vao_prompt_bang_con_so_cua_chinh_tac_gia(monkeypatch):
+    monkeypatch.setenv("CU_NHIP_PROMPT", "1")
     from voiceprofile.generator import build_nhip_block
     kh = build_nhip_block(_HS_DO_DUOC)
     assert "14 words" in kh and "16%" in kh
@@ -860,8 +861,9 @@ def test_nhip_di_vao_prompt_bang_con_so_cua_chinh_tac_gia():
     assert "VOICE TARGETS" in build_voice_block(_HS_DO_DUOC)
 
 
-def test_ho_so_chua_do_duoc_thi_prompt_KHONG_DOI_MOT_BYTE():
+def test_ho_so_chua_do_duoc_thi_prompt_KHONG_DOI_MOT_BYTE(monkeypatch):
     """Hoi quy: ho so cu (khong co target do duoc) phai cho prompt y het truoc C3."""
+    monkeypatch.setenv("CU_NHIP_PROMPT", "1")
     from voiceprofile.generator import build_nhip_block
     cu = {"author": "A", "exemplars": ["x"], "signature_moves": [{"move": "m"}],
           "reproduction_targets": {"ttr": {"target": 0.3, "sd": None, "do_duoc": False}}}
@@ -869,13 +871,16 @@ def test_ho_so_chua_do_duoc_thi_prompt_KHONG_DOI_MOT_BYTE():
     assert "VOICE TARGETS" not in build_voice_block(cu)
 
 
-def test_cong_tac_tat_duoc(monkeypatch):
+def test_mac_dinh_TAT_sau_ab_24_08(monkeypatch):
+    """A/B 15 luot: bat khoi so lam lech nhip XAU di (0,72 vs 0,53). Mac dinh tat."""
     from voiceprofile.generator import build_nhip_block
-    monkeypatch.setenv("CU_NHIP_PROMPT", "0")
+    monkeypatch.delenv("CU_NHIP_PROMPT", raising=False)
     assert build_nhip_block(_HS_DO_DUOC) == ""
+    assert "VOICE TARGETS" not in build_voice_block(_HS_DO_DUOC)
 
 
-def test_lui_ve_do_tren_chinh_doan_mau_khi_khong_co_target():
+def test_lui_ve_do_tren_chinh_doan_mau_khi_khong_co_target(monkeypatch):
+    monkeypatch.setenv("CU_NHIP_PROMPT", "1")
     """Khong co target -> do tren chinh exemplar se hien trong prompt, de con so noi
     ra luon khop van ma model nhin thay (khong bao gio mau thuan noi tai)."""
     from voiceprofile.generator import build_nhip_block
@@ -887,7 +892,8 @@ def test_lui_ve_do_tren_chinh_doan_mau_khi_khong_co_target():
     assert "average sentence length" in kh
 
 
-def test_khong_khai_ngoi_khi_ho_so_khong_do_dien_ngon():
+def test_khong_khai_ngoi_khi_ho_so_khong_do_dien_ngon(monkeypatch):
+    monkeypatch.setenv("CU_NHIP_PROMPT", "1")
     from voiceprofile.generator import build_nhip_block
     hs = dict(_HS_DO_DUOC)
     hs.pop("discourse_features")
@@ -895,8 +901,9 @@ def test_khong_khai_ngoi_khi_ho_so_khong_do_dien_ngon():
     assert "you" not in kh and "sentences\n" not in kh.split("paragraphs")[0][-5:]
 
 
-def test_khong_dua_do_dai_doan_vo_ly_vao_prompt():
+def test_khong_dua_do_dai_doan_vo_ly_vao_prompt(monkeypatch):
     """Do that 24/08: A009 ra 39 cau/doan (file it dong trong) — lenh do la lenh vo ly."""
+    monkeypatch.setenv("CU_NHIP_PROMPT", "1")
     from voiceprofile.generator import build_nhip_block
     hs = {**_HS_DO_DUOC, "discourse_features": {"do_duoc": True, "chieu": {
         "cau_moi_doan": {"target": 39.0, "sd": 5.0}}}}
