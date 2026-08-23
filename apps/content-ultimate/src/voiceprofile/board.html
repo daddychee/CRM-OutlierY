@@ -79,10 +79,11 @@
   .wbrief b{display:block;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;
     color:var(--muted);margin-bottom:6px;font-weight:600}
   details.wlog{margin-top:10px;border-top:1px solid var(--border-soft);padding-top:8px}
-  .nhay{display:inline-block;width:8px;height:14px;background:var(--accent);
-    vertical-align:-2px;margin-left:5px;animation:nhay 1s step-end infinite}
-  @keyframes nhay{50%{opacity:0}}
-  @media(prefers-reduced-motion:reduce){.nhay{animation:none;opacity:.55}}
+  .dangchay{display:inline-flex;gap:5px;align-items:baseline;margin-left:8px;
+    color:var(--accent);font-size:11.5px;font-weight:600;letter-spacing:0;text-transform:none}
+  .dangchay .nhay{display:inline-block;min-width:12px;font-family:var(--mono)}
+  .dangchay b{font-variant-numeric:tabular-nums;font-weight:600}
+  .log .dangchay{font-size:12px;display:flex;margin-left:0;margin-top:3px}
   details.wlog>summary{list-style:none;cursor:pointer;font-size:11px;letter-spacing:.14em;
     text-transform:uppercase;color:var(--muted)}
   details.wlog>summary::-webkit-details-marker{display:none}
@@ -230,6 +231,7 @@
       </div>
       <div class="wcols">
       <div>
+        <div class="hsbao" id="hs_mota" hidden></div>
         <div class="hs" id="hs_the" hidden></div>
         <div class="hsbao" id="hs_canh" hidden></div>
         <div class="hsbao" id="hs_giong" hidden></div>
@@ -260,6 +262,8 @@
         <input type="text" id="ex_name"><span></span>
       </div>
       <div class="checks">
+        <label title="Một lượt LLM: viết đoạn mô tả giọng + hướng dẫn dùng (nội dung gì, mood, atmosphere). Model chỉ được đọc số đo đã đo và đoạn văn thật.">
+          <input type="checkbox" id="ex_mota" checked> Mô tả giọng + hướng dẫn dùng</label>
         <label><input type="checkbox" id="ex_rhetoric" checked> Rhetoric (LLM + kiểm chứng)</label>
         <label><input type="checkbox" id="ex_clonekit" checked> Clone-kit</label>
         <label><input type="checkbox" id="ex_dataset" checked> Dataset JSONL</label>
@@ -486,6 +490,17 @@ function xemHoSo(ma){
         <div class="g">${g.gan_nhat?('gần nhất: '+g.gan_nhat.ma+' — càng nhỏ càng giống'):'chưa so được'}</div></div>`;
     $('hs_the').hidden=false;
 
+    // Mo ta giong: thu nguoi bien tap can doc TRUOC cac con so (Owner 24/08).
+    const mt = d.mo_ta || {};
+    const NHAN = {tom_tat:'Giọng này nghe thế nào', dung_cho:'Dùng cho nội dung gì',
+                  mood:'Mood cần set', atmosphere:'Atmosphere', khong_hop:'Không hợp với'};
+    const dong = Object.keys(NHAN).filter(k=>mt[k]).map(k=>`<li><b>${NHAN[k]}.</b> ${mt[k]}</li>`);
+    $('hs_mota').hidden = !dong.length;
+    if(dong.length) $('hs_mota').innerHTML = '<b>Mô tả giọng và cách dùng</b><ul>'
+      + dong.join('') + '</ul>'
+      + '<p class="note" style="margin:8px 0 0">Đoạn này do model viết, nhưng chỉ được đọc'
+      + ' số đo Python đã đo và đoạn văn thật của tác giả — không con số nào do nó nghĩ ra.</p>';
+
     const trung=(g.trung||[]);
     $('hs_giong').hidden = !trung.length;
     if(trung.length) $('hs_giong').innerHTML =
@@ -540,6 +555,7 @@ async function guiBuild(corpus, name, out, xacNhan){
   const r = await api('/api/build', {corpus, name, out,
     rhetoric:$('ex_rhetoric').checked, clonekit:$('ex_clonekit').checked,
     dataset:$('ex_dataset').checked, provider:$('ex_llm').value||null,
+    mo_ta:$('ex_mota').checked,
     lab:$('ex_lab').checked, lab_samples:parseInt($('ex_lab_n').value)||5,
     xac_nhan_transcript_tho: !!xacNhan});
   if(r && r.error === 'corpus_transcript_tho'){
@@ -1151,25 +1167,63 @@ function capNhatDemLog(){
 }
 
 function logLine(id, s){
-  const el=$(id), c=el.querySelector('.nhay'); if(c) c.remove();
+  const el=$(id), c=el.querySelector('.dangchay'); if(c) c.remove();
   el.textContent += (el.textContent?'\n':'')+s;
   if(DANG_CHAY) el.appendChild(dauNhay());
   el.scrollTop=el.scrollHeight;
 }
-function dauNhay(){ const i=document.createElement('i'); i.className='nhay'; return i; }
-
-// Dau nhay bao "may dang viet". Log da thu gon thanh mot dong bam-de-mo nen
-// dau nhay phai co o CA dong tieu de — khong thi nguoi dung khong biet no con
-// chay hay da treo.
+// Bao "dang chay" (Owner 23/08): dau nhay tho khong du — can dau ... chay va BO DEM
+// GIAY, vi mot chuong mat vai phut va nguoi ngoi cho phai biet no dang di den dau.
+// Dat o CA cuoi log LAN dong tieu de, vi log da thu gon thanh mot dong bam-de-mo.
 let DANG_CHAY = false;
-function batDauNhay(on){
-  DANG_CHAY = on;
-  const el=$('w_log'), cu=el.querySelector('.nhay'); if(cu) cu.remove();
-  if(on){ el.appendChild(dauNhay()); el.scrollTop=el.scrollHeight; }
-  const s=document.querySelector('details.wlog>summary');
-  if(s){ const n=s.querySelector('.nhay');
-         if(on && !n) s.appendChild(dauNhay()); else if(!on && n) n.remove(); }
+let _dh_batDau = 0, _dh_nhip = null;
+
+function _dhGiay(giay) {
+  if (giay < 60) return giay + 's';
+  const p = Math.floor(giay / 60), g = giay % 60;
+  return p + 'p' + (g < 10 ? '0' : '') + g + 's';
 }
+
+function dauNhay() {
+  // <i class="nhay"> = cum dau cham chay; <b> = bo dem giay. Cham do bang JS chu
+  // khong bang CSS de may dat prefers-reduced-motion van doc duoc so giay.
+  const i = document.createElement('span');
+  i.className = 'dangchay';
+  i.innerHTML = '<span>đang viết</span><i class="nhay"></i><b>0s</b>';
+  return i;
+}
+
+function _dhVe() {
+  const giay = Math.max(0, Math.round((Date.now() - _dh_batDau) / 1000));
+  const cham = '.'.repeat(1 + (Math.floor(Date.now() / 500) % 3));
+  document.querySelectorAll('.dangchay').forEach(function (el) {
+    const c = el.querySelector('.nhay'), b = el.querySelector('b');
+    if (c) c.textContent = cham;
+    if (b) b.textContent = _dhGiay(giay);
+  });
+}
+
+function batDauNhay(on) {
+  DANG_CHAY = on;
+  clearInterval(_dh_nhip); _dh_nhip = null;
+  document.querySelectorAll('.dangchay').forEach(function (e) { e.remove(); });
+  if (!on) {
+    if (_dh_batDau) {
+      // Noi RO chay het bao lau — so nay la thu duy nhat cho biet lan sau nen doi
+      // bao lau, va la bang chung khi model cham bat thuong.
+      logLine('w_log', 'Xong sau ' + _dhGiay(Math.round((Date.now() - _dh_batDau) / 1000)) + '.');
+      _dh_batDau = 0;
+    }
+    return;
+  }
+  _dh_batDau = Date.now();
+  const el = $('w_log'); el.appendChild(dauNhay()); el.scrollTop = el.scrollHeight;
+  const s = document.querySelector('details.wlog>summary');
+  if (s) s.appendChild(dauNhay());
+  _dhVe();
+  _dh_nhip = setInterval(_dhVe, 500);
+}
+
 function poll(tab){
   clearInterval(POLL);
   POLL = setInterval(async ()=>{
