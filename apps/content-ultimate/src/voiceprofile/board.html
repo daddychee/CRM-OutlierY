@@ -79,6 +79,10 @@
   .wbrief b{display:block;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;
     color:var(--muted);margin-bottom:6px;font-weight:600}
   details.wlog{margin-top:10px;border-top:1px solid var(--border-soft);padding-top:8px}
+  .nhay{display:inline-block;width:8px;height:14px;background:var(--accent);
+    vertical-align:-2px;margin-left:5px;animation:nhay 1s step-end infinite}
+  @keyframes nhay{50%{opacity:0}}
+  @media(prefers-reduced-motion:reduce){.nhay{animation:none;opacity:.55}}
   details.wlog>summary{list-style:none;cursor:pointer;font-size:11px;letter-spacing:.14em;
     text-transform:uppercase;color:var(--muted)}
   details.wlog>summary::-webkit-details-marker{display:none}
@@ -147,6 +151,7 @@
   .wch b{font-size:13.5px}
   .wch .vs{color:var(--muted);font-size:11px}
   .wch.ok b{color:var(--ok)}.wch.warn b{color:var(--danger)}
+  .wch:not(.ok):not(.warn) b{color:var(--faint)}
   .wtxt{border:1px solid var(--border);border-radius:9px;background:var(--raised);
     padding:20px 26px;font-size:16px;line-height:1.8;white-space:pre-wrap}
   .wduyet{border:1px solid var(--accent);border-radius:9px;padding:11px 13px;margin-top:12px;
@@ -235,27 +240,24 @@
       <aside class="side">
       <div class="panel co-gian"><h2>Thiết lập</h2>
       <div class="cuon">
+      <!-- MOT o cho tac pham (Owner 24/08): truoc day "Folder ban thao" va "Bo van ban"
+           la hai o cho CUNG mot viec — chon thu muc, roi chon thu muc con cua chinh no.
+           Nay gop lam mot; ex_dir/ex_out thanh input AN de JS va server giu nguyen hop dong. -->
+      <input type="hidden" id="ex_dir">
+      <input type="hidden" id="ex_out">
       <div class="row">
-        <label>Folder bản thảo</label>
-        <input type="text" class="path" id="ex_dir" placeholder="Chọn folder chứa .txt/.md của tác giả">
+        <label>Tác phẩm</label>
+        <select id="ex_corpus"></select>
         <span style="display:flex;gap:6px">
-          <button class="btn small" id="ex_browse" onclick="pickAuthorDir()">Browse…</button>
-          <button class="btn small" id="ex_uploadbtn" onclick="document.getElementById('ex_files').click()" hidden>Upload…</button>
+          <button class="btn small" id="ex_browse" onclick="pickAuthorDir()">Chọn…</button>
+          <button class="btn small" id="ex_uploadbtn" onclick="document.getElementById('ex_files').click()" hidden>Tải lên…</button>
           <input type="file" id="ex_files" multiple accept=".txt,.md" hidden>
         </span>
       </div>
-      <div class="row">
-        <label>Bộ văn bản</label>
-        <select id="ex_corpus"></select><span></span>
-      </div>
+      <p class="note" id="ex_tacpham" style="margin:-4px 0 10px">Các tác phẩm của tác giả — file .txt/.md, càng nhiều càng đo đúng giọng.</p>
       <div class="row">
         <label>Tên tác giả</label>
         <input type="text" id="ex_name"><span></span>
-      </div>
-      <div class="row">
-        <label>Folder kết quả</label>
-        <input type="text" class="path" id="ex_out">
-        <button class="btn small" id="ex_choose" onclick="pickOutDir()">Choose…</button>
       </div>
       <div class="checks">
         <label><input type="checkbox" id="ex_rhetoric" checked> Rhetoric (LLM + kiểm chứng)</label>
@@ -365,17 +367,17 @@
            border:1px solid #b1483f;background:rgba(177,72,63,.08);font-size:13px"></div>
       <div class="row">
         <label>Tác giả (thư viện)</label>
-        <select id="w_author" onchange="suggestScript();authorMeta();veThanhTomTat();napBaiDangCo()"></select>
+        <select id="w_author" onchange="suggestScript();authorMeta();veThanhTomTat();napBaiDangCo();luuPhien()"></select>
         <button class="btn small" onclick="loadLibrary()">Làm mới</button>
       </div>
       <div class="row">
         <label>LLM viết</label>
-        <select id="w_llm" onchange="veThanhTomTat()"></select><span></span>
+        <select id="w_llm" onchange="veThanhTomTat();luuPhien()"></select><span></span>
       </div>
       <div class="row">
         <label>Độ dài (ký tự)</label>
         <input type="number" id="w_chars" value="18000" style="max-width:140px"
-               oninput="veThanhTomTat()"><span></span>
+               oninput="veThanhTomTat();luuPhien()"><span></span>
       </div>
       <div class="row">
         <label>Lưu kịch bản (.md)</label>
@@ -389,7 +391,7 @@
       </div>
       <div class="row" style="align-items:start">
         <label style="padding-top:8px">Outline</label>
-        <textarea id="w_outline" oninput="napDanhSachTuOutline()" placeholder="Title: ...
+        <textarea id="w_outline" oninput="napDanhSachTuOutline();luuPhien()" placeholder="Title: ...
 Hook: ...
 Chapter 1: ...
 Chapter 2: ...
@@ -514,17 +516,21 @@ async function pickAuthorDir(){
   $('ex_corpus').innerHTML = (d.dirs||[]).map(x=>`<option>${esc(x)}</option>`).join('') || '<option value="">(không thấy .txt/.md)</option>';
   $('ex_name').value = d.name||'';
   $('ex_out').value = d.output||'';
-  if(!(d.dirs||[]).length) logLine('ex_log','CẢNH BÁO: không tìm thấy file .txt/.md trong folder đã chọn.');
+  const n = (d.dirs||[]).length;
+  $('ex_tacpham').textContent = n
+    ? `${n} bộ tác phẩm trong ${path}`
+    : 'Không tìm thấy file .txt/.md nào trong thư mục đã chọn.';
+  if(!n) logLine('ex_log','CẢNH BÁO: không tìm thấy file .txt/.md trong folder đã chọn.');
   showTranscriptWarnings(d);
 }
-async function pickOutDir(){
-  const {path} = await api('/api/pick-folder', {prompt:'Chọn folder kết quả'});
-  if(path) $('ex_out').value = path;
-}
 async function startExtract(){
-  const corpus = $('ex_corpus').value.trim(), name = $('ex_name').value.trim(), out = $('ex_out').value.trim();
-  if(!corpus){ logLine('ex_log','LỖI: chưa chọn bộ văn bản (bấm Browse…).'); return; }
-  if(!name || !out){ logLine('ex_log','LỖI: thiếu tên tác giả hoặc folder kết quả.'); return; }
+  const corpus = $('ex_corpus').value.trim(), name = $('ex_name').value.trim();
+  // Duong dan ket qua: may tu biet (detect-corpus tra ve), khong bat nguoi dung khai.
+  // Chua co thi dat canh chinh thu muc tac pham — van dung duoc, khong chan viec chay.
+  let out = $('ex_out').value.trim();
+  if(!out && corpus){ out = corpus.replace(/[\\/]+$/,'') + '_ho-so'; $('ex_out').value = out; }
+  if(!corpus){ logLine('ex_log','LỖI: chưa chọn tác phẩm nào (bấm Chọn… hoặc Tải lên…).'); return; }
+  if(!name){ logLine('ex_log','LỖI: chưa điền tên tác giả.'); return; }
   $('ex_log').textContent=''; setRunning('ex', true);
   await guiBuild(corpus, name, out, false);
 }
@@ -658,7 +664,7 @@ async function pickSave(){
 // ---- Chế độ VPS/headless: không có picker native (osascript) → Upload thay Browse ----
 let CAN_PICK = true;
 function applyCaps(){
-  for(const id of ['ex_browse','ex_choose','w_saveas','ex_open','w_open']){
+  for(const id of ['ex_browse','w_saveas','ex_open','w_open']){
     const el = $(id); if(el) el.hidden = !CAN_PICK;
   }
   $('ex_uploadbtn').hidden = CAN_PICK;
@@ -678,6 +684,7 @@ async function uploadCorpus(){
   $('ex_dir').value = d.dir;
   const det = await api('/api/detect-corpus', {author_dir: d.dir});
   $('ex_corpus').innerHTML = (det.dirs||[]).map(x=>`<option>${x}</option>`).join('');
+  $('ex_tacpham').textContent = `${d.saved} tệp đã tải lên · ${(det.dirs||[]).length} bộ tác phẩm`;
   if(!$('ex_name').value.trim()) $('ex_name').value = det.name || name;
   $('ex_out').value = det.output || '';
   $('ex_files').value = '';
@@ -777,6 +784,116 @@ function tachBriefTuOutline(outline){
   return ra;
 }
 
+// ================= GIU PHIEN LAM VIEC (Owner 23/08) =================
+// "Toi vua chuyen sang tab khac la toan bo phien lam viec da bi mat. Khong biet mo
+// lai the nao." Bon tab tren cung la BON TRANG rieng, doi tab = nap lai trang = mat
+// sach trang thai trong bo nho. Ban thao van nam tren dia (script.md) nhung trang
+// khong tu doc lai, va outline / chuong dang mo thi khong o dau ca.
+// Giu rieng theo TUNG NGUOI: chung may thi moi nguoi mot kho.
+const PHIEN_KHOA = 'cu_writing_' + (window.CU_USER || 'local');
+const PHIEN_DOI = 4;          // bao doi phien neu ban ghi cu hon (ngay)
+let _hen_luu = null;
+
+function luuPhien() {
+  // Goi rat nhieu cho (go phim, viet xong chuong) nen hoan lai 400ms roi ghi mot lan.
+  clearTimeout(_hen_luu);
+  _hen_luu = setTimeout(function () {
+    try {
+      const a = $('w_author');
+      localStorage.setItem(PHIEN_KHOA, JSON.stringify({
+        v: 1, luc: Date.now(),
+        tacGia: a ? a.value : '', llm: $('w_llm').value,
+        soKyTu: $('w_chars').value, duong: $('w_script').value,
+        outline: $('w_outline').value,
+        phan: W_PHAN, dang: W_DANG, ban: W_BAN, banCu: W_BAN_CU
+      }));
+    } catch (e) {
+      // Het cho (bai rat dai) — bo ban thao, giu phan nhe de con khoi phuc duoc
+      // thiet lap va outline. Im lang la sai: nguoi dung phai biet ban thao khong
+      // duoc giu, keo tuong mat bai.
+      try {
+        localStorage.setItem(PHIEN_KHOA, JSON.stringify({
+          v: 1, luc: Date.now(), tacGia: ($('w_author') || {}).value || '',
+          llm: $('w_llm').value, soKyTu: $('w_chars').value,
+          duong: $('w_script').value, outline: $('w_outline').value,
+          phan: W_PHAN, dang: W_DANG, ban: {}, banCu: {}, thieuBan: true
+        }));
+        logLine('w_log', 'Phiên quá lớn: chỉ giữ thiết lập và outline, bản thảo đọc lại từ script.md.');
+      } catch (e2) { /* localStorage bi tat han — chiu, khong lam hong gi */ }
+    }
+  }, 400);
+}
+
+function xoaPhien() {
+  try { localStorage.removeItem(PHIEN_KHOA); } catch (e) {}
+}
+
+function docPhien() {
+  try {
+    const d = JSON.parse(localStorage.getItem(PHIEN_KHOA) || 'null');
+    if (!d || d.v !== 1) return null;
+    if (Date.now() - (d.luc || 0) > PHIEN_DOI * 864e5) return null;
+    return d;
+  } catch (e) { return null; }
+}
+
+function _khiNao(luc) {
+  const p = Math.round((Date.now() - luc) / 60000);
+  if (p < 1) return 'vừa xong';
+  if (p < 60) return p + ' phút trước';
+  const g = Math.round(p / 60);
+  return g < 24 ? g + ' giờ trước' : Math.round(g / 24) + ' ngày trước';
+}
+
+async function khoiPhucPhien() {
+  const d = docPhien();
+  if (!d) return false;
+  const a = $('w_author');
+  if (d.tacGia && a) {
+    for (let i = 0; i < a.options.length; i++) {
+      if (a.options[i].value === d.tacGia) { a.selectedIndex = i; break; }
+    }
+  }
+  if (d.llm) $('w_llm').value = d.llm;
+  if (d.soKyTu) $('w_chars').value = d.soKyTu;
+  if (d.duong) $('w_script').value = d.duong;
+  if (d.outline) $('w_outline').value = d.outline;
+
+  authorMeta();
+  W_BAN = d.ban || {};
+  W_BAN_CU = d.banCu || {};
+  W_PHAN = (d.phan && d.phan.length) ? d.phan : parseHeadings(d.outline || '');
+  W_BRIEF = d.outline ? tachBriefTuOutline(d.outline) : {};
+  W_DANG = (d.dang && W_PHAN.indexOf(d.dang) >= 0) ? d.dang : (W_PHAN[0] || null);
+
+  // Ban thao khong nam trong kho (phien qua lon) -> doc lai tu script.md tren dia.
+  if (d.thieuBan) { try { await napBan(); } catch (e) {} }
+
+  veDanhSach(); veThanhTomTat();
+  if (W_DANG) await moPhan(W_DANG);
+  baoDaKhoiPhuc(d.luc);
+  return true;
+}
+
+function baoDaKhoiPhuc(luc) {
+  // Noi RO da khoi phuc va cho duong quay ve ban trang — nguoi dung phai biet minh
+  // dang xem lai phien cu, khong phai bai moi.
+  const o = $('w_ghichu'); if (!o) return;
+  o.innerHTML = 'Đã mở lại phiên ' + esc(_khiNao(luc))
+    + ' · <a href="#" id="w_phien_moi" style="color:var(--link)">bắt đầu bài mới</a>';
+  const n = $('w_phien_moi');
+  if (n) n.onclick = function (e) {
+    e.preventDefault();
+    xoaPhien();
+    W_PHAN = []; W_DANG = null; W_BAN = {}; W_BAN_CU = {}; W_BRIEF = {};
+    $('w_outline').value = '';
+    veDanhSach(); veThanhTomTat(); veChipsRong();
+    $('w_than').textContent = 'Chưa nạp dữ liệu. Chọn giọng và outline ở cột phải rồi bấm Nạp dữ liệu.';
+    $('w_brief').hidden = true; $('w_duyetbox').hidden = true; $('w_hanhdong').hidden = true;
+    o.textContent = 'Đã xoá phiên cũ. Chọn giọng và outline rồi bấm Nạp dữ liệu.';
+  };
+}
+
 function napDuLieu(){
   // Thiet lap xong -> nhuong cho han cho khoi viet.
   const a = selectedAuthor();
@@ -787,6 +904,7 @@ function napDuLieu(){
   W_BRIEF = tachBriefTuOutline(o);
   if(!W_PHAN.length){ $('w_ghichu').textContent = 'Outline chưa có mốc Hook / Chapter N / End.'; return; }
   veDanhSach();
+  luuPhien();
   moPhan(W_DANG && W_BAN[W_DANG] ? W_DANG : W_PHAN[0]);
 }
 
@@ -902,7 +1020,7 @@ function danhDau(t, hits){
 }
 
 async function moPhan(h){
-  W_DANG = h; veDanhSach(); veDayChipBan(h);
+  W_DANG = h; veDanhSach(); veDayChipBan(h); luuPhien();
   const ds = (W_BAN_CU[h]||[]);
   const t = (W_XEM_BAN!=null && ds[W_XEM_BAN]!=null) ? ds[W_XEM_BAN] : (W_BAN[h] || '');
   $('w_ten').textContent = h;
@@ -1019,7 +1137,8 @@ function setRunning(tab, on){
   if(tab==='ex'){ $('ex_start').disabled=on; $('ex_open').disabled=on; }
   else { for(const id of ['w_nap','w_viet_chuong','w_viet_het','w_dl']){ const e=$(id); if(e) e.disabled=on; }
     $('w_stop').hidden = !on;   // nút Dừng chỉ hiện khi đang viết
-    $('w_stop').disabled = false; }
+    $('w_stop').disabled = false;
+    batDauNhay(on); }
 }
 async function cancelWrite(){
   $('w_stop').disabled = true;
@@ -1073,7 +1192,8 @@ function poll(tab){
       // VA ve ngay khoi bao cao ho so (24/08) — nguoi chay khong phai di tim file .md.
       if(tab==='ex' && !j.error){ loadLibrary($('ex_name').value.trim()); napDanhSachHoSo(); }
       $(tab==='ex'?'ex_status':'w_status').innerHTML = j.error ? `<span style="color:var(--danger)">LỖI: ${esc(j.error)}</span>` : 'Xong.';
-      if(tab==='w' && cheDo()==='duyet'){ await napBan(); await moPhan(W_DANG || W_PHAN[0]); veDanhSach(); }
+      if(tab==='w' && cheDo()==='duyet'){ await napBan(); await moPhan(W_DANG || W_PHAN[0]);
+        veDanhSach(); luuPhien(); }
     }
   }, 800);
 }
@@ -1141,7 +1261,13 @@ async function downloadScript(){
   logLine('w_log','Đã tải script về máy (xem folder Downloads).');
 }
 
-loadLibrary();      // nap providers + thu vien luc mo
+// Mo trang: nap thu vien XONG roi moi khoi phuc, vi khoi phuc phai chon dung muc
+// trong dropdown tac gia. Khong co phien cu -> ve bon o rong de khoi trong (Owner
+// 23/08: "tao truoc cac box de san o do").
+loadLibrary().then(async () => {
+  const co = await khoiPhucPhien();
+  if(!co) veChipsRong();
+});
 napDanhSachHoSo();  // khoi bao cao ho so tab Author (24/08)
 loadOutlines(); // nap danh sach outline.txt tu runs/ (neu chay qua content-ultimate)
 

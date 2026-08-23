@@ -1561,8 +1561,13 @@ def make_handler(run_name: str):
             standalone (voiceprofile.server, không qua đây) → đủ 2 tab như cũ.
             Tiêm KHÔNG phụ thuộc whoami bar — local không nginx vẫn phải tách trang."""
             html = self._board(VP_HTML).decode("utf-8")
+            # Tiem them DANH TINH: phien lam viec cua Writing duoc giu rieng cho tung
+            # nguoi (Owner 23/08 — chuyen tab la mat sach phien). Chung may thi moi
+            # nguoi mot kho rieng. Khong co header (chay may ca nhan) -> "local".
+            ai = json.dumps(_me(self) or "local")
             return html.replace(
-                "<body>", f'<body><script>window.CU_MODE="{mode}";</script>', 1
+                "<body>",
+                f'<body><script>window.CU_MODE="{mode}";window.CU_USER={ai};</script>', 1
             ).encode("utf-8")
 
         def do_GET(self):
