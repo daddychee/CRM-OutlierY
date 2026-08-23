@@ -126,6 +126,31 @@
   script TỪ CHỐI xóa vì bản gốc trên NAS đã biến mất → bản trong app là bản duy
   nhất — đúng ý đồ chốt chặn.
 
+- 20/08/2026 (tiếp 2) — **QUY TRÌNH TẬP CHÍNH THỨC** (user chốt, thay cách làm tự
+  phát trước đó). Kho NAS: `<tập>/Feedback/` là nơi nhân sự up bản duyệt, đặt tên
+  theo mã tập — bản gốc `LI001`, bản sửa `LI001.1`, `LI001.2`… Duyệt còn **ĐÚNG BA
+  BƯỚC**: Awaiting review (chưa ai bình luận) → In review → Approved; `can_sua`
+  NGHỈ HƯU (migration 004 đưa bản ghi cũ về dang_duyet, gỡ nút + tab + nhãn) vì yêu
+  cầu sửa vốn nằm trong bình luận. **Tập có bản Approved = xong → LÚC ĐÓ mới được
+  dọn cả khối Feedback.**
+  • `ma_tap` phải NHẢY QUA thư mục 'Feedback' khi lùi lên tìm mã, không thì cả kho
+    gom vào một nhóm tên 'Feedback'. `thu_muc_feedback()` trả '' cho bản ghi đời cũ
+    (trỏ thẳng thư mục tập) → **những bản ghi đó KHÔNG có đường dọn cả thư mục**,
+    vì trong thư mục tập có bản master của team.
+  • `xoa_khoi_feedback` = dọn cả khối, chốt riêng: thư mục phải **tên đúng
+    'Feedback'** (thư mục tập/kho phim gốc không đời nào xóa được, có test quét cả
+    3 cấp trên), mã tập client gửi phải khớp mã suy từ đường thật, tập phải đã
+    Approved; mỗi file ghi nhật ký TRƯỚC khi xóa; bản ghi trong khối bị gỡ mềm,
+    bình luận giữ nguyên.
+  • Chốt 7 áp cho CẢ lệnh xóa từng file: chưa Approved thì Manager cũng không xóa
+    được gì (nếu sau này cần dọn bản up nhầm trước lúc duyệt thì phải mở ngoại lệ
+    có chủ đích, đừng gỡ chốt).
+  • Nút Approve tự lật thành "Reopen review" tại chỗ; nhóm tập đã duyệt hiện nhãn
+    "episode signed off" và nút "Clean up feedback folder" (chỉ Manager+).
+  64 test pass. Kiểm sống sau restart: migration 004 chạy (12 dang_duyet, 0 can_sua),
+  giao diện sạch chữ 'Changes requested', LI037 hiện 'episode signed off' nhưng
+  KHÔNG có nút dọn — đúng, vì tập đó theo cấu trúc cũ, chưa có khối Feedback.
+
 ## Quyết định thiết kế (đừng phá)
 
 - **NAS CHỈ ĐỌC TUYỆT ĐỐI**: app không chép/ghi/xóa/đổi tên gì trong `VR_NAS_DIR`

@@ -25,7 +25,11 @@ from pathlib import Path
 _APP_DIR = Path(__file__).resolve().parents[1]           # apps/video-review
 ROOT = _APP_DIR.parents[1]                                # D:\AI AGENT OUTLIERY
 
-TRANG_THAI_VIDEO = ("dang_duyet", "can_sua", "da_duyet", "da_xoa")
+# BA bước duyệt (user chốt 20/08): Awaiting review → In review → Approved.
+# 'Awaiting' suy từ 'chưa có bình luận nào', không phải giá trị lưu trong sổ.
+# 'da_xoa' là GỠ MỀM, không phải một bước duyệt. 'can_sua' đã nghỉ hưu (mig 004).
+TRANG_THAI_VIDEO = ("dang_duyet", "da_duyet", "da_xoa")
+TEN_THU_MUC_FEEDBACK = "feedback"
 # .mov để được nhưng cảnh báo ở UI (tùy codec trình duyệt mới phát) — mp4/webm chắc ăn.
 DUOI_CHO_PHEP = {".mp4": "video/mp4", ".m4v": "video/mp4",
                  ".webm": "video/webm", ".mov": "video/quicktime"}
@@ -244,6 +248,26 @@ def lay_video(ma: str) -> dict | None:
         conn.close()
 
 
+def thu_muc_feedback(video: dict) -> str:
+    """Đường TƯƠNG ĐỐI của khối Feedback chứa bản dựng này, '' nếu bản ghi không
+    nằm trong khối Feedback nào (bản ghi đời cũ trỏ thẳng vào thư mục tập —
+    KHÔNG được phép xóa cả thư mục đó, trong đó có bản master của team)."""
+    phan = (video.get("duong") or "").split("/")[:-1]
+    for i in range(len(phan) - 1, -1, -1):
+        if phan[i].strip().lower() == TEN_THU_MUC_FEEDBACK:
+            return "/".join(phan[:i + 1])
+    return ""
+
+
+def tap_da_duyet(ma_tap_can_tim: str) -> bool:
+    """Tập ĐÃ NGHIỆM THU chưa — có ít nhất một bản Approved còn sống. Đây là điều
+    kiện DUY NHẤT mở khóa việc dọn file trên NAS (user chốt 20/08)."""
+    if not ma_tap_can_tim:
+        return False
+    return any(ma_tap(v) == ma_tap_can_tim and v["trang_thai"] == "da_duyet"
+               for v in danh_sach_video())
+
+
 def cac_duong_nas_dang_dung() -> set[str]:
     """Đường NAS đã có bản ghi CÒN SỐNG — để danh sách NAS đánh dấu 'đã trong app'."""
     conn = ket_noi()
@@ -263,11 +287,11 @@ def ma_tap(video: dict) -> str:
     Quy ước đặt tên của team, không phải luật cứng — sai thì rơi vào Khác, không
     bao giờ gộp nhầm hai tập vào nhau vì mã phải khớp nguyên vẹn."""
     ten = video.get("ten_file") or ""
-    cha = ""
-    duong = (video.get("duong") or "").replace("\\", "/")
-    if "/" in duong:
-        cha = duong.rsplit("/", 2)[-2] if duong.count("/") >= 1 else ""
-    for nguon in (ten, cha, video.get("ten") or ""):
+    # Cấu trúc kho của team: <tập>/Feedback/<bản dựng>.mp4 — lùi lên tìm mã tập thì
+    # phải NHẢY QUA thư mục 'Feedback', nếu không cả kho gom vào một nhóm 'Feedback'.
+    phan = [x for x in (video.get("duong") or "").split("/")[:-1]
+            if x.strip().lower() != TEN_THU_MUC_FEEDBACK]
+    for nguon in [ten] + phan[::-1] + [video.get("ten") or ""]:
         for m in _RE_TAP.finditer(nguon):
             # bỏ qua chính MÃ CỦA APP (file đời cũ tên '2026-08-19_VR-0003_li083.mp4')
             # — mã tập phải là mã của team, không phải số thứ tự trong sổ

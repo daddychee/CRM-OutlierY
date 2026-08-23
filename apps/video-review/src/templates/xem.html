@@ -33,7 +33,6 @@
   .vr-head h2{margin:0;font-size:17px;flex:1;min-width:200px}
   .chip{display:inline-block;font-size:12px;font-weight:600;border-radius:999px;padding:3px 11px;white-space:nowrap}
   .chip.dang_duyet{background:var(--th-16263f);color:var(--accent)}
-  .chip.can_sua{background:rgba(217,124,108,.14);color:var(--th-d97c6c)}
   .chip.da_duyet{background:rgba(90,170,120,.16);color:#5aaa78}
   html[data-theme="light"] .chip.da_duyet{color:#2e7d4f}
   .nut.nho{padding:5px 11px;font-size:13px;border-radius:8px}
@@ -100,8 +99,13 @@
     {{ video.ma }} · {{ video.nguoi_tao }} · {{ video.tao_luc[:10] }}</span></h2>
   <span class="chip {{ video.trang_thai }}" id="chip-tt">{{ NHAN_TRANG_THAI.get(video.trang_thai, video.trang_thai) }}</span>
   {% if user.co_duyet %}
-  <button class="nut nho phu" data-tt="can_sua">Request changes</button>
+  {#- BA bước duyệt (user chốt 20/08): Awaiting → In review → Approved. Yêu cầu
+      sửa nằm trong bình luận nên không còn nút 'Request changes'. #}
+  {% if video.trang_thai == 'da_duyet' %}
+  <button class="nut nho phu" data-tt="dang_duyet">Reopen review</button>
+  {% else %}
   <button class="nut nho" data-tt="da_duyet">Approve</button>
+  {% endif %}
   {% endif %}
   {% if user.co_xoa %}
   <button class="nut nho nguy" id="nut-go">Remove</button>
@@ -384,7 +388,13 @@
         if (!r.ok) return;
         var chip = document.getElementById("chip-tt");
         chip.className = "chip " + b.dataset.tt;
-        chip.textContent = { can_sua: "Changes requested", da_duyet: "Approved", dang_duyet: "In review" }[b.dataset.tt];
+        chip.textContent = { da_duyet: "Approved", dang_duyet: "In review" }[b.dataset.tt];
+        // Approve xong thì nút phải đổi thành Reopen (và ngược lại) — chỉ có 2 bước
+        // bấm được nên lật tại chỗ, không bắt người dùng F5.
+        var duyet = b.dataset.tt === "da_duyet";
+        b.dataset.tt = duyet ? "dang_duyet" : "da_duyet";
+        b.textContent = duyet ? "Reopen review" : "Approve";
+        b.className = duyet ? "nut nho phu" : "nut nho";
       });
     });
   });

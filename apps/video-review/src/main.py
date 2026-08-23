@@ -44,11 +44,12 @@ from nen.common.sidebar import ctx_sidebar  # noqa: E402 — cờ sidebar UI_FLO
 templates = Jinja2Templates(directory=str(_APP_DIR / "src" / "templates"),
                             context_processors=[ctx_sidebar])
 
-NHAN_TRANG_THAI = {"dang_duyet": "In review", "can_sua": "Changes requested",
-                   "da_duyet": "Approved"}
-# Nhãn trạng thái HIỂN THỊ trang danh sách (cho_review/dang_review suy từ bình luận)
+# BA bước duyệt (user chốt 20/08). 'can_sua' đã nghỉ hưu — yêu cầu sửa nằm trong
+# bình luận; bản ghi cũ đã đưa về dang_duyet ở migration 004.
+NHAN_TRANG_THAI = {"dang_duyet": "In review", "da_duyet": "Approved"}
+# Nhãn HIỂN THỊ: 'Awaiting review' suy từ "chưa có bình luận nào", không lưu trong sổ
 NHAN_HIEN_THI = {"cho_review": "Awaiting review", "dang_review": "In review",
-                 "can_sua": "Changes requested", "da_duyet": "Approved"}
+                 "da_duyet": "Approved"}
 
 
 def _fmt_mmss(v) -> str:
@@ -155,10 +156,17 @@ def _gom_tap(cac_video: list[dict]) -> list[dict]:
     ra = []
     for ma, ds in nhom.items():
         moi = ds[0]
+        xong = any(v["trang_thai"] == "da_duyet" for v in ds)
+        # khối Feedback để dọn: chỉ bản ghi nằm TRONG <tập>/Feedback mới có; bản ghi
+        # đời cũ trỏ thẳng thư mục tập thì KHÔNG (trong đó có bản master của team)
+        khoi = next((kho_video.thu_muc_feedback(v) for v in ds
+                     if kho_video.thu_muc_feedback(v)), "")
         ra.append({
             "ma": ma, "videos": ds, "so": len(ds), "moi_id": moi["id"],
             "hien_thi": moi["hien_thi"], "ten_moi": moi["ten"],
-            "mo": any(v["hien_thi"] != "da_duyet" for v in ds),
+            "mo": not xong,
+            "xong": xong, "khoi_feedback": khoi,
+            "don_duoc": xong and bool(khoi),
             "canh": any((not v["tt_file"]["co"]) or v["tt_file"]["doi"]
                         or v["canh_codec"] for v in ds)})
     ra.sort(key=lambda g: -g["moi_id"])
@@ -329,6 +337,20 @@ async def api_nas_xoa_file(duong: str = Form(...), xac_nhan: str = Form(...),
         raise HTTPException(403, str(e))
     except (FileNotFoundError, OSError):
         raise HTTPException(404, "Không thấy file trên NAS (có thể vừa bị xóa).")
+
+
+@app.post("/api-vr/nas-xoa-feedback")
+async def api_nas_xoa_feedback(duong: str = Form(...), ma_tap: str = Form(...),
+                               user: dict = Depends(yeu_cau_xoa)):
+    """Dọn CẢ KHỐI <tập>/Feedback sau khi tập đã Approved (quy trình user 20/08)."""
+    try:
+        return don_nas.xoa_khoi_feedback(duong, ma_tap, user["ten"])
+    except ValueError as e:
+        raise HTTPException(422, str(e))
+    except PermissionError as e:
+        raise HTTPException(403, str(e))
+    except (FileNotFoundError, OSError):
+        raise HTTPException(404, "Không thấy khối Feedback này trên NAS.")
 
 
 # ---------- API bình luận + trạng thái ----------

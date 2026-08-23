@@ -18,7 +18,6 @@
   .chip{display:inline-block;font-size:12px;font-weight:600;border-radius:999px;padding:2px 10px;white-space:nowrap}
   .chip.cho_review{background:var(--th-16263f);color:var(--accent);font-weight:700}
   .chip.dang_review,.chip.dang_duyet{background:var(--th-182233);color:var(--th-9aa5b5);border:1px solid var(--chip-line)}
-  .chip.can_sua{background:rgba(217,124,108,.14);color:var(--th-d97c6c)}
   .chip.da_duyet{background:rgba(90,170,120,.16);color:#5aaa78}
   html[data-theme="light"] .chip.da_duyet{color:#2e7d4f}
   .vr-bl{font-size:12.5px;color:var(--muted)}
@@ -41,6 +40,11 @@
     padding:1px 8px;white-space:nowrap;margin-left:6px}
   .canh.mat{background:rgba(217,124,108,.16);color:var(--th-d97c6c)}
   .canh.doi{background:rgba(214,166,74,.16);color:#d6a64a}
+  .canh.xong{background:rgba(90,170,120,.16);color:#5aaa78}
+  html[data-theme="light"] .canh.xong{color:#2e7d4f}
+  .don-hop{padding:10px 14px;background:rgba(217,124,108,.09);font-size:12.5px;
+    display:flex;align-items:center;gap:9px;flex-wrap:wrap;border-top:1px solid var(--line)}
+  .don-loi{color:var(--th-d97c6c);font-size:12.5px;padding:8px 14px;display:none}
   html[data-theme="light"] .canh.doi{color:#8a6413}
   /* hàng lọc: tab trạng thái + tìm + Mine only */
   .loc-hang{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:4px 0 14px}
@@ -97,7 +101,6 @@
 <div class="loc-hang" id="loc-hang">
   <button type="button" class="loc-tab" data-loc="cho_review">Awaiting review<span class="dem"></span></button>
   <button type="button" class="loc-tab" data-loc="dang_review">In review<span class="dem"></span></button>
-  <button type="button" class="loc-tab" data-loc="can_sua">Changes requested<span class="dem"></span></button>
   <button type="button" class="loc-tab" data-loc="da_duyet">Approved<span class="dem"></span></button>
   <button type="button" class="loc-tab" data-loc="tat_ca">All<span class="dem"></span></button>
   <input type="search" id="loc-tim" placeholder="Search name / owner…">
@@ -110,7 +113,12 @@
     <span class="chip {{ tap.hien_thi }}">{{ NHAN_HIEN_THI.get(tap.hien_thi, tap.hien_thi) }}</span>
     <span class="tap-ten">{{ tap.ten_moi }}</span>
     {%- if tap.canh %}<span class="canh mat">needs attention</span>{% endif %}
+    {%- if tap.xong %}<span class="canh xong">episode signed off</span>{% endif %}
     <span class="tap-so">{{ tap.so }} cut{{ 's' if tap.so > 1 else '' }}</span>
+    {%- if tap.don_duoc and user.co_xoa %}
+    <button class="nut nho nguy don-nut" type="button"
+            data-tap="{{ tap.ma }}" data-khoi="{{ tap.khoi_feedback }}">Clean up feedback folder</button>
+    {%- endif %}
   </summary>
   <table class="vr"><tbody class="vr-than">
   {% for v in tap.videos %}
@@ -296,4 +304,49 @@
 })();
 </script>
 {% endif %}
+<script>
+(function () {
+  "use strict";
+  // Dọn CẢ KHỐI <tập>/Feedback sau khi tập đã Approved (quy trình user 20/08).
+  // Hai bước: bấm → ô tích → Confirm. Không dùng confirm() của trình duyệt.
+  document.querySelectorAll(".don-nut").forEach(function (nut) {
+    nut.addEventListener("click", function (e) {
+      e.preventDefault(); e.stopPropagation();     // đừng gập/mở nhóm khi bấm nút
+      var khoiEl = nut.closest("details.tap");
+      if (khoiEl.querySelector(".don-hop")) return;
+      var hop = document.createElement("div");
+      hop.className = "don-hop";
+      var nhan = document.createElement("label");
+      var tick = document.createElement("input"); tick.type = "checkbox";
+      nhan.appendChild(tick);
+      nhan.appendChild(document.createTextNode(
+        " Delete every file in " + nut.dataset.khoi + " — permanent, no recycle bin"));
+      var ok = document.createElement("button");
+      ok.className = "nut nho nguy"; ok.type = "button"; ok.textContent = "Clean up"; ok.disabled = true;
+      var huy = document.createElement("button");
+      huy.className = "nut nho phu"; huy.type = "button"; huy.textContent = "Cancel";
+      var loi = document.createElement("div"); loi.className = "don-loi";
+      tick.addEventListener("change", function () { ok.disabled = !tick.checked; });
+      huy.addEventListener("click", function () { hop.remove(); loi.remove(); });
+      ok.addEventListener("click", function () {
+        ok.disabled = true; ok.textContent = "Cleaning…";
+        var fd = new FormData();
+        fd.append("duong", nut.dataset.khoi);
+        fd.append("ma_tap", nut.dataset.tap);
+        fetch("/api-vr/nas-xoa-feedback", { method: "POST", body: fd })
+          .then(function (r) { if (!r.ok) return r.json().then(function (j) { throw j; }); return r.json(); })
+          .then(function () { location.reload(); })
+          .catch(function (j) {
+            ok.disabled = false; ok.textContent = "Clean up";
+            loi.textContent = (j && j.detail) || "Could not clean up this folder.";
+            loi.style.display = "block";
+          });
+      });
+      hop.appendChild(nhan); hop.appendChild(ok); hop.appendChild(huy);
+      khoiEl.open = true;
+      khoiEl.appendChild(hop); khoiEl.appendChild(loi);
+    });
+  });
+})();
+</script>
 {% endblock %}

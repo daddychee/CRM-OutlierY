@@ -49,7 +49,17 @@ def test_liet_ke_thu_muc_kem_co_va_co_quyen(client, tap):
     assert du["co_quyen_xoa"] is False                              # level 2 không có cờ xoa
 
 
+def test_chua_approved_thi_chua_duoc_don(client, tap):
+    """Tập chưa nghiệm thu → Manager cũng không xóa được file nào."""
+    r = client.post("/api-vr/nas-xoa-file",
+                    data={"duong": "Life In/US/LI037/LI037 fix lần 2.mp4",
+                          "xac_nhan": "LI037 fix lần 2.mp4"}, headers=_mgr())
+    assert r.status_code == 403 and "Approved" in r.json()["detail"]
+    assert (tap / "LI037 fix lần 2.mp4").is_file()
+
+
 def test_xoa_can_co_cua_manager(client, tap):
+    _nghiem_thu()
     du = {"duong": "Life In/US/LI037/LI037 fix lần 2.mp4", "xac_nhan": "LI037 fix lần 2.mp4"}
     assert client.post("/api-vr/nas-xoa-file", data=du, headers=h()).status_code == 403
     assert client.post("/api-vr/nas-xoa-file", data=du,
@@ -64,7 +74,13 @@ def _mgr():
     return h(ten="quanly", level=4, actions="duyet,xoa")
 
 
+def _nghiem_thu(ma="VR-0001"):
+    """Chốt 7: chỉ dọn được khi tập ĐÃ có bản Approved (user chốt 20/08)."""
+    kho_video.doi_trang_thai(ma, "da_duyet")
+
+
 def test_khong_xoa_duoc_file_ngoai_video_va_phu_de(client, tap):
+    _nghiem_thu()
     r = client.post("/api-vr/nas-xoa-file",
                     data={"duong": "Life In/US/LI037/LI037.prproj",
                           "xac_nhan": "LI037.prproj"}, headers=_mgr())
@@ -73,6 +89,7 @@ def test_khong_xoa_duoc_file_ngoai_video_va_phu_de(client, tap):
 
 
 def test_ten_xac_nhan_lech_thi_tu_choi(client, tap):
+    _nghiem_thu()
     """Danh sách tải từ trước, file đã đổi → tên echo không khớp → DỪNG."""
     r = client.post("/api-vr/nas-xoa-file",
                     data={"duong": "Life In/US/LI037/LI037 fix lần 2.mp4",
@@ -82,6 +99,7 @@ def test_ten_xac_nhan_lech_thi_tu_choi(client, tap):
 
 
 def test_chan_duong_ngoai_goc_nas(client, tap, tmp_path):
+    _nghiem_thu()
     ngoai = tmp_path / "ngoai.mp4"
     ngoai.write_bytes(b"v")
     for xau in ["../../../ngoai.mp4", str(ngoai)]:
@@ -93,6 +111,7 @@ def test_chan_duong_ngoai_goc_nas(client, tap, tmp_path):
 
 def test_xoa_file_dang_dung_thi_go_mem_ban_ghi_va_giu_binh_luan(client, tap):
     kho_video.them_binh_luan("VR-0001", "an", "cắt đoạn mở đầu", ts_giay=4)
+    _nghiem_thu()
     r = client.post("/api-vr/nas-xoa-file",
                     data={"duong": "Life In/US/LI037/LI037 fix lần 1.mp4",
                           "xac_nhan": "LI037 fix lần 1.mp4"}, headers=_mgr())
@@ -103,6 +122,7 @@ def test_xoa_file_dang_dung_thi_go_mem_ban_ghi_va_giu_binh_luan(client, tap):
 
 
 def test_nhat_ky_ghi_truoc_khi_xoa_va_chi_them(client, tap):
+    _nghiem_thu()
     for ten in ("LI037 fix lần 2.mp4", "LI037 fix lần 2.srt"):
         client.post("/api-vr/nas-xoa-file",
                     data={"duong": "Life In/US/LI037/" + ten, "xac_nhan": ten}, headers=_mgr())
@@ -114,6 +134,7 @@ def test_nhat_ky_ghi_truoc_khi_xoa_va_chi_them(client, tap):
 
 
 def test_nhat_ky_van_con_dau_vet_khi_xoa_hong(client, tap, monkeypatch):
+    _nghiem_thu()
     """Ghi nhật ký TRƯỚC rồi mới unlink: xóa hỏng giữa chừng vẫn còn dấu vết."""
     def hong(self):
         raise OSError("file đang mở giả lập")

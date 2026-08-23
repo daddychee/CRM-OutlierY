@@ -15,7 +15,9 @@ SÁU chốt chặn cho một lệnh xóa (thứ tự kiểm ở server, không t
      tải từ 10 phút trước, file đã đổi) chứ không phải để hành người dùng; lớp
      chặn tay-nhầm là hai bước bấm + ô tích ở giao diện;
   6. mọi lệnh xóa ghi nhật ký CHỈ-THÊM trước khi xóa — xóa xong mới ghi thì lỗi
-     giữa chừng là mất dấu vết.
+     giữa chừng là mất dấu vết;
+  7. TẬP PHẢI ĐÃ APPROVED (user chốt 20/08: "khi có 1 tập được nghiệm thu approved
+     thì cả folder đó được đánh dấu là đã xong, lúc này mới cho phép xóa").
 
 Bản ghi trong app đang trỏ file bị xóa sẽ được GỠ MỀM luôn (bình luận giữ nguyên
 trong sổ) — đó chính là ý "dọn dẹp cho danh sách bớt dài".
@@ -112,6 +114,10 @@ def xoa_file(tuong_doi: str, xac_nhan: str, nguoi: str) -> dict:
                               "không đụng tới.")
     if (xac_nhan or "").strip() != f.name:                    # chốt 5
         raise ValueError("Tên xác nhận không khớp tên file.")
+    tap = kho_video.ma_tap({"ten_file": f.name, "duong": tuong_doi})
+    if not kho_video.tap_da_duyet(tap):                        # chốt 7 (user 20/08)
+        raise PermissionError("Chỉ dọn được khi tập đã có bản Approved — "
+                              f"tập {tap or 'này'} chưa nghiệm thu xong.")
     rel = f.relative_to(goc.resolve()).as_posix()
     ban_ghi = kho_video.da_lien_ket(rel)
     ma = ban_ghi["ma"] if ban_ghi else ""
@@ -121,3 +127,54 @@ def xoa_file(tuong_doi: str, xac_nhan: str, nguoi: str) -> dict:
     if ma:
         kho_video.doi_trang_thai(ma, "da_xoa")   # gỡ mềm — bình luận vẫn còn trong sổ
     return {"ten": f.name, "byte": co, "ma_go": ma}
+
+
+def xoa_khoi_feedback(duong_thu_muc: str, xac_nhan_ma_tap: str, nguoi: str) -> dict:
+    """Dọn CẢ KHỐI Feedback của một tập đã nghiệm thu (quy trình user chốt 20/08:
+    <tập>/Feedback/ chứa bản duyệt, Approved xong thì xóa cả khối).
+
+    Chốt riêng của lệnh này, ngoài các chốt chung:
+    - thư mục phải TÊN ĐÚNG 'Feedback' → không đời nào xóa nhầm thư mục tập
+      (nơi chứa bản master + file dự án);
+    - mã tập client gửi phải khớp mã tập suy từ đường thật;
+    - tập phải đã có bản Approved.
+    Mọi file ghi nhật ký TRƯỚC khi xóa; bản ghi trỏ vào khối này bị gỡ mềm.
+    """
+    goc = kho_video.nas_dir()
+    if goc is None:
+        raise FileNotFoundError("NAS chưa cấu hình")
+    try:
+        d = kho_video.duong_nas_an_toan(goc, duong_thu_muc)
+    except PermissionError:
+        raise FileNotFoundError(duong_thu_muc)
+    if not d.is_dir():
+        raise FileNotFoundError(duong_thu_muc)
+    if d.name.strip().lower() != kho_video.TEN_THU_MUC_FEEDBACK:
+        raise PermissionError("Chỉ xóa được thư mục tên 'Feedback' — thư mục tập "
+                              "và kho phim gốc app không đụng tới.")
+    rel = d.relative_to(goc.resolve()).as_posix()
+    tap = kho_video.ma_tap({"ten_file": "", "duong": rel + "/x.mp4"})
+    if (xac_nhan_ma_tap or "").strip().upper() != tap:
+        raise ValueError("Mã tập xác nhận không khớp thư mục định xóa.")
+    if not kho_video.tap_da_duyet(tap):
+        raise PermissionError(f"Tập {tap} chưa có bản Approved — chưa được dọn.")
+
+    cac_file = [f for f in d.rglob("*") if f.is_file()]
+    dang_dung = kho_video.cac_duong_nas_dang_dung()
+    tong, ma_go = 0, []
+    for f in cac_file:
+        r = f.relative_to(goc.resolve()).as_posix()
+        co = f.stat().st_size
+        ban_ghi = kho_video.da_lien_ket(r) if r in dang_dung else None
+        ghi_nhat_ky(nguoi, r, co, ban_ghi["ma"] if ban_ghi else "")
+        f.unlink()
+        tong += co
+        if ban_ghi:
+            ma_go.append(ban_ghi["ma"])
+    for thu in sorted((x for x in d.rglob("*") if x.is_dir()),
+                      key=lambda x: len(x.parts), reverse=True):
+        thu.rmdir()
+    d.rmdir()
+    for ma in ma_go:
+        kho_video.doi_trang_thai(ma, "da_xoa")   # bình luận vẫn giữ trong sổ
+    return {"tap": tap, "so_file": len(cac_file), "byte": tong, "ma_go": ma_go}
