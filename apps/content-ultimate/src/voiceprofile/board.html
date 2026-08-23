@@ -108,6 +108,11 @@
     .side .cuon{overflow:visible}}
   /* Khoi bao cao ho so sau extract (24/08) — bon nhom so Owner yeu cau:
      muc do · so tu · do gian cau · muc do giong tac gia. */
+  /* Thanh chon tac gia — viec DAU TIEN nguoi dung lam khi mo trang (Owner 24/08). */
+  .hschon{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;
+    background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:12px 14px}
+  .hschon label{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+  .hschon select{font-size:15px;padding:7px 10px}
   .hs{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin-bottom:12px}
   .hs .o{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:11px 13px}
   .hs .o .k{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
@@ -225,7 +230,12 @@
       <!-- Bo cuc HAI COT y khuon tab Writing (Owner chot 24/08): trai = ket qua doc
            duoc, phai = thiet lap + nut chay. Thiet lap la viec lam MOT LAN, khong
            dang chiem cho suot buoi. -->
-      <div class="wave" style="margin-bottom:10px">
+      <div class="hschon">
+        <label for="hs_chon">Giọng tác giả</label>
+        <select id="hs_chon" onchange="xemHoSo(this.value)"></select>
+        <button class="btn small" onclick="napDanhSachHoSo()">Làm mới</button>
+      </div>
+      <div class="wave" style="margin:8px 0 12px">
         <b id="hs_ten">Chưa có hồ sơ nào được chọn</b>
         <span class="meta" id="hs_meta"></span>
       </div>
@@ -240,7 +250,7 @@
         <div class="logwrap"><div class="eyebrow">Log</div><div class="log" id="ex_log"></div></div>
       </div>
       <aside class="side">
-      <div class="panel co-gian"><h2>Thiết lập</h2>
+      <div class="panel co-gian"><h2>Trích xuất giọng mới</h2>
       <div class="cuon">
       <!-- MOT o cho tac pham (Owner 24/08): truoc day "Folder ban thao" va "Bo van ban"
            la hai o cho CUNG mot viec — chon thu muc, roi chon thu muc con cua chinh no.
@@ -285,13 +295,6 @@
         <button class="btn primary" id="ex_start" onclick="startExtract()">▶ START</button>
         <button class="btn" id="ex_open" onclick="openPath(document.getElementById('ex_out').value)" disabled>Mở folder kết quả</button>
       </div>
-      </div>
-      <div class="panel"><h2>Hồ sơ đã có</h2>
-        <div class="row" style="grid-template-columns:1fr auto">
-          <select id="hs_chon" onchange="xemHoSo(this.value)"></select>
-          <button class="btn small" onclick="napDanhSachHoSo()">Làm mới</button>
-        </div>
-        <p class="note" style="margin:8px 0 0">Chọn một hồ sơ để xem lại số đo mà không phải chạy lại extract.</p>
       </div>
       </aside>
       </div>
