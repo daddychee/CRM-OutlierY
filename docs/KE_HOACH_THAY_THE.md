@@ -72,7 +72,10 @@ Owner chốt: bỏ SpeakY (không đưa vào V3) · cutover · phương án đi�
 ### Việc treo sau cutover
 - [ ] **Vault chưa có trong V3** — dữ liệu két (bản mã) an toàn trong freeze + mirror;
       cần gấp thì Enable lại tác vụ OUTLIERY (V2) tạm để mở vault, xong Disable lại.
-- [ ] Kiểm sáng 24/08: máy tự dậy 9:00? (xem logs\tat-may.log + giờ boot).
+- [x] ~~Kiểm sáng 24/08: máy tự dậy 9:00?~~ **ĐỔI 23/08: Owner chốt VẬN HÀNH THỦ CÔNG**
+      — ra về tự Shut down, sáng bấm nút nguồn (app tự lên nhờ OUTLIERY-V3 at-startup).
+      Đã gỡ tác vụ OUTLIERY-BatMay + tắt hibernate (lấy lại 17GB); OUTLIERY-TatMay giữ
+      làm LƯỚI AN TOÀN 20:00 = shutdown thật, đếm ngược 120s, hủy bằng `shutdown /a`.
 - [ ] Nghiệm thu 1 vòng restart máy thật (OUTLIERY-V3 at-startup đã test bằng Start-Task,
       chưa test boot lạnh thật).
 - [ ] Sau 2–4 tuần: gỡ khối :8000 trong Caddyfile khi hết truy cập.
