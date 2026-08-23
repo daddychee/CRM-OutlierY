@@ -206,9 +206,15 @@ def test_cho_qua_khi_du_tu_du_diem_do():
     assert MT.du_co_so(_hs(53530, 1, 14))[0] is True    # A002: 1 tac pham nhung du day
 
 
-def test_du_tu_nhung_it_tac_pham_thi_CHAY_va_bao_khuyet():
-    """A002/A004 co 1 tac pham: so do rat tin duoc, chi thieu khuon mo bai/ket bai.
-    Chan han la phi — chay, nhung bao ro muc nao se khuyet."""
-    r = MT.sinh_mo_ta(_hs(53530, 1, 14), lambda p, s: _TRA_VE_DU, kv=_KV)
+def test_mot_tac_pham_dai_KHONG_bi_coi_la_thieu():
+    """Owner 24/08: "1 tac pham gan 100k tu hoan toan da co the xac dinh van phong".
+    A004 co 1 file nhung 10 chuong = 10 lan mo bai — khong duoc bao khuyet gi."""
+    r = MT.sinh_mo_ta(_hs(90373, 1, 23), lambda p, s: _TRA_VE_DU, kv=_KV)
+    assert r.get("mo_ta") and "khuyet" not in r
+
+
+def test_bao_khuyet_theo_SO_MAU_chu_khong_theo_so_tac_pham():
+    kv_it = {**_KV, "mo_dau": {**_KV["mo_dau"], "du_mau": False, "so_mau": 1}}
+    r = MT.sinh_mo_ta(_hs(53530, 1, 14), lambda p, s: _TRA_VE_DU, kv=kv_it)
     assert r.get("mo_ta")
-    assert "khuyet" in r and "tác phẩm" in r["khuyet"]
+    assert "lần mở bài" in r["khuyet"] and "tác phẩm" not in r["khuyet"].split("—")[0]

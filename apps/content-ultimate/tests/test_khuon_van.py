@@ -100,3 +100,57 @@ def test_loai_tieu_de_dai_va_chu_thich_google_docs():
     r = KV.khuon([van, van, van])
     assert r["mo_dau"]["cau"][0].startswith("Would you trade")
     assert not r["ket"]["cau"][0].startswith("[")
+
+
+# --- Chuong ben trong mot tac pham (Owner 24/08) -----------------------------------
+# Owner: "1 tac pham gan 100k tu hoan toan da co the xac dinh van phong, va tac pham
+# tieu bieu nhat chinh la giong ghim vao dau khan gia."
+# Dung: file Investigate Lewis co 90.373 tu voi CHAPTER ONE... — do theo FILE thi ca
+# quyen sach chi cho MOT cau mo bai. Don vi dung phai la LAN MO BAI quan sat duoc.
+SACH = ("CHAPTER ONE\nA Secret Origin Story\n\n"
+        "The letter arrived on a Tuesday in late autumn. Nobody opened it for a week.\n\n"
+        "He read it twice and then put it in a drawer where it stayed for years.\n\n"
+        "CHAPTER TWO\nThe Quiet Years\n\n"
+        "Money moved through the office in ways nobody could explain afterwards.\n\n"
+        "By spring the firm had doubled and nobody asked a single question.\n\n"
+        "CHAPTER THREE\nWhat the Auditors Missed\n\n"
+        "Nobody checks a number that has always been right before this moment.\n\n"
+        "The auditors signed the report and went home for the weekend as usual.\n\n")
+
+
+def test_mot_tac_pham_co_chuong_van_cho_nhieu_mau():
+    r = KV.khuon([SACH])
+    assert r["mo_dau"]["so_mau"] == 3, "ba chuong phai cho ba cau mo bai"
+    assert r["mo_dau"]["du_mau"] is True
+    assert r["ket"]["so_mau"] == 3
+
+
+def test_tieu_de_chuong_khong_bi_nham_la_cau_mo():
+    r = KV.khuon([SACH])
+    assert not any(c.startswith("CHAPTER") for c in r["mo_dau"]["cau"])
+    assert r["mo_dau"]["cau"][0].startswith("The letter arrived")
+
+
+def test_khong_co_chuong_thi_van_do_theo_tac_pham():
+    van = ("Mot bai khong co chuong nao ca, chi la van xuoi lien mach thoi.\n\n"
+           "Doan thu hai cua bai viet nay cung khong co tieu de chuong nao het.")
+    r = KV.khuon([van])
+    assert r["mo_dau"]["so_mau"] == 1 and r["mo_dau"]["du_mau"] is False
+
+
+def test_chi_nhan_chuong_khi_co_it_nhat_ba_cai():
+    """Mot dong 'CHAPTER ONE' le loi khong bien ca file thanh nhieu chuong."""
+    van = "CHAPTER ONE\n\n" + ("Cau van binh thuong trong mot bai viet dai. " * 6)
+    assert KV.khuon([van])["mo_dau"]["so_mau"] == 1
+
+
+def test_bo_don_vi_khong_co_cau_van_nao():
+    """Do that 24/08: A002 cho ra "My Witness Statement" — tieu de muc luc — lam mau
+    mo bai. Tha it mau con hon mau rac: mau rac di thang vao prompt roi thanh
+    "cach mo bai cua tac gia"."""
+    muc_luc = "CHAPTER ONE\nMy Witness Statement\n\nWhat Lies Ahead\n\nA Vision\n\n"
+    that = ("CHAPTER TWO\n\nThe letter arrived on a Tuesday in late autumn here.\n\n"
+            "Nobody opened it for a week after that had happened at all.\n\n")
+    r = KV.khuon([muc_luc + that + that.replace("TWO", "THREE")])
+    assert all("Witness Statement" not in c for c in r["mo_dau"]["cau"])
+    assert r["mo_dau"]["cau"][0].startswith("The letter arrived")

@@ -262,12 +262,14 @@ def chuan_hoa(raw: dict, kho_cau: list[str] | None = None) -> dict:
 #   MIN_TU_MO_TA  duoi 12.000 tu thi so chi so ON DINH rot xuong con 5-6/20 (do that
 #                 tren kho 24/08) — mo ta dung tren nen do la mo ta mot phong doan.
 #   MIN_DIEM_DO   duoi 3 diem do thi khong noi duoc gi ve do on dinh (luat C1).
-# Thieu TAC PHAM thi KHONG chan: A002 co 1 tac pham nhung 53.530 tu / 14 diem do — so
-# do rat tin duoc, chi thieu khuon mo bai va ket bai. Chan han la phi mot ho so tot;
-# chay nhung bao ro muc nao se khuyet.
+# KHONG dem TAC PHAM. Owner 24/08: "1 tac pham gan 100k tu hoan toan da co the xac
+# dinh van phong, va tac pham tieu bieu nhat chinh la giong ghim vao dau khan gia."
+# Dung — va do that cho thay dem tac pham con SAI KY THUAT: file Investigate Lewis co
+# 90.373 tu voi 10 chuong, tuc 10 lan mo bai quan sat duoc, nhung dem theo file thi ra
+# "1 tac pham". Don vi dung la SO MAU MO BAI (khuon_van.don_vi_do), va viec do la cua
+# khuon_van; o day chi can biet corpus co du day khong.
 MIN_TU_MO_TA = 12000
 MIN_DIEM_DO = 3
-MIN_TAC_PHAM_KHUON = 3
 
 
 def du_co_so(profile: dict) -> tuple[bool, str]:
@@ -320,14 +322,14 @@ def sinh_mo_ta(profile: dict, llm_json: Callable[[str, dict], dict],
     # so Python da do, khong phai tin suong.
     mo_ta["so_do_neo"] = {k: v for k, v in d["so_do"].items() if v is not None}
     ra = {"mo_ta": mo_ta}
-    # Du tu nhung it tac pham: chay duoc, nhung khuon mo bai / ket bai khong co nghia
-    # (mot tac pham thi khong goi la thoi quen) — bao ro thay vi de nguoi doc tu hoi
-    # sao muc do bien mat.
-    n_tp = (profile.get("corpus_stats") or {}).get("n_works") or 0
-    if n_tp < MIN_TAC_PHAM_KHUON:
-        ra["khuyet"] = (f"Corpus chỉ có {n_tp} tác phẩm — mục Cách mở bài và Cách kết bị "
-                        f"bỏ (cần từ {MIN_TAC_PHAM_KHUON} tác phẩm mới gọi là thói quen). "
-                        "Các mục khác không bị ảnh hưởng.")
+    # Khuon mo bai / ket bai co the khuyet vi CHUA DU MAU (khuon_van tu khai du_mau) —
+    # bao ro thay vi de nguoi doc tu hoi sao muc do bien mat. Dem MAU, khong dem tac pham.
+    md = ((kv or {}).get("mo_dau") or {})
+    if kv and not md.get("du_mau"):
+        ra["khuyet"] = (f"Chỉ quan sát được {md.get('so_mau', 0)} lần mở bài trong corpus "
+                        "— mục Cách mở bài và Cách kết bị bỏ. Tác phẩm dài có chia chương "
+                        "thì mỗi chương tính một lần; tác phẩm liền mạch không chia thì cả "
+                        "cuốn chỉ tính một. Các mục khác không bị ảnh hưởng.")
     return ra
 
 

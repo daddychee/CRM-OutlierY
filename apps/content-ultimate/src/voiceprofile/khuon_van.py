@@ -76,12 +76,14 @@ def _cau_that(text: str, nguoc: bool = False) -> str:
         truoc roi moi tach cau trong tung doan.
     """
     cs = [c for d in _doan(text) for c in split_sentences(d)]
-    if not cs:
-        return ""
     for c in (reversed(cs) if nguoc else cs):
         if _la_cau_van(c):
             return _cau_sach(c)
-    return _cau_sach(cs[-1] if nguoc else cs[0])
+    # Khong tim duoc cau van nao (muc luc, trang ban quyen, danh sach hinh minh hoa)
+    # -> BO don vi nay. Do that 24/08: fallback "lay dai cau dau tien" cho ra
+    # "My Witness Statement" — tieu de muc luc — dung lam mau mo bai. Tha it mau con
+    # hon mau rac: mau rac di thang vao prompt roi thanh "cach mo bai cua tac gia".
+    return ""
 
 
 def _la_cau_van(c: str) -> bool:
@@ -101,6 +103,44 @@ def _la_cau_van(c: str) -> bool:
 
 def _doan(text: str) -> list[str]:
     return [d.strip() for d in re.split(r"\n\s*\n", text or "") if d.strip()]
+
+
+# Tieu de chuong — nhan dien de tach MOT tac pham dai thanh nhieu lan MO BAI.
+# Owner 24/08: "1 tac pham gan 100k tu hoan toan da co the xac dinh van phong, va tac
+# pham tieu bieu nhat chinh la giong ghim vao dau khan gia." Dung, va do that lo ra loi
+# nang hon o day: file Investigate Lewis co 90.373 tu voi "CHAPTER ONE, CHAPTER TWO..."
+# ma cach do cu (mot mau moi FILE) chi lay DUNG MOT cau mo bai cho ca quyen sach. Don
+# vi do khong phai "tac pham" ma la LAN MO BAI quan sat duoc.
+_TIEU_DE_CHUONG = re.compile(
+    r"^\s*(?:#{1,3}\s*)?(?:chapter|chuong|chương|part|phần|phan|book|section)\b[\s\-–—:.]*"
+    r"(?:[0-9]+|[ivxlc]+|one|two|three|four|five|six|seven|eight|nine|ten|"
+    r"eleven|twelve|mot|một|hai|ba|bon|bốn|nam|năm|sau|sáu|bay|bảy|tam|tám|chin|chín|muoi|mười)?\s*$",
+    re.IGNORECASE)
+MIN_CHUONG = 3            # mot dong "CHAPTER ONE" le loi khong bien file thanh nhieu chuong
+
+
+def tach_chuong(text: str) -> list[str]:
+    """Tach mot van ban thanh cac chuong. Duoi MIN_CHUONG moc thi tra ve nguyen van."""
+    dong = (text or "").splitlines()
+    moc = [i for i, l in enumerate(dong) if _TIEU_DE_CHUONG.match(l)]
+    if len(moc) < MIN_CHUONG:
+        return [text] if (text or "").strip() else []
+    ra = []
+    for i, d in enumerate(moc):
+        het = moc[i + 1] if i + 1 < len(moc) else len(dong)
+        # bo chinh dong tieu de: no khong phai cau van (va _la_cau_van cung loai no)
+        than = "\n".join(dong[d + 1:het]).strip()
+        if than:
+            ra.append(than)
+    return ra or [text]
+
+
+def don_vi_do(texts: list[str]) -> list[str]:
+    """Cac don vi co MO va KET rieng: chuong neu tach duoc, khong thi ca tac pham."""
+    ra = []
+    for t in texts:
+        ra += tach_chuong(t)
+    return ra
 
 
 def _mo_dau(texts: list[str]) -> dict:
@@ -186,9 +226,12 @@ def _tu_dac_trung(texts: list[str], n_max: int = 3, top_k: int = 10) -> list[dic
 def khuon(texts: list[str]) -> dict:
     """Bon muc khuon van tu corpus. Corpus rong -> cac muc rong, khong vo."""
     texts = [t for t in (texts or []) if (t or "").strip()]
+    # Mo bai / ket bai do tren tung CHUONG khi tach duoc — mot quyen sach 90k tu co
+    # hang chuc lan mo bai, khong phai mot.
+    dv = don_vi_do(texts)
     return {
-        "mo_dau": _mo_dau(texts),
+        "mo_dau": _mo_dau(dv),
         "chuyen_doan": _chuyen_doan(texts),
-        "ket": _ket(texts),
+        "ket": _ket(dv),
         "tu_dac_trung": _tu_dac_trung(texts),
     }
