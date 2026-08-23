@@ -256,15 +256,26 @@ def doc_trending_csv(dong: list[dict]) -> list[dict]:
     Cot Trend breakdown = truy van con, tuc NGUYEN NHAN: `peru` -> 'picchu' (to mo
     du lich) khac han `oman` -> 'trump oman' (dia chinh tri).
     """
+    def _o(v) -> str:
+        """Mot o ve CHUOI. Doc file .csv thi o nao cung la chuoi, nhung duong lay
+        TRUC TIEP tra so cho 'Search volume' va NaN cho o trong (23/08: NaN la
+        float, .strip() no ra AttributeError giua luot quet). NaN va None deu la
+        O TRONG — khong phai so 0, khong phai chuoi 'nan'."""
+        if v is None or v != v:                     # v != v chi dung voi NaN
+            return ""
+        if isinstance(v, float) and v.is_integer():
+            return str(int(v))                      # 200000.0 -> "200000"
+        return str(v).strip()
+
     ra = []
     for r in dong:
-        cum = (r.get("Trends") or "").strip()
+        cum = _o(r.get("Trends"))
         if not cum:
             continue
-        bd = [x.strip() for x in (r.get("Trend breakdown") or "").split(",") if x.strip()]
-        ra.append({"cum": cum, "luong": (r.get("Search volume") or "").strip(),
-                   "bat_dau": (r.get("Started") or "").strip(),
-                   "con_mo": (r.get("Ended") or "nan").strip().lower() in ("nan", ""),
+        bd = [x.strip() for x in _o(r.get("Trend breakdown")).split(",") if x.strip()]
+        ra.append({"cum": cum, "luong": _o(r.get("Search volume")),
+                   "bat_dau": _o(r.get("Started")),
+                   "con_mo": _o(r.get("Ended")).lower() in ("nan", ""),
                    "breakdown": bd[1:]})            # bo phan tu dau = chinh cum do
     return ra
 
@@ -333,8 +344,21 @@ KHOA_CHON = "trending_da_chon"
 
 
 def trang_thai(conn, ws: int) -> dict | None:
+    """Trang thai luot quet — DOI CHIEU voi luong that truoc khi tra loi.
+
+    Luong nam TRONG tien trinh app, con trang thai nam trong kv. App khoi dong lai
+    giua chung thi luong chet ma kv van ghi 'running' -> UI quay mai (dinh that
+    23/08). Khong sua kv o day: chi bao dung su that cho nguoi doc, con nguoi dung
+    bam Quet lai la _chay ghi de trang thai moi.
+    """
     from . import db
-    return db.kv_get(conn, ws, KHOA_TT, None)
+    tt = db.kv_get(conn, ws, KHOA_TT, None)
+    if tt and tt.get("state") == "running":
+        t = _luong.get(ws)
+        if not (t and t.is_alive()):
+            return {**tt, "state": "error",
+                    "ly_do": "Lượt quét bị đứt giữa chừng (app khởi động lại). Bấm Quét để chạy lại."}
+    return tt
 
 
 def ket_qua(conn, ws: int) -> dict | None:

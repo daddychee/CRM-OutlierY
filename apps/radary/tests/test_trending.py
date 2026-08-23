@@ -119,6 +119,27 @@ def test_doc_trending_csv_doc_thang_cua_so_va_nguyen_nhan():
     assert ra[0]["breakdown"] == ["picchu", "machu picchu"]   # bỏ phần tử đầu = chính cụm
 
 
+def test_doc_trending_csv_chiu_duoc_o_khong_phai_chuoi():
+    """Sự cố 23/08 lượt quét thật: AttributeError 'float' object has no attribute
+    'strip'. Test cũ chỉ cho ăn CHUỖI (đúng khi đọc file .csv), còn đường LẤY TRỰC
+    TIẾP trả về số cho 'Search volume' và NaN cho ô trống. Ô trống KHÔNG phải 0 và
+    NaN KHÔNG phải chuỗi 'nan' — phải quy về rỗng trước khi đọc."""
+    nan = float("nan")
+    ra = tr.doc_trending_csv([
+        {"Trends": "guyana", "Search volume": 200000.0, "Started": "August 21, 2026",
+         "Ended": nan, "Trend breakdown": nan},
+        {"Trends": "oman", "Search volume": 50000, "Started": nan,
+         "Ended": "August 22, 2026", "Trend breakdown": "oman,trump oman"},
+        {"Trends": nan, "Search volume": 1000.0, "Started": nan, "Ended": nan,
+         "Trend breakdown": nan},
+    ])
+    assert len(ra) == 2                                   # dòng tên NaN bị bỏ như dòng rỗng
+    assert ra[0]["con_mo"] is True                        # NaN = cửa sổ còn mở
+    assert ra[1]["con_mo"] is False
+    assert ra[0]["luong"] == "200000" and ra[1]["luong"] == "50000"   # không ra "200000.0"
+    assert ra[0]["breakdown"] == [] and ra[0]["bat_dau"] == "August 21, 2026"
+    assert ra[1]["bat_dau"] == ""                         # NaN -> rỗng, không phải "nan"
+
 # ============================== bước xác minh loại — lỗi đã trả giá 23/08
 def _doc_wiki(bang: dict):
     """Wikipedia pageterms giả."""
@@ -233,3 +254,18 @@ def test_gdelt_loi_khac_429_thi_ghi_dung_ma_HTTP():
 
     d = tr.vi_sao_nong("guyana", doc=_doc)
     assert d["co_du_lieu"] is False and not d.get("bi_chan_nhip") and "503" in d["ly_do"]
+
+
+def test_trang_thai_running_mo_coi_sau_khi_app_khoi_dong_lai(tmp_path, monkeypatch):
+    """Sự cố 23/08 ngay sau restart: kv còn state='running' của lượt quét đã chết
+    theo tiến trình cũ. Luồng nằm TRONG tiến trình nên khởi động lại là mất — kv
+    thì không biết điều đó, UI cứ quay mãi. Đọc trạng thái phải đối chiếu luồng
+    thật, mồ côi thì nói thẳng là đứt chứ không báo đang chạy."""
+    import radary.trending as _tr
+    from radary import db as _db
+    conn = _db.connect(str(tmp_path / "t.db")) if _db.connect.__code__.co_argcount else _db.connect()
+    _db.kv_set(conn, 7, _tr.KHOA_TT, {"state": "running", "buoc": "đọc pool"})
+    _tr._luong.pop(7, None)                       # không có luồng nào sống cho ws 7
+    tt = _tr.trang_thai(conn, 7)
+    assert tt["state"] == "error"
+    assert "đứt" in tt["ly_do"]
