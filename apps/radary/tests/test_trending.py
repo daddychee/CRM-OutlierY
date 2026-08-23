@@ -507,3 +507,24 @@ def test_bi_chan_nhip_thi_xep_LAI_hang_chu_khong_bao_hong(dat_lai_hang):
         tr._vs_mot_luot()
     assert tr._vs_hang == []
     assert tr._vs_loi[(15, "guyana")]["co_du_lieu"] is False    # hết lượt thì nói thật
+
+
+def test_gdelt_tra_HTML_cung_la_bi_chan_nhip(dat_lai_hang):
+    """GDELT báo chặn nhịp bằng HAI cách: mã 429, VÀ trả HTML thay JSON. Nhánh HTML
+    tự nó đã đoán đúng ("thường là bị chặn nhịp gọi") nhưng không gắn cờ, nên hàng
+    đợi coi là hỏng hẳn — không chờ, không thử lại. Đo thật 23/08 rơi đúng ca này."""
+    from radary import db as _db
+    conn = _db.connect()
+
+    def _html(url):
+        return "<html><body>rate limit</body></html>"
+
+    r = tr.vi_sao_nong("guyana", doc=_html)
+    assert r["bi_chan_nhip"] is True, "trả HTML mà không nhận ra là bị chặn"
+    assert tr._chan_toi[0] > time.time(), "không đặt cữ nghỉ như nhánh 429"
+
+    tr._chan_toi[0] = 0.0
+    tr.xin_vi_sao(conn, 16, "guyana", doc=_html)
+    tr._vs_mot_luot()
+    assert len(tr._vs_hang) == 1, "bị chặn kiểu HTML mà không xếp lại hàng"
+    assert (16, "guyana") not in tr._vs_loi

@@ -308,6 +308,23 @@ table.tr-bang tbody tr:last-child td{border-bottom:0}
 .tr-buoc li.dang { color:var(--text); font-weight:600 }
 .tr-buoc li.dang i { background:var(--accent); border-color:var(--accent);
   box-shadow:0 0 0 3px var(--accent-soft) }
+/* Popup CHI TIET: mot thuc the, moi thu o cung mot cho. */
+.tr-ct { border-left:3px solid var(--line) }
+.tr-ct.a { border-left-color:var(--tr-thieu_cung) } .tr-ct.b { border-left-color:var(--tr-da_khai_thac) }
+.tr-ct.c { border-left-color:var(--tr-da_thu) } .tr-ct.d { border-left-color:var(--tr-bao_hoa) }
+.tr-ct.e { border-left-color:var(--muted) }
+.tr-ct-o { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin:4px 0 0;
+  font-size:11.5px; letter-spacing:.09em; font-weight:600 }
+.tr-ct.a .tr-ct-o { color:var(--tr-thieu_cung) } .tr-ct.b .tr-ct-o { color:var(--tr-da_khai_thac) }
+.tr-ct.c .tr-ct-o { color:var(--tr-da_thu) } .tr-ct.d .tr-ct-o { color:var(--tr-bao_hoa) }
+.tr-ct.e .tr-ct-o { color:var(--muted) }
+.tr-ct-so { display:flex; flex-wrap:wrap; gap:8px; margin:12px 0 2px }
+.tr-ct-so > div { flex:1 1 116px; border:1px solid var(--line); border-radius:8px; padding:7px 10px }
+.tr-ct-so b { display:block; font-size:16px; font-variant-numeric:tabular-nums }
+.tr-ct-so span { font-size:11px; color:var(--muted); line-height:1.35; display:block; margin-top:1px }
+.tr-ngo-to { margin:8px 0 0; padding:7px 10px; border-radius:7px; font-size:12px; line-height:1.55;
+  background:var(--hot-soft); color:var(--text); border:1px solid var(--line) }
+
 /* Nut "vi sao nong": trang thai dang chay phai NHIN LA BIET. Cham nhap nhay chi
    la lop phu — chu "dang hoi 4s" van la nguon su that, nen tat hieu ung chuyen
    dong khong mat thong tin. */

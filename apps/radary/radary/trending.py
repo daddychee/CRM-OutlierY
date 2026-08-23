@@ -341,9 +341,14 @@ def vi_sao_nong(cum: str, doc=None, ngay: int = 30, tran_bai: int = 8) -> dict:
     try:
         d = json.loads(raw)
     except Exception:                                            # noqa: BLE001
-        # GDELT tra HTML khi bi chan nhip — noi thang thay vi im lang
-        return {"co_du_lieu": False,
-                "ly_do": "GDELT trả về không phải JSON (thường là bị chặn nhịp gọi)"}
+        # GDELT bao chan nhip bang HAI cach: ma 429, VA tra HTML thay JSON. Nhanh
+        # nay tu no da doan dung tu dau nhung khong gan co, nen hang doi coi la
+        # hong han — khong cho, khong thu lai (do that 23/08 roi dung ca nay).
+        _chan_toi[0] = time.time() + GDELT_NGHI_SAU_429
+        return {"co_du_lieu": False, "bi_chan_nhip": True,
+                "cho_giay": GDELT_NGHI_SAU_429,
+                "ly_do": "GDELT trả về không phải JSON — bị chặn nhịp gọi, "
+                         f"chờ {GDELT_NGHI_SAU_429} giây rồi thử lại"}
     loat = (d.get("timeline") or [{}])[0].get("data") or []
     if not loat:
         return {"co_du_lieu": False, "ly_do": f"GDELT không có tin nào về “{cum}” trong {ngay} ngày"}
