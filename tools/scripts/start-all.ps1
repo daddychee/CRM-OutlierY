@@ -80,6 +80,10 @@ $env:VR_NAS_DIR = 'F:\OutlierY Nas 2'
 # app CHI bo qua buoc do - khong bao bua, va luoi chot ben trinh duyet van chay.
 $env:VR_FFPROBE = 'C:\OutlierY\tools\ffmpeg\bin\ffprobe.exe'
 
+# Duong UNC cua goc NAS: trang xem dua duong nay de nguoi dung dan vao Explorer
+# (trinh duyet khong mo duoc file:// tu trang http). Share 'Video' = F:\OutlierY Nas 2.
+$env:VR_NAS_UNC = '\\192.168.1.250\Video'
+
 $dichVu = @(
     @{ Ten = 'qdrant-test'; Cong = 6343
        Exe = (Join-Path $root 'tools\qdrant\qdrant.exe')

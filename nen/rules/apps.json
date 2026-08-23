@@ -373,10 +373,10 @@
       "mo_ta": "Feedback video kiểu Frame.io: chọn bản dựng có sẵn trên NAS (không upload, không chép) → bình luận gắn mốc thời gian + vẽ chú thích trên khung hình → trạng thái duyệt (In review / Changes requested / Approved).",
       "cong": 9114,
       "tien_to": [
+        "/api-vr",
         "/danh-sach",
-        "/xem",
         "/media",
-        "/api-vr"
+        "/xem"
       ],
       "health": "/health",
       "phien_ban": "0.2.0",
@@ -403,6 +403,15 @@
           "backup": "sqlite-snapshot",
           "giu": "vinh-vien",
           "ghi_chu": "Sổ video (đường tới file NAS + vân tay dung lượng/ngày sửa) + bình luận mốc thời gian + nét vẽ chú thích. ĐÂY là thứ duy nhất phải backup của app — video gốc do NAS giữ."
+        },
+        {
+          "ten": "nhat-ky-xoa-nas",
+          "loai": "csv",
+          "duong": "data/video-review/db/nhat_ky_xoa_nas.csv",
+          "muc_quy": "vang",
+          "backup": "copy",
+          "giu": "vinh-vien",
+          "ghi_chu": "Nhật ký CHỈ-THÊM mọi lệnh xóa file trên NAS phát từ app (ai, file nào, lúc nào, bao nhiêu byte) — đây là đường duy nhất app được ghi/xóa trên NAS nên phải có vết vĩnh viễn."
         }
       ]
     },

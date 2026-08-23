@@ -254,6 +254,29 @@ def cac_duong_nas_dang_dung() -> set[str]:
         conn.close()
 
 
+_RE_TAP = re.compile(r"([A-Za-z]{2,4})[\s_-]?(\d{2,4})")
+
+
+def ma_tap(video: dict) -> str:
+    """Mã tập rút từ TÊN FILE, lùi về tên thư mục cha ('LI037 fix lần 2.mp4' →
+    'LI037'; 'LI049_Round 3.mp4' → 'LI049'). Không nhận ra → '' (nhóm 'Khác').
+    Quy ước đặt tên của team, không phải luật cứng — sai thì rơi vào Khác, không
+    bao giờ gộp nhầm hai tập vào nhau vì mã phải khớp nguyên vẹn."""
+    ten = video.get("ten_file") or ""
+    cha = ""
+    duong = (video.get("duong") or "").replace("\\", "/")
+    if "/" in duong:
+        cha = duong.rsplit("/", 2)[-2] if duong.count("/") >= 1 else ""
+    for nguon in (ten, cha, video.get("ten") or ""):
+        for m in _RE_TAP.finditer(nguon):
+            # bỏ qua chính MÃ CỦA APP (file đời cũ tên '2026-08-19_VR-0003_li083.mp4')
+            # — mã tập phải là mã của team, không phải số thứ tự trong sổ
+            if m.group(1).upper() == "VR":
+                continue
+            return (m.group(1) + m.group(2)).upper()
+    return ""
+
+
 def danh_sach_video() -> list[dict]:
     """Danh sách chưa-gỡ, mới nhất trước, kèm số bình luận còn mở + TỔNG bình luận
     (so_tong = 0 là dấu hiệu 'chưa ai review' — logic hiển thị Awaiting review)."""

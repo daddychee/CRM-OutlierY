@@ -35,7 +35,7 @@ from fastapi import (Depends, FastAPI, Form, Header, HTTPException, Request,
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from fastapi.templating import Jinja2Templates
 
-from src import kho_video, nap_nas
+from src import don_nas, kho_video, nap_nas
 
 _APP_DIR = Path(__file__).resolve().parents[1]
 PHIEN_BAN = "0.2.0"
@@ -141,8 +141,28 @@ async def danh_sach(request: Request, user: dict = Depends(khu_cua_toi)):
         v["canh_codec"] = kho_video.canh_bao_codec(
             kho_video.bao_dam_codec(v) if v["tt_file"]["co"] else "")
     return templates.TemplateResponse(request, "danh_sach.html", {
-        "cac_video": cac_video, "user": user,
+        "cac_video": cac_video, "cac_tap": _gom_tap(cac_video), "user": user,
         "nas_bat": nap_nas.nas_dir() is not None})
+
+
+def _gom_tap(cac_video: list[dict]) -> list[dict]:
+    """Gom bản dựng THEO TẬP (user chốt 20/08: mỗi tập đẻ fix lần 1/2/Round 3…
+    nên danh sách phình theo số vòng sửa, không theo số tập). Nhóm mở sẵn khi
+    còn việc phải làm; tập đã duyệt hết thì gập lại cho gọn."""
+    nhom: dict[str, list[dict]] = {}
+    for v in cac_video:                      # đã sắp mới nhất trước
+        nhom.setdefault(kho_video.ma_tap(v) or "Khác", []).append(v)
+    ra = []
+    for ma, ds in nhom.items():
+        moi = ds[0]
+        ra.append({
+            "ma": ma, "videos": ds, "so": len(ds), "moi_id": moi["id"],
+            "hien_thi": moi["hien_thi"], "ten_moi": moi["ten"],
+            "mo": any(v["hien_thi"] != "da_duyet" for v in ds),
+            "canh": any((not v["tt_file"]["co"]) or v["tt_file"]["doi"]
+                        or v["canh_codec"] for v in ds)})
+    ra.sort(key=lambda g: -g["moi_id"])
+    return ra
 
 
 # ---------- trang review ----------
@@ -166,6 +186,8 @@ async def xem(request: Request, ma: str, user: dict = Depends(khu_cua_toi)):
         "co_phu_de": pd_nguon != "",
         "pd_nguon": pd_nguon,                    # app|nas|kho — NAS thì app không gỡ được
         "tt_file": tt_file, "canh_codec": canh_codec,
+        "unc_thu_muc": don_nas.duong_unc(video["duong"].rsplit("/", 1)[0])
+                       if video["nguon"] == "nas" else "",
         "cac_bl": kho_video.ds_binh_luan(ma)})   # nhúng vào JS qua |tojson (script-safe)
 
 
@@ -278,6 +300,35 @@ async def api_nas_lien_ket(duong: str = Form(...), ten: str = Form(""),
         raise HTTPException(404, "Không thấy file trên NAS.")
     return {"ma": ban_ghi["ma"],
             "canh_codec": kho_video.canh_bao_codec(ban_ghi.get("codec", ""))}
+
+
+# ---------- dọn thư mục NAS sau khi review xong (xem src/don_nas.py) ----------
+
+@app.get("/api-vr/nas-thu-muc/{ma}")
+async def api_nas_thu_muc(ma: str, user: dict = Depends(khu_cua_toi)):
+    """Mọi file trong thư mục chứa bản dựng này + đường UNC để mở bằng Explorer."""
+    video = _video_song(ma)
+    if video["nguon"] != "nas":
+        raise HTTPException(404, "Bản ghi này không trỏ tới NAS.")
+    try:
+        du = don_nas.liet_ke_thu_muc(video["duong"])
+    except (FileNotFoundError, PermissionError):
+        raise HTTPException(404, "Không đọc được thư mục trên NAS.")
+    return {**du, "co_quyen_xoa": user["co_xoa"]}
+
+
+@app.post("/api-vr/nas-xoa-file")
+async def api_nas_xoa_file(duong: str = Form(...), xac_nhan: str = Form(...),
+                           user: dict = Depends(yeu_cau_xoa)):
+    """XÓA THẬT file trên NAS — ngoại lệ có kiểm soát, 6 chốt chặn ở don_nas."""
+    try:
+        return don_nas.xoa_file(duong, xac_nhan, user["ten"])
+    except ValueError as e:
+        raise HTTPException(422, str(e))
+    except PermissionError as e:
+        raise HTTPException(403, str(e))
+    except (FileNotFoundError, OSError):
+        raise HTTPException(404, "Không thấy file trên NAS (có thể vừa bị xóa).")
 
 
 # ---------- API bình luận + trạng thái ----------

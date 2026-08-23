@@ -133,3 +133,16 @@ def test_danh_sach_dem_binh_luan_mo():
     hang = kho_video.danh_sach_video()[0]
     assert hang["so_mo"] == 1
     assert hang["so_tong"] == 2      # so_tong đếm CẢ đã giải — tín hiệu "đã có người review"
+
+
+def test_ma_tap_gom_dung_ban_cua_cung_tap():
+    """Mã tập lấy từ tên file, lùi về thư mục; mã sổ VR-000N KHÔNG được coi là tập."""
+    goi = lambda tf, d="": kho_video.ma_tap({"ten_file": tf, "duong": d + tf, "ten": tf})
+    assert goi("LI037 fix lần 1.mp4") == goi("LI037 fix lần 2.mp4") == "LI037"
+    assert goi("LI049_Round 3.mp4") == "LI049"
+    assert goi("LI082_4K.mp4") == "LI082"
+    # file đời cũ do app tự đặt tên: bỏ qua VR-0003, lấy mã thật trong slug
+    assert goi("2026-08-19_VR-0003_li083.mp4") == "LI083"
+    # không nhận ra thì lùi về tên thư mục, cuối cùng mới chịu thua
+    assert goi("ban dung cuoi.mp4", "Life In/US/LI073/") == "LI073"
+    assert goi("ban dung cuoi.mp4", "Life In/US/ky-yeu/") == ""

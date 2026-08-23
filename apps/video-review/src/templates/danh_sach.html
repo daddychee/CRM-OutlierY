@@ -22,6 +22,20 @@
   .chip.da_duyet{background:rgba(90,170,120,.16);color:#5aaa78}
   html[data-theme="light"] .chip.da_duyet{color:#2e7d4f}
   .vr-bl{font-size:12.5px;color:var(--muted)}
+  details.tap{background:var(--sidebar);border:1px solid var(--line);border-radius:12px;
+    margin-bottom:8px;overflow:hidden}
+  details.tap>summary{list-style:none;cursor:pointer;padding:11px 14px;display:flex;
+    align-items:center;gap:10px;flex-wrap:wrap;font-size:14px}
+  details.tap>summary::-webkit-details-marker{display:none}
+  details.tap>summary::before{content:"";width:7px;height:7px;border-right:1.5px solid var(--muted);
+    border-bottom:1.5px solid var(--muted);transform:rotate(-45deg);transition:transform .15s;flex:none}
+  details.tap[open]>summary::before{transform:rotate(45deg)}
+  details.tap>summary:hover{background:var(--th-141c2b)}
+  .tap-ma{font-weight:700;letter-spacing:.02em}
+  .tap-ten{color:var(--muted);font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:38%}
+  .tap-so{margin-left:auto;color:var(--muted);font-size:12.5px}
+  details.tap table.vr{border-top:1px solid var(--line)}
+  details.tap table.vr td:first-child{padding-left:26px}
   .vr-duong{font-size:11.5px;color:var(--muted);opacity:.85;overflow-wrap:anywhere}
   .canh{display:inline-block;font-size:11.5px;font-weight:600;border-radius:999px;
     padding:1px 8px;white-space:nowrap;margin-left:6px}
@@ -89,10 +103,17 @@
   <input type="search" id="loc-tim" placeholder="Search name / owner…">
   <label class="loc-toi-nhan"><input type="checkbox" id="loc-toi"> Mine only</label>
 </div>
-<table class="vr">
-  <thead><tr><th>Video</th><th>Status</th><th>Owner</th><th>Uploaded</th><th>Size</th><th>Open notes</th></tr></thead>
-  <tbody id="vr-than">
-  {% for v in cac_video %}
+{% for tap in cac_tap %}
+<details class="tap" data-tap="{{ tap.ma }}"{% if tap.mo %} open{% endif %}>
+  <summary>
+    <span class="tap-ma">{{ tap.ma }}</span>
+    <span class="chip {{ tap.hien_thi }}">{{ NHAN_HIEN_THI.get(tap.hien_thi, tap.hien_thi) }}</span>
+    <span class="tap-ten">{{ tap.ten_moi }}</span>
+    {%- if tap.canh %}<span class="canh mat">needs attention</span>{% endif %}
+    <span class="tap-so">{{ tap.so }} cut{{ 's' if tap.so > 1 else '' }}</span>
+  </summary>
+  <table class="vr"><tbody class="vr-than">
+  {% for v in tap.videos %}
     <tr data-tt="{{ v.hien_thi }}" data-ten="{{ v.ten }}" data-nguoi="{{ v.nguoi_tao }}">
       <td><a href="/xem/{{ v.ma }}"><b>{{ v.ten }}</b></a>
         <span class="vr-bl">· {{ v.ma }}</span>
@@ -103,12 +124,13 @@
       <td><span class="chip {{ v.hien_thi }}">{{ NHAN_HIEN_THI.get(v.hien_thi, v.hien_thi) }}</span></td>
       <td>{{ v.nguoi_tao }}</td>
       <td class="vr-bl">{{ v.tao_luc[:10] }}</td>
-      <td class="vr-bl">{{ (v.kich_thuoc / 1048576) | round(1) }}MB</td>
-      <td class="vr-bl">{{ v.so_mo }}</td>
+      <td class="vr-bl">{{ (v.kich_thuoc / 1073741824) | round(2) }}GB</td>
+      <td class="vr-bl">{{ v.so_mo }} open</td>
     </tr>
   {% endfor %}
-  </tbody>
-</table>
+  </tbody></table>
+</details>
+{% endfor %}
 <div id="khong-khop">No videos match this filter.</div>
 {% else %}
 <p style="color:var(--muted)">No videos yet — pick the first cut from the NAS above.</p>
@@ -124,7 +146,7 @@
   var hang = document.getElementById("loc-hang");
   if (!hang) return;
   var TOI = {{ user.ten | tojson }};
-  var cacDong = Array.prototype.slice.call(document.querySelectorAll("#vr-than tr"));
+  var cacDong = Array.prototype.slice.call(document.querySelectorAll(".vr-than tr"));
   var oTim = document.getElementById("loc-tim");
   var oToi = document.getElementById("loc-toi");
   var khongKhop = document.getElementById("khong-khop");
@@ -153,6 +175,16 @@
         && (!toi || d.dataset.nguoi === TOI);
       d.style.display = hien ? "" : "none";
       if (hien) thay++;
+    });
+    // nhóm tập rỗng thì giấu hẳn; đang lọc thì MỞ nhóm ra, nếu không kết quả
+    // nằm trong nhóm đã gập lại thì người dùng tưởng là không có gì
+    var dangLoc = loc !== "tat_ca" || !!tim || toi;
+    document.querySelectorAll("details.tap").forEach(function (g) {
+      var con = g.querySelectorAll(".vr-than tr");
+      var hienNhom = Array.prototype.some.call(con, function (r) { return r.style.display !== "none"; });
+      g.style.display = hienNhom ? "" : "none";
+      if (dangLoc && hienNhom) { g.dataset.mocu = g.open ? "1" : "0"; g.open = true; }
+      else if (!dangLoc && g.dataset.mocu === "0") { g.open = false; delete g.dataset.mocu; }
     });
     khongKhop.style.display = thay ? "none" : "block";
   }

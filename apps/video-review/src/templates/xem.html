@@ -3,6 +3,25 @@
 {% block topbar_ten %}Video Review{% endblock %}
 
 {% block style_them %}
+  .tm-nas{margin-top:14px;border:1px solid var(--line);border-radius:12px;background:var(--sidebar);overflow:hidden}
+  .tm-nas>summary{cursor:pointer;padding:10px 14px;font-size:13.5px;font-weight:600;list-style:none}
+  .tm-nas>summary::-webkit-details-marker{display:none}
+  .tm-nas>summary:hover{background:var(--th-141c2b)}
+  .tm-hint{color:var(--muted);font-weight:400;font-size:12.5px}
+  .tm-duong{display:flex;align-items:center;gap:9px;flex-wrap:wrap;padding:10px 14px;border-top:1px solid var(--line)}
+  .tm-duong code{background:var(--th-182233);border:1px solid var(--chip-line);border-radius:7px;
+    padding:4px 9px;font-size:12.5px;overflow-wrap:anywhere}
+  .tm-ds{border-top:1px solid var(--line)}
+  .tm-dong{display:flex;align-items:center;gap:10px;padding:8px 14px;border-bottom:1px solid var(--line);font-size:13px}
+  .tm-dong:last-child{border-bottom:0}
+  .tm-ten{overflow-wrap:anywhere}
+  .tm-co{margin-left:auto;color:var(--muted);font-size:12.5px;white-space:nowrap}
+  .tm-tag{font-size:11.5px;border-radius:999px;padding:1px 8px;background:var(--th-182233);
+    border:1px solid var(--chip-line);color:var(--muted);white-space:nowrap}
+  .tm-xac{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 14px 12px 14px;
+    background:rgba(217,124,108,.09);font-size:12.5px}
+  .tm-loi{color:var(--th-d97c6c);font-size:12.5px;padding:0 14px 10px;display:none}
+  .tm-tong{padding:9px 14px;font-size:12.5px;color:var(--muted);border-top:1px solid var(--line)}
   .bang-canh{border-radius:12px;padding:11px 14px;margin-bottom:14px;font-size:13.5px;line-height:1.5}
   .bang-canh b{display:block;margin-bottom:2px}
   .bang-canh.mat{background:rgba(217,124,108,.13);border:1px solid rgba(217,124,108,.4);color:var(--th-d97c6c)}
@@ -111,6 +130,21 @@
     <div class="moc-bar" id="moc-bar" title="Comment markers — click a dot to jump"></div>
     <p id="loi-phat" style="display:none;color:var(--th-d97c6c);font-size:13px">
       This browser can’t play the file (codec). Re-export as mp4 (H.264) onto the NAS and add that file.</p>
+
+    {% if video.nguon == 'nas' %}
+    <details class="tm-nas" id="tm-nas">
+      <summary>Folder on the NAS <span class="tm-hint">— see what is taking up space, clean up after the review</span></summary>
+      {% if unc_thu_muc %}
+      <div class="tm-duong">
+        <code id="tm-unc">{{ unc_thu_muc }}</code>
+        <button class="nut nho phu" type="button" id="tm-copy">Copy path</button>
+        <span class="tm-hint">paste into Windows Explorer or Win+R</span>
+      </div>
+      {% endif %}
+      <div id="tm-ds" class="tm-ds"><div class="tm-hint" style="padding:10px 2px">Loading…</div></div>
+      <div id="tm-loi" class="tm-loi"></div>
+    </details>
+    {% endif %}
   </div>
 
   <div class="bl-panel">
@@ -397,4 +431,121 @@
   if (vid.readyState >= 1) { canChinhCanvas(); renderMoc(); }
 })();
 </script>
+{% if video.nguon == 'nas' %}
+<script>
+(function () {
+  "use strict";
+  // Thư mục NAS chứa bản dựng: xem có gì, dọn sau khi review xong.
+  // Nạp LƯỜI (chỉ khi mở khối) — mỗi lần mở là đọc lại đĩa, không cache cũ.
+  var khoi = document.getElementById("tm-nas");
+  if (!khoi) return;
+  var MA = {{ video.ma | tojson }};
+  var dsEl = document.getElementById("tm-ds");
+  var loiEl = document.getElementById("tm-loi");
+  var daNap = false;
+
+  function loi(chu) { loiEl.textContent = chu; loiEl.style.display = chu ? "block" : "none"; }
+  function coDep(n) {
+    return n >= 1073741824 ? (n / 1073741824).toFixed(2) + " GB"
+         : n >= 1048576 ? Math.round(n / 1048576) + " MB" : Math.round(n / 1024) + " KB";
+  }
+
+  var nutCopy = document.getElementById("tm-copy");
+  if (nutCopy) nutCopy.addEventListener("click", function () {
+    var chu = document.getElementById("tm-unc").textContent;
+    // LAN chạy HTTP nên KHÔNG có navigator.clipboard (bài học 01/08) — chọn chữ
+    // rồi execCommand, hỏng nữa thì bảo người dùng tự copy chứ không im lặng.
+    var o = document.createElement("textarea");
+    o.value = chu; o.setAttribute("readonly", "");
+    o.style.position = "fixed"; o.style.opacity = "0";
+    document.body.appendChild(o); o.select();
+    var xong = false;
+    try { xong = document.execCommand("copy"); } catch (e) { xong = false; }
+    document.body.removeChild(o);
+    nutCopy.textContent = xong ? "Copied" : "Select the path and copy";
+    setTimeout(function () { nutCopy.textContent = "Copy path"; }, 2000);
+  });
+
+  function veDong(m, coQuyenXoa) {
+    var d = document.createElement("div");
+    d.className = "tm-dong";
+    var ten = document.createElement("span");
+    ten.className = "tm-ten"; ten.textContent = m.ten;   // textNode — chống XSS
+    d.appendChild(ten);
+    if (m.dang_dung) {
+      var t = document.createElement("span");
+      t.className = "tm-tag"; t.textContent = "in app"; d.appendChild(t);
+    }
+    var co = document.createElement("span");
+    co.className = "tm-co"; co.textContent = coDep(m.byte); d.appendChild(co);
+    if (coQuyenXoa && m.xoa_duoc) {
+      var nut = document.createElement("button");
+      nut.className = "nut nho nguy"; nut.type = "button"; nut.textContent = "Delete";
+      nut.addEventListener("click", function () { hoiChac(d, m); });
+      d.appendChild(nut);
+    }
+    return d;
+  }
+
+  function hoiChac(dong, m) {
+    if (dong.nextSibling && dong.nextSibling.className === "tm-xac") return;
+    var hop = document.createElement("div");
+    hop.className = "tm-xac";
+    var nhan = document.createElement("label");
+    var tick = document.createElement("input"); tick.type = "checkbox";
+    nhan.appendChild(tick);
+    nhan.appendChild(document.createTextNode(
+      m.dang_dung ? " Delete this file from the NAS for good — the entry in the app is removed too (notes are kept)"
+                  : " Delete this file from the NAS for good — there is no recycle bin"));
+    var ok = document.createElement("button");
+    ok.className = "nut nho nguy"; ok.type = "button"; ok.textContent = "Delete"; ok.disabled = true;
+    var huy = document.createElement("button");
+    huy.className = "nut nho phu"; huy.type = "button"; huy.textContent = "Cancel";
+    tick.addEventListener("change", function () { ok.disabled = !tick.checked; });
+    huy.addEventListener("click", function () { hop.remove(); });
+    ok.addEventListener("click", function () { xoa(m, ok); });
+    hop.appendChild(nhan); hop.appendChild(ok); hop.appendChild(huy);
+    dong.parentNode.insertBefore(hop, dong.nextSibling);
+  }
+
+  function xoa(m, nut) {
+    nut.disabled = true; nut.textContent = "Deleting…"; loi("");
+    var fd = new FormData();
+    fd.append("duong", m.duong);
+    fd.append("xac_nhan", m.ten);          // echo tên: chặn danh sách CŨ xóa nhầm file
+    fetch("/api-vr/nas-xoa-file", { method: "POST", body: fd })
+      .then(function (r) { if (!r.ok) return r.json().then(function (j) { throw j; }); return r.json(); })
+      .then(function (du) {
+        if (du.ma_go === MA) { location.href = "/danh-sach"; return; }
+        nap();
+      })
+      .catch(function (j) {
+        nut.disabled = false; nut.textContent = "Delete";
+        loi((j && j.detail) || "Could not delete the file.");
+      });
+  }
+
+  function nap() {
+    loi("");
+    fetch("/api-vr/nas-thu-muc/" + MA)
+      .then(function (r) { if (!r.ok) throw 0; return r.json(); })
+      .then(function (du) {
+        dsEl.textContent = "";
+        du.muc.forEach(function (m) { dsEl.appendChild(veDong(m, du.co_quyen_xoa)); });
+        var tong = document.createElement("div");
+        tong.className = "tm-tong";
+        tong.textContent = du.muc.length + " files · " + coDep(du.tong_byte) + " in this folder"
+          + (du.co_quyen_xoa ? "" : " · only Managers can delete files here");
+        dsEl.appendChild(tong);
+      })
+      .catch(function () { dsEl.textContent = ""; loi("Could not read the folder on the NAS."); });
+  }
+
+  khoi.addEventListener("toggle", function () {
+    if (khoi.open) { daNap = true; nap(); }
+  });
+  if (khoi.open && !daNap) nap();
+})();
+</script>
+{% endif %}
 {% endblock %}

@@ -97,6 +97,35 @@
   chỉ `videoWidth === 0` mới lộ; và mở kho file cho người dùng chọn tự do thì
   phải kiểm định dạng NGAY TẠI CỬA, đừng tin "team toàn xuất H.264".
 
+- 20/08/2026 (tiếp) — **DỌN DẸP SAU REVIEW: mở thư mục NAS + xóa file từ app +
+  gom danh sách THEO TẬP** (user: "sau mỗi lần lại nhiều lên"). Số thật lúc làm:
+  15 bản ghi / 80 bình luận, và danh sách phình theo VÒNG SỬA chứ không theo tập
+  (LI037 fix lần 1 → lần 2, LI049 Round 2 → Round 3, LI073 fix lần 1 → lần 2);
+  một thư mục tập nặng 17,2GB vì giữ 3 bản dựng cùng lúc.
+  • **Gom theo tập** (`kho_video.ma_tap`): mã rút từ TÊN FILE, lùi về tên thư mục,
+    BỎ QUA mã sổ của app (`2026-08-19_VR-0003_li083.mp4` → LI083, không phải
+    VR0003 — dính thật lượt đầu). Nhóm `<details>` mở sẵn khi còn bản chưa duyệt,
+    tập duyệt xong gập lại; lọc/tìm phải MỞ nhóm ra không thì kết quả nằm trong
+    nhóm đã gập và người dùng tưởng không có gì.
+  • **Khối "Folder on the NAS"** trên trang xem: đường UNC để dán vào Explorer
+    (`VR_NAS_UNC`, trình duyệt KHÔNG mở được `file://` từ trang http — copy dùng
+    execCommand vì LAN chạy HTTP) + liệt kê mọi file trong thư mục kèm dung lượng
+    và cờ "in app".
+  • **XÓA FILE NAS TỪ APP** — user chốt, đây là **NGOẠI LỆ CÓ KIỂM SOÁT** của luật
+    "app chỉ đọc NAS", `src/don_nas.py`, SÁU chốt: cờ `xoa` (Manager 4+) · resolve
+    trong gốc (ngoài gốc → **404 lặng lẽ**, KHÔNG 403 — sửa sau khi test bắt) ·
+    phải là file · **chỉ đuôi video + phụ đề** (dự án Premiere/CapCut cạnh đó
+    tuyệt đối không đụng) · client echo đúng tên file (chặn danh sách CŨ xóa nhầm
+    hàng, không phải để hành người dùng) · **nhật ký chỉ-thêm ghi TRƯỚC khi xóa**
+    (`db/nhat_ky_xoa_nas.csv`, đã khai vào apps.json) — xóa xong mới ghi thì lỗi
+    giữa chừng là mất dấu vết, có test giả lập unlink hỏng để ghim. Xóa file đang
+    có bản ghi → **gỡ mềm bản ghi luôn** (bình luận giữ nguyên trong sổ). Giao
+    diện chặn tay-nhầm bằng 2 bước bấm + ô tích, không dùng hộp thoại trình duyệt.
+  55 test pass. Kiểm sống qua cổng 9114: 4 chốt trả đúng 403/422/404/403 mà không
+  xóa file nào của team. **Dọn xong 7,46GB bản sao cũ** (VR-0007/0008); VR-0006 bị
+  script TỪ CHỐI xóa vì bản gốc trên NAS đã biến mất → bản trong app là bản duy
+  nhất — đúng ý đồ chốt chặn.
+
 ## Quyết định thiết kế (đừng phá)
 
 - **NAS CHỈ ĐỌC TUYỆT ĐỐI**: app không chép/ghi/xóa/đổi tên gì trong `VR_NAS_DIR`
