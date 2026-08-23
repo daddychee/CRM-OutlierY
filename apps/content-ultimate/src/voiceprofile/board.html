@@ -499,6 +499,26 @@ function napDanhSachHoSo(chon){
 
 function so(x, n){ return (x===null||x===undefined) ? '—' : Number(x).toFixed(n===undefined?1:n); }
 
+// Chi so cot loi. Hai viec o day:
+// (a) API cu (app chua restart sau khi doi code) khong co truong nay -> tra chuoi rong
+//     thay vi in "undefined/undefined" ra man hinh nguoi dung;
+// (b) it diem do thi con so nay CAO GIA. Do that 24/08 — cat CUNG mot corpus thanh
+//     nhieu diem do hon thi ti le tut o 4/4 ho so thu:
+//       A002  4 diem 7/10 -> 8 diem 6/10 -> 16 diem 5/10
+//       A010  4 diem 9/10 -> 8 diem 8/10 -> 15 diem 8/10
+//       A007 / A014 deu 9/10 -> 8/10 khi len 16 diem
+//     It mau thi it dao dong lo ra, nen "on dinh" de cao hon thuc te — du am cua chinh
+//     cai benh da sua o C1 (1 diem do -> spread 0 -> giu het 17/17). Ho so mong phai
+//     noi ro dieu do NGAY CANH con so, khong de nguoi doc yen tam nham.
+const DIEM_DO_TIN = 5;
+function cotLoiHTML(d){
+  if(d.cot_loi===undefined || d.cot_loi_tong===undefined) return '';
+  const mo = d.diem_do < DIEM_DO_TIN;
+  const nhac = mo ? ` <span title="Hệ số biến thiên tính trên ${d.diem_do} điểm đo thì còn nhiễu: ít mẫu thì ít dao động lộ ra, nên tỉ lệ này dễ cao hơn thực tế. Nạp thêm tác phẩm rồi đo lại mới chắc." style="opacity:.75">(đo trên ${d.diem_do} điểm — còn nhiễu)</span>` : '';
+  const hiem = ` <span title="Nhóm còn lại là tần suất từng loại dấu câu (chấm phẩy, ngoặc, chấm than…). Dấu hiếm thì tác giả nào cũng dao động mạnh, nạp thêm corpus không làm nó đều hơn — nên nhóm này không tính vào mức độ.">· dấu câu hiếm ${d.hiem}/${d.hiem_tong}</span>`;
+  return ` · <b>${d.cot_loi}/${d.cot_loi_tong}</b> chỉ số cốt lõi ổn định${nhac}${hiem}`;
+}
+
 // ---------- Bo sung tac pham cho giong da co (24/08) ----------
 // Tai dung TRON BO duong san co: /api/upload-corpus (them tham so vao_ma) roi
 // guiBuild() — chinh luong Extractor, nen log, % tien do va viec tu nap lai so do
@@ -548,8 +568,7 @@ function xemHoSo(ma){
     const n=d.nhip||{}, g=d.giong||{};
     $('hs_the').innerHTML = `
       <div class="o ${cls}"><div class="k">Mức độ</div><div class="v">${nhan}</div>
-        <div class="g">${d.diem_do} điểm đo · <b>${d.cot_loi}/${d.cot_loi_tong}</b> chỉ số cốt lõi ổn định
-          <span title="Nhóm còn lại là tần suất từng loại dấu câu (chấm phẩy, ngoặc, chấm than…). Dấu hiếm thì tác giả nào cũng dao động mạnh, nạp thêm corpus không làm nó đều hơn — nên nhóm này không tính vào mức độ.">· dấu câu hiếm ${d.hiem}/${d.hiem_tong}</span></div></div>
+        <div class="g">${d.diem_do} điểm đo${cotLoiHTML(d)}</div></div>
       <div class="o"><div class="k">Số từ</div><div class="v">${(d.tu||0).toLocaleString('vi-VN')}</div>
         <div class="g">${d.tu<12000?'nên nạp thêm cho đủ ~12.000':'corpus đủ dày'}</div></div>
       <div class="o"><div class="k">Độ giãn câu</div><div class="v">±${so(n.do_gian)}</div>

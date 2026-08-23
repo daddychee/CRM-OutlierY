@@ -205,3 +205,14 @@ def test_dau_cau_hiem_thap_KHONG_ra_yeu_cau():
                            + [_qf(f"punct_{x}_freq", False)
                               for x in ("semicolon", "colon", "exclaim", "ellipsis")])
     assert _tt(p)["yeu_cau"] == []
+
+
+def test_ui_khong_in_undefined_khi_api_cu():
+    """App chay nen nap module Python luc khoi dong, con board.html doc moi lan —
+    UI moi + API cu = "undefined/undefined" tren man hinh nguoi dung (da xay ra 24/08)."""
+    import pathlib
+    from voiceprofile import server as vp
+    ui = (pathlib.Path(vp.__file__).parent / "board.html").read_text(encoding="utf-8")
+    assert "cotLoiHTML" in ui
+    assert "d.cot_loi===undefined" in ui, "phai co duong lui khi API chua co truong nay"
+    assert "còn nhiễu" in ui, "it diem do thi phai nhac ngay canh con so"
