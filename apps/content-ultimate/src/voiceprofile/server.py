@@ -406,6 +406,137 @@ def _library_payload() -> dict:
             "can_pick": sys.platform == "darwin"}
 
 
+# ── Tom tat ho so cho UI (24/08) ───────────────────────────────────────────────────
+# Owner: "UI log hien nay toi can dua them ca bao cao sau khi extract: muc do, so tu,
+# do gian cau, muc do giong tac gia". Bon nhom so do la bon cau hoi khac nhau:
+#   muc do   — co du diem do de tin cac con so khong (C1)
+#   so tu    — corpus day hay mong, va bao nhieu file
+#   do gian  — nhip cau: so tu moi cau ± do lech chuan, ti le cau cut
+#   giong    — Delta: giong nay gan giong nao trong kho, co trung ai khong
+# Python do het, khong goi model.
+
+DELTA_TU_MOI_HO_SO = 20000   # doc bao nhieu tu moi corpus de dung bang Delta
+
+
+def _tom_tat_tu_profile(profile: dict, ma: str, bang_delta: dict | None) -> dict:
+    """Bon nhom so tu MOT ho so da co san (khong doc lai corpus)."""
+    from .dien_ngon import TEN_CHIEU  # noqa: F401  (giu import gan nhau cho de lan)
+    cs = profile.get("corpus_stats") or {}
+    qf = [f for f in (profile.get("quant_features") or []) if isinstance(f, dict)]
+    rt = profile.get("reproduction_targets") or {}
+    gt = {f.get("name"): f.get("value") for f in qf}
+
+    diem = cs.get("n_stability_units") or 0
+    tu = cs.get("n_tokens") or 0
+    if diem < 3:
+        muc = "chua_do_duoc"
+    elif tu < 12000 or diem < 5:
+        muc = "mong"
+    else:
+        muc = "du"
+
+    ex = [e for e in (profile.get("exemplars") or []) if isinstance(e, str)]
+    ra = {
+        "ma": ma,
+        "ten": profile.get("author") or "",
+        "muc_do": muc,
+        "tu": tu,
+        "file": cs.get("n_works") or 0,
+        "diem_do": diem,
+        "chi_so_on_dinh": sum(1 for f in qf if f.get("keep")),
+        "tong_chi_so": len(qf),
+        "so_target": len(rt),
+        "moves": len(profile.get("signature_moves") or []),
+        "nhip": {
+            "tu_moi_cau": gt.get("sentence_len_mean"),
+            "do_gian": gt.get("sentence_len_stdev"),
+            "ti_le_cut": (gt.get("sentence_short_ratio") or 0) * 100 or None,
+            "ti_le_dai": (gt.get("sentence_long_ratio") or 0) * 100 or None,
+        },
+        "neo_tu": sum(len(e.split()) for e in ex),
+        "giong": {},
+        "canh_bao": [],
+    }
+
+    from .soi_ho_so import soi_profile
+    soi = soi_profile(profile)
+    canh = list(soi.get("canh_bao") or [])
+    canh += list((profile.get("discourse_features") or {}).get("canh_bao") or [])
+    # soi_ho_so do 3 doan mau TRONG ho so, nhung luc viet that `write --author-dir`
+    # thay chung bang neo day rut tu corpus (chon_neo). Con corpus tren dia thi hai
+    # canh bao ve neo la sai ngu canh — bo di va noi ro neo thuc te lay tu dau.
+    cd = (profile.get("corpus_stats") or {}).get("corpus_dir")
+    ra["neo_day"] = bool(cd and Path(cd).is_dir())
+    if ra["neo_day"]:
+        canh = [c for c in canh if "Neo giọng chỉ" not in c and "đoạn mẫu trùng" not in c]
+    ra["canh_bao"] = canh
+
+    if bang_delta and ma in (bang_delta.get("z") or {}):
+        from . import delta as D
+        gan = sorted(({"ma": k, "delta": round(D.delta_giua(ma, k, bang_delta), 3)}
+                      for k in bang_delta["z"] if k != ma), key=lambda r: r["delta"])
+        trung = [n for n in D.nhom_ban_sao(bang_delta) if ma in n]
+        ra["giong"] = {
+            "gan_nhat": gan[0] if gan else None,
+            "xa_nhat": gan[-1] if gan else None,
+            "trung": [x for x in (trung[0] if trung else []) if x != ma],
+        }
+    return ra
+
+
+def _bang_delta_kho() -> dict | None:
+    """Bang Delta tren toan thu vien — doc DELTA_TU_MOI_HO_SO tu dau moi corpus.
+
+    Khong doc tron corpus: A001 co 149.240 tu, doc het chi de lay mot con so thi UI
+    phai cho. Delta on dinh tu vai nghin tu; cat deu mot moc cho moi ho so cung giu
+    duoc tinh cong bang giua cac ho so.
+    """
+    from . import delta as D
+    from .corpus import load_corpus_dir
+    kho = {}
+    for a in library.list_authors():
+        d = a.get("corpus")
+        if not d or not Path(d).is_dir():
+            continue
+        try:
+            works = load_corpus_dir(d)
+        except (OSError, ValueError):
+            continue
+        gom, dem = [], 0
+        for w in works:
+            gom.append(w)
+            dem += len(w.split())
+            if dem >= DELTA_TU_MOI_HO_SO:
+                break
+        kho[a["code"]] = gom
+    if len(kho) < 2:
+        return None
+    try:
+        return D.xay_bang(kho)
+    except ValueError:
+        return None
+
+
+def _api_ho_so(q: dict) -> tuple[int, dict]:
+    """GET /api/ho-so?ma=A013 — CHI nhan MA (cung luat voi /api/kiem-chung: client
+    khong duoc tro server vao file bat ky)."""
+    ma = (q.get("ma") or "").strip()
+    a = next((x for x in library.list_authors() if x["code"] == ma), None)
+    if not a:
+        return 404, {"error": f"khong tim thay ho so {ma!r} trong thu vien"}
+    p = Path(a["profile"])
+    if not p.is_file():
+        return 404, {"error": "ho so chua duoc dung — chay Extractor truoc"}
+    try:
+        profile = json.loads(p.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as e:
+        return 500, {"error": f"khong doc duoc profile.json: {e}"}
+    ra = _tom_tat_tu_profile(profile, ma, _bang_delta_kho())
+    bc = p.parent / "bao-cao-extract.md"
+    ra["bao_cao"] = str(bc) if bc.is_file() else ""
+    return 200, ra
+
+
 def _providers() -> list[dict]:
     try:
         from .llm import available_model_choices
@@ -511,6 +642,10 @@ def make_handler():
                 self._json(200, payload)
             elif path == "/api/library":
                 self._json(200, _library_payload())
+            elif path == "/api/ho-so":
+                from urllib.parse import parse_qs, urlparse
+                q = {k: v[0] for k, v in parse_qs(urlparse(self.path).query).items()}
+                self._json(*_api_ho_so(q))
             elif path == "/api/download":
                 from urllib.parse import parse_qs, urlparse
                 raw = (parse_qs(urlparse(self.path).query).get("path") or [""])[0]

@@ -99,6 +99,18 @@
     border-top:1px solid var(--border-soft)}
   @media(max-width:1100px){.side{position:static;max-height:none}
     .side .cuon{overflow:visible}}
+  /* Khoi bao cao ho so sau extract (24/08) — bon nhom so Owner yeu cau:
+     muc do · so tu · do gian cau · muc do giong tac gia. */
+  .hs{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin-bottom:12px}
+  .hs .o{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:11px 13px}
+  .hs .o .k{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+  .hs .o .v{font-size:21px;font-weight:600;font-variant-numeric:tabular-nums;margin:6px 0 3px}
+  .hs .o .g{font-size:12px;color:var(--muted);line-height:1.4}
+  .hs .o.du{border-color:#3f7d55}.hs .o.mong{border-color:#8a6a2a}.hs .o.chua{border-color:#b1483f}
+  .hsbao{border:1px solid var(--border);border-radius:8px;padding:11px 13px;margin-bottom:12px;
+    background:var(--panel)}
+  .hsbao ul{margin:6px 0 0;padding-left:18px}.hsbao li{margin-bottom:5px;font-size:13px}
+  .hsbao.canh{border-color:#8a6a2a}
   .wave{font-size:13px;color:var(--muted)}.wave b{color:var(--text);font-weight:600}
   .wave .meta{display:inline-flex;gap:14px;flex-wrap:wrap;margin-left:8px}
   .wave .meta b{color:var(--text);font-weight:600}
@@ -202,6 +214,25 @@
 
     <!-- ============ TAB 1: EXTRACTOR ============ -->
     <section class="pane" id="p1" role="tabpanel">
+      <!-- Bo cuc HAI COT y khuon tab Writing (Owner chot 24/08): trai = ket qua doc
+           duoc, phai = thiet lap + nut chay. Thiet lap la viec lam MOT LAN, khong
+           dang chiem cho suot buoi. -->
+      <div class="wave" style="margin-bottom:10px">
+        <b id="hs_ten">Chưa có hồ sơ nào được chọn</b>
+        <span class="meta" id="hs_meta"></span>
+      </div>
+      <div class="wcols">
+      <div>
+        <div class="hs" id="hs_the" hidden></div>
+        <div class="hsbao" id="hs_canh" hidden></div>
+        <div class="hsbao" id="hs_giong" hidden></div>
+        <div class="status" id="ex_status">Chế độ self-profile — không cần baseline.</div>
+        <div class="progress"><i id="ex_prog"></i></div>
+        <div class="logwrap"><div class="eyebrow">Log</div><div class="log" id="ex_log"></div></div>
+      </div>
+      <aside class="side">
+      <div class="panel co-gian"><h2>Thiết lập</h2>
+      <div class="cuon">
       <div class="row">
         <label>Folder bản thảo</label>
         <input type="text" class="path" id="ex_dir" placeholder="Chọn folder chứa .txt/.md của tác giả">
@@ -241,13 +272,21 @@
         <label>LLM (cho Rhetoric)</label>
         <select id="ex_llm"></select>
       </div>
+      </div>
       <div class="bar">
         <button class="btn primary" id="ex_start" onclick="startExtract()">▶ START</button>
         <button class="btn" id="ex_open" onclick="openPath(document.getElementById('ex_out').value)" disabled>Mở folder kết quả</button>
       </div>
-      <div class="status" id="ex_status">Chế độ self-profile — không cần baseline.</div>
-      <div class="progress"><i id="ex_prog"></i></div>
-      <div class="logwrap"><div class="eyebrow">Log</div><div class="log" id="ex_log"></div></div>
+      </div>
+      <div class="panel"><h2>Hồ sơ đã có</h2>
+        <div class="row" style="grid-template-columns:1fr auto">
+          <select id="hs_chon" onchange="xemHoSo(this.value)"></select>
+          <button class="btn small" onclick="napDanhSachHoSo()">Làm mới</button>
+        </div>
+        <p class="note" style="margin:8px 0 0">Chọn một hồ sơ để xem lại số đo mà không phải chạy lại extract.</p>
+      </div>
+      </aside>
+      </div>
     </section>
 
     <!-- ============ TAB 2: WRITER ============ -->
@@ -402,6 +441,59 @@ function fillProviders(){
     : '<option value="">(chưa có key trong .env)</option>';
   $('ex_llm').innerHTML = opts;
   $('w_llm').innerHTML = opts;
+}
+
+// ---------- Bao cao ho so (24/08) ----------
+// Owner: "UI log hien nay toi can dua them ca bao cao sau khi extract: muc do, so tu,
+// do gian cau, muc do giong tac gia". Goi /api/ho-so?ma= (Python do, 0 token) sau khi
+// extract xong VA khi nguoi dung chon lai mot ho so cu.
+const HS_MUC = {du:['du','Đủ dữ liệu'], mong:['mong','Mỏng'], chua_do_duoc:['chua','Chưa đo được']};
+
+function napDanhSachHoSo(chon){
+  fetch('/api/library').then(r=>r.json()).then(d=>{
+    const sel=$('hs_chon'); const ds=d.authors||[];
+    sel.innerHTML = ds.length ? ds.map(a=>`<option value="${a.code}">${a.code} · ${a.name}</option>`).join('')
+                              : '<option value="">(chưa có hồ sơ nào)</option>';
+    if(chon && ds.some(a=>a.code===chon)) sel.value=chon;
+    if(sel.value) xemHoSo(sel.value);
+  }).catch(()=>{});
+}
+
+function so(x, n){ return (x===null||x===undefined) ? '—' : Number(x).toFixed(n===undefined?1:n); }
+
+function xemHoSo(ma){
+  if(!ma) return;
+  fetch('/api/ho-so?ma='+encodeURIComponent(ma)).then(r=>r.json()).then(d=>{
+    if(d.error){ $('hs_ten').textContent=d.error; return; }
+    const [cls,nhan] = HS_MUC[d.muc_do] || ['','—'];
+    $('hs_ten').textContent = `${d.ma} · ${d.ten}`;
+    $('hs_meta').innerHTML = `<span>${d.file} file</span><span>${d.moves} signature moves</span>`
+      + (d.bao_cao ? `<span><a href="/api/download?path=${encodeURIComponent(d.bao_cao)}">Tải báo cáo đầy đủ</a></span>` : '');
+    const n=d.nhip||{}, g=d.giong||{};
+    $('hs_the').innerHTML = `
+      <div class="o ${cls}"><div class="k">Mức độ</div><div class="v">${nhan}</div>
+        <div class="g">${d.diem_do} điểm đo · ${d.chi_so_on_dinh}/${d.tong_chi_so} chỉ số ổn định</div></div>
+      <div class="o"><div class="k">Số từ</div><div class="v">${(d.tu||0).toLocaleString('vi-VN')}</div>
+        <div class="g">${d.tu<12000?'nên nạp thêm cho đủ ~12.000':'corpus đủ dày'}</div></div>
+      <div class="o"><div class="k">Độ giãn câu</div><div class="v">±${so(n.do_gian)}</div>
+        <div class="g">${so(n.tu_moi_cau)} từ mỗi câu · ${so(n.ti_le_cut,0)}% câu dưới 8 từ</div></div>
+      <div class="o"><div class="k">Giống tác giả khác</div>
+        <div class="v">${g.gan_nhat?so(g.gan_nhat.delta,2):'—'}</div>
+        <div class="g">${g.gan_nhat?('gần nhất: '+g.gan_nhat.ma+' — càng nhỏ càng giống'):'chưa so được'}</div></div>`;
+    $('hs_the').hidden=false;
+
+    const trung=(g.trung||[]);
+    $('hs_giong').hidden = !trung.length;
+    if(trung.length) $('hs_giong').innerHTML =
+      `<b>Trùng hồ sơ khác:</b> giọng này gần như không phân biệt được với ${trung.join(', ')}`
+      + ` — cùng một corpus đang mang nhiều tên, chọn cái nào cũng cho kết quả như nhau.`;
+
+    const c=(d.canh_bao||[]);
+    $('hs_canh').hidden = !c.length;
+    $('hs_canh').className = 'hsbao' + (c.length?' canh':'');
+    if(c.length) $('hs_canh').innerHTML = '<b>Cần biết trước khi dùng hồ sơ này</b><ul>'
+      + c.map(x=>`<li>${x}</li>`).join('') + '</ul>';
+  }).catch(e=>{ $('hs_ten').textContent='Không đọc được hồ sơ: '+e; });
 }
 
 // ---------- Extractor ----------
@@ -939,8 +1031,9 @@ function poll(tab){
     if(j.done){
       clearInterval(POLL); setRunning(tab, false);
       if(tab==='w') showVerdict(j.log||[]);
-      // Extractor xong -> tu nap lai thu vien Writer + chon luon tac gia vua tao
-      if(tab==='ex' && !j.error) loadLibrary($('ex_name').value.trim());
+      // Extractor xong -> tu nap lai thu vien Writer + chon luon tac gia vua tao,
+      // VA ve ngay khoi bao cao ho so (24/08) — nguoi chay khong phai di tim file .md.
+      if(tab==='ex' && !j.error){ loadLibrary($('ex_name').value.trim()); napDanhSachHoSo(); }
       $(tab==='ex'?'ex_status':'w_status').innerHTML = j.error ? `<span style="color:var(--danger)">LỖI: ${esc(j.error)}</span>` : 'Xong.';
       if(tab==='w' && cheDo()==='duyet'){ await napBan(); await moPhan(W_DANG || W_PHAN[0]); veDanhSach(); }
     }
@@ -1010,7 +1103,8 @@ async function downloadScript(){
   logLine('w_log','Đã tải script về máy (xem folder Downloads).');
 }
 
-loadLibrary();  // nap providers + thu vien luc mo
+loadLibrary();      // nap providers + thu vien luc mo
+napDanhSachHoSo();  // khoi bao cao ho so tab Author (24/08)
 loadOutlines(); // nap danh sach outline.txt tu runs/ (neu chay qua content-ultimate)
 
 // Chia trang (2026-07-16): qua content-ultimate, /author = ① Extractor va /write =

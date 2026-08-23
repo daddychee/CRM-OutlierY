@@ -68,3 +68,45 @@ def test_bao_cao_kho_gom_moi_ho_so_va_canh_bao_trung():
                               {"ma": "A_ban_sao", "ten": "A2", "profile": _profile()},
                               {"ma": "B", "ten": "B", "profile": _profile(n=1)}], bang)
     assert "A_ban_sao" in md and ("trùng" in md or "bản sao" in md)
+
+
+# --- Tom tat ho so cho UI (24/08, Owner yeu cau) -----------------------------------
+def test_tom_tat_ho_so_du_bon_nhom_so():
+    """UI can: mức độ · số từ · độ giãn câu · mức độ giống tác giả."""
+    from voiceprofile import server as vp
+    r = vp._tom_tat_tu_profile(_profile(), ma="A999", bang_delta=None)
+    assert r["muc_do"] in ("du", "mong", "chua_do_duoc")
+    assert r["tu"] > 0 and r["diem_do"] >= 1
+    assert r["nhip"]["do_gian"] is not None      # do gian cau = do lech chuan do dai cau
+    assert "tu_moi_cau" in r["nhip"] and "ti_le_cut" in r["nhip"]
+    assert "giong" in r
+
+
+def test_tom_tat_khai_muc_do_theo_diem_do():
+    from voiceprofile import server as vp
+    assert vp._tom_tat_tu_profile(_profile(n=1), ma="A", bang_delta=None)["muc_do"] == "chua_do_duoc"
+    assert vp._tom_tat_tu_profile(_profile(n=6), ma="A", bang_delta=None)["muc_do"] in ("du", "mong")
+
+
+def test_tom_tat_ho_so_khong_nhan_duong_dan_tu_client():
+    """Cung luat voi /api/kiem-chung: client chi gui MA, khong tro server vao file bat ky."""
+    from voiceprofile import server as vp
+    ma, r = vp._api_ho_so({"ma": "../../etc/passwd"})
+    assert ma == 404 and "error" in r
+
+
+def test_route_ho_so_ton_tai():
+    from voiceprofile import server as vp
+    src = open(vp.__file__, encoding="utf-8").read()
+    assert '"/api/ho-so"' in src, "xoa lang le duong API nay la test do"
+
+
+def test_con_corpus_thi_khong_canh_bao_neo_mong():
+    """Luc viet that, cli thay 3 doan mau bang neo day rut tu corpus — canh bao
+    'neo chi 253 tu' o day la sai ngu canh (da sua cung loi trong bao cao .md)."""
+    from voiceprofile import server as vp
+    p = _profile()
+    p["corpus_stats"]["corpus_dir"] = str(__import__("pathlib").Path(__file__).parent)
+    r = vp._tom_tat_tu_profile(p, ma="A", bang_delta=None)
+    assert r["neo_day"] is True
+    assert not any("Neo giọng chỉ" in c for c in r["canh_bao"])
