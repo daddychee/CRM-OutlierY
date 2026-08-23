@@ -434,6 +434,79 @@ SUA_CAU_VONG = 2
 END_CUT_VONG = 2         # End no gap 3 lan khuon thi mot vong khong du          # tran do day cua khoi neo giong (xem chon_neo.TRAN_TU)
 
 
+# C3 (24/08) — KENH DAN. Do dem 24/08 tren generator: profile.json co 8 truong, ma
+# prompt chi doc DUNG HAI (exemplars, signature_moves). reproduction_targets duoc tinh
+# tu thang 7, day du, dep — va chua bao gio di vao prompt mot lan nao (chu "sentence_len"
+# xuat hien 0 lan trong ca file nay). Do la nghia den cua "cau truc tinh": do xong roi de day.
+#
+# Nhung ra lenh bang LOI khong khong an — con lac 16/07 da chung minh: luat "viet cau dai"
+# lam van nhoi cau, go luat di thi van van sang thai cuc cau vun. Nen o day KHONG ra lenh
+# truu tuong: dua CON SO CUA CHINH TAC GIA NAY, va noi ro cac doan mau ngay ben duoi da
+# nam o dung nhung con so do. Model co ca tell lan show cung tro mot huong.
+#
+# Cong tac CU_NHIP_PROMPT=0 de tat (mac dinh bat). Ho so chua do duoc so nao -> khoi RONG
+# -> prompt y het truoc, khong doi mot byte (co test hoi quy ghim).
+def _nhip_tu_target(profile: dict) -> dict:
+    """Lay so do di vao prompt. Uu tien target do tren CORPUS, lui ve do tren chinh
+    cac doan mau se hien trong prompt — de con so noi ra luon khop van nguoi doc thay."""
+    ra: dict[str, float] = {}
+    rt = profile.get("reproduction_targets") or {}
+    for ten, khoa in (("sentence_len_mean", "tu_moi_cau"),
+                      ("sentence_short_ratio", "ti_le_cut"),
+                      ("sentence_long_ratio", "ti_le_dai")):
+        t = rt.get(ten)
+        if isinstance(t, dict) and t.get("do_duoc") is not False and isinstance(t.get("target"), (int, float)):
+            ra[khoa] = float(t["target"])
+    if "tu_moi_cau" not in ra:
+        mau = [e for e in (profile.get("exemplars") or []) if isinstance(e, str)]
+        if mau:
+            from .chon_neo import nhip
+            n = nhip("\n\n".join(mau))
+            if n["so_cau"] >= 5:
+                ra = {"tu_moi_cau": n["tu_moi_cau"],
+                      "ti_le_cut": n["ti_le_cut"] / 100.0,
+                      "ti_le_dai": n["ti_le_dai"] / 100.0}
+    return ra
+
+
+DOAN_HOP_LY = (2.0, 8.0)   # ngoai khoang nay thi so do doan la artefact dinh dang file
+
+
+def build_nhip_block(profile: dict) -> str:
+    """Khoi VOICE TARGETS — rong khi khong do duoc gi hoac khi bi tat."""
+    import os
+    if (os.environ.get("CU_NHIP_PROMPT") or "1").strip() == "0":
+        return ""
+    n = _nhip_tu_target(profile)
+    if not n.get("tu_moi_cau"):
+        return ""
+    dong = [f"- average sentence length: about {n['tu_moi_cau']:.0f} words"]
+    if "ti_le_cut" in n:
+        dong.append(f"- about {100 * n['ti_le_cut']:.0f}% of sentences run under 8 words "
+                    f"(this is the author's rhythm, not a quota to fill)")
+    if n.get("ti_le_dai", 0) >= 0.02:
+        dong.append(f"- about {100 * n['ti_le_dai']:.0f}% run past 35 words")
+    df = (profile.get("discourse_features") or {}).get("chieu") or {}
+    doan = df.get("cau_moi_doan") or {}
+    # Tran an toan cho do dai doan: do that 24/08 ho so A009 ra 39 cau/doan (file corpus
+    # it dong trong), va mot lenh "viet doan 39 cau" trong prompt la lenh vo ly — kich ban
+    # YouTube khong ai viet the. Ngoai khoang nguoi that viet thi BO DONG NAY, khong doan
+    # bua mot con so khac: bao cao van ghi so do that de nguoi doc biet corpus co van de.
+    if (doan.get("do_duoc") is not False and isinstance(doan.get("target"), (int, float))
+            and DOAN_HOP_LY[0] <= doan["target"] <= DOAN_HOP_LY[1]):
+        dong.append(f"- paragraphs of roughly {doan['target']:.0f} sentences")
+    you = df.get("ngoi_thu_hai") or {}
+    if isinstance(you.get("target"), (int, float)):
+        if you["target"] >= 5:
+            dong.append(f"- speaks TO the reader: \"you\" about {you['target']:.0f} times per 1000 words")
+        elif you["target"] < 0.5:
+            dong.append("- never addresses the reader as \"you\": this author explains, does not converse")
+    return ("\nVOICE TARGETS (measured from this author's own corpus, not a style "
+            "preference):\n" + "\n".join(dong) +
+            "\nThe exemplar passages below already sit at these numbers. Write at that "
+            "rhythm naturally; do not count words sentence by sentence.")
+
+
 def build_voice_block(profile: dict) -> str:
     """Khoi huong dan giong dung chung cho moi phan: exemplar + signature moves."""
     author = profile.get("author", "the author")
@@ -456,6 +529,9 @@ def build_voice_block(profile: dict) -> str:
         parts.append("\nEXEMPLARS (voice ground truth):")
         for i, ex in enumerate(exemplars, 1):
             parts.append(f"[{i}] {ex}")
+    nhip_block = build_nhip_block(profile)
+    if nhip_block:
+        parts.append(nhip_block)
     moves = profile.get("signature_moves", [])
     if moves:
         parts.append("\nSIGNATURE MOVES (use these deliberately, they are verified in the author's real work):")

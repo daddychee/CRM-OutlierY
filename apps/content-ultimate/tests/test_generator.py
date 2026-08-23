@@ -833,3 +833,73 @@ def test_viet_lai_mot_phan_da_co_thi_van_viet_23_08():
     assert "con kho, them chi tiet" in goi[0]
     assert "Ban truoc cua chuong mot" in goi[0]
     assert dict(s.sections)["Chapter 1"].startswith("Ban viet lai")
+
+
+# --- C3 (24/08): so do cua tac gia di vao prompt ----------------------------------
+# Dem 24/08: profile.json co 8 truong, prompt doc DUNG HAI. reproduction_targets tinh
+# tu thang 7 va chua bao gio vao prompt mot lan nao — "cau truc tinh" dung nghia den.
+_HS_DO_DUOC = {
+    "author": "A", "exemplars": ["Some exemplar text here for the voice."],
+    "reproduction_targets": {
+        "sentence_len_mean": {"target": 14.0, "sd": 1.2, "do_duoc": True},
+        "sentence_short_ratio": {"target": 0.16, "sd": 0.03, "do_duoc": True},
+        "sentence_long_ratio": {"target": 0.04, "sd": 0.01, "do_duoc": True},
+    },
+    "discourse_features": {"do_duoc": True, "chieu": {
+        "cau_moi_doan": {"target": 4.0, "sd": 0.5},
+        "ngoi_thu_hai": {"target": 8.0, "sd": 1.0},
+    }},
+}
+
+
+def test_nhip_di_vao_prompt_bang_con_so_cua_chinh_tac_gia():
+    from voiceprofile.generator import build_nhip_block
+    kh = build_nhip_block(_HS_DO_DUOC)
+    assert "14 words" in kh and "16%" in kh
+    assert "4 sentences" in kh and "8 times per 1000 words" in kh
+    assert "VOICE TARGETS" in build_voice_block(_HS_DO_DUOC)
+
+
+def test_ho_so_chua_do_duoc_thi_prompt_KHONG_DOI_MOT_BYTE():
+    """Hoi quy: ho so cu (khong co target do duoc) phai cho prompt y het truoc C3."""
+    from voiceprofile.generator import build_nhip_block
+    cu = {"author": "A", "exemplars": ["x"], "signature_moves": [{"move": "m"}],
+          "reproduction_targets": {"ttr": {"target": 0.3, "sd": None, "do_duoc": False}}}
+    assert build_nhip_block(cu) == ""
+    assert "VOICE TARGETS" not in build_voice_block(cu)
+
+
+def test_cong_tac_tat_duoc(monkeypatch):
+    from voiceprofile.generator import build_nhip_block
+    monkeypatch.setenv("CU_NHIP_PROMPT", "0")
+    assert build_nhip_block(_HS_DO_DUOC) == ""
+
+
+def test_lui_ve_do_tren_chinh_doan_mau_khi_khong_co_target():
+    """Khong co target -> do tren chinh exemplar se hien trong prompt, de con so noi
+    ra luon khop van ma model nhin thay (khong bao gio mau thuan noi tai)."""
+    from voiceprofile.generator import build_nhip_block
+    van = ("The road bent north. Nobody used it after the mill closed and the last "
+           "trucks went south instead. Grass came back within two winters. Then the "
+           "fence posts went. Then the gate. By the fourth year you could not tell "
+           "there had been a road at all, except in dry summers.")
+    kh = build_nhip_block({"author": "A", "exemplars": [van]})
+    assert "average sentence length" in kh
+
+
+def test_khong_khai_ngoi_khi_ho_so_khong_do_dien_ngon():
+    from voiceprofile.generator import build_nhip_block
+    hs = dict(_HS_DO_DUOC)
+    hs.pop("discourse_features")
+    kh = build_nhip_block(hs)
+    assert "you" not in kh and "sentences\n" not in kh.split("paragraphs")[0][-5:]
+
+
+def test_khong_dua_do_dai_doan_vo_ly_vao_prompt():
+    """Do that 24/08: A009 ra 39 cau/doan (file it dong trong) — lenh do la lenh vo ly."""
+    from voiceprofile.generator import build_nhip_block
+    hs = {**_HS_DO_DUOC, "discourse_features": {"do_duoc": True, "chieu": {
+        "cau_moi_doan": {"target": 39.0, "sd": 5.0}}}}
+    kh = build_nhip_block(hs)
+    assert "paragraphs of" not in kh
+    assert "average sentence length" in kh      # cac dong khac van giu
