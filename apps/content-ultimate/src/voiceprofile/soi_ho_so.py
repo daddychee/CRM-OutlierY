@@ -103,26 +103,26 @@ def soi_profile(profile: dict) -> dict:
     if slm is not None and slm > CAU_QUA_DAI:
         co.append("corpus_thieu_dau_cau")
         canh_bao.append(
-            f"Corpus do ra {slm:.0f} tu/cau — khong the co that o nguoi viet. "
-            "Gan nhu chac chan la transcript chua don dau cau; moi so do giong cua "
-            "ho so nay (do dai cau, nhip, Flesch) deu khong dung."
+            f"Corpus đo ra {slm:.0f} từ mỗi câu — không thể có thật ở người viết. "
+            "Gần như chắc chắn là transcript chưa chấm câu; mọi số đo giọng của "
+            "hồ sơ này (độ dài câu, nhịp, Flesch) đều không dùng được."
         )
     elif slm is not None and 0 < slm < CAU_QUA_NGAN:
         co.append("corpus_cau_qua_vun")
-        canh_bao.append(f"Corpus do ra {slm:.1f} tu/cau — vun bat thuong, nen kiem lai nguon.")
+        canh_bao.append(f"Corpus đo ra {slm:.1f} từ mỗi câu — vụn bất thường, nên kiểm lại nguồn.")
 
     if ex["so_mau"] and ex["tu_moi_cau"] > CAU_QUA_DAI:
         co.append("exemplar_thieu_dau_cau")
         canh_bao.append(
-            f"Exemplar do ra {ex['tu_moi_cau']:.0f} tu/cau — mau neo giong cung thieu "
-            "dau cau; model se hoc thanh cau dai vo tan."
+            f"Đoạn mẫu đo ra {ex['tu_moi_cau']:.0f} từ mỗi câu — mẫu neo giọng cũng thiếu "
+            "dấu câu; model sẽ học thành câu dài vô tận."
         )
 
     if ex["tong_tu"] < NEO_DU_TU:
         co.append("neo_mong")
         canh_bao.append(
-            f"Neo giong chi {ex['tong_tu']} tu ({ex['so_mau']} mau) — qua mong so voi "
-            "ca tram dong luat trong prompt; model se roi ve nhip mac dinh cua no."
+            f"Neo giọng chỉ {ex['tong_tu']} từ ({ex['so_mau']} mẫu) — quá mỏng so với "
+            "cả trăm dòng luật trong prompt; model sẽ rơi về nhịp mặc định của nó."
         )
     # Corpus mong: SO DO van dung (van ban co dau cau), nhung KHONG the noi dac trung
     # nao la on dinh — mot diem do khong co phuong sai. Bao rieng, khong lam do_duoc
@@ -132,18 +132,18 @@ def soi_profile(profile: dict) -> dict:
     n_tu = cs.get("n_tokens")
     if isinstance(n_units, int) and n_units < MIN_DON_VI_DO:
         co.append("corpus_mong")
-        thieu = (f", nap them ~{CORPUS_DU_TU - n_tu:,} tu nua"
+        thieu = (f", nạp thêm khoảng {CORPUS_DU_TU - n_tu:,} từ nữa".replace(",", ".")
                  if isinstance(n_tu, int) and n_tu < CORPUS_DU_TU else "")
         canh_bao.append(
-            f"Corpus chi cat duoc {n_units} diem do"
-            + (f" ({n_tu:,} tu)" if isinstance(n_tu, int) else "")
-            + f" — duoi {MIN_DON_VI_DO} diem thi do on dinh CHUA do duoc, moi con so "
-            f"'sai so 0' deu la gia. So do van dung, nhung dung tin do chac chan{thieu}."
+            f"Corpus chỉ cắt được {n_units} điểm đo"
+            + (f" ({n_tu:,} từ)".replace(",", ".") if isinstance(n_tu, int) else "")
+            + f" — dưới {MIN_DON_VI_DO} điểm thì độ ổn định CHƯA đo được, mọi con số "
+            f"'sai số 0' đều là giả. Số đo vẫn đúng, nhưng đừng tin là chắc chắn{thieu}."
         )
 
     if ex["trung_lap"]:
         co.append("exemplar_trung_lap")
-        canh_bao.append("Cac mau exemplar trung noi dung nhau — neo thuc te con mong hon so tu.")
+        canh_bao.append("Các đoạn mẫu trùng nội dung nhau — neo thực tế còn mỏng hơn số từ.")
 
     return {
         "ten": ten,

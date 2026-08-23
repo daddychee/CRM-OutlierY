@@ -72,11 +72,11 @@ def test_file_khong_co_dong_trong_thi_khong_khai_do_dai_doan():
     hs = DN.ho_so([mot_khoi, mot_khoi, mot_khoi])
     assert hs["canh_bao"], "phai bao khi corpus khong co ranh gioi doan"
     assert hs["chieu"]["cau_moi_doan"]["do_duoc"] is False
-    assert not any("Doan dai" in c for c in DN.mo_ta(hs))
+    assert not any("Đoạn dài" in c for c in DN.mo_ta(hs))
 
 
 def test_corpus_co_ranh_doan_thi_khai_binh_thuong():
     van = "One. Two.\n\nThree. Four.\n\nFive. Six."
     hs = DN.ho_so([van, van, van])
     assert not hs["canh_bao"]
-    assert any("Doan dai" in c for c in DN.mo_ta(hs))
+    assert any("Đoạn dài" in c for c in DN.mo_ta(hs))

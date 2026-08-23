@@ -304,7 +304,7 @@ def test_bat_corpus_mong_chua_du_diem_do():
     r = soi_profile(p)
     assert "corpus_mong" in r["co"]
     assert r["do_duoc"] is True, "so do van dung — chi la chua chung minh duoc on dinh"
-    assert any("diem do" in c for c in r["canh_bao"])
+    assert any("điểm đo" in c for c in r["canh_bao"])
 
 
 def test_corpus_du_diem_do_thi_khong_bao_mong():

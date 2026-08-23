@@ -84,6 +84,10 @@ def build(
         stability_cv=stability_cv,
     )
 
+    # Nho DUONG DAN corpus trong chinh ho so: bao cao kho can doc lai van goc de dung
+    # bang Delta, va khong co cho nao khac luu duong dan nay ngoai so dang ky thu vien.
+    profile.setdefault("corpus_stats", {})["corpus_dir"] = str(Path(author_dir).resolve())
+
     # Giu lai signature_moves da co (ket qua lenh `rhetoric` ton kem LLM, khong nen
     # mat khi do lai dac trung) — chay lai `rhetoric` neu muon lam moi.
     out_path = Path(out)
@@ -103,6 +107,17 @@ def build(
     typer.echo(f"Da ghi {out} [{profile['profile_mode']}] — {n_kept}/{len(profile['quant_features'])} "
                f"dac trung dat nguong, {len(profile['distinctive_ngrams'])} n-gram, "
                f"{len(profile['reproduction_targets'])} target tai tao, {len(profile['exemplars'])} exemplar.")
+
+    # BAO CAO EXTRACT (24/08): ghi ngay canh profile.json. Truoc day muon biet ho so
+    # co dung khong thi phai mo profile.json doc tay — va khong ai doc, do la ly do ba
+    # ho so dung tren corpus transcript tho van duoc dung de viet suot ba tuan.
+    try:
+        from .bao_cao import bao_cao_extract, ghi_bao_cao
+        duong_bc = ghi_bao_cao(bao_cao_extract(profile, corpus_dir=author_dir),
+                               Path(out).parent / "bao-cao-extract.md")
+        typer.echo(f"Bao cao extract: {duong_bc}")
+    except Exception as e:  # noqa: BLE001 — bao cao hong KHONG duoc lam hong extract
+        typer.echo(f"(Khong dung duoc bao cao extract: {e})")
 
     # Chi canh bao khi corpus THAT SU ngan (it doan do) — 1 sach day da tu du doan.
     n_units = profile["corpus_stats"].get("n_stability_units", author_corpus.n_works)
@@ -377,6 +392,61 @@ def write(
 
     if not no_validate and len(script.sections) >= n_content:
         _run_validate(script_md, profile, author_dir)
+
+
+@app.command(name="bao-cao")
+def bao_cao_lenh(
+    profile_path: str = typer.Option(None, "--profile", help="profile.json cua MOT ho so"),
+    author_dir: str = typer.Option(None, "--author-dir", help="Corpus (de do neo giong)"),
+    kho: str = typer.Option(None, "--kho", help="Thu muc chua nhieu <ma>/profile.json — bao cao CA KHO"),
+    out: str = typer.Option(None, "--out", help="File .md dau ra (mac dinh: canh profile)"),
+):
+    """Bao cao qua trinh extract — Python doc lai ho so, 0 token, khong goi model.
+
+    Mot ho so:  --profile <duong>/profile.json [--author-dir <corpus>]
+    Ca kho:     --kho <thu muc uploads>
+    """
+    from .bao_cao import bao_cao_extract, bao_cao_kho, ghi_bao_cao
+    from . import delta as D
+
+    if kho:
+        goc = Path(kho)
+        ds, kho_van = [], {}
+        for p in sorted(goc.glob("*/profile.json")):
+            try:
+                pf = json.loads(p.read_text(encoding="utf-8"))
+            except (OSError, ValueError):
+                continue
+            ma = p.parent.name.split("_")[0]
+            ds.append({"ma": ma, "ten": pf.get("author", ""), "profile": pf})
+        if not ds:
+            typer.echo(f"Khong tim thay profile.json nao trong {goc}")
+            raise typer.Exit(code=1)
+        # Bang Delta chi dung duoc khi doc lai duoc corpus goc; thieu thi bo qua phan do.
+        bang = None
+        for h in ds:
+            d = (h["profile"].get("corpus_stats") or {}).get("corpus_dir")
+            if d and Path(d).is_dir():
+                try:
+                    kho_van[h["ma"]] = load_corpus_dir(d)
+                except (OSError, ValueError):
+                    pass
+        if len(kho_van) >= 2:
+            bang = D.xay_bang(kho_van)
+        md = bao_cao_kho(ds, bang)
+        duong = out or str(goc / "bao-cao-kho.md")
+    else:
+        if not profile_path or not Path(profile_path).is_file():
+            typer.echo("Can --profile <duong>/profile.json hoac --kho <thu muc>")
+            raise typer.Exit(code=1)
+        pf = json.loads(Path(profile_path).read_text(encoding="utf-8"))
+        neo = None
+        if author_dir:
+            from .chon_neo import neo_day
+            neo = neo_day(author_dir)
+        md = bao_cao_extract(pf, corpus_dir=author_dir, neo=neo)
+        duong = out or str(Path(profile_path).parent / "bao-cao-extract.md")
+    typer.echo(f"Da ghi {ghi_bao_cao(md, duong)}")
 
 
 @app.command(name="validate")

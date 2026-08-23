@@ -111,9 +111,9 @@ def ho_so(don_vi_do: list[str], min_don_vi: int = 3) -> dict:
     # Bao thang thay vi de nguoi doc tuong tac gia viet doan 786 cau.
     canh_bao = []
     if statistics.mean([p["so_doan"] for p in per]) <= 1.05:
-        canh_bao.append("File corpus khong co dong trong nao — 'cau_moi_doan' o day la do "
-                        "dai FILE, khong phai do dai doan. Chieu nay khong dung duoc cho "
-                        "ho so nay (cac chieu khac khong bi anh huong).")
+        canh_bao.append("File corpus không có một dòng trống nào — 'số câu mỗi đoạn' ở đây "
+                        "là độ dài FILE, không phải độ dài đoạn. Chiều này không dùng được "
+                        "cho hồ sơ này (các chiều khác không bị ảnh hưởng).")
         chieu["cau_moi_doan"]["do_duoc"] = False
     return {"do_duoc": du, "n_don_vi": len(khoi), "chieu": chieu, "canh_bao": canh_bao}
 
@@ -127,19 +127,19 @@ def mo_ta(hs: dict) -> list[str]:
     c = {k: v["target"] for k, v in hs["chieu"].items()}
     ra = []
     if c["ngoi_thu_hai"] >= 5:
-        ra.append(f"Noi THANG voi nguoi doc: {c['ngoi_thu_hai']:.1f} lan 'you' moi 1.000 tu.")
+        ra.append(f"Nói THẲNG với người đọc: {c['ngoi_thu_hai']:.1f} lần \"you\" mỗi 1.000 từ.")
     elif c["ngoi_thu_hai"] < 0.5:
-        ra.append("Gan nhu khong bao gio goi 'you' — giong giang giai, khong doi thoai.")
+        ra.append("Gần như không bao giờ gọi \"you\" — giọng giảng giải, không đối thoại.")
     if c["ngoi_thu_nhat_it"] >= 5:
-        ra.append(f"Ke o ngoi thu nhat: {c['ngoi_thu_nhat_it']:.1f} lan 'I' moi 1.000 tu.")
+        ra.append(f"Kể ở ngôi thứ nhất: {c['ngoi_thu_nhat_it']:.1f} lần \"I\" mỗi 1.000 từ.")
     if c["ngoi_thu_nhat_nhieu"] >= 5:
-        ra.append(f"Keo nguoi doc vao cung phia: {c['ngoi_thu_nhat_nhieu']:.1f} lan 'we' moi 1.000 tu.")
+        ra.append(f"Kéo người đọc về cùng phía: {c['ngoi_thu_nhat_nhieu']:.1f} lần \"we\" mỗi 1.000 từ.")
     if hs["chieu"]["cau_moi_doan"].get("do_duoc") is not False:
-        ra.append(f"Doan dai trung binh {c['cau_moi_doan']:.1f} cau.")
+        ra.append(f"Đoạn dài trung bình {c['cau_moi_doan']:.1f} câu.")
     if c["lien_tu_mo_cau"] >= 0.15:
-        ra.append(f"{100 * c['lien_tu_mo_cau']:.0f}% so cau mo bang lien tu (But/And/So) — nhip van noi.")
+        ra.append(f"{100 * c['lien_tu_mo_cau']:.0f}% số câu mở bằng liên từ (But/And/So) — nhịp văn nói.")
     if c["cau_hoi"] >= 0.05:
-        ra.append(f"{100 * c['cau_hoi']:.0f}% so cau la cau hoi truc tiep.")
+        ra.append(f"{100 * c['cau_hoi']:.0f}% số câu là câu hỏi trực tiếp.")
     if c["bi_dong"] >= 0.20:
-        ra.append(f"The bi dong day: {100 * c['bi_dong']:.0f}% so cau (proxy regex).")
+        ra.append(f"Thể bị động dày: {100 * c['bi_dong']:.0f}% số câu (đo bằng mẫu regex, là ước lượng).")
     return ra
