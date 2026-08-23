@@ -332,6 +332,13 @@ def write(
         raise typer.Exit(code=1)
     typer.echo(f"Provider: {cfg['provider']} | model: {cfg['model']} | muc tieu ~{chars} ky tu")
 
+    # Khoi VOICE TARGETS tu bat/tat theo model (generator.MODEL_BAM_NEO) — chi gan
+    # bien trong bo nho, KHONG ghi de profile.json.
+    profile = {**profile, "_model": cfg["model"]}
+    from .generator import build_nhip_block
+    if build_nhip_block(profile):
+        typer.echo(f"Nhip: gui kem so do cua tac gia vao prompt ({cfg['model']} bam neo).")
+
     if resume:
         done = load_checkpoint(out, outline)
         if done:

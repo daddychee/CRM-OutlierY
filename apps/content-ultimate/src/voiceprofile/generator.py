@@ -482,11 +482,28 @@ def _nhip_tu_target(profile: dict) -> dict:
 
 DOAN_HOP_LY = (2.0, 8.0)   # ngoai khoang nay thi so do doan la artefact dinh dang file
 
+# Model NGHE THEO NEO — do that 24/08, xem bang so trong khoi chu thich tren.
+# Model khong nam trong danh sach nay thi khoi so lam van XAU di, nen mac dinh tat.
+# Them model moi vao day CHI SAU khi da A/B du luot voi chinh no; dung suy dien
+# "doi sau chac cung the".
+MODEL_BAM_NEO = ("glm-5.3",)
+
+
+def _model_bam_neo(model: str) -> bool:
+    m = (model or "").strip().lower()
+    return any(m == x or m.startswith(x + "-") for x in MODEL_BAM_NEO)
+
 
 def build_nhip_block(profile: dict) -> str:
     """Khoi VOICE TARGETS — rong khi khong do duoc gi hoac khi bi tat."""
     import os
-    if (os.environ.get("CU_NHIP_PROMPT") or "0").strip() != "1":
+    # Ba trang thai: env "1" bat / "0" tat / khong dat -> TU QUYET theo model dang
+    # chay (profile["_model"] do cli gan luc viet). Co tay de quen ca hai chieu, ma
+    # dat sai chieu thi van xau di ma khong ai biet.
+    co = (os.environ.get("CU_NHIP_PROMPT") or "").strip()
+    if co == "0":
+        return ""
+    if co != "1" and not _model_bam_neo(profile.get("_model", "")):
         return ""
     n = _nhip_tu_target(profile)
     if not n.get("tu_moi_cau"):

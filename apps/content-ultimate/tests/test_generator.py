@@ -871,12 +871,28 @@ def test_ho_so_chua_do_duoc_thi_prompt_KHONG_DOI_MOT_BYTE(monkeypatch):
     assert "VOICE TARGETS" not in build_voice_block(cu)
 
 
-def test_mac_dinh_TAT_sau_ab_24_08(monkeypatch):
-    """A/B 15 luot: bat khoi so lam lech nhip XAU di (0,72 vs 0,53). Mac dinh tat."""
+def test_khong_biet_model_thi_TAT(monkeypatch):
+    """A/B glm-5.2 (15 luot): bat khoi so lam lech nhip XAU di 0,72 vs 0,53."""
     from voiceprofile.generator import build_nhip_block
     monkeypatch.delenv("CU_NHIP_PROMPT", raising=False)
     assert build_nhip_block(_HS_DO_DUOC) == ""
     assert "VOICE TARGETS" not in build_voice_block(_HS_DO_DUOC)
+
+
+def test_model_bam_neo_thi_TU_BAT(monkeypatch):
+    """A/B glm-5.3 (11 luot): bat tot hon gap doi 0,35 vs 0,70, bai con dai hon."""
+    from voiceprofile.generator import build_nhip_block
+    monkeypatch.delenv("CU_NHIP_PROMPT", raising=False)
+    assert "average sentence length" in build_nhip_block({**_HS_DO_DUOC, "_model": "glm-5.3"})
+    assert build_nhip_block({**_HS_DO_DUOC, "_model": "glm-5.2"}) == ""
+
+
+def test_co_tay_thang_ca_hai_chieu(monkeypatch):
+    from voiceprofile.generator import build_nhip_block
+    monkeypatch.setenv("CU_NHIP_PROMPT", "0")
+    assert build_nhip_block({**_HS_DO_DUOC, "_model": "glm-5.3"}) == ""
+    monkeypatch.setenv("CU_NHIP_PROMPT", "1")
+    assert build_nhip_block({**_HS_DO_DUOC, "_model": "glm-5.2"}) != ""
 
 
 def test_lui_ve_do_tren_chinh_doan_mau_khi_khong_co_target(monkeypatch):
