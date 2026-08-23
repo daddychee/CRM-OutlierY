@@ -68,6 +68,36 @@
   .progress{height:6px;background:var(--raised);border:1px solid var(--border);border-radius:99px;
     overflow:hidden;margin-top:12px}
   .progress>i{display:block;height:100%;background:var(--accent);width:0;transition:width .3s}
+  /* thanh tom tat tren cung + thiet lap thu gon (mockup vong 4) */
+  .wtop{display:flex;align-items:center;gap:14px;flex-wrap:wrap;border:1px solid var(--border);
+    border-radius:10px;padding:9px 14px;background:var(--raised);margin-bottom:10px}
+  .wtop .ten{font-weight:700;font-size:14px}
+  .wtop .meta{font-size:12.5px;color:var(--muted);display:flex;gap:14px;flex-wrap:wrap}
+  .wtop .meta b{color:var(--text);font-weight:600}
+  .wtop .kd{font-variant-numeric:tabular-nums;font-size:12.5px;color:var(--muted)}
+  .wtop .kd b{color:var(--text)}
+  details.wset{border:1px solid var(--border);border-radius:10px;margin-bottom:12px;background:var(--panel)}
+  details.wset>summary{list-style:none;cursor:pointer;padding:9px 14px;font-size:12.5px;color:var(--muted)}
+  details.wset>summary::-webkit-details-marker{display:none}
+  details.wset>summary:hover{color:var(--text)}
+  details.wset[open]>summary{border-bottom:1px solid var(--border-soft);color:var(--text)}
+  .wset-body{padding:14px 14px 4px}
+  .wtxt mark{background:rgba(180,118,44,.18);border-bottom:1.5px solid #B4762C;
+    padding:0 1px;border-radius:2px;color:inherit}
+  .wvers{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:0 0 9px}
+  .wvers .vc{border:1px solid var(--border);border-radius:20px;padding:3px 11px;font-size:11.5px;
+    cursor:pointer;background:var(--raised)}
+  .wvers .vc.on{border-color:var(--accent);color:var(--accent);background:var(--accent-soft);font-weight:600}
+  .wbrief{border:1px dashed var(--border);border-radius:9px;padding:12px 16px;margin-bottom:11px;
+    background:var(--raised);font-size:13.5px;line-height:1.65;color:var(--muted);white-space:pre-wrap}
+  .wbrief b{display:block;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--muted);margin-bottom:6px;font-weight:600}
+  details.wlog{margin-top:10px;border-top:1px solid var(--border-soft);padding-top:8px}
+  details.wlog>summary{list-style:none;cursor:pointer;font-size:11px;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--muted)}
+  details.wlog>summary::-webkit-details-marker{display:none}
+  details.wlog>summary:hover{color:var(--text)}
+  details.wlog .log{max-height:200px;margin-top:6px}
   /* ===== Viet TUNG CHUONG (23/08) — minimalist icon: chi dung cham mau + chu ===== */
   .wmode{display:flex;gap:9px;flex-wrap:wrap;margin:0 0 12px}
   .wmode label{display:flex;align-items:center;gap:8px;border:1px solid var(--border);
@@ -75,7 +105,7 @@
   .wmode label:has(input:checked){border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
   .wmode small{font-weight:400;color:var(--muted)}
   .wmode label:has(input:checked) small{color:var(--accent)}
-  .wdesk{display:grid;grid-template-columns:236px minmax(0,1fr);gap:14px;align-items:start;margin-top:12px}
+  .wdesk{display:grid;grid-template-columns:200px minmax(0,1fr);gap:14px;align-items:start;margin-top:12px}
   @media(max-width:960px){.wdesk{grid-template-columns:1fr}}
   .wsec{border:1px solid var(--border);border-radius:10px;overflow:hidden}
   .wsec .it{display:grid;grid-template-columns:9px minmax(0,1fr) auto;gap:8px;align-items:center;
@@ -95,7 +125,8 @@
   .wch .vs{color:var(--muted);font-size:11px}
   .wch.ok b{color:var(--ok)}.wch.warn b{color:var(--danger)}
   .wtxt{border:1px solid var(--border);border-radius:9px;background:var(--raised);
-    padding:18px 24px;font-size:16px;line-height:1.8;white-space:pre-wrap;max-width:74ch}
+    padding:20px 26px;font-size:16px;line-height:1.8;white-space:pre-wrap}
+  .wtxt > *{max-width:74ch}
   .wduyet{border:1px solid var(--accent);border-radius:9px;padding:11px 13px;margin-top:12px;
     background:var(--accent-soft)}
   .wduyet .q{font-size:13px;font-weight:600;margin:0 0 8px}
@@ -213,21 +244,36 @@
 
     <!-- ============ TAB 2: WRITER ============ -->
     <section class="pane" id="p2" role="tabpanel" hidden>
+      <!-- thanh tom tat: thiet lap la viec lam MOT LAN, khong dang chiem cho suot buoi -->
+      <div class="wtop">
+        <span class="ten" id="wt_ten">Chưa chọn tác giả</span>
+        <span class="meta" id="wt_meta"></span>
+        <span style="flex:1"></span>
+        <span class="kd" id="wt_kd">đã viết <b>0</b> / 18.000</span>
+        <button class="btn small" id="w_dl" onclick="downloadScript()"
+                style="border-color:transparent;background:none;color:var(--muted);font-weight:500">Tải về</button>
+        <button class="btn small" id="w_kc" onclick="kiemChung()"
+                style="border-color:transparent;background:none;color:var(--muted);font-weight:500">Kiểm chứng cả bài</button>
+      </div>
+      <details class="wset" id="w_setup" open>
+        <summary>Thiết lập · bấm để mở hoặc thu — giọng, model, độ dài, outline</summary>
+        <div class="wset-body">
       <div class="lib-note" id="w_libnote"></div>
       <div id="w_hoso_canhbao" hidden style="margin:6px 0;padding:8px 10px;border-radius:8px;
            border:1px solid #b1483f;background:rgba(177,72,63,.08);font-size:13px"></div>
       <div class="row">
         <label>Tác giả (thư viện)</label>
-        <select id="w_author" onchange="suggestScript();authorMeta()"></select>
+        <select id="w_author" onchange="suggestScript();authorMeta();veThanhTomTat();napBaiDangCo()"></select>
         <button class="btn small" onclick="loadLibrary()">Làm mới</button>
       </div>
       <div class="row">
         <label>LLM viết</label>
-        <select id="w_llm"></select><span></span>
+        <select id="w_llm" onchange="veThanhTomTat()"></select><span></span>
       </div>
       <div class="row">
         <label>Độ dài (ký tự)</label>
-        <input type="number" id="w_chars" value="18000" style="max-width:140px"><span></span>
+        <input type="number" id="w_chars" value="18000" style="max-width:140px"
+               oninput="veThanhTomTat()"><span></span>
       </div>
       <div class="row">
         <label>Lưu kịch bản (.md)</label>
@@ -241,31 +287,23 @@
       </div>
       <div class="row" style="grid-template-columns:150px minmax(0,1fr);align-items:start">
         <label style="padding-top:8px">Outline</label>
-        <textarea id="w_outline" placeholder="Title: ...
+        <textarea id="w_outline" oninput="napDanhSachTuOutline()" placeholder="Title: ...
 Hook: ...
 Chapter 1: ...
 Chapter 2: ...
 End: ..."></textarea>
       </div>
-      <div class="bar">
-        <button class="btn primary" id="w_write" onclick="startWrite(false)">▶ WRITE</button>
-        <button class="btn" id="w_cont" onclick="startWrite(true)">↻ Tiếp tục</button>
-        <button class="btn" id="w_stop" onclick="cancelWrite()" hidden>■ Dừng &amp; huỷ</button>
-        <button class="btn" id="w_open" onclick="openPath(document.getElementById('w_script').value)" disabled>Mở script.md</button>
-        <button class="btn" id="w_dl" onclick="downloadScript()" disabled>⬇ Tải về máy</button>
-        <button class="btn" id="w_kc" onclick="kiemChung()">🔍 Kiểm chứng kịch bản</button>
-      </div>
+        <div class="bar" style="margin-top:12px">
+          <button class="btn primary" id="w_nap" onclick="napDuLieu()">Nạp dữ liệu</button>
+          <span class="note" id="w_ghichu" style="margin:0">Chọn giọng và outline rồi bấm để sang khối viết.</span>
+        </div>
+        </div>
+      </details>
       <div class="status" id="w_status"></div>
       <div class="progress"><i id="w_prog"></i></div>
       <div class="pills" id="w_pills"></div>
 
       <!-- ===== VIET TUNG CHUONG (23/08) ===== -->
-      <div class="wmode" id="w_mode">
-        <label><input type="radio" name="wmode" value="duyet" checked onchange="doiCheDo()">
-          Viết và duyệt <small>· dừng sau mỗi chương</small></label>
-        <label><input type="radio" name="wmode" value="full" onchange="doiCheDo()">
-          Viết full <small>· chạy một mạch</small></label>
-      </div>
       <div class="wdesk" id="w_desk">
         <div class="wsec" id="w_sections"></div>
         <div class="wwork">
@@ -273,8 +311,15 @@ End: ..."></textarea>
             <b id="w_ten" style="font-size:15px">—</b>
             <span class="note" id="w_y" style="margin:0"></span>
           </div>
+          <div class="wvers" id="w_vers"></div>
           <div class="wchips" id="w_chips"></div>
-          <div class="wtxt" id="w_than">Chưa có phần nào. Bấm WRITE để viết phần đầu tiên.</div>
+          <div class="wbrief" id="w_brief" hidden></div>
+          <div class="wtxt" id="w_than">Chưa nạp dữ liệu. Mở Thiết lập, chọn giọng và outline rồi bấm Nạp dữ liệu.</div>
+          <div class="bar" id="w_hanhdong" style="margin-top:12px" hidden>
+            <button class="btn primary" id="w_viet_chuong" onclick="vietChuongNay()">Viết chương này</button>
+            <button class="btn" id="w_viet_het" onclick="vietHet()">Viết hết các chương còn lại</button>
+            <button class="btn" id="w_stop" onclick="cancelWrite()" hidden>Dừng và huỷ</button>
+          </div>
           <div class="wduyet" id="w_duyetbox" hidden>
             <p class="q">Phần này dùng được chưa?</p>
             <textarea id="w_gopy" placeholder="Muốn sửa gì thì viết vào đây. Ví dụ: đoạn giữa còn khô, thêm một chi tiết cụ thể."></textarea>
@@ -305,7 +350,8 @@ End: ..."></textarea>
           <div id="kc_hits" style="max-height:240px;overflow:auto;margin-top:6px"></div>
         </details>
       </div>
-      <div class="logwrap"><div class="eyebrow">Log</div><div class="log" id="w_log"></div></div>
+      <details class="wlog"><summary>Log <span class="note" id="w_logdem"></span></summary>
+        <div class="log" id="w_log"></div></details>
       <div class="hint">Bị ngắt giữa chừng (hết token/mất mạng)? Bấm <b>↻ Tiếp tục</b> để viết tiếp từ chương dở, không phải làm lại từ đầu.</div>
     </section>
   </div>
@@ -326,7 +372,7 @@ function showTab(n){
     $('t'+i).setAttribute('aria-selected', i===n);
     $('p'+i).hidden = i!==n;
   }
-  if(n===2){ loadLibrary(); loadOutlines(); }
+  if(n===2){ loadLibrary(); loadOutlines(); setTimeout(veThanhTomTat, 400); }
 }
 
 // ---------- Providers ----------
@@ -541,11 +587,13 @@ async function loadOutlineFromRun(){
   const d = await api('/api/outline-load', {path:p});
   // Độ dài user đặt trên board (hệ nguyên liệu) theo outline về Writer — 2 nơi không lệch.
   const tc = parseInt($('w_outsrc').selectedOptions[0]?.dataset.chars||'0');
-  if(tc>0){ $('w_chars').value = tc; logLine('w_log', `Độ dài lấy từ board: ${tc.toLocaleString('vi-VN')} ký tự.`); }
+  if(tc>0){ $('w_chars').value = tc; veThanhTomTat();
+            logLine('w_log', `Độ dài lấy từ board: ${tc.toLocaleString('vi-VN')} ký tự.`); }
   if(d.content){
     $('w_outline').value = d.content;
     logLine('w_log','Đã nạp outline từ board Outline.');
     outlineCheck();                       // Tầng 1: báo ngân sách ý trước khi tốn token
+    napDanhSachTuOutline();               // gan value bang JS KHONG kich hoat oninput
   }
   else logLine('w_log','Không đọc được outline từ run đã chọn.');
 }
@@ -572,6 +620,7 @@ async function startWrite(resume){
   if(resume){ const c = await api('/api/checkpoint', {script, outline}); done = c.done||[]; }
   renderPills(outline, done);
   W_PHAN = parseHeadings(outline); $('w_script').value = script;
+  $('w_setup').open = false;                 // thiet lap xong thi thu lai, nhuong cho cho ban viet
   await napBan(); veDanhSach();
   if(cheDo()==='duyet'){                       // viet DUNG phan dau tien chua co
     const ke = phanKeTiep();
@@ -589,10 +638,105 @@ async function startWrite(resume){
 // Tai dung parseHeadings / api / poll / logLine san co. Khong them route moi:
 // noi dung tung phan doc tu /api/download roi tach theo dong "## ".
 let W_PHAN = [], W_DANG = null, W_BAN = {};
+let W_BRIEF = {};       // {heading: brief tu outline} — cho nguoi doc lan cuoi truoc khi viet
+let W_BAN_CU = {};      // {heading: [ban cu...]} — giu khi viet lai, nguoi chon ban ung
+let W_XEM_BAN = null;   // null = ban moi nhat
 
-function cheDo(){ const r=document.querySelector('input[name=wmode]:checked'); return r?r.value:'duyet'; }
-function doiCheDo(){ $('w_desk').hidden = cheDo()!=='duyet'; }
+function tachBriefTuOutline(outline){
+  // Brief cua tung phan = phan van nam GIUA hai moc tieu de trong outline.
+  // Nguoi viet doc lai truoc khi quyet dinh viet — day la lan doc cuoi.
+  const re = /(?:^|\n)\s*#*\s*(hook|chapter\s*\d+|end|ending|outro|conclusion|intro(?:duction)?)\b[^\n]*/ig;
+  const moc = [...outline.matchAll(re)];
+  const ra = {};
+  moc.forEach((m, k) => {
+    let l = m[1].toLowerCase().replace(/\s+/g, ' ');
+    const ten = l === 'hook' ? 'Hook'
+      : l.startsWith('chapter') ? l.replace(/\b\w/g, c => c.toUpperCase())
+      : (['end','ending','outro','conclusion'].includes(l) ? 'End' : 'Intro');
+    const dau = m.index + m[0].length;
+    const cuoi = (k + 1 < moc.length) ? moc[k + 1].index : outline.length;
+    // Than = phan sau dong tieu de. Chi dung phan duoi cua chinh dong tieu de khi
+    // than RONG — neu khong se LAP, vi nhieu outline dat cau dau cua brief ngay
+    // tren dong tieu de (bat 23/08: "El Alto's history..." hien hai lan).
+    const than = outline.slice(dau, cuoi).trim();
+    const duoi = m[0].split(/[:—–-]/).slice(1).join(':').trim();
+    ra[ten] = than || duoi;
+  });
+  return ra;
+}
+
+function napDuLieu(){
+  // Thiet lap xong -> nhuong cho han cho khoi viet.
+  const a = selectedAuthor();
+  const o = $('w_outline').value.trim();
+  if(!a){ $('w_ghichu').textContent = 'Chưa chọn giọng tác giả.'; return; }
+  if(!o){ $('w_ghichu').textContent = 'Chưa có outline.'; return; }
+  W_PHAN = parseHeadings(o);
+  W_BRIEF = tachBriefTuOutline(o);
+  if(!W_PHAN.length){ $('w_ghichu').textContent = 'Outline chưa có mốc Hook / Chapter N / End.'; return; }
+  $('w_setup').open = false;
+  veDanhSach();
+  moPhan(W_DANG && W_BAN[W_DANG] ? W_DANG : W_PHAN[0]);
+}
+
+async function vietChuongNay(){
+  if(!W_DANG) return;
+  if(W_BAN[W_DANG]){ (W_BAN_CU[W_DANG] = W_BAN_CU[W_DANG] || []).push(W_BAN[W_DANG]); }
+  W_XEM_BAN = null;
+  await vietPhan(W_DANG, ($('w_gopy').value || '').trim());
+}
+
+async function vietHet(){
+  // Viet mot mach cac phan con thieu — duong cu, khong dung chi_phan.
+  await startWrite(Object.keys(W_BAN).length > 0);
+}
+
+
+function cheDo(){ return 'duyet'; }
+function doiCheDo(){ veThanhTomTat(); }
 function themGopY(t){ const o=$('w_gopy'); o.value = (o.value.trim()? o.value.trim()+'. ':'')+t; o.focus(); }
+
+function thuThietLapNeuDuDieuKien(){
+  // Mockup vong 4: ban viet chiem phan chinh man hinh. Thiet lap la viec lam MOT
+  // LAN — co du tac gia va outline roi thi thu lai, khong chiem cho suot buoi.
+  const co = selectedAuthor() && $('w_outline').value.trim();
+  if(co && $('w_setup').open) $('w_setup').open = false;
+}
+
+async function napBaiDangCo(){
+  // Bai da viet nam san tren dia — mo app len phai thay ngay, khong bat bam WRITE.
+  await new Promise(r=>setTimeout(r, 250));      // doi suggestScript() dien duong dan
+  await napBan();
+  if(Object.keys(W_BAN).length){
+    if(!W_PHAN.length) W_PHAN = Object.keys(W_BAN);
+    veDanhSach();
+    await moPhan(W_DANG || W_PHAN.find(h=>W_BAN[h]) || W_PHAN[0]);
+  }
+}
+
+function napDanhSachTuOutline(){
+  // Danh sach phan hien NGAY khi dan outline — khong doi den luc bam WRITE.
+  const o = $('w_outline').value.trim();
+  W_PHAN = o ? parseHeadings(o) : [];
+  W_BRIEF = o ? tachBriefTuOutline(o) : {};   // thieu dong nay thi dan outline xong
+                                              // sang chuong khong thay outline chuong
+  veDanhSach(); veThanhTomTat(); thuThietLapNeuDuDieuKien();
+  if(W_DANG) moPhan(W_DANG);
+}
+
+function veThanhTomTat(){
+  const a = selectedAuthor();
+  $('wt_ten').textContent = a ? (a.name || a.code) : 'Chưa chọn tác giả';
+  const llm = $('w_llm').options[$('w_llm').selectedIndex];
+  $('wt_meta').innerHTML = [
+    a ? `giọng <b>${esc(a.code||'')}</b>` : '',
+    llm ? `model <b>${esc((llm.textContent||'').split('—').pop().trim())}</b>` : '',
+    W_PHAN.length ? `outline <b>${W_PHAN.length} phần</b>` : '',
+  ].filter(Boolean).join(' ');
+  const tong = Object.values(W_BAN).reduce((n,t)=>n+(t||'').length, 0);
+  const muc = parseInt($('w_chars').value)||18000;
+  $('wt_kd').innerHTML = `đã viết <b>${tong.toLocaleString('vi-VN')}</b> / ${muc.toLocaleString('vi-VN')}`;
+}
 
 function veDanhSach(){
   $('w_sections').innerHTML = W_PHAN.map(h=>{
@@ -601,6 +745,7 @@ function veDanhSach(){
     return `<div class="it ${h===W_DANG?'on':''}" onclick="moPhan('${h.replace(/'/g,"")}')">
       <i class="wdot ${st}"></i><span class="nm">${esc(h)}</span><span class="ky">${ky}</span></div>`;
   }).join('');
+  veThanhTomTat();
 }
 
 async function napBan(){
@@ -609,23 +754,67 @@ async function napBan(){
   if(!r.ok) return;
   const md = await r.text();
   W_BAN = {};
-  const re = /^##\s+(.+?)\s*$/gm; let m, moc=[];
-  while((m=re.exec(md))) moc.push([m[1].trim(), m.index+m[0].length]);
-  moc.forEach(([h,i],k)=>{ W_BAN[h] = md.slice(i, k+1<moc.length? moc[k+1][1]-moc[k+1][0].length-3 : md.length).trim(); });
+  // Cat theo moc '## ': than phan chay TU sau dong tieu de DEN dau dong tieu de ke.
+  // (Ban truoc tu tinh chi so nen lot lai cum '##' o cuoi moi phan.)
+  const moc = [...md.matchAll(/^##[ \t]+(.+?)[ \t]*$/gm)];
+  moc.forEach((m, k) => {
+    const dau = m.index + m[0].length;
+    const cuoi = (k + 1 < moc.length) ? moc[k + 1].index : md.length;
+    W_BAN[m[1].trim()] = md.slice(dau, cuoi).trim();
+  });
+}
+
+function veDayChipBan(h){
+  const ds = (W_BAN_CU[h]||[]);
+  if(!ds.length){ $('w_vers').innerHTML=''; return; }
+  const chip = (i, nhan, on)=>`<span class="vc ${on?'on':''}" onclick="xemBan('${h.replace(/'/g,'')}',${i})">${nhan}</span>`;
+  $('w_vers').innerHTML = '<span class="note" style="margin:0 2px 0 0">Bản:</span>'
+    + chip(-1, 'Bản '+(ds.length+1)+' · mới nhất', W_XEM_BAN==null)
+    + ds.map((_,i)=>chip(i, 'Bản '+(i+1), W_XEM_BAN===i)).reverse().join('');
+}
+function xemBan(h, i){ W_XEM_BAN = (i<0?null:i); moPhan(h); }
+
+function danhDau(t, hits){
+  // danh dau cau mang dong tac may — dung chinh cum ma may bat duoc
+  const esc2 = x=>x.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+  let ra = esc2(t);
+  const cum = [...new Set((hits||[]).map(x=>x.cum).filter(x=>x && x.length>3))];
+  for(const c of cum){
+    const re = new RegExp(esc2(c).replace(/[.*+?^${}()|[\]\\]/g,'\\$&'), 'g');
+    ra = ra.replace(re, m=>`<mark>${m}</mark>`);
+  }
+  // Em-dash cung tinh vao chi so "dong tac may" nhung KHONG nam trong hits (deai.py
+  // dem rieng). Khong danh dau thi o chi so bao 16/1000 ma trong bai khong thay cho
+  // nao — nguoi viet khong sua duoc cai minh khong nhin thay. Van NGUOI do duoc
+  // 0,00 em-dash/1000 tu, nen moi dau la mot cho dang xem lai.
+  ra = ra.split('—').join('<mark>—</mark>');
+  return ra.replace(/\n/g, '<br>');
 }
 
 async function moPhan(h){
-  W_DANG = h; veDanhSach();
-  const t = W_BAN[h] || '';
+  W_DANG = h; veDanhSach(); veDayChipBan(h);
+  const ds = (W_BAN_CU[h]||[]);
+  const t = (W_XEM_BAN!=null && ds[W_XEM_BAN]!=null) ? ds[W_XEM_BAN] : (W_BAN[h] || '');
   $('w_ten').textContent = h;
-  $('w_than').textContent = t || 'Phần này chưa viết.';
+  const br = W_BRIEF[h] || '';
+  $('w_brief').hidden = !br;
+  if(br) $('w_brief').innerHTML = '<b>Outline của phần này</b>' + esc(br);
+  $('w_than').textContent = t || (br ? 'Phần này chưa viết. Đọc outline ở trên rồi bấm Viết chương này.'
+                                     : 'Phần này chưa viết.');
   $('w_duyetbox').hidden = !t;
+  $('w_hanhdong').hidden = !W_PHAN.length;
+  const con = W_PHAN.filter(x=>!W_BAN[x]).length;
+  $('w_viet_chuong').textContent = t ? 'Viết lại chương này' : 'Viết chương này';
+  $('w_viet_het').textContent = con ? `Viết hết ${con} phần còn lại` : 'Đã viết đủ các phần';
+  $('w_viet_het').disabled = !con;
   $('w_chips').innerHTML = '';
   $('w_y').textContent = t ? t.length.toLocaleString('vi-VN')+' ký tự' : '';
   if(!t) return;
+  napNganSachY(h);
   const a = selectedAuthor(); if(!a) return;
   const r = await api('/api/kiem-chung', {code:a.code, text:t});
   if(r.error) return;
+  $('w_than').innerHTML = danhDau(t, (r.dau_vet_may||{}).hits);
   const n = r.nhip && r.nhip.chi_so || {}, c = r.nhip && r.nhip.chuan || null;
   const dt = r.dau_vet_may || {};
   const chip = (l,v,vs,ok)=>`<span class="wch ${ok?'ok':'warn'}"><span class="l">${l}</span><b>${v}</b><span class="vs">${vs}</span></span>`;
@@ -635,6 +824,29 @@ async function moPhan(h){
     chip('câu cụt', (n.ti_le_cut ?? '—')+'%', c?('tác giả '+c.ti_le_cut+'%'):'', !c || (n.ti_le_cut||0) <= c.ti_le_cut*1.5),
     chip('động tác máy', dt.dong_tac_tren_1000_tu ?? '—', 'trên 1.000 từ', (dt.dong_tac_tren_1000_tu||0) <= 4),
   ].join('');
+}
+
+async function napNganSachY(h){
+  // Tai dung /api/outline-check (Python do, 0 token) de biet chuong nay khai trien
+  // day du may y trong so may y cua brief — con so ky tu tro khong noi duoc dieu do.
+  const o = $('w_outline').value.trim();
+  if(!o){
+    // Khong co outline thi KHONG doan ngan sach y. Bai nap tu dia khong mang theo
+    // outline (hai duong doc file deu chi cho .md/.jsonl va cac run cua board —
+    // cua an ninh, khong noi ra chi de mot dong hien thi phu chay duoc).
+    $('w_y').textContent = (W_BAN[h]||'').length.toLocaleString('vi-VN')
+      + ' ký tự · nạp outline để biết chương này khai triển mấy ý';
+    return;
+  }
+  try{
+    const r = await api('/api/outline-check', {outline:o, chars:parseInt($('w_chars').value)||18000});
+    // hop dong that: {chapters:[{heading, full, est_ideas, mention, alloc}]}
+    const d = (r.chapters||[]).find(x=>(x.heading||'').toLowerCase()===h.toLowerCase());
+    const ky = (W_BAN[h]||'').length.toLocaleString('vi-VN')+' ký tự';
+    if(d && d.full!=null && d.est_ideas!=null)
+      $('w_y').textContent = `${ky} · ${d.full} trong ${d.est_ideas} ý khai triển đầy đủ`
+        + (d.mention ? `, ${d.mention} ý nhắc lướt` : '');
+  }catch(e){}
 }
 
 function phanKeTiep(){
@@ -662,6 +874,9 @@ async function duyetPhan(){
 async function vietLaiPhan(){
   const g = $('w_gopy').value.trim();
   if(!W_DANG){ return; }
+  // GIU ban cu truoc khi viet de lai — nguoi so hai ban roi chon (mockup vong 4)
+  if(W_BAN[W_DANG]){ (W_BAN_CU[W_DANG] = W_BAN_CU[W_DANG] || []).push(W_BAN[W_DANG]); }
+  W_XEM_BAN = null;
   await vietPhan(W_DANG, g);
 }
 
@@ -669,7 +884,7 @@ async function vietLaiPhan(){
 let POLL=null;
 function setRunning(tab, on){
   if(tab==='ex'){ $('ex_start').disabled=on; $('ex_open').disabled=on; }
-  else { $('w_write').disabled=on; $('w_cont').disabled=on; $('w_open').disabled=on; $('w_dl').disabled=on;
+  else { for(const id of ['w_nap','w_viet_chuong','w_viet_het','w_dl']){ const e=$(id); if(e) e.disabled=on; }
     $('w_stop').hidden = !on;   // nút Dừng chỉ hiện khi đang viết
     $('w_stop').disabled = false; }
 }
@@ -678,6 +893,11 @@ async function cancelWrite(){
   logLine('w_log','■ Đang dừng… (giữ lại các chương đã viết)');
   await api('/api/cancel', {});
 }
+function capNhatDemLog(){
+  const n = ($('w_log').textContent.match(/\n/g)||[]).length;
+  const d = $('w_logdem'); if(d) d.textContent = n ? `· ${n} dòng` : '';
+}
+
 function logLine(id, s){ const el=$(id); el.textContent += (el.textContent?'\n':'')+s; el.scrollTop=el.scrollHeight; }
 function poll(tab){
   clearInterval(POLL);
