@@ -59,14 +59,45 @@ def _sao_cay(nguon: Path, dich: Path) -> None:
         shutil.copy2(nguon, dich)
 
 
+def giu_snapshot_moi_nhat(thu_muc: Path, giu: int, xoa_qua_api: str = "") -> list[str]:
+    """Dọn snapshot cũ, CHỈ GIỮ `giu` bản mới nhất. Trả tên các bản đã xóa.
+
+    Snapshot Qdrant là bản ĐẦY ĐỦ (không tăng dần): mỗi lần chụp thêm nguyên một
+    bản cỡ cả collection. Không dọn thì mỗi ngày +1 bản vĩnh viễn — 23/08/2026 đã
+    thành 119 bản = 118GB trong khi kho thật chỉ 1,1GB. Có `xoa_qua_api` (URL
+    Qdrant) thì xóa qua API để Qdrant cập nhật danh sách của nó, lỗi thì xóa file.
+    """
+    if giu < 1 or not thu_muc.is_dir():
+        return []
+    cac = sorted(thu_muc.glob("*.snapshot"), key=lambda f: f.stat().st_mtime, reverse=True)
+    da_xoa = []
+    for f in cac[giu:]:
+        xong = False
+        if xoa_qua_api:
+            try:
+                httpx.delete(f"{xoa_qua_api}/snapshots/{f.name}", timeout=60)
+                xong = not f.exists()
+            except Exception:  # noqa: BLE001 — API hỏng thì vẫn dọn được bằng file
+                xong = False
+        if not xong:
+            f.unlink(missing_ok=True)
+        f.with_name(f.name + ".checksum").unlink(missing_ok=True)
+        da_xoa.append(f.name)
+    return da_xoa
+
+
 def _sao_qdrant(store: dict, dich: Path) -> str:
-    """Trigger snapshot qua API rồi copy file mới nhất từ snapshots_path local."""
+    """Trigger snapshot qua API, copy sang đích, RỒI DỌN bản cũ ở cả hai nơi.
+    Số bản giữ: env QDRANT_GIU_SNAPSHOT (mặc định 7) — xem giu_snapshot_moi_nhat."""
     url = store.get("url", "http://127.0.0.1:6343")
     r = httpx.post(f"{url}/snapshots", timeout=120)
     r.raise_for_status()
     ten = r.json()["result"]["name"]
     nguon = Path(store["duong"]) / ten
     _sao_cay(nguon, dich / ten)
+    giu = int(os.environ.get("QDRANT_GIU_SNAPSHOT", "7"))
+    giu_snapshot_moi_nhat(Path(store["duong"]), giu, xoa_qua_api=url)
+    giu_snapshot_moi_nhat(dich, giu)        # thư mục backup cũng phình y hệt
     return ten
 
 

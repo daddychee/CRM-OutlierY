@@ -46,7 +46,7 @@
 
 | Chủ | Store | Đường | Mức quý | Backup |
 |---|---|---|---|---|
-| nen | iam.db / ket.db / ket.key / logs / qdrant | data\nen, data\logs, data\qdrant | 🥇 | snapshot/copy/api |
+| nen | iam.db / ket.db / ket.key / logs / qdrant | data\nen, data\logs, data\qdrant | 🥇 | snapshot/copy/api (snapshot Qdrant GIỮ 7 BẢN mới nhất — QDRANT_GIU_SNAPSHOT; 23/08/2026 từng phình 119 bản = 118GB vì không ai dọn) |
 | nen | sổ đồng bộ tài khoản NAS (nas-dong-bo.json) | data\nen\nas-dong-bo.json | 🥈 | copy |
 | ai-agent | kho-tai-lieu (file gốc 8 ngăn + catalog + sổ vận hành) | data\ai-agent\kho\kho-tai-lieu | 🥇 | copy |
 | ai-agent | lịch sử hội thoại per-user | data\ai-agent\db\lich-su | 🥇 | copy |

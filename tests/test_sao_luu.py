@@ -94,3 +94,25 @@ def test_qdrant_snapshot_tich_hop(tmp_path):
     kq = sao_luu.sao_luu_store(store, tmp_path / "backup")
     assert kq["trang_thai"] == "ok"
     assert (tmp_path / "backup" / "nen" / "qdrant" / kq["snapshot"]).exists()
+
+
+def test_giu_snapshot_moi_nhat_don_ban_cu(tmp_path):
+    """Snapshot Qdrant là bản ĐẦY ĐỦ, không dọn thì phình mãi (23/08/2026: 119 bản
+    = 118GB trong khi kho thật 1,1GB). Giữ N bản mới nhất, xóa kèm .checksum."""
+    import time
+    from nen.common.sao_luu import giu_snapshot_moi_nhat
+    for i in range(6):
+        f = tmp_path / f"full-snapshot-{i}.snapshot"
+        f.write_bytes(b"x")
+        f.with_name(f.name + ".checksum").write_text("c", encoding="utf-8")
+        time.sleep(0.01)                      # mtime tăng dần → bản 5 là mới nhất
+    da_xoa = giu_snapshot_moi_nhat(tmp_path, 2)
+    con = sorted(f.name for f in tmp_path.glob("*.snapshot"))
+    assert con == ["full-snapshot-4.snapshot", "full-snapshot-5.snapshot"]
+    assert len(da_xoa) == 4
+    assert sorted(f.name for f in tmp_path.glob("*.checksum")) == [
+        "full-snapshot-4.snapshot.checksum", "full-snapshot-5.snapshot.checksum"]
+    # gọi lại khi đã đủ ít → không xóa thêm gì; giu=0 là lệnh vô nghĩa, phải trơ
+    assert giu_snapshot_moi_nhat(tmp_path, 2) == []
+    assert giu_snapshot_moi_nhat(tmp_path, 0) == []
+    assert len(list(tmp_path.glob("*.snapshot"))) == 2
