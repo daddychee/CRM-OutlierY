@@ -110,6 +110,7 @@
      muc do · so tu · do gian cau · muc do giong tac gia. */
   /* Thanh chon tac gia — viec DAU TIEN nguoi dung lam khi mo trang (Owner 24/08). */
   .hschon{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;
+    flex-wrap:wrap;
     background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:12px 14px}
   .hschon label{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
   .hschon select{font-size:15px;padding:7px 10px}
@@ -250,8 +251,12 @@
       <div class="hschon">
         <label for="hs_chon">Giọng tác giả</label>
         <select id="hs_chon" onchange="xemHoSo(this.value)"></select>
-        <button class="btn small" onclick="napDanhSachHoSo()">Làm mới</button>
+        <span style="display:flex;gap:6px">
+          <button class="btn small" id="hs_bosung" onclick="chonFileBoSung()">+ Bổ sung tác phẩm</button>
+          <button class="btn small" onclick="napDanhSachHoSo()">Làm mới</button>
+        </span>
       </div>
+      <input type="file" id="hs_files" multiple accept=".txt,.md" hidden>
       <div class="wave" style="margin:8px 0 12px">
         <b id="hs_ten">Chưa có hồ sơ nào được chọn</b>
         <span class="meta" id="hs_meta"></span>
@@ -478,9 +483,11 @@ function fillProviders(){
 // extract xong VA khi nguoi dung chon lai mot ho so cu.
 const HS_MUC = {du:['du','Đủ dữ liệu'], mong:['mong','Mỏng'], chua_do_duoc:['chua','Chưa đo được']};
 
+let LIB_HS = [];      // ho so kem duong corpus/output — dung khi bo sung tac pham
 function napDanhSachHoSo(chon){
   fetch('/api/library').then(r=>r.json()).then(d=>{
     const sel=$('hs_chon'); const ds=d.authors||[];
+    LIB_HS = ds;
     sel.innerHTML = ds.length ? ds.map(a=>`<option value="${a.code}">${a.code} · ${a.name}</option>`).join('')
                               : '<option value="">(chưa có hồ sơ nào)</option>';
     if(chon && ds.some(a=>a.code===chon)) sel.value=chon;
@@ -489,6 +496,44 @@ function napDanhSachHoSo(chon){
 }
 
 function so(x, n){ return (x===null||x===undefined) ? '—' : Number(x).toFixed(n===undefined?1:n); }
+
+// ---------- Bo sung tac pham cho giong da co (24/08) ----------
+// Tai dung TRON BO duong san co: /api/upload-corpus (them tham so vao_ma) roi
+// guiBuild() — chinh luong Extractor, nen log, % tien do va viec tu nap lai so do
+// sau khi xong deu chay nhu cu, khong co man hinh rieng nao ca.
+function chonFileBoSung(){
+  const ma = $('hs_chon').value;
+  if(!ma){ logLine('ex_log','Chưa chọn giọng nào để bổ sung.'); return; }
+  $('hs_files').click();
+}
+
+document.getElementById('hs_files').addEventListener('change', async function(){
+  const ma = $('hs_chon').value;
+  const files = [...this.files];
+  this.value = '';
+  if(!ma || !files.length) return;
+
+  logLine('ex_log', `Đang nạp ${files.length} tác phẩm vào hồ sơ ${ma}…`);
+  const payload = [];
+  for(const f of files) payload.push({name: f.name, text: await f.text()});
+  const d = await api('/api/upload-corpus', {vao_ma: ma, files: payload});
+  if(!d.dir){ logLine('ex_log','LỖI nạp: '+(d.error||'?')); return; }
+  logLine('ex_log', `Đã thêm ${d.saved} tệp vào ${d.dir}`);
+
+  const det = await api('/api/detect-corpus', {author_dir: d.dir});
+  showTranscriptWarnings(det);
+
+  // Chay lai trich xuat cho chinh ho so nay — so do va mo ta phai do lai tren corpus
+  // day hon, giu nguyen ten tac gia va thu muc ket qua.
+  const a = (LIB_HS.find(x=>x.code===ma) || {});
+  $('ex_name').value = a.name || '';
+  $('ex_out').value = a.output || '';
+  $('ex_corpus').innerHTML = `<option>${esc(d.dir)}</option>`;
+  $('ex_tacpham').textContent = `${d.saved} tệp vừa thêm · đang đo lại giọng ${ma}`;
+  logLine('ex_log','Đang đo lại giọng trên corpus đầy hơn…');
+  setRunning('ex', true);
+  await guiBuild(d.dir, a.name || '', a.output || '', false);
+});
 
 function xemHoSo(ma){
   if(!ma) return;
@@ -551,7 +596,9 @@ function xemHoSo(ma){
     $('hs_canh').hidden = !c.length;
     $('hs_canh').className = 'hsbao' + (c.length?' canh':'');
     if(c.length) $('hs_canh').innerHTML = '<b>Cần biết trước khi dùng hồ sơ này</b><ul>'
-      + c.map(x=>`<li>${x}</li>`).join('') + '</ul>';
+      + c.map(x=>`<li>${x}</li>`).join('') + '</ul>'
+      + '<div class="bar" style="margin-top:10px"><button class="btn small"'
+      + ' onclick="chonFileBoSung()">+ Bổ sung tác phẩm cho giọng này</button></div>';
   }).catch(e=>{ $('hs_ten').textContent='Không đọc được hồ sơ: '+e; });
 }
 

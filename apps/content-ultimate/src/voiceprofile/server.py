@@ -594,15 +594,40 @@ def _save_upload(b: dict) -> dict:
     files = b.get("files") or []
     if not files:
         return {"error": "khong co file nao"}
-    name = re.sub(r"[^\w\s-]", "", str(b.get("name") or "")).strip() or "corpus"
-    dest = _REPO_ROOT / "uploads" / name
+
+    # BO SUNG TAC PHAM cho mot giong DA CO (24/08): client gui MA ho so, server tu tra
+    # thu vien lay thu muc corpus that — khong nhan duong dan tu client (cung luat voi
+    # /api/kiem-chung). Phai tra thu vien chu khong doan `uploads/<ten>`: A001 co corpus
+    # o `authors/Carl Sagan/Cosmos`, doan sai thi file bo sung roi vao thu muc khac va
+    # ho so khong he day them mot chu nao.
+    ma = str(b.get("vao_ma") or "").strip()
+    if ma:
+        a = next((x for x in library.list_authors() if x["code"] == ma), None)
+        if not a or not a.get("corpus"):
+            return {"error": f"khong tim thay ho so {ma!r} trong thu vien"}
+        dest = Path(a["corpus"])
+        if not dest.is_dir():
+            return {"error": f"thu muc corpus cua {ma} khong con: {dest}"}
+    else:
+        name = re.sub(r"[^\w\s-]", "", str(b.get("name") or "")).strip() or "corpus"
+        dest = _REPO_ROOT / "uploads" / name
     dest.mkdir(parents=True, exist_ok=True)
+
     saved = 0
     for f in files:
         fname = Path(str(f.get("name", ""))).name
         if not fname.lower().endswith((".txt", ".md")):
             continue
-        (dest / fname).write_text(str(f.get("text", "")), encoding="utf-8")
+        p = dest / fname
+        # Bo sung KHONG duoc de len ban cu: trung ten thi them hau to, khong ghi de
+        # (cung luat voi kho tai lieu ben ai-agent).
+        if ma and p.exists():
+            goc, duoi = p.stem, p.suffix
+            i = 2
+            while (dest / f"{goc}-{i}{duoi}").exists():
+                i += 1
+            p = dest / f"{goc}-{i}{duoi}"
+        p.write_text(str(f.get("text", "")), encoding="utf-8")
         saved += 1
     if not saved:
         return {"error": "khong file nao la .txt/.md"}
