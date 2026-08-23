@@ -247,6 +247,55 @@ tr.clickable:hover td { background:var(--accent-soft) }
 .hx { color:var(--viz-down); cursor:pointer; font-weight:700; padding:0 4px }
 .htier { display:inline-block; font-size:11px; font-weight:700; border-radius:6px; padding:1px 8px }
 .htier.A { background:var(--viz-up); color:#fff } .htier.B { background:var(--line); color:var(--muted) }
+
+/* ================= TAB TRENDING (23/08/2026) — do THI TRUONG ngoai pool ======
+   Mau bon o: dung lai token co san cua app, khong dat mau moi. */
+:root{ --tr-thieu_cung:var(--accent); --tr-da_khai_thac:var(--good);
+       --tr-da_thu:var(--bad); --tr-bao_hoa:var(--muted); --tr-chua_du:var(--muted); }
+.tr-wrap{display:flex;flex-direction:column;gap:12px}
+.tr-top{display:flex;align-items:center;gap:13px;flex-wrap:wrap}
+.tr-pheu{display:flex;margin-left:auto}
+.tr-pheu div{padding:5px 13px;border:1px solid var(--line);border-right:0;background:var(--panel);
+  font-size:11.5px;color:var(--muted);display:flex;flex-direction:column;justify-content:center;min-width:92px}
+.tr-pheu div:first-child{border-radius:7px 0 0 7px}
+.tr-pheu div:last-child{border-right:1px solid var(--accent);border-color:var(--accent);
+  border-radius:0 7px 7px 0;background:var(--accent-soft)}
+.tr-pheu b{font-size:15px;color:var(--text);font-variant-numeric:tabular-nums}
+.tr-pheu div:last-child b{color:var(--accent)}
+.tr-h2{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:3px}
+.tr-sub{font-size:12px;color:var(--muted);margin:0 0 11px}
+.tr-bando{display:block}
+.tr-cham{cursor:pointer}
+.tr-sp{width:76px;height:20px;display:block}
+details.tr-nhom{border:1px solid var(--line);border-radius:9px;background:var(--panel);overflow:hidden}
+details.tr-nhom>summary{list-style:none;cursor:pointer;padding:11px 14px;display:flex;align-items:center;
+  gap:10px;font-size:12px;letter-spacing:.09em;font-weight:600}
+details.tr-nhom>summary::-webkit-details-marker{display:none}
+.tr-dot{width:9px;height:9px;border-radius:50%;flex:none}
+.tr-nhom.a .tr-dot{background:var(--tr-thieu_cung)} .tr-nhom.b .tr-dot{background:var(--tr-da_khai_thac)}
+.tr-nhom.c .tr-dot{background:var(--tr-da_thu)} .tr-nhom.d .tr-dot{background:var(--tr-bao_hoa)}
+.tr-nhom.e .tr-dot{background:var(--muted);opacity:.6}
+.tr-phu{font-weight:400;letter-spacing:0;color:var(--muted);font-size:12px;text-transform:none}
+.tr-dem{margin-left:auto;font-size:12px;color:var(--muted);border:1px solid var(--line);
+  border-radius:20px;padding:1px 10px}
+table.tr-bang{width:100%;border-collapse:collapse;font-size:12.5px}
+table.tr-bang thead th{text-align:left;font-weight:500;font-size:10.5px;letter-spacing:.09em;
+  text-transform:uppercase;color:var(--muted);padding:6px 10px;border-top:1px solid var(--line);
+  border-bottom:1px solid var(--line)}
+table.tr-bang tbody td{padding:6px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
+table.tr-bang tbody tr:last-child td{border-bottom:0}
+.tr-tk{width:26px} .tr-ten{font-weight:600;white-space:nowrap}
+.tr-n{font-variant-numeric:tabular-nums;white-space:nowrap}
+.tr-mota{font-weight:400;font-size:11px;color:var(--muted);white-space:normal;max-width:250px}
+.tr-vs{color:var(--muted);font-size:11.5px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tr-mo{margin-left:7px;font-size:10px;font-weight:600;letter-spacing:.06em;color:var(--accent);
+  border:1px solid var(--accent);border-radius:20px;padding:1px 7px;text-transform:uppercase}
+.tr-ngo{margin-left:7px;font-size:10.5px;font-weight:400;color:var(--bad);
+  border:1px dashed var(--bad);border-radius:5px;padding:0 6px}
+.tr-bai{margin:6px 0 0;padding-left:17px;font-size:12.5px}
+.tr-bai li{margin-bottom:4px}
+.tr-loai{margin:0;padding:10px 14px 12px 30px;font-size:11.5px;max-height:260px;overflow:auto}
+.tr-loai li{margin-bottom:3px}
 </style>
 </head>
 <body>

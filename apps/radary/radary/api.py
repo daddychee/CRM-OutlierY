@@ -1072,6 +1072,74 @@ def _soi_nen_nong(ws: int, cums: list[str], vung: dict | None):
             pass
 
 
+# ======================= TRENDING — do THI TRUONG tu nguon NGOAI pool =========
+# Phan vai: Trending tra loi "CO NEN LAM DE NAY KHONG"; Mapping tra loi "DOI THU
+# DANG LAM THE NAO". Ban giao giua hai tab la VIEC CUA NGUOI (Owner chot 23/08) —
+# khong co route nao chuyen du lieu sang Mapping.
+@app.get('/api/workspaces/{ws}/trending')
+def trending_xem(ws: int, request: Request):
+    """Ket qua luot quet gan nhat + trang thai + so ghi da-chon. 0 quota."""
+    from . import trending
+    with get_conn() as c:
+        u = auth.require_user(c, request)
+        w = auth.ws_for_user(c, ws, u['id'])
+        vung, _ = _vung_cua_ws(w)
+        return {'ket_qua': trending.ket_qua(c, ws), 'trang_thai': trending.trang_thai(c, ws),
+                'da_chon': trending.da_chon(c, ws), 'market': w['market'],
+                'geo': (vung or {}).get('regionCode') or '',
+                'duoc_quet': auth.ROLE_RANK.get(w['member_role'], -1) >= auth.ROLE_RANK['leader']}
+
+
+@app.post('/api/workspaces/{ws}/trending/quet')
+def trending_quet(ws: int, request: Request):
+    """Chay nen: Trending Now -> tu dien pool -> xac minh loai -> doi chieu pool.
+    Chi leader+ (giong probe cum nong) vi buoc quet chay trinh duyet."""
+    from . import trending
+    with get_conn() as c:
+        u = auth.require_user(c, request)
+        w = auth.ws_for_user(c, ws, u['id'], min_role='leader')
+        vung, _ = _vung_cua_ws(w)
+        geo = (vung or {}).get('regionCode')
+        if not geo:
+            # Pool chua gan thi truong -> KHONG doan 'US' (su co 21/08: doan buc
+            # ra ca chuoi lech thi truong).
+            raise HTTPException(400, 'Pool chưa gắn thị trường — chưa biết quét vùng nào.')
+        if not trending.bat_dau(ws, geo):
+            raise HTTPException(409, 'Pool này đang có lượt quét chạy.')
+        return {'ok': True, 'geo': geo}
+
+
+@app.post('/api/workspaces/{ws}/trending/vi-sao')
+def trending_vi_sao(ws: int, body: dict, request: Request):
+    """Vi sao thuc the nay nong — GDELT (0 khoa, 0 dong). MOT ung vien mot lan:
+    GDELT chan nhip 1 loi goi/5 giay, tuyet doi khong quet ca bang qua duong nay."""
+    from . import trending
+    with get_conn() as c:
+        u = auth.require_user(c, request)
+        auth.ws_for_user(c, ws, u['id'])
+    cum = (body.get('cum') or '').strip()
+    if not cum:
+        raise HTTPException(400, 'Thiếu cụm.')
+    return trending.vi_sao_nong(cum)
+
+
+@app.post('/api/workspaces/{ws}/trending/chon')
+def trending_chon(ws: int, body: dict, request: Request):
+    """So ghi: ung vien nao NGUOI DA CHON lam. Ve nay khong tu suy duoc — phai co
+    nguoi tick, va sau vai thang no la thu duy nhat tra loi duoc "di som co thang
+    khong" bang du lieu nha (trending_methodology.md §10)."""
+    from . import trending
+    with get_conn() as c:
+        u = auth.require_user(c, request)
+        auth.ws_for_user(c, ws, u['id'], min_role='leader')
+        cum = (body.get('cum') or '').strip()
+        if not cum:
+            raise HTTPException(400, 'Thiếu cụm.')
+        return {'da_chon': trending.dat_chon(c, ws, cum, bool(body.get('chon')),
+                                             {'boi': body.get('boi'), 'o': body.get('o'),
+                                              'nguoi': u.get('email') or u.get('id')})}
+
+
 @app.get('/api/workspaces/{ws}/discovery/tu-khoa-nong')
 def tu_khoa_nong_api(ws: int, request: Request, nhiem_vu_nen: BackgroundTasks,
                      ngon_ngu: str = ''):

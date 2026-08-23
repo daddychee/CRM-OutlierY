@@ -1934,6 +1934,208 @@ function CotVaDuong({ lua }) {
   </div>`;
 }
 
+// ===================== TAB TRENDING — đo THỊ TRƯỜNG từ nguồn NGOÀI pool =====
+// Phân vai: Trending trả lời "CÓ NÊN LÀM ĐỀ NÀY KHÔNG"; Mapping trả lời "ĐỐI THỦ
+// ĐANG LÀM THẾ NÀO". Bàn giao giữa hai tab là VIỆC CỦA NGƯỜI — không có đường
+// truyền dữ liệu tự động (Owner chốt 23/08).
+const O_NHAN = {
+  thieu_cung: ['THIẾU CUNG', 'ít video · chạy tốt', 'a'],
+  da_khai_thac: ['ĐÃ KHAI THÁC', 'nhiều video · chạy tốt', 'b'],
+  da_thu: ['ĐÃ THỬ, KHÔNG ĂN', 'ít video · chạy kém', 'c'],
+  bao_hoa: ['BÃO HOÀ', 'nhiều video · chạy kém', 'd'],
+  chua_du: ['CHƯA ĐỦ DẤU VẾT', 'dưới 5 video', 'e'],
+};
+const O_THU_TU = ['thieu_cung', 'da_khai_thac', 'da_thu', 'bao_hoa', 'chua_du'];
+
+// Bản đồ CUNG × HIỆU SUẤT. Đám mây mờ = TOÀN BỘ thực thể pool đang làm — đây là
+// CĂN CỨ của hai đường ngưỡng, để người đọc thấy ngưỡng đến từ đâu chứ không phải
+// tin lời máy (luật A3 / Nguyên tắc 5).
+function BanDo({ kq, chon, onChon }) {
+  const may = kq.dam_may || [], uv = kq.ung_vien || [], ng = kq.nguong || {};
+  if (!may.length || !ng.du_mau) return null;
+  const W = 980, H = 400, L = 56, R = 16, T = 20, B = 44;
+  const lx = n => Math.log10(Math.max(1, n)), ly = b => Math.log10(Math.max(0.05, b));
+  const x1 = Math.max(...may.map(m => lx(m.n))) * 1.03;
+  const ys = may.map(m => ly(m.boi));
+  const y0 = Math.min(...ys) * 1.03, y1 = Math.max(...ys) * 1.06;
+  const X = n => L + lx(n) / x1 * (W - L - R);
+  const Y = b => H - B - (ly(b) - y0) / (y1 - y0) * (H - T - B);
+  const cx = X(ng.video_tv), cy = Y(ng.boi_p75);
+  const cotX = [2, 5, 10, 25, 50, 100, 200, 400].filter(v => lx(v) <= x1);
+  const cotY = [0.1, 0.25, 0.5, 1, 2, 5, 10, 20].filter(v => ly(v) >= y0 && ly(v) <= y1);
+  const dat = new Set();
+  return html`<svg viewBox=${`0 0 ${W} ${H}`} style="width:100%;height:auto" class="tr-bando">
+    <rect x=${L} y=${T} width=${W - L - R} height=${H - T - B} fill="currentColor" opacity=".025"/>
+    <rect x=${L} y=${T} width=${cx - L} height=${cy - T} fill="var(--accent,#4C8FE0)" opacity=".07"/>
+    ${cotX.map(v => html`<g><line x1=${X(v)} y1=${T} x2=${X(v)} y2=${H - B} stroke="currentColor" opacity=".08"/>
+      <text x=${X(v)} y=${H - B + 16} font-size="10.5" fill="currentColor" opacity=".55" text-anchor="middle">${v}</text></g>`)}
+    ${cotY.map(v => html`<g><line x1=${L} y1=${Y(v)} x2=${W - R} y2=${Y(v)} stroke="currentColor" opacity=".08"/>
+      <text x=${L - 8} y=${Y(v) + 3.5} font-size="10.5" fill="currentColor" opacity=".55" text-anchor="end">${v}×</text></g>`)}
+    <line x1=${cx} y1=${T} x2=${cx} y2=${H - B} stroke="var(--accent,#4C8FE0)" opacity=".6" stroke-dasharray="5,4"/>
+    <line x1=${L} y1=${cy} x2=${W - R} y2=${cy} stroke="var(--accent,#4C8FE0)" opacity=".6" stroke-dasharray="5,4"/>
+    <text x=${cx + 7} y=${T + 14} font-size="10.5" fill="var(--accent,#4C8FE0)">trung vị pool · ${ng.video_tv} video</text>
+    <text x=${W - R - 4} y=${cy - 7} font-size="10.5" fill="var(--accent,#4C8FE0)" text-anchor="end">p75 pool · ${ng.boi_p75}×</text>
+    <text x=${L + 12} y=${T + 36} font-size="10" letter-spacing=".12em" fill="currentColor" opacity=".4">THIẾU CUNG</text>
+    <text x=${W - R - 12} y=${T + 36} font-size="10" letter-spacing=".12em" fill="currentColor" opacity=".4" text-anchor="end">ĐÃ KHAI THÁC</text>
+    <text x=${L + 12} y=${H - B - 12} font-size="10" letter-spacing=".12em" fill="currentColor" opacity=".4">ĐÃ THỬ, KHÔNG ĂN</text>
+    <text x=${W - R - 12} y=${H - B - 12} font-size="10" letter-spacing=".12em" fill="currentColor" opacity=".4" text-anchor="end">BÃO HOÀ</text>
+    ${may.map(m => html`<circle cx=${X(m.n)} cy=${Y(m.boi)} r="2.1" fill="currentColor" opacity=".16"/>`)}
+    ${uv.map(u => html`<g class="tr-cham" onClick=${() => onChon(u.cum)}>
+      ${u.mo ? html`<circle cx=${X(u.n)} cy=${Y(u.boi)} r="8.5" fill="none" stroke=${`var(--tr-${u.o})`} opacity=".5"/>` : null}
+      ${u.do_chac < 0.7
+        ? html`<circle cx=${X(u.n)} cy=${Y(u.boi)} r="4.2" fill="none" stroke=${`var(--tr-${u.o})`} stroke-width="1.6" stroke-dasharray="2,1.6"/>`
+        : html`<circle cx=${X(u.n)} cy=${Y(u.boi)} r=${chon === u.cum ? 6 : 4.2} fill=${`var(--tr-${u.o})`}/>`}
+      <title>${u.cum} — ${u.n} video · ${u.boi}× trung vị${u.do_chac < 0.7 ? ` · khớp từ “${u.khop_voi}”` : ''}</title>
+    </g>`)}
+    ${uv.map(u => {
+      const k = Math.round(X(u.n) / 50) + ':' + Math.round(Y(u.boi) / 14);
+      if (dat.has(k)) return null; dat.add(k);
+      return html`<text x=${X(u.n) + 8} y=${Y(u.boi) + 3.5} font-size="11" fill="currentColor" opacity=".92">${u.cum}</text>`;
+    })}
+    <text x=${(W + L) / 2} y=${H - 6} font-size="10.5" fill="currentColor" opacity=".6" text-anchor="middle">CUNG — số video của pool nói về thực thể này →</text>
+    <text x="15" y=${H / 2} font-size="10.5" fill="currentColor" opacity=".6" text-anchor="middle" transform=${`rotate(-90 15 ${H / 2})`}>HIỆU SUẤT — bội số so với trung vị pool →</text>
+  </svg>`;
+}
+
+function Nhip({ nhip, o }) {
+  const d = (nhip || []).filter(v => v !== undefined);
+  if (!d.length || Math.max(...d) === 0) return html`<span class="mut">—</span>`;
+  const m = Math.max(...d), w = 76, h = 20;
+  const pts = d.map((v, i) => `${(i / (d.length - 1)) * w},${h - (v / m) * (h - 3) - 1.5}`).join(' ');
+  return html`<svg viewBox=${`0 0 ${w} ${h}`} class="tr-sp">
+    <polyline points=${pts} fill="none" stroke=${`var(--tr-${o})`} stroke-width="1.5" stroke-linejoin="round"/></svg>`;
+}
+
+function Trending({ ws, canEdit }) {
+  const [d, setD] = useState(null);
+  const [busy, setBusy] = useState('');
+  const [err, setErr] = useState('');
+  const [chon, setChon] = useState(null);        // cụm đang mở khối "vì sao nóng"
+  const [viSao, setViSao] = useState({});        // cụm -> kết quả GDELT
+
+  const nap = () => api('GET', `/workspaces/${ws}/trending`).then(setD).catch(e => setErr(String(e.message)));
+  useEffect(() => { setD(null); setErr(''); setChon(null); setViSao({}); nap(); }, [ws]);
+
+  // Đang quét thì hỏi lại mỗi 3s — quét chạy nền, đóng tab vẫn xong server-side.
+  useEffect(() => {
+    const st = d && d.trang_thai;
+    if (!st || st.state !== 'running') return;
+    const t = setTimeout(nap, 3000);
+    return () => clearTimeout(t);
+  }, [d]);
+
+  const quet = async () => {
+    setErr(''); setBusy('quet');
+    try { await api('POST', `/workspaces/${ws}/trending/quet`, {}); await nap(); }
+    catch (e) { setErr(String(e.message)); }
+    setBusy('');
+  };
+
+  const hoiViSao = async cum => {
+    setChon(cum);
+    if (viSao[cum]) return;
+    setViSao(v => ({ ...v, [cum]: { dang_hoi: true } }));
+    try {
+      const r = await api('POST', `/workspaces/${ws}/trending/vi-sao`, { cum });
+      setViSao(v => ({ ...v, [cum]: r }));
+    } catch (e) { setViSao(v => ({ ...v, [cum]: { co_du_lieu: false, ly_do: String(e.message) } })); }
+  };
+
+  const tick = async (u, on) => {
+    try {
+      const r = await api('POST', `/workspaces/${ws}/trending/chon`,
+        { cum: u.cum, chon: on, boi: u.boi, o: u.o });
+      setD(x => ({ ...x, da_chon: r.da_chon }));
+    } catch (e) { setErr(String(e.message)); }
+  };
+
+  if (err && !d) return html`<div class="card err">${err}</div>`;
+  if (!d) return html`<div class="card mut">Đang tải…</div>`;
+  const kq = d.ket_qua, st = d.trang_thai, dachon = d.da_chon || {};
+  const dangChay = st && st.state === 'running';
+
+  return html`<div class="tr-wrap">
+    <div class="tr-top">
+      <span class="mut">Thị trường <b>${d.market || '—'}</b>${d.geo ? ` · ${d.geo}` : ''}</span>
+      ${kq ? html`<span class="mut">quét <b>${new Date(kq.luc * 1000).toLocaleString('vi-VN', { hour12: false })}</b></span>` : null}
+      ${d.duoc_quet ? html`<button class="btn" disabled=${dangChay || busy === 'quet'} onClick=${quet}>
+        ${dangChay ? 'Đang quét…' : kq ? 'Quét lại' : 'Quét'}</button>` : null}
+      ${kq ? html`<div class="tr-pheu">
+        <div>Trending Now<b>${(kq.so_tho || 0).toLocaleString('vi-VN')}</b></div>
+        <div>khớp từ điển pool<b>${kq.so_khop}</b></div>
+        <div>qua xác minh loại<b>${(kq.ung_vien || []).length}</b></div>
+        <div>cửa sổ đang mở<b>${(kq.ung_vien || []).filter(u => u.mo).length}</b></div>
+      </div>` : null}
+    </div>
+
+    ${err ? html`<div class="card err">${err}</div>` : null}
+    ${dangChay ? html`<div class="card mut">Đang quét — <b>${st.buoc}</b>. Chạy nền, đóng tab vẫn xong.</div>` : null}
+    ${st && st.state === 'error' ? html`<div class="card err">Lượt quét lỗi: ${st.ly_do}</div>` : null}
+
+    ${!kq ? html`<div class="card mut">Chưa có lượt quét nào.${d.duoc_quet ? ' Bấm Quét để bắt đầu.' : ''}</div>`
+      : html`
+      <div class="card">
+        <div class="tr-h2">Bản đồ cung × hiệu suất</div>
+        <p class="tr-sub">Chấm mờ = <b>${(kq.dam_may || []).length} thực thể pool đang làm</b> — đây là <b>căn cứ của hai đường ngưỡng</b>: trung vị ${kq.nguong.video_tv} video và p75 ${kq.nguong.boi_p75}×
+          đều lấy từ chính đám mây này, không phải hằng số. Vòng ngoài = cửa sổ còn mở; <b>viền nét đứt = khớp một phần cụm trend, có thể nối nhầm</b>.</p>
+        <${BanDo} kq=${kq} chon=${chon} onChon=${hoiViSao}/>
+      </div>
+
+      ${chon ? html`<div class="card tr-vs">
+        <div class="tr-h2">Vì sao “${chon}” nóng — GDELT (0 khoá, 0 đồng)</div>
+        ${(() => {
+          const v = viSao[chon];
+          if (!v || v.dang_hoi) return html`<p class="mut">Đang hỏi GDELT…</p>`;
+          if (!v.co_du_lieu) return html`<p class="mut">${v.ly_do}</p>`;
+          return html`<div>
+            <p class="mut">Đỉnh ${v.dinh_ngay} · ${v.dinh_phan_tram} <span class="mut">(${v.don_vi})</span> · chuỗi ${v.diem.length} mốc</p>
+            <ul class="tr-bai">${(v.bai || []).map(b => html`<li>
+              <a href=${b.link} target="_blank" rel="noopener">${b.tieu_de}</a>
+              <span class="mut"> ${b.nguon}</span></li>`)}</ul>
+            ${v.ghi_chu ? html`<p class="mut">${v.ghi_chu}</p>` : null}
+          </div>`;
+        })()}
+      </div>` : null}
+
+      ${O_THU_TU.map(o => {
+        const ds = (kq.ung_vien || []).filter(u => u.o === o)
+          .sort((a, b) => (a.mo === b.mo ? b.boi - a.boi : (a.mo ? -1 : 1)));
+        if (!ds.length) return null;
+        const [ten, phu, cls] = O_NHAN[o];
+        return html`<details class=${'tr-nhom ' + cls} open=${o === 'thieu_cung' || o === 'da_khai_thac'}>
+          <summary><i class="tr-dot"></i>${ten}<span class="tr-phu">${phu}</span><span class="tr-dem">${ds.length}</span></summary>
+          <table class="tr-bang"><thead><tr>
+            <th></th><th>thực thể</th><th>cung</th><th>hiệu suất</th><th>nhịp pool 12 tháng</th>
+            <th>gần nhất</th><th>vì sao nóng</th><th>lượng</th><th></th></tr></thead>
+          <tbody>${ds.map(u => html`<tr>
+            <td class="tr-tk"><input type="checkbox" checked=${!!dachon[u.cum]} disabled=${!canEdit}
+              onChange=${e => tick(u, e.target.checked)}/></td>
+            <td class="tr-ten">${u.cum}
+              ${u.mo ? html`<span class="tr-mo">đang mở</span>` : null}
+              ${u.do_chac < 0.7 ? html`<span class="tr-ngo" title=${`Thực thể chỉ chiếm ${Math.round(u.do_chac * 100)}% cụm trend — có thể nối nhầm`}>← “${u.khop_voi}”</span>` : null}
+              ${u.mo_ta ? html`<div class="tr-mota">${u.mo_ta}</div>` : null}</td>
+            <td class="tr-n"><b>${u.n}</b> video</td>
+            <td class="tr-n"><b>${u.boi}×</b> <span class="mut">${Math.round(u.vpd)}/ngày</span></td>
+            <td><${Nhip} nhip=${u.nhip} o=${u.o}/></td>
+            <td class="tr-n mut">${u.moi_nhat_ngay}n</td>
+            <td class="tr-vs">${(u.vi_sao || []).join(' · ') || html`<span class="mut">chưa rõ</span>`}</td>
+            <td class="tr-n mut">${u.luong}</td>
+            <td><button class="btn small" onClick=${() => hoiViSao(u.cum)}>Vì sao nóng</button></td>
+          </tr>`)}</tbody></table>
+        </details>`;
+      })}
+
+      ${(kq.da_loai || []).length ? html`<details class="tr-nhom e">
+        <summary><i class="tr-dot"></i>ĐÃ LOẠI Ở BƯỚC XÁC MINH LOẠI <span class="tr-phu">không loại im lặng — kèm mô tả Wikipedia để tự kiểm</span>
+          <span class="tr-dem">${kq.da_loai.length}</span></summary>
+        <ul class="tr-loai">${kq.da_loai.map(x => html`<li><b>${x.cum}</b>
+          <span class="mut"> — ${x.mo_ta || 'không tra được mô tả'}</span></li>`)}</ul>
+      </details>` : null}
+    `}
+  </div>`;
+}
+
+
 function Mapping({ ws, canEdit }) {
   const [cum, setCum] = useState('');
   const [A, setA] = useState(null);
@@ -2588,7 +2790,7 @@ function Mapping({ ws, canEdit }) {
     </div>` : ''}`;
 }
 
-const TABS = [['board', 'Board'], ['alerts', 'Alerts'], ['mapping', 'Mapping'], ['reports', 'Report'],
+const TABS = [['board', 'Board'], ['alerts', 'Alerts'], ['trending', 'Trending'], ['mapping', 'Mapping'], ['reports', 'Report'],
               ['pool', 'Data Pool'], ['harvest', 'Harvest'], ['settings', 'Tuning'], ['admin', 'Setting']];
 // thứ tự ưu tiên thị trường (user 19/08): US trước → Tây Ban Nha → còn lại.
 // MỘT nguồn cho cả dải tab lẫn bước tự chọn pool của Mapping.
@@ -2623,7 +2825,9 @@ function App() {
     const role0 = (me.orgs || []).find(o => o.id === orgId0)?.role || 'viewer';
     // 21/08: 'mapping' phải có trong whitelist này — thiếu là bấm tab xong bị đá về
     // Board ngay (guard chạy sau setTab). Viewer xem được, như Board.
-    const ok = ['board', 'alerts', 'mapping', 'reports', 'settings'].includes(tab)
+    // 23/08: 'trending' dính ĐÚNG bẫy này — tab hiện trên thanh, 0 lỗi JS, bấm
+    // vào lại về Board. Thêm tab mới thì PHẢI thêm khoá vào đây.
+    const ok = ['board', 'alerts', 'trending', 'mapping', 'reports', 'settings'].includes(tab)
       || (['pool', 'harvest'].includes(tab) && role0 !== 'viewer')   // 23/07: leader trở lên
       || (tab === 'admin' && role0 === 'owner');
     if (!ok) setTab('board');
@@ -2735,6 +2939,7 @@ function App() {
       : tab === 'board' && niche && (nicheView || !(cur && cur.market)) ? html`<${NicheVolume} ma=${niche.ma} ten=${niche.ten}/>`
       : tab === 'board' ? html`<${Board} ws=${ws} canEdit=${canEdit}/>`
       : tab === 'alerts' ? html`<${Alerts} ws=${ws} canEdit=${canEdit}/>`
+      : tab === 'trending' ? html`<${Trending} ws=${ws} canEdit=${canEdit}/>`
       : tab === 'mapping' ? html`<${Mapping} ws=${ws} canEdit=${canEdit}/>`
       : tab === 'reports' ? html`<${Reports} ws=${ws} canEdit=${canEdit}/>`
       : tab === 'pool' ? html`<${Pool} ws=${ws} canEdit=${canEdit} role=${role} nganhs=${nganhs}

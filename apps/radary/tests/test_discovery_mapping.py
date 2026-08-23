@@ -333,16 +333,36 @@ def test_thi_truong_tra_duoi_muc_minh_thi_khong_dang_vao():
     assert mapping.phan_loai_quyet_dinh(m, pool_view_moi=None) == "dang_danh"   # không có baseline thì không phán
 
 
-def test_tab_mapping_nam_trong_whitelist_cua_UI():
-    """Bug 21/08: bấm tab Mapping xong bị đá về Board — vì guard 'tab không hợp lệ'
-    trong app.js giữ một whitelist CỨNG mà tab mới không được thêm vào.
-    Ghim cả 3 chỗ phải khai khi thêm tab, để lần sau không sót chỗ nào."""
+def test_moi_tab_deu_khai_du_ba_cho_trong_UI():
+    """Bug 21/08 (Mapping) roi TAI DIEN 23/08 (Trending): tab hien tren thanh, 0 loi
+    JS, bam vao lai nhay ve Board — vi guard 'tab khong hop le' giu mot whitelist
+    CUNG ma tab moi khong duoc them vao.
+
+    Ban dau cua test nay ghim MAT CHU cua whitelist ("['board', 'alerts', ...]") nen
+    CHINH NO vo khi them tab — thanh ra khong bat duoc bug lan hai. Gio ghim LUAT:
+    moi tab khai trong TABS phai co mat o ca ba cho. Them tab nao cung tu duoc kiem.
+    """
+    import re as _re
     from pathlib import Path
     js = Path(__file__).resolve().parents[1].joinpath("web", "app.js").read_text(encoding="utf-8")
-    assert "['board', 'alerts', 'mapping', 'reports', 'settings'].includes(tab)" in js, \
-        "thiếu trong whitelist guard -> tab tự nhảy về board"
-    assert "['mapping', 'Mapping']" in js, "thiếu trong TABS -> không có nút"
-    assert "tab === 'mapping'" in js, "thiếu trong dispatch -> bấm vào ra trang trắng"
+
+    d = js.index("const TABS = ")
+    ten = _re.findall("[[]'([a-z]+)', '", js[d:js.index("];", d)])
+    assert "mapping" in ten and "trending" in ten, f"TABS thieu tab: {ten}"
+
+    # Guard la MOT bieu thuc nhieu nhanh: danh sach mo cho moi nguoi, roi cac nhanh
+    # role-gated cho pool/harvest/admin. Phai quet CA cau lenh, khong chi ngoac dau.
+    g = js.index("const ok = ")
+    cho_qua = _re.findall("'([a-z]+)'", js[g:js.index(";", g)])
+
+    # Ba tab nay CO CHU DICH khong co nhanh dispatch rieng: chung roi vao nhanh
+    # mac dinh cuoi chuoi ba ngoi, deu render <Settings/>.
+    ROI_VE_SETTINGS = {"settings", "harvest", "admin"}
+
+    for t in ten:
+        assert t in cho_qua, f"tab '{t}' thieu trong whitelist guard -> tu nhay ve board"
+        if t not in ROI_VE_SETTINGS:
+            assert f": tab === '{t}' ?" in js, f"tab '{t}' thieu trong dispatch -> bam vao ra trang trang"
 
 
 # --------------------------------- THỊ TRƯỜNG / NGÔN NGỮ (user: chỉ làm Mỹ, 21/08)

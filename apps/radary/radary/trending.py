@@ -319,3 +319,136 @@ def vi_sao_nong(cum: str, doc=None, ngay: int = 30, tran_bai: int = 8) -> dict:
             "dinh_ngay": (dinh.get("date") or "")[:8],
             "dinh_phan_tram": round(dinh.get("value") or 0, 4), "bai": bai,
             "ghi_chu": None if bai else "GDELT có đường khối lượng nhưng không kèm bài báo nào"}
+
+
+# =========================================================== VIEC CHAY NEN
+# Khuon giong niche_report.py: trang thai trong kv (khong de bang moi), mot luong
+# moi workspace, dang chay thi tu choi luot moi.
+import threading                                                 # noqa: E402
+
+_luong: dict[int, threading.Thread] = {}
+KHOA_KQ = "trending_ket_qua"
+KHOA_TT = "trending_trang_thai"
+KHOA_CHON = "trending_da_chon"
+
+
+def trang_thai(conn, ws: int) -> dict | None:
+    from . import db
+    return db.kv_get(conn, ws, KHOA_TT, None)
+
+
+def ket_qua(conn, ws: int) -> dict | None:
+    from . import db
+    return db.kv_get(conn, ws, KHOA_KQ, None)
+
+
+def da_chon(conn, ws: int) -> dict:
+    """So ghi §10 methodology: ung vien nao NGUOI DA CHON lam. Vế nay khong tu suy
+    duoc — phai co nguoi tick. Sau vai thang no la thu duy nhat tra loi duoc cau
+    "di som co thang khong" bang du lieu nha."""
+    from . import db
+    return db.kv_get(conn, ws, KHOA_CHON, {})
+
+
+def dat_chon(conn, ws: int, cum: str, chon: bool, boi_canh: dict | None = None) -> dict:
+    from . import db
+    s = da_chon(conn, ws)
+    if chon:
+        s[cum] = {"luc": time.time(), **(boi_canh or {})}
+    else:
+        s.pop(cum, None)
+    with conn:
+        db.kv_set(conn, ws, KHOA_CHON, s)
+    return s
+
+
+def _ghi_tt(conn, ws, **kw):
+    from . import db
+    with conn:
+        db.kv_set(conn, ws, KHOA_TT, {"ts": time.time(), **kw})
+
+
+def bat_dau(ws: int, geo: str, gio: int = 168) -> bool:
+    """Khoi dong quet nen. False neu workspace nay dang co luot chay."""
+    t = _luong.get(ws)
+    if t and t.is_alive():
+        return False
+    t = threading.Thread(target=_chay, args=(ws, geo, gio), daemon=True,
+                         name=f"trending-{ws}")
+    _luong[ws] = t
+    t.start()
+    return True
+
+
+def tai_trending_now(geo: str = "US", gio: int = 168) -> list[dict]:
+    """Danh sach DANG LEN cua Google. Tach rieng de test thay duoc bang ham gia.
+
+    trendspyg doc endpoint khong co tai lieu chinh thuc nen fragile (do that trong
+    serp.py: 43% thanh cong). Loi -> nem, de tang tren ghi ly do that vao trang thai
+    chu KHONG tra danh sach rong (rong se bi doc nham thanh 'khong co trend nao').
+    """
+    from trendspyg import download_google_trends_csv
+    d = download_google_trends_csv(geo=geo, hours=gio, category="all",
+                                   output_format="dict", headless=True)
+    ds = d if isinstance(d, list) else (d.get("trends") or d.get("data") or [])
+    return doc_trending_csv(ds)
+
+
+def _chay(ws: int, geo: str, gio: int, tai=None, doc=None) -> None:
+    from . import db
+    conn = db.connect()
+    try:
+        _ghi_tt(conn, ws, state="running", buoc="đọc pool")
+        tho = [dict(r) for r in conn.execute(
+            """SELECT v.title, v.pub_ts,
+                 (SELECT views FROM ticks t WHERE t.video_id=v.id ORDER BY ts DESC LIMIT 1) views
+               FROM videos v WHERE v.workspace_id=?""", (ws,))]
+        kho = chuan_hoa_kho(tho)
+        if len(kho) < 50:
+            _ghi_tt(conn, ws, state="error",
+                    ly_do=f"Pool chỉ có {len(kho)} video đủ số liệu — chưa đủ để dựng từ điển.")
+            return
+        tv_pool = statistics.median(r["vpd"] for r in kho)
+
+        _ghi_tt(conn, ws, state="running", buoc="dựng từ điển thực thể của pool")
+        td = tu_dien_pool(kho)
+
+        _ghi_tt(conn, ws, state="running", buoc=f"quét Google Trending Now ({geo})")
+        trends = (tai or tai_trending_now)(geo, gio)
+
+        _ghi_tt(conn, ws, state="running", buoc="khớp từ điển + xác minh loại")
+        ung = khop_tu_dien(trends, td)
+        mo_ta = xac_minh_loai(sorted(ung), doc=doc)
+        giu, bo = loc_thuc_the(sorted(ung), mo_ta)
+
+        _ghi_tt(conn, ws, state="running", buoc="đối chiếu pool")
+        may = [h for h in (ho_so_pool(kho, t) for t in td) if h]
+        ng = nguong_pool(may, tv_pool)
+        uv = []
+        for t in giu:
+            h = ho_so_pool(kho, t)
+            if not h:
+                continue
+            tr_ = ung[t]
+            h.update({"o": xep_o(h, ng), "boi": round(h["vpd"] / tv_pool, 2),
+                      "mo": tr_.get("con_mo"), "luong": tr_.get("luong", ""),
+                      "bat_dau": tr_.get("bat_dau", ""), "vi_sao": tr_.get("breakdown", [])[:3],
+                      "do_chac": tr_.get("do_chac", 1.0), "khop_voi": tr_.get("khop_voi", t),
+                      "mo_ta": mo_ta.get(t, "")})
+            uv.append(h)
+
+        from . import db as _db
+        with conn:
+            _db.kv_set(conn, ws, KHOA_KQ, {
+                "luc": time.time(), "geo": geo, "gio": gio,
+                "so_tho": len(trends), "so_khop": len(ung), "so_may": len(may),
+                "tv_pool": round(tv_pool, 2), "nguong": ng,
+                "dam_may": [{"n": m["n"], "boi": round(m["vpd"] / tv_pool, 3)} for m in may],
+                "ung_vien": uv,
+                "da_loai": [{"cum": t, "mo_ta": m} for t, m in bo]})
+        _ghi_tt(conn, ws, state="done", so_ung_vien=len(uv), so_loai=len(bo))
+    except Exception as e:                                       # noqa: BLE001
+        # Ly do THAT vao trang thai — khong nuot thanh "khong co trend nao"
+        _ghi_tt(conn, ws, state="error", ly_do=f"{type(e).__name__}: {e}"[:300])
+    finally:
+        conn.close()
