@@ -39,6 +39,20 @@ CHIEU_NHIP = ("sentence_len_mean", "sentence_len_stdev",
               "sentence_short_ratio", "sentence_long_ratio")
 
 
+def la_cot_loi(ten: str) -> bool:
+    """Chi so COT LOI vs DAU CAU HIEM (24/08).
+
+    Owner: "moi co 8/20 chi so on dinh, ti le chua qua ban, khong yen tam". Do that
+    cho thay mau so 20 moi la thu sai: 10 trong do la tan suat TUNG LOAI dau cau, ma
+    dau hiem thi tac gia nao cung dao dong manh (A001: cham than cv 1,50; ba cham
+    1,50; ngoac don 0,70) — do la ban chat cua "hiem", khong phai thieu du lieu, va
+    nap them corpus khong sua duoc. Tach hai nhom thi A001 hien dung mat that: on
+    dinh 10/10 cot loi, chi mat diem o dau cau hiem.
+    punct_freq_total tinh la COT LOI: no la mat do dau cau tong, khong phai mot loai.
+    """
+    return not ten.startswith("punct_") or ten == "punct_freq_total"
+
+
 @dataclass
 class QuantFeature:
     name: str

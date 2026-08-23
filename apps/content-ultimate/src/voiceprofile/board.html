@@ -548,7 +548,8 @@ function xemHoSo(ma){
     const n=d.nhip||{}, g=d.giong||{};
     $('hs_the').innerHTML = `
       <div class="o ${cls}"><div class="k">Mức độ</div><div class="v">${nhan}</div>
-        <div class="g">${d.diem_do} điểm đo · ${d.chi_so_on_dinh}/${d.tong_chi_so} chỉ số ổn định</div></div>
+        <div class="g">${d.diem_do} điểm đo · <b>${d.cot_loi}/${d.cot_loi_tong}</b> chỉ số cốt lõi ổn định
+          <span title="Nhóm còn lại là tần suất từng loại dấu câu (chấm phẩy, ngoặc, chấm than…). Dấu hiếm thì tác giả nào cũng dao động mạnh, nạp thêm corpus không làm nó đều hơn — nên nhóm này không tính vào mức độ.">· dấu câu hiếm ${d.hiem}/${d.hiem_tong}</span></div></div>
       <div class="o"><div class="k">Số từ</div><div class="v">${(d.tu||0).toLocaleString('vi-VN')}</div>
         <div class="g">${d.tu<12000?'nên nạp thêm cho đủ ~12.000':'corpus đủ dày'}</div></div>
       <div class="o"><div class="k">Độ giãn câu</div><div class="v">±${so(n.do_gian)}</div>

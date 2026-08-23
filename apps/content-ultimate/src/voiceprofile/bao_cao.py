@@ -146,7 +146,17 @@ def bao_cao_extract(profile: dict, corpus_dir: str | Path | None = None,
         d.append(f"| {ten_c} | {_so(f.get('value'))} | {_so(t.get('sd'))} | {_ly_do_giu(f)} |")
     if not qf:
         d.append("| *(chưa có chỉ số nào)* | — | — | hồ sơ chưa chạy bước `build` |")
-    d += ["", f"**{sum(1 for f in qf if f.get('keep'))}/{len(qf)}** chỉ số đạt ngưỡng ổn định; "
+    # Tach hai nhom (24/08): gop lam mot con so "8/20" doc nguoc han y nghia — 10 trong
+    # 20 la tan suat TUNG LOAI dau cau, ma dau hiem thi tac gia nao cung dao dong.
+    from .quant import la_cot_loi
+    loi = [f for f in qf if la_cot_loi(f.get("name", ""))]
+    hiem = [f for f in qf if not la_cot_loi(f.get("name", ""))]
+    n_loi = sum(1 for f in loi if f.get("keep") or f.get("bat_buoc"))
+    d += ["", f"**{n_loi}/{len(loi)}** chỉ số **cốt lõi** ổn định (nhịp câu, hư từ, độ đa "
+          f"dạng từ vựng, độ dễ đọc, mật độ dấu câu) — đây là con số nói lên hồ sơ có "
+          f"chắc hay không. Nhóm còn lại là tần suất từng loại dấu câu: "
+          f"{sum(1 for f in hiem if f.get('keep'))}/{len(hiem)} ổn định, và dấu hiếm thì "
+          f"tác giả nào cũng dao động mạnh nên nạp thêm corpus không làm nó đều hơn.", "",
           f"**{len(rt)}** chỉ số được dùng làm đích khi chấm bài viết ra.", ""]
 
     # --- 3. Lap truong / dien ngon --------------------------------------------------

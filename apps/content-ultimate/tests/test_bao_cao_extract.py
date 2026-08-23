@@ -164,3 +164,44 @@ def test_ui_hien_khoi_yeu_cau_rieng_khoi_luu_y():
     ui = (pathlib.Path(vp.__file__).parent / "board.html").read_text(encoding="utf-8")
     assert 'id="hs_yeucau"' in ui and "Cần làm để hoàn thiện hồ sơ" in ui
     assert "d.yeu_cau" in ui
+
+
+# --- Tach chi so COT LOI khoi dau cau hiem (24/08) ---------------------------------
+# Owner: "Moi co 8/20 chi so on dinh, ti le chua qua ban. Khong yen tam."
+# Do that BAC gia thuyet "thieu corpus": A001 co 149.240 tu van 8/20, con A009 chi
+# 12.167 tu lai 10/20. Tach ra thi lo nguyen nhan: A001 on dinh 10/10 chi so COT LOI,
+# chi mat diem o 9 loai DAU CAU HIEM (cham than cv 1,50; ba cham 1,50; ngoac 0,70) —
+# nhung dau tac gia dung thua nen tan suat dao dong manh. Nap them corpus khong lam
+# dau cham than xuat hien deu hon.
+def _qf(ten, keep, bat_buoc=False):
+    return {"name": ten, "value": 1.0, "keep": keep, "bat_buoc": bat_buoc, "do_duoc": True}
+
+
+def test_tach_cot_loi_va_dau_cau_hiem():
+    p = _profile()
+    p["quant_features"] = ([_qf("sentence_len_mean", False, bat_buoc=True),
+                            _qf("ttr", True), _qf("flesch_reading_ease", True),
+                            _qf("punct_freq_total", True)]
+                           + [_qf(f"punct_{x}_freq", False)
+                              for x in ("semicolon", "colon", "exclaim")])
+    r = _tt(p)
+    assert r["cot_loi"] == 4 and r["cot_loi_tong"] == 4
+    assert r["hiem"] == 0 and r["hiem_tong"] == 3
+
+
+def test_cot_loi_yeu_thi_RA_yeu_cau_bo_sung():
+    p = _profile()
+    p["corpus_stats"] = {"n_works": 1, "n_tokens": 20000, "n_stability_units": 5}
+    p["quant_features"] = [_qf("ttr", True)] + [_qf(f"x{i}", False) for i in range(9)]
+    yc = _tt(p)["yeu_cau"]
+    assert any("cốt lõi" in x for x in yc), f"cot loi 1/10 phai ra viec: {yc}"
+
+
+def test_dau_cau_hiem_thap_KHONG_ra_yeu_cau():
+    """Nap them corpus khong sua duoc chuyen nay — dung bia ra viec."""
+    p = _profile()
+    p["corpus_stats"] = {"n_works": 13, "n_tokens": 149240, "n_stability_units": 37}
+    p["quant_features"] = ([_qf(f"c{i}", True) for i in range(10)]
+                           + [_qf(f"punct_{x}_freq", False)
+                              for x in ("semicolon", "colon", "exclaim", "ellipsis")])
+    assert _tt(p)["yeu_cau"] == []

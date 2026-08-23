@@ -185,7 +185,11 @@ def soi_kho(thu_muc_uploads: str | Path) -> list[dict]:
 TU_DU_MO_TA = 12000       # giu bang mo_ta_giong.MIN_TU_MO_TA
 
 
-def yeu_cau_hoan_thien(soi: dict, canh_bao_them: list[str] | None = None) -> list[str]:
+COT_LOI_DU = 0.8          # duoi 80% chi so cot loi on dinh thi corpus that su con mong
+
+
+def yeu_cau_hoan_thien(soi: dict, canh_bao_them: list[str] | None = None,
+                       cot_loi: tuple[int, int] | None = None) -> list[str]:
     """Viec cu the de ho so nay day len — rong khi khong con gi de lam."""
     co = set(soi.get("co") or [])
     cs = soi.get("chi_so") or {}
@@ -206,6 +210,14 @@ def yeu_cau_hoan_thien(soi: dict, canh_bao_them: list[str] | None = None) -> lis
     elif "corpus_mong" in co:
         ra.append("Bổ sung thêm tác phẩm: corpus chưa cắt được 3 điểm đo nên chưa nói "
                   "được đặc trưng nào là ổn định.")
+
+    # Bao dong theo NHOM COT LOI, khong theo tong 20 chi so: 10 loai dau cau hiem
+    # dao dong la ban chat cua "hiem" (A001 co 149.240 tu van chi giu 1/10), nap them
+    # corpus khong sua duoc — bia ra viec o do la day nguoi dung di lam viec vo ich.
+    if cot_loi and cot_loi[1] and cot_loi[0] / cot_loi[1] < COT_LOI_DU:
+        ra.append(f"Bổ sung tác phẩm: mới {cot_loi[0]}/{cot_loi[1]} chỉ số cốt lõi "
+                  "(nhịp câu, hư từ, độ đa dạng từ vựng, độ dễ đọc) đạt ngưỡng ổn định "
+                  "— dưới mức này thì giọng đo ra còn dao động theo từng bài.")
 
     for c in (canh_bao_them or []):
         if "dòng trống" in c:

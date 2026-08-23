@@ -427,6 +427,7 @@ DELTA_TU_MOI_HO_SO = 20000   # doc bao nhieu tu moi corpus de dung bang Delta
 def _tom_tat_tu_profile(profile: dict, ma: str, bang_delta: dict | None) -> dict:
     """Bon nhom so tu MOT ho so da co san (khong doc lai corpus)."""
     from .dien_ngon import TEN_CHIEU  # noqa: F401  (giu import gan nhau cho de lan)
+    from .quant import la_cot_loi
     cs = profile.get("corpus_stats") or {}
     qf = [f for f in (profile.get("quant_features") or []) if isinstance(f, dict)]
     rt = profile.get("reproduction_targets") or {}
@@ -451,6 +452,13 @@ def _tom_tat_tu_profile(profile: dict, ma: str, bang_delta: dict | None) -> dict
         "diem_do": diem,
         "chi_so_on_dinh": sum(1 for f in qf if f.get("keep")),
         "tong_chi_so": len(qf),
+        # Hai nhom TACH BACH (24/08): "8/20" gop ca 10 loai dau cau hiem nen doc
+        # nguoc — A001 that ra on dinh 10/10 cot loi. Xem quant.la_cot_loi.
+        "cot_loi": sum(1 for f in qf if la_cot_loi(f.get("name", ""))
+                       and (f.get("keep") or f.get("bat_buoc"))),
+        "cot_loi_tong": sum(1 for f in qf if la_cot_loi(f.get("name", ""))),
+        "hiem": sum(1 for f in qf if not la_cot_loi(f.get("name", "")) and f.get("keep")),
+        "hiem_tong": sum(1 for f in qf if not la_cot_loi(f.get("name", ""))),
         "so_target": len(rt),
         "moves": len(profile.get("signature_moves") or []),
         "nhip": {
@@ -482,7 +490,8 @@ def _tom_tat_tu_profile(profile: dict, ma: str, bang_delta: dict | None) -> dict
     # danh sach rong — khong bia ra viec cho du muc.
     from .soi_ho_so import yeu_cau_hoan_thien
     ra["yeu_cau"] = yeu_cau_hoan_thien(
-        soi, (profile.get("discourse_features") or {}).get("canh_bao") or [])
+        soi, (profile.get("discourse_features") or {}).get("canh_bao") or [],
+        cot_loi=(ra["cot_loi"], ra["cot_loi_tong"]))
 
     if bang_delta and ma in (bang_delta.get("z") or {}):
         from . import delta as D
