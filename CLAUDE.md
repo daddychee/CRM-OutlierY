@@ -38,6 +38,9 @@ Quy ước từ 16/08/2026 (user chốt): mỗi mạch việc lớn có MỘT s�
   dịch/không-dịch, quy trình, trạng thái từng đợt.
 - **Khối đế (danh bạ kênh/ngách, API keys, IAM, két)**: [docs/DE.md](docs/DE.md)
   — đề xuất tái thiết + 4 quyết định Owner + nhịp Đ1-Đ4.
+- **Model LLM (app nào gọi model nào, đổi model, thinking/reasoning)**:
+  [docs/model-llm.md](docs/model-llm.md) — luật resolve model từ két, công tắc
+  suy luận theo đời model GLM (đo thật), cách đổi + phải restart gì.
 
 ## Trạng thái (cập nhật mỗi mốc)
 
@@ -251,3 +254,46 @@ Quy ước từ 16/08/2026 (user chốt): mỗi mạch việc lớn có MỘT s�
   RadarY) — 2 phiên song song chung MỘT index, phiên kia commit đúng lúc phần SEO
   đang stage. Bài học (nối bc97b8e): repo nhiều phiên thì stage xong phải commit
   NGAY, không để index nóng.
+- 23/08/2026 — **GLM 5.3 VÀO HỆ + MỘT LUẬT MODEL DUY NHẤT** (sổ:
+  [docs/model-llm.md](docs/model-llm.md)). Owner đổi khóa GLM sang `glm-5.3`; 5/10
+  việc LLM đi theo ngay, 4 việc còn đặt model riêng (content x2, ai-agent·extract,
+  DA·dien_giai) vẫn đè bản cũ, writer giữ `glm-4.5-air` theo chốt. BA VIỆC LÀM:
+  (a) **vá lệch nguồn sự thật** — route `api-khoa` trước đây trả model rỗng thẳng,
+  không lùi về model của khóa → Owner đổi trên UI mà niche/seo/radary vẫn chạy hằng
+  số hardcode, im lặng; giờ hai route cùng luật (việc thắng khóa, khóa thắng mặc
+  định), test ghim. (b) **ô Model ở Per-app config: gõ tay → dropdown** + lựa chọn
+  "— theo khóa —" (trước đây ô trống = giữ nguyên nên KHÔNG bỏ được model riêng);
+  thêm hằng `MODEL_THEO_KHOA`. (c) **công tắc suy luận theo ĐỜI model**: glm-5.3
+  KHÔNG tắt được thinking (z.ai 1210, có mặt field `thinking` là 400) phải dùng
+  `reasoning_effort` low/high/max; ngược lại glm-5.2 KHÔNG giảm reasoning theo
+  `reasoning_effort` nên vẫn phải `thinking:disabled` — sửa 3 app (seo/content/
+  niche), nghiệm thu gọi THẬT cả 3 đường (JSON + 2 đường SSE). Mặc định hardcode
+  GIỮ ở `glm-5.2` (bản đang chạy ổn) — riêng radary sửa `glm-4-plus` (id đã biến
+  mất khỏi /models, diễn giải hỏng lặng lẽ) về `glm-5.2`. Bẫy đọc lỗi: model chưa
+  mở cho gói trả **429 1302**, không phải 403 — phân biệt bằng cách gọi model khác
+  ngay sau đó. Suite: nền 202 · content 296 · niche 12 · seo 13 · radary 116/1 nền.
+- 24/08/2026 — **AUTHOR EXTRACT: NĂM CẢI TIẾN + BÁO CÁO** (sổ:
+  [docs/kich-ban-studio.md](docs/kich-ban-studio.md) mục 14; 6 commit, content 371 pass,
+  nền 202 pass). Owner đưa bản đánh giá của Grok về "trích xuất giọng văn → cấu trúc hóa
+  → cho AI viết tương đồng" và duyệt làm cả năm. **Chẩn đoán mở đầu**: `profile.json` có
+  8 trường mà `generator.py` đọc đúng HAI — `reproduction_targets` tính từ tháng 7 và
+  CHƯA BAO GIỜ vào prompt (chữ `sentence_len` xuất hiện 0 lần). **C1** cửa ổn định chạy
+  ngược: A013 (1 file/3.726 từ) cắt ra ĐÚNG MỘT điểm đo → spread 0.0 → giữ 17/17 và mọi
+  sd = 0.0, trong khi A014 (25.392 từ) chỉ giữ 7/17 vì có phương sai thật; nay đơn vị đo
+  co giãn, dưới 3 điểm thì `do_duoc=False` và `evaluate_script` bỏ qua (trước đây sd=0.0
+  bị đọc thành band 5% — thứ chưa đo được thành tiêu chuẩn chặt nhất bảng). Kho: sd=0 giả
+  35 → 0. **C2** nhịp câu là chiều BẮT BUỘC: `select_exemplars` chỉ nhìn tập keep=True nên
+  nó chọn mẫu bằng hư từ và TTR, KHÔNG nhìn nhịp — gốc của bảng 22/08; lệch nhịp mẫu↔corpus
+  6,41 → 0,47, tốt hơn 10/12. **C4** thước thứ ba `delta.py` (Burrows's Delta, 0 token):
+  leave-one-out nhận đúng 11/12, và lộ ra **kho 12 hồ sơ chỉ có 8 giọng thật** — A003=A008=
+  A011 (đã biết) và **A007=A012 (chưa ai biết)**. **C5** `dien_ngon.py` 9 chiều lập trường/
+  diễn ngôn/cú pháp ở KHÓA RIÊNG (không trộn thang chấm — bài học `punct_freq_total`):
+  "you"/1.000 từ A009 37,8 · A013 8,1 · A002 1,2. **C3** mở kênh dẫn số đo vào prompt —
+  **A/B 15 lượt BÁC**: lệch nhịp tắt 0,53 vs bật 0,72, bài ngắn hơn ~9% ⇒ mặc định TẮT
+  trong CODE, giữ cơ chế + test để thử lại với glm-5.3 (5.3 bám neo, 5.2 thì không).
+  **BÁO CÁO** `bao_cao.py`: `build` xong tự ghi `bao-cao-extract.md` cạnh profile (máy đã
+  đọc gì · đo được gì kèm VÌ SAO giữ/loại · Delta so kho · in nguyên văn khối đi vào
+  prompt) + `bao_cao_kho()` + lệnh CLI `bao-cao`, 0 token. Ba lỗi trình bày bắt được khi
+  ĐỌC báo cáo thật chứ không phải từ test. **Còn lại**: chạy lại extract ghi đè 12 hồ sơ
+  thật (việc của Owner — đang phục vụ team); dọn 5 tên/2 giọng trùng; nạp thêm corpus cho
+  A013/A010/A007/A012.

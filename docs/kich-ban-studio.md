@@ -706,3 +706,165 @@ So riêng chương 1 thì hai hồ sơ cho kết quả **gần như nhau**: 17,3
 **cắt** đã sửa để tính theo độ dài bản nháp đầu vào. Nhưng log cho thấy có cơ chế tự nâng
 tới 37.500 mà vẫn không đủ, nên đây là giới hạn của model chứ không chỉ là con số cấu hình.
 Cần đo riêng trước khi nâng tiếp.
+
+## 14. AUTHOR EXTRACT — NĂM CẢI TIẾN C1→C5 + BÁO CÁO (24/08/2026)
+
+Owner đưa một bản đánh giá của Grok về bài toán "trích xuất giọng văn → cấu trúc hóa →
+cho AI viết tương đồng" và duyệt làm cả năm cải tiến. Đánh giá đó mô tả đúng bài toán
+nhưng không biết hệ đã ở đâu: **Phase 1 và phần lớn Phase 2 trong roadmap của nó đã xong
+từ tháng 7**, và ở vài chỗ app đi xa hơn (exemplar chọn theo nhịp corpus; mọi trích dẫn
+của LLM bị Python đối chiếu verbatim). Ba khuyến nghị phải bác, có bằng chứng tại chỗ:
+
+| Grok đề xuất | Vì sao không làm |
+|---|---|
+| LoRA / fine-tune (mức 3–4) | Corpus thật của kho là **3.726 – 25.392 từ** mỗi tác giả; bảng của chính Grok đòi ≥50.000. Và bằng chứng 23/08: cùng bộ neo, đổi 5.2 → 5.3 kéo lệch nhịp 1,11 → 0,01. Đòn bẩy nằm ở **model + neo**, không ở trọng số |
+| "Trích thành cấu trúc rồi nhét vào AI" | Chính là cái bẫy hệ đã sập: `reproduction_targets` tính từ tháng 7 và **chưa bao giờ vào prompt** (xem C3) |
+| Style embedding bằng mạng nơ-ron | Burrows's Delta cho phần lớn giá trị với 0 hạ tầng, và **giải thích được** (chỉ ra đúng hư từ nào lệch) — luật của app là mọi con số phải truy nguyên được |
+
+Đo đếm mở đầu (đây là chẩn đoán, không phải cảm tính): `profile.json` có **8 trường**,
+`generator.py` đọc đúng **hai** (`exemplars`, `signature_moves`, cộng `output_language`
+mới thêm 23/08). Chữ `sentence_len` xuất hiện **0 lần** trong toàn bộ generator.
+
+### 14.1. Hai lỗi thống kê chưa ai bắt (C1 + C2)
+
+**Cửa ổn định chạy ngược với corpus mỏng.** A013 Derek Muller (1 file / 3.726 từ) cắt ra
+**đúng một** đơn vị đo → `spread = 0.0` ở mọi đặc trưng → `cv = 0` → giữ **17/17** và mọi
+`sd = 0.0`. Trong khi A014 (25.392 từ, 6 file) chỉ giữ 7/17 vì có phương sai thật để đo.
+Hồ sơ mỏng nhất kho lại tự khai là chắc chắn nhất: "không có phương sai" bị đọc thành
+"phương sai bằng 0" = chắc chắn tuyệt đối. Sửa: đơn vị đo **co giãn** theo corpus (nhắm
+`MIN_DON_VI_DO + 1` = 4 đơn vị, vì một đơn vị đi làm held-out), dưới 3 điểm đo thì
+`keep=False` + `sd=None` + `do_duoc=False`, và `evaluate_script` **bỏ qua** target
+`do_duoc=False` — trước đây `sd=0.0` bị đọc thành band 5%, biến thứ chưa đo được thành
+tiêu chuẩn chặt nhất bảng.
+
+| | A013 | A002 | A007/A012 | A010 |
+|---|---|---|---|---|
+| điểm đo | 1 → **4** | 1 → **14** | 2 → **4** | 2 → **4** |
+| chỉ số giữ | 17 → 6 | 16 → 6 | 10 → 5 | 9 → 8 |
+| `sd = 0` giả | 17 → **0** | 16 → **0** | 1 → 0 | 0 |
+
+**Chiều quan trọng nhất bị chính cửa đó loại.** A014 có `sentence_len_mean` `keep=False`
+(cv cao qua 6 văn bản). Mà `select_exemplars` chỉ nhìn tập `keep=True` → nó chọn đoạn mẫu
+bằng hư từ và TTR, **không nhìn nhịp câu**. Đây là gốc của bảng 22/08 (mẫu neo A013 33,3%
+câu dài trong khi văn thật 9,3%): `chon_neo` đã vá triệu chứng ở đường viết, nhưng
+`profile.json` vẫn giữ nguyên lỗi. cv cao ở nhịp **không phải nhiễu** — nó là đặc điểm của
+người viết. Sửa: 4 chiều nhịp thành **bắt buộc**, luôn vào tập chọn mẫu + target, và thêm
+2 chiều còn thiếu (`sentence_short_ratio` / `sentence_long_ratio`, dùng đúng ngưỡng 8/35
+của `deai` và `chon_neo` để thước đo và neo giọng nói cùng một thứ tiếng).
+
+Đo lại 12 hồ sơ — **lệch nhịp đoạn mẫu so với corpus: trung bình 6,41 → 0,47**, tốt hơn
+ở 10/12. A001 3,69 → 0,26 · A003 65,35 → 0,32 (mẫu cũ 639,7 từ/câu: nó lấy nguyên cục
+transcript thô làm mẫu) · A010 1,03 → 0,38. Kém hơn 2 hồ sơ, mức chênh nhỏ: A009
+0,36 → 0,79 · A014 0,39 → 0,47.
+
+### 14.2. Thước thứ ba: nhận dạng tác giả (C4)
+
+Hai thước cũ không biết tác giả là ai — nhóm A đếm dấu vết máy, nhóm B đo nhịp; hai người
+cùng nhịp thì chúng không phân biệt nổi. `delta.py` là Burrows 2002 bản gốc: 150 từ phổ
+biến nhất, z-score theo từng từ, khoảng cách = trung bình |z_a − z_b|. Từ có `sd = 0` bị
+**bỏ** khỏi trục đo (không vá bằng epsilon); văn dưới 500 từ vẫn xếp hạng nhưng khai
+`du_mau = False`.
+
+Chạy trên kho lộ ra chuyện không ai biết: **kho 12 hồ sơ chỉ có 8 giọng thật**.
+`A003 = A008 = A011` (đã biết từ 23/08) và **`A007 Storytelling-Investigate = A012 Old
+story`** — Delta 0.000, cùng một corpus 8.244 từ mang hai tên. Người viết đang chọn giữa
+những cái tên khác nhau mà bên trong là một.
+
+Kiểm leave-one-out (cắt đoạn ~1.500 từ khỏi corpus rồi hỏi "đoạn này của ai"): **11/12**
+đúng ở cấp nhóm giọng. Ca sai duy nhất là A001 Carl Sagan bị đọc thành A002 Attenborough
+(1,072 vs 1,140 — sát nút, hai giọng tư liệu khoa học vốn gần nhau). Con số thô trước khi
+gom nhóm bản sao là 6/12, và 5 ca "sai" đó đều là hồ sơ bị **chính bản sao của nó** chiếm
+chỗ: thước đúng, dữ liệu trùng.
+
+### 14.3. Ba tầng đo còn thiếu (C5)
+
+`dien_ngon.py` — 9 chiều Quant Engine không nhìn: lập trường (`you` / `I` / `we` trên
+1.000 từ), diễn ngôn (câu mỗi đoạn, liên từ mở câu, câu hỏi), cú pháp (bị động bằng proxy
+regex, hapax, mật độ chữ số). Đây là thứ phân biệt hai giọng rõ nhất mà không thước nào
+đang đo:
+
+| | A009 LeoKim | A013 Derek Muller | A002 Attenborough | A007 |
+|---|---:|---:|---:|---:|
+| "you" / 1.000 từ | **37,8** | 8,1 | 1,2 | 0,6 |
+| câu mở bằng liên từ | **66%** | 32% | 8% | 3% |
+
+Nằm ở **khóa riêng** `discourse_features`, tuyệt đối không nhập vào `quant_features`: mọi
+chiều nhét vào đó sẽ tự động chảy tiếp vào `reproduction_targets` rồi vào thang chấm giọng
+— và thang càng nhiều chiều tạp nham thì càng dễ đọc ngược (bài học `punct_freq_total`
+23/08 làm điểm tụt 86% → 57% cho bản văn **tốt hơn**). Có test ghim hai tầng không lẫn sang
+nhau.
+
+Van lộ ra khi đo thật: A007/A012 cho **786 câu/đoạn**, A010 cho 426 — không phải văn phong
+mà vì file corpus không có một dòng trống nào, tức đó là độ dài **file**. Nay báo thẳng và
+đánh dấu chiều đó `do_duoc = False`.
+
+### 14.4. Mở kênh dẫn — và kết quả A/B (C3)
+
+`build_nhip_block` đưa **con số của chính tác giả này** vào prompt, kèm câu "các đoạn mẫu
+bên dưới đã nằm ở đúng những con số đó" — để model có cả *tell* lẫn *show* cùng một hướng,
+thay vì lệnh trừu tượng kiểu "viết câu dài" (con lắc 16/07). Nguồn số: `reproduction_targets`
+khi đo được, lùi về đo trên chính các đoạn mẫu sẽ hiện trong prompt.
+
+Hai van: hồ sơ chưa đo được gì → khối **rỗng**, prompt không đổi một byte (test hồi quy
+ghim); trần độ dài đoạn 2–8 câu, vì A009 cho 39 câu/đoạn và một lệnh "viết đoạn 39 câu" là
+lệnh vô lý — ngoài khoảng thì bỏ dòng đó chứ không đoán bừa số khác.
+
+### 14.5. Báo cáo extract (Owner yêu cầu)
+
+`bao_cao.py` — chạy xong extract là có `bao-cao-extract.md` ngay cạnh `profile.json`.
+Trước đây muốn biết một hồ sơ có dùng được không thì phải mở `profile.json` đọc tay, và
+không ai đọc: đó là lý do ba hồ sơ dựng trên corpus transcript thô vẫn được dùng viết suốt
+ba tuần. Báo cáo trả lời bốn câu hỏi bằng tiếng Việt:
+
+1. **Máy đã đọc gì** — file vào, file bị loại và vì sao, số điểm đo cắt ra.
+2. **Đo được gì** — từng chiều kèm *vì sao nó có mặt*: "giữ: ổn định" / "giữ: chiều bắt
+   buộc (nhịp câu)" / "chưa đo được". Không con số nào tự nhiên có mặt mà không giải thích.
+3. **Khác giọng khác chỗ nào** — Delta tới 3 giọng gần nhất + cảnh báo trùng hồ sơ.
+4. **Gì thật sự đi vào prompt** — in nguyên văn khối `VOICE TARGETS` generator gửi đi.
+
+Kèm `bao_cao_kho()` cho Owner nhìn hết 12 hồ sơ trong một bảng, và lệnh CLI `bao-cao`
+để dựng lại bất cứ lúc nào (0 token). Báo cáo hỏng **không được** làm hỏng extract — bọc
+`try` riêng.
+
+Ba lỗi trình bày bắt được khi **đọc báo cáo thật của A013**, không phải từ test: báo cáo tự
+mâu thuẫn (vừa ghi "neo 1.950 từ" vừa cảnh báo "neo chỉ 253 từ" — vì `soi_ho_so` đo 3 đoạn
+mẫu trong hồ sơ còn lúc viết thì `cli` thay bằng neo dày); chiều bị artefact định dạng vẫn
+in như chiều bình thường; và câu cảnh báo viết tiếng Việt **không dấu** lẫn vào báo cáo có
+dấu. Quy ước từ nay: **chuỗi hiển thị có dấu, code và comment giữ không dấu.**
+
+### 14.6. A/B của C3: đo xong thì **bác** — mặc định TẮT
+
+Chạy 15 lượt trên hai hồ sơ ngược chiều nhau, cùng outline cùng neo cùng `glm-5.2`, khác
+đúng một biến `CU_NHIP_PROMPT`:
+
+| lệch nhịp so với corpus (càng nhỏ càng đúng giọng) | tắt | bật |
+|---|---|---|
+| A014 Amazing (corpus 13,2 từ/câu) | **0,61** `[0,28 0,69 0,49 0,99]` | 0,73 `[0,73 0,53 0,84 0,84]` |
+| A012 Old story (corpus 10,6) | **0,43** `[0,32 0,55 0,42]` | 0,70 `[0,17 1,16 0,98 0,48]` |
+| gộp | **0,53** (n=7) | 0,72 (n=8) |
+
+Bật kém hơn ở 5/7 cặp, và bài **ngắn hơn ~9%** (A014 350 → 318 từ; A012 418 → 376). Nói
+con số ra không làm model bám nhịp hơn — nó làm model viết đứt quãng và ít chữ hơn.
+
+Đổi mặc định trong **CODE** về tắt (không chỉ `.env` — bài học 18/07: `.env` không theo
+sang máy khác). Giữ nguyên cơ chế và toàn bộ test: bằng chứng 23/08 cho thấy `glm-5.3`
+bám neo còn `5.2` thì không, nên **thử lại với 5.3 là việc của đợt sau**, không phải bỏ đi
+làm lại. 1/16 lượt dính `contentFilter` GLM (mã 1301) ở A012 — đúng ca đã ghi ở mục 12.2,
+không liên quan biến đang đo.
+
+Đây là kết quả quan trọng hơn cả việc nó "thất bại": nếu tin gợi ý của Grok mà không đo,
+hệ đã có thêm một khối luật thường trực trong prompt làm bài **xấu đi và ngắn đi**, và sẽ
+mất hàng tuần mới truy ra — đúng kiểu bệnh mà `punct_freq_total` và con lắc 16/07 đã gây.
+
+### 14.7. Còn lại của mạch này
+
+- **Chạy lại extract cho 12 hồ sơ trong kho thật.** Toàn bộ số đo ở mục này dựng trong
+  scratchpad (chỉ đọc kho). Hồ sơ đang dùng vẫn là bản cũ với `sd = 0` giả; chạy lại là
+  việc của Owner vì nó ghi đè `profile.json` đang phục vụ team.
+- **Dọn hồ sơ trùng**: `A003 = A008 = A011` và `A007 = A012`. Năm cái tên, hai giọng.
+- **Corpus mỏng cần nạp thêm**: A013 Derek Muller 3.726 từ · A010 Tribes 6.853 · A007/A012
+  8.244. Ngưỡng để nói được điều gì về độ ổn định là ~2.400 từ, nhưng để 4 điểm đo tách
+  bạch thì nên ≥12.000.
+- **Thử lại C3 với glm-5.3** (một biến, cùng bộ đo, đủ lượt như lần này).
+- **Dùng Delta cho kiểm chứng mù**: hai bản của cùng một chương, hỏi thước xem bản nào gần
+  tác giả hơn — thay cho thang % đã bỏ.
