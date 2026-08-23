@@ -87,7 +87,9 @@
   /* ===== HAI COT (mockup vong 5) — cung so do voi Outline Board: 1fr + 400px,
      gap 14, gay o 1100px. Duoi 1500px cot phai co con 340 de dong chu khong hep
      qua tren laptop 1366 (do that: 59 ky tu/dong neu giu 400). ===== */
-  #p1{max-width:1140px}                     /* tab Extractor giu kho cu */
+  /* 24/08: BO tran rieng 1140px cua tab Extractor. No co tu hoi tab nay la mot cot
+     form doc (hep cho de doc); nay da la hai cot nhu Writing nen tran rieng lam
+     Author hep hon Writing va Outline Board — ca ba dung chung .app 1460px. */
   .wcols{display:grid;grid-template-columns:minmax(0,1fr) 400px;gap:14px;align-items:start}
   @media(max-width:1500px){.wcols{grid-template-columns:minmax(0,1fr) 340px}}
   @media(max-width:1100px){.wcols{grid-template-columns:1fr}}
@@ -317,7 +319,7 @@
             <button class="btn" id="w_stop" onclick="cancelWrite()" hidden>Dừng và huỷ</button>
           </div>
           <div class="wduyet" id="w_duyetbox" hidden>
-            <p class="q">Chương này dùng được chưa?</p>
+            <p class="q">Điều chỉnh</p>
             <textarea id="w_gopy" placeholder="Muốn sửa gì thì viết vào đây. Ví dụ: đoạn giữa còn khô, thêm một chi tiết cụ thể."></textarea>
             <div class="wgoi">
               <span onclick="themGopY('Câu còn vụn, viết liền mạch hơn')">Câu còn vụn</span>
@@ -352,7 +354,7 @@
       <div class="hint">Bị ngắt giữa chừng (hết token/mất mạng)? Bấm <b>↻ Tiếp tục</b> để viết tiếp từ chương dở, không phải làm lại từ đầu.</div>
       </div>
       <aside class="side">
-        <div class="panel"><h2>Chương này</h2>
+        <div class="panel"><h2>Kết quả</h2>
           <div class="wchips" id="w_chips"></div>
             <span class="note" id="w_y" style="margin:0"></span>
         </div>
@@ -915,9 +917,9 @@ async function moPhan(h){
   $('w_viet_chuong').textContent = t ? 'Viết lại chương này' : 'Viết chương này';
   $('w_viet_het').textContent = con ? `Viết hết ${con} phần còn lại` : 'Đã viết đủ các phần';
   $('w_viet_het').disabled = !con;
-  $('w_chips').innerHTML = '';
-  $('w_y').textContent = t ? t.length.toLocaleString('vi-VN')+' ký tự' : '';
-  if(!t) return;
+  if(!t){ veChipsRong(); $('w_y').textContent = ''; return; }
+  veChipsRong(t.length);                    // hien ngay so ky tu, ba o kia doi do xong
+  $('w_y').textContent = t.length.toLocaleString('vi-VN')+' ký tự';
   napNganSachY(h);
   const a = selectedAuthor(); if(!a) return;
   const r = await api('/api/kiem-chung', {code:a.code, text:t});
@@ -931,12 +933,29 @@ async function moPhan(h){
     ? `${so_dau} chỗ mang dấu vết máy · phần được tô trong bài` : '';
   const n = r.nhip && r.nhip.chi_so || {}, c = r.nhip && r.nhip.chuan || null;
   const dt = r.dau_vet_may || {};
-  const chip = (l,v,vs,ok)=>`<span class="wch ${ok?'ok':'warn'}"><span class="l">${l}</span><b>${v}</b><span class="vs">${vs}</span></span>`;
+  const chip = chipHTML;
   $('w_chips').innerHTML = [
     chip('ký tự', t.length.toLocaleString('vi-VN'), '', true),
     chip('từ/câu', n.tu_moi_cau ?? '—', c?('tác giả '+c.tu_moi_cau):'', !c || Math.abs((n.tu_moi_cau||0)-c.tu_moi_cau) < c.tu_moi_cau*0.25),
     chip('câu cụt', (n.ti_le_cut ?? '—')+'%', c?('tác giả '+c.ti_le_cut+'%'):'', !c || (n.ti_le_cut||0) <= c.ti_le_cut*1.5),
     chip('động tác máy', dt.dong_tac_tren_1000_tu ?? '—', 'trên 1.000 từ', (dt.dong_tac_tren_1000_tu||0) <= 4),
+  ].join('');
+}
+
+function chipHTML(l, v, vs, ok){
+  return `<span class="wch ${ok===null?'':(ok?'ok':'warn')}"><span class="l">${l}</span>`
+       + `<b>${v}</b><span class="vs">${vs}</span></span>`;
+}
+
+// Bon o luon CO SAN (Owner 23/08: "tao truoc cac box de san o do, thay vi viet xong
+// moi hien ket qua"). Chua co so lieu thi hien dau gach, khong de khoi trong hoac
+// nhay giat khi do xong.
+function veChipsRong(soKyTu){
+  $('w_chips').innerHTML = [
+    chipHTML('ký tự',        soKyTu ? soKyTu.toLocaleString('vi-VN') : '—', '', null),
+    chipHTML('từ/câu',       '—', 'chờ đo', null),
+    chipHTML('câu cụt',      '—', 'chờ đo', null),
+    chipHTML('động tác máy', '—', 'trên 1.000 từ', null),
   ].join('');
 }
 
@@ -1012,7 +1031,26 @@ function capNhatDemLog(){
   const d = $('w_logdem'); if(d) d.textContent = n ? `· ${n} dòng` : '';
 }
 
-function logLine(id, s){ const el=$(id); el.textContent += (el.textContent?'\n':'')+s; el.scrollTop=el.scrollHeight; }
+function logLine(id, s){
+  const el=$(id), c=el.querySelector('.nhay'); if(c) c.remove();
+  el.textContent += (el.textContent?'\n':'')+s;
+  if(DANG_CHAY) el.appendChild(dauNhay());
+  el.scrollTop=el.scrollHeight;
+}
+function dauNhay(){ const i=document.createElement('i'); i.className='nhay'; return i; }
+
+// Dau nhay bao "may dang viet". Log da thu gon thanh mot dong bam-de-mo nen
+// dau nhay phai co o CA dong tieu de — khong thi nguoi dung khong biet no con
+// chay hay da treo.
+let DANG_CHAY = false;
+function batDauNhay(on){
+  DANG_CHAY = on;
+  const el=$('w_log'), cu=el.querySelector('.nhay'); if(cu) cu.remove();
+  if(on){ el.appendChild(dauNhay()); el.scrollTop=el.scrollHeight; }
+  const s=document.querySelector('details.wlog>summary');
+  if(s){ const n=s.querySelector('.nhay');
+         if(on && !n) s.appendChild(dauNhay()); else if(!on && n) n.remove(); }
+}
 function poll(tab){
   clearInterval(POLL);
   POLL = setInterval(async ()=>{
