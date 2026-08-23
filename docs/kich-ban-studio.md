@@ -856,6 +856,35 @@ không liên quan biến đang đo.
 hệ đã có thêm một khối luật thường trực trong prompt làm bài **xấu đi và ngắn đi**, và sẽ
 mất hàng tuần mới truy ra — đúng kiểu bệnh mà `punct_freq_total` và con lắc 16/07 đã gây.
 
+### 14.6b. Đo lại với glm-5.3: **đảo chiều hoàn toàn**
+
+Owner báo đã chuyển sang 5.3, nên đo lại đúng bộ đo đó — 11 lượt, cùng hai hồ sơ:
+
+| | tắt | bật |
+|---|---|---|
+| glm-5.2 (15 lượt) | **0,53** | 0,72 · bài ngắn hơn ~9% |
+| glm-5.3 (11 lượt) | 0,70 | **0,35** · bài *dài hơn* (285 → 336 từ; 603 → 632) |
+| A014 từng lượt 5.3 | `[0,58 0,72 0,86 0,24]` | `[0,33 0,51 0,29 0,35]` |
+| A012 từng lượt 5.3 | `[0,68 1,14]` | `[0,28]` · 1 lượt dính contentFilter 1301 |
+
+Cùng một đoạn văn, cùng một khối số, **hai model đọc ra hai hướng ngược nhau** — và khớp
+với bằng chứng 23/08 (5.3 bám neo; 5.2 bị thể loại chi phối mạnh hơn neo). Con số trong
+prompt chỉ ăn với model **chịu nghe theo neo**.
+
+Nên bỏ cờ tay, cho nó **tự quyết theo model**: `MODEL_BAM_NEO = ("glm-5.3",)`, `cli` gán
+`profile["_model"]` bằng model đang chạy (biến trong bộ nhớ, không ghi đè hồ sơ) và in một
+dòng báo đã gửi kèm số đo. `CU_NHIP_PROMPT` vẫn thắng cả hai chiều khi cần ép tay. Lý do
+bỏ cờ tay: cờ đặt sai chiều thì văn vẫn xấu đi mà **không ai biết** — cùng họ bệnh với cảnh
+báo transcript thô bị bỏ qua 100% suốt từ 16/07.
+
+**Thêm model mới vào `MODEL_BAM_NEO` chỉ sau khi đã A/B đủ lượt với chính nó** — đừng suy
+diễn "đời sau chắc cũng thế".
+
+**Hai điều về 5.3 phải biết trước khi team dùng thật** (đo hôm nay): chậm gấp 3–4 lần
+(171–487 giây một chương so với 50–150), và rủi ro mục 13.1 vẫn còn (model reasoning đốt hết
+ngân sách token ở vòng cắt/nở rồi trả rỗng — bản vá 88505fc giữ được bản nháp nhưng chương
+sẽ không về đúng khuôn độ dài). `contentFilter` GLM vẫn dính ở hồ sơ A012, cả 5.2 lẫn 5.3.
+
 ### 14.7. Còn lại của mạch này
 
 - **Chạy lại extract cho 12 hồ sơ trong kho thật.** Toàn bộ số đo ở mục này dựng trong
