@@ -97,7 +97,7 @@ def bao_cao_extract(profile: dict, corpus_dir: str | Path | None = None,
     if neo and neo.get("neo") and (neo.get("tong_tu") or 0) >= 800:
         canh = [c for c in canh if "Neo giọng chỉ" not in c and "đoạn mẫu trùng" not in c]
     if canh:
-        d += ["## ⚠ Cần biết trước khi dùng hồ sơ này", ""]
+        d += ["## ⚠ Lưu ý", ""]
         d += [f"- {c}" for c in canh] + [""]
 
     # --- Mo ta giong: cai NGUOI DOC can truoc tien (24/08) --------------------------

@@ -251,10 +251,7 @@
       <div class="hschon">
         <label for="hs_chon">Giọng tác giả</label>
         <select id="hs_chon" onchange="xemHoSo(this.value)"></select>
-        <span style="display:flex;gap:6px">
-          <button class="btn small" id="hs_bosung" onclick="chonFileBoSung()">+ Bổ sung tác phẩm</button>
-          <button class="btn small" onclick="napDanhSachHoSo()">Làm mới</button>
-        </span>
+        <button class="btn small" onclick="napDanhSachHoSo()">Làm mới</button>
       </div>
       <input type="file" id="hs_files" multiple accept=".txt,.md" hidden>
       <div class="wave" style="margin:8px 0 12px">
@@ -267,6 +264,10 @@
         <div class="hs" id="hs_the" hidden></div>
         <div class="hsbao" id="hs_canh" hidden></div>
         <div class="hsbao" id="hs_giong" hidden></div>
+        <div class="bar" id="hs_hanhdong" hidden style="margin-bottom:12px">
+          <button class="btn small" id="hs_bosung" onclick="chonFileBoSung()">+ Bổ sung tác phẩm cho giọng này</button>
+          <span class="note" id="hs_bosung_gy"></span>
+        </div>
         <div class="status" id="ex_status">Chế độ self-profile — không cần baseline.</div>
         <div class="progress"><i id="ex_prog"></i></div>
         <div class="logwrap"><div class="eyebrow">Log</div><div class="log" id="ex_log"></div></div>
@@ -592,13 +593,17 @@ function xemHoSo(ma){
       `<b>Trùng hồ sơ khác:</b> giọng này gần như không phân biệt được với ${trung.join(', ')}`
       + ` — cùng một corpus đang mang nhiều tên, chọn cái nào cũng cho kết quả như nhau.`;
 
+    $('hs_hanhdong').hidden = false;
+    const thieu = Math.max(0, 12000 - (d.tu||0));
+    $('hs_bosung_gy').textContent = thieu
+      ? `Cần thêm khoảng ${thieu.toLocaleString('vi-VN')} từ nữa mới đủ để mô tả giọng.`
+      : 'Corpus càng dày thì số đo càng chắc.';
+
     const c=(d.canh_bao||[]);
     $('hs_canh').hidden = !c.length;
     $('hs_canh').className = 'hsbao' + (c.length?' canh':'');
-    if(c.length) $('hs_canh').innerHTML = '<b>Cần biết trước khi dùng hồ sơ này</b><ul>'
-      + c.map(x=>`<li>${x}</li>`).join('') + '</ul>'
-      + '<div class="bar" style="margin-top:10px"><button class="btn small"'
-      + ' onclick="chonFileBoSung()">+ Bổ sung tác phẩm cho giọng này</button></div>';
+    if(c.length) $('hs_canh').innerHTML = '<b>Lưu ý</b><ul>'
+      + c.map(x=>`<li>${x}</li>`).join('') + '</ul>';
   }).catch(e=>{ $('hs_ten').textContent='Không đọc được hồ sơ: '+e; });
 }
 
