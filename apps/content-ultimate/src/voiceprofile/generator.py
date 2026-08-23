@@ -444,13 +444,19 @@ END_CUT_VONG = 2         # End no gap 3 lan khuon thi mot vong khong du         
 # truu tuong: dua CON SO CUA CHINH TAC GIA NAY, va noi ro cac doan mau ngay ben duoi da
 # nam o dung nhung con so do. Model co ca tell lan show cung tro mot huong.
 #
-# KET QUA A/B 24/08 — MAC DINH TAT. Do that 15 luot (glm-5.2, hai ho so nguoc chieu
-# nhau, cung outline cung neo, khac dung bien nay): lech nhip TRUNG BINH tat 0,53 vs
-# bat 0,72; bat kem hon o 5/7 cap va bai NGAN hon ~9% (A014 350 -> 318 tu; A012 418 ->
-# 376). Tuc noi con so ra khong lam model bam hon, ma lam no viet cau chung hon va it
-# chu hon. Giu nguyen co che + test: bang chung 23/08 cho thay glm-5.3 BAM NEO con 5.2
-# thi khong, nen dang thu lai voi 5.3 la viec cua dot sau, khong phai bo di lam lai.
-# Bat bang CU_NHIP_PROMPT=1. Ho so chua do duoc so nao -> khoi RONG (test hoi quy ghim).
+# KET QUA A/B 24/08 — TAC DUNG PHU THUOC MODEL, nen mac dinh TAT (an toan cho model
+# dang chay production la glm-5.2) va BAT bang CU_NHIP_PROMPT=1 khi chay glm-5.3.
+#
+#   glm-5.2, 15 luot, hai ho so nguoc chieu:  tat 0,53  |  bat 0,72   (bat KEM hon
+#     5/7 cap, bai ngan hon ~9%: A014 350 -> 318 tu, A012 418 -> 376)
+#   glm-5.3, cung outline cung neo:           tat 0,65  |  bat 0,42   (bat TOT hon
+#     2/2 luot, khong mat chu: 330 -> 332 tu)
+#
+# Dung mot doan van, dung mot khoi so, hai model doc ra hai huong nguoc nhau. Khop voi
+# bang chung 23/08 (5.3 bam neo, 5.2 bi the loai chi phoi manh hon neo): con so trong
+# prompt chi an voi model chiu nghe theo neo. Doi model thi phai do lai, dung mang
+# ket luan cua model nay sang model kia.
+# Ho so chua do duoc so nao -> khoi RONG, prompt khong doi mot byte (test hoi quy ghim).
 def _nhip_tu_target(profile: dict) -> dict:
     """Lay so do di vao prompt. Uu tien target do tren CORPUS, lui ve do tren chinh
     cac doan mau se hien trong prompt — de con so noi ra luon khop van nguoi doc thay."""
