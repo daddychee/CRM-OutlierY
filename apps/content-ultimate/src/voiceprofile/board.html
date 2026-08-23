@@ -23,7 +23,7 @@
   button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;padding:0}
   button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{
     outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
-  .app{max-width:1200px;margin:0 auto;padding:22px 26px 70px;display:flex;flex-direction:column;gap:16px}
+  .app{max-width:1460px;margin:0 auto;padding:22px 26px 70px;display:flex;flex-direction:column;gap:16px}
   header{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;border-bottom:1px solid var(--border);padding-bottom:14px}
   .topnav{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding-right:260px;margin-bottom:-4px}
   .eyebrow{font-size:10.5px;letter-spacing:.15em;text-transform:uppercase;color:var(--muted)}
@@ -68,20 +68,6 @@
   .progress{height:6px;background:var(--raised);border:1px solid var(--border);border-radius:99px;
     overflow:hidden;margin-top:12px}
   .progress>i{display:block;height:100%;background:var(--accent);width:0;transition:width .3s}
-  /* thanh tom tat tren cung + thiet lap thu gon (mockup vong 4) */
-  .wtop{display:flex;align-items:center;gap:14px;flex-wrap:wrap;border:1px solid var(--border);
-    border-radius:10px;padding:9px 14px;background:var(--raised);margin-bottom:10px}
-  .wtop .ten{font-weight:700;font-size:14px}
-  .wtop .meta{font-size:12.5px;color:var(--muted);display:flex;gap:14px;flex-wrap:wrap}
-  .wtop .meta b{color:var(--text);font-weight:600}
-  .wtop .kd{font-variant-numeric:tabular-nums;font-size:12.5px;color:var(--muted)}
-  .wtop .kd b{color:var(--text)}
-  details.wset{border:1px solid var(--border);border-radius:10px;margin-bottom:12px;background:var(--panel)}
-  details.wset>summary{list-style:none;cursor:pointer;padding:9px 14px;font-size:12.5px;color:var(--muted)}
-  details.wset>summary::-webkit-details-marker{display:none}
-  details.wset>summary:hover{color:var(--text)}
-  details.wset[open]>summary{border-bottom:1px solid var(--border-soft);color:var(--text)}
-  .wset-body{padding:14px 14px 4px}
   .wtxt mark{background:rgba(180,118,44,.18);border-bottom:1.5px solid #B4762C;
     padding:0 1px;border-radius:2px;color:inherit}
   .wvers{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:0 0 9px}
@@ -98,13 +84,35 @@
   details.wlog>summary::-webkit-details-marker{display:none}
   details.wlog>summary:hover{color:var(--text)}
   details.wlog .log{max-height:200px;margin-top:6px}
-  /* ===== Viet TUNG CHUONG (23/08) — minimalist icon: chi dung cham mau + chu ===== */
-  .wmode{display:flex;gap:9px;flex-wrap:wrap;margin:0 0 12px}
-  .wmode label{display:flex;align-items:center;gap:8px;border:1px solid var(--border);
-    border-radius:8px;padding:8px 12px;font-size:13px;font-weight:600;cursor:pointer;background:var(--raised)}
-  .wmode label:has(input:checked){border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
-  .wmode small{font-weight:400;color:var(--muted)}
-  .wmode label:has(input:checked) small{color:var(--accent)}
+  /* ===== HAI COT (mockup vong 5) — cung so do voi Outline Board: 1fr + 400px,
+     gap 14, gay o 1100px. Duoi 1500px cot phai co con 340 de dong chu khong hep
+     qua tren laptop 1366 (do that: 59 ky tu/dong neu giu 400). ===== */
+  #p1{max-width:1140px}                     /* tab Extractor giu kho cu */
+  .wcols{display:grid;grid-template-columns:minmax(0,1fr) 400px;gap:14px;align-items:start}
+  @media(max-width:1500px){.wcols{grid-template-columns:minmax(0,1fr) 340px}}
+  @media(max-width:1100px){.wcols{grid-template-columns:1fr}}
+  .side{display:flex;flex-direction:column;gap:14px;position:sticky;top:14px;
+    max-height:calc(100vh - 24px)}
+  .side .panel.co-gian{display:flex;flex-direction:column;min-height:0;flex:1 1 auto}
+  .side .cuon{overflow-y:auto;min-height:0;flex:1 1 auto;overscroll-behavior:contain}
+  .side .panel.co-gian > .bar{flex:none;margin-top:10px;padding-top:10px;
+    border-top:1px solid var(--border-soft)}
+  @media(max-width:1100px){.side{position:static;max-height:none}
+    .side .cuon{overflow:visible}}
+  .wave{font-size:13px;color:var(--muted)}.wave b{color:var(--text);font-weight:600}
+  .wave .meta{display:inline-flex;gap:14px;flex-wrap:wrap;margin-left:8px}
+  .wave .meta b{color:var(--text);font-weight:600}
+  .panel{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:14px}
+  .btn.trong{border-color:transparent;background:none;color:var(--muted);font-weight:500}
+  .side .kd{font-variant-numeric:tabular-nums;font-size:13px;color:var(--muted);margin-bottom:7px}
+  .side .kd b{color:var(--text);font-size:16px}
+  .side .bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .panel h2{margin:0 0 10px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  .side .row{grid-template-columns:minmax(0,1fr) auto;gap:6px;margin-bottom:10px}
+  .side .row > label{grid-column:1/-1;text-align:left;font-size:11.5px;color:var(--muted);margin-bottom:-3px}
+  .side .row > span:empty{display:none}
+  .side .btn.small{white-space:nowrap}
+  .side textarea{min-height:150px}
   .wdesk{display:grid;grid-template-columns:200px minmax(0,1fr);gap:14px;align-items:start;margin-top:12px}
   @media(max-width:960px){.wdesk{grid-template-columns:1fr}}
   .wsec{border:1px solid var(--border);border-radius:10px;overflow:hidden}
@@ -117,7 +125,8 @@
   .wdot{width:7px;height:7px;border-radius:50%;display:inline-block;background:var(--faint);opacity:.4}
   .wdot.ok{background:var(--ok);opacity:1}.wdot.now{background:var(--accent);opacity:1}
   .wwork{border:1px solid var(--border);border-radius:10px;padding:14px 16px;background:var(--panel)}
-  .wchips{display:flex;gap:7px;flex-wrap:wrap;margin:0 0 11px}
+  .wchips{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin:0 0 8px}
+  .wch{flex-wrap:wrap}
   .wch{border:1px solid var(--border);border-radius:7px;padding:4px 10px;background:var(--raised);
     font-size:12px;display:flex;align-items:baseline;gap:6px;font-variant-numeric:tabular-nums}
   .wch .l{color:var(--muted);font-size:11px}
@@ -126,7 +135,6 @@
   .wch.ok b{color:var(--ok)}.wch.warn b{color:var(--danger)}
   .wtxt{border:1px solid var(--border);border-radius:9px;background:var(--raised);
     padding:20px 26px;font-size:16px;line-height:1.8;white-space:pre-wrap}
-  .wtxt > *{max-width:74ch}
   .wduyet{border:1px solid var(--accent);border-radius:9px;padding:11px 13px;margin-top:12px;
     background:var(--accent-soft)}
   .wduyet .q{font-size:13px;font-weight:600;margin:0 0 8px}
@@ -245,19 +253,72 @@
     <!-- ============ TAB 2: WRITER ============ -->
     <section class="pane" id="p2" role="tabpanel" hidden>
       <!-- thanh tom tat: thiet lap la viec lam MOT LAN, khong dang chiem cho suot buoi -->
-      <div class="wtop">
-        <span class="ten" id="wt_ten">Chưa chọn tác giả</span>
-        <span class="meta" id="wt_meta"></span>
-        <span style="flex:1"></span>
-        <span class="kd" id="wt_kd">đã viết <b>0</b> / 18.000</span>
-        <button class="btn small" id="w_dl" onclick="downloadScript()"
-                style="border-color:transparent;background:none;color:var(--muted);font-weight:500">Tải về</button>
-        <button class="btn small" id="w_kc" onclick="kiemChung()"
-                style="border-color:transparent;background:none;color:var(--muted);font-weight:500">Kiểm chứng cả bài</button>
+      <!-- Bo cuc HAI COT y khuon Outline Board (mockup vong 5, Owner duyet 23/08):
+           trai = ban viet, phai = thiet lap + chi so, cot phai dinh man hinh. -->
+      <div class="wave" style="margin-bottom:10px">
+        <b id="wt_ten">Chưa chọn tác giả</b> <span class="meta" id="wt_meta"></span>
       </div>
-      <details class="wset" id="w_setup" open>
-        <summary>Thiết lập · bấm để mở hoặc thu — giọng, model, độ dài, outline</summary>
-        <div class="wset-body">
+      <div class="wcols">
+      <div>
+
+      <!-- ===== VIET TUNG CHUONG (23/08) ===== -->
+      <div class="wdesk" id="w_desk">
+        <div class="wsec" id="w_sections"></div>
+        <div class="wwork">
+          <div class="row" style="grid-template-columns:1fr auto;margin-bottom:8px">
+            <b id="w_ten" style="font-size:15px">—</b>
+          </div>
+          <div class="wvers" id="w_vers"></div>
+          <div class="wbrief" id="w_brief" hidden></div>
+          <div class="wtxt" id="w_than">Chưa nạp dữ liệu. Mở Thiết lập, chọn giọng và outline rồi bấm Nạp dữ liệu.</div>
+          <p class="note" id="w_dem_dt" style="margin:7px 0 0" hidden></p>
+          <div class="bar" id="w_hanhdong" style="margin-top:12px" hidden>
+            <button class="btn primary" id="w_viet_chuong" onclick="vietChuongNay()">Viết chương này</button>
+            <button class="btn" id="w_viet_het" onclick="vietHet()">Viết hết các chương còn lại</button>
+            <button class="btn" id="w_stop" onclick="cancelWrite()" hidden>Dừng và huỷ</button>
+          </div>
+          <div class="wduyet" id="w_duyetbox" hidden>
+            <p class="q">Chương này dùng được chưa?</p>
+            <textarea id="w_gopy" placeholder="Muốn sửa gì thì viết vào đây. Ví dụ: đoạn giữa còn khô, thêm một chi tiết cụ thể."></textarea>
+            <div class="wgoi">
+              <span onclick="themGopY('Câu còn vụn, viết liền mạch hơn')">Câu còn vụn</span>
+              <span onclick="themGopY('Thiếu chi tiết cụ thể')">Thiếu chi tiết cụ thể</span>
+              <span onclick="themGopY('Mở đầu chậm, vào việc ngay')">Mở đầu chậm</span>
+              <span onclick="themGopY('Bỏ những chỗ đang được đánh dấu')">Bỏ chỗ đang đánh dấu</span>
+            </div>
+            <div class="wacts">
+              <button class="btn primary" id="w_duyet" onclick="duyetPhan()">Duyệt, viết phần sau</button>
+              <button class="btn" id="w_vietlai" onclick="vietLaiPhan()">Viết lại theo góp ý</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="verdict" id="w_verdict">
+        <div><div class="pct" id="w_pct">—</div></div>
+        <table class="tg" id="w_tg"></table>
+      </div>
+      <!-- KIEM CHUNG KICH BAN (21/08/2026) — 3 nhom tach bach, Python do, 0 LLM.
+           Chi BAO, khong tu sua van ban, khong chan viec xuat (luat A3). -->
+      <div id="kc_box" hidden style="margin-top:14px;border:1px solid var(--border);border-radius:10px;padding:12px">
+        <div class="eyebrow">Kiểm chứng kịch bản <span id="kc_nguon" style="opacity:.7;font-weight:400"></span></div>
+        <div id="kc_ket"></div>
+        <table class="tg" id="kc_bang"></table>
+        <details id="kc_chitiet" style="margin-top:8px" hidden>
+          <summary style="cursor:pointer">Cụm bị đánh dấu (bấm để xem)</summary>
+          <div id="kc_hits" style="max-height:240px;overflow:auto;margin-top:6px"></div>
+        </details>
+      </div>
+      <details class="wlog"><summary>Log <span class="note" id="w_logdem"></span></summary>
+        <div class="log" id="w_log"></div></details>
+      <div class="hint">Bị ngắt giữa chừng (hết token/mất mạng)? Bấm <b>↻ Tiếp tục</b> để viết tiếp từ chương dở, không phải làm lại từ đầu.</div>
+      </div>
+      <aside class="side">
+        <div class="panel"><h2>Chương này</h2>
+          <div class="wchips" id="w_chips"></div>
+            <span class="note" id="w_y" style="margin:0"></span>
+        </div>
+        <div class="panel co-gian" id="w_setup"><h2>Thiết lập</h2>
+        <div class="cuon">
       <div class="lib-note" id="w_libnote"></div>
       <div id="w_hoso_canhbao" hidden style="margin:6px 0;padding:8px 10px;border-radius:8px;
            border:1px solid #b1483f;background:rgba(177,72,63,.08);font-size:13px"></div>
@@ -285,7 +346,7 @@
         <select id="w_outsrc"><option value="">(chọn run có outline.txt)</option></select>
         <button class="btn small" onclick="loadOutlineFromRun()">Nạp</button>
       </div>
-      <div class="row" style="grid-template-columns:150px minmax(0,1fr);align-items:start">
+      <div class="row" style="align-items:start">
         <label style="padding-top:8px">Outline</label>
         <textarea id="w_outline" oninput="napDanhSachTuOutline()" placeholder="Title: ...
 Hook: ...
@@ -293,66 +354,24 @@ Chapter 1: ...
 Chapter 2: ...
 End: ..."></textarea>
       </div>
+        </div>
         <div class="bar" style="margin-top:12px">
           <button class="btn primary" id="w_nap" onclick="napDuLieu()">Nạp dữ liệu</button>
           <span class="note" id="w_ghichu" style="margin:0">Chọn giọng và outline rồi bấm để sang khối viết.</span>
         </div>
         </div>
-      </details>
-      <div class="status" id="w_status"></div>
-      <div class="progress"><i id="w_prog"></i></div>
-      <div class="pills" id="w_pills"></div>
-
-      <!-- ===== VIET TUNG CHUONG (23/08) ===== -->
-      <div class="wdesk" id="w_desk">
-        <div class="wsec" id="w_sections"></div>
-        <div class="wwork">
-          <div class="row" style="grid-template-columns:1fr auto;margin-bottom:8px">
-            <b id="w_ten" style="font-size:15px">—</b>
-            <span class="note" id="w_y" style="margin:0"></span>
-          </div>
-          <div class="wvers" id="w_vers"></div>
-          <div class="wchips" id="w_chips"></div>
-          <div class="wbrief" id="w_brief" hidden></div>
-          <div class="wtxt" id="w_than">Chưa nạp dữ liệu. Mở Thiết lập, chọn giọng và outline rồi bấm Nạp dữ liệu.</div>
-          <div class="bar" id="w_hanhdong" style="margin-top:12px" hidden>
-            <button class="btn primary" id="w_viet_chuong" onclick="vietChuongNay()">Viết chương này</button>
-            <button class="btn" id="w_viet_het" onclick="vietHet()">Viết hết các chương còn lại</button>
-            <button class="btn" id="w_stop" onclick="cancelWrite()" hidden>Dừng và huỷ</button>
-          </div>
-          <div class="wduyet" id="w_duyetbox" hidden>
-            <p class="q">Phần này dùng được chưa?</p>
-            <textarea id="w_gopy" placeholder="Muốn sửa gì thì viết vào đây. Ví dụ: đoạn giữa còn khô, thêm một chi tiết cụ thể."></textarea>
-            <div class="wgoi">
-              <span onclick="themGopY('Câu còn vụn, viết liền mạch hơn')">Câu còn vụn</span>
-              <span onclick="themGopY('Thiếu chi tiết cụ thể')">Thiếu chi tiết cụ thể</span>
-              <span onclick="themGopY('Mở đầu chậm, vào việc ngay')">Mở đầu chậm</span>
-            </div>
-            <div class="wacts">
-              <button class="btn primary" id="w_duyet" onclick="duyetPhan()">Duyệt, viết phần sau</button>
-              <button class="btn" id="w_vietlai" onclick="vietLaiPhan()">Viết lại theo góp ý</button>
-            </div>
+        <div class="panel"><h2>Tiến độ</h2>
+          <div class="kd" id="wt_kd">đã viết <b>0</b> / 18.000</div>
+          <div class="progress"><i id="w_prog"></i></div>
+          <div class="status" id="w_status"></div>
+          <div class="pills" id="w_pills"></div>
+          <div class="bar" style="margin-top:9px">
+            <button class="btn small trong" id="w_dl" onclick="downloadScript()">Tải về</button>
+            <button class="btn small trong" id="w_kc" onclick="kiemChung()">Kiểm chứng cả bài</button>
           </div>
         </div>
+      </aside>
       </div>
-      <div class="verdict" id="w_verdict">
-        <div><div class="pct" id="w_pct">—</div></div>
-        <table class="tg" id="w_tg"></table>
-      </div>
-      <!-- KIEM CHUNG KICH BAN (21/08/2026) — 3 nhom tach bach, Python do, 0 LLM.
-           Chi BAO, khong tu sua van ban, khong chan viec xuat (luat A3). -->
-      <div id="kc_box" hidden style="margin-top:14px;border:1px solid var(--border);border-radius:10px;padding:12px">
-        <div class="eyebrow">Kiểm chứng kịch bản <span id="kc_nguon" style="opacity:.7;font-weight:400"></span></div>
-        <div id="kc_ket"></div>
-        <table class="tg" id="kc_bang"></table>
-        <details id="kc_chitiet" style="margin-top:8px" hidden>
-          <summary style="cursor:pointer">Cụm bị đánh dấu (bấm để xem)</summary>
-          <div id="kc_hits" style="max-height:240px;overflow:auto;margin-top:6px"></div>
-        </details>
-      </div>
-      <details class="wlog"><summary>Log <span class="note" id="w_logdem"></span></summary>
-        <div class="log" id="w_log"></div></details>
-      <div class="hint">Bị ngắt giữa chừng (hết token/mất mạng)? Bấm <b>↻ Tiếp tục</b> để viết tiếp từ chương dở, không phải làm lại từ đầu.</div>
     </section>
   </div>
 </div>
@@ -620,7 +639,6 @@ async function startWrite(resume){
   if(resume){ const c = await api('/api/checkpoint', {script, outline}); done = c.done||[]; }
   renderPills(outline, done);
   W_PHAN = parseHeadings(outline); $('w_script').value = script;
-  $('w_setup').open = false;                 // thiet lap xong thi thu lai, nhuong cho cho ban viet
   await napBan(); veDanhSach();
   if(cheDo()==='duyet'){                       // viet DUNG phan dau tien chua co
     const ke = phanKeTiep();
@@ -674,7 +692,6 @@ function napDuLieu(){
   W_PHAN = parseHeadings(o);
   W_BRIEF = tachBriefTuOutline(o);
   if(!W_PHAN.length){ $('w_ghichu').textContent = 'Outline chưa có mốc Hook / Chapter N / End.'; return; }
-  $('w_setup').open = false;
   veDanhSach();
   moPhan(W_DANG && W_BAN[W_DANG] ? W_DANG : W_PHAN[0]);
 }
@@ -700,7 +717,6 @@ function thuThietLapNeuDuDieuKien(){
   // Mockup vong 4: ban viet chiem phan chinh man hinh. Thiet lap la viec lam MOT
   // LAN — co du tac gia va outline roi thi thu lai, khong chiem cho suot buoi.
   const co = selectedAuthor() && $('w_outline').value.trim();
-  if(co && $('w_setup').open) $('w_setup').open = false;
 }
 
 async function napBaiDangCo(){
@@ -815,6 +831,12 @@ async function moPhan(h){
   const r = await api('/api/kiem-chung', {code:a.code, text:t});
   if(r.error) return;
   $('w_than').innerHTML = danhDau(t, (r.dau_vet_may||{}).hits);
+  // Dem cho da danh dau, de con so o o "dong tac may" co dia chi trong bai.
+  // danhDau() danh ca em-dash nen dem theo so <mark> that, khong dem theo hits.
+  const so_dau = ($('w_than').innerHTML.match(/<mark>/g) || []).length;
+  $('w_dem_dt').hidden = !so_dau;
+  $('w_dem_dt').textContent = so_dau
+    ? `${so_dau} chỗ mang dấu vết máy · phần được tô trong bài` : '';
   const n = r.nhip && r.nhip.chi_so || {}, c = r.nhip && r.nhip.chuan || null;
   const dt = r.dau_vet_may || {};
   const chip = (l,v,vs,ok)=>`<span class="wch ${ok?'ok':'warn'}"><span class="l">${l}</span><b>${v}</b><span class="vs">${vs}</span></span>`;
