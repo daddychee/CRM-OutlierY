@@ -260,7 +260,8 @@ def _env() -> dict:
 
 def _run_extractor(job: dict, corpus: str, name: str, out: str, do_rhetoric: bool,
                    do_clonekit: bool, do_dataset: bool, provider: str | None,
-                   do_lab: bool = False, lab_samples: int = 5) -> None:
+                   do_lab: bool = False, lab_samples: int = 5,
+                   do_mo_ta: bool = False) -> None:
     status = "error"
     try:
         Path(out).mkdir(parents=True, exist_ok=True)
@@ -280,19 +281,24 @@ def _run_extractor(job: dict, corpus: str, name: str, out: str, do_rhetoric: boo
             rarg = ["rhetoric", "--author-dir", corpus, "--profile", profile, "--author", name]
             rarg += _provider_args(provider)
             ok = step(2, "2. rhetoric", rarg, False)
+        if ok and do_mo_ta:
+            # Mo ta giong + huong dan dung (24/08). Mot luot LLM, re; hong thi bo qua —
+            # ho so van dung duoc de viet, chi thieu doan mo ta.
+            marg = ["mo-ta", "--profile", profile] + _provider_args(provider)
+            step(3, "3. mo ta giong", marg, False)
         if ok and do_clonekit:
-            ok = step(3, "3. clonekit",
+            ok = step(4, "4. clonekit",
                       ["clonekit", "--author-dir", corpus, "--author", name,
                        "--out", str(Path(out) / "clonekit.md")], False)
         if ok and do_dataset:
-            step(4, "4. dataset",
+            step(5, "5. dataset",
                  ["dataset", "--author-dir", corpus, "--author", name,
                   "--out", str(Path(out) / "dataset.jsonl")], False)
         if ok and do_lab:
             # Buoc 5: do ky tu/brief RIENG cua tac gia nay (luat A5). Ton lab_samples x 4
             # luot LLM — chay CUOI de cac buoc re hon xong truoc; hong thi profile van dung
             # duoc (Writer roi ve hang so chung).
-            step(5, f"5. lab do do dai ({lab_samples * 4} chuong thu)",
+            step(6, f"6. lab do do dai ({lab_samples * 4} chuong thu)",
                  ["lab", "--profile", profile, "--samples", str(lab_samples),
                   *_provider_args(provider)], False)
         status = "done" if ok else "error"
@@ -454,6 +460,8 @@ def _tom_tat_tu_profile(profile: dict, ma: str, bang_delta: dict | None) -> dict
             "ti_le_dai": (gt.get("sentence_long_ratio") or 0) * 100 or None,
         },
         "neo_tu": sum(len(e.split()) for e in ex),
+        "mo_ta": {k: v for k, v in (profile.get("mo_ta_giong") or {}).items()
+                  if k != "so_do_neo"},
         "giong": {},
         "canh_bao": [],
     }
@@ -719,7 +727,8 @@ def make_handler():
                         return
                 steps = (1 + int(bool(b.get("rhetoric", True)))
                          + int(bool(b.get("clonekit", True)))
-                         + int(bool(b.get("dataset", True))) + int(bool(b.get("lab", False))))
+                         + int(bool(b.get("dataset", True))) + int(bool(b.get("lab", False)))
+                         + int(bool(b.get("mo_ta", False))))
                 job, err = _try_start(self._user(), "extractor", steps, out=b["out"])
                 if not job:
                     self._json(409, {"error": err}); return
@@ -727,7 +736,7 @@ def make_handler():
                     "job": job, "corpus": b["corpus"], "name": b["name"], "out": b["out"],
                     "do_rhetoric": b.get("rhetoric", True), "do_clonekit": b.get("clonekit", True),
                     "do_dataset": b.get("dataset", True), "provider": b.get("provider"),
-                    "do_lab": b.get("lab", False),
+                    "do_lab": b.get("lab", False), "do_mo_ta": b.get("mo_ta", False),
                     "lab_samples": max(3, min(10, int(b.get("lab_samples") or 5))),
                 }, daemon=True).start()
                 self._json(200, {"started": True})

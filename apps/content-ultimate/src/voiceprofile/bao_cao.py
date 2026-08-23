@@ -100,6 +100,15 @@ def bao_cao_extract(profile: dict, corpus_dir: str | Path | None = None,
         d += ["## ⚠ Cần biết trước khi dùng hồ sơ này", ""]
         d += [f"- {c}" for c in canh] + [""]
 
+    # --- Mo ta giong: cai NGUOI DOC can truoc tien (24/08) --------------------------
+    mt = profile.get("mo_ta_giong") or {}
+    if mt:
+        from .mo_ta_giong import dong_markdown
+        d += ["## Giọng này dùng cho việc gì", ""]
+        d += [f"- {x}" for x in dong_markdown(mt)] + [""]
+        d += ["*Đoạn trên do model viết, nhưng chỉ được đọc số đo Python đã đo và các "
+              "đoạn văn thật của tác giả — không có con số nào do nó nghĩ ra.*", ""]
+
     # --- 1. May da doc gi ----------------------------------------------------------
     d += ["## Corpus đã đọc", "",
           "| | |", "|---|---|",

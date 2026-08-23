@@ -401,6 +401,47 @@ def write(
         _run_validate(script_md, profile, author_dir)
 
 
+@app.command(name="mo-ta")
+def mo_ta_lenh(
+    profile_path: str = typer.Option(..., "--profile", help="profile.json cua tac gia"),
+    provider: str = typer.Option(None, "--provider", help="Provider LLM"),
+    model: str = typer.Option(None, "--model", help="Ghi de model"),
+):
+    """Mo ta giong van + huong dan dung (dung cho noi dung gi, mood, atmosphere).
+
+    Cho DUY NHAT trong author extract ma LLM noi thanh loi — nen no chi duoc nhin SO
+    DA DO va DOAN VAN THAT; ho so chua du diem do thi khong goi model.
+    """
+    from .mo_ta_giong import NHAN_VIET, sinh_mo_ta
+    p = Path(profile_path)
+    if not p.is_file():
+        typer.echo(f"Khong tim thay {profile_path} — chay `build` truoc.")
+        raise typer.Exit(code=1)
+    profile = json.loads(p.read_text(encoding="utf-8"))
+    try:
+        cfg = _pick_provider(provider, model)
+    except RuntimeError as e:
+        typer.echo(f"LOI: {e}")
+        raise typer.Exit(code=1)
+    r = sinh_mo_ta(profile, lambda pr, sc: llm_json(pr, sc, cfg))
+    if not r.get("mo_ta"):
+        typer.echo(f"Khong sinh duoc mo ta: {r.get('ly_do')}")
+        raise typer.Exit(code=1)
+    profile["mo_ta_giong"] = r["mo_ta"]
+    p.write_text(json.dumps(profile, ensure_ascii=False, indent=2), encoding="utf-8")
+    typer.echo(f"Da ghi mo_ta_giong vao {p}:")
+    for k, nhan in NHAN_VIET.items():
+        if r["mo_ta"].get(k):
+            typer.echo(f"  {nhan}: {r['mo_ta'][k]}")
+    # Bao cao .md dung lai de mang theo doan mo ta vua sinh
+    try:
+        from .bao_cao import bao_cao_extract, ghi_bao_cao
+        cd = (profile.get("corpus_stats") or {}).get("corpus_dir")
+        ghi_bao_cao(bao_cao_extract(profile, corpus_dir=cd), p.parent / "bao-cao-extract.md")
+    except Exception as e:  # noqa: BLE001
+        typer.echo(f"(Khong dung lai duoc bao cao: {e})")
+
+
 @app.command(name="bao-cao")
 def bao_cao_lenh(
     profile_path: str = typer.Option(None, "--profile", help="profile.json cua MOT ho so"),
