@@ -89,14 +89,27 @@ def dac_trung(text: str) -> dict[str, float]:
     }
 
 
-def ho_so(don_vi_do: list[str], min_don_vi: int = 3) -> dict:
+def ho_so(don_vi_do: list[str], min_don_vi: int = 3,
+          van_goc: list[str] | None = None) -> dict:
     """Gop chin chieu tren cac don vi do cua corpus -> target + sai so.
 
     Dung dung luat C1: duoi min_don_vi diem do thi sd = None va do_duoc = False —
     gia tri van do duoc, chi la chua chung minh duoc no on dinh.
+
+    `van_goc` (bug sua 24/08): don vi do do `chunk_by_words` cat ra duoc NOI BANG DAU
+    CACH, tuc ranh gioi doan bi xoa sach. Do "so cau moi doan" tren do thi ho so nao
+    du lon de phai cat chunk cung bi bao "file khong co mot dong trong nao" — canh bao
+    oan cho phan lon kho (A001 co 2.693 doan that, sau khi cat chi con 37). Chieu do
+    doan phai do tren VAN GOC; cac chieu khac khong bi anh huong nen van do tren don vi.
     """
     khoi = [t for t in don_vi_do if (t or "").strip()] or [""]
     per = [dac_trung(t) for t in khoi]
+    goc = [t for t in (van_goc or []) if (t or "").strip()]
+    if goc:
+        per_goc = [dac_trung(t) for t in goc]
+        for i, p_ in enumerate(per):
+            g = per_goc[min(i, len(per_goc) - 1)]
+            p_["cau_moi_doan"], p_["so_doan"] = g["cau_moi_doan"], g["so_doan"]
     du = len(khoi) >= min_don_vi
     chieu = {}
     for ten in TEN_CHIEU:

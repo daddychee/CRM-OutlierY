@@ -80,3 +80,25 @@ def test_corpus_co_ranh_doan_thi_khai_binh_thuong():
     hs = DN.ho_so([van, van, van])
     assert not hs["canh_bao"]
     assert any("Đoạn dài" in c for c in DN.mo_ta(hs))
+
+
+def test_do_cau_moi_doan_tren_VAN_GOC_khong_phai_don_vi_da_cat():
+    """Bug 24/08: chunk_by_words noi cac cau bang dau cach nen XOA SACH ranh gioi doan;
+    do 'so cau moi doan' tren chunk do thi ho so nao du lon de phai cat chunk cung bi
+    bao "file khong co mot dong trong nao" — canh bao oan cho phan lon kho."""
+    goc = "Mot. Hai.\n\nBa. Bon.\n\nNam. Sau.\n\nBay. Tam."
+    da_cat = ["Mot. Hai. Ba. Bon.", "Nam. Sau. Bay. Tam."]      # ranh gioi doan da mat
+    hs = DN.ho_so(da_cat, van_goc=[goc])
+    assert not hs["canh_bao"], "van goc CO ranh gioi doan thi khong duoc bao thieu"
+    assert abs(hs["chieu"]["cau_moi_doan"]["target"] - 2.0) < 0.01
+
+
+def test_van_bao_khi_van_goc_that_su_mot_khoi():
+    mot_khoi = "Mot. Hai. Ba. Bon. Nam. Sau. Bay. Tam."
+    hs = DN.ho_so([mot_khoi], van_goc=[mot_khoi])
+    assert hs["canh_bao"]
+
+
+def test_khong_truyen_van_goc_thi_giu_hanh_vi_cu():
+    mot_khoi = "Mot. Hai. Ba. Bon."
+    assert DN.ho_so([mot_khoi])["canh_bao"]

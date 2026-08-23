@@ -151,7 +151,9 @@ def build_profile(
         # vao quant_features. Moi chieu nhet vao quant_features se tu dong chay tiep
         # vao reproduction_targets roi vao thang cham giong, va thang cang nhieu chieu
         # tap nham thi cang de doc nguoc (bai hoc punct_freq_total 23/08).
-        "discourse_features": dien_ngon_ho_so(target_texts),
+        # van_goc = van ban NGUYEN: don vi do (chunk) da mat ranh gioi doan, do do dai
+        # doan tren no thi ho so nao phai cat chunk cung bi bao "khong co dong trong".
+        "discourse_features": dien_ngon_ho_so(target_texts, van_goc=author_corpus.works),
         "signature_moves": [],  # duoc dien sau boi lenh `rhetoric` (Module 3 + 3b)
         "language_neutral_targets": {},  # Module 4 - chua co
         "exemplars": exemplars,
