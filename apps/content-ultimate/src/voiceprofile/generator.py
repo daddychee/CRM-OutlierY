@@ -559,24 +559,66 @@ def build_voice_block(profile: dict) -> str:
 # ponytail: nhan dien bang DAU tieng Viet, khong keo them thu vien nhan dien ngon ngu.
 # Tran: chi phan biet duoc vi/en, va outline tieng Viet KHONG DAU se bi coi la "en".
 # Nang cap khi thuc su can them ngon ngu: doi _DAU_VI thanh bang ky tu theo ngon ngu.
-_DAU_VI = "ăâđêôơưáàảãạấầẩẫậéèẻẽẹếềểễệíìỉĩịóòỏõọốồổỗộớờởỡợúùủũụứừửữựýỳỷỹỵ"
+# Chi lay nhung dau CHI TIENG VIET moi co. Bo het dau dung chung voi Tay Ban Nha /
+# Phap / Bo Dao Nha / Italia (á à â ã é è ê í ì ó ò ô õ ú ù ý ç ñ ü ï î ë û): mot ten
+# rieng nhu "El Tío" hay "São Paulo" khong duoc phep lat ca bai sang tieng Viet.
+_DAU_RIENG_VI = set("ăđơưạảấầẩẫậắằẳẵặẹẻẽếềểễệỉĩịọỏốồổỗộớờởỡợụủứừửữựỳỵỷỹ")
+# Nguong theo TY LE TU mang dau rieng, khong theo "co hay khong": outline tieng Anh
+# viet ve Viet Nam van co the chua vai ten rieng tieng Viet. Do that 23/08 tren 40
+# outline that: tieng Anh 0.000-0.048, van tieng Viet that 0.326-0.468 — 0.15 nam
+# giua khe, cach mau Anh cao nhat gan 7 lan.
+NGUONG_TY_LE_VI = 0.15
+_TU = re.compile(r"[^\W\d_]+", re.UNICODE)
 TEN_NGON_NGU = {"vi": "Vietnamese", "en": "English"}
 
 
+def ty_le_dau_viet(text: str) -> float:
+    """Ti le TU co mang dau rieng cua tieng Viet. Dung cho ca test lan chan doan."""
+    tu = _TU.findall(text or "")
+    if not tu:
+        return 0.0
+    co = sum(1 for w in tu if any(c in _DAU_RIENG_VI for c in w.lower()))
+    return co / len(tu)
+
+
 def ngon_ngu_cua(outline: str) -> str:
-    """Ngon ngu cua outline. Khong nhan ra -> 'en' (mac dinh cua ca kho hien nay)."""
-    t = (outline or "").lower()
-    return "vi" if any(c in t for c in _DAU_VI) else "en"
+    """Ngon ngu cua outline. Khong nhan ra -> 'en' (mac dinh cua ca kho hien nay).
+
+    SU CO 23/08: ban dau chi can MOT ky tu co dau la ket luan tieng Viet. Outline
+    Bolivia co dung mot chu "Tío" (ten rieng Tay Ban Nha) -> may bao tieng Viet ->
+    prompt ra lenh viet tieng Viet -> hook that ra tieng Viet. Model khong sai, may
+    nhan dien sai. Gio doi thanh do TY LE tren bo dau RIENG cua tieng Viet.
+    """
+    return "vi" if ty_le_dau_viet(outline or "") >= NGUONG_TY_LE_VI else "en"
 
 
 def khoi_ngon_ngu(ma: str) -> str:
-    """Cau lenh ngon ngu cho prompt. Rong voi 'en' de bai tieng Anh KHONG doi mot byte."""
-    if ma == "en":
-        return ""
+    """Cau lenh ngon ngu cho prompt — NOI RA trong MOI truong hop, ke ca tieng Anh.
+
+    Ban dau tra rong voi 'en' de bai tieng Anh khong doi mot byte. Nhung nhu the
+    bai tieng Anh khong he duoc bao ve: khong cau nao noi phai viet tieng Anh, tat
+    ca trong vao viec model tu suy ra tu outline. Luat cua Owner la TUYET DOI, nen
+    doi lai: luon ra lenh. (Danh doi da biet: prompt tieng Anh dai them mot dong.)
+    """
     ten = TEN_NGON_NGU.get(ma, ma)
     return (f"LANGUAGE: write the entire piece in {ten}. Every sentence, including the "
             f"opening line, must be in {ten}. Do not mix in another language, and do not "
-            f"translate the outline back into English.")
+            f"translate the outline into a different language.")
+
+
+def sai_ngon_ngu(text: str, ma_mong_doi: str) -> str:
+    """Doc ra co dung ngon ngu da ra lenh khong. Do bang MAY, 0 dong, chay sau moi phan.
+
+    Su co 23/08 im lang suot buoi: may nhan dien sai -> prompt ra lenh sai -> model
+    viet tieng Viet cho outline tieng Anh, va KHONG CO GI bao. Ra lenh la chua du,
+    phai do lai dau ra. Dung chinh thuoc do cua ngon_ngu_cua nen mot nguong duy nhat.
+    """
+    that = ngon_ngu_cua(text)
+    if not text.strip() or that == ma_mong_doi:
+        return ""
+    return (f"NGON NGU SAI: da ra lenh viet {TEN_NGON_NGU.get(ma_mong_doi, ma_mong_doi)} "
+            f"nhung doan viet ra la {TEN_NGON_NGU.get(that, that)} "
+            f"(ty le tu mang dau tieng Viet {ty_le_dau_viet(text):.2f}).")
 
 
 def canh_bao_ngon_ngu(ma_bai: str, profile: dict | None) -> str:
@@ -1279,6 +1321,9 @@ def generate_script(
         prev_tail = _tail(body)
         if on_section_done:
             on_section_done(sec.heading, body)   # luu checkpoint ngay
+        sai = sai_ngon_ngu(body, ngon_ngu_cua(outline))
+        if sai and on_progress:
+            on_progress(f"  ! {sec.heading}: {sai}")
         if on_progress:
             on_progress(f"  {sec.heading}: {len(body)} ky tu (tong {written}/{total_chars})")
     # >= nua so chuong phai no => khong phai ngau nhien tung chuong ma la HO SO GIONG viet

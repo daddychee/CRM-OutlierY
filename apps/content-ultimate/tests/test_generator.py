@@ -910,3 +910,75 @@ def test_khong_dua_do_dai_doan_vo_ly_vao_prompt(monkeypatch):
     kh = build_nhip_block(hs)
     assert "paragraphs of" not in kh
     assert "average sentence length" in kh      # cac dong khac van giu
+
+
+# ===== SU CO 23/08: mot chu 'i' co dau lam ca bai tieng Anh ra tieng Viet =====
+
+def test_dau_tieng_nuoc_khac_khong_bien_bai_thanh_tieng_viet_23_08():
+    """Outline Bolivia (tieng Anh) co ten rieng Tay Ban Nha "El Tio" — DUY NHAT mot
+    chu i co dau. Ban cu quet 'co bat ky ky tu co dau nao' nen ket luan tieng Viet,
+    roi prompt RA LENH cho model viet toan bai bang tieng Viet. Model lam dung lenh;
+    loi nam o may nhan dien. Hook that da ra tieng Viet (script.md 12:14 ngay 23/08).
+
+    Do that de chon nguong (0.15): 40 outline tieng Anh co ty le tu mang dau RIENG
+    cua tieng Viet 0.000-0.048, van tieng Viet that 0.326-0.468 — khe rat rong.
+    """
+    from voiceprofile.generator import ngon_ngu_cua
+
+    bolivia = ("Chapter 3: Miners keep a colonial faith, worshipping a devil statue "
+               "named El Tio to bargain for survival underground.").replace("Tio", "Tío")
+    assert ngon_ngu_cua(bolivia) == "en"
+
+    # Ten rieng tieng Viet trong outline tieng Anh cung KHONG duoc lat ngon ngu:
+    # phim tai lieu ve Viet Nam viet bang tieng Anh la ca hoan toan binh thuong.
+    da_nang = ("Chapter 2: The bridge over the Han river in Đà Nẵng became "
+               "a symbol of how fast the city rebuilt itself after the war.")
+    assert ngon_ngu_cua(da_nang) == "en"
+
+    # Cac dau dung chung voi tieng Phap / Tay Ban Nha / Bo Dao Nha deu khong tinh.
+    assert ngon_ngu_cua("Chapter 1: A café in São Paulo, a niño, a crêpe.") == "en"
+
+    # Van tieng Viet that van phai ra 'vi'.
+    assert ngon_ngu_cua("Chương 1: Đời sống ở đây thay đổi rất nhanh sau khi con đường "
+                        "mới được xây, người dân không còn phải đi vòng qua núi nữa.") == "vi"
+
+
+def test_bai_tieng_anh_cung_phai_duoc_RA_LENH_ngon_ngu_23_08():
+    """Ban cu tra chuoi RONG cho 'en' — chu y la "bai tieng Anh khong doi mot byte".
+    Nhung nhu vay bai tieng Anh KHONG he duoc bao ve: khong cau lenh nao noi phai
+    viet tieng Anh, tat ca trong vao viec model tu suy ra. Luat cua Owner la tuyet
+    doi, nen ngon ngu phai duoc NOI RA trong moi truong hop.
+    """
+    from voiceprofile.generator import khoi_ngon_ngu, build_hook_prompt
+
+    lenh = khoi_ngon_ngu("en")
+    assert lenh and "English" in lenh
+
+    _, user = build_hook_prompt("A landlocked country with a navy", "",
+                                "Chapter 1: The navy that never sees the sea.")
+    assert "English" in user
+
+
+def test_do_lai_ngon_ngu_DAU_RA_chu_khong_chi_ra_lenh_23_08():
+    """Ra lenh la chua du. Su co 23/08 im lang suot buoi vi khong co gi do lai dau ra:
+    may nhan dien sai -> prompt ra lenh sai -> model viet dung lenh sai, khong ai biet.
+    Gio moi phan viet xong deu duoc do lai, lech thi bao ngay tren log."""
+    from voiceprofile import generator as g
+
+    def llm(system, user, max_tokens=0, **kw):
+        return ("Một quốc gia không có lấy một mét bờ biển, nhưng vẫn nuôi hải quân. "
+                "Hàng ngàn thủy thủ. Hàng chục con tàu. Vì sao họ không chịu buông?")
+
+    ghi: list[str] = []
+    g.generate_script(
+        outline=("Title: Bolivia" + chr(10) + "Hook: A navy with no sea." + chr(10)
+                 + "Chapter 1: The navy that never sees the sea." + chr(10) + "End: Why it matters."),
+        profile={"author": "X", "exemplars": ["A sample paragraph of prose."], "signature_moves": []},
+        llm_text=llm, total_chars=1200, on_progress=ghi.append)
+
+    bao = [x for x in ghi if "NGON NGU SAI" in x]
+    assert len(bao) == 3, ghi                      # hook + chuong + ket, khong sot phan nao
+    assert "English" in bao[0] and "Vietnamese" in bao[0]
+
+    # Nguoc lai: doan tieng Anh dung yeu cau thi TUYET DOI khong duoc bao nham.
+    assert g.sai_ngon_ngu("A navy with no sea, and yet it sails every morning.", "en") == ""
