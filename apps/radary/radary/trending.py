@@ -75,6 +75,18 @@ def _mien(a: dict) -> str:
 
 
 _lan_goi_gdelt = [0.0]           # moc lan goi GDELT gan nhat (trong tien trinh)
+_chan_toi = [0.0]                # dinh 429 thi nghi toi moc nay (trong tien trinh)
+
+# Do that 23/08: GDELT ton 12-17s MOI loi goi va chan nhip theo kieu dinh-roi-chan-
+# tiep chu khong phai cua so co dinh — chinh gian cach khong chua duoc. Nen:
+#  - het gio 30s (20s cu lam loi goi that 16.9s suyt truot, va da co 1 URLError)
+#  - dinh 429 thi NGHI han GDELT_NGHI_SAU_429 giay, tu choi ngay khong cham mang
+#  - ket qua co du lieu thi cache VS_HAN giay (khoi luong tin 30 ngay khong doi
+#    trong vai gio) — lan hoi lai la 0 giay, 0 loi goi
+GDELT_HET_GIO = 30
+GDELT_NGHI_SAU_429 = 90
+VS_HAN = 6 * 3600
+KHOA_VS = "trending_vi_sao"
 
 
 def _giu_nhip(gian_cach: float = GDELT_GIAN_CACH) -> None:
@@ -86,7 +98,7 @@ def _giu_nhip(gian_cach: float = GDELT_GIAN_CACH) -> None:
     _lan_goi_gdelt[0] = time.time()
 
 
-def _tai_text(url: str, doc=None, het_gio: int = 20) -> str:
+def _tai_text(url: str, doc=None, het_gio: int = GDELT_HET_GIO) -> str:
     if doc is not None:
         return doc(url)
     with _ur.urlopen(_ur.Request(url, headers=_UA), timeout=het_gio) as r:
@@ -300,6 +312,13 @@ def vi_sao_nong(cum: str, doc=None, ngay: int = 30, tran_bai: int = 8) -> dict:
     Loi/khong co du lieu -> tra co_du_lieu=False KEM LY DO, tuyet doi khong tra rong
     de nguoi (hay AI) doc nham thanh "khong co tin gi".
     """
+    cho = _chan_toi[0] - time.time()
+    if cho > 0:
+        # Khong cham mang: dinh 429 roi ma van goi tiep thi nguoi dung ngoi them
+        # ~12s nua chi de nhan lai dung loi do — day chinh la cam giac "mai khong
+        # xong". Noi thang con bao nhieu giay.
+        return {"co_du_lieu": False, "bi_chan_nhip": True, "cho_giay": int(cho) + 1,
+                "ly_do": f"GDELT đang chặn nhịp gọi — chờ {int(cho) + 1} giây rồi bấm lại"}
     q = _up.urlencode({"query": f'"{cum}"', "mode": "timelinevolinfo",
                        "format": "json", "timespan": f"{ngay}d"})
     if doc is None:
@@ -312,9 +331,10 @@ def vi_sao_nong(cum: str, doc=None, ngay: int = 30, tran_bai: int = 8) -> dict:
         # nguoi doc se di sua nham cho, dung ho su co 29/07 "Z.ai het tien bi bao
         # nham la khong lay duoc phu de".
         if e.code == 429:
+            _chan_toi[0] = time.time() + GDELT_NGHI_SAU_429
             return {"co_du_lieu": False, "bi_chan_nhip": True,
-                    "ly_do": f"GDELT chặn nhịp gọi (1 lời gọi/{GDELT_GIAN_CACH:.0f} giây) "
-                             "— chờ rồi bấm lại"}
+                    "cho_giay": GDELT_NGHI_SAU_429,
+                    "ly_do": f"GDELT chặn nhịp gọi — chờ {GDELT_NGHI_SAU_429} giây rồi bấm lại"}
         return {"co_du_lieu": False, "ly_do": f"GDELT lỗi HTTP {e.code}"}
     except Exception as e:                                       # noqa: BLE001
         return {"co_du_lieu": False, "ly_do": f"GDELT lỗi: {type(e).__name__}"}
@@ -339,6 +359,26 @@ def vi_sao_nong(cum: str, doc=None, ngay: int = 30, tran_bai: int = 8) -> dict:
             "dinh_phan_tram": round(dinh.get("value") or 0, 4), "bai": bai,
             "ghi_chu": None if bai else "GDELT có đường khối lượng nhưng không kèm bài báo nào"}
 
+
+
+def vi_sao_co_cache(conn, ws: int, cum: str, doc=None, ngay: int = 30) -> dict:
+    """vi_sao_nong() co cache theo (ws, cum). Lan dau van phai tra gia 12-17s cho
+    GDELT — khong rut ngan duoc. Lan hoi lai thi khong.
+
+    CHI cache cau tra loi CO DU LIEU: loi mang / 429 ma cache 6 tieng thi mot luc
+    GDELT tro chung con app van noi "khong co tin", dung ho van chong bia.
+    """
+    from . import db
+    so = db.kv_get(conn, ws, KHOA_VS, None) or {}
+    cu = so.get(cum)
+    if cu and time.time() - cu.get("luc", 0) < VS_HAN:
+        return {**cu["kq"], "tu_cache": True, "cache_luc": cu["luc"]}
+    kq = vi_sao_nong(cum, doc=doc, ngay=ngay)
+    if kq.get("co_du_lieu"):
+        so[cum] = {"luc": time.time(), "kq": kq}
+        with conn:
+            db.kv_set(conn, ws, KHOA_VS, so)
+    return kq
 
 # =========================================================== VIEC CHAY NEN
 # Khuon giong niche_report.py: trang thai trong kv (khong de bang moi), mot luong

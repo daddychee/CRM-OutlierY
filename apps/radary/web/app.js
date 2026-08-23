@@ -2029,6 +2029,18 @@ function Nhip({ nhip, o }) {
     <polyline points=${pts} fill="none" stroke=${`var(--tr-${o})`} stroke-width="1.5" stroke-linejoin="round"/></svg>`;
 }
 
+// Đồng hồ đếm giây lúc chờ. GDELT chậm là bản chất (đo thật 12-17s), không rút
+// ngắn được — nhưng "chờ mà thấy số chạy" khác hẳn "chờ mà không biết còn sống".
+function DemGiay({ tu }) {
+  const [n, setN] = useState(0);
+  useEffect(() => {
+    if (!tu) return;
+    const t = setInterval(() => setN(Math.round((Date.now() - tu) / 1000)), 250);
+    return () => clearInterval(t);
+  }, [tu]);
+  return html`<b> ${n}s</b>`;
+}
+
 function Trending({ ws, canEdit }) {
   const [d, setD] = useState(null);
   const [busy, setBusy] = useState('');
@@ -2057,8 +2069,8 @@ function Trending({ ws, canEdit }) {
 
   const hoiViSao = async cum => {
     setChon(cum);
-    if (viSao[cum]) return;
-    setViSao(v => ({ ...v, [cum]: { dang_hoi: true } }));
+    if (viSao[cum] && !viSao[cum].dang_hoi) return;
+    setViSao(v => ({ ...v, [cum]: { dang_hoi: true, tu: Date.now() } }));
     try {
       const r = await api('POST', `/workspaces/${ws}/trending/vi-sao`, { cum });
       setViSao(v => ({ ...v, [cum]: r }));
@@ -2127,10 +2139,12 @@ function Trending({ ws, canEdit }) {
         <div class="tr-h2">Vì sao “${chon}” nóng — GDELT (0 khoá, 0 đồng)</div>
         ${(() => {
           const v = viSao[chon];
-          if (!v || v.dang_hoi) return html`<p class="mut">Đang hỏi GDELT…</p>`;
+          if (!v || v.dang_hoi) return html`<p class="mut">Đang hỏi GDELT
+            <${DemGiay} tu=${v && v.tu}/> — nguồn này thường mất 12–17 giây.</p>`;
           if (!v.co_du_lieu) return html`<p class="mut">${v.ly_do}</p>`;
           return html`<div>
-            <p class="mut">Đỉnh ${v.dinh_ngay} · ${v.dinh_phan_tram} <span class="mut">(${v.don_vi})</span> · chuỗi ${v.diem.length} mốc</p>
+            <p class="mut">Đỉnh ${v.dinh_ngay} · ${v.dinh_phan_tram} <span class="mut">(${v.don_vi})</span> · chuỗi ${v.diem.length} mốc${
+              v.tu_cache ? html` · <span title="Không gọi lại GDELT — kết quả đã hỏi trước đó">đọc lại từ bộ nhớ</span>` : ''}</p>
             <ul class="tr-bai">${(v.bai || []).map(b => html`<li>
               <a href=${b.link} target="_blank" rel="noopener">${b.tieu_de}</a>
               <span class="mut"> ${b.nguon}</span></li>`)}</ul>

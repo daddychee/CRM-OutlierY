@@ -1114,15 +1114,18 @@ def trending_quet(ws: int, request: Request):
 @app.post('/api/workspaces/{ws}/trending/vi-sao')
 def trending_vi_sao(ws: int, body: dict, request: Request):
     """Vi sao thuc the nay nong — GDELT (0 khoa, 0 dong). MOT ung vien mot lan:
-    GDELT chan nhip 1 loi goi/5 giay, tuyet doi khong quet ca bang qua duong nay."""
+    GDELT chan nhip rat gat, tuyet doi khong quet ca bang qua duong nay.
+
+    Do that 23/08: moi loi goi ton 12-17s. Di qua lop cache nen hoi lai la 0 giay.
+    """
     from . import trending
     with get_conn() as c:
         u = auth.require_user(c, request)
         auth.ws_for_user(c, ws, u['id'])
-    cum = (body.get('cum') or '').strip()
-    if not cum:
-        raise HTTPException(400, 'Thiếu cụm.')
-    return trending.vi_sao_nong(cum)
+        cum = (body.get('cum') or '').strip()
+        if not cum:
+            raise HTTPException(400, 'Thiếu cụm.')
+        return trending.vi_sao_co_cache(c, ws, cum)
 
 
 @app.post('/api/workspaces/{ws}/trending/chon')

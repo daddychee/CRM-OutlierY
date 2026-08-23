@@ -14,6 +14,16 @@ import pytest
 from radary import trending as tr
 
 
+@pytest.fixture(autouse=True)
+def _dat_lai_nhip_gdelt():
+    """Nhịp gọi + cờ nghỉ-sau-429 là biến TOÀN CỤC của tiến trình (đúng ý đồ: một
+    app một nhịp). Trong test thì nó rò từ ca này sang ca kia — một ca dính 429 là
+    mọi ca sau đó bị từ chối oan. Đặt lại trước mỗi ca."""
+    tr._chan_toi[0] = 0.0
+    tr._lan_goi_gdelt[0] = 0.0
+    yield
+
+
 # --------------------------------------------------------------- kho giả lập
 def _kho(bo: list[tuple[str, int, float]], bay_gio: float):
     """(tiêu đề, views, tuổi ngày) -> bản ghi kho đã chuẩn hoá."""
@@ -326,3 +336,64 @@ def test_ho_so_pool_khong_bia_video_khi_kho_thieu_yt_id():
     ])
     h = tr.ho_so_pool(kho, "guyana")
     assert h["n"] == 2 and h["video"] == []
+
+
+# ============================== GDELT cham — do that 23/08: 12-17s moi loi goi
+
+def test_vi_sao_co_cache_hoi_lai_khong_goi_mang():
+    """Owner báo 'vì sao nóng chạy lâu quá'. Đo thật: GDELT tốn 12-17s MỖI lời gọi
+    và chặn nhịp rất hay. Không rút ngắn được lời gọi đầu, nhưng lần hỏi LẠI thì
+    không được trả giá lần nữa — khối lượng tin 30 ngày không đổi trong vài giờ."""
+    from radary import db as _db
+    conn = _db.connect()
+    dem = []
+
+    def _gia(url):
+        dem.append(url)
+        return json.dumps({"timeline": [{"data": [
+            {"date": "20260816T120000Z", "value": 0.65,
+             "toparts": [{"title": "Bai 1", "url": "https://x.com/a"}]}]}]})
+
+    a = tr.vi_sao_co_cache(conn, 3, "guyana", doc=_gia)
+    b = tr.vi_sao_co_cache(conn, 3, "guyana", doc=_gia)
+    assert a["co_du_lieu"] and b["co_du_lieu"]
+    assert len(dem) == 1, "lần hỏi lại vẫn gọi mạng"
+    assert b["tu_cache"] is True and a.get("tu_cache") is not True
+    # cụm khác thì vẫn phải hỏi thật
+    tr.vi_sao_co_cache(conn, 3, "niger", doc=_gia)
+    assert len(dem) == 2
+
+
+def test_vi_sao_khong_cache_ket_qua_hong():
+    """Lỗi mạng/429 KHÔNG được đóng băng 6 tiếng — chỉ cache câu trả lời có dữ liệu."""
+    from radary import db as _db
+    conn = _db.connect()
+    dem = []
+
+    def _hong(url):
+        dem.append(url)
+        raise RuntimeError("mang hong")
+
+    for _ in range(2):
+        r = tr.vi_sao_co_cache(conn, 4, "guyana", doc=_hong)
+        assert r["co_du_lieu"] is False
+    assert len(dem) == 2
+
+
+def test_bi_429_thi_tu_choi_NGAY_thay_vi_bat_cho_them_mot_luot():
+    """Dính 429 rồi mà vẫn cho gọi tiếp thì người dùng ngồi thêm 12s nữa để nhận
+    đúng lỗi đó — cảm giác 'mãi không xong' đến từ đây. Chặn thì nói ngay, kèm số
+    giây còn lại, KHÔNG chạm mạng."""
+    import urllib.error as ue
+    dem = []
+
+    def _429(url):
+        dem.append(url)
+        raise ue.HTTPError(url, 429, "Too Many Requests", {}, None)
+
+    r1 = tr.vi_sao_nong("guyana", doc=_429)
+    assert r1["bi_chan_nhip"] is True
+    r2 = tr.vi_sao_nong("niger", doc=_429)
+    assert r2["bi_chan_nhip"] is True
+    assert len(dem) == 1, "lời gọi thứ hai vẫn chạm mạng"
+    assert r2["cho_giay"] > 0 and str(r2["cho_giay"]) in r2["ly_do"]
