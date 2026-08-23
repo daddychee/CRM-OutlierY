@@ -163,6 +163,10 @@
         <svg class="ic" viewBox="0 0 24 24"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3"/><path d="M1 14h6M9 8h6M17 16h6"/></svg> General</a>
       <a class="nav-item" href="/vault">
         <svg class="ic" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Vault</a>
+      {% elif sb_general %}
+      {# Cấp lẻ trang khu General (19/08) — /general là cửa, tự đưa tới trang có quyền #}
+      <a class="nav-item" href="/general">
+        <svg class="ic" viewBox="0 0 24 24"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3"/><path d="M1 14h6M9 8h6M17 16h6"/></svg> General</a>
       {% elif sb_ns %}
       <a class="nav-item" href="/general/people">
         <svg class="ic" viewBox="0 0 24 24"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3"/><path d="M1 14h6M9 8h6M17 16h6"/></svg> General</a>
@@ -186,6 +190,32 @@
     <iframe class="khung-app" src="/app/{{ app.slug }}/{{ request.query_params.get('duong', '') }}" title="{{ app.ten }}"></iframe>
   </div>
 <script>
+// F5 GIỮ ĐÚNG CHỖ ĐANG XEM (lỗi Owner báo 24/08: "author extract ấn F5 lại chuyển về
+// trang chủ, các tab còn lại cũng vậy").
+// Nguyên nhân: app khung nằm trong iframe, nên khi người dùng đi bên TRONG app (bấm
+// tab Writing, mở Outline Board…) thì URL của khung không đổi — F5 nạp lại khung với
+// ?duong= cũ, tức về trang mặc định của app. Iframe cùng origin nên khung đọc được
+// đường dẫn thật của nó sau mỗi lần tải, rồi replaceState để thanh địa chỉ khớp chỗ
+// đang xem. Không dùng pushState: đi trong app không nên đẻ thêm mục lịch sử ở khung
+// (nút Back của trình duyệt đã đi trong iframe rồi).
+(function () {
+  var fr = document.querySelector('iframe.khung-app');
+  if (!fr || !history.replaceState) return;
+  var tien = '/app/{{ app.slug }}/';
+  fr.addEventListener('load', function () {
+    var duong;
+    try {
+      var loc = fr.contentWindow.location;      // cùng origin — không ném ở đây
+      if (loc.pathname.indexOf(tien) !== 0) return;
+      duong = loc.pathname.slice(tien.length).replace(/\/+$/, '') + (loc.search || '');
+    } catch (e) { return; }                     // khác origin: bỏ qua, không làm hỏng khung
+    var url = new URL(location.href);
+    if (duong) { url.searchParams.set('duong', duong); }
+    else { url.searchParams.delete('duong'); }
+    if (url.href !== location.href) history.replaceState(null, '', url.href);
+  });
+})();
+
 // Popup Management ghim đáy — JS y khuôn base.html các app (thuần, LAN an toàn).
 (function () {
   var mgmtNut = document.getElementById('sb-mgmt-nut');

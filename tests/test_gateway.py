@@ -7,6 +7,7 @@ Test proxy là TÍCH HỢP THẬT: app-mau chạy uvicorn thread ở :9190 (đú
 import importlib.util
 import threading
 import time
+from datetime import date
 from pathlib import Path
 
 import bcrypt
@@ -15,6 +16,7 @@ import pytest
 import uvicorn
 from fastapi.testclient import TestClient
 
+from nen.common import nas_sync
 from nen.gateway.main import app as gateway_app
 from nen.iam import iam
 
@@ -111,6 +113,57 @@ def test_user_bi_xoa_phien_chet_theo(client, iam_db):
         conn.execute("DELETE FROM tai_khoan WHERE ten='owner-test'")
     conn.close()
     assert client.get("/").status_code == 303   # đọc SỐNG → phiên chết ngay
+
+
+# ---------- NAS: gateway gọi dong_bo_nen đúng lúc/đúng nhóm (đưa NAS vào v2) ----------
+# Monkeypatch THẲNG nas_sync.dong_bo_nen (ghi lại lời gọi) — không cần bật
+# NAS_DONG_BO/mock subprocess PowerShell, vì an toàn nội bộ (công tắc, tên hệ
+# thống, chuẩn mật khẩu...) là trách nhiệm RIÊNG của nas_sync (test_nas_sync.py);
+# ở đây chỉ kiểm GATEWAY nối đúng dây: đúng ten/mật khẩu thật/nhóm.
+
+def test_dang_nhap_dung_goi_nas_dong_bo_nhom_toan_quyen(client, iam_db, monkeypatch):
+    """owner-test level 5 >= min_level 3 của hành động nas_cap_cao (phan_quyen.json
+    apps.to-chuc) → NHOM_TOAN_QUYEN."""
+    from nen.gateway import main as gw
+    ghi = []
+    monkeypatch.setattr(gw.nas_sync, "dong_bo_nen",
+                        lambda ten, mk, nhom: ghi.append((ten, mk, nhom)))
+    _login(client)
+    assert ghi == [("owner-test", "mk-test", nas_sync.NHOM_TOAN_QUYEN)]
+
+
+def test_dang_nhap_level_thap_goi_nhom_chi_them(client, iam_db, monkeypatch):
+    """nhanvien level 2 < min_level 3 → NHOM_CHI_THEM (đọc + thêm file, không sửa/xóa)."""
+    from nen.gateway import main as gw
+    ghi = []
+    monkeypatch.setattr(gw.nas_sync, "dong_bo_nen",
+                        lambda ten, mk, nhom: ghi.append((ten, mk, nhom)))
+    _login(client, "nhanvien", "mk-nv-6")
+    assert ghi == [("nhanvien", "mk-nv-6", nas_sync.NHOM_CHI_THEM)]
+
+
+def test_dang_nhap_sai_khong_goi_nas(client, iam_db, monkeypatch):
+    from nen.gateway import main as gw
+    ghi = []
+    monkeypatch.setattr(gw.nas_sync, "dong_bo_nen",
+                        lambda ten, mk, nhom: ghi.append((ten, mk, nhom)))
+    _login(client, mk="sai")
+    assert ghi == []
+
+
+def test_tu_doi_mat_khau_cung_dong_bo_nas(client, iam_db, monkeypatch):
+    """Tự đổi mật khẩu (đã đăng nhập) cũng phải đồng bộ NAS — mật khẩu MỚI, không
+    phải mật khẩu cũ vừa hết hiệu lực."""
+    from nen.gateway import main as gw
+    _login(client)
+    ghi = []
+    monkeypatch.setattr(gw.nas_sync, "dong_bo_nen",
+                        lambda ten, mk, nhom: ghi.append((ten, mk, nhom)))
+    r = client.post("/profile/mat-khau",
+                    data={"mk_hien_tai": "mk-test", "mk_moi": "MatKhauMoi9",
+                          "mk_lai": "MatKhauMoi9"})
+    assert r.status_code == 200
+    assert ghi == [("owner-test", "MatKhauMoi9", nas_sync.NHOM_TOAN_QUYEN)]
 
 
 def test_api_chua_dang_nhap_tra_401_json(client):
@@ -236,6 +289,165 @@ def test_phan_quyen_tick_de_luat_mac_dinh(client, iam_db):
         "ten": "nhanvien", "app_slug": "data-analytics",
         "hanh_dong": "vao", "gia_tri": "ke_thua"})
     assert iam.co_quyen(nv, "vao", "data-analytics", conn)      # gỡ tick về mặc định
+    conn.close()
+
+
+def test_khu_general_cap_theo_tung_trang(client, iam_db):
+    """Khu General cấp TỪNG TRANG bằng ô tick (Owner chốt 19/08 — Director L4).
+
+    Ghim 3 điều: (a) MẶC ĐỊNH không đổi — L4 kể cả có Delegated admin vẫn 403 ở
+    mọi trang (bệnh Owner gặp thật: đủ 3 giỏ hub mà vẫn không vào được General);
+    (b) tick một trang chỉ mở ĐÚNG trang đó; (c) Permissions/API Keys KHÔNG bao
+    giờ mở được — giỏ Owner tuyệt đối, Manager không ngang Owner.
+    """
+    conn = iam.ket_noi()
+    ow = iam.claims_cua(iam.lay_tai_khoan(conn, "owner-test"))
+    iam.tao_tai_khoan(conn, ow, "director", "mk-dir-9", "Kinh doanh", 4,
+                      phai_doi_mk=False)
+    iam.sua_tai_khoan(conn, ow, "director", admin_uy_quyen=True)
+    conn.close()
+
+    _login(client, "director", "mk-dir-9")
+    for duong in ("/general/audit-log", "/general/data-backup",
+                  "/general/applications"):
+        assert client.get(duong).status_code == 403, f"{duong} phải Owner-only khi chưa tick"
+    # '/general' là CỬA: L4 vốn có Niches/Channels (luật cũ) nên được đưa sang đó,
+    # KHÔNG phải xem được trang Overview.
+    r = client.get("/general")
+    assert r.status_code == 303 and r.headers["location"] == "/general/niches"
+
+    _login(client)                                    # Owner tick MỘT trang
+    r = client.post("/general/permissions/save", data={
+        "ten": "director", "dat__*__general_nhat_ky": "cho",
+        "lydo__*__general_nhat_ky": "Director giám sát nhật ký"})
+    assert r.status_code == 303 and "bao=Saved%201" in r.headers["location"]
+
+    _login(client, "director", "mk-dir-9")
+    assert client.get("/general/audit-log").status_code == 200      # mở đúng trang đã tick
+    assert client.get("/general/data-backup").status_code == 403    # trang chưa tick vẫn đóng
+    assert client.get("/general/applications").status_code == 403
+    assert client.get("/general/permissions").status_code == 403    # giỏ tuyệt đối
+    assert client.get("/general/api-keys").status_code == 403
+    assert "Audit Log" in client.get("/general/audit-log").text     # nav hiện link đã cấp
+    # '/general' là CỬA (nút sidebar chỉ trỏ về đây): đưa tới trang ĐẦU TIÊN có
+    # quyền theo thứ tự khai — director L4 sẵn có Niches nên rơi vào đó.
+    r = client.get("/general")
+    assert r.status_code == 303 and r.headers["location"] == "/general/niches"
+
+    # Người KHÔNG có quyền nền nào: cửa phải trỏ đúng trang vừa được tick.
+    _login(client)
+    assert client.post("/general/permissions/save", data={
+        "ten": "nhanvien", "dat__*__general_nhat_ky": "cho",
+        "lydo__*__general_nhat_ky": "xem nhật ký"}).status_code == 303
+    _login(client, "nhanvien", "mk-nv-6")
+    r = client.get("/general")
+    assert r.status_code == 303 and r.headers["location"] == "/general/audit-log"
+
+
+def test_doi_bo_phan_ho_so_keo_theo_tai_khoan(client, iam_db):
+    """Owner báo 19/08: "chuyển bộ phận trong HR nhưng Permissions vẫn vai cũ".
+    QUYỀN tính theo tai_khoan.bo_phan còn HR sửa nguoi.bo_phan → phải đồng bộ,
+    và cấm sửa bộ phận ở tab Accounts (một nguồn sự thật = hồ sơ)."""
+    conn = iam.ket_noi()
+    ow = iam.claims_cua(iam.lay_tai_khoan(conn, "owner-test"))
+    ns = iam.tao_nguoi(conn, ow, "Người Chuyển Phòng", "Vận hành - Sản xuất")
+    iam.tao_tai_khoan(conn, ow, "chuyenphong", "mk-cp-9", "Vận hành - Sản xuất", 2,
+                      nguoi_ma=ns["ma"], phai_doi_mk=False)
+    u = iam.claims_cua(iam.lay_tai_khoan(conn, "chuyenphong"))
+    assert not iam.co_quyen(u, "vao", "seo-optimize", conn)   # VH L2: chưa vào được SEO
+
+    iam.sua_nguoi(conn, ow, ns["ma"], bo_phan="Kinh doanh")   # HR chuyển phòng
+    tk = iam.lay_tai_khoan(conn, "chuyenphong")
+    assert tk["bo_phan"] == "Kinh doanh"                      # tài khoản đi theo NGAY
+    assert iam.co_quyen(iam.claims_cua(tk), "vao", "seo-optimize", conn)
+
+    try:                                                      # chiều ngược bị chặn
+        iam.sua_tai_khoan(conn, ow, "chuyenphong", bo_phan="Vận hành - Sản xuất")
+        raise AssertionError("phải chặn sửa bộ phận ở tab Accounts")
+    except iam.LoiIam as e:
+        assert "hồ sơ" in str(e)
+    assert iam.lay_tai_khoan(conn, "chuyenphong")["bo_phan"] == "Kinh doanh"
+    conn.close()
+
+
+def test_niches_channels_tick_mo_cho_team(client, iam_db):
+    """Niches/Channels — 2 tab team cần nhất (Owner 19/08). Mặc định GIỮ luật cũ
+    Manager L4+; ô tick THẮNG cả hai chiều: mở cho L2, hoặc chặn đúng một L4."""
+    conn = iam.ket_noi()
+    ow = iam.claims_cua(iam.lay_tai_khoan(conn, "owner-test"))
+    iam.tao_tai_khoan(conn, ow, "mgr4", "mk-mgr-9", "Kinh doanh", 4, phai_doi_mk=False)
+    conn.close()
+
+    _login(client, "nhanvien", "mk-nv-6")                    # L2: mặc định đóng
+    assert client.get("/general/niches").status_code == 403
+    assert client.get("/general/channels").status_code == 403
+    _login(client, "mgr4", "mk-mgr-9")                       # L4: mặc định mở (luật cũ)
+    assert client.get("/general/niches").status_code == 200
+    assert client.get("/general/channels").status_code == 200
+
+    _login(client)
+    assert client.post("/general/permissions/save", data={
+        "ten": "nhanvien", "dat__*__general_niches": "cho",
+        "lydo__*__general_niches": "team dùng danh bạ ngách",
+        "dat__*__general_channels": "cho",
+        "lydo__*__general_channels": "team dùng danh bạ kênh"}).status_code == 303
+    assert client.post("/general/permissions/save", data={   # chặn đúng một L4
+        "ten": "mgr4", "dat__*__general_channels": "chan",
+        "lydo__*__general_channels": "tạm khóa bàn giao"}).status_code == 303
+
+    _login(client, "nhanvien", "mk-nv-6")
+    assert client.get("/general/niches").status_code == 200      # tick MỞ cho L2
+    assert client.get("/general/channels").status_code == 200
+    _login(client, "mgr4", "mk-mgr-9")
+    assert client.get("/general/niches").status_code == 200      # không tick → giữ L4+
+    assert client.get("/general/channels").status_code == 403     # tick CHẶN thắng level
+
+
+def test_o_tick_slug_rong_bi_tu_choi(client, iam_db):
+    """Sự cố thật 19/08: template mới chạy trên tiến trình cũ → slug render rỗng
+    → form ghi app_slug='' = ô tick chết lặng lẽ. Giờ phải TỪ CHỐI, không ghi."""
+    _login(client)
+    r = client.post("/general/permissions/save", data={
+        "ten": "nhanvien", "dat____giam_sat": "cho", "lydo____giam_sat": "x"})
+    assert r.status_code == 303 and "loi=" in r.headers["location"]
+    conn = iam.ket_noi()
+    assert conn.execute(
+        "SELECT COUNT(*) FROM quyen_override WHERE app_slug=''").fetchone()[0] == 0
+    conn.close()
+
+
+def test_tick_duyet_ho_so_co_hieu_luc(client, iam_db):
+    """Ô tick 'Approve HR profiles' PHẢI ăn — bản cũ gọi co_quyen thiếu conn nên
+    ô này chết lặng lẽ: Owner tick mà người được cấp vẫn 403 (sửa 19/08)."""
+    _login(client)
+    assert client.post("/general/permissions/save", data={
+        "ten": "nhanvien", "dat__*__duyet_ho_so": "cho",
+        "lydo__*__duyet_ho_so": "kiêm nhiệm hồ sơ"}).status_code == 303
+
+    _login(client, "nhanvien", "mk-nv-6")
+    r = client.post("/general/people/create",
+                    data={"ho_ten": "Người Của Tick", "bo_phan": "Kinh doanh"})
+    assert r.status_code == 200 and "Created profile" in r.text
+    # nhưng vẫn KHÔNG được đụng tài khoản (giỏ quan_tai_khoan riêng)
+    assert client.post("/general/accounts/create", data={
+        "ten": "tk-lau-2", "mat_khau": "mk-tam-6",
+        "bo_phan": "Kinh doanh", "level": 2}).status_code == 403
+
+
+def test_bang_phan_quyen_gop_app_da_gop_giao_dien(client, iam_db):
+    """App có gop_vao (Niche Research → Data Analytics, Owner chốt 18/08) KHÔNG
+    đứng riêng trong bảng, nhưng ô tick của nó vẫn ghi về ĐÚNG app của nó."""
+    _login(client)
+    trang = client.get("/general/permissions?ten=nhanvien").text
+    assert ">Niche Research</summary>" not in trang.replace("\n", "")
+    assert "dat__niche-research__tao" in trang        # hàng vẫn còn, nằm trong khối app chủ
+    r = client.post("/general/permissions/save", data={
+        "ten": "nhanvien", "dat__niche-research__tao": "cho",
+        "lydo__niche-research__tao": "chạy nghiên cứu hộ"})
+    assert r.status_code == 303 and "bao=Saved%201" in r.headers["location"]
+    conn = iam.ket_noi()
+    nv = iam.claims_cua(iam.lay_tai_khoan(conn, "nhanvien"))
+    assert iam.co_quyen(nv, "tao", "niche-research", conn)
     conn.close()
 
 
@@ -471,12 +683,80 @@ def test_people_update_sua_ho_so_va_quyen(client, iam_db):
     ns = next(n for n in iam.liet_ke_nguoi(conn) if n["ma"] == ma)
     conn.close()
     assert ns["trang_thai"] == "nghi"
+    # THÔI VIỆC đi trọn đường route (mục 'Đã thôi việc' — Owner chốt 19/08):
+    # không khai ngày → iam tự lấy hôm nay; nhận lại làm → xóa vết, hồ sơ CÒN.
+    assert ns["ngay_thoi_viec"] == date.today().isoformat()
+    r = client.post("/general/people/update", data={
+        "ma": ma, "trang_thai": "nghi", "ngay_thoi_viec": "2026-08-10",
+        "ly_do_thoi_viec": "Hết hợp đồng", "ve": "hr"})
+    assert r.status_code == 303
+    conn = iam.ket_noi()
+    ns = next(n for n in iam.liet_ke_nguoi(conn) if n["ma"] == ma)
+    conn.close()
+    assert ns["ngay_thoi_viec"] == "2026-08-10" and ns["ly_do_thoi_viec"] == "Hết hợp đồng"
+    client.post("/general/people/update", data={
+        "ma": ma, "trang_thai": "hoat_dong", "ve": "hr"})
+    conn = iam.ket_noi()
+    ns = next(n for n in iam.liet_ke_nguoi(conn) if n["ma"] == ma)
+    conn.close()
+    assert ns["trang_thai"] == "hoat_dong" and ns["ngay_thoi_viec"] == ""
+    client.post("/general/people/update", data={"ma": ma, "trang_thai": "nghi", "ve": "hr"})
     r = client.post("/general/people/update", data={       # trạng thái lạ → loi
         "ma": ma, "trang_thai": "xoa-han", "ve": "hr"})
     assert r.status_code == 303 and "/hr?tab=accounts&loi=" in r.headers["location"]
     _login(client, "nhanvien", "mk-nv-6")                  # nhân viên thường bị chặn
     assert client.post("/general/people/update", data={
         "ma": ma, "trang_thai": "hoat_dong"}).status_code == 403
+
+
+def test_people_terminate_go_mem_va_khoa_dang_nhap(client, iam_db):
+    """TERMINATE (Owner chốt 19/08 — THAY nút xóa tài khoản): một lượt bấm =
+    hồ sơ về 'nghi' + ngày/lý do + KHÓA đăng nhập, KHÔNG xóa gì. Người không có
+    giỏ tài khoản (HR L3) vẫn thôi việc được — hồ sơ chuyển, thông báo nói thẳng
+    đăng nhập còn mở. Nhân viên thường 403."""
+    _login(client)
+    r = client.post("/general/accounts/create-full", data={
+        "ho_ten": "Người Nghỉ", "bo_phan": "Kinh doanh", "vi_tri": "SEO",
+        "username": "nguoinghi", "mat_khau": "mk-tam-6", "level": 2, "ve": "hr"})
+    assert r.status_code == 303
+    conn = iam.ket_noi()
+    ma = next(n["ma"] for n in iam.liet_ke_nguoi(conn) if n["ho_ten"] == "Người Nghỉ")
+    conn.close()
+
+    r = client.post("/general/people/terminate", data={
+        "ma": ma, "ngay_thoi_viec": "2026-08-10",
+        "ly_do_thoi_viec": "Hết hợp đồng", "ve": "hr"})
+    assert r.status_code == 303 and "/hr?tab=accounts&bao=" in r.headers["location"]
+    conn = iam.ket_noi()
+    ns = next(n for n in iam.liet_ke_nguoi(conn) if n["ma"] == ma)
+    tk = iam.lay_tai_khoan(conn, "nguoinghi")
+    conn.close()
+    assert ns["trang_thai"] == "nghi" and ns["ngay_thoi_viec"] == "2026-08-10"
+    assert ns["ly_do_thoi_viec"] == "Hết hợp đồng"
+    assert tk and tk["khoa"] == 1                          # đăng nhập bị khóa, KHÔNG xóa
+
+    # HR L3 (không có giỏ quan_tai_khoan): hồ sơ vẫn chuyển, đăng nhập còn mở
+    conn = iam.ket_noi()
+    ow = iam.claims_cua(iam.lay_tai_khoan(conn, "owner-test"))
+    iam.tao_tai_khoan(conn, ow, "hr-lead", "mk-hr-6", iam.HR_BO_PHAN, 3,
+                      phai_doi_mk=False)
+    ns2 = iam.tao_nguoi(conn, ow, "Người Nghỉ 2", "Kinh doanh", "SEO")
+    iam.tao_tai_khoan(conn, ow, "nguoinghi2", "mk-tam-6", "Kinh doanh", 2,
+                      nguoi_ma=ns2["ma"], phai_doi_mk=False)
+    conn.close()
+    _login(client, "hr-lead", "mk-hr-6")
+    r = client.post("/general/people/terminate", data={"ma": ns2["ma"], "ve": "hr"})
+    assert r.status_code == 303
+    assert "still%20open" in r.headers["location"]          # nói thẳng, không im lặng
+    conn = iam.ket_noi()
+    ns2m = next(n for n in iam.liet_ke_nguoi(conn) if n["ma"] == ns2["ma"])
+    assert ns2m["trang_thai"] == "nghi" and ns2m["ngay_thoi_viec"] != ""   # ngày tự điền
+    assert iam.lay_tai_khoan(conn, "nguoinghi2")["khoa"] == 0
+    conn.close()
+
+    _login(client, "nhanvien", "mk-nv-6")
+    assert client.post("/general/people/terminate",
+                       data={"ma": ma}).status_code == 403
 
 
 def test_create_full_tron_goi_va_rollback(client, iam_db):
@@ -646,3 +926,15 @@ def test_alias_hr_finance_tro_to_chuc(client, iam_db):
     assert "GET" in duong["/hr"] and "GET" in duong["/finance"]
     tc = tim_app("to-chuc")
     assert "/hr" in tc["tien_to"] and "/finance" in tc["tien_to"]
+
+
+def test_khung_ghi_lai_duong_dan_iframe_de_F5_giu_cho():
+    """Owner 24/08: "author extract an F5 lai chuyen ve trang chu, cac tab con lai
+    cung vay". App khung nam trong iframe nen di ben TRONG app khong doi URL khung;
+    F5 nap lai khung voi ?duong= cu = ve trang mac dinh. Khung phai doc duong dan that
+    cua iframe (cung origin) roi replaceState."""
+    import pathlib
+    html = pathlib.Path("nen/gateway/templates/nen_khung_app.html").read_text(encoding="utf-8")
+    assert "iframe.khung-app" in html and "history.replaceState" in html
+    assert "contentWindow.location" in html
+    assert "history.pushState" not in html,         "di trong app khong duoc de them muc lich su o khung (comment nhac pushState thi duoc)"
