@@ -176,3 +176,39 @@ def soi_kho(thu_muc_uploads: str | Path) -> list[dict]:
         r["thu_muc"] = p.parent.name
         ket.append(r)
     return ket
+
+# ── Yeu cau hoan thien ho so (24/08) ─────────────────────────────────────────────────
+# Owner: "phan luu y nay can dua ra yeu cau de hoan thien ho so (neu co)".
+# Canh bao MO TA van de; yeu cau noi NGUOI DUNG PHAI LAM GI. Hai viec khac nhau, va
+# "(neu co)" la phan quan trong: van de nao khong sua duoc thi KHONG bia ra viec —
+# mot danh sach viec ma lam xong van khong het canh bao thi con te hon khong co.
+TU_DU_MO_TA = 12000       # giu bang mo_ta_giong.MIN_TU_MO_TA
+
+
+def yeu_cau_hoan_thien(soi: dict, canh_bao_them: list[str] | None = None) -> list[str]:
+    """Viec cu the de ho so nay day len — rong khi khong con gi de lam."""
+    co = set(soi.get("co") or [])
+    cs = soi.get("chi_so") or {}
+    ra: list[str] = []
+
+    if "corpus_thieu_dau_cau" in co or "exemplar_thieu_dau_cau" in co:
+        ra.append("Chấm câu lại file transcript rồi nạp lại, hoặc bỏ file đó khỏi tác "
+                  "phẩm — mọi số đo nhịp câu hiện tại đều không dùng được.")
+    if "corpus_cau_qua_vun" in co:
+        ra.append("Kiểm lại nguồn văn bản: câu vụn bất thường thường là do tách dòng sai "
+                  "khi chuyển từ PDF hoặc phụ đề.")
+
+    tu = cs.get("corpus_tu")
+    if isinstance(tu, int) and tu < TU_DU_MO_TA:
+        ra.append(f"Bổ sung thêm khoảng {TU_DU_MO_TA - tu:,} từ tác phẩm của tác giả này "
+                  f"(đang có {tu:,} từ) — đủ {TU_DU_MO_TA:,} từ mới mô tả được giọng."
+                  .replace(",", "."))
+    elif "corpus_mong" in co:
+        ra.append("Bổ sung thêm tác phẩm: corpus chưa cắt được 3 điểm đo nên chưa nói "
+                  "được đặc trưng nào là ổn định.")
+
+    for c in (canh_bao_them or []):
+        if "dòng trống" in c:
+            ra.append("Nạp lại bản thảo có giữ dòng trống giữa các đoạn — bản hiện tại là "
+                      "một khối liền nên không đo được độ dài đoạn và cách chuyển đoạn.")
+    return ra

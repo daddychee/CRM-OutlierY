@@ -100,6 +100,13 @@ def bao_cao_extract(profile: dict, corpus_dir: str | Path | None = None,
         d += ["## ⚠ Lưu ý", ""]
         d += [f"- {c}" for c in canh] + [""]
 
+    # Luu y noi co gi sai; muc nay noi phai LAM GI de ho so day len (Owner 24/08).
+    from .soi_ho_so import yeu_cau_hoan_thien
+    yc = yeu_cau_hoan_thien(soi, (df.get("canh_bao") or []))
+    if yc:
+        d += ["## Cần làm để hoàn thiện hồ sơ", ""]
+        d += [f"{i}. {x}" for i, x in enumerate(yc, 1)] + [""]
+
     # --- Mo ta giong: cai NGUOI DOC can truoc tien (24/08) --------------------------
     mt = profile.get("mo_ta_giong") or {}
     if mt:

@@ -263,6 +263,7 @@
         <div class="hsbao" id="hs_mota" hidden></div>
         <div class="hs" id="hs_the" hidden></div>
         <div class="hsbao" id="hs_canh" hidden></div>
+        <div class="hsbao" id="hs_yeucau" hidden></div>
         <div class="hsbao" id="hs_giong" hidden></div>
         <div class="bar" id="hs_hanhdong" hidden style="margin-bottom:12px">
           <button class="btn small" id="hs_bosung" onclick="chonFileBoSung()">+ Bổ sung tác phẩm cho giọng này</button>
@@ -594,9 +595,9 @@ function xemHoSo(ma){
       + ` — cùng một corpus đang mang nhiều tên, chọn cái nào cũng cho kết quả như nhau.`;
 
     $('hs_hanhdong').hidden = false;
-    const thieu = Math.max(0, 12000 - (d.tu||0));
-    $('hs_bosung_gy').textContent = thieu
-      ? `Cần thêm khoảng ${thieu.toLocaleString('vi-VN')} từ nữa mới đủ để mô tả giọng.`
+    // Khoi "Can lam" da noi ro so tu con thieu — o day chi mot dong ngan, khong lap lai.
+    $('hs_bosung_gy').textContent = (d.yeu_cau||[]).length
+      ? 'Nạp thêm file .txt/.md rồi hệ đo lại ngay.'
       : 'Corpus càng dày thì số đo càng chắc.';
 
     const c=(d.canh_bao||[]);
@@ -604,6 +605,13 @@ function xemHoSo(ma){
     $('hs_canh').className = 'hsbao' + (c.length?' canh':'');
     if(c.length) $('hs_canh').innerHTML = '<b>Lưu ý</b><ul>'
       + c.map(x=>`<li>${x}</li>`).join('') + '</ul>';
+
+    // Luu y noi CO GI SAI; khoi nay noi PHAI LAM GI (Owner 24/08). Ho so sach thi
+    // khong hien gi — khong bia ra viec cho du muc.
+    const yc = (d.yeu_cau||[]);
+    $('hs_yeucau').hidden = !yc.length;
+    if(yc.length) $('hs_yeucau').innerHTML = '<b>Cần làm để hoàn thiện hồ sơ</b><ol>'
+      + yc.map(x=>`<li>${x}</li>`).join('') + '</ol>';
   }).catch(e=>{ $('hs_ten').textContent='Không đọc được hồ sơ: '+e; });
 }
 

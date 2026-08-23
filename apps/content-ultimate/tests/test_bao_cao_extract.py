@@ -110,3 +110,57 @@ def test_con_corpus_thi_khong_canh_bao_neo_mong():
     r = vp._tom_tat_tu_profile(p, ma="A", bang_delta=None)
     assert r["neo_day"] is True
     assert not any("Neo giọng chỉ" in c for c in r["canh_bao"])
+
+
+# --- Yeu cau hoan thien ho so (24/08, Owner) ---------------------------------------
+# "Phan luu y nay can dua ra yeu cau de hoan thien ho so (neu co)."
+# Canh bao MO TA van de; yeu cau noi NGUOI DUNG PHAI LAM GI. Khong phai van de nao
+# cung co viec de lam — cai nao khong sua duoc thi khong bia ra viec.
+def _tt(profile, **kw):
+    from voiceprofile import server as vp
+    return vp._tom_tat_tu_profile(profile, ma="A", bang_delta=None, **kw)
+
+
+def test_corpus_mong_ra_yeu_cau_KEM_SO_TU():
+    p = _profile()
+    p["corpus_stats"] = {"n_works": 1, "n_tokens": 3726, "n_stability_units": 1}
+    yc = _tt(p)["yeu_cau"]
+    assert yc, "corpus mong phai co viec de lam"
+    assert any("8.274" in x for x in yc), f"phai noi ro can them bao nhieu tu: {yc}"
+
+
+def test_file_khong_co_dong_trong_ra_yeu_cau_nap_lai():
+    p = _profile()
+    p["discourse_features"] = {"do_duoc": True, "chieu": {},
+                               "canh_bao": ["File corpus không có một dòng trống nào — ..."]}
+    yc = _tt(p)["yeu_cau"]
+    assert any("dòng trống" in x for x in yc)
+
+
+def test_transcript_tho_ra_yeu_cau_cham_cau():
+    p = _profile()
+    p["quant_features"] = [{"name": "sentence_len_mean", "value": 1085.0, "keep": False}]
+    yc = _tt(p)["yeu_cau"]
+    assert any("chấm câu" in x.lower() for x in yc)
+
+
+def test_ho_so_sach_thi_KHONG_bia_ra_viec():
+    p = _profile(n=8)
+    p["corpus_stats"] = {"n_works": 8, "n_tokens": 30000, "n_stability_units": 8}
+    assert _tt(p)["yeu_cau"] == []
+
+
+def test_bao_cao_md_in_muc_yeu_cau():
+    from voiceprofile import bao_cao
+    p = _profile()
+    p["corpus_stats"] = {"n_works": 1, "n_tokens": 3726, "n_stability_units": 1}
+    md = bao_cao.bao_cao_extract(p)
+    assert "Cần làm để hoàn thiện hồ sơ" in md and "8.274" in md
+
+
+def test_ui_hien_khoi_yeu_cau_rieng_khoi_luu_y():
+    import pathlib
+    from voiceprofile import server as vp
+    ui = (pathlib.Path(vp.__file__).parent / "board.html").read_text(encoding="utf-8")
+    assert 'id="hs_yeucau"' in ui and "Cần làm để hoàn thiện hồ sơ" in ui
+    assert "d.yeu_cau" in ui

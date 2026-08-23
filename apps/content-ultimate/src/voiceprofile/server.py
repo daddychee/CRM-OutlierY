@@ -478,6 +478,11 @@ def _tom_tat_tu_profile(profile: dict, ma: str, bang_delta: dict | None) -> dict
     if ra["neo_day"]:
         canh = [c for c in canh if "Neo giọng chỉ" not in c and "đoạn mẫu trùng" not in c]
     ra["canh_bao"] = canh
+    # Canh bao noi CO GI SAI; yeu cau noi PHAI LAM GI (Owner 24/08). Ho so sach thi
+    # danh sach rong — khong bia ra viec cho du muc.
+    from .soi_ho_so import yeu_cau_hoan_thien
+    ra["yeu_cau"] = yeu_cau_hoan_thien(
+        soi, (profile.get("discourse_features") or {}).get("canh_bao") or [])
 
     if bang_delta and ma in (bang_delta.get("z") or {}):
         from . import delta as D
