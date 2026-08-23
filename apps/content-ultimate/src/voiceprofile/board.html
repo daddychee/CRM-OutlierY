@@ -121,11 +121,28 @@
   .hs .o.du{border-color:#3f7d55}.hs .o.mong{border-color:#8a6a2a}.hs .o.chua{border-color:#b1483f}
   .hsbao{border:1px solid var(--border);border-radius:8px;padding:11px 13px;margin-bottom:12px;
     background:var(--panel)}
-  .hsbao ul{margin:6px 0 0;padding-left:18px}.hsbao li{margin-bottom:5px;font-size:13px}
+  .hsbao ul,.hsbao ol{margin:6px 0 0;padding-left:18px}
+  .hsbao li{margin-bottom:5px;font-size:13px}
+  .mtkhoi + .mtkhoi{margin-top:12px;padding-top:10px;border-top:1px solid var(--border-soft)}
+  .mtkhoi h4{margin:0;font-size:12px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+  .mtkhoi i{color:var(--muted)}
   .hsbao.canh{border-color:#8a6a2a}
   .wave{font-size:13px;color:var(--muted)}.wave b{color:var(--text);font-weight:600}
   .wave .meta{display:inline-flex;gap:14px;flex-wrap:wrap;margin-left:8px}
   .wave .meta b{color:var(--text);font-weight:600}
+  /* Thanh tom tat dau ban viet. Ban dau dung .wave dung chung nhung .meta la
+     inline-flex boc CHUOI tron chu voi <b>, nen trinh duyet tach tung mau chu
+     thanh mot o flex -> khoang 14px roi vao giua "giong" va "A001" y nhu giua cac
+     nhom: mat nhom, doc ra dinh lien nhau. Gio moi CAP boc trong mot <span>. */
+  .wthanh{display:flex;align-items:baseline;gap:11px;flex-wrap:wrap;font-size:13px;
+    color:var(--muted);padding-bottom:11px;border-bottom:1px solid var(--border-soft);margin-bottom:13px}
+  .wthanh > b{color:var(--text);font-weight:600;font-size:15px;letter-spacing:-.01em}
+  .wthanh .ma{font-family:var(--mono);font-size:11px;color:var(--faint);
+    border:1px solid var(--border);border-radius:4px;padding:1px 6px}
+  .wthanh .meta{display:flex;align-items:baseline;gap:16px;flex-wrap:wrap;margin-left:auto}
+  .wthanh .meta > span{display:inline-flex;align-items:baseline;gap:6px}
+  .wthanh .meta i{font-style:normal;color:var(--faint)}
+  .wthanh .meta b{color:var(--text);font-weight:600;font-variant-numeric:tabular-nums}
   .panel{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:14px}
   .btn.trong{border-color:transparent;background:none;color:var(--muted);font-weight:500}
   .side .kd{font-variant-numeric:tabular-nums;font-size:13px;color:var(--muted);margin-bottom:7px}
@@ -305,8 +322,9 @@
       <!-- thanh tom tat: thiet lap la viec lam MOT LAN, khong dang chiem cho suot buoi -->
       <!-- Bo cuc HAI COT y khuon Outline Board (mockup vong 5, Owner duyet 23/08):
            trai = ban viet, phai = thiet lap + chi so, cot phai dinh man hinh. -->
-      <div class="wave" style="margin-bottom:10px">
-        <b id="wt_ten">Chưa chọn tác giả</b> <span class="meta" id="wt_meta"></span>
+      <div class="wthanh">
+        <b id="wt_ten">Chưa chọn tác giả</b><span class="ma" id="wt_ma" hidden></span>
+        <span class="meta" id="wt_meta"></span>
       </div>
       <div class="wcols">
       <div>
@@ -495,14 +513,33 @@ function xemHoSo(ma){
 
     // Mo ta giong: thu nguoi bien tap can doc TRUOC cac con so (Owner 24/08).
     const mt = d.mo_ta || {};
-    const NHAN = {tom_tat:'Giọng này nghe thế nào', dung_cho:'Dùng cho nội dung gì',
-                  mood:'Mood cần set', atmosphere:'Atmosphere', khong_hop:'Không hợp với'};
-    const dong = Object.keys(NHAN).filter(k=>mt[k]).map(k=>`<li><b>${NHAN[k]}.</b> ${mt[k]}</li>`);
-    $('hs_mota').hidden = !dong.length;
-    if(dong.length) $('hs_mota').innerHTML = '<b>Mô tả giọng và cách dùng</b><ul>'
-      + dong.join('') + '</ul>'
+    // Ba khoi theo ba nguoi doc: chon giong -> giao viec -> viet theo giong (24/08).
+    const NHAN = {dinh_danh:'Giọng này là gì', ky_thuat:'Kỹ thuật đặc trưng',
+                  dung_cho:'Dùng cho nội dung gì', khong_hop:'Không hợp với',
+                  mood:'Mood cần set', atmosphere:'Atmosphere', cach_mo:'Cách mở bài',
+                  cach_chuyen:'Cách chuyển đoạn', cach_ket:'Cách kết',
+                  tu_nen_dung:'Vốn từ nên dùng', chi_lenh:'Ba chỉ lệnh khi viết'};
+    const KHOI = [['Nhận ra giọng',['dinh_danh','ky_thuat']],
+                  ['Giao việc',['dung_cho','khong_hop','mood','atmosphere']],
+                  ['Viết theo giọng',['cach_mo','cach_chuyen','cach_ket','tu_nen_dung','chi_lenh']]];
+    const phanHTML = k => {
+      const v = mt[k];
+      if(k==='ky_thuat') return `<li><b>${NHAN[k]}:</b><ul>`
+        + v.map(x=>`<li>${x.ten} — <i>“${x.vi_du}”</i></li>`).join('') + '</ul></li>';
+      if(k==='chi_lenh') return `<li><b>${NHAN[k]}:</b><ol>`
+        + v.map(x=>`<li>${x}</li>`).join('') + '</ol></li>';
+      return `<li><b>${NHAN[k]}.</b> ${v}</li>`;
+    };
+    const khoiHTML = KHOI.map(([ten,ks])=>{
+      const co = ks.filter(k=>mt[k] && (!Array.isArray(mt[k]) || mt[k].length));
+      return co.length ? `<div class="mtkhoi"><h4>${ten}</h4><ul>`
+                       + co.map(phanHTML).join('') + '</ul></div>' : '';
+    }).filter(Boolean);
+    $('hs_mota').hidden = !khoiHTML.length;
+    if(khoiHTML.length) $('hs_mota').innerHTML = khoiHTML.join('')
       + '<p class="note" style="margin:8px 0 0">Đoạn này do model viết, nhưng chỉ được đọc'
-      + ' số đo Python đã đo và đoạn văn thật của tác giả — không con số nào do nó nghĩ ra.</p>';
+      + ' số đo Python đã đo và câu văn thật của tác giả; mỗi ví dụ kỹ thuật đều được đối'
+      + ' chiếu lại với corpus — ví dụ bịa bị loại.</p>';
 
     const trung=(g.trung||[]);
     $('hs_giong').hidden = !trung.length;
@@ -975,11 +1012,14 @@ function veThanhTomTat(){
   const a = selectedAuthor();
   $('wt_ten').textContent = a ? (a.name || a.code) : 'Chưa chọn tác giả';
   const llm = $('w_llm').options[$('w_llm').selectedIndex];
+  // Ma tac gia di lien ten (khong can nhan "giong" — ten DA noi ro giong ai).
+  $('wt_ma').textContent = a ? (a.code || '') : '';
+  $('wt_ma').hidden = !(a && a.code);
+  const cap = (nhan, gt) => `<span><i>${nhan}</i><b>${gt}</b></span>`;
   $('wt_meta').innerHTML = [
-    a ? `giọng <b>${esc(a.code||'')}</b>` : '',
-    llm ? `model <b>${esc((llm.textContent||'').split('—').pop().trim())}</b>` : '',
-    W_PHAN.length ? `outline <b>${W_PHAN.length} phần</b>` : '',
-  ].filter(Boolean).join(' ');
+    llm ? cap('model', esc((llm.textContent||'').split('—').pop().trim())) : '',
+    W_PHAN.length ? cap('outline', W_PHAN.length + ' phần') : '',
+  ].filter(Boolean).join('');
   const tong = Object.values(W_BAN).reduce((n,t)=>n+(t||'').length, 0);
   const muc = parseInt($('w_chars').value)||18000;
   $('wt_kd').innerHTML = `đã viết <b>${tong.toLocaleString('vi-VN')}</b> / ${muc.toLocaleString('vi-VN')}`;

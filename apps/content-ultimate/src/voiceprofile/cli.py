@@ -412,7 +412,7 @@ def mo_ta_lenh(
     Cho DUY NHAT trong author extract ma LLM noi thanh loi — nen no chi duoc nhin SO
     DA DO va DOAN VAN THAT; ho so chua du diem do thi khong goi model.
     """
-    from .mo_ta_giong import NHAN_VIET, sinh_mo_ta
+    from .mo_ta_giong import sinh_mo_ta
     p = Path(profile_path)
     if not p.is_file():
         typer.echo(f"Khong tim thay {profile_path} — chay `build` truoc.")
@@ -423,16 +423,28 @@ def mo_ta_lenh(
     except RuntimeError as e:
         typer.echo(f"LOI: {e}")
         raise typer.Exit(code=1)
-    r = sinh_mo_ta(profile, lambda pr, sc: llm_json(pr, sc, cfg))
+    # Khuon van (cach mo / chuyen doan / ket / cum tu) do tren CORPUS THAT, 0 token —
+    # day la nguyen lieu cua khoi C. Khong doc duoc corpus thi mo ta van chay, chi
+    # thieu ba muc do.
+    kv = None
+    cd = (profile.get("corpus_stats") or {}).get("corpus_dir")
+    if cd and Path(cd).is_dir():
+        from .khuon_van import khuon
+        from .corpus import load_corpus_dir
+        try:
+            kv = khuon(load_corpus_dir(cd))
+        except (OSError, ValueError) as e:
+            typer.echo(f"(Khong do duoc khuon van: {e})")
+    r = sinh_mo_ta(profile, lambda pr, sc: llm_json(pr, sc, cfg), kv=kv)
     if not r.get("mo_ta"):
         typer.echo(f"Khong sinh duoc mo ta: {r.get('ly_do')}")
         raise typer.Exit(code=1)
     profile["mo_ta_giong"] = r["mo_ta"]
     p.write_text(json.dumps(profile, ensure_ascii=False, indent=2), encoding="utf-8")
     typer.echo(f"Da ghi mo_ta_giong vao {p}:")
-    for k, nhan in NHAN_VIET.items():
-        if r["mo_ta"].get(k):
-            typer.echo(f"  {nhan}: {r['mo_ta'][k]}")
+    from .mo_ta_giong import dong_markdown
+    for dong in dong_markdown(r["mo_ta"]):
+        typer.echo("  " + dong)
     # Bao cao .md dung lai de mang theo doan mo ta vua sinh
     try:
         from .bao_cao import bao_cao_extract, ghi_bao_cao
