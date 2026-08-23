@@ -2012,9 +2012,10 @@ function Trending({ ws, canEdit }) {
   const [err, setErr] = useState('');
   const [chon, setChon] = useState(null);        // cụm đang mở khối "vì sao nóng"
   const [viSao, setViSao] = useState({});        // cụm -> kết quả GDELT
+  const [moVid, setMoVid] = useState(null);      // cụm đang mở danh sách video dẫn chứng
 
   const nap = () => api('GET', `/workspaces/${ws}/trending`).then(setD).catch(e => setErr(String(e.message)));
-  useEffect(() => { setD(null); setErr(''); setChon(null); setViSao({}); nap(); }, [ws]);
+  useEffect(() => { setD(null); setErr(''); setChon(null); setViSao({}); setMoVid(null); nap(); }, [ws]);
 
   // Đang quét thì hỏi lại mỗi 3s — quét chạy nền, đóng tab vẫn xong server-side.
   useEffect(() => {
@@ -2069,7 +2070,15 @@ function Trending({ ws, canEdit }) {
     </div>
 
     ${err ? html`<div class="card err">${err}</div>` : null}
-    ${dangChay ? html`<div class="card mut">Đang quét — <b>${st.buoc}</b>. Chạy nền, đóng tab vẫn xong.</div>` : null}
+    ${dangChay ? html`<div class="card">
+      <div class="tr-h2">Đang quét — bước ${st.buoc_so || 1}/${st.buoc_tong || (d.buoc_ds || []).length}</div>
+      <ol class="tr-buoc">${(d.buoc_ds || [st.buoc]).map((b, i) => {
+        const n = i + 1, cur = st.buoc_so || 1;
+        return html`<li class=${n < cur ? 'xong' : n === cur ? 'dang' : ''}>
+          <i></i><span>${b}</span></li>`;
+      })}</ol>
+      <div class="mut" style="font-size:12px">Chạy nền — đóng tab vẫn xong ở server.</div>
+    </div>` : null}
     ${st && st.state === 'error' ? html`<div class="card err">Lượt quét lỗi: ${st.ly_do}</div>` : null}
 
     ${!kq ? html`<div class="card mut">Chưa có lượt quét nào.${d.duoc_quet ? ' Bấm Quét để bắt đầu.' : ''}</div>`
@@ -2114,14 +2123,28 @@ function Trending({ ws, canEdit }) {
               ${u.mo ? html`<span class="tr-mo">đang mở</span>` : null}
               ${u.do_chac < 0.7 ? html`<span class="tr-ngo" title=${`Thực thể chỉ chiếm ${Math.round(u.do_chac * 100)}% cụm trend — có thể nối nhầm`}>← “${u.khop_voi}”</span>` : null}
               ${u.mo_ta ? html`<div class="tr-mota">${u.mo_ta}</div>` : null}</td>
-            <td class="tr-n"><b>${u.n}</b> video</td>
+            <td class="tr-n">${(u.video || []).length
+              ? html`<button class=${'tr-mvid' + (moVid === u.cum ? ' on' : '')}
+                  onClick=${() => setMoVid(moVid === u.cum ? null : u.cum)}
+                  title="Xem video của pool nói về cụm này"><b>${u.n}</b> video</button>`
+              : html`<b>${u.n}</b> video`}</td>
             <td class="tr-n"><b>${u.boi}×</b> <span class="mut">${Math.round(u.vpd)}/ngày</span></td>
             <td><${Nhip} nhip=${u.nhip} o=${u.o}/></td>
             <td class="tr-n mut">${u.moi_nhat_ngay}n</td>
             <td class="tr-vs">${(u.vi_sao || []).join(' · ') || html`<span class="mut">chưa rõ</span>`}</td>
             <td class="tr-n mut">${u.luong}</td>
             <td><button class="btn small" onClick=${() => hoiViSao(u.cum)}>Vì sao nóng</button></td>
-          </tr>`)}</tbody></table>
+          </tr>
+          ${moVid === u.cum ? html`<tr class="tr-vhang"><td colspan="9">
+            <div class="klabel">Video của pool nói về “${u.cum}” (${u.n} video, hiện ${(u.video || []).length} chạy nhất)</div>
+            ${(u.video || []).map(v => html`<div class="hvid">
+              <a href=${'https://youtu.be/' + v.yt_id} target="_blank" rel="noopener">
+                <img loading="lazy" src=${'https://i.ytimg.com/vi/' + v.yt_id + '/mqdefault.jpg'} alt=""/></a>
+              <div><div class="hvt"><a href=${'https://youtu.be/' + v.yt_id} target="_blank" rel="noopener">${v.title}</a></div>
+              <div class="hvm"><b>${soGon(v.views)} view</b> · ${soGon(v.vpd)}/ngày${
+                v.tuoi != null ? ' · ' + v.tuoi + ' ngày tuổi' : ''}${v.kenh ? ' · ' + v.kenh : ''}</div></div>
+            </div>`)}
+          </td></tr>` : null}`)}</tbody></table>
         </details>`;
       })}
 

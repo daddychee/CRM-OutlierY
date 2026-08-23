@@ -1087,6 +1087,8 @@ def trending_xem(ws: int, request: Request):
         return {'ket_qua': trending.ket_qua(c, ws), 'trang_thai': trending.trang_thai(c, ws),
                 'da_chon': trending.da_chon(c, ws), 'market': w['market'],
                 'geo': (vung or {}).get('regionCode') or '',
+                'buoc_ds': [b.format(geo=(vung or {}).get('regionCode') or '')
+                            for b in trending.BUOC],
                 'duoc_quet': auth.ROLE_RANK.get(w['member_role'], -1) >= auth.ROLE_RANK['leader']}
 
 

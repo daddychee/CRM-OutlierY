@@ -159,7 +159,7 @@ def loc_thuc_the(ten_ds: list[str], mo_ta: dict[str, str],
 
 # ============================================================ HO SO TRONG POOL
 def ho_so_pool(kho: list[dict], cum: str, bay_gio: float | None = None,
-               so_thang: int = 12) -> dict | None:
+               so_thang: int = 12, so_video: int = 4) -> dict | None:
     """Pool nay noi ve `cum` bao nhieu, chay the nao, nhip theo thang.
 
     Doi hoi moi ban ghi co `title_l`, `pub_ts`, `vpd` (view/ngay) — dung
@@ -176,10 +176,17 @@ def ho_so_pool(kho: list[dict], cum: str, bay_gio: float | None = None,
     for r in hit:
         k = datetime.fromtimestamp(r["pub_ts"], timezone.utc).strftime("%Y-%m")
         dem[k] = dem.get(k, 0) + 1
+    # Vai video chay nhat lam DAN CHUNG XEM DUOC. Con so "n video" tu no khong kiem
+    # chung duoc; co link + thumbnail thi nguoi doc tu doi chieu duoc trong 2 giay.
+    # Ban ghi thieu yt_id thi BO, khong dung link rong.
+    vids = sorted((r for r in hit if r.get("yt_id")), key=lambda r: -r["vpd"])[:so_video]
     return {"cum": cum, "n": len(hit),
             "vpd": statistics.median(r["vpd"] for r in hit),
             "nhip": [dem.get(k, 0) for k in moc],
-            "moi_nhat_ngay": int((bay_gio - max(r["pub_ts"] for r in hit)) / 86400)}
+            "moi_nhat_ngay": int((bay_gio - max(r["pub_ts"] for r in hit)) / 86400),
+            "video": [{"yt_id": r["yt_id"], "title": r.get("title") or "",
+                       "views": r.get("views"), "vpd": round(r["vpd"]),
+                       "tuoi": r.get("tuoi"), "kenh": r.get("kenh") or ""} for r in vids]}
 
 
 def chuan_hoa_kho(kho: list[dict], bay_gio: float | None = None) -> list[dict]:
@@ -190,7 +197,8 @@ def chuan_hoa_kho(kho: list[dict], bay_gio: float | None = None) -> list[dict]:
         if not r.get("title") or not r.get("views") or not r.get("pub_ts"):
             continue
         tuoi = max(1.0, (bay_gio - r["pub_ts"]) / 86400)
-        ra.append({**r, "title_l": r["title"].lower(), "vpd": r["views"] / tuoi})
+        ra.append({**r, "title_l": r["title"].lower(), "vpd": r["views"] / tuoi,
+                   "tuoi": int(tuoi)})
     return ra
 
 
@@ -338,6 +346,22 @@ def vi_sao_nong(cum: str, doc=None, ngay: int = 30, tran_bai: int = 8) -> dict:
 import threading                                                 # noqa: E402
 
 _luong: dict[int, threading.Thread] = {}
+
+# Cac giai doan cua mot luot quet — khai o MOT cho de UI ve duoc tien trinh
+# "buoc 3/5" thay vi chi hien mot dong chu. Them/bot buoc thi sua day, _chay goi
+# theo chi so nen khong lech nhau duoc.
+BUOC = [
+    "đọc pool",
+    "dựng từ điển thực thể của pool",
+    "quét Google Trending Now ({geo})",
+    "khớp từ điển + xác minh loại",
+    "đối chiếu pool",
+]
+
+
+def _buoc(conn, ws: int, i: int, **kw) -> None:
+    _ghi_tt(conn, ws, state="running", buoc=BUOC[i].format(**kw),
+            buoc_so=i + 1, buoc_tong=len(BUOC))
 KHOA_KQ = "trending_ket_qua"
 KHOA_TT = "trending_trang_thai"
 KHOA_CHON = "trending_da_chon"
@@ -422,9 +446,9 @@ def _chay(ws: int, geo: str, gio: int, tai=None, doc=None) -> None:
     from . import db
     conn = db.connect()
     try:
-        _ghi_tt(conn, ws, state="running", buoc="đọc pool")
+        _buoc(conn, ws, 0)
         tho = [dict(r) for r in conn.execute(
-            """SELECT v.title, v.pub_ts,
+            """SELECT v.title, v.pub_ts, v.yt_id, v.channel_title AS kenh,
                  (SELECT views FROM ticks t WHERE t.video_id=v.id ORDER BY ts DESC LIMIT 1) views
                FROM videos v WHERE v.workspace_id=?""", (ws,))]
         kho = chuan_hoa_kho(tho)
@@ -434,18 +458,18 @@ def _chay(ws: int, geo: str, gio: int, tai=None, doc=None) -> None:
             return
         tv_pool = statistics.median(r["vpd"] for r in kho)
 
-        _ghi_tt(conn, ws, state="running", buoc="dựng từ điển thực thể của pool")
+        _buoc(conn, ws, 1)
         td = tu_dien_pool(kho)
 
-        _ghi_tt(conn, ws, state="running", buoc=f"quét Google Trending Now ({geo})")
+        _buoc(conn, ws, 2, geo=geo)
         trends = (tai or tai_trending_now)(geo, gio)
 
-        _ghi_tt(conn, ws, state="running", buoc="khớp từ điển + xác minh loại")
+        _buoc(conn, ws, 3)
         ung = khop_tu_dien(trends, td)
         mo_ta = xac_minh_loai(sorted(ung), doc=doc)
         giu, bo = loc_thuc_the(sorted(ung), mo_ta)
 
-        _ghi_tt(conn, ws, state="running", buoc="đối chiếu pool")
+        _buoc(conn, ws, 4)
         may = [h for h in (ho_so_pool(kho, t) for t in td) if h]
         ng = nguong_pool(may, tv_pool)
         uv = []

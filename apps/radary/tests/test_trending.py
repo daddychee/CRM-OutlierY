@@ -269,3 +269,60 @@ def test_trang_thai_running_mo_coi_sau_khi_app_khoi_dong_lai(tmp_path, monkeypat
     tt = _tr.trang_thai(conn, 7)
     assert tt["state"] == "error"
     assert "đứt" in tt["ly_do"]
+
+
+# ============================== hai viec Owner chot 23/08
+
+def test_bon_buoc_chay_khai_o_MOT_cho_va_danh_so():
+    """Owner: 'phải note lại các giai đoạn chạy, chạy từng bước nào'. Nhãn bước
+    trước đây rải rác trong _chay dưới dạng chuỗi rời — UI chỉ hiện được chữ, không
+    biết đang ở bước mấy trên mấy. Gom về MỘT danh sách khai báo, _chay chỉ gọi
+    theo chỉ số, kv ghi kèm số thứ tự để UI vẽ được tiến trình."""
+    import inspect
+    assert len(tr.BUOC) >= 4
+    ma = inspect.getsource(tr._chay)
+    for i in range(len(tr.BUOC)):
+        assert f"_buoc(conn, ws, {i}" in ma, f"_chay không khai bước {i}"
+    # không còn nhãn bước viết tay lẫn vào
+    assert 'state="running", buoc=' not in ma
+
+
+def test_buoc_ghi_kem_so_thu_tu(tmp_path):
+    from radary import db as _db
+    conn = _db.connect()
+    tr._buoc(conn, 9, 2, geo="US")
+    tt = _db.kv_get(conn, 9, tr.KHOA_TT, None)
+    assert tt["buoc_so"] == 3 and tt["buoc_tong"] == len(tr.BUOC)
+    assert "US" in tt["buoc"]            # nhãn có chỗ điền geo thì phải điền thật
+
+
+def test_ho_so_pool_kem_video_de_dan_chung():
+    """Owner: hiện link + thumbnail như bảng Topic hot bên Mapping. Muốn vậy hồ sơ
+    phải mang theo yt_id — con số 'n video' tự nó không kiểm chứng được."""
+    kho = tr.chuan_hoa_kho([
+        {"title": "Life in Guyana", "pub_ts": time.time() - 10 * 86400, "views": 500_000,
+         "yt_id": "aaa", "kenh": "K1"},
+        {"title": "Guyana today", "pub_ts": time.time() - 20 * 86400, "views": 100_000,
+         "yt_id": "bbb", "kenh": "K2"},
+        {"title": "Guyana rừng", "pub_ts": time.time() - 5 * 86400, "views": 10_000,
+         "yt_id": "ccc", "kenh": "K3"},
+        {"title": "Life in Peru", "pub_ts": time.time() - 5 * 86400, "views": 900_000,
+         "yt_id": "ddd", "kenh": "K4"},
+    ])
+    h = tr.ho_so_pool(kho, "guyana", so_video=2)
+    assert h["n"] == 3
+    # aaa 50k/ngày > bbb 5k/ngày > ccc 2k/ngày — xếp theo NHỊP chạy, không theo
+    # view thô (ccc mới 5 ngày nhưng chạy chậm hơn bbb đã 20 ngày).
+    assert [v["yt_id"] for v in h["video"]] == ["aaa", "bbb"]
+    assert h["video"][0]["kenh"] == "K1" and h["video"][0]["tuoi"] == 10
+    assert all("ddd" != v["yt_id"] for v in h["video"])           # video khác cụm không lọt
+
+
+def test_ho_so_pool_khong_bia_video_khi_kho_thieu_yt_id():
+    """Pool cũ có bản ghi thiếu yt_id — bỏ qua, không dựng link rỗng."""
+    kho = tr.chuan_hoa_kho([
+        {"title": "Life in Guyana", "pub_ts": time.time() - 10 * 86400, "views": 500_000},
+        {"title": "Guyana today", "pub_ts": time.time() - 20 * 86400, "views": 100_000},
+    ])
+    h = tr.ho_so_pool(kho, "guyana")
+    assert h["n"] == 2 and h["video"] == []
