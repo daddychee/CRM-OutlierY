@@ -257,12 +257,31 @@ def chuan_hoa(raw: dict, kho_cau: list[str] | None = None) -> dict:
     return ra
 
 
+# CUA VAO (Owner 24/08: "neu ho so nao khong du dieu kien, dung chay. Bao toi bo sung
+# them mau."). Hai nguong, moi cai co ly do do duoc:
+#   MIN_TU_MO_TA  duoi 12.000 tu thi so chi so ON DINH rot xuong con 5-6/20 (do that
+#                 tren kho 24/08) — mo ta dung tren nen do la mo ta mot phong doan.
+#   MIN_DIEM_DO   duoi 3 diem do thi khong noi duoc gi ve do on dinh (luat C1).
+# Thieu TAC PHAM thi KHONG chan: A002 co 1 tac pham nhung 53.530 tu / 14 diem do — so
+# do rat tin duoc, chi thieu khuon mo bai va ket bai. Chan han la phi mot ho so tot;
+# chay nhung bao ro muc nao se khuyet.
+MIN_TU_MO_TA = 12000
+MIN_DIEM_DO = 3
+MIN_TAC_PHAM_KHUON = 3
+
+
 def du_co_so(profile: dict) -> tuple[bool, str]:
     """Co du can cu de noi gi ve giong nay khong (van chong bia)."""
     cs = profile.get("corpus_stats") or {}
-    if (cs.get("n_stability_units") or 0) < 3:
-        return False, ("Hồ sơ chưa đủ điểm đo (corpus mỏng) — số đo chưa chứng minh được "
-                       "là ổn định, nên chưa mô tả giọng. Nạp thêm tác phẩm rồi chạy lại.")
+    tu = cs.get("n_tokens") or 0
+    if (cs.get("n_stability_units") or 0) < MIN_DIEM_DO:
+        return False, ("Hồ sơ chưa đủ điểm đo — số đo chưa chứng minh được là ổn định, "
+                       "nên chưa mô tả giọng. Nạp thêm tác phẩm rồi chạy lại.")
+    if tu < MIN_TU_MO_TA:
+        return False, (f"Corpus mới {tu:,} từ — cần thêm khoảng {MIN_TU_MO_TA - tu:,} từ "
+                       f"nữa mới đủ để mô tả giọng. Dưới {MIN_TU_MO_TA:,} từ thì chỉ "
+                       "khoảng 5-6 trên 20 chỉ số đạt ngưỡng ổn định, mô tả dựng trên nền "
+                       "đó là mô tả một phỏng đoán.").replace(",", ".")
     if not [e for e in (profile.get("exemplars") or []) if isinstance(e, str)]:
         return False, "Hồ sơ chưa có đoạn văn mẫu nào để dẫn chứng."
     if _gia_tri(profile, "sentence_len_mean") is None:
@@ -279,7 +298,16 @@ def sinh_mo_ta(profile: dict, llm_json: Callable[[str, dict], dict],
     """
     ok, ly_do = du_co_so(profile)
     if not ok:
-        return {"ly_do": ly_do}
+        # Khai RO thieu gi va thieu bao nhieu — de goi ben ngoai bao thang cho nguoi
+        # dung "bo sung them mau", khong bat ho tu doan tu mot cau van.
+        cs = profile.get("corpus_stats") or {}
+        tu = cs.get("n_tokens") or 0
+        ra = {"ly_do": ly_do}
+        if tu < MIN_TU_MO_TA and (cs.get("n_stability_units") or 0) >= MIN_DIEM_DO:
+            ra["thieu"], ra["can_them_tu"] = "so_tu", MIN_TU_MO_TA - tu
+        elif (cs.get("n_stability_units") or 0) < MIN_DIEM_DO:
+            ra["thieu"] = "diem_do"
+        return ra
     d = du_lieu_neo(profile, kv)
     try:
         raw = llm_json(build_prompt(d, profile.get("author") or "this author"), SCHEMA)
@@ -291,7 +319,16 @@ def sinh_mo_ta(profile: dict, llm_json: Callable[[str, dict], dict],
     # So do di KEM loi van: nguoi doc doi chieu duoc tung con so trong doan mo ta voi
     # so Python da do, khong phai tin suong.
     mo_ta["so_do_neo"] = {k: v for k, v in d["so_do"].items() if v is not None}
-    return {"mo_ta": mo_ta}
+    ra = {"mo_ta": mo_ta}
+    # Du tu nhung it tac pham: chay duoc, nhung khuon mo bai / ket bai khong co nghia
+    # (mot tac pham thi khong goi la thoi quen) — bao ro thay vi de nguoi doc tu hoi
+    # sao muc do bien mat.
+    n_tp = (profile.get("corpus_stats") or {}).get("n_works") or 0
+    if n_tp < MIN_TAC_PHAM_KHUON:
+        ra["khuyet"] = (f"Corpus chỉ có {n_tp} tác phẩm — mục Cách mở bài và Cách kết bị "
+                        f"bỏ (cần từ {MIN_TAC_PHAM_KHUON} tác phẩm mới gọi là thói quen). "
+                        "Các mục khác không bị ảnh hưởng.")
+    return ra
 
 
 # Ba khoi, dung thu tu nguoi doc gap: nhan ra giong -> giao viec -> viet theo giong.

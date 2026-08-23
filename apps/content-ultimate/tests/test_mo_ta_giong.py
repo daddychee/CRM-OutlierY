@@ -175,3 +175,40 @@ def test_prompt_cam_in_ten_truong_ky_thuat_vao_van_tieng_viet():
     0.47' — tên trường trong code lọt vào câu văn cho người đọc."""
     p = MT.build_prompt(MT.du_lieu_neo(_PROFILE, _KV), "X")
     assert "NEVER print a field name" in p
+
+
+# --- Cua vao: ho so khong du dieu kien thi KHONG chay (Owner 24/08) ----------------
+# "Neu ho so nao khong du dieu kien, dung chay. Bao toi bo sung them mau."
+def _hs(tu, tac_pham, diem):
+    return {**_PROFILE, "corpus_stats": {"n_tokens": tu, "n_works": tac_pham,
+                                         "n_stability_units": diem}}
+
+
+def test_chan_corpus_duoi_nguong_tu():
+    ok, ly = MT.du_co_so(_hs(3726, 1, 4))          # A013 Derek Muller
+    assert ok is False and "8.274" in ly.replace(",", ".")   # noi RO can them bao nhieu
+
+
+def test_chan_va_KHONG_goi_model():
+    goi = []
+    r = MT.sinh_mo_ta(_hs(6853, 1, 4), llm_json=lambda p, s: goi.append(p) or {})
+    assert goi == [], "khong du dieu kien thi khong duoc dot mot luot LLM nao"
+    assert r["thieu"] == "so_tu" and r["can_them_tu"] == MT.MIN_TU_MO_TA - 6853
+
+
+def test_chan_khi_chua_du_diem_do():
+    ok, ly = MT.du_co_so(_hs(20000, 1, 1))
+    assert ok is False and "điểm đo" in ly
+
+
+def test_cho_qua_khi_du_tu_du_diem_do():
+    assert MT.du_co_so(_hs(12167, 5, 5))[0] is True     # A009 LeoKim
+    assert MT.du_co_so(_hs(53530, 1, 14))[0] is True    # A002: 1 tac pham nhung du day
+
+
+def test_du_tu_nhung_it_tac_pham_thi_CHAY_va_bao_khuyet():
+    """A002/A004 co 1 tac pham: so do rat tin duoc, chi thieu khuon mo bai/ket bai.
+    Chan han la phi — chay, nhung bao ro muc nao se khuyet."""
+    r = MT.sinh_mo_ta(_hs(53530, 1, 14), lambda p, s: _TRA_VE_DU, kv=_KV)
+    assert r.get("mo_ta")
+    assert "khuyet" in r and "tác phẩm" in r["khuyet"]

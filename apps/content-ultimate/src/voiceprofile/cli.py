@@ -437,8 +437,16 @@ def mo_ta_lenh(
             typer.echo(f"(Khong do duoc khuon van: {e})")
     r = sinh_mo_ta(profile, lambda pr, sc: llm_json(pr, sc, cfg), kv=kv)
     if not r.get("mo_ta"):
-        typer.echo(f"Khong sinh duoc mo ta: {r.get('ly_do')}")
-        raise typer.Exit(code=1)
+        # Owner 24/08: "khong du dieu kien thi dung chay, bao toi bo sung them mau".
+        # In THANG so tu con thieu de nguoi dung biet phai nap bao nhieu, khong phai
+        # doan tu mot cau van.
+        typer.echo(f"CHUA DU DIEU KIEN: {r.get('ly_do')}")
+        if r.get("can_them_tu"):
+            typer.echo(f"  => Can bo sung them ~{r['can_them_tu']:,} tu tac pham cua tac gia nay."
+                       .replace(",", "."))
+        raise typer.Exit(code=2)   # 2 = thieu du lieu (khac 1 = loi that su)
+    if r.get("khuyet"):
+        typer.echo(f"LUU Y: {r['khuyet']}")
     profile["mo_ta_giong"] = r["mo_ta"]
     p.write_text(json.dumps(profile, ensure_ascii=False, indent=2), encoding="utf-8")
     typer.echo(f"Da ghi mo_ta_giong vao {p}:")
