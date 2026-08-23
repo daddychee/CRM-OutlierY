@@ -24,6 +24,20 @@ FUNCTION_WORDS = {
 
 PUNCT_CHARS = [",", ";", ":", "—", "-", "(", ")", "!", "?", "..."]
 
+# Nguong cau cut / cau dai — GIU BANG deai.CAU_CUT_TU / CAU_DAI_TU va chon_neo.nhip
+# de thuoc do (cham) va neo giong (viet) noi cung mot thu tieng.
+CAU_CUT_TU = 8
+CAU_DAI_TU = 35
+
+# CHIEU NHIP (C2, 24/08) — luon co mat trong ho so, du cua on dinh co loai hay khong.
+# Do that: A014 co sentence_len_mean keep=False vi cv cao qua 6 van ban, ma
+# select_exemplars chi nhin tap keep=True => no chon doan mau bang hu tu va TTR,
+# KHONG nhin nhip cau. Do la goc cua bang 22/08 (mau neo A013 33,3% cau dai trong
+# khi van that 9,3%). cv cao o nhip khong phai nhieu: no la dac diem cua nguoi viet
+# (luc dai luc ngan). Loai chieu nay di la vut mat dung thu quan trong nhat.
+CHIEU_NHIP = ("sentence_len_mean", "sentence_len_stdev",
+              "sentence_short_ratio", "sentence_long_ratio")
+
 
 @dataclass
 class QuantFeature:
@@ -35,6 +49,7 @@ class QuantFeature:
     stable_on_heldout: bool | None = None
     keep: bool = True
     do_duoc: bool = True         # co DU diem do de noi duoc gi ve do on dinh khong (C1)
+    bat_buoc: bool = False       # chieu nhip: giu lai du cv cao (C2)
 
     def to_dict(self) -> dict:
         return {
@@ -46,6 +61,7 @@ class QuantFeature:
             "stable_on_heldout": self.stable_on_heldout,
             "keep": self.keep,
             "do_duoc": self.do_duoc,
+            "bat_buoc": self.bat_buoc,
         }
 
 
@@ -88,9 +104,12 @@ def _raw_features(text: str) -> dict[str, float]:
         cap_count += sum(1 for w in sw[1:] if w[0].isupper())
     cap_proxy = cap_count / n_words
 
+    n_s = len(sent_lens) or 1
     feats = {
         "sentence_len_mean": statistics.mean(sent_lens),
         "sentence_len_stdev": statistics.pstdev(sent_lens) if len(sent_lens) > 1 else 0.0,
+        "sentence_short_ratio": sum(1 for d in sent_lens if d < CAU_CUT_TU) / n_s,
+        "sentence_long_ratio": sum(1 for d in sent_lens if d > CAU_DAI_TU) / n_s,
         "function_word_freq": func_word_freq,
         "punct_freq_total": punct_total,
         "ttr": ttr,
@@ -171,7 +190,7 @@ def build_quant_features(
         keep = abs(z) >= z_keep_threshold and stable is not False
         features.append(QuantFeature(
             name=name, value=value, baseline=baseline_mean, zscore=z,
-            stable_on_heldout=stable, keep=keep,
+            stable_on_heldout=stable, keep=keep, bat_buoc=name in CHIEU_NHIP,
         ))
     return features
 
@@ -214,6 +233,7 @@ def build_self_features(
         features.append(QuantFeature(
             name=name, value=mean, spread=spread if du else None,
             stable_on_heldout=stable, keep=keep, do_duoc=du,
+            bat_buoc=name in CHIEU_NHIP,
         ))
     return features
 

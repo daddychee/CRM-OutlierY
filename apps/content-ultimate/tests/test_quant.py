@@ -210,3 +210,64 @@ def test_giu_nguyen_hanh_vi_khi_corpus_deu_lanh_23_08(tmp_path):
     (tmp_path / "b.txt").write_text(VAN_LANH, encoding="utf-8")
     works, bo = load_corpus_dir(tmp_path, bao_file_bo=True)
     assert len(works) == 2 and bo == []
+
+
+# --- C2 (24/08): nhip cau la chieu BAT BUOC ---------------------------------------
+# Do that 24/08: A014 Amazing co sentence_len_mean keep=False (cv cao qua 6 van ban),
+# ma select_exemplars chi nhin tap keep=True => no chon doan mau bang hu tu va TTR,
+# KHONG nhin nhip cau. Do la goc cua bang 22/08 (mau neo A013 33,3% cau dai trong khi
+# van that 9,3%). cv cao o nhip khong phai nhieu — do la dac diem cua nguoi viet
+# (luc dai luc ngan); loai no di la vut mat chieu quan trong nhat.
+NHIP_DAO_DONG = [
+    "He waited. The train did not come. He waited some more and thought about nothing at all.",
+    "The long afternoon stretched out across the platform in a way that made every "
+    "single minute feel like an hour of some other, slower life he had not chosen and "
+    "could not now escape, and still the train did not come.",
+    "Rain. Then wind. Then nothing for a long time.",
+]
+
+
+def test_do_ti_le_cau_cut_va_cau_dai():
+    from voiceprofile.quant import _raw_features
+    f = _raw_features("Short one. Two. Three here. " + "word " * 40 + "end.")
+    assert 0.0 <= f["sentence_short_ratio"] <= 1.0
+    assert f["sentence_short_ratio"] > 0.5      # ba cau dau deu duoi 8 tu
+    assert f["sentence_long_ratio"] > 0.0       # cau cuoi > 35 tu
+
+
+def test_chieu_nhip_luon_bat_buoc_du_cv_cao():
+    from voiceprofile.quant import CHIEU_NHIP, build_self_features
+    feats = {f.name: f for f in build_self_features(NHIP_DAO_DONG, author_heldout=[])}
+    for ten in CHIEU_NHIP:
+        assert feats[ten].bat_buoc is True, f"{ten} phai la chieu bat buoc"
+
+
+def test_nhip_co_mat_trong_target_ke_ca_khi_khong_on_dinh():
+    from voiceprofile.corpus import Corpus
+    from voiceprofile.profile import build_profile
+    from voiceprofile.quant import CHIEU_NHIP
+    works = NHIP_DAO_DONG * 4
+    p = build_profile("A", "en", "en", Corpus(name="A", works=works, train=works, heldout=[]))
+    for ten in CHIEU_NHIP:
+        assert ten in p["reproduction_targets"], f"{ten} bi loai khoi target"
+
+
+def test_exemplar_chon_theo_nhip_khong_lech():
+    """Mau chon ra phai gan nhip corpus hon la doan lech nhip nhat."""
+    from voiceprofile.corpus import Corpus
+    from voiceprofile.profile import build_profile
+    from voiceprofile.textutils import split_sentences, tokenize_words
+    ngan = "The door opened. Nobody came in. The room stayed cold. He counted to ten. "
+    dai = ("The corridor beyond the door extended further than he had remembered from "
+           "the previous winter when the building still belonged to the railway company "
+           "and every room smelled faintly of coal smoke and wet wool. ")
+    works = [ngan * 12 + dai * 2] * 3        # corpus chu yeu cau NGAN
+    p = build_profile("A", "en", "en", Corpus(name="A", works=works, train=works, heldout=[]))
+
+    def tu_moi_cau(t):
+        cau = [c for c in split_sentences(t) if tokenize_words(c)]
+        return sum(len(tokenize_words(c)) for c in cau) / len(cau) if cau else 0.0
+
+    chuan = tu_moi_cau(works[0])
+    lech = [abs(tu_moi_cau(e) - chuan) for e in p["exemplars"]]
+    assert min(lech) < chuan * 0.35, f"mau chon ra lech nhip qua xa: {lech} vs {chuan}"

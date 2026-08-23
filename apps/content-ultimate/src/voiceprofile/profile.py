@@ -108,7 +108,9 @@ def build_profile(
     # Chua chieu nao chung minh duoc on dinh (corpus mong) -> chon exemplar bang MOI
     # chieu do duoc. Van hon target rong: target rong thi moi cua so co khoang cach 0
     # va select_exemplars chon bua ba doan dau tien.
-    kept = [f for f in features if f.keep] or features
+    # Chieu NHIP vao thang du cua on dinh co loai hay khong (C2) — no la thu
+    # select_exemplars phai nhin, va la thu nguoi doc nhan ra dau tien khi van sai giong.
+    kept = [f for f in features if f.keep or f.bat_buoc] or features
     exemplars = select_exemplars(author_corpus.works, kept)
 
     # Phuong an tai tao: moi dac trung giu lai la mot target do duoc, kem dung sai
