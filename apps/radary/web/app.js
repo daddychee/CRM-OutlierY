@@ -1938,12 +1938,27 @@ function CotVaDuong({ lua }) {
 // Phân vai: Trending trả lời "CÓ NÊN LÀM ĐỀ NÀY KHÔNG"; Mapping trả lời "ĐỐI THỦ
 // ĐANG LÀM THẾ NÀO". Bàn giao giữa hai tab là VIỆC CỦA NGƯỜI — không có đường
 // truyền dữ liệu tự động (Owner chốt 23/08).
+// [tên, vị trí trên bản đồ, lớp CSS, NGHĨA]. Vế thứ 4 là thứ người dùng thực sự
+// cần: hai trục chỉ nói "ít/nhiều · tốt/kém", còn ô đó NGHĨA LÀ GÌ thì phải viết
+// ra. Mỗi ô đều kèm cái BẪY của chính nó — không ô nào là kết luận tự động
+// (luật A3: công cụ bày bằng chứng, người chọn).
 const O_NHAN = {
-  thieu_cung: ['THIẾU CUNG', 'ít video · chạy tốt', 'a'],
-  da_khai_thac: ['ĐÃ KHAI THÁC', 'nhiều video · chạy tốt', 'b'],
-  da_thu: ['ĐÃ THỬ, KHÔNG ĂN', 'ít video · chạy kém', 'c'],
-  bao_hoa: ['BÃO HOÀ', 'nhiều video · chạy kém', 'd'],
-  chua_du: ['CHƯA ĐỦ DẤU VẾT', 'dưới 5 video', 'e'],
+  thieu_cung: ['THIẾU CUNG', 'ít video · chạy tốt', 'a',
+    'Pool ít làm chủ đề này, nhưng video nào đã làm thì chạy trên mức thường. ' +
+    'Bẫy: “ít video” chưa chắc là chưa ai nghĩ ra — có thể đã thử rồi xoá, hoặc khó làm. ' +
+    'Mở danh sách video để tự kiểm trước khi tin.'],
+  da_khai_thac: ['ĐÃ KHAI THÁC', 'nhiều video · chạy tốt', 'b',
+    'Chủ đề đã được thị trường xác nhận là ăn, và đối thủ đã vào. ' +
+    'Vào sau thì phần thắng nằm ở góc nhìn và cách làm, không còn ở việc chọn chủ đề.'],
+  da_thu: ['ĐÃ THỬ, KHÔNG ĂN', 'ít video · chạy kém', 'c',
+    'Đã có người thử, kết quả dưới trung vị pool. ' +
+    'Bẫy: mẫu ít nên “không ăn” có thể do cách làm của vài video đó, chưa hẳn do chủ đề.'],
+  bao_hoa: ['BÃO HOÀ', 'nhiều video · chạy kém', 'd',
+    'Nhiều người đã làm mà hiệu suất vẫn dưới trung vị — cung vượt cầu, hoặc sóng đã qua. ' +
+    'Đây là ô duy nhất mà đông người làm là tin XẤU.'],
+  chua_du: ['CHƯA ĐỦ DẤU VẾT', 'dưới ngưỡng video của pool', 'e',
+    'Pool chưa nói về nó đủ nhiều để kết luận gì. Đây là “chưa biết”, KHÔNG phải ' +
+    '“không có cơ hội” — cũng không phải “có cơ hội”.'],
 };
 const O_THU_TU = ['thieu_cung', 'da_khai_thac', 'da_thu', 'bao_hoa', 'chua_du'];
 
@@ -1965,8 +1980,16 @@ function BanDo({ kq, chon, onChon }) {
   const cotY = [0.1, 0.25, 0.5, 1, 2, 5, 10, 20].filter(v => ly(v) >= y0 && ly(v) <= y1);
   const dat = new Set();
   return html`<svg viewBox=${`0 0 ${W} ${H}`} style="width:100%;height:auto" class="tr-bando">
-    <rect x=${L} y=${T} width=${W - L - R} height=${H - T - B} fill="currentColor" opacity=".025"/>
-    <rect x=${L} y=${T} width=${cx - L} height=${cy - T} fill="var(--accent,#4C8FE0)" opacity=".07"/>
+    <rect x=${L} y=${T} width=${W - L - R} height=${H - T - B} fill="currentColor" opacity=".02"/>
+    ${/* Bon vung to bang DUNG mau cua bon o o bang duoi — mat noi mau voi nghia,
+          khong phai nho nhan chu. Chi la NEN nen do dam rat thap de cham va nhan
+          van doc duoc tren ca hai theme. */ ''}
+    ${[['thieu_cung', L, T, cx - L, cy - T],
+       ['da_khai_thac', cx, T, W - R - cx, cy - T],
+       ['da_thu', L, cy, cx - L, H - B - cy],
+       ['bao_hoa', cx, cy, W - R - cx, H - B - cy]].map(([o, x, y, w, h]) =>
+      html`<rect x=${x} y=${y} width=${Math.max(0, w)} height=${Math.max(0, h)}
+        fill=${`var(--tr-${o})`} opacity=${o === 'bao_hoa' ? '.05' : '.08'}/>`)}
     ${cotX.map(v => html`<g><line x1=${X(v)} y1=${T} x2=${X(v)} y2=${H - B} stroke="currentColor" opacity=".08"/>
       <text x=${X(v)} y=${H - B + 16} font-size="10.5" fill="currentColor" opacity=".55" text-anchor="middle">${v}</text></g>`)}
     ${cotY.map(v => html`<g><line x1=${L} y1=${Y(v)} x2=${W - R} y2=${Y(v)} stroke="currentColor" opacity=".08"/>
@@ -1975,10 +1998,10 @@ function BanDo({ kq, chon, onChon }) {
     <line x1=${L} y1=${cy} x2=${W - R} y2=${cy} stroke="var(--accent,#4C8FE0)" opacity=".6" stroke-dasharray="5,4"/>
     <text x=${cx + 7} y=${T + 14} font-size="10.5" fill="var(--accent,#4C8FE0)">trung vị pool · ${ng.video_tv} video</text>
     <text x=${W - R - 4} y=${cy - 7} font-size="10.5" fill="var(--accent,#4C8FE0)" text-anchor="end">p75 pool · ${ng.boi_p75}×</text>
-    <text x=${L + 12} y=${T + 36} font-size="10" letter-spacing=".12em" fill="currentColor" opacity=".4">THIẾU CUNG</text>
-    <text x=${W - R - 12} y=${T + 36} font-size="10" letter-spacing=".12em" fill="currentColor" opacity=".4" text-anchor="end">ĐÃ KHAI THÁC</text>
-    <text x=${L + 12} y=${H - B - 12} font-size="10" letter-spacing=".12em" fill="currentColor" opacity=".4">ĐÃ THỬ, KHÔNG ĂN</text>
-    <text x=${W - R - 12} y=${H - B - 12} font-size="10" letter-spacing=".12em" fill="currentColor" opacity=".4" text-anchor="end">BÃO HOÀ</text>
+    <text x=${L + 12} y=${T + 36} font-size="10" letter-spacing=".12em" fill="var(--tr-thieu_cung)" opacity=".85">THIẾU CUNG</text>
+    <text x=${W - R - 12} y=${T + 36} font-size="10" letter-spacing=".12em" fill="var(--tr-da_khai_thac)" opacity=".85" text-anchor="end">ĐÃ KHAI THÁC</text>
+    <text x=${L + 12} y=${H - B - 12} font-size="10" letter-spacing=".12em" fill="var(--tr-da_thu)" opacity=".85">ĐÃ THỬ, KHÔNG ĂN</text>
+    <text x=${W - R - 12} y=${H - B - 12} font-size="10" letter-spacing=".12em" fill="var(--tr-bao_hoa)" opacity=".85" text-anchor="end">BÃO HOÀ</text>
     ${may.map(m => html`<circle cx=${X(m.n)} cy=${Y(m.boi)} r="2.1" fill="currentColor" opacity=".16"/>`)}
     ${uv.map(u => html`<g class="tr-cham" onClick=${() => onChon(u.cum)}>
       ${u.mo ? html`<circle cx=${X(u.n)} cy=${Y(u.boi)} r="8.5" fill="none" stroke=${`var(--tr-${u.o})`} opacity=".5"/>` : null}
@@ -2070,14 +2093,19 @@ function Trending({ ws, canEdit }) {
     </div>
 
     ${err ? html`<div class="card err">${err}</div>` : null}
-    ${dangChay ? html`<div class="card">
-      <div class="tr-h2">Đang quét — bước ${st.buoc_so || 1}/${st.buoc_tong || (d.buoc_ds || []).length}</div>
-      <ol class="tr-buoc">${(d.buoc_ds || [st.buoc]).map((b, i) => {
-        const n = i + 1, cur = st.buoc_so || 1;
+    ${/* Giu thanh buoc lai CA SAU KHI XONG (Owner 23/08): chay xong thi cham xanh
+          het — nguoi doc biet ket qua duoi day di qua du 5 chang nao, khong phai
+          nho lai. Xong thi xep NGANG cho gon, dang chay thi doc de theo doi. */ ''}
+    ${(dangChay || (kq && st && st.state === 'done')) ? html`<div class="card">
+      <div class="tr-h2">${dangChay
+        ? `Đang quét — bước ${st.buoc_so || 1}/${(st.buoc_tong || (d.buoc_ds || []).length)}`
+        : `Đã quét xong — ${(d.buoc_ds || []).length}/${(d.buoc_ds || []).length} bước`}</div>
+      <ol class=${'tr-buoc' + (dangChay ? '' : ' xong-het')}>${(d.buoc_ds || [st.buoc]).map((b, i) => {
+        const n = i + 1, cur = dangChay ? (st.buoc_so || 1) : Infinity;
         return html`<li class=${n < cur ? 'xong' : n === cur ? 'dang' : ''}>
           <i></i><span>${b}</span></li>`;
       })}</ol>
-      <div class="mut" style="font-size:12px">Chạy nền — đóng tab vẫn xong ở server.</div>
+      ${dangChay ? html`<div class="mut" style="font-size:12px">Chạy nền — đóng tab vẫn xong ở server.</div>` : null}
     </div>` : null}
     ${st && st.state === 'error' ? html`<div class="card err">Lượt quét lỗi: ${st.ly_do}</div>` : null}
 
@@ -2088,6 +2116,11 @@ function Trending({ ws, canEdit }) {
         <p class="tr-sub">Chấm mờ = <b>${(kq.dam_may || []).length} thực thể pool đang làm</b> — đây là <b>căn cứ của hai đường ngưỡng</b>: trung vị ${kq.nguong.video_tv} video và p75 ${kq.nguong.boi_p75}×
           đều lấy từ chính đám mây này, không phải hằng số. Vòng ngoài = cửa sổ còn mở; <b>viền nét đứt = khớp một phần cụm trend, có thể nối nhầm</b>.</p>
         <${BanDo} kq=${kq} chon=${chon} onChon=${hoiViSao}/>
+        <dl class="tr-chu">${O_THU_TU.map(o => {
+          const [ten, vt, cls, nghia] = O_NHAN[o];
+          return html`<div class=${'tr-chu-o ' + cls}><dt><i class="tr-dot"></i>${ten}
+            <span class="tr-phu">${vt}</span></dt><dd>${nghia}</dd></div>`;
+        })}</dl>
       </div>
 
       ${chon ? html`<div class="card tr-vs">
@@ -2110,9 +2143,10 @@ function Trending({ ws, canEdit }) {
         const ds = (kq.ung_vien || []).filter(u => u.o === o)
           .sort((a, b) => (a.mo === b.mo ? b.boi - a.boi : (a.mo ? -1 : 1)));
         if (!ds.length) return null;
-        const [ten, phu, cls] = O_NHAN[o];
+        const [ten, phu, cls, nghia] = O_NHAN[o];
         return html`<details class=${'tr-nhom ' + cls} open=${o === 'thieu_cung' || o === 'da_khai_thac'}>
           <summary><i class="tr-dot"></i>${ten}<span class="tr-phu">${phu}</span><span class="tr-dem">${ds.length}</span></summary>
+          <p class="tr-nghia">${nghia}</p>
           <table class="tr-bang"><thead><tr>
             <th></th><th>thực thể</th><th>cung</th><th>hiệu suất</th><th>nhịp pool 12 tháng</th>
             <th>gần nhất</th><th>vì sao nóng</th><th>lượng</th><th></th></tr></thead>
