@@ -11,6 +11,7 @@ from __future__ import annotations
 import random
 
 from .corpus import Corpus
+from .dien_ngon import ho_so as dien_ngon_ho_so
 from .quant import (
     build_quant_features,
     build_self_features,
@@ -146,6 +147,11 @@ def build_profile(
         "quant_features": [f.to_dict() for f in features],
         "distinctive_ngrams": [n.to_dict() for n in ngrams],
         "reproduction_targets": reproduction_targets,
+        # C5 (24/08): lap truong / dien ngon / cu phap — do o KHOA RIENG, khong tron
+        # vao quant_features. Moi chieu nhet vao quant_features se tu dong chay tiep
+        # vao reproduction_targets roi vao thang cham giong, va thang cang nhieu chieu
+        # tap nham thi cang de doc nguoc (bai hoc punct_freq_total 23/08).
+        "discourse_features": dien_ngon_ho_so(target_texts),
         "signature_moves": [],  # duoc dien sau boi lenh `rhetoric` (Module 3 + 3b)
         "language_neutral_targets": {},  # Module 4 - chua co
         "exemplars": exemplars,
