@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 """Test IAM (P2) — ghim: schema migration, 2 giỏ quyền, 3 luật sắt Admin ủy quyền,
 chống tự khóa, nhật ký, migration users.txt. Đây là 'ONE runnable check' của IAM."""
+from datetime import date
+
 import bcrypt
 import pytest
 
@@ -203,6 +205,36 @@ def test_sua_nguoi_doi_truong_va_trang_thai(conn):
                for d in nk)                                       # luật sắt 3: có vết
 
 
+def test_thoi_viec_ghi_ngay_va_nhan_lai_lam_xoa_vet(conn):
+    """Mục 'ĐÃ THÔI VIỆC' (Owner chốt 19/08 — không xóa hẳn): chuyển 'nghi' mà
+    chưa khai ngày → lấy HÔM NAY (mục thôi việc không có dòng ngày trống); khai
+    tay thì giữ đúng ngày + lý do; nhận lại làm → xóa sạch vết thôi việc; ngày
+    sai dạng → LoiIam. Hồ sơ VẪN nằm trong sổ ở mọi bước."""
+    ow = _owner(conn)
+    ns = iam.tao_nguoi(conn, ow, "Người Nghỉ", "Kinh doanh", "SEO")
+
+    def _hs():
+        return next(n for n in iam.liet_ke_nguoi(conn) if n["ma"] == ns["ma"])
+
+    iam.sua_nguoi(conn, ow, ns["ma"], trang_thai="nghi")
+    assert _hs()["trang_thai"] == "nghi"
+    assert _hs()["ngay_thoi_viec"] == date.today().isoformat()
+
+    iam.sua_nguoi(conn, ow, ns["ma"], trang_thai="nghi",
+                  ngay_thoi_viec="2026-08-15", ly_do_thoi_viec="Hết hợp đồng")
+    assert _hs()["ngay_thoi_viec"] == "2026-08-15"
+    assert _hs()["ly_do_thoi_viec"] == "Hết hợp đồng"
+
+    iam.sua_nguoi(conn, ow, ns["ma"], trang_thai="hoat_dong")   # nhận lại làm
+    assert _hs()["trang_thai"] == "hoat_dong"
+    assert _hs()["ngay_thoi_viec"] == "" and _hs()["ly_do_thoi_viec"] == ""
+
+    with pytest.raises(iam.LoiIam):
+        iam.sua_nguoi(conn, ow, ns["ma"], trang_thai="nghi",
+                      ngay_thoi_viec="15/08/2026")
+    assert any(n["ma"] == ns["ma"] for n in iam.liet_ke_nguoi(conn))   # không xóa
+
+
 def test_ho_so_mo_rong_luu_va_validate(conn):
     """Hồ sơ ĐẦY ĐỦ (DE.md mục 12.1): 5 cột mới lưu đúng; cap_bac ngoài thang /
     vị trí ngoài CSV / CẶP bộ phận×vị trí sai (bài học 01/08) / bộ phận ngoài
@@ -291,7 +323,11 @@ def test_hoi_quy_khong_le_khong_acting_y_nguyen(conn):
         assert u["level"] == lv and "level_that" not in u
         # vào app theo min_level + bộ phận (L4+ bỏ rào) — y luật cũ
         assert iam.co_quyen(u, "vao", "ai-agent", conn) is True
-        assert iam.co_quyen(u, "vao", "data-analytics", conn) == \
+        # Data Analytics: LUẬT MỚI 19/08 — MỌI nhân sự đều xem được (hết rào
+        # bộ phận Kinh doanh, min_level về 1). Dùng seo-optimize để giữ ca
+        # "app có rào bộ phận" trong ma trận này.
+        assert iam.co_quyen(u, "vao", "data-analytics", conn) is True
+        assert iam.co_quyen(u, "vao", "seo-optimize", conn) == \
             (lv >= 4 or (bp == "Kinh doanh" and lv >= 2))
         # hành động app: mặc định theo min_level trong luật
         assert iam.co_quyen(u, "nap_tai_lieu", "ai-agent", conn) == (lv >= 4)

@@ -37,6 +37,9 @@
   details.sua svg.ic{width:13px;height:13px}
   .f-sua{display:flex;gap:5px;align-items:center;flex-wrap:wrap;margin-top:.45rem}
   tr.ns-dong{cursor:pointer}
+  details.thoi-viec{margin:.9rem 0 .3rem;border-top:1px solid var(--line);padding-top:.6rem}
+  details.thoi-viec summary{cursor:pointer;color:var(--muted);font-size:.85rem}
+  details.thoi-viec[open] summary{color:var(--ink)}
   .tb-cong-cu{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:.2rem 0 .7rem}
   .tb-cong-cu .day{flex:1}
   .khoi-tk{display:flex;flex-direction:column;gap:.35rem;margin-top:.4rem}
@@ -63,6 +66,7 @@
 
 <div class="stat-row">
   <div class="stat"><div class="n">{% if stats.ho_so is none %}<span class="thieu" title="Could not read IAM registry">—</span>{% else %}{{ stats.ho_so }}{% endif %}</div><div class="t">active profiles</div></div>
+  <div class="stat"><div class="n">{% if stats.thoi_viec is none %}<span class="thieu" title="Could not read IAM registry">—</span>{% else %}{{ stats.thoi_viec }}{% endif %}</div><div class="t">former employees</div></div>
   <div class="stat"><div class="n">{{ stats.co_mat }}</div><div class="t">present today (tool system)</div></div>
   <div class="stat"><div class="n">{{ stats.chua_xep }}</div><div class="t">not rated for {{ ky_kpi }}</div></div>
 </div>
@@ -111,15 +115,6 @@
     <input type="hidden" name="gia_tri" value="{% if tk.khoa %}0{% else %}1{% endif %}">
     <button type="submit" class="nut phu" style="padding:2px 10px;font-size:.8rem">{% if tk.khoa %}Unlock account{% else %}Lock account{% endif %}</button>
   </form>
-  {% if user.level >= 5 %}
-  <form method="post" action="/general/accounts/update" class="f-dong">
-    <input type="hidden" name="ve" value="hr">
-    <input type="hidden" name="ten" value="{{ tk.ten }}">
-    <input type="hidden" name="hanh_dong" value="xoa">
-    <input class="o" name="gia_tri" placeholder="retype {{ tk.ten }}">
-    <button type="submit" class="nut nguy" style="padding:2px 10px;font-size:.8rem">Delete account</button>
-  </form>
-  {% endif %}
 </div>
 {% endmacro %}
 <h3 class="hub-tieu">
@@ -139,7 +134,7 @@
 <table class="bang">
   <tr><th>Name</th><th>Username</th><th>Department</th><th>Position</th>
     <th>Level</th><th>Status</th><th>Created</th></tr>
-  {% for h in ho_so %}
+  {% for h in ho_so if h.trang_thai != 'nghi' %}
   {% set tk = tk_cua.get(h.ma) %}
   <tr class="ns-dong" data-ma="{{ h.ma }}" data-tim="{{ (h.ma ~ ' ' ~ h.ho_ten ~ ' ' ~ (tk.ten if tk else '') ~ ' ' ~ h.bo_phan) | lower }}">
     <td>{{ h.ho_ten }}</td>
@@ -162,6 +157,37 @@
   {% endfor %}
 </table>
 </div>
+
+{% set da_nghi = ho_so | selectattr('trang_thai', 'equalto', 'nghi') | list %}
+{% if da_nghi %}
+<details class="thoi-viec">
+  <summary>Former employees · {{ da_nghi | length }}</summary>
+  <div class="bang-cuon">
+  <table class="bang">
+    <tr><th>Name</th><th>Username</th><th>Department</th><th>Position</th>
+      <th>Start</th><th>Left on</th><th>Reason</th><th></th></tr>
+    {% for h in da_nghi %}
+    {% set tk = tk_cua.get(h.ma) %}
+    <tr class="ns-dong" data-ma="{{ h.ma }}" data-tim="{{ (h.ma ~ ' ' ~ h.ho_ten ~ ' ' ~ (tk.ten if tk else '') ~ ' ' ~ h.bo_phan) | lower }}">
+      <td>{{ h.ho_ten }}</td>
+      <td class="tk">{% if tk %}{{ tk.ten }}{% if not tk.khoa %} <span class="badge">login open</span>{% endif %}{% else %}—{% endif %}</td>
+      <td>{{ h.bo_phan }}</td>
+      <td>{{ h.vi_tri or '—' }}</td>
+      <td>{{ h.get('ngay_vao') or '—' }}</td>
+      <td>{{ h.get('ngay_thoi_viec') or '—' }}</td>
+      <td>{{ h.get('ly_do_thoi_viec') or '—' }}</td>
+      <td>
+        <form method="post" action="/general/people/update" class="f-dong" style="margin:0">
+          <input type="hidden" name="ve" value="hr">
+          <input type="hidden" name="ma" value="{{ h.ma }}">
+          <input type="hidden" name="trang_thai" value="hoat_dong">
+          <button type="submit" class="nut phu" style="padding:2px 10px;font-size:.8rem">Reinstate</button>
+        </form></td></tr>
+    {% endfor %}
+  </table>
+  </div>
+</details>
+{% endif %}
 
 {% for h in ho_so %}
 <div class="h1b" id="h1b-{{ h.ma }}" hidden>
@@ -200,9 +226,20 @@
       <div><label>Status</label><select class="o" name="trang_thai">
         {% for tt, nhan in nhan_tt.items() %}<option value="{{ tt }}"{% if h.trang_thai == tt %} selected{% endif %}>{{ nhan }}</option>{% endfor %}
       </select></div>
+      <div><label>Left on</label><input class="o" type="date" name="ngay_thoi_viec" value="{{ h.get('ngay_thoi_viec', '') }}"></div>
+      <div><label>Leave reason</label><input class="o" name="ly_do_thoi_viec" value="{{ h.get('ly_do_thoi_viec', '') }}"></div>
     </div>
     <button type="submit" class="nut" style="padding:.35rem .9rem;font-size:.84rem">Save profile</button>
   </form>
+  {% if h.trang_thai != 'nghi' %}
+  <form method="post" action="/general/people/terminate" class="f-dong">
+    <input type="hidden" name="ve" value="hr">
+    <input type="hidden" name="ma" value="{{ h.ma }}">
+    <input class="o" type="date" name="ngay_thoi_viec" title="Last working day">
+    <input class="o" name="ly_do_thoi_viec" placeholder="Leave reason">
+    <button type="submit" class="nut nguy" style="padding:2px 10px;font-size:.8rem">Terminate</button>
+  </form>
+  {% endif %}
   <h3 class="hub-tieu" style="margin-top:.9rem">
     <svg class="ic" viewBox="0 0 24 24"><path d="M21.4 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
     Documents

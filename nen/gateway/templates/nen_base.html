@@ -84,19 +84,20 @@
 {# Nav khu General — UI_FLOW.md mục 5+8: mỗi trang MỘT việc. People/Accounts đã
    GỘP về HR Hub /hr (một cửa nhân sự, Owner chốt 16/08) nên rời nav này. #}
 <nav class="muc">
+  {# Owner thấy đủ; người khác thấy từng trang theo Ô TICK khu General (cờ
+     g_* do route truyền qua _nav_gen — Owner chốt 19/08 cấp Director L4).
+     Permissions + API Keys KHÔNG có cờ: giỏ Owner tuyệt đối, không tick được. #}
   {% set la_owner = user.level >= 5 %}
-  {% if la_owner %}<a href="/general" class="{% if trang == 'tong-quan' %}active{% endif %}">Overview</a>{% endif %}
-  {% if user.level >= 4 %}
-  <a href="/general/niches" class="{% if trang == 'niches' %}active{% endif %}">Niches</a>
-  <a href="/general/channels" class="{% if trang == 'channels' %}active{% endif %}">Channels</a>
-  {% endif %}
+  {% if la_owner or g_tong_quan %}<a href="/general" class="{% if trang == 'tong-quan' %}active{% endif %}">Overview</a>{% endif %}
+  {% if la_owner or g_niches %}<a href="/general/niches" class="{% if trang == 'niches' %}active{% endif %}">Niches</a>{% endif %}
+  {% if la_owner or g_channels %}<a href="/general/channels" class="{% if trang == 'channels' %}active{% endif %}">Channels</a>{% endif %}
   {% if la_owner %}
   <a href="/general/permissions" class="{% if trang == 'phan-quyen' %}active{% endif %}">Permissions</a>
   <a href="/general/api-keys" class="{% if trang == 'api-keys' %}active{% endif %}">API Keys</a>
-  <a href="/general/data-backup" class="{% if trang == 'du-lieu' %}active{% endif %}">Data &amp; Backup</a>
-  <a href="/general/audit-log" class="{% if trang == 'nhat-ky' %}active{% endif %}">Audit Log</a>
-  <a href="/general/applications" class="{% if trang == 'ung-dung' %}active{% endif %}">Applications</a>
   {% endif %}
+  {% if la_owner or g_du_lieu %}<a href="/general/data-backup" class="{% if trang == 'du-lieu' %}active{% endif %}">Data &amp; Backup</a>{% endif %}
+  {% if la_owner or g_nhat_ky %}<a href="/general/audit-log" class="{% if trang == 'nhat-ky' %}active{% endif %}">Audit Log</a>{% endif %}
+  {% if la_owner or g_ung_dung %}<a href="/general/applications" class="{% if trang == 'ung-dung' %}active{% endif %}">Applications</a>{% endif %}
 </nav>
 <main>
   {% if bao %}<p class="bao">✓ {{ bao }}</p>{% endif %}

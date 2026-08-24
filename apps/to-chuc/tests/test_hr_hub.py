@@ -151,14 +151,40 @@ def test_hr_gop_mot_dong_mot_nguoi():
     assert 'action="/general/accounts/grant"' in b            # cấp cho hồ sơ chưa có
     assert f'value="{ma}"' in b                               # grant trỏ đúng hồ sơ
     assert 'action="/general/accounts/update"' in b
-    assert 'name="hanh_dong"' in b and 'value="xoa"' in b     # xóa gõ-lại-tên giữ khuôn
+    assert 'value="xoa"' not in b                             # Owner chốt 19/08: hết nút xóa
+    assert 'action="/general/people/terminate"' in b          # thay bằng Terminate
     assert 'action="/general/accounts/create-full"' in b      # New person trọn gói
     assert 'name="username"' in b and 'name="mat_khau"' in b
 
 
+def test_thoi_viec_xuong_muc_rieng_khong_bi_xoa():
+    """ĐÃ THÔI VIỆC (Owner chốt 19/08): hồ sơ KHÔNG bị xóa — rời bảng chính,
+    xuống mục 'Former employees' kèm ngày + lý do + nút nhận lại làm; tài khoản
+    còn mở thì có cảnh báo; người đã nghỉ ra khỏi bảng KPI (không chấm nữa)."""
+    from nen.iam import iam
+    ma = _iam_seed()
+    conn = iam.ket_noi()
+    iam.tao_tai_khoan(conn, None, "chu-he", "mk-6-ky-tu", "Ban quản trị", 5,
+                      phai_doi_mk=False)
+    ow = iam.claims_cua(iam.lay_tai_khoan(conn, "chu-he"))
+    iam.tao_tai_khoan(conn, ow, "ngoc-vh", "mk-6-ky-tu", "Vận hành - Sản xuất", 2,
+                      nguoi_ma=ma, phai_doi_mk=False)
+    iam.sua_nguoi(conn, ow, ma, trang_thai="nghi", ngay_thoi_viec="2026-08-10",
+                  ly_do_thoi_viec="Hết hợp đồng")
+    conn.close()
+    b = _client(apps="to-chuc,hr,accounts", ten="chu-he", level=5).get("/hr?tab=accounts").text
+    assert "Former employees" in b
+    assert "2026-08-10" in b and "Hết hợp đồng" in b           # tra được nghỉ lúc nào
+    dong = f'<tr class="ns-dong" data-ma="{ma}"'
+    assert b.count(dong) == 1                                  # CHỈ 1 dòng
+    assert b.index(dong) > b.index("Former employees")         # và dòng đó nằm ở mục thôi việc
+    assert "Reinstate" in b and "login open" in b              # nhận lại + cảnh báo TK
+    assert "ngoc-vh" not in _client().get("/hr?tab=kpi").text  # hết chấm KPI người nghỉ
+
+
 def test_hr_khoi_account_4_box_rieng_khong_con_dropdown():
     """Owner chốt 17/08: KHÔNG set biến qua 1 dropdown hành động + 1 ô value
-    chung — mỗi biến MỘT box riêng. 4 form nhỏ (reset_mk/level/khoa/xoa) đều POST
+    chung — mỗi biến MỘT box riêng. 3 form nhỏ (reset_mk/level/khoa) đều POST
     /general/accounts/update với field ten/hanh_dong/gia_tri GIỮ NGUYÊN; dropdown
     đa-hành-động + ô "value" chung đã biến mất."""
     from nen.iam import iam
@@ -175,7 +201,7 @@ def test_hr_khoi_account_4_box_rieng_khong_con_dropdown():
     assert 'name="hanh_dong" value="reset_mk"' in b
     assert 'name="hanh_dong" value="level"' in b
     assert 'name="hanh_dong" value="khoa"' in b
-    assert 'name="hanh_dong" value="xoa"' in b
+    assert 'name="hanh_dong" value="xoa"' not in b       # nút xóa tài khoản đã gỡ (19/08)
     assert 'name="ten" value="acc-nv"' in b               # trỏ đúng tài khoản
 
     # dropdown đa-hành-động + ô value chung đã bị bỏ
@@ -187,8 +213,9 @@ def test_hr_khoi_account_4_box_rieng_khong_con_dropdown():
     assert ">Reset password<" in b
     assert ">Set level<" in b
     assert (">Lock account<" in b) != (">Unlock account<" in b)   # đúng 1 trong 2, theo trạng thái
-    assert ">Delete account<" in b                        # user hiện là Owner → thấy nút xóa
-    assert 'placeholder="retype acc-nv"' in b
+    assert ">Delete account<" not in b                    # KHÔNG còn xóa tài khoản
+    assert ">Terminate<" in b                             # thay bằng thôi việc (gỡ mềm)
+    assert 'placeholder="Leave reason"' in b              # Terminate: ngày + lý do, không gõ-lại-tên
 
 
 # ---------- Attendance: bảng công tháng + chốt chỉ-thêm ----------

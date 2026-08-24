@@ -421,6 +421,39 @@ sqlite-snapshot như iam.db.
   tab 2, restart ai-agent → chat chạy thật; Ctrl+U không thấy khóa. VIỆC
   TREO: engine xoay khóa thật ở app tiêu thụ (Đ4); các app nối
   `quota_log.ghi` dần; trạng thái "nghi cạn" (K1) cần quota log có dữ liệu.
+- 19/08/2026 — **MỤC "ĐÃ THÔI VIỆC" TRONG HR HUB** (Owner chốt: "nhân sự đã nghỉ
+  không muốn xóa hẳn mà cho vào mục đã thôi việc"). Nền đã có gỡ mềm
+  `trang_thai='nghi'` từ 001 nhưng THIẾU hai thứ: chỗ ghi NGÀY/LÝ DO nghỉ và
+  chỗ ĐỨNG riêng trên UI (người nghỉ nằm lẫn bảng chính, nằm cả trong bảng KPI).
+  Migration iam **006** thêm `ngay_thoi_viec` + `ly_do_thoi_viec` (đặt tên
+  THOI_VIEC để khỏi lẫn "ngày nghỉ phép" của tab Leaves). `iam.sua_nguoi` nhận 2
+  trường + 2 luật: chuyển 'nghi' mà chưa khai ngày → LẤY HÔM NAY (mục thôi việc
+  không có dòng ngày trống); nhận lại làm (về hoat_dong/cho_duyet) → XÓA sạch
+  ngày + lý do. Route `/general/people/update` chuyển tiếp 2 trường (khuôn "bỏ
+  trống = giữ nguyên"); nhận lại làm = POST `trang_thai=hoat_dong`, KHÔNG có xóa
+  hồ sơ (giữ luật cũ). HR Hub tab Accounts: bảng chính chỉ người ĐANG LÀM, khối
+  gấp **Former employees** ở dưới (ngày nghỉ · lý do · nút Reinstate · badge
+  "login open" khi tài khoản chưa khóa — HR thấy ngay việc còn phải làm), ô đếm
+  thêm "former employees"; hồ sơ chi tiết H1b có ô Left on + Leave reason.
+  `_ds_nguoi_iam` (to-chuc) BỎ người đã nghỉ khỏi bảng KPI/chấm công/phép — bản
+  ghi chấm công cũ của họ KHÔNG xóa (vẫn hiện theo dữ liệu ngày đó).
+  **NÚT "DELETE ACCOUNT" GỠ HẲN, THAY BẰNG "TERMINATE"** (Owner chốt cùng ngày):
+  route mới `/general/people/terminate` (gate nhan_su) làm ĐÚNG HAI VIỆC trong
+  một lượt bấm và không xóa gì — hồ sơ về 'nghi' + ngày/lý do TRƯỚC (sự thật
+  nhân sự), rồi KHÓA đăng nhập; bước khóa CÓ THỂ HỎNG (thiếu giỏ quan_tai_khoan,
+  đụng tài khoản Owner, tự khóa mình) → nuốt lỗi thành thông báo "Login … still
+  open: <lý do>", hồ sơ vẫn đã chuyển. Nút nằm ở khối HỒ SƠ (thôi việc là việc
+  nhân sự, HR L3+ làm được) chứ không ở khối tài khoản (khối đó cần giỏ accounts);
+  khối tài khoản còn 3 box reset_mk/level/khoa. Hệ quả đã báo Owner: KHÔNG còn
+  cửa UI nào xóa tài khoản (kể cả tài khoản mồ côi) — backend `hanh_dong=xoa`
+  vẫn còn, cần thì mở lại một dòng. Test: iam (ngày tự điền/khai tay/xóa vết/
+  ngày sai dạng) + gateway (terminate khóa được đăng nhập · HR không giỏ tài
+  khoản vẫn thôi việc được + báo "still open" · nhân viên 403) + HR Hub (dòng
+  CHỈ nằm ở mục thôi việc, KPI hết tên, hết nút Delete account).
+  Suite root 199 · to-chuc 63.
+  **LƯU Ý VẬN HÀNH**: migration tự chạy ở lần mở kết nối kế tiếp (đã VACUUM INTO
+  `data/nen/backup/iam-truoc-thoi-viec-*.db` trước); phải RESTART gateway +
+  to-chuc mới ăn code mới (bài học 19/08: template mới + Python cũ = câm lặng).
 
 ## 14. PERMISSIONS THIẾT KẾ LẠI (16/08 — mockup v2 CHỜ OWNER DUYỆT, chưa code)
 

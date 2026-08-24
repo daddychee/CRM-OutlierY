@@ -96,7 +96,10 @@
       <tr><th>Action</th><th>Unlocks</th><th>Default</th><th>In effect</th><th>Set</th><th>Reason</th></tr>
       {% for h in k.hang %}
       <tr{% if h.nguon == 'override' %} class="le"{% endif %}>
-        <td>{{ h.nhan }}</td><td class="phu">{{ h.mo_ta }}</td>
+        {# h.slug (KHÔNG phải k.slug): app đã gộp giao diện nối hàng vào khối app
+           chủ nhưng ô tick vẫn ghi về đúng app của nó. #}
+        <td>{{ h.nhan }}{% if h.tu %}<span class="uu-tien"> · {{ h.tu }}</span>{% endif %}</td>
+        <td class="phu">{{ h.mo_ta }}</td>
         <td class="phu">{{ h.mac_dinh }}</td>
         <td>{% if h.hieu_luc %}<span class="badge ok">YES{% if h.nguon != 'default' %} ({{ h.nguon }}){% endif %}</span>
             {% else %}<span class="badge">NO{% if h.nguon != 'default' %} ({{ h.nguon }}){% endif %}</span>{% endif %}</td>
@@ -104,14 +107,14 @@
           {% if chon.level >= 5 %}
           <span class="badge">Owner — locked</span>
           {% else %}
-          <select name="dat__{{ k.slug }}__{{ h.ma }}">
+          <select name="dat__{{ h.slug }}__{{ h.ma }}">
             <option value="ke_thua"{% if h.dat == 'ke_thua' %} selected{% endif %}>inherit</option>
             <option value="cho"{% if h.dat == 'cho' %} selected{% endif %}>allow</option>
             <option value="chan"{% if h.dat == 'chan' %} selected{% endif %}>deny</option>
           </select>
           {% endif %}
         </td>
-        <td>{% if chon.level < 5 %}<input name="lydo__{{ k.slug }}__{{ h.ma }}" size="20" value="{{ h.ly_do }}" placeholder="required for allow/deny">{% endif %}</td>
+        <td>{% if chon.level < 5 %}<input name="lydo__{{ h.slug }}__{{ h.ma }}" size="20" value="{{ h.ly_do }}" placeholder="required for allow/deny">{% endif %}</td>
       </tr>
       {% endfor %}
     </table>

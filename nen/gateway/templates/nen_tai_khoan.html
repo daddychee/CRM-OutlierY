@@ -23,7 +23,9 @@
           <option value="bo_phan">set department =</option>
           <option value="reset_mk">reset password =</option>
           <option value="khoa">lock (1) / unlock (0) =</option>
-          {% if la_owner %}<option value="xoa">DELETE (retype name) =</option>{% endif %}
+          {# 19/08: GỠ lựa chọn DELETE — Owner chốt không để cửa xóa tài khoản trên
+             giao diện; thôi việc đi đường Terminate ở HR Hub (gỡ mềm, khóa đăng
+             nhập, hồ sơ giữ nguyên). Backend hanh_dong=xoa vẫn còn nếu cần mở lại. #}
         </select>
         <input name="gia_tri" size="10" placeholder="value">
         <button>Apply</button>

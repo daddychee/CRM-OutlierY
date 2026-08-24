@@ -161,6 +161,10 @@ def _ds_nguoi_iam() -> tuple[list[dict] | None, str]:
             for tk in iam.liet_ke_tai_khoan(conn):
                 ma_ns = tk.get("nguoi_ma") or ""
                 ho_so = nguoi.get(ma_ns) or {}
+                if ho_so.get("trang_thai") == "nghi":
+                    continue     # ĐÃ THÔI VIỆC: ra khỏi bảng KPI/chấm công/phép
+                                 # (hồ sơ vẫn còn ở mục 'Đã thôi việc' tab Accounts;
+                                 #  bản ghi chấm công cũ của họ KHÔNG bị xóa)
                 ds.append({"ten": tk["ten"], "bo_phan": tk.get("bo_phan") or "",
                            "ho_ten": ho_so.get("ho_ten", ""),
                            "planner_id": ("ns_" + ma_ns.replace("-", "").lower())
@@ -330,6 +334,8 @@ def hr_trang(request: Request, tab: str = "accounts", thang: str = "",
     chua_xep = [r["ten"] for r in (kpi["vh"] + kpi["kd"]) if r["ten"] not in danh_gia]
     stats = {"ho_so": sum(1 for h in (ho_so or []) if h.get("trang_thai") == "hoat_dong")
                       if ho_so is not None else None,
+             "thoi_viec": sum(1 for h in (ho_so or []) if h.get("trang_thai") == "nghi")
+                          if ho_so is not None else None,
              "co_mat": len(cc_doc_ngay(date.today().isoformat())),
              "chua_xep": len(chua_xep)}
     # Tab Accounts (gộp): danh mục hồ sơ (luật ngoài code) + tài liệu gốc + LEFT

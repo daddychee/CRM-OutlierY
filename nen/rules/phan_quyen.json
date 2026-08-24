@@ -12,6 +12,15 @@
     "nhan_su",
     "ke_toan"
   ],
+  "_ghi_chu_khu_general": "TỪNG TRANG khu General là một hành động tick riêng (Owner chốt 19/08 — cấp cho Director L4). HAI MỨC MẶC ĐỊNH: 4 trang quản trị (tong_quan/nhat_ky/du_lieu/ung_dung) KHÔNG thuộc giỏ nào → co_quyen fail-closed = chỉ Owner; 2 trang danh bạ (niches/channels) giữ luật cũ L4+ và ô tick THẮNG luật đó (mở cho team dưới L4, hoặc chặn một người L4 cụ thể). Mặc định cả 6 = hành vi trước khi có ô tick. Permissions + API Keys KHÔNG có ở đây — chúng nằm ở gio_owner_tuyet_doi (Manager không bao giờ ngang Owner).",
+  "gio_khu_general": [
+    "general_tong_quan",
+    "general_niches",
+    "general_channels",
+    "general_nhat_ky",
+    "general_du_lieu",
+    "general_ung_dung"
+  ],
   "apps": {
     "app-mau": {
       "vao": {
@@ -49,11 +58,9 @@
       }
     },
     "data-analytics": {
+      "_ghi_chu_vao": "LUẬT TOÀN AGENT (Owner chốt 19/08): MỌI nhân sự đều được XEM Data Analytics — gỡ rào bộ phận Kinh doanh và hạ min_level 2→1. Đọc số liệu là việc chung, không phải đặc quyền một phòng.",
       "vao": {
-        "min_level": 2,
-        "bo_phan": [
-          "Kinh doanh"
-        ]
+        "min_level": 1
       },
       "quan_tri": {
         "nhan": "Quản trị",

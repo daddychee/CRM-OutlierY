@@ -53,6 +53,19 @@ def test_router_nhieu_kenh_hoi_lai(he):
 
 
 def test_quyen_nguoi_hoi_bi_chan_noi_thang(he):
+    """LUẬT 19/08: MỌI nhân sự xem được Data Analytics → Vận hành L2 giờ hỏi
+    được (trước bị rào bộ phận Kinh doanh). Cơ chế 'bị chặn thì NÓI THẲNG' vẫn
+    phải sống, nên ca chặn giờ dựng bằng ô tick deny của Owner."""
+    assert cau_noi.bao_cao_kenh(
+        {"ten_chuan": "Outland", "ma": "K-OUTLAND"}, VH_L2, he
+    )["loai"] != "khong_du_quyen"
+
+    ow = iam.claims_cua(iam.tao_tai_khoan(
+        he, None, "owner-test", "mk-test", "Ban quản trị", 5, phai_doi_mk=False))
+    iam.tao_tai_khoan(he, ow, "vh", "mk-vh-6", "Vận hành - Sản xuất", 2,
+                      phai_doi_mk=False)
+    iam.gan_override(he, ow, "vh", "data-analytics", "vao", False, "tạm khóa bàn giao")
+
     kq = cau_noi.bao_cao_kenh({"ten_chuan": "Outland", "ma": "K-OUTLAND"}, VH_L2, he)
     assert kq["loai"] == "khong_du_quyen"
     assert "Data Analytics" in kq["noi_thang"]   # app nói THẲNG, khác tài liệu lặng lẽ

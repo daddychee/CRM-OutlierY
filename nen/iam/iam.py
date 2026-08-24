@@ -238,6 +238,12 @@ def sua_tai_khoan(conn: sqlite3.Connection, ai_lam: dict, ten_dich: str,
             raise LoiIam("Level phải trong thang 1–5.")
     if admin_uy_quyen is not None and ai_lam["level"] < OWNER_LEVEL:
         raise LoiIam("Chỉ Owner được bật/tắt Admin ủy quyền.")  # ủy quyền là việc của chủ
+    if bo_phan is not None and tk.get("nguoi_ma"):
+        # MỘT nguồn sự thật: tài khoản đã nối hồ sơ thì bộ phận theo HỒ SƠ (nơi
+        # có kiểm CẶP bộ phận × vị trí, bài học 01/08). Cho sửa ở đây là mở
+        # đường cho hai sổ lệch nhau — đúng bệnh Owner gặp 19/08.
+        raise LoiIam("Bộ phận lấy từ hồ sơ nhân sự — đổi ở tab HR (hồ sơ "
+                     f"{tk['nguoi_ma']}), tài khoản sẽ tự theo.")
     cap_nhat, gia_tri = [], []
     for cot, gt in (("bo_phan", bo_phan), ("level", level),
                     ("admin_uy_quyen", admin_uy_quyen), ("khoa", khoa),
@@ -316,21 +322,27 @@ def _kiem_cap_bo_phan_vi_tri(bo_phan: str, vi_tri: str) -> None:
 
 
 def _kiem_truong_ho_so(cap_bac: str = "", ngay_sinh: str = "",
-                       ngay_vao: str = "", cccd: str = "") -> None:
+                       ngay_vao: str = "", cccd: str = "",
+                       ngay_thoi_viec: str = "") -> None:
     """Validate các trường hồ sơ mở rộng (rỗng = chưa khai, cho qua)."""
     if cap_bac and cap_bac not in CAP_BAC:
         raise LoiIam("Cấp bậc phải là: " + " / ".join(CAP_BAC))
-    for nhan, gt in (("Ngày sinh", ngay_sinh), ("Ngày vào làm", ngay_vao)):
+    for nhan, gt in (("Ngày sinh", ngay_sinh), ("Ngày vào làm", ngay_vao),
+                     ("Ngày thôi việc", ngay_thoi_viec)):
         if gt and not re.fullmatch(r"\d{4}-\d{2}-\d{2}", gt):
             raise LoiIam(f"{nhan} phải dạng YYYY-MM-DD.")
     if cccd and not re.fullmatch(r"\d{12}", cccd):
         raise LoiIam("CCCD phải gồm đúng 12 chữ số (hoặc bỏ trống).")
 
 
-def quyen_nhan_su(claims: dict) -> bool:
+def quyen_nhan_su(claims: dict, conn: sqlite3.Connection | None = None) -> bool:
     """Ai được vào trang Nhân sự (UI_FLOW.md mục 6, đúng V1): Owner + HR L3+.
-    Giỏ ủy quyền duyet_ho_so mở thêm cho Admin ủy quyền (mặc định TẮT)."""
-    return co_quyen(claims, "duyet_ho_so") or \
+    Giỏ ủy quyền duyet_ho_so mở thêm cho Admin ủy quyền (mặc định TẮT).
+
+    PHẢI truyền conn để Ô TICK duyet_ho_so có hiệu lực: co_quyen không có conn
+    thì BỎ QUA hẳn bảng quyen_override — bản cũ thiếu conn nên Owner tick ô
+    'Approve HR profiles' mà không ai được gì (ô chết lặng lẽ, sửa 19/08)."""
+    return co_quyen(claims, "duyet_ho_so", conn=conn) or \
         (claims.get("bo_phan") == HR_BO_PHAN and claims["level"] >= 3)
 
 
@@ -338,7 +350,7 @@ def tao_nguoi(conn: sqlite3.Connection, ai_lam: dict | None, ho_ten: str,
               bo_phan: str, vi_tri: str = "", ngay_sinh: str = "",
               cccd: str = "", dia_chi: str = "", ngay_vao: str = "",
               cap_bac: str = "") -> dict:
-    if ai_lam is not None and not quyen_nhan_su(ai_lam):
+    if ai_lam is not None and not quyen_nhan_su(ai_lam, conn):
         raise LoiIam("Bạn không có quyền quản hồ sơ nhân sự.")
     if not ho_ten.strip():
         raise LoiIam("Thiếu họ tên.")
@@ -365,13 +377,19 @@ def sua_nguoi(conn: sqlite3.Connection, ai_lam: dict | None, ma: str,
               vi_tri: str | None = None, trang_thai: str | None = None,
               ngay_sinh: str | None = None, cccd: str | None = None,
               dia_chi: str | None = None, ngay_vao: str | None = None,
-              cap_bac: str | None = None) -> None:
+              cap_bac: str | None = None, ngay_thoi_viec: str | None = None,
+              ly_do_thoi_viec: str | None = None) -> None:
     """Sửa hồ sơ người (trả nợ 'hồ sơ chỉ tạo được' — DE.md mục 9/12). None = giữ
     nguyên trường đó. KHÔNG có xóa hồ sơ: nghỉ việc = trang_thai 'nghi' (gỡ mềm,
     mã NS bất biến như doc_code). Đụng bộ phận/vị trí → kiểm CẶP trên giá trị
     SAU GỘP (bài học 01/08); không đụng → bản ghi cũ ngoài danh mục vẫn sửa được
-    trạng thái (grandfather)."""
-    if ai_lam is not None and not quyen_nhan_su(ai_lam):
+    trạng thái (grandfather).
+
+    THÔI VIỆC (Owner chốt 19/08) — hồ sơ đi vào mục 'Đã thôi việc', không xóa:
+    chuyển sang 'nghi' mà chưa khai ngày → LẤY HÔM NAY (mục thôi việc luôn tra
+    được ai nghỉ lúc nào, không có dòng ngày trống); nhận lại làm (về hoat_dong/
+    cho_duyet) → XÓA ngày + lý do thôi việc để hồ sơ không mang vết cũ."""
+    if ai_lam is not None and not quyen_nhan_su(ai_lam, conn):
         raise LoiIam("Bạn không có quyền quản hồ sơ nhân sự.")
     hien = conn.execute("SELECT * FROM nguoi WHERE ma=?", (ma,)).fetchone()
     if not hien:
@@ -384,13 +402,20 @@ def sua_nguoi(conn: sqlite3.Connection, ai_lam: dict | None, ma: str,
         _kiem_cap_bo_phan_vi_tri(
             bo_phan if bo_phan is not None else hien["bo_phan"],
             vi_tri if vi_tri is not None else (hien["vi_tri"] or ""))
-    _kiem_truong_ho_so(cap_bac or "", ngay_sinh or "", ngay_vao or "", cccd or "")
+    _kiem_truong_ho_so(cap_bac or "", ngay_sinh or "", ngay_vao or "", cccd or "",
+                       ngay_thoi_viec or "")
+    if trang_thai == "nghi" and ngay_thoi_viec is None and not hien["ngay_thoi_viec"]:
+        ngay_thoi_viec = datetime.now().strftime("%Y-%m-%d")
+    elif trang_thai in ("hoat_dong", "cho_duyet"):
+        ngay_thoi_viec, ly_do_thoi_viec = "", ""      # đi làm lại: hết vết thôi việc
     cap_nhat, gia_tri = [], []
     for cot, gt in (("ho_ten", ho_ten.strip() if ho_ten else None),
                     ("bo_phan", bo_phan), ("vi_tri", vi_tri),
                     ("trang_thai", trang_thai), ("ngay_sinh", ngay_sinh),
                     ("cccd", cccd), ("dia_chi", dia_chi),
-                    ("ngay_vao", ngay_vao), ("cap_bac", cap_bac)):
+                    ("ngay_vao", ngay_vao), ("cap_bac", cap_bac),
+                    ("ngay_thoi_viec", ngay_thoi_viec),
+                    ("ly_do_thoi_viec", ly_do_thoi_viec)):
         if gt is not None:
             cap_nhat.append(f"{cot}=?")
             gia_tri.append(gt)
@@ -399,6 +424,14 @@ def sua_nguoi(conn: sqlite3.Connection, ai_lam: dict | None, ma: str,
     with conn:
         conn.execute(f"UPDATE nguoi SET {', '.join(cap_nhat)} WHERE ma=?",
                      (*gia_tri, ma))
+        # ĐỒNG BỘ BỘ PHẬN sang tài khoản nối (Owner báo 19/08: "chuyển bộ phận
+        # trong HR nhưng Permissions vẫn vai cũ"). QUYỀN tính theo tai_khoan.
+        # bo_phan, còn HR sửa nguoi.bo_phan → không đồng bộ là hai sổ trôi khỏi
+        # nhau, người đã chuyển phòng vẫn giữ quyền phòng cũ (đo thật: 3 người
+        # lệch). Hồ sơ là NGUỒN SỰ THẬT — tao_tai_khoan cũng lấy bộ phận từ đây.
+        if bo_phan is not None:
+            conn.execute("UPDATE tai_khoan SET bo_phan=? WHERE nguoi_ma=?",
+                         (bo_phan, ma))
     # Nhật ký KHÔNG ghi giá trị cccd/dia_chi (nhạy cảm) — chỉ ghi tên cột đã đổi.
     ghi_nhat_ky(conn, (ai_lam or {}).get("ten", "(khoi tao)"), "sua_nguoi",
                 f"{ma}: doi {', '.join(c.rstrip('=?') for c in cap_nhat)}")
@@ -417,6 +450,12 @@ def gan_override(conn: sqlite3.Connection, ai_lam: dict, ten_dich: str,
     BẮT BUỘC lý do (mockup P5 — mọi ngoại lệ tra được vì sao). Tick giỏ Owner
     tuyệt đối → chặn."""
     luat = _luat()
+    # Lưới chặn rác (sự cố 19/08): template lỡ render slug rỗng (bản mới chạy
+    # trên tiến trình cũ) thì form gửi app_slug='' → dòng ghi vào KHÔNG khớp app
+    # nào = ô tick chết lặng lẽ. Thà 4xx còn hơn ghi rác vào sổ quyền.
+    if not app_slug.strip() or not hanh_dong.strip():
+        raise LoiIam("Ô tick không hợp lệ (thiếu app hoặc hành động) — "
+                     "tải lại trang; nếu vừa cập nhật app thì khởi động lại dịch vụ.")
     if hanh_dong in luat.get("gio_owner_tuyet_doi", []):
         raise LoiIam("Quyền này thuộc giỏ Owner tuyệt đối — không tick được.")
     if ai_lam["level"] < OWNER_LEVEL:
