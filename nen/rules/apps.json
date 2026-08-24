@@ -715,7 +715,8 @@
       "mo_ta": "Kế hoạch tuần: Leader giao việc cho nhân sự → nhân sự nhận việc rồi tự viết checklist cách triển khai, làm xong tick → quản lý xem khối lượng và tỉ lệ hoàn thành.",
       "cong": 9117,
       "tien_to": [
-        "/tasky"
+        "/tasky",
+        "/api-tasky"
       ],
       "health": "/health",
       "phien_ban": "0.1.0",

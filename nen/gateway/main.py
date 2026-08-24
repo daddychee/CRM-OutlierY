@@ -2048,6 +2048,7 @@ _ALIAS: dict[str, tuple[str, str]] = {
     # Đồng nhất URL 18/08 (Owner bắt "cùng nút sidebar mà URL khác họ"): mọi nút
     # Tools = /<slug>. App native thêm alias ở đây; app KHUNG xem _ALIAS_KHUNG cuối file.
     "/video-review": ("video-review", "danh-sach"),
+    "/tasky": ("tasky", "tasky"),
     "/nas": ("to-chuc", "nas"),
     "/kpi": ("to-chuc", "kpi"),
     "/vault": ("to-chuc", "vault"),
