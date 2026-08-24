@@ -1979,6 +1979,90 @@ def api_danh_ba_ngach(request: Request):
             for t in danh_ba.liet_ke("ngach")]
 
 
+# ---------- PHÂN CÔNG (trục B — DE.md; Owner chốt 24/08/2026) ----------
+# Trục A (năng lực) đi bằng header X-Remote-Actions mỗi request. Trục B (ai làm việc
+# trên ĐỐI TƯỢNG nào) không đi được bằng header — danh sách dài và đổi theo từng đối
+# tượng — nên app HỎI qua 3 đường dưới đây, đúng khuôn `api-khoa` đang chạy tốt:
+# app bind loopback nên chỉ app gọi được; app KHÔNG bao giờ tự giữ sổ người.
+
+def _loopback(request: Request) -> bool:
+    return not (request.client and request.client.host not in ("127.0.0.1", "::1"))
+
+
+@app.get("/api/quyen/tai-khoan/{app_slug}")
+def api_quyen_tai_khoan(request: Request, app_slug: str):
+    """Người DÙNG ĐƯỢC app này — để app dựng ô chọn khi giao việc.
+
+    Sự cố 24/08: app SEO chào danh sách từ sổ di sản V2 của chính nó, sổ ngừng cập nhật
+    từ 19/08 nên người mới (nhungpn) không có trong đó → giao việc 400 và hộp thoại
+    không có gì để chọn. Danh sách phải đến từ đây, không từ app."""
+    if not _loopback(request):
+        return JSONResponse({"loi": "chi loopback"}, status_code=403)
+    conn = iam.ket_noi()
+    try:
+        ra = []
+        for tk in iam.liet_ke_tai_khoan(conn):
+            if tk["khoa"]:
+                continue
+            claims = iam.hieu_luc(iam.claims_cua(tk), conn)
+            if not iam.co_quyen(claims, "vao", app_slug, conn):
+                continue
+            ra.append({"ten": tk["ten"], "ten_hien_thi": tk.get("ten_hien_thi") or "",
+                       "bo_phan": tk["bo_phan"], "level": claims["level"],
+                       "vai": iam.vai_cho_app(claims, app_slug, conn)})
+        return {"tai_khoan": ra}
+    finally:
+        conn.close()
+
+
+@app.get("/api/quyen/pham-vi/{app_slug}")
+def api_quyen_pham_vi(request: Request, app_slug: str, ten: str = ""):
+    """Người này được giao ĐỐI TƯỢNG nào trong app — {loai: [mã…]}, '*' = tất cả.
+
+    Nền trả đúng thứ đã ghi, KHÔNG diễn giải theo vai: "Manager bỏ qua trục B" là luật
+    của app (app biết vai mình đang cầm). Gộp hai thứ ở đây thì đổi luật vai là phạm vi
+    đổi theo mà không ai để ý."""
+    if not _loopback(request):
+        return JSONResponse({"loi": "chi loopback"}, status_code=403)
+    if not ten.strip():
+        return {"ten": "", "pham_vi": {}}
+    conn = iam.ket_noi()
+    try:
+        return {"ten": ten, "pham_vi": iam.pham_vi(conn, ten.strip(), app_slug)}
+    finally:
+        conn.close()
+
+
+@app.post("/api/quyen/phan-cong")
+async def api_quyen_phan_cong(request: Request):
+    """GIAO VIỆC — app chuyển tiếp NGUYÊN cookie phiên của người bấm, gateway tự xác
+    thực người thật rồi tự kiểm quyền `phan_cong`.
+
+    Không dùng khóa chia sẻ: cookie KHÔNG nằm trong proxy._HEADER_CAM nên app vẫn nhận
+    được cookie OUTLIERY của người dùng. Hệ quả đáng giá: app có lỗi cũng không tự phong
+    quyền cho ai được, vì nó không cầm thứ gì để tự xưng danh."""
+    user = user_hien_tai(request)
+    if not user:
+        return JSONResponse({"loi": "chua dang nhap"}, status_code=401)
+    try:
+        b = await request.json()
+    except Exception:                                    # noqa: BLE001 — body hỏng = 400
+        return JSONResponse({"loi": "body không phải JSON"}, status_code=400)
+    nguoi = b.get("nguoi") or []
+    if isinstance(nguoi, str):                           # app gửi 1 tên trần cũng nhận
+        nguoi = [nguoi]
+    conn = iam.ket_noi()
+    try:
+        sach = iam.dat_phan_cong(conn, user, str(b.get("app") or ""),
+                                 str(b.get("loai") or ""), str(b.get("ma") or ""),
+                                 [str(x) for x in nguoi], str(b.get("ghi_chu") or ""))
+        return {"ok": True, "nguoi": sach}
+    except iam.LoiIam as e:
+        return JSONResponse({"loi": str(e)}, status_code=400)
+    finally:
+        conn.close()
+
+
 @app.get("/cai-dat")
 def cai_dat_cu():
     return RedirectResponse("/general/api-keys", status_code=303)

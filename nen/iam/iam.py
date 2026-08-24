@@ -598,3 +598,127 @@ def vai_cho_app(claims: dict, app_slug: str,
                 and co_quyen(claims, ma, app_slug, conn):
             return "leader"
     return "viewer"
+
+
+# ---------- PHÂN CÔNG (trục B — "ai làm việc trên ĐỐI TƯỢNG nào", Owner chốt 24/08/2026) ----
+
+HANH_DONG_PHAN_CONG = "phan_cong"
+
+
+def _yeu_cau_phan_cong(conn: sqlite3.Connection, ai_lam: dict, app_slug: str) -> None:
+    """Ai được GIAO VIỆC: hành động `phan_cong` của chính app đó (Owner chốt 24/08 —
+    Manager trở lên; Leader KHÔNG). App chưa khai hành động này → co_quyen fail-closed
+    về Owner, đúng lệ hành-động-lạ."""
+    if not co_quyen(ai_lam, HANH_DONG_PHAN_CONG, app_slug, conn):
+        raise LoiIam("Bạn không có quyền giao việc trong app này "
+                     "(từ Manager trở lên — Owner cấp ở General › Permissions).")
+
+
+def _kiem_nguoi_nhan(conn: sqlite3.Connection, app_slug: str, ten: str) -> dict:
+    """Người nhận phân công PHẢI vào được app — kiểm Ở NỀN, không ở app.
+
+    Đây đúng chỗ hỏng 24/08: app SEO kiểm tên bằng sổ di sản V2 của chính nó, sổ ngừng
+    cập nhật nên tên người mới bị từ chối, còn tên người CŨ (đã đổi bộ phận, đã khóa) thì
+    vẫn nhận — giao xong kênh thành mồ côi mà không ai biết.
+    """
+    tk = lay_tai_khoan(conn, ten)
+    if not tk:
+        raise LoiIam(f"Không có tài khoản '{ten}'.")
+    if tk["khoa"]:
+        raise LoiIam(f"Tài khoản '{ten}' đang bị khóa — mở khóa trước khi giao việc.")
+    if not co_quyen(claims_cua(tk), "vao", app_slug, conn):
+        raise LoiIam(f"'{ten}' không vào được app này (bộ phận/cấp chưa đủ) — "
+                     "cấp quyền vào app ở General › Permissions trước.")
+    return dict(tk)
+
+
+def dat_phan_cong(conn: sqlite3.Connection, ai_lam: dict, app_slug: str,
+                  loai: str, ma: str, nguoi: list[str], ghi_chu: str = "") -> list[str]:
+    """THAY toàn bộ danh sách người của một đối tượng. Danh sách rỗng = gỡ hết (đối
+    tượng về diện chỉ Manager/Owner đụng được). Trả danh sách đã ghi.
+
+    Đặt-cả-cụm chứ không thêm/bớt từng dòng: giao việc là câu "kênh này giờ ai làm",
+    trả lời bằng một trạng thái cuối thì không có cửa cho hai lượt bấm đua nhau ra kết
+    quả nửa vời.
+    """
+    if not app_slug.strip() or not loai.strip() or not ma.strip():
+        raise LoiIam("Thiếu app / loại / mã đối tượng.")
+    _yeu_cau_phan_cong(conn, ai_lam, app_slug)
+    sach = []
+    for t in nguoi:
+        t = (t or "").strip()
+        if not t:
+            continue
+        tk = _kiem_nguoi_nhan(conn, app_slug, t)
+        if tk["ten"] not in sach:
+            sach.append(tk["ten"])           # tên như sổ ghi (đã trim), không ghi trùng
+    with conn:
+        conn.execute("DELETE FROM phan_cong WHERE app_slug=? AND loai=? AND ma=?",
+                     (app_slug, loai, ma))
+        for t in sach:
+            conn.execute(
+                "INSERT INTO phan_cong (app_slug, loai, ma, ten_tai_khoan, ghi_chu, "
+                "ai_gan, luc) VALUES (?,?,?,?,?,?,?)",
+                (app_slug, loai, ma, t, ghi_chu.strip(), ai_lam["ten"], _gio()))
+    ghi_nhat_ky(conn, ai_lam["ten"], "phan_cong",
+                f"{app_slug} {loai}:{ma} = {', '.join(sach) if sach else '(gỡ hết)'}"
+                + (f" ({ghi_chu.strip()})" if ghi_chu.strip() else ""))
+    return sach
+
+
+def pham_vi(conn: sqlite3.Connection, ten: str, app_slug: str) -> dict[str, list[str]]:
+    """Người này được giao những gì trong app — {loai: [mã…]}. Rỗng = chưa được giao gì.
+
+    KHÔNG suy diễn theo vai ở đây: nền trả đúng sự thật đã ghi, còn "Manager bỏ qua trục
+    B" là luật của app (app biết vai mình đang cầm). Trộn hai thứ vào một hàm là đến lúc
+    đổi luật vai thì phạm vi cũng đổi theo mà không ai để ý — đúng bẫy đã dính ở
+    `roles.overview_channels` bên SEO.
+    """
+    ra: dict[str, list[str]] = {}
+    for r in conn.execute(
+            "SELECT loai, ma FROM phan_cong WHERE ten_tai_khoan=? AND app_slug=? "
+            "ORDER BY loai, ma", (ten, app_slug)):
+        ra.setdefault(r["loai"], []).append(r["ma"])
+    return ra
+
+
+def nguoi_cua(conn: sqlite3.Connection, app_slug: str, loai: str,
+              ma: str) -> list[str]:
+    """Đối tượng này đang giao cho ai."""
+    return [r["ten_tai_khoan"] for r in conn.execute(
+        "SELECT ten_tai_khoan FROM phan_cong WHERE app_slug=? AND loai=? AND ma=? "
+        "ORDER BY ten_tai_khoan", (app_slug, loai, ma))]
+
+
+def liet_ke_phan_cong(conn: sqlite3.Connection,
+                      app_slug: str | None = None) -> list[dict]:
+    if app_slug:
+        cur = conn.execute("SELECT * FROM phan_cong WHERE app_slug=? "
+                           "ORDER BY loai, ma, ten_tai_khoan", (app_slug,))
+    else:
+        cur = conn.execute("SELECT * FROM phan_cong "
+                           "ORDER BY app_slug, loai, ma, ten_tai_khoan")
+    return [dict(r) for r in cur]
+
+
+def phan_cong_mo_coi(conn: sqlite3.Connection,
+                     app_slug: str | None = None) -> list[dict]:
+    """Phân công trỏ tới người KHÔNG còn vào được app (khóa, đổi bộ phận, xóa tài khoản).
+
+    Người đổi bộ phận thì phân công cũ không tự sai đi — nó chỉ ngừng có tác dụng, LẶNG
+    LẼ. Hàm này là thứ biến im lặng đó thành một dòng đọc được; báo cáo, không tự xóa —
+    xóa hộ là quyết định nghiệp vụ của Manager, không phải của cái sổ.
+    """
+    ra = []
+    for d in liet_ke_phan_cong(conn, app_slug):
+        tk = lay_tai_khoan(conn, d["ten_tai_khoan"])
+        if not tk:
+            d["ly_do"] = "tài khoản không còn"
+        elif tk["khoa"]:
+            d["ly_do"] = "tài khoản đang khóa"
+        elif not co_quyen(claims_cua(tk), "vao", d["app_slug"], conn):
+            d["ly_do"] = f"không vào được app (bộ phận {tk['bo_phan']}, cấp {tk['level']})"
+        else:
+            continue
+        ra.append(d)
+    return ra

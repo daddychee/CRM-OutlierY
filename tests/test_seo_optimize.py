@@ -63,7 +63,15 @@ def test_luat_va_vai_seo_theo_thuong_quy(conn):
             assert iam.vai_cho_app(u, "seo-optimize", conn) == vai, (bp, lv)
     assert iam.vai_cho_app(ow, "seo-optimize", conn) == "admin"     # Owner: quan_tri → admin
     assert iam.cac_hanh_dong(ow, "seo-optimize", conn) == \
-        ["van_hanh", "sua", "toan_quyen", "quan_tri"]
+        ["van_hanh", "sua", "toan_quyen", "phan_cong", "quan_tri"]
+    # GIAO VIỆC (trục B, thêm 24/08): Manager trở lên — Leader KHÔNG. Đây là chỗ ĐẢO
+    # luật `chan_owner` của V2 (02/08 nới cho leader), user chốt lại 24/08.
+    u3 = iam.claims_cua(iam.lay_tai_khoan(conn, "u3"))          # Kinh doanh L3
+    u4 = iam.claims_cua(iam.lay_tai_khoan(conn, "u4"))          # Kinh doanh L4
+    assert not iam.co_quyen(u3, "phan_cong", "seo-optimize", conn)
+    assert iam.co_quyen(u4, "phan_cong", "seo-optimize", conn)
+    # ...và hành động mới KHÔNG được đẩy vai (bẫy substring nas_cap_cao)
+    assert iam.vai_cho_app(u4, "seo-optimize", conn) == "manager"
 
 
 def test_tick_toan_quyen_phat_manager_khong_len_admin(conn):

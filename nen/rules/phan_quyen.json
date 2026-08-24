@@ -267,7 +267,7 @@
       },
       "sua": {
         "nhan": "Thị trường được giao",
-        "mo_ta": "Vai leader: tạo/sửa thị trường, xóa format + mục kho niche, gán/đổi CHỦ kênh, khôi phục thùng rác 24h — KHÔNG xóa kênh/thị trường",
+        "mo_ta": "Vai leader: tạo/sửa thị trường, xóa format + mục kho niche, khôi phục thùng rác 24h — KHÔNG xóa kênh/thị trường, KHÔNG giao việc (Owner chốt 24/08: giao kênh là của Manager trở lên — xem hành động phan_cong)",
         "min_level": 3,
         "bo_phan": [
           "Kinh doanh"
@@ -276,6 +276,14 @@
       "toan_quyen": {
         "nhan": "Toàn quyền vận hành",
         "mo_ta": "Vai manager: sửa MỌI kênh, xóa kênh/format/tập/thị trường + dọn thùng rác, xem nhật ký audit — KHÔNG gồm tài khoản/API key (Manager không ngang Owner)",
+        "min_level": 4,
+        "bo_phan": [
+          "Kinh doanh"
+        ]
+      },
+      "phan_cong": {
+        "nhan": "Giao việc (kênh)",
+        "mo_ta": "Trục B — gán người ↔ KÊNH (ai được ghi lên kênh nào). Owner chốt 24/08/2026: Manager trở lên, Leader KHÔNG. Dữ liệu ở bảng phan_cong của nền, app chỉ thi hành; người nhận phải vào được app (nền kiểm). LƯU Ý ĐẶT TÊN: khóa tránh substring them/tao/sua/xoa/toan_quyen (bẫy iam.vai_cho_app).",
         "min_level": 4,
         "bo_phan": [
           "Kinh doanh"
