@@ -221,3 +221,15 @@ def test_duong_giao_viec_bao_ly_do_doc_duoc(he):
     r = c.post("/api/quyen/phan-cong",
                json={"app": APP, "loai": "kenh", "ma": "cf-01", "nguoi": ["vh"]})
     assert r.status_code == 400 and "không vào được app" in r.json()["loi"]
+
+
+def test_duong_doc_toan_bo_va_mo_coi(he):
+    c = he["conn"]
+    iam.dat_phan_cong(c, he["manager"], APP, "kenh", "cf-01", ["nv"])
+    iam.dat_phan_cong(c, he["manager"], APP, "kenh", "ed-01", ["ld"])
+    d = _goi(f"/api/quyen/phan-cong/{APP}").json()
+    assert {(x["ma"], x["ten_tai_khoan"]) for x in d["phan_cong"]} == \
+        {("cf-01", "nv"), ("ed-01", "ld")}
+    assert d["mo_coi"] == []
+    iam.sua_tai_khoan(c, he["owner"], "nv", khoa=True)
+    assert [x["ma"] for x in _goi(f"/api/quyen/phan-cong/{APP}").json()["mo_coi"]] == ["cf-01"]

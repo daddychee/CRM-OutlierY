@@ -2033,6 +2033,21 @@ def api_quyen_pham_vi(request: Request, app_slug: str, ten: str = ""):
         conn.close()
 
 
+@app.get("/api/quyen/phan-cong/{app_slug}")
+def api_quyen_phan_cong_doc(request: Request, app_slug: str):
+    """TOÀN BỘ phân công của app + danh sách MỒ CÔI (giao cho người nay không vào được
+    app nữa). App dựng màn "kênh này ai làm" bằng MỘT lượt đọc, và hiện luôn cảnh báo mồ
+    côi — thứ trước đây chỉ lộ ra khi có người đi điều tra (11/26 kênh, 24/08)."""
+    if not _loopback(request):
+        return JSONResponse({"loi": "chi loopback"}, status_code=403)
+    conn = iam.ket_noi()
+    try:
+        return {"phan_cong": iam.liet_ke_phan_cong(conn, app_slug),
+                "mo_coi": iam.phan_cong_mo_coi(conn, app_slug)}
+    finally:
+        conn.close()
+
+
 @app.post("/api/quyen/phan-cong")
 async def api_quyen_phan_cong(request: Request):
     """GIAO VIỆC — app chuyển tiếp NGUYÊN cookie phiên của người bấm, gateway tự xác
