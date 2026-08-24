@@ -268,19 +268,27 @@ def test_redirect_giu_vi_tri_va_modal_revoke(client):
 
 def test_model_chi_hien_cho_llm_generate(client):
     """Owner phê lần 4 ('tự bịa đúng không?'): ô model CHỈ có ở loại llm/generate
-    — task transcript KHÔNG có input model (loại này không có khái niệm model);
-    input model còn lại autocomplete=off (chặn trình duyệt gợi ý lịch sử bậy)."""
+    — task transcript KHÔNG có ô model (loại này không có khái niệm model).
+    Từ 22/08 ô model là DROPDOWN (Owner: 'cho phép chọn model khi cấu hình per
+    app') — hết gõ tay nên cũng hết cần autocomplete=off; danh sách gợi ý theo
+    nhà của khóa đầu + lựa chọn '— theo khóa —' để bỏ override."""
     _login(client, "owner-test", "mk-test")
     conn = ket.ket_noi()
     ket.them_api_key(conn, "transcript", "tr-abcdefgh-9999")
-    ket.them_api_key(conn, "llm", "sk-llm-abcdef-8888", nha="glm")
+    kid = ket.them_api_key(conn, "llm", "sk-llm-abcdef-8888", nha="glm")
+    # gán khóa cho việc: gợi ý model đi theo NHÀ của khóa đầu, chưa gán thì
+    # dropdown chỉ có "— theo khóa —" (chưa biết nhà nào thì không bịa gợi ý)
+    ket.luu_cap_phat_viec(conn, "content-ultimate", "viet_kich_ban", [kid])
     conn.close()
 
     # tab 2: content-ultimate có cả task llm (2) + transcript + youtube trong
     # contract → đúng 2 input model (chỉ 2 task llm), có autocomplete=off
     trang = client.get("/general/api-keys?tab=app&app=content-ultimate").text
     assert trang.count('name="model"') == 2
-    assert 'autocomplete="off"' in trang
+    assert '<input name="model"' not in trang            # chọn, không gõ tay
+    assert f'value="{ket.MODEL_THEO_KHOA}"' in trang     # bỏ override được
+    for m in ket.MODEL_GOI_Y["glm"]:                     # gợi ý theo nhà của khóa
+        assert f'<option value="{m}"' in trang
 
     # tab 1: bảng YouTube Transcript (đứng CUỐI danh sách loại) không còn form
     # đổi model — form model chỉ nằm trong các khối llm/generate phía trên

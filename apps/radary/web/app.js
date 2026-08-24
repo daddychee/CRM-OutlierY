@@ -396,7 +396,7 @@ function LlmPanel({ orgId }) {
           <option value="glm">GLM (Zhipu)</option>
         </select></div>
       <div class="formrow"><label>Model</label>
-        <input type="text" placeholder=${provider === 'glm' ? 'mặc định: glm-4-plus' : 'mặc định: claude-opus-4-8'}
+        <input type="text" placeholder=${provider === 'glm' ? 'mặc định: glm-5.2' : 'mặc định: claude-opus-4-8'}
           value=${model} onInput=${e => setModel(e.target.value)}/></div>
       <div class="formrow"><label>API key</label>
         <input type="password" placeholder=${cfg?.configured ? `đang dùng ${cfg.masked} — dán key mới để thay` : 'dán API key'}

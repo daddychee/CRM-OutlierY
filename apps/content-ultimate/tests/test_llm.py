@@ -28,7 +28,9 @@ def test_available_providers_lists_only_those_with_keys():
     env = {"GLM_API_KEY": "glm-secret", "OPENAI_API_KEY": "sk-oa"}
     avail = available_providers(env)
     assert set(avail) == {"glm", "openai"}
-    assert avail["glm"]["model"] == "glm-5.2"
+    # ghim theo giá trị HIỆN HÀNH của catalog, không ghim mặt chữ —
+    # đổi bản GLM (5.2 → 5.3 …) không được làm test tự vỡ.
+    assert avail["glm"]["model"] == PROVIDERS["glm"]["default_model"]
     assert avail["glm"]["base_url"].startswith("https://")
     assert avail["glm"]["openai_compatible"] is True
 
@@ -89,3 +91,28 @@ def test_oe_llm_nhan_dien_het_tien():
     assert _no_balance("Please recharge your account")
     assert not _no_balance('{"error":{"code":"1302","message":"Too many requests"}}')
     assert not _no_balance("")
+
+def test_oe_llm_cong_tac_suy_luan_theo_doi_model(tmp_path):
+    """GLM 5.3 KHÔNG tắt được thinking (z.ai 1210) và có field `thinking` là 400 →
+    body phải mang reasoning_effort thay. Bản 5.2 thì ngược lại: reasoning_effort
+    KHÔNG cắt được reasoning nên vẫn phải thinking:disabled. Đo thật 23/08."""
+    from oe.llm import LLM, _luon_thinking
+
+    assert _luon_thinking("glm-5.3") and _luon_thinking("GLM-5.3")
+    assert not _luon_thinking("glm-5.2") and not _luon_thinking("")
+
+    def body_cua(model):
+        env = tmp_path / f"{model}.env"
+        env.write_text(chr(10).join(["LLM_PROVIDER=glm", "GLM_API_KEY=k",
+                                     f"GLM_MODEL={model}", ""]),
+                       encoding="utf-8")
+        llm = LLM(env)
+        ghi = {}
+        llm._stream = lambda body, timeout: ghi.update(body) or "x"   # noqa: ARG005
+        llm.complete("s", "u")
+        return ghi
+
+    b = body_cua("glm-5.2")
+    assert b["thinking"] == {"type": "disabled"} and "reasoning_effort" not in b
+    b = body_cua("glm-5.3")
+    assert "thinking" not in b and b["reasoning_effort"] == "low"

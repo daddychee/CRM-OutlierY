@@ -240,7 +240,12 @@
         {% elif ids %}<span class="badge">single key</span>{% else %}—{% endif %}</td>
     {# Model CHỈ có nghĩa với llm/generate — Owner phê lần 4: task transcript
        hiện ô model (kèm gợi ý GLM từ autocomplete trình duyệt) là "tự bịa". #}
-    <td>{% if v.loai in ('llm', 'generate') %}{{ muc.get('model') or '—' }}{% else %}—{% endif %}</td>
+    {% set khoa_dau = (keys | selectattr('id', 'equalto', ids[0]) | list | first) if ids else none %}
+    <td>{% if v.loai in ('llm', 'generate') %}
+          {% if muc.get('model') %}{{ muc.get('model') }}
+          {% elif khoa_dau and khoa_dau.model %}<span class="phu">{{ khoa_dau.model }} (theo khóa)</span>
+          {% else %}—{% endif %}
+        {% else %}—{% endif %}</td>
     <td class="phu">{{ muc.get('ngay') or '—' }}</td>
     <td>
       <form class="dong" method="post" action="/general/api-keys/cap-phat">
@@ -253,8 +258,20 @@
           <option value="du_phong"{% if muc.get('che_do') == 'du_phong' %} selected{% endif %}>failover</option>
         </select>
         {% endif %}
+        {# Dropdown thay ô gõ tay (Owner 22/08): model phải CHỌN từ gợi ý theo
+           nhà của khóa đầu — gõ tay là nguồn sai chính tả id model. Giá trị hiện
+           hành luôn còn trong danh sách kể cả khi không nằm trong gợi ý. #}
         {% if v.loai in ('llm', 'generate') %}
-        <input name="model" size="13" placeholder="model" autocomplete="off" value="{{ muc.get('model', '') }}">
+        {% set goi_y = model_goi_y.get(khoa_dau.nha, []) if khoa_dau else [] %}
+        <select name="model">
+          <option value="{{ model_theo_khoa }}">— theo khóa{% if khoa_dau and khoa_dau.model %} ({{ khoa_dau.model }}){% endif %} —</option>
+          {% if muc.get('model') and muc.get('model') not in goi_y %}
+          <option value="{{ muc.get('model') }}" selected>{{ muc.get('model') }}</option>
+          {% endif %}
+          {% for m in goi_y %}
+          <option value="{{ m }}"{% if muc.get('model') == m %} selected{% endif %}>{{ m }}</option>
+          {% endfor %}
+        </select>
         {% endif %}
         <button style="padding:3px 12px">Save</button>
       </form></td></tr>

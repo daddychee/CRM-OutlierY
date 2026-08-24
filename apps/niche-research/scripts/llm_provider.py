@@ -26,12 +26,19 @@ _GLM_DEFAULT_MODEL       = "glm-5.2"
 # Z.AI (docs.z.ai) — international endpoint. Domestic Zhipu accounts (bigmodel.cn) use a different
 # base URL/key; override via GLM_BASE_URL in .env if that's what you have.
 _GLM_DEFAULT_BASE        = "https://api.z.ai/api/paas/v4"
+# Models that always reason (see the note where extra_body is built).
+_GLM_ALWAYS_THINKING     = ("glm-5.3",)
 _GROK_DEFAULT_MODEL      = "grok-4"
 _GROK_DEFAULT_BASE       = "https://api.x.ai/v1"
 
 
 class LLMError(Exception):
     pass
+
+
+def _always_thinking(model: str) -> bool:
+    m = (model or "").lower()
+    return any(m.startswith(x) for x in _GLM_ALWAYS_THINKING)
 
 
 def _anthropic_call(system, user, *, work, max_tokens, cache_prefix=None, model_override=None):
@@ -171,8 +178,18 @@ def call(provider, system, user, *, work=".", max_tokens=4096, cache_prefix=None
         # BEFORE the real "content" — on a small max_tokens that reasoning alone can exhaust the
         # budget, leaving no room for the actual answer. Our agents want clean JSON/markdown output,
         # not exposed reasoning, so thinking is OFF by default; set GLM_THINKING=enabled to restore it.
-        thinking = get_env("GLM_THINKING", work, "disabled")
-        extra = {"thinking": {"type": thinking}} if thinking in ("enabled", "disabled") else None
+        # GLM 5.3+ can't disable thinking at all: sending a `thinking` field returns
+        # 400 (z.ai code 1210 "always engages in thinking ... use low, high, or max").
+        # Measured 23/08/2026 — the reverse holds too: on glm-5.2 `reasoning_effort`
+        # does NOT cut reasoning (still 178-205 tokens), so the older models keep
+        # thinking:disabled. Two generations, two switches — never swap blindly.
+        model_that = model_override or get_env("GLM_MODEL", work, _GLM_DEFAULT_MODEL)
+        if _always_thinking(model_that):
+            # z.ai only accepts low | high | max ("minimal" → 400).
+            extra = {"reasoning_effort": get_env("GLM_REASONING_EFFORT", work, "low")}
+        else:
+            thinking = get_env("GLM_THINKING", work, "disabled")
+            extra = {"thinking": {"type": thinking}} if thinking in ("enabled", "disabled") else None
         return _openai_compatible_call(base, "GLM_API_KEY", "GLM_MODEL", _GLM_DEFAULT_MODEL,
                                        system, user, work=work, max_tokens=max_tokens, label="GLM",
                                        cache_prefix=cache_prefix, model_override=model_override, extra_body=extra)

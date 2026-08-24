@@ -1250,6 +1250,7 @@ def _render_api_keys(request: Request, user: dict, bao: str = "",
         "nha_por_loai": nha_por_loai,
         "mo_rong": mo_rong, "url_mo_rong": url_mo_rong,
         "ten_loai": ket.TEN_LOAI_API, "model_goi_y": ket.MODEL_GOI_Y,
+        "model_theo_khoa": ket.MODEL_THEO_KHOA,
         "log_rows": log_rows, "ngay": ngay or _date.today().isoformat(),
         "loc": loc}, headers={"Cache-Control": "no-store"})
 
@@ -1933,8 +1934,15 @@ def api_cau_hinh_api_khoa(request: Request, app_slug: str):
                     khoa.append({"id": kid, "key": gia_tri,
                                  "loai": ket.lay_cau_hinh(conn, f"api.{kid}.loai"),
                                  "nha": ket.lay_cau_hinh(conn, f"api.{kid}.nha")})
+            # model: việc đặt riêng THẮNG, không đặt thì THEO KHÓA đầu — cùng
+            # luật với cau_hinh_llm (route llm/{vai}). Trước 23/08 chỗ này trả
+            # rỗng thẳng nên niche/seo rơi về mặc định HARDCODE trong app: Owner
+            # đổi model của khóa trên UI mà app phụ không hề đổi theo.
+            model = muc.get("model", "")
+            if not model and khoa:
+                model = ket.lay_cau_hinh(conn, f"api.{khoa[0]['id']}.model")
             ra[viec] = {"khoa": khoa, "che_do": muc.get("che_do", "mot_khoa"),
-                        "model": muc.get("model", "")}
+                        "model": model}
         return ra
     finally:
         conn.close()

@@ -130,6 +130,14 @@ def test_loopback_api_khoa_tra_cap_phat_va_chan_ngoai(ket_tmp):
     assert muc["che_do"] == "xoay_vong"
     assert asyncio.run(goi(("192.168.1.50", 50000))).status_code == 403
 
+    # model: việc không đặt riêng → THEO KHÓA đầu (23/08). Trước đó trả rỗng nên
+    # app phụ rơi về mặc định hardcode — Owner đổi model trên UI mà app không đổi.
+    kl = ket.them_api_key(c, "llm", "sk-glm-that-4a7b", nha="glm", model="glm-5.2")
+    ket.luu_cap_phat_viec(c, "radary", "dien_giai", [kl])
+    assert asyncio.run(goi(("127.0.0.1", 50000))).json()["dien_giai"]["model"] == "glm-5.2"
+    ket.luu_cap_phat_viec(c, "radary", "dien_giai", [kl], model="glm-4.5-air")
+    assert asyncio.run(goi(("127.0.0.1", 50000))).json()["dien_giai"]["model"] == "glm-4.5-air"
+
 
 def test_di_tru_khoa_radary_idempotent_dung_ngan(ket_tmp, tmp_path):
     """Migration khóa nội bộ radary → két: Fernet giải đúng, trùng giá trị nạp

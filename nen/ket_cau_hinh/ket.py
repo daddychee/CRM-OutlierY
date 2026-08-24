@@ -207,9 +207,12 @@ TEN_LOAI_API = {"youtube": "YouTube Data API v3", "llm": "LLM",
                 "serp": "Search Results API (SERP)",
                 "apify": "Apify (scraper thuê)"}
 # Model gợi ý cho dropdown (mockup K2-K3) — gợi ý thôi, giá trị hiện hành luôn giữ.
+# glm-5.3 thêm 22/08 (đo endpoint /models của z.ai: glm-4.5 · glm-4.5-air · glm-4.6
+# · glm-4.7 · glm-5 · glm-5-turbo · glm-5.1 · glm-5.2 · glm-5.3) — bản cũ GIỮ để
+# việc nào cần nhanh/rẻ (writer dùng glm-4.5-air) vẫn chọn được.
 MODEL_GOI_Y = {
     "claude": ["claude-fable-5", "claude-sonnet-5", "claude-haiku-4-5"],
-    "glm": ["glm-4.5-air", "glm-5", "glm-5.2"],
+    "glm": ["glm-4.5-air", "glm-5", "glm-5.2", "glm-5.3"],
     "gemini": ["gemini-2.5-pro", "gemini-2.5-flash"],
     "chatgpt": ["gpt-5", "gpt-5-mini"],
     "deepseek": ["deepseek-chat", "deepseek-reasoner"],
@@ -217,6 +220,8 @@ MODEL_GOI_Y = {
     "seedream": ["seedream-3.0"],
 }
 CHE_DO_CAP = ("mot_khoa", "xoay_vong", "du_phong")
+# Giá trị tường minh "dùng model của khóa" — phân biệt với rỗng = không đổi.
+MODEL_THEO_KHOA = "__theo_khoa__"
 
 
 def them_api_key(conn: sqlite3.Connection, loai: str, khoa: str,
@@ -334,7 +339,13 @@ def luu_cap_phat_viec(conn: sqlite3.Connection, app_slug: str, viec: str,
         muc["che_do"] = che_do if che_do in ("xoay_vong", "du_phong") \
             else muc.get("che_do") if muc.get("che_do") in ("xoay_vong", "du_phong") \
             else "xoay_vong"
-    muc["model"] = model.strip() if model else muc.get("model", "")
+    # model RỖNG = "không đổi" (form + khóa / ✕ gỡ khóa không mang field model —
+    # rỗng mà xóa thì mỗi lần thêm khóa lại mất override). Muốn TRẢ VỀ model của
+    # khóa thì gửi tường minh MODEL_THEO_KHOA (dropdown Per-app config, 22/08).
+    if model == MODEL_THEO_KHOA:
+        muc["model"] = ""
+    else:
+        muc["model"] = model.strip() if model else muc.get("model", "")
     muc["ngay"] = datetime.now().strftime("%Y-%m-%d")
     _luu_cap_phat(conn, cp)
     return muc

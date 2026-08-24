@@ -155,6 +155,22 @@ def test_cau_hinh_llm_fallback_cu_byte_identical(conn):
     assert ket.cau_hinh_llm(conn, "data-analytics", "writer")["api_key"] == "sk-cu-1234"
 
 
+def test_cap_phat_model_rong_giu_nguyen_con_theo_khoa_thi_xoa(conn):
+    """Ô model Per-app config (22/08): rỗng = KHÔNG ĐỔI (form + khóa / ✕ gỡ khóa
+    không mang field model), MODEL_THEO_KHOA = trả về model của khóa."""
+    k = ket.them_api_key(conn, "llm", "sk-glm-1234", nha="glm", model="glm-5.3")
+    ket.luu_cap_phat_viec(conn, "ai-agent", "writer", [k], model="glm-4.5-air")
+    # thêm/gỡ khóa (không gửi model) không được thổi bay override
+    muc = ket.luu_cap_phat_viec(conn, "ai-agent", "writer", [k])
+    assert muc["model"] == "glm-4.5-air"
+    assert ket.cau_hinh_llm(conn, "ai-agent", "writer")["model"] == "glm-4.5-air"
+    # chọn "— theo khóa —" → xóa override, resolve về model của khóa
+    muc = ket.luu_cap_phat_viec(conn, "ai-agent", "writer", [k],
+                                model=ket.MODEL_THEO_KHOA)
+    assert muc["model"] == ""
+    assert ket.cau_hinh_llm(conn, "ai-agent", "writer")["model"] == "glm-5.3"
+
+
 def test_cau_hinh_llm_resolve_tu_cap_phat_moi(conn):
     kid = ket.them_api_key(conn, "llm", "sk-moi-8888", nha="glm",
                            model="glm-4.5-air")

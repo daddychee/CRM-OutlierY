@@ -10,7 +10,10 @@ import json, urllib.error, urllib.request
 from . import crypto, db
 
 PROVIDERS = ('claude', 'glm')
-DEFAULT_MODEL = {'claude': 'claude-opus-4-8', 'glm': 'glm-4-plus'}
+# glm-4-plus cu da BIEN MAT khoi /models cua z.ai (do 22/08) -> mac dinh ve
+# glm-5.2, dung ban ca he dang goi that. glm-5.3 co trong danh sach nhung
+# tai khoan hien tai goi vao la 429 (chua mo goi) — doi mo roi hang doi.
+DEFAULT_MODEL = {'claude': 'claude-opus-4-8', 'glm': 'glm-5.2'}
 
 ASK_SYSTEM = (
     'Bạn là trợ lý đọc số liệu của Radary — radar phát hiện video outlier YouTube trên pool kênh đối thủ. '

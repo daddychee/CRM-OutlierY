@@ -45,6 +45,19 @@ def _no_balance(body: str) -> bool:
     return any(m in low for m in _NO_BALANCE)
 
 
+# GLM 5.3 trở đi KHÔNG tắt được thinking: gửi kèm `thinking` là 400 (z.ai code 1210
+# "always engages in thinking ... use low, high, or max"). Đo thật 23/08/2026 —
+# chiều ngược lại cũng đúng: glm-5.2 KHÔNG giảm reasoning theo `reasoning_effort`
+# (vẫn 178-205 token) nên bản cũ vẫn phải dùng thinking:disabled. Hai bản hai đường.
+# Model mới báo 1210 thì thêm tiền tố vào đây (1 dòng, không sửa logic).
+LUON_THINKING = ("glm-5.3",)
+
+
+def _luon_thinking(model: str) -> bool:
+    m = (model or "").lower()
+    return any(m.startswith(x) for x in LUON_THINKING)
+
+
 class LLM:
     def __init__(self, env_path: str | Path, kind: str = "oe"):
         # V3 (lam gon 16/08): chay sau cong OUTLIERY thi khoa lay tu KET moi lan
@@ -59,6 +72,8 @@ class LLM:
         self.model = cfg.get("GLM_MODEL", "glm-5.2")
         self.base = cfg.get("GLM_BASE_URL", "https://api.z.ai/api/paas/v4").rstrip("/")
         self.thinking = cfg.get("GLM_THINKING", "disabled").lower() == "enabled"
+        # z.ai chỉ nhận low | high | max ("minimal" kiểu OpenAI → 400).
+        self.muc_suy_luan = cfg.get("GLM_REASONING_EFFORT", "low")
         if not self.key:
             raise SystemExit("Thiếu GLM_API_KEY trong .env")
 
@@ -72,7 +87,11 @@ class LLM:
             "max_tokens": max_tokens,
             "temperature": temperature,
         }
-        if not self.thinking:
+        if _luon_thinking(self.model):
+            # GLM 5.3+ KHÔNG tắt được thinking (z.ai 1210) và có mặt field
+            # `thinking` là 400 → chỉ hạ MỨC suy luận xuống được.
+            body["reasoning_effort"] = self.muc_suy_luan
+        elif not self.thinking:
             body["thinking"] = {"type": "disabled"}
         for attempt in range(4):
             try:

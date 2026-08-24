@@ -60,8 +60,8 @@ PROVIDERS: dict[str, dict] = {
 }
 
 
-# Lua chon model cho dropdown UI (yeu cau team 2026-07-08): user chon 1 trong 4 —
-# Claude Sonnet / Claude Opus / GLM 5.0 / GLM 5.2; chi hien model co key trong .env.
+# Lua chon model cho dropdown UI (yeu cau team 2026-07-08): user chon 1 trong so —
+# Claude Sonnet / Claude Opus / GLM 5.0 / GLM 5.2 / GLM 5.3; chi hien model co key trong .env.
 # Id that tren z.ai cua "GLM 5.0" la "glm-5" (do bang endpoint /models, 2026-07-08).
 MODEL_CHOICES: list[dict] = [
     {"id": "anthropic:claude-sonnet-5", "provider": "anthropic",
@@ -70,6 +70,7 @@ MODEL_CHOICES: list[dict] = [
      "model": "claude-opus-4-8", "label": "Claude Opus"},
     {"id": "glm:glm-5", "provider": "glm", "model": "glm-5", "label": "GLM 5.0"},
     {"id": "glm:glm-5.2", "provider": "glm", "model": "glm-5.2", "label": "GLM 5.2"},
+    {"id": "glm:glm-5.3", "provider": "glm", "model": "glm-5.3", "label": "GLM 5.3"},
 ]
 
 
