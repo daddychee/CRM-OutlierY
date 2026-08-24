@@ -54,6 +54,7 @@ dò substring các từ đó để suy X-Remote-Role gửi sang app khác (bẫy
 - [x] **B3** Màn *Việc của tôi* + API `/api-tasky/*` (nhận · từ chối có lý do · viết/tick checklist · báo xong · tự thêm việc)
 - [x] **B4** Màn *Giao việc*: giao (lọc cấp dưới cùng bộ phận) · xác nhận / trả lại · dời / hủy / đổi người · đóng tuần
 - [x] **B5** Màn *Báo cáo*: Leader bộ phận mình · Manager mọi bộ phận · HR Leader+ toàn công ty · Owner tất
+- [x] **B8** Phối hợp ngang liên bộ phận: yêu cầu → nhận/từ chối → tự làm hoặc chẻ việc con; bên yêu cầu nghiệm thu
 - [x] **B7** Thông báo trong hệ: huy hiệu sidebar + khối *Cần chú ý*, 3 mức màu (đỏ gấp / vàng lưu ý / xanh tin)
 - [x] **B6 (nền)** Kho quy trình: đếm checklist theo loại việc + bước lặp nhiều nhất; <3 lần → *chưa đủ tiền lệ*. Rút quy trình + gợi ý là vòng sau.
 

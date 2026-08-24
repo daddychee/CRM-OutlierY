@@ -28,9 +28,14 @@ from pathlib import Path
 # Trạng thái việc — tập HỮU HẠN, code không được sinh giá trị ngoài tập này.
 CHO_NHAN, DANG_LAM, BAO_XONG, XAC_NHAN = "cho_nhan", "dang_lam", "bao_xong", "xac_nhan"
 TU_CHOI, HUY, DOI = "tu_choi", "huy", "doi"
-TRANG_THAI = (CHO_NHAN, DANG_LAM, BAO_XONG, XAC_NHAN, TU_CHOI, HUY, DOI)
+# Yêu cầu phối hợp LIÊN BỘ PHẬN đang chờ bên kia đồng ý (Owner chốt 24/08). Khác
+# CHO_NHAN ở chỗ người gửi KHÔNG có quyền trên người nhận — đây là lời mời, không
+# phải lệnh; bên kia từ chối là hết chuyện.
+CHO_PHOI_HOP = "cho_phoi_hop"
+TRANG_THAI = (CHO_NHAN, CHO_PHOI_HOP, DANG_LAM, BAO_XONG, XAC_NHAN, TU_CHOI, HUY, DOI)
 # Trạng thái ĐƯỢC TÍNH vào mẫu số tỉ lệ hoàn thành (xem docstring).
-TRONG_MAU_SO = (CHO_NHAN, DANG_LAM, BAO_XONG, XAC_NHAN, DOI)
+TRONG_MAU_SO = (CHO_NHAN, CHO_PHOI_HOP, DANG_LAM, BAO_XONG, XAC_NHAN, DOI)
+LEADER_LEVEL = 3
 OWNER_LEVEL = 5
 DOI_LA_KET = 2          # dời từ 2 lần trở lên → cờ "việc kẹt"
 
@@ -138,6 +143,22 @@ def duoc_giao_cho(nguoi_giao: dict, nguoi_nhan: dict) -> bool:
         nguoi_giao.get("bo_phan") == nguoi_nhan.get("bo_phan")
 
 
+def duoc_yeu_cau_phoi_hop(nguoi_gui: dict, nguoi_nhan: dict) -> bool:
+    """Phối hợp NGANG giữa hai bộ phận (Owner chốt 24/08): cả hai phải là quản lý
+    (L3+), phải KHÁC BỘ PHẬN, và chênh nhau tối đa 1 bậc.
+
+    Khác bộ phận thì không ai chỉ huy ai (lệ 04/08: toàn quyền chỉ ở bộ phận chủ
+    quản) — nên đây là YÊU CẦU, bên kia có quyền từ chối. Cùng bộ phận thì đã có
+    đường giao việc thường, không đi cửa này."""
+    if nguoi_gui["level"] < LEADER_LEVEL or nguoi_nhan["level"] < LEADER_LEVEL:
+        return False
+    if not nguoi_gui.get("bo_phan") or not nguoi_nhan.get("bo_phan"):
+        return False
+    if nguoi_gui["bo_phan"] == nguoi_nhan["bo_phan"]:
+        return False
+    return abs(nguoi_gui["level"] - nguoi_nhan["level"]) <= 1
+
+
 def _kiem_chinh_chu(viec: dict, user: dict) -> None:
     if viec["nguoi"] != user["ten"]:
         raise PermissionError("Đây không phải việc của bạn.")
@@ -150,7 +171,10 @@ def duoc_xac_nhan(viec: dict, user: dict) -> bool:
         return True
     if viec.get("nguoi_giao") and viec["nguoi_giao"] == user["ten"]:
         return True
-    return viec["nguoi"] == user["ten"] and user["level"] >= 3
+    if viec.get("nguon") == "phoi_hop":
+        return False      # việc phối hợp: BÊN YÊU CẦU nghiệm thu, bên làm không tự
+                          # ký cho mình (Owner chốt 24/08)
+    return viec["nguoi"] == user["ten"] and user["level"] >= LEADER_LEVEL
 
 
 # ---------- thao tác ----------
@@ -167,12 +191,13 @@ def _viec_moi(tieu_de: str, loai_viec: str, nguoi: str) -> dict:
             "ly_do": "", "checklist": [],
             "so_lan_doi": 0, "goc_id": None,
             "nguon_ngoai": None,        # chừa cho chiều Tasky → PlannerY (§9.5)
+            "tu_yeu_cau": "",           # id việc phối hợp mà việc này được chẻ ra
             "luc_tao": _gio(), "luc_nhan": None, "luc_bao_xong": None,
             "luc_xac_nhan": None, "nguoi_xac_nhan": None, "tu_xac_nhan": False}
 
 
 def them_viec_giao(ma: str, nguoi_giao: dict, nguoi_nhan: dict,
-                   tieu_de: str, loai_viec: str) -> dict:
+                   tieu_de: str, loai_viec: str, tu_yeu_cau: str = "") -> dict:
     """Leader giao việc → trạng thái CHỜ NHẬN. Loại việc bắt buộc: đây là khóa gom
     checklist thành quy trình sau này (§5), thiếu thì không cứu được bằng migration."""
     if not duoc_giao_cho(nguoi_giao, nguoi_nhan):
@@ -184,13 +209,51 @@ def them_viec_giao(ma: str, nguoi_giao: dict, nguoi_nhan: dict,
         so = doc_tuan(ma)
         v = _viec_moi(tieu_de, loai_viec, nguoi_nhan["ten"])
         v.update({"nguoi_giao": nguoi_giao["ten"], "nguon": "giao",
-                  "trang_thai": CHO_NHAN})
+                  "trang_thai": CHO_NHAN, "tu_yeu_cau": tu_yeu_cau or ""})
         so["viec"].append(v)
         _ghi_tuan(so)
     ghi_nhat_ky("giao_viec", nguoi_giao["ten"],
                 {"tuan": ma, "viec": v["id"], "cho": nguoi_nhan["ten"],
                  "tieu_de": v["tieu_de"]})
     return v
+
+
+def yeu_cau_phoi_hop(ma: str, nguoi_gui: dict, nguoi_nhan: dict,
+                     tieu_de: str, loai_viec: str) -> dict:
+    """Gửi YÊU CẦU phối hợp sang bộ phận khác — trạng thái CHỜ PHỐI HỢP.
+
+    Bên nhận toàn quyền: nhận rồi tự làm, hoặc chẻ việc con giao cho người của họ
+    (đường giao việc thường, `tu_yeu_cau` giữ liên kết ngược). Từ chối cũng được —
+    người gửi không có quyền trên họ."""
+    if not duoc_yeu_cau_phoi_hop(nguoi_gui, nguoi_nhan):
+        raise PermissionError(
+            "Chỉ gửi được cho quản lý bộ phận KHÁC, chênh nhau tối đa 1 bậc.")
+    if not (loai_viec or "").strip():
+        raise ValueError("Phải chọn loại việc.")
+    with _khoa:
+        so = doc_tuan(ma)
+        v = _viec_moi(tieu_de, loai_viec, nguoi_nhan["ten"])
+        v.update({"nguoi_giao": nguoi_gui["ten"], "nguon": "phoi_hop",
+                  "trang_thai": CHO_PHOI_HOP,
+                  "bo_phan_gui": nguoi_gui.get("bo_phan", "")})
+        so["viec"].append(v)
+        _ghi_tuan(so)
+    ghi_nhat_ky("yeu_cau_phoi_hop", nguoi_gui["ten"],
+                {"tuan": ma, "viec": v["id"], "cho": nguoi_nhan["ten"],
+                 "bo_phan_nhan": nguoi_nhan.get("bo_phan", ""), "tieu_de": v["tieu_de"]})
+    return v
+
+
+def yeu_cau_da_gui(ma: str, user: dict) -> list[dict]:
+    """Yêu cầu phối hợp CHÍNH user này gửi đi — để theo dõi, không tính vào tỉ lệ
+    của họ (Owner chốt: ai làm mới được tính công)."""
+    return [v for v in doc_tuan(ma)["viec"]
+            if v["nguon"] == "phoi_hop" and v.get("nguoi_giao") == user["ten"]]
+
+
+def viec_con(ma: str, id_yeu_cau: str) -> list[dict]:
+    """Việc bên nhận đã chẻ ra giao cho người bộ phận mình từ một yêu cầu."""
+    return [v for v in doc_tuan(ma)["viec"] if v.get("tu_yeu_cau") == id_yeu_cau]
 
 
 def them_viec_tu(ma: str, user: dict, tieu_de: str, loai_viec: str = "") -> dict:
@@ -211,7 +274,7 @@ def nhan_viec(ma: str, id_viec: str, user: dict) -> dict:
         so = doc_tuan(ma)
         v = _tim(so, id_viec)
         _kiem_chinh_chu(v, user)
-        if v["trang_thai"] != CHO_NHAN:
+        if v["trang_thai"] not in (CHO_NHAN, CHO_PHOI_HOP):
             raise ValueError("Việc này không ở trạng thái chờ nhận.")
         v.update({"trang_thai": DANG_LAM, "luc_nhan": _gio()})
         _ghi_tuan(so)
@@ -228,7 +291,7 @@ def tu_choi_viec(ma: str, id_viec: str, user: dict, ly_do: str) -> dict:
         so = doc_tuan(ma)
         v = _tim(so, id_viec)
         _kiem_chinh_chu(v, user)
-        if v["trang_thai"] != CHO_NHAN:
+        if v["trang_thai"] not in (CHO_NHAN, CHO_PHOI_HOP):
             raise ValueError("Chỉ từ chối được việc chưa nhận.")
         v.update({"trang_thai": TU_CHOI, "ly_do": ly_do[:500]})
         _ghi_tuan(so)
@@ -246,7 +309,7 @@ def them_buoc(ma: str, id_viec: str, user: dict, noi_dung: str) -> dict:
         so = doc_tuan(ma)
         v = _tim(so, id_viec)
         _kiem_chinh_chu(v, user)
-        if v["trang_thai"] == CHO_NHAN:
+        if v["trang_thai"] in (CHO_NHAN, CHO_PHOI_HOP):
             raise ValueError("Nhận việc trước rồi mới viết cách triển khai.")
         if v["trang_thai"] in (TU_CHOI, HUY):
             raise ValueError("Việc đã đóng, không thêm bước được.")
@@ -378,7 +441,8 @@ def dong_tuan(ma: str, nguoi: str, user: dict) -> dict:
     with _khoa:
         so = doc_tuan(ma)
         con_treo = [v for v in so["viec"]
-                    if v["nguoi"] == nguoi and v["trang_thai"] in (CHO_NHAN, DANG_LAM, BAO_XONG)]
+                    if v["nguoi"] == nguoi
+                    and v["trang_thai"] in (CHO_NHAN, CHO_PHOI_HOP, DANG_LAM, BAO_XONG)]
         if con_treo:
             raise ValueError(
                 f"Còn {len(con_treo)} việc chưa xử lý — xác nhận, dời hoặc hủy trước khi đóng tuần.")
@@ -433,7 +497,9 @@ def thong_ke_nguoi(ma: str, ten: str) -> dict:
         "tu_them": sum(1 for v in mau_so if v["nguon"] == "tu_them"),
         "xong": len(xong),
         "cho_xac_nhan": sum(1 for v in mau_so if v["trang_thai"] == BAO_XONG),
-        "chua_nhan": sum(1 for v in mau_so if v["trang_thai"] == CHO_NHAN),
+        "chua_nhan": sum(1 for v in mau_so
+                         if v["trang_thai"] in (CHO_NHAN, CHO_PHOI_HOP)),
+        "phoi_hop": sum(1 for v in mau_so if v["nguon"] == "phoi_hop"),
         "bi_tu_choi": sum(1 for v in ds if v["trang_thai"] == TU_CHOI),
         "bi_huy": sum(1 for v in ds if v["trang_thai"] == HUY),
         "ket": sum(1 for v in mau_so if v["so_lan_doi"] >= DOI_LA_KET),
@@ -449,7 +515,8 @@ def con_treo(ma: str, user: dict) -> list[dict]:
     """Việc CHƯA ngã ngũ mà user này có quyền xử lý — leader phải dời/hủy hết mới
     đóng được tuần cho người đó."""
     return [v for v in doc_tuan(ma)["viec"]
-            if v["trang_thai"] in (CHO_NHAN, DANG_LAM) and duoc_xac_nhan(v, user)]
+            if v["trang_thai"] in (CHO_NHAN, CHO_PHOI_HOP, DANG_LAM)
+            and duoc_xac_nhan(v, user)]
 
 
 def kho_quy_trinh(so_tuan: int = 26, du_de_rut: int = 3) -> list[dict]:

@@ -46,6 +46,16 @@ def cap_duoi_cua(nguoi_giao: dict) -> tuple[list[dict] | None, str]:
     return [n for n in ds if duoc_giao_cho(nguoi_giao, n)], ""
 
 
+def ngang_cap_bo_phan_khac(user: dict) -> tuple[list[dict] | None, str]:
+    """Quản lý bộ phận KHÁC mà user này gửi được yêu cầu phối hợp — lọc bằng chính
+    luật của lõi (một nguồn sự thật, không chép lại điều kiện)."""
+    from src.tuan import duoc_yeu_cau_phoi_hop
+    ds, loi = ds_nguoi()
+    if ds is None:
+        return None, loi
+    return [n for n in ds if duoc_yeu_cau_phoi_hop(user, n)], ""
+
+
 def trong_pham_vi_bao_cao(user: dict, toan_cong_ty: bool) -> tuple[list[dict] | None, str]:
     """Phạm vi báo cáo (FLOW-v3 §9.1): Manager L4+ và HR Leader+ xem TOÀN CÔNG TY
     (cờ `toan_cong_ty` do route tính từ X-Remote-Actions), Leader xem bộ phận mình.

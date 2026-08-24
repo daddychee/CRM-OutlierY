@@ -70,6 +70,49 @@
   {% endif %}
 </div>
 
+<div class="tk-muc"><h3>Phối hợp liên bộ phận</h3><hr>
+  <span class="ghi">Nhờ quản lý bộ phận khác — họ có quyền từ chối</span></div>
+<div class="khoi">
+  {% if ngang_cap %}
+  <div class="goi-y" style="margin-top:0">Bên nhận toàn quyền: nhận rồi tự làm hoặc giao lại
+    cho người bộ phận họ. Khi họ báo xong, <b>bạn</b> là người nghiệm thu.</div>
+  <div class="hang">
+    <input id="p-ten" placeholder="Cần bộ phận kia làm gì?">
+    <select id="p-nguoi">
+      {% for n in ngang_cap %}<option value="{{ n.ten }}">{{ n.ho_ten or n.ten }} — {{ n.bo_phan }}</option>{% endfor %}
+    </select>
+    <input id="p-loai" list="ds-loai" placeholder="Loại việc" style="max-width:200px;flex:0 0 auto">
+    <button class="nut chinh" id="p-nut">Gửi yêu cầu</button>
+  </div>
+  <div class="loi" id="p-loi" hidden></div>
+  {% else %}
+  <div class="goi-y" style="margin:0">Chưa có quản lý bộ phận khác ngang cấp bạn (chênh tối đa
+    1 bậc) — chưa gửi yêu cầu phối hợp cho ai được.</div>
+  {% endif %}
+
+  {% if da_gui %}
+  <ul class="viecs" style="margin-top:12px">
+    {% for v in da_gui %}
+    <li data-id="{{ v.id }}">
+      <div class="ten">{{ v.tieu_de }}
+        <div class="ai">Gửi {{ v.nguoi }} ·
+          {% if v.trang_thai == 'cho_phoi_hop' %}chờ họ đồng ý
+          {% elif v.trang_thai == 'dang_lam' %}họ đang làm
+          {% elif v.trang_thai == 'bao_xong' %}họ báo xong — chờ bạn nghiệm thu
+          {% elif v.trang_thai == 'xac_nhan' %}đã nghiệm thu
+          {% elif v.trang_thai == 'tu_choi' %}<b>họ từ chối</b>: {{ v.ly_do }}
+          {% else %}{{ v.trang_thai }}{% endif %}</div>
+      </div>
+      {% if v.trang_thai == 'bao_xong' %}
+      <button class="nut" data-tra-lai>Trả lại</button>
+      <button class="nut chinh" data-xac-nhan>Nghiệm thu</button>
+      {% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+</div>
+
 <div class="tk-muc"><h3>Chờ bạn xác nhận</h3><hr>
   <span class="ghi">Việc nhân sự đã báo xong — xác nhận thì mới tính vào tỉ lệ</span></div>
 <div class="khoi">
@@ -182,6 +225,26 @@
     gNut.addEventListener("click", giao);
     document.getElementById("g-ten").addEventListener("keydown", function (e) {
       if (e.key === "Enter" && !e.isComposing && e.keyCode !== 229) { e.preventDefault(); giao(); }
+    });
+  }
+
+  var pNut = document.getElementById("p-nut");
+  if (pNut) {
+    var pLoi = document.getElementById("p-loi");
+    var guiYc = function () {
+      var ten = (document.getElementById("p-ten").value || "").trim();
+      var loai = (document.getElementById("p-loai").value || "").trim();
+      if (!ten) { return; }
+      if (!loai) { baoLoi(pLoi, new Error("Phải chọn loại việc.")); return; }
+      pNut.disabled = true;
+      goi("phoi-hop", { tieu_de: ten, nguoi: document.getElementById("p-nguoi").value,
+                        loai_viec: loai })
+        .then(function () { location.reload(); })
+        .catch(function (e) { pNut.disabled = false; baoLoi(pLoi, e); });
+    };
+    pNut.addEventListener("click", guiYc);
+    document.getElementById("p-ten").addEventListener("keydown", function (e) {
+      if (e.key === "Enter" && !e.isComposing && e.keyCode !== 229) { e.preventDefault(); guiYc(); }
     });
   }
 

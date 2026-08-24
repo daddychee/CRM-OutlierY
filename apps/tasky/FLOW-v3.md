@@ -158,3 +158,33 @@ Báo cáo cấp bộ phận/công ty chỉ hiện **số**, không mở checklis
 
 Sau này **dữ liệu chảy Tasky → PlannerY**, KHÔNG phải ngược lại. Tasky là nơi người khai
 việc; PlannerY nhận. Vòng 1 vẫn không nối gì; giữ sẵn trường `nguon_ngoai` trên task.
+
+## 10. PHỐI HỢP NGANG GIỮA CÁC BỘ PHẬN (Owner chốt 24/08)
+
+Giao việc là **lệnh** (trên xuống, trong bộ phận). Phối hợp là **yêu cầu** (ngang
+hàng, liên bộ phận) — người gửi KHÔNG có quyền trên người nhận, nên bên kia có
+quyền từ chối và việc đó là bình thường.
+
+```
+Quản lý bộ phận A ──yêu cầu──► Quản lý bộ phận B
+                                 ├─ Từ chối (bắt ghi lý do) → về A, hết chuyện
+                                 └─ Đồng ý → B LÀ CHỦ việc, chọn một trong hai:
+                                      · tự làm (viết checklist như việc thường)
+                                      · chẻ việc con giao người bộ phận B
+                                        (đường giao việc thường, giữ liên kết ngược)
+                                    → B báo xong → **A NGHIỆM THU** hoặc trả lại
+```
+
+| Điều | Luật |
+|---|---|
+| Ai gửi được | Cả hai phải L3+, **khác bộ phận**, chênh **tối đa 1 bậc** (Manager KD ↔ Manager VH, Manager KD ↔ Leader VH) |
+| Cùng bộ phận | Không đi cửa này — đã có đường giao việc thường |
+| Ai nghiệm thu | **Bên yêu cầu** (người cần kết quả). Bên làm KHÔNG tự ký cho mình dù là Manager và là chủ việc |
+| Tính công | **Bên nhận việc** — ai làm nấy được tính. Bên nhờ chỉ theo dõi, tránh đếm đúp khối lượng công ty |
+| Phân phối tiếp | Việc con vẫn qua đúng luật giao việc thường: chỉ giao được trong bộ phận mình. Nhận việc phối hợp KHÔNG cho quyền giao sang bộ phận khác |
+
+Trạng thái mới `cho_phoi_hop`; việc mang `nguon = "phoi_hop"`, `bo_phan_gui`, và việc
+con mang `tu_yeu_cau` = id yêu cầu gốc để truy ngược.
+
+Thông báo thêm 3 sự kiện: bên nhận thấy *"N yêu cầu phối hợp đang chờ trả lời"*
+(quá hạn → đỏ); bên gửi thấy *"chờ bạn nghiệm thu"* và *"bị bộ phận kia từ chối"*.

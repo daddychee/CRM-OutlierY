@@ -133,6 +133,11 @@ def trang_viec(request: Request, user: dict = Depends(lay_user), tuan_xem: str =
         "user": user, "ma_tuan": ma, "tu": tu, "den": den,
         "viec_giao": [v for v in ds if v["nguon"] == "giao"],
         "viec_tu": [v for v in ds if v["nguon"] == "tu_them"],
+        "viec_ph": [v for v in ds if v["nguon"] == "phoi_hop"],
+        "cap_duoi_toi": (nhan_su.cap_duoi_cua(user)[0] or [])
+                        if "giao_viec" in cac_hanh_dong(x_remote_actions) else [],
+        "viec_con": {v["id"]: tuan_lo.viec_con(ma, v["id"])
+                     for v in ds if v["nguon"] == "phoi_hop"},
         "tk": tuan_lo.thong_ke_nguoi(ma, user["ten"]),
         "loai_viec": tuan_lo.cac_loai_viec(),
         "tuan_truoc": tuan_lo.tuan_lien_ke(ma, -1),
@@ -154,6 +159,8 @@ def trang_giao(request: Request, user: dict = Depends(yeu_cau_giao_viec),
         "user": user, "ma_tuan": ma, "tu": tu, "den": den,
         "cap_duoi": ds_nguoi, "loi_iam": loi,
         "bang": bang,
+        "ngang_cap": nhan_su.ngang_cap_bo_phan_khac(user)[0] or [],
+        "da_gui": tuan_lo.yeu_cau_da_gui(ma, user),
         "cho_xac_nhan": tuan_lo.cho_xac_nhan(ma, user),
         "con_treo": tuan_lo.con_treo(ma, user),
         "loai_viec": tuan_lo.cac_loai_viec(),
@@ -250,8 +257,18 @@ def _tim_nguoi(ten: str) -> dict:
 
 @app.post("/api-tasky/giao")
 def api_giao(nguoi: str = Form(...), tieu_de: str = Form(...), loai_viec: str = Form(""),
-             tuan_xem: str = Form(""), user: dict = Depends(yeu_cau_giao_viec)):
+             tu_yeu_cau: str = Form(""), tuan_xem: str = Form(""),
+             user: dict = Depends(yeu_cau_giao_viec)):
+    """Giao việc trong bộ phận. `tu_yeu_cau` = id yêu cầu phối hợp đang chẻ nhỏ."""
     return _goi(tuan_lo.them_viec_giao, _ma_tuan_hop_le(tuan_xem), user,
+                _tim_nguoi(nguoi), tieu_de, loai_viec, tu_yeu_cau)
+
+
+@app.post("/api-tasky/phoi-hop")
+def api_phoi_hop(nguoi: str = Form(...), tieu_de: str = Form(...), loai_viec: str = Form(""),
+                 tuan_xem: str = Form(""), user: dict = Depends(yeu_cau_giao_viec)):
+    """Gửi yêu cầu phối hợp sang bộ phận khác (luật ngang cấp kiểm ở lõi)."""
+    return _goi(tuan_lo.yeu_cau_phoi_hop, _ma_tuan_hop_le(tuan_xem), user,
                 _tim_nguoi(nguoi), tieu_de, loai_viec)
 
 

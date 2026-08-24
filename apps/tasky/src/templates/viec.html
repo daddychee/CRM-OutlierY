@@ -58,15 +58,17 @@
 </div>
 
 {% macro the_viec(v) %}
-<article class="viec" data-id="{{ v.id }}" data-tt="{{ v.trang_thai }}">
+<article class="viec" data-id="{{ v.id }}" data-tt="{{ v.trang_thai }}" data-loai="{{ v.loai_viec }}">
   <div class="dinh" data-mo>
     <svg class="mui" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg>
     <div style="flex:1;min-width:0">
       <div class="ten">{{ v.tieu_de }}</div>
       <div class="duoi">
         {% if v.loai_viec %}<span class="the loai">{{ v.loai_viec }}</span>{% endif %}
-        {% if v.nguoi_giao %}<span>{{ v.nguoi_giao }} giao</span>{% else %}<span>Tôi tự thêm</span>{% endif %}
-        {% if v.trang_thai == 'cho_nhan' %}<span class="the cho">Chờ bạn nhận</span>
+        {% if v.nguon == 'phoi_hop' %}<span>{{ v.nguoi_giao }} ({{ v.bo_phan_gui or 'bộ phận khác' }}) yêu cầu phối hợp</span>
+        {% elif v.nguoi_giao %}<span>{{ v.nguoi_giao }} giao</span>{% else %}<span>Tôi tự thêm</span>{% endif %}
+        {% if v.trang_thai == 'cho_phoi_hop' %}<span class="the cho">Chờ bạn đồng ý phối hợp</span>
+        {% elif v.trang_thai == 'cho_nhan' %}<span class="the cho">Chờ bạn nhận</span>
         {% elif v.trang_thai == 'bao_xong' %}<span class="the cho">Chờ xác nhận</span>
         {% elif v.trang_thai == 'xac_nhan' %}<span class="the">Đã xác nhận</span>
         {% elif v.trang_thai == 'tu_choi' %}<span class="the">Đã từ chối</span>
@@ -84,10 +86,13 @@
   </div>
 
   <div class="than" hidden>
-    {% if v.trang_thai == 'cho_nhan' %}
-      <div class="goi-y">Leader giao việc này cho bạn. Nhận việc rồi mới viết được cách triển khai.</div>
+    {% if v.trang_thai in ('cho_nhan', 'cho_phoi_hop') %}
+      <div class="goi-y">{% if v.nguon == 'phoi_hop' %}Đây là <b>yêu cầu phối hợp</b> từ
+        {{ v.bo_phan_gui or 'bộ phận khác' }} — bạn toàn quyền nhận hay từ chối. Nhận rồi
+        có thể tự làm hoặc giao lại cho người trong bộ phận mình.
+        {% else %}Leader giao việc này cho bạn. Nhận việc rồi mới viết được cách triển khai.{% endif %}</div>
       <div class="hang">
-        <button class="nut chinh" data-nhan>Nhận việc</button>
+        <button class="nut chinh" data-nhan>{% if v.nguon == 'phoi_hop' %}Đồng ý phối hợp{% else %}Nhận việc{% endif %}</button>
         <button class="nut" data-mo-tuchoi>Từ chối</button>
       </div>
       <div class="hang" data-o-tuchoi hidden>
@@ -115,9 +120,31 @@
         <input data-buoc-moi placeholder="Thêm một bước…">
         <button class="nut" data-them-buoc>Thêm bước</button>
       </div>
+      {% if v.nguon == 'phoi_hop' and cap_duoi_toi %}
+      <div class="hang chan" style="flex-direction:column;align-items:stretch;gap:7px">
+        <span class="goi-y" style="margin:0">Giao lại cho người trong bộ phận bạn (việc con
+          vẫn nối về yêu cầu này):</span>
+        {% if viec_con.get(v.id) %}
+        <ul class="ck">
+          {% for c in viec_con[v.id] %}
+          <li><span class="noi">{{ c.tieu_de }} — {{ c.nguoi }}
+            <span class="the">{{ {'cho_nhan':'chờ nhận','dang_lam':'đang làm','bao_xong':'chờ xác nhận','xac_nhan':'xong','tu_choi':'từ chối','huy':'đã hủy','doi':'đã dời'}.get(c.trang_thai, c.trang_thai) }}</span></span></li>
+          {% endfor %}
+        </ul>
+        {% endif %}
+        <div class="hang" style="margin:0">
+          <input data-con-ten placeholder="Việc con…">
+          <select data-con-nguoi>
+            {% for n in cap_duoi_toi %}<option value="{{ n.ten }}">{{ n.ho_ten or n.ten }}</option>{% endfor %}
+          </select>
+          <button class="nut" data-con-giao>Giao việc con</button>
+        </div>
+      </div>
+      {% endif %}
       <div class="hang chan">
         <span class="goi-y" style="flex:1;margin:0">
-          {% if v.trang_thai == 'bao_xong' %}Bạn đã báo xong — đang chờ leader xác nhận.
+          {% if v.trang_thai == 'bao_xong' %}Bạn đã báo xong — {% if v.nguon == 'phoi_hop' %}đang chờ
+            {{ v.nguoi_giao }} bên {{ v.bo_phan_gui or 'bộ phận kia' }} nghiệm thu.{% else %}đang chờ leader xác nhận.{% endif %}
           {% else %}Làm xong hết thì bấm Báo xong, leader sẽ xác nhận.{% endif %}</span>
         {% if v.trang_thai == 'dang_lam' %}<button class="nut" data-bao-xong>Báo xong việc này</button>{% endif %}
       </div>
@@ -131,6 +158,12 @@
 <div class="tk-muc"><h3>Leader giao</h3><hr></div>
 {% if viec_giao %}{% for v in viec_giao %}{{ the_viec(v) }}{% endfor %}
 {% else %}<div class="trong">Tuần này chưa ai giao việc cho bạn.</div>{% endif %}
+
+{% if viec_ph %}
+<div class="tk-muc"><h3>Phối hợp liên bộ phận</h3><hr>
+  <span class="ghi">Bộ phận khác nhờ — bạn toàn quyền nhận hoặc từ chối</span></div>
+{% for v in viec_ph %}{{ the_viec(v) }}{% endfor %}
+{% endif %}
 
 <div class="tk-muc"><h3>Việc tôi tự nhận</h3><hr>
   <span class="ghi">Không thuộc việc leader giao — vẫn tính đủ trong tỉ lệ hoàn thành</span></div>
@@ -221,6 +254,19 @@
       // Bộ gõ tiếng Việt phát 2 keydown (isComposing / keyCode 229) — lọc kẻo thêm đôi
       oB.addEventListener("keydown", function (e) {
         if (e.key === "Enter" && !e.isComposing && e.keyCode !== 229) { e.preventDefault(); chay(); }
+      });
+    }
+
+    var conGiao = v.querySelector("[data-con-giao]");
+    if (conGiao) {
+      conGiao.addEventListener("click", function () {
+        var ten = (v.querySelector("[data-con-ten]").value || "").trim();
+        if (!ten) { return; }
+        conGiao.disabled = true;
+        goi("giao", { tieu_de: ten, nguoi: v.querySelector("[data-con-nguoi]").value,
+                      loai_viec: v.dataset.loai || "", tu_yeu_cau: id })
+          .then(function () { location.reload(); })
+          .catch(function (e) { conGiao.disabled = false; baoLoi(oLoi, e); });
       });
     }
 

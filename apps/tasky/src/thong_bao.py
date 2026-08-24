@@ -58,6 +58,12 @@ def cua_toi(ma: str, user: dict) -> list[dict]:
     if ket:
         ra.append(_muc(CAP, f"{len(ket)} việc kẹt — đã dời từ 2 tuần trước", len(ket), "/tasky"))
 
+    ph = [v for v in ds if v["trang_thai"] == t.CHO_PHOI_HOP]
+    if ph:
+        ra.append(_muc(CAP if any(_qua_han(v["luc_tao"], _gio_cho_nhan()) for v in ph) else LUU_Y,
+                       f"{len(ph)} yêu cầu phối hợp từ bộ phận khác đang chờ bạn trả lời",
+                       len(ph), "/tasky"))
+
     cho = [v for v in ds if v["trang_thai"] == t.CHO_NHAN]
     tre = [v for v in cho if _qua_han(v["luc_tao"], _gio_cho_nhan())]
     if tre:
@@ -90,6 +96,16 @@ def cua_leader(ma: str, user: dict, ds_nguoi: list[dict]) -> list[dict]:
     if tu_choi:
         ra.append(_muc(LUU_Y, f"{len(tu_choi)} việc bị từ chối — cần giao lại",
                        len(tu_choi), "/giao-viec"))
+
+    gui = t.yeu_cau_da_gui(ma, user)
+    xong_ph = [v for v in gui if v["trang_thai"] == t.BAO_XONG]
+    if xong_ph:
+        ra.append(_muc(LUU_Y, f"{len(xong_ph)} việc phối hợp chờ bạn nghiệm thu",
+                       len(xong_ph), "/giao-viec"))
+    tu_choi_ph = [v for v in gui if v["trang_thai"] == t.TU_CHOI]
+    if tu_choi_ph:
+        ra.append(_muc(LUU_Y, f"{len(tu_choi_ph)} yêu cầu phối hợp bị bộ phận kia từ chối",
+                       len(tu_choi_ph), "/giao-viec"))
 
     ket = [v for v in viec if v["so_lan_doi"] >= t.DOI_LA_KET
            and v["trang_thai"] in (t.CHO_NHAN, t.DANG_LAM, t.BAO_XONG)]
