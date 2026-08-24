@@ -297,3 +297,26 @@ Quy ước từ 16/08/2026 (user chốt): mỗi mạch việc lớn có MỘT s�
   ĐỌC báo cáo thật chứ không phải từ test. **Còn lại**: chạy lại extract ghi đè 12 hồ sơ
   thật (việc của Owner — đang phục vụ team); dọn 5 tên/2 giọng trùng; nạp thêm corpus cho
   A013/A010/A007/A012.
+
+- 24/08/2026 — **GENERAL: ĐỔI DANH MỤC VÒNG ĐỜI + GIÓNG LƯỚI API KEYS** (commit
+  `7b8a4c2`, suite nền 206 pass). Owner duyệt từng ý trước khi code vì khối general
+  chạm mọi app. **(1) Loại kênh** còn `compilation/narrator/documentary`; giá trị cũ
+  của kênh đã khai (K-OUTLAND `giai_tri`) KHÔNG bị xóa — form sửa thêm option
+  grandfather "(legacy — reselect)" theo lệ 04/08. **Data Analytics giữ danh mục
+  RIÊNG 6 loại** (`content_type_profiles.csv`) — Owner chốt không rút theo, hồ sơ
+  `tre_em` (nới retention ×1.4, RPM thấp là quy luật COPPA) còn nguyên giá trị đọc số.
+  **(2) Niche**: Exploiting · Scaling · Maintaining · Paused (bỏ `thu`/Testing; mặc
+  định tạo mới → `khai_thac`). **(3) Lifecycle kênh** 5 nấc: Incubating · Testing ·
+  Traction · Monetized · **Shadowbanned**; bỏ `ngu_dong`/Dormant; `khai_tu`/Retired
+  thành **NẤC ẨN** — `doi_trang_thai_kenh()` mặc định từ chối, chỉ `khai_tu_kenh()`
+  (nút Retire, chỉ Owner) đặt được (trước POST thẳng vào đường stepper cũng retire
+  được), kênh đã retire vẫn hiện badge + lọc tìm lại được. **(4) API keys**: mọi khối
+  dùng CHUNG lưới 6 cột cố định (`table-layout:fixed` + `colgroup`, khối không có
+  Model giữ ô trống) → các bảng thẳng một trục; bỏ cột Usage + Added.
+  **Migration 003** (đổi CHECK = dựng lại bảng `ngach` + `kenh`): DB thật 4 kênh +
+  6 ngách di trú nguyên vẹn, `foreign_key_check` sạch, backup `VACUUM INTO` trước.
+  **BÀI HỌC**: migration đổi tập giá trị phải MAP giá trị đã bỏ (`thu`→`khai_thac`,
+  `ngu_dong`→`khai_tu`) cho DB đời cũ ở máy khác — không map thì CHECK mới giết
+  migration giữa chừng; **test `test_backfill_002` bắt được ca này**, DB thật không
+  có bản ghi nào rơi vào đó nên nếu chỉ nghiệm thu trên máy này sẽ không bao giờ lộ.
+  **Còn lại**: Owner chọn lại loại cho K-OUTLAND (form không tự đổi để khỏi bịa).
