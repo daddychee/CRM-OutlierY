@@ -3,19 +3,339 @@
 {% block topbar_ten %}Tasky{% endblock %}
 
 {% block style_them %}
-  .tk-card{background:var(--sidebar);border:1px solid var(--line);border-radius:14px;
-    padding:18px 20px;margin-bottom:16px}
-  .tk-card h2{margin:0 0 8px;font-size:15.5px}
-  .tk-hint{font-size:13px;color:var(--muted);line-height:1.65}
-  .tk-hint b{color:var(--ink);font-weight:600}
+  /* Màu lấy TỪ TOKEN base.html (--th-*), không viết hex trần — luật theme 2 chế độ */
+  .tk-dau{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+  .tk-dau h2{margin:0;font-size:16px}
+  .tk-dau .khoang{font-size:12.5px;color:var(--muted)}
+  .tk-lui{margin-left:auto;display:flex;gap:6px}
+  .tk-lui a{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;color:var(--muted);
+    border:1px solid var(--chip-line);border-radius:8px;padding:4px 10px;text-decoration:none}
+  .tk-lui a:hover{border-color:var(--accent);color:var(--accent)}
+  .tk-so{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px}
+  .tk-o{background:var(--sidebar);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+  .tk-o .nhan{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);font-weight:600}
+  .tk-o .to{font-size:26px;font-weight:600;margin-top:4px;font-variant-numeric:tabular-nums;
+    letter-spacing:-.02em;line-height:1.15}
+  .tk-o .to small{font-size:13px;font-weight:500;color:var(--muted)}
+  .tk-o .phu{font-size:12px;color:var(--muted);margin-top:3px}
+  .thanh{height:5px;border-radius:3px;background:var(--th-182233);overflow:hidden;
+    margin-top:8px;border:1px solid var(--line)}
+  .thanh i{display:block;height:100%;background:var(--accent)}
+
+  .tk-muc{display:flex;align-items:center;gap:9px;margin:20px 0 10px}
+  .tk-muc h3{margin:0;font-size:12.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+  .tk-muc hr{flex:1;border:0;border-top:1px solid var(--line)}
+  .tk-muc .ghi{font-size:12.5px;color:var(--muted)}
+
+  .viec{background:var(--sidebar);border:1px solid var(--line);border-radius:12px;
+    margin-bottom:10px;overflow:hidden}
+  .viec>.dinh{display:flex;gap:11px;align-items:flex-start;padding:12px 14px;cursor:pointer}
+  .viec>.dinh:hover{background:var(--th-141c2b)}
+  .viec .ten{font-size:14px;font-weight:600;margin-bottom:4px}
+  .viec .duoi{font-size:12.5px;color:var(--muted);display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .mui{width:14px;height:14px;flex:none;margin-top:4px;stroke:var(--muted);fill:none;
+    stroke-width:2;transition:transform .15s}
+  .viec.mo .mui{transform:rotate(90deg)}
+  .tien{text-align:right;min-width:92px;font-size:13px;font-variant-numeric:tabular-nums}
+  .tien .thanh{width:92px}
+  .than{border-top:1px solid var(--line);padding:10px 14px 14px;background:var(--th-141c2b)}
+  .than[hidden]{display:none}
+  .goi-y{font-size:12.5px;color:var(--muted);margin:2px 0 8px}
+
+  ul.ck{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:1px}
+  ul.ck li{display:flex;gap:10px;align-items:center;padding:6px 7px;border-radius:8px}
+  ul.ck li:hover{background:var(--sidebar)}
+  ul.ck li .noi{flex:1;font-size:13.5px}
+  ul.ck li.xong .noi{color:var(--muted);text-decoration:line-through}
+  .o-tick{width:17px;height:17px;flex:none;border:1.5px solid var(--chip-line);border-radius:5px;
+    background:var(--sidebar);cursor:pointer;display:grid;place-items:center;padding:0}
+  .o-tick svg{width:11px;height:11px;stroke:var(--bg);stroke-width:2.6;fill:none;display:none}
+  .o-tick.xong{background:var(--accent);border-color:var(--accent)}
+  .o-tick.xong svg{display:block}
+
+  .hang{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px}
+  .hang input,.hang select{border:1px solid var(--chip-line);border-radius:9px;padding:7px 11px;
+    background:var(--th-182233);color:var(--ink);font:inherit;font-size:13px}
+  .hang input{flex:1;min-width:170px}
+  .hang.chan{margin-top:12px;padding-top:10px;border-top:1px dashed var(--chip-line)}
+  .nut{border:1px solid var(--chip-line);background:var(--sidebar);color:var(--ink);
+    border-radius:9px;padding:6px 12px;font-size:13px;font-family:inherit;cursor:pointer}
+  .nut:hover{border-color:var(--accent);color:var(--accent)}
+  .nut.chinh{background:var(--accent);border-color:var(--accent);color:var(--th-090c12);font-weight:600}
+  .nut.chinh:hover{color:var(--th-090c12);opacity:.9}
+  .nut[disabled]{opacity:.5;cursor:default}
+
+  .the{display:inline-flex;align-items:center;border:1px solid var(--chip-line);border-radius:999px;
+    padding:2px 9px;font-size:11.5px;color:var(--muted);white-space:nowrap}
+  .the.cho{border-color:transparent;background:var(--th-16263f);color:var(--accent);font-weight:600}
+  .the.doi{border-color:transparent;background:var(--th-1d2840);color:var(--th-c2cbd9);font-weight:600}
+  .the.ket{border-color:transparent;background:var(--th-331a16, var(--th-1d2840));color:var(--th-d97c6c);font-weight:600}
+  .the.loai{background:var(--th-182233);color:var(--th-c2cbd9)}
+  .trong{color:var(--muted);font-size:13.5px;padding:14px 0}
+  .loi{color:var(--th-d97c6c);font-size:12.5px;margin-top:6px}
 {% endblock %}
 
 {% block noi_dung %}
-<div class="tk-card">
-  <h2>Việc của tôi</h2>
-  <p class="tk-hint">
-    Chào <b>{{ user.ho_ten or user.ten }}</b>{% if user.bo_phan %} — {{ user.bo_phan }}{% endif %}.<br>
-    Khung app đã dựng xong. Danh sách việc tuần và checklist triển khai lên ở bước kế tiếp.
-  </p>
+<div class="tk-dau">
+  <div>
+    <h2>Việc của tôi</h2>
+    <div class="khoang">Tuần {{ ma_tuan[-2:]|int }} · {{ tu[8:] }}/{{ tu[5:7] }} – {{ den[8:] }}/{{ den[5:7] }}/{{ den[:4] }}
+      {%- if ma_tuan != tuan_nay %} · <b>đang xem tuần cũ</b>{% endif %}</div>
+  </div>
+  <div class="tk-lui">
+    <a href="/tasky?tuan_xem={{ tuan_truoc }}">← Tuần trước</a>
+    {% if ma_tuan != tuan_nay %}<a href="/tasky">Tuần này</a>{% endif %}
+    <a href="/tasky?tuan_xem={{ tuan_sau }}">Tuần sau →</a>
+  </div>
 </div>
+
+<div class="tk-so">
+  <div class="tk-o">
+    <div class="nhan">Việc tuần này</div>
+    <div class="to">{{ tk.so_viec }}<small> việc</small></div>
+    <div class="phu">{{ tk.giao }} leader giao · {{ tk.tu_them }} tôi tự nhận</div>
+  </div>
+  <div class="tk-o">
+    <div class="nhan">Đã hoàn thành</div>
+    {% if tk.ti_le is none %}
+      <div class="to" style="color:var(--muted)">—</div>
+      <div class="phu">Chưa có việc nào trong tuần</div>
+    {% else %}
+      <div class="to">{{ tk.xong }}<small>/{{ tk.so_viec }}</small></div>
+      <div class="thanh"><i style="width:{{ tk.ti_le }}%"></i></div>
+      <div class="phu">{{ tk.ti_le }}% đã được xác nhận</div>
+    {% endif %}
+  </div>
+  <div class="tk-o">
+    <div class="nhan">Bước đã tick</div>
+    <div class="to">{{ tk.buoc_xong }}<small>/{{ tk.buoc_tong }} bước</small></div>
+    <div class="phu">Tổng các checklist tuần này</div>
+  </div>
+  <div class="tk-o">
+    <div class="nhan">Cần để ý</div>
+    <div class="to">{{ tk.chua_nhan + tk.ket }}</div>
+    <div class="phu">{{ tk.chua_nhan }} việc chưa nhận · {{ tk.ket }} việc kẹt</div>
+  </div>
+</div>
+
+{% macro the_viec(v) %}
+<article class="viec" data-id="{{ v.id }}" data-tt="{{ v.trang_thai }}">
+  <div class="dinh" data-mo>
+    <svg class="mui" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg>
+    <div style="flex:1;min-width:0">
+      <div class="ten">{{ v.tieu_de }}</div>
+      <div class="duoi">
+        {% if v.loai_viec %}<span class="the loai">{{ v.loai_viec }}</span>{% endif %}
+        {% if v.nguoi_giao %}<span>{{ v.nguoi_giao }} giao</span>{% else %}<span>Tôi tự thêm</span>{% endif %}
+        {% if v.trang_thai == 'cho_nhan' %}<span class="the cho">Chờ bạn nhận</span>
+        {% elif v.trang_thai == 'bao_xong' %}<span class="the cho">Chờ xác nhận</span>
+        {% elif v.trang_thai == 'xac_nhan' %}<span class="the">Đã xác nhận</span>
+        {% elif v.trang_thai == 'tu_choi' %}<span class="the">Đã từ chối</span>
+        {% elif v.trang_thai == 'huy' %}<span class="the">Đã hủy</span>
+        {% elif v.trang_thai == 'doi' %}<span class="the doi">Đã dời sang tuần sau</span>{% endif %}
+        {% if v.so_lan_doi >= 2 %}<span class="the ket">Việc kẹt · dời {{ v.so_lan_doi }} lần</span>{% endif %}
+      </div>
+    </div>
+    <div class="tien">
+      {% if v.checklist %}
+        <b class="dem">{{ v.checklist|selectattr('xong')|list|length }}<span style="color:var(--muted);font-size:12px">/{{ v.checklist|length }} bước</span></b>
+        <div class="thanh"><i style="width:{{ (100 * (v.checklist|selectattr('xong')|list|length) / (v.checklist|length))|round|int }}%"></i></div>
+      {% else %}<b style="color:var(--muted)">—</b>{% endif %}
+    </div>
+  </div>
+
+  <div class="than" hidden>
+    {% if v.trang_thai == 'cho_nhan' %}
+      <div class="goi-y">Leader giao việc này cho bạn. Nhận việc rồi mới viết được cách triển khai.</div>
+      <div class="hang">
+        <button class="nut chinh" data-nhan>Nhận việc</button>
+        <button class="nut" data-mo-tuchoi>Từ chối</button>
+      </div>
+      <div class="hang" data-o-tuchoi hidden>
+        <input data-ly-do placeholder="Vì sao bạn từ chối việc này? (bắt buộc)">
+        <button class="nut" data-tuchoi>Xác nhận từ chối</button>
+      </div>
+    {% elif v.trang_thai in ('tu_choi', 'huy') %}
+      <div class="goi-y">Lý do: {{ v.ly_do or '(không ghi)' }}</div>
+    {% else %}
+      {% if not v.checklist %}
+        <div class="goi-y">Chưa có bước nào. Viết ra cách bạn định làm — đây cũng là thứ sau này
+          gom lại thành quy trình chung của bộ phận.</div>
+      {% endif %}
+      <ul class="ck">
+        {% for b in v.checklist %}
+        <li data-buoc="{{ b.id }}" {% if b.xong %}class="xong"{% endif %}>
+          <button class="o-tick {% if b.xong %}xong{% endif %}" aria-label="Xong bước">
+            <svg viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></svg></button>
+          <span class="noi">{{ b.noi_dung }}</span>
+        </li>
+        {% endfor %}
+      </ul>
+      {% if v.trang_thai in ('dang_lam', 'bao_xong') %}
+      <div class="hang">
+        <input data-buoc-moi placeholder="Thêm một bước…">
+        <button class="nut" data-them-buoc>Thêm bước</button>
+      </div>
+      <div class="hang chan">
+        <span class="goi-y" style="flex:1;margin:0">
+          {% if v.trang_thai == 'bao_xong' %}Bạn đã báo xong — đang chờ leader xác nhận.
+          {% else %}Làm xong hết thì bấm Báo xong, leader sẽ xác nhận.{% endif %}</span>
+        {% if v.trang_thai == 'dang_lam' %}<button class="nut" data-bao-xong>Báo xong việc này</button>{% endif %}
+      </div>
+      {% endif %}
+    {% endif %}
+    <div class="loi" data-loi hidden></div>
+  </div>
+</article>
+{% endmacro %}
+
+<div class="tk-muc"><h3>Leader giao</h3><hr></div>
+{% if viec_giao %}{% for v in viec_giao %}{{ the_viec(v) }}{% endfor %}
+{% else %}<div class="trong">Tuần này chưa ai giao việc cho bạn.</div>{% endif %}
+
+<div class="tk-muc"><h3>Việc tôi tự nhận</h3><hr>
+  <span class="ghi">Không thuộc việc leader giao — vẫn tính đủ trong tỉ lệ hoàn thành</span></div>
+{% for v in viec_tu %}{{ the_viec(v) }}{% endfor %}
+
+<div class="viec" style="padding:12px 14px">
+  <div class="hang" style="margin:0">
+    <input id="viec-moi" placeholder="Thêm việc bạn tự nhận…">
+    <input id="loai-moi" list="ds-loai" placeholder="Loại việc (gõ mới cũng được)" style="max-width:230px;flex:0 0 auto">
+    <datalist id="ds-loai">{% for l in loai_viec %}<option value="{{ l }}">{% endfor %}</datalist>
+    <button class="nut chinh" id="them-viec">Thêm việc</button>
+  </div>
+  <div class="loi" id="loi-them" hidden></div>
+</div>
+{% endblock %}
+
+{% block script %}
+<script>
+(function () {
+  var TUAN = {{ ma_tuan|tojson }};
+
+  function goi(duong, du_lieu) {
+    var fd = new FormData();
+    fd.append("tuan_xem", TUAN);
+    Object.keys(du_lieu).forEach(function (k) { fd.append(k, du_lieu[k]); });
+    return fetch("/api-tasky/" + duong, { method: "POST", body: fd })
+      .then(function (r) {
+        return r.json().catch(function () { return {}; }).then(function (d) {
+          if (!r.ok) { throw new Error(d.detail || "Không lưu được, thử lại giúp tôi."); }
+          return d;
+        });
+      });
+  }
+
+  function baoLoi(o, e) {
+    if (!o) { return; }
+    o.textContent = e.message || String(e);
+    o.hidden = false;
+  }
+
+  // Mở / đóng một việc
+  document.querySelectorAll(".viec > .dinh[data-mo]").forEach(function (d) {
+    d.addEventListener("click", function () {
+      var v = d.parentElement, than = v.querySelector(".than");
+      if (!than) { return; }
+      than.hidden = !than.hidden;
+      v.classList.toggle("mo", !than.hidden);
+    });
+  });
+
+  document.querySelectorAll(".viec").forEach(function (v) {
+    var id = v.dataset.id, oLoi = v.querySelector("[data-loi]");
+
+    var nhan = v.querySelector("[data-nhan]");
+    if (nhan) {
+      nhan.addEventListener("click", function () {
+        nhan.disabled = true;
+        goi("nhan", { id: id }).then(function () { location.reload(); })
+          .catch(function (e) { nhan.disabled = false; baoLoi(oLoi, e); });
+      });
+    }
+
+    // Từ chối = HAI BƯỚC: mở ô lý do → xác nhận (lý do bắt buộc, chặn ở cả server)
+    var moTc = v.querySelector("[data-mo-tuchoi]"), oTc = v.querySelector("[data-o-tuchoi]");
+    if (moTc && oTc) {
+      moTc.addEventListener("click", function () {
+        oTc.hidden = false;
+        var o = oTc.querySelector("[data-ly-do]"); if (o) { o.focus(); }
+      });
+      oTc.querySelector("[data-tuchoi]").addEventListener("click", function () {
+        var ly = (oTc.querySelector("[data-ly-do]").value || "").trim();
+        if (!ly) { baoLoi(oLoi, new Error("Phải ghi lý do từ chối.")); return; }
+        goi("tu-choi", { id: id, ly_do: ly }).then(function () { location.reload(); })
+          .catch(function (e) { baoLoi(oLoi, e); });
+      });
+    }
+
+    var themB = v.querySelector("[data-them-buoc]");
+    if (themB) {
+      var oB = v.querySelector("[data-buoc-moi]");
+      var chay = function () {
+        var nd = (oB.value || "").trim();
+        if (!nd) { return; }
+        goi("buoc", { id: id, noi_dung: nd }).then(function () { location.reload(); })
+          .catch(function (e) { baoLoi(oLoi, e); });
+      };
+      themB.addEventListener("click", chay);
+      // Bộ gõ tiếng Việt phát 2 keydown (isComposing / keyCode 229) — lọc kẻo thêm đôi
+      oB.addEventListener("keydown", function (e) {
+        if (e.key === "Enter" && !e.isComposing && e.keyCode !== 229) { e.preventDefault(); chay(); }
+      });
+    }
+
+    var baoX = v.querySelector("[data-bao-xong]");
+    if (baoX) {
+      baoX.addEventListener("click", function () {
+        baoX.disabled = true;
+        goi("bao-xong", { id: id }).then(function () { location.reload(); })
+          .catch(function (e) { baoX.disabled = false; baoLoi(oLoi, e); });
+      });
+    }
+
+    // Tick bước: cập nhật tại chỗ (không reload) + vẽ lại thanh tiến độ của việc
+    v.querySelectorAll("ul.ck li").forEach(function (li) {
+      li.querySelector(".o-tick").addEventListener("click", function () {
+        var o = li.querySelector(".o-tick"), xong = !o.classList.contains("xong");
+        o.classList.toggle("xong", xong);
+        li.classList.toggle("xong", xong);
+        goi("tick", { id: id, buoc: li.dataset.buoc, xong: xong ? "1" : "0" })
+          .then(function () { veLai(v); })
+          .catch(function (e) {                       // hỏng thì trả lại đúng trạng thái cũ
+            o.classList.toggle("xong", !xong); li.classList.toggle("xong", !xong);
+            baoLoi(oLoi, e);
+          });
+      });
+    });
+  });
+
+  function veLai(v) {
+    var ds = v.querySelectorAll("ul.ck li"), xong = v.querySelectorAll("ul.ck li.xong").length;
+    var dem = v.querySelector(".tien .dem"), thanh = v.querySelector(".tien .thanh i");
+    if (dem) {
+      dem.innerHTML = xong + '<span style="color:var(--muted);font-size:12px">/' + ds.length + " bước</span>";
+    }
+    if (thanh && ds.length) { thanh.style.width = Math.round(100 * xong / ds.length) + "%"; }
+  }
+
+  var nutThem = document.getElementById("them-viec");
+  if (nutThem) {
+    var oTen = document.getElementById("viec-moi"), oLoai = document.getElementById("loai-moi");
+    var oLoiThem = document.getElementById("loi-them");
+    var themViec = function () {
+      var ten = (oTen.value || "").trim();
+      if (!ten) { return; }
+      nutThem.disabled = true;
+      goi("viec-tu", { tieu_de: ten, loai_viec: (oLoai.value || "").trim() })
+        .then(function () { location.reload(); })
+        .catch(function (e) { nutThem.disabled = false; baoLoi(oLoiThem, e); });
+    };
+    nutThem.addEventListener("click", themViec);
+    oTen.addEventListener("keydown", function (e) {
+      if (e.key === "Enter" && !e.isComposing && e.keyCode !== 229) { e.preventDefault(); themViec(); }
+    });
+  }
+})();
+</script>
 {% endblock %}

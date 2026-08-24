@@ -63,11 +63,15 @@ def khoang_tuan(ma: str) -> tuple[str, str]:
     return dau.isoformat(), date.fromisocalendar(int(y), int(w), 7).isoformat()
 
 
-def tuan_ke_tiep(ma: str) -> str:
-    """'2026-W52' → '2027-W01' (cộng 7 ngày rồi hỏi lại lịch ISO — không tự cộng
-    số tuần, vì năm ISO có năm 52 tuần có năm 53)."""
+def tuan_lien_ke(ma: str, buoc: int = 1) -> str:
+    """Tuần trước/sau: cộng ngày rồi HỎI LẠI lịch ISO — không tự cộng số tuần, vì
+    năm ISO có năm 52 tuần có năm 53 ('2026-W52' + 1 = '2026-W53', +2 = '2027-W01')."""
     tu, _ = khoang_tuan(ma)
-    return ma_tuan(date.fromisoformat(tu) + timedelta(days=7))
+    return ma_tuan(date.fromisoformat(tu) + timedelta(days=7 * buoc))
+
+
+def tuan_ke_tiep(ma: str) -> str:
+    return tuan_lien_ke(ma, 1)
 
 
 def _gio() -> str:
@@ -394,6 +398,22 @@ def cho_xac_nhan(ma: str, user: dict) -> list[dict]:
     """Việc đang chờ CHÍNH user này xác nhận (dùng cho màn Giao việc)."""
     return [v for v in doc_tuan(ma)["viec"]
             if v["trang_thai"] == BAO_XONG and duoc_xac_nhan(v, user)]
+
+
+def cac_loai_viec(so_tuan: int = 12) -> list[str]:
+    """Danh sách loại việc ĐÃ DÙNG (mới nhất trước) để gợi ý khi khai việc — danh
+    mục tự lớn dần, gõ tên mới là thành loại mới (khuôn tag từ khóa của AI Agent).
+    Quét vài tuần gần nhất là đủ; kho rỗng → [] chứ không bịa danh mục mẫu."""
+    thu_muc = _goc() / "tuan"
+    if not thu_muc.is_dir():
+        return []
+    ra: list[str] = []
+    for p in sorted(thu_muc.glob("*.json"), reverse=True)[:so_tuan]:
+        for v in doc_tuan(p.stem)["viec"]:
+            loai = (v.get("loai_viec") or "").strip()
+            if loai and loai not in ra:
+                ra.append(loai)
+    return ra
 
 
 def thong_ke_nguoi(ma: str, ten: str) -> dict:

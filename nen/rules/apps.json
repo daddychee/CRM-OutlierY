@@ -719,7 +719,7 @@
         "/api-tasky"
       ],
       "health": "/health",
-      "phien_ban": "0.1.0",
+      "phien_ban": "0.2.0",
       "chay": {
         "kieu": "uvicorn",
         "app_dir": "apps/tasky",

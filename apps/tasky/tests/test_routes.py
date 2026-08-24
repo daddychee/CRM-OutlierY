@@ -27,8 +27,8 @@ def test_khong_co_claims_thi_401_khong_lo_trang():
 def test_co_claims_thi_vao_duoc_va_hien_dung_ten():
     r = client.get("/tasky", headers=CLAIMS)
     assert r.status_code == 200
-    assert "Nguyễn Thu Hà" in r.text          # X-Remote-Name đã unquote
-    assert "Vận hành - Sản xuất" in r.text     # X-Remote-Dept đã unquote
+    assert "Nguyễn Thu Hà" in r.text          # X-Remote-Name đã unquote (sidebar)
+    assert "Việc của tôi" in r.text            # đúng màn, không phải trang lỗi
 
 
 def test_dept_tieng_viet_duoc_unquote_trong_claims():
