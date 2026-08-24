@@ -40,3 +40,17 @@ _references/
 # apps/<slug>/.git; repo cha (nen) khong track code app nay nua. Cac app khac se
 # tach dan sau khi mach phien song song tren monorepo lang xuong.
 apps/seo-optimize/
+
+# Cookie phien lay tu trinh duyet (Google Trends) — BI MAT, khong bao gio vao git
+trends_cookies.json
+*_cookies.json
+cookies.txt
+
+# Ket qua cao/xuat tam — tai san chay lai duoc, khong phai ma nguon
+downloads/
+
+# File trung gian cua mot lan phan tich (tien to _ = nhap, khong ai tham chieu)
+docs/_*.json
+
+# Editor workspace
+*.code-workspace
