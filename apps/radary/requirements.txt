@@ -1,5 +1,0 @@
-# Backend web (Phase 2) — engine lõi radary/ vẫn thuần stdlib, chỉ tầng API cần các gói này
-fastapi>=0.110
-uvicorn>=0.27
-cryptography>=42
-tzdata>=2024.1        # container slim không có tzdata hệ thống — cần cho Asia/Ho_Chi_Minh

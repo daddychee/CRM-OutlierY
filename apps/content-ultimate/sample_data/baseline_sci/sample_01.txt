@@ -1,7 +1,0 @@
-The mitochondrion is an organelle found in most eukaryotic cells. Its primary function is to generate adenosine triphosphate, commonly abbreviated as ATP, through a process called oxidative phosphorylation. Mitochondria contain their own DNA, distinct from the DNA found in the nucleus.
-
-Researchers have proposed that mitochondria originated from free-living bacteria that were engulfed by a host cell approximately two billion years ago. Over time, this endosymbiotic relationship became permanent. The bacterium lost much of its independent genome, transferring many genes to the host nucleus, while retaining a small set required for local energy production.
-
-This theory is supported by several lines of evidence. Mitochondrial DNA is circular, similar to bacterial chromosomes. Mitochondrial ribosomes resemble bacterial ribosomes more closely than they resemble the ribosomes found elsewhere in the eukaryotic cell. Additionally, mitochondria replicate independently of the cell cycle, dividing by a process similar to bacterial fission.
-
-The implications of endosymbiotic theory extend beyond cellular biology. It suggests that complex life arose, in part, through cooperation between previously independent organisms, rather than through gradual modification alone.

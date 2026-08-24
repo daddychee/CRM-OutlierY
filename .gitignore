@@ -54,3 +54,13 @@ docs/_*.json
 
 # Editor workspace
 *.code-workspace
+
+# 4 app CO REPO GIT RIENG (tach 24/08 — cung khuon seo-optimize 19/08): moi app
+# mot repo private, nhanh `v3` la ban dang chay, `main` giu lich su V2 lam su
+# lieu. Nguon su that la repo con nam ngay trong apps/<slug>/.git; repo cha
+# (nen) khong track code 4 app nay nua. File VAN NAM NGUYEN CHO CU tren dia nen
+# duong dan/tien trinh/test goc khong doi mot ly.
+apps/radary/
+apps/plannery/
+apps/niche-research/
+apps/content-ultimate/
