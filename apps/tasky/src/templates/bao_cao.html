@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% block title %}Báo cáo tuần — Tasky{% endblock %}
+{% block topbar_ten %}Tasky · Báo cáo{% endblock %}
+
+{% block style_them %}
+  {% include "_tasky_style.html" %}
+  .khoi{background:var(--sidebar);border:1px solid var(--line);border-radius:12px;
+    padding:14px 16px;margin-bottom:14px}
+  .khoi h3{margin:0 0 4px;font-size:14px}
+  table.tk{width:100%;border-collapse:collapse;font-size:13.5px}
+  table.tk th{text-align:left;font-size:11px;color:var(--muted);text-transform:uppercase;
+    letter-spacing:.05em;font-weight:600;padding:8px 10px;border-bottom:1px solid var(--line);
+    white-space:nowrap}
+  table.tk td{padding:9px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+  table.tk tr:last-child td{border-bottom:0}
+  table.tk tr:hover td{background:var(--th-141c2b)}
+  table.tk td.so{text-align:right;font-variant-numeric:tabular-nums}
+  table.tk td.bp{font-weight:600;background:var(--th-141c2b);color:var(--th-c2cbd9)}
+  .mini{display:inline-block;width:54px;height:5px;border-radius:3px;background:var(--th-182233);
+    overflow:hidden;vertical-align:middle;margin-right:7px;border:1px solid var(--line)}
+  .mini i{display:block;height:100%;background:var(--accent)}
+{% endblock %}
+
+{% block noi_dung %}
+<div class="tk-dau">
+  <div>
+    <h2>Báo cáo tuần</h2>
+    <div class="khoang">Tuần {{ ma_tuan[-2:]|int }} · {{ tu[8:] }}/{{ tu[5:7] }} – {{ den[8:] }}/{{ den[5:7] }}/{{ den[:4] }}
+      · {% if toan_cong_ty %}toàn công ty{% else %}{{ user.bo_phan or 'bộ phận của bạn' }}{% endif %}</div>
+  </div>
+  <div class="tk-lui">
+    <a href="/bao-cao-tuan?tuan_xem={{ tuan_truoc }}">← Tuần trước</a>
+    {% if ma_tuan != tuan_nay %}<a href="/bao-cao-tuan">Tuần này</a>{% endif %}
+    <a href="/bao-cao-tuan?tuan_xem={{ tuan_sau }}">Tuần sau →</a>
+  </div>
+</div>
+
+{% if loi_iam %}<div class="khoi"><div class="loi" style="margin:0">{{ loi_iam }}</div></div>{% endif %}
+
+<div class="tk-so">
+  <div class="tk-o">
+    <div class="nhan">Tỉ lệ hoàn thành</div>
+    {% if tong.ti_le is none %}
+      <div class="to" style="color:var(--muted)">—</div>
+      <div class="phu">Chưa ai có việc trong tuần này</div>
+    {% else %}
+      <div class="to">{{ tong.ti_le }}<small>%</small></div>
+      <div class="thanh"><i style="width:{{ tong.ti_le }}%"></i></div>
+      <div class="phu">{{ tong.tong_xong }}/{{ tong.tong_viec }} việc đã xác nhận</div>
+    {% endif %}
+  </div>
+  <div class="tk-o">
+    <div class="nhan">Khối lượng</div>
+    <div class="to">{{ tong.tong_viec }}<small> việc</small></div>
+    <div class="phu">{{ tong.tong_buoc }} bước checklist · {{ tong.co_viec }} người</div>
+  </div>
+  <div class="tk-o">
+    <div class="nhan">Việc kẹt</div>
+    <div class="to"{% if tong.tong_ket %} style="color:var(--th-d97c6c)"{% endif %}>{{ tong.tong_ket }}</div>
+    <div class="phu">Đã dời từ 2 tuần trở lên</div>
+  </div>
+  <div class="tk-o">
+    <div class="nhan">Chưa có việc</div>
+    <div class="to">{{ tong.chua_co_viec }}<small> người</small></div>
+    <div class="phu">Không có số để báo cáo, không tính là 0%</div>
+  </div>
+</div>
+
+<div class="khoi" style="padding:0;overflow-x:auto">
+  <table class="tk">
+    <thead><tr><th>Người</th><th>Hoàn thành</th><th class="so">Việc</th><th class="so">Giao</th>
+      <th class="so">Tự nhận</th><th class="so">Bước tick</th><th class="so">Kẹt</th>
+      <th class="so">Từ chối</th><th>Tuần</th></tr></thead>
+    <tbody>
+      {% set nhom = bang|groupby('bo_phan') %}
+      {% for bp, ds in nhom %}
+        {% if nhom|length > 1 %}<tr><td class="bp" colspan="9">{{ bp or 'Chưa gán bộ phận' }}</td></tr>{% endif %}
+        {% for d in ds %}
+        <tr>
+          <td>{{ d.ho_ten or d.nguoi }}</td>
+          <td>{% if d.ti_le is none %}<span style="color:var(--muted)">— chưa có việc</span>
+              {% else %}<span class="mini"><i style="width:{{ d.ti_le }}%"></i></span>{{ d.ti_le }}%
+              ({{ d.xong }}/{{ d.so_viec }}){% if d.tu_xac_nhan %} <span class="the">tự xác nhận</span>{% endif %}{% endif %}</td>
+          <td class="so">{{ d.so_viec or '—' }}</td>
+          <td class="so">{{ d.giao }}</td>
+          <td class="so">{{ d.tu_them }}</td>
+          <td class="so">{{ d.buoc_xong }}/{{ d.buoc_tong }}</td>
+          <td class="so">{% if d.ket %}<span class="the ket">{{ d.ket }}</span>{% else %}0{% endif %}</td>
+          <td class="so">{{ d.bi_tu_choi }}</td>
+          <td>{% if d.da_dong %}<span class="the">Đã đóng</span>
+              {% elif d.cho_xac_nhan %}<span class="the cho">{{ d.cho_xac_nhan }} chờ xác nhận</span>
+              {% else %}<span class="the">Đang chạy</span>{% endif %}</td>
+        </tr>
+        {% endfor %}
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+<div class="goi-y">Chỉ tính việc <b>leader đã xác nhận</b>. Người chưa được giao việc nào hiện
+  “—”, không hiện 0% — để khỏi đọc nhầm thành làm việc kém.</div>
+
+<div class="tk-muc"><h3>Kho quy trình đang hình thành</h3><hr>
+  <span class="ghi">Gom từ checklist thật · chưa bật gợi ý</span></div>
+<div class="khoi">
+  <div class="goi-y" style="margin-top:0">Mỗi loại việc cần <b>3 checklist của việc đã hoàn thành</b>
+    thì hệ mới rút ra được các bước lặp lại để leader duyệt thành quy trình chuẩn.
+    Chưa đủ thì không đề xuất gì.</div>
+  {% if kho_quy_trinh %}
+  <div style="overflow-x:auto">
+    <table class="tk">
+      <thead><tr><th>Loại việc</th><th class="so">Checklist đã tích</th><th>Trạng thái</th>
+        <th>Bước lặp nhiều nhất</th></tr></thead>
+      <tbody>
+        {% for m in kho_quy_trinh %}
+        <tr>
+          <td>{{ m.loai }}</td>
+          <td class="so">{{ m.so_checklist }}</td>
+          <td>{% if m.du_de_rut %}<span class="the cho">Đủ để rút quy trình</span>
+              {% else %}<span class="the">Cần thêm {{ m.con_thieu }}</span>{% endif %}</td>
+          <td style="white-space:normal">{% if m.du_de_rut %}“{{ m.buoc_hay_nhat }}” — {{ m.lan_lap }}/{{ m.so_checklist }} lần
+              {% else %}<span style="color:var(--muted)">chưa đủ tiền lệ</span>{% endif %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="goi-y" style="margin-bottom:0">Chưa có việc nào hoàn thành kèm checklist — kho quy
+    trình sẽ tự đầy lên khi mọi người dùng.</div>
+  {% endif %}
+</div>
+{% endblock %}

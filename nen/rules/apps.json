@@ -716,6 +716,8 @@
       "cong": 9117,
       "tien_to": [
         "/tasky",
+        "/giao-viec",
+        "/bao-cao-tuan",
         "/api-tasky"
       ],
       "health": "/health",

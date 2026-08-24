@@ -2049,6 +2049,8 @@ _ALIAS: dict[str, tuple[str, str]] = {
     # Tools = /<slug>. App native thêm alias ở đây; app KHUNG xem _ALIAS_KHUNG cuối file.
     "/video-review": ("video-review", "danh-sach"),
     "/tasky": ("tasky", "tasky"),
+    "/giao-viec": ("tasky", "giao-viec"),
+    "/bao-cao-tuan": ("tasky", "bao-cao-tuan"),
     "/nas": ("to-chuc", "nas"),
     "/kpi": ("to-chuc", "kpi"),
     "/vault": ("to-chuc", "vault"),

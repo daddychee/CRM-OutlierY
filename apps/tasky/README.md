@@ -51,13 +51,13 @@ dò substring các từ đó để suy X-Remote-Role gửi sang app khác (bẫy
 - [x] **B1** Khung app + claims + đăng ký 4 chỗ (PORTS.md · apps.json · phan_quyen.json · start-all.ps1)
 - [x] **B2** Lõi `src/tuan.py`: sổ tuần + luật giao/nhận/từ chối/tick/xác nhận/dời/hủy/đóng tuần + thống kê (32 test)
 - [x] **B3** Màn *Việc của tôi* + API `/api-tasky/*` (nhận · từ chối có lý do · viết/tick checklist · báo xong · tự thêm việc)
-- [ ] B4 Màn *Giao việc* + xác nhận + đóng tuần
-- [ ] B5 Màn *Báo cáo* (4 phạm vi)
-- [ ] B6 Kho quy trình — mới đếm/thống kê, chưa gợi ý
+- [x] **B4** Màn *Giao việc*: giao (lọc cấp dưới cùng bộ phận) · xác nhận / trả lại · dời / hủy / đổi người · đóng tuần
+- [x] **B5** Màn *Báo cáo*: Leader bộ phận mình · Manager mọi bộ phận · HR Leader+ toàn công ty · Owner tất
+- [x] **B6 (nền)** Kho quy trình: đếm checklist theo loại việc + bước lặp nhiều nhất; <3 lần → *chưa đủ tiền lệ*. Rút quy trình + gợi ý là vòng sau.
 
 ## Việc treo
 
-- Icon sidebar: `_icon_app.html` của mỗi app có bản riêng (Luật 4). Slug `tasky`
-  chưa có nhánh nên đang là ô vuông mặc định — thêm nhánh vào các bản khi làm B3.
+- Vòng sau của §5: rút quy trình chuẩn từ kho (gộp bước gần giống, leader duyệt),
+  rồi mới dùng làm gợi ý khi giao việc cùng loại.
 - Chưa nối app nào (Luật 4 + FLOW-v3 §9.5). Chiều nối tương lai: **Tasky → PlannerY**,
   task đã chừa sẵn trường `nguon_ngoai`.

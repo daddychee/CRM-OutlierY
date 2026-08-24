@@ -3,76 +3,7 @@
 {% block topbar_ten %}Tasky{% endblock %}
 
 {% block style_them %}
-  /* Màu lấy TỪ TOKEN base.html (--th-*), không viết hex trần — luật theme 2 chế độ */
-  .tk-dau{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px}
-  .tk-dau h2{margin:0;font-size:16px}
-  .tk-dau .khoang{font-size:12.5px;color:var(--muted)}
-  .tk-lui{margin-left:auto;display:flex;gap:6px}
-  .tk-lui a{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;color:var(--muted);
-    border:1px solid var(--chip-line);border-radius:8px;padding:4px 10px;text-decoration:none}
-  .tk-lui a:hover{border-color:var(--accent);color:var(--accent)}
-  .tk-so{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px}
-  .tk-o{background:var(--sidebar);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
-  .tk-o .nhan{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);font-weight:600}
-  .tk-o .to{font-size:26px;font-weight:600;margin-top:4px;font-variant-numeric:tabular-nums;
-    letter-spacing:-.02em;line-height:1.15}
-  .tk-o .to small{font-size:13px;font-weight:500;color:var(--muted)}
-  .tk-o .phu{font-size:12px;color:var(--muted);margin-top:3px}
-  .thanh{height:5px;border-radius:3px;background:var(--th-182233);overflow:hidden;
-    margin-top:8px;border:1px solid var(--line)}
-  .thanh i{display:block;height:100%;background:var(--accent)}
-
-  .tk-muc{display:flex;align-items:center;gap:9px;margin:20px 0 10px}
-  .tk-muc h3{margin:0;font-size:12.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
-  .tk-muc hr{flex:1;border:0;border-top:1px solid var(--line)}
-  .tk-muc .ghi{font-size:12.5px;color:var(--muted)}
-
-  .viec{background:var(--sidebar);border:1px solid var(--line);border-radius:12px;
-    margin-bottom:10px;overflow:hidden}
-  .viec>.dinh{display:flex;gap:11px;align-items:flex-start;padding:12px 14px;cursor:pointer}
-  .viec>.dinh:hover{background:var(--th-141c2b)}
-  .viec .ten{font-size:14px;font-weight:600;margin-bottom:4px}
-  .viec .duoi{font-size:12.5px;color:var(--muted);display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-  .mui{width:14px;height:14px;flex:none;margin-top:4px;stroke:var(--muted);fill:none;
-    stroke-width:2;transition:transform .15s}
-  .viec.mo .mui{transform:rotate(90deg)}
-  .tien{text-align:right;min-width:92px;font-size:13px;font-variant-numeric:tabular-nums}
-  .tien .thanh{width:92px}
-  .than{border-top:1px solid var(--line);padding:10px 14px 14px;background:var(--th-141c2b)}
-  .than[hidden]{display:none}
-  .goi-y{font-size:12.5px;color:var(--muted);margin:2px 0 8px}
-
-  ul.ck{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:1px}
-  ul.ck li{display:flex;gap:10px;align-items:center;padding:6px 7px;border-radius:8px}
-  ul.ck li:hover{background:var(--sidebar)}
-  ul.ck li .noi{flex:1;font-size:13.5px}
-  ul.ck li.xong .noi{color:var(--muted);text-decoration:line-through}
-  .o-tick{width:17px;height:17px;flex:none;border:1.5px solid var(--chip-line);border-radius:5px;
-    background:var(--sidebar);cursor:pointer;display:grid;place-items:center;padding:0}
-  .o-tick svg{width:11px;height:11px;stroke:var(--bg);stroke-width:2.6;fill:none;display:none}
-  .o-tick.xong{background:var(--accent);border-color:var(--accent)}
-  .o-tick.xong svg{display:block}
-
-  .hang{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px}
-  .hang input,.hang select{border:1px solid var(--chip-line);border-radius:9px;padding:7px 11px;
-    background:var(--th-182233);color:var(--ink);font:inherit;font-size:13px}
-  .hang input{flex:1;min-width:170px}
-  .hang.chan{margin-top:12px;padding-top:10px;border-top:1px dashed var(--chip-line)}
-  .nut{border:1px solid var(--chip-line);background:var(--sidebar);color:var(--ink);
-    border-radius:9px;padding:6px 12px;font-size:13px;font-family:inherit;cursor:pointer}
-  .nut:hover{border-color:var(--accent);color:var(--accent)}
-  .nut.chinh{background:var(--accent);border-color:var(--accent);color:var(--th-090c12);font-weight:600}
-  .nut.chinh:hover{color:var(--th-090c12);opacity:.9}
-  .nut[disabled]{opacity:.5;cursor:default}
-
-  .the{display:inline-flex;align-items:center;border:1px solid var(--chip-line);border-radius:999px;
-    padding:2px 9px;font-size:11.5px;color:var(--muted);white-space:nowrap}
-  .the.cho{border-color:transparent;background:var(--th-16263f);color:var(--accent);font-weight:600}
-  .the.doi{border-color:transparent;background:var(--th-1d2840);color:var(--th-c2cbd9);font-weight:600}
-  .the.ket{border-color:transparent;background:var(--th-331a16, var(--th-1d2840));color:var(--th-d97c6c);font-weight:600}
-  .the.loai{background:var(--th-182233);color:var(--th-c2cbd9)}
-  .trong{color:var(--muted);font-size:13.5px;padding:14px 0}
-  .loi{color:var(--th-d97c6c);font-size:12.5px;margin-top:6px}
+  {% include "_tasky_style.html" %}
 {% endblock %}
 
 {% block noi_dung %}

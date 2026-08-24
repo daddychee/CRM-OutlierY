@@ -445,6 +445,64 @@ def thong_ke_nguoi(ma: str, ten: str) -> dict:
     }
 
 
+def con_treo(ma: str, user: dict) -> list[dict]:
+    """Việc CHƯA ngã ngũ mà user này có quyền xử lý — leader phải dời/hủy hết mới
+    đóng được tuần cho người đó."""
+    return [v for v in doc_tuan(ma)["viec"]
+            if v["trang_thai"] in (CHO_NHAN, DANG_LAM) and duoc_xac_nhan(v, user)]
+
+
+def kho_quy_trinh(so_tuan: int = 26, du_de_rut: int = 3) -> list[dict]:
+    """NỀN cho §5 — mỗi loại việc đã tích được bao nhiêu checklist của việc ĐÃ HOÀN
+    THÀNH, và bước nào lặp nhiều nhất.
+
+    Vòng này CHỈ ĐẾM và bày ra, KHÔNG đề xuất gì: dưới `du_de_rut` lần thì nói thẳng
+    "chưa đủ tiền lệ". Chuẩn hóa bước để gom = thường hóa + gộp khoảng trắng (đủ để
+    đếm; gộp bước gần giống là việc của vòng sau, làm khi có dữ liệu thật).
+    """
+    thu_muc = _goc() / "tuan"
+    if not thu_muc.is_dir():
+        return []
+    gom: dict[str, dict] = {}
+    for p in sorted(thu_muc.glob("*.json"), reverse=True)[:so_tuan]:
+        for v in doc_tuan(p.stem)["viec"]:
+            loai = (v.get("loai_viec") or "").strip()
+            if not loai or v["trang_thai"] != XAC_NHAN or not v["checklist"]:
+                continue
+            m = gom.setdefault(loai, {"loai": loai, "so_checklist": 0, "buoc": {}})
+            m["so_checklist"] += 1
+            for khoa in {" ".join((b["noi_dung"] or "").lower().split())
+                         for b in v["checklist"] if b.get("noi_dung")}:
+                o = m["buoc"].setdefault(khoa, {"lan": 0, "mau": ""})
+                o["lan"] += 1
+                o["mau"] = o["mau"] or next(
+                    b["noi_dung"] for b in v["checklist"]
+                    if " ".join((b["noi_dung"] or "").lower().split()) == khoa)
+    ra = []
+    for m in gom.values():
+        hay_nhat = max(m["buoc"].values(), key=lambda o: o["lan"], default=None)
+        ra.append({"loai": m["loai"], "so_checklist": m["so_checklist"],
+                   "du_de_rut": m["so_checklist"] >= du_de_rut,
+                   "con_thieu": max(0, du_de_rut - m["so_checklist"]),
+                   "buoc_hay_nhat": hay_nhat["mau"] if hay_nhat else "",
+                   "lan_lap": hay_nhat["lan"] if hay_nhat else 0})
+    return sorted(ra, key=lambda m: (-m["so_checklist"], m["loai"]))
+
+
+def tong_hop(bang: list[dict]) -> dict:
+    """Số cấp công ty/bộ phận từ bảng báo cáo. Không ai có việc → ti_le None."""
+    co_viec = [d for d in bang if d["so_viec"]]
+    tong_viec = sum(d["so_viec"] for d in co_viec)
+    tong_xong = sum(d["xong"] for d in co_viec)
+    return {"so_nguoi": len(bang), "co_viec": len(co_viec),
+            "chua_co_viec": len(bang) - len(co_viec),
+            "tong_viec": tong_viec, "tong_xong": tong_xong,
+            "tong_buoc": sum(d["buoc_tong"] for d in bang),
+            "tong_ket": sum(d["ket"] for d in bang),
+            "da_dong": sum(1 for d in bang if d["da_dong"]),
+            "ti_le": round(100 * tong_xong / tong_viec) if tong_viec else None}
+
+
 def bang_bao_cao(ma: str, ds_nguoi: list[dict]) -> list[dict]:
     """Bảng báo cáo cho danh sách người ĐÃ LỌC PHẠM VI (route lo quyền — lõi không
     tự đoán ai được xem ai)."""

@@ -162,9 +162,24 @@
       {# active: mọi trang app này đều thuộc mục Video Review (path ở app là đường
          ĐÃ CẮT tiền tố /app/<slug> nên so bằng '/app/'+slug không bao giờ khớp) #}
       {% for a in sb_apps if a.slug != 'niche' %}
-      <a class="nav-item{% if a.slug == 'video-review' %} active{% endif %}" href="{{ a.href }}">
+      <a class="nav-item{% if a.slug == 'tasky' and request.url.path == '/tasky' %} active{% endif %}" href="{{ a.href }}">
         {% include "_icon_app.html" %} {{ a.ten }}{% if a.slug == 'content-ultimate' %}
-        <svg class="ic mui-nhom" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>{% endif %}</a>
+        <svg class="ic mui-nhom" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>{% endif %}
+        {%- if a.slug == 'tasky' %}
+        <svg class="ic mui-nhom mo" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>{% endif %}</a>
+      {#- Mục con của Tasky: chỉ hiện khi đang ở trong app này, và CHỈ hiện mục người
+          dùng có quyền (cờ tk_giao / tk_bao_cao route tính từ X-Remote-Actions —
+          app chỉ tin cờ gateway phát, không tự suy từ level). -#}
+      {% if a.slug == 'tasky' %}
+        {% if tk_giao %}
+        <a class="nav-item nav-con{% if request.url.path == '/giao-viec' %} active{% endif %}" href="/giao-viec">
+          <svg class="ic" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M18 8v6M15 11h6"/></svg> Giao việc</a>
+        {% endif %}
+        {% if tk_bao_cao %}
+        <a class="nav-item nav-con{% if request.url.path == '/bao-cao-tuan' %} active{% endif %}" href="/bao-cao-tuan">
+          <svg class="ic" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg> Báo cáo</a>
+        {% endif %}
+      {% endif %}
       {% endfor %}
       {% if sb_da %}
       {% set da_mo = request.url.path.startswith('/niche') or request.url.path == '/chan-doan' or request.url.path.startswith('/bao-cao-lich-su') %}

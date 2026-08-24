@@ -1,0 +1,234 @@
+{% extends "base.html" %}
+{% block title %}Giao việc — Tasky{% endblock %}
+{% block topbar_ten %}Tasky · Giao việc{% endblock %}
+
+{% block style_them %}
+  {% include "_tasky_style.html" %}
+  .khoi{background:var(--sidebar);border:1px solid var(--line);border-radius:12px;
+    padding:14px 16px;margin-bottom:14px}
+  .khoi h3{margin:0 0 4px;font-size:14px}
+  table.tk{width:100%;border-collapse:collapse;font-size:13.5px}
+  table.tk th{text-align:left;font-size:11px;color:var(--muted);text-transform:uppercase;
+    letter-spacing:.05em;font-weight:600;padding:8px 10px;border-bottom:1px solid var(--line);
+    white-space:nowrap}
+  table.tk td{padding:9px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+  table.tk tr:last-child td{border-bottom:0}
+  table.tk tr:hover td{background:var(--th-141c2b)}
+  table.tk td.so{text-align:right;font-variant-numeric:tabular-nums}
+  .mini{display:inline-block;width:50px;height:5px;border-radius:3px;background:var(--th-182233);
+    overflow:hidden;vertical-align:middle;margin-right:7px;border:1px solid var(--line)}
+  .mini i{display:block;height:100%;background:var(--accent)}
+  ul.viecs{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:6px}
+  ul.viecs li{display:flex;gap:9px;align-items:center;flex-wrap:wrap;padding:9px 11px;
+    border:1px solid var(--line);border-radius:10px;background:var(--th-141c2b)}
+  ul.viecs li .ten{flex:1;min-width:180px;font-size:13.5px}
+  ul.viecs li .ai{font-size:12.5px;color:var(--muted)}
+{% endblock %}
+
+{% block noi_dung %}
+<div class="tk-dau">
+  <div>
+    <h2>Giao việc</h2>
+    <div class="khoang">Tuần {{ ma_tuan[-2:]|int }} · {{ tu[8:] }}/{{ tu[5:7] }} – {{ den[8:] }}/{{ den[5:7] }}
+      · {{ user.bo_phan or 'mọi bộ phận' }}</div>
+  </div>
+  <div class="tk-lui">
+    <a href="/giao-viec?tuan_xem={{ tuan_truoc }}">← Tuần trước</a>
+    {% if ma_tuan != tuan_nay %}<a href="/giao-viec">Tuần này</a>{% endif %}
+    <a href="/giao-viec?tuan_xem={{ tuan_sau }}">Tuần sau →</a>
+  </div>
+</div>
+
+{% if loi_iam %}<div class="khoi"><div class="loi" style="margin:0">{{ loi_iam }}</div></div>{% endif %}
+
+<div class="khoi">
+  <h3>Giao một việc</h3>
+  <div class="goi-y">Chỉ giao được cho người cấp dưới trong bộ phận mình. Loại việc dùng để sau
+    này gom checklist thành quy trình chung — gõ tên mới là tạo loại mới.</div>
+  {% if cap_duoi %}
+  <div class="hang">
+    <input id="g-ten" placeholder="Việc cần làm… (ví dụ: Dựng 6 video kênh Hidden Laos)">
+    <select id="g-nguoi">
+      {% for n in cap_duoi %}<option value="{{ n.ten }}">{{ n.ho_ten or n.ten }}{% if n.bo_phan %} — {{ n.bo_phan }}{% endif %}</option>{% endfor %}
+    </select>
+    <input id="g-loai" list="ds-loai" placeholder="Loại việc" style="max-width:200px;flex:0 0 auto">
+    <datalist id="ds-loai">{% for l in loai_viec %}<option value="{{ l }}">{% endfor %}</datalist>
+    <button class="nut chinh" id="g-nut">Giao việc</button>
+  </div>
+  <div class="loi" id="g-loi" hidden></div>
+  {% else %}
+  <div class="goi-y" style="margin-top:8px">Không có ai dưới quyền bạn trong bộ phận này —
+    chưa giao việc cho ai được.</div>
+  {% endif %}
+</div>
+
+<div class="tk-muc"><h3>Chờ bạn xác nhận</h3><hr>
+  <span class="ghi">Việc nhân sự đã báo xong — xác nhận thì mới tính vào tỉ lệ</span></div>
+<div class="khoi">
+  {% if cho_xac_nhan %}
+  <ul class="viecs">
+    {% for v in cho_xac_nhan %}
+    <li data-id="{{ v.id }}">
+      <div class="ten">{{ v.tieu_de }}
+        <div class="ai">{{ v.nguoi }} · {{ v.checklist|selectattr('xong')|list|length }}/{{ v.checklist|length }} bước
+          {%- if v.loai_viec %} · {{ v.loai_viec }}{% endif %}</div>
+      </div>
+      <button class="nut" data-tra-lai>Trả lại</button>
+      <button class="nut chinh" data-xac-nhan>Xác nhận</button>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}<div class="goi-y" style="margin:0">Không có việc nào đang chờ bạn xác nhận.</div>{% endif %}
+  <div class="loi" data-loi-xn hidden></div>
+</div>
+
+<div class="tk-muc"><h3>Việc còn treo</h3><hr>
+  <span class="ghi">Cuối tuần phải xử lý hết mới đóng được tuần cho người đó</span></div>
+<div class="khoi">
+  {% if con_treo %}
+  <ul class="viecs">
+    {% for v in con_treo %}
+    <li data-id="{{ v.id }}">
+      <div class="ten">{{ v.tieu_de }}
+        <div class="ai">{{ v.nguoi }} ·
+          {% if v.trang_thai == 'cho_nhan' %}chưa nhận việc{% else %}đang làm{% endif %}
+          {%- if v.so_lan_doi %} · đã dời {{ v.so_lan_doi }} lần{% endif %}</div>
+      </div>
+      <button class="nut" data-doi>Dời tuần sau</button>
+      <button class="nut" data-huy>Hủy</button>
+    </li>
+    <li data-o-ly-do="{{ v.id }}" hidden>
+      <input data-ly-do placeholder="Lý do (bắt buộc khi hủy)…">
+      <select data-nguoi-moi>
+        <option value="">Giữ nguyên người</option>
+        {% for n in cap_duoi %}<option value="{{ n.ten }}">Đổi sang {{ n.ho_ten or n.ten }}</option>{% endfor %}
+      </select>
+      <button class="nut chinh" data-xac-nhan-ly-do>Xác nhận</button>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}<div class="goi-y" style="margin:0">Không còn việc nào treo.</div>{% endif %}
+  <div class="loi" data-loi-treo hidden></div>
+</div>
+
+<div class="tk-muc"><h3>Bộ phận tuần này</h3><hr></div>
+<div class="khoi" style="padding:0;overflow-x:auto">
+  <table class="tk">
+    <thead><tr><th>Người</th><th>Hoàn thành</th><th class="so">Việc</th><th class="so">Giao</th>
+      <th class="so">Tự nhận</th><th class="so">Bước</th><th class="so">Kẹt</th>
+      <th class="so">Từ chối</th><th>Tuần</th></tr></thead>
+    <tbody>
+      {% for d in bang %}
+      <tr>
+        <td>{{ d.ho_ten or d.nguoi }}</td>
+        <td>{% if d.ti_le is none %}<span style="color:var(--muted)">— chưa có việc</span>
+            {% else %}<span class="mini"><i style="width:{{ d.ti_le }}%"></i></span>{{ d.xong }}/{{ d.so_viec }}
+            {%- if d.tu_xac_nhan %} <span class="the">tự xác nhận</span>{% endif %}{% endif %}</td>
+        <td class="so">{{ d.so_viec or '—' }}</td>
+        <td class="so">{{ d.giao }}</td>
+        <td class="so">{{ d.tu_them }}</td>
+        <td class="so">{{ d.buoc_xong }}/{{ d.buoc_tong }}</td>
+        <td class="so">{% if d.ket %}<span class="the ket">{{ d.ket }}</span>{% else %}0{% endif %}</td>
+        <td class="so">{{ d.bi_tu_choi }}</td>
+        <td>{% if d.da_dong %}<span class="the">Đã đóng</span>
+            {% else %}<button class="nut" data-dong="{{ d.nguoi }}">Đóng tuần</button>{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+<div class="loi" id="loi-dong" hidden></div>
+{% endblock %}
+
+{% block script %}
+<script>
+(function () {
+  var TUAN = {{ ma_tuan|tojson }};
+
+  function goi(duong, du_lieu) {
+    var fd = new FormData();
+    fd.append("tuan_xem", TUAN);
+    Object.keys(du_lieu).forEach(function (k) { fd.append(k, du_lieu[k]); });
+    return fetch("/api-tasky/" + duong, { method: "POST", body: fd }).then(function (r) {
+      return r.json().catch(function () { return {}; }).then(function (d) {
+        if (!r.ok) { throw new Error(d.detail || "Không lưu được, thử lại giúp tôi."); }
+        return d;
+      });
+    });
+  }
+  function baoLoi(o, e) { if (o) { o.textContent = e.message || String(e); o.hidden = false; } }
+
+  var gNut = document.getElementById("g-nut");
+  if (gNut) {
+    var gLoi = document.getElementById("g-loi");
+    var giao = function () {
+      var ten = (document.getElementById("g-ten").value || "").trim();
+      var loai = (document.getElementById("g-loai").value || "").trim();
+      if (!ten) { return; }
+      if (!loai) { baoLoi(gLoi, new Error("Phải chọn loại việc.")); return; }
+      gNut.disabled = true;
+      goi("giao", { tieu_de: ten, nguoi: document.getElementById("g-nguoi").value, loai_viec: loai })
+        .then(function () { location.reload(); })
+        .catch(function (e) { gNut.disabled = false; baoLoi(gLoi, e); });
+    };
+    gNut.addEventListener("click", giao);
+    document.getElementById("g-ten").addEventListener("keydown", function (e) {
+      if (e.key === "Enter" && !e.isComposing && e.keyCode !== 229) { e.preventDefault(); giao(); }
+    });
+  }
+
+  var loiXn = document.querySelector("[data-loi-xn]");
+  document.querySelectorAll("[data-xac-nhan]").forEach(function (b) {
+    b.addEventListener("click", function () {
+      b.disabled = true;
+      goi("xac-nhan", { id: b.closest("li").dataset.id }).then(function () { location.reload(); })
+        .catch(function (e) { b.disabled = false; baoLoi(loiXn, e); });
+    });
+  });
+  document.querySelectorAll("[data-tra-lai]").forEach(function (b) {
+    b.addEventListener("click", function () {
+      goi("tra-lai", { id: b.closest("li").dataset.id, ly_do: "" })
+        .then(function () { location.reload(); }).catch(function (e) { baoLoi(loiXn, e); });
+    });
+  });
+
+  // Dời / hủy: mở hàng lý do của ĐÚNG việc đó rồi mới gửi (hủy bắt buộc lý do)
+  var loiTreo = document.querySelector("[data-loi-treo]");
+  function moLyDo(id, viec) {
+    var hang = document.querySelector('[data-o-ly-do="' + id + '"]');
+    if (!hang) { return; }
+    hang.hidden = false;
+    hang.dataset.viec = viec;
+    hang.querySelector("[data-nguoi-moi]").style.display = (viec === "doi") ? "" : "none";
+    var o = hang.querySelector("[data-ly-do]");
+    o.placeholder = (viec === "huy") ? "Vì sao hủy việc này? (bắt buộc)" : "Lý do dời (không bắt buộc)";
+    o.focus();
+  }
+  document.querySelectorAll("[data-doi]").forEach(function (b) {
+    b.addEventListener("click", function () { moLyDo(b.closest("li").dataset.id, "doi"); });
+  });
+  document.querySelectorAll("[data-huy]").forEach(function (b) {
+    b.addEventListener("click", function () { moLyDo(b.closest("li").dataset.id, "huy"); });
+  });
+  document.querySelectorAll("[data-xac-nhan-ly-do]").forEach(function (b) {
+    b.addEventListener("click", function () {
+      var hang = b.closest("li"), id = hang.dataset.oLyDo, viec = hang.dataset.viec || "doi";
+      var ly = (hang.querySelector("[data-ly-do]").value || "").trim();
+      var nm = hang.querySelector("[data-nguoi-moi]").value || "";
+      if (viec === "huy" && !ly) { baoLoi(loiTreo, new Error("Phải ghi lý do hủy.")); return; }
+      goi(viec, viec === "doi" ? { id: id, ly_do: ly, nguoi_moi: nm } : { id: id, ly_do: ly })
+        .then(function () { location.reload(); }).catch(function (e) { baoLoi(loiTreo, e); });
+    });
+  });
+
+  var loiDong = document.getElementById("loi-dong");
+  document.querySelectorAll("[data-dong]").forEach(function (b) {
+    b.addEventListener("click", function () {
+      b.disabled = true;
+      goi("dong-tuan", { nguoi: b.dataset.dong }).then(function () { location.reload(); })
+        .catch(function (e) { b.disabled = false; baoLoi(loiDong, e); });
+    });
+  });
+})();
+</script>
+{% endblock %}

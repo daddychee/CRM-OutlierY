@@ -37,6 +37,7 @@ os.environ.setdefault("TASKY_DIR", str(ROOT / "data" / "tasky" / "db"))
 
 PHIEN_BAN = "0.2.0"
 app = FastAPI(title="Tasky v3")
+from src import nhan_su  # noqa: E402 — danh sách người, đọc chỉ-đọc sổ IAM chung
 from src import tuan as tuan_lo  # noqa: E402 — lõi sổ tuần (đọc TASKY_DIR lúc gọi hàm)
 from nen.common.sidebar import ctx_sidebar  # noqa: E402 — cờ sidebar UI_FLOW.md mục 2
 
@@ -82,6 +83,14 @@ yeu_cau_xac_nhan = _yeu_cau("xac_nhan_ket_qua", "Chỉ Leader trở lên mới x
 yeu_cau_bao_cao = _yeu_cau("bao_cao_bo_phan", "Báo cáo dành cho Leader trở lên.")
 
 
+def _co_sidebar(x_remote_actions: str) -> dict:
+    """Cờ hiện mục con sidebar — CHỈ theo cờ gateway phát, không tự suy từ level."""
+    hd = cac_hanh_dong(x_remote_actions)
+    return {"tk_giao": "giao_viec" in hd,
+            "tk_bao_cao": bool({"bao_cao_bo_phan", "bao_cao_cong_ty",
+                                "bao_cao_nhan_su"} & hd)}
+
+
 def _ma_tuan_hop_le(ma: str) -> str:
     """Tuần lấy từ query/form của client — mã sai hoặc rỗng thì về TUẦN NÀY chứ
     không nổ 500 (người dùng sửa URL không được làm hỏng trang)."""
@@ -105,7 +114,8 @@ async def health():
 # ---------- trang ----------
 
 @app.get("/tasky", response_class=HTMLResponse)
-def trang_viec(request: Request, user: dict = Depends(lay_user), tuan_xem: str = ""):
+def trang_viec(request: Request, user: dict = Depends(lay_user), tuan_xem: str = "",
+               x_remote_actions: str = Header("")):
     """Việc của tôi — chỉ việc CỦA MÌNH (luật 1: lọc ở server, không ẩn nút)."""
     ma = _ma_tuan_hop_le(tuan_xem)
     ds = tuan_lo.viec_cua(ma, user["ten"])
@@ -118,7 +128,51 @@ def trang_viec(request: Request, user: dict = Depends(lay_user), tuan_xem: str =
         "loai_viec": tuan_lo.cac_loai_viec(),
         "tuan_truoc": tuan_lo.tuan_lien_ke(ma, -1),
         "tuan_sau": tuan_lo.tuan_lien_ke(ma, 1),
-        "tuan_nay": tuan_lo.ma_tuan()})
+        "tuan_nay": tuan_lo.ma_tuan(), **_co_sidebar(x_remote_actions)})
+
+
+@app.get("/giao-viec", response_class=HTMLResponse)
+def trang_giao(request: Request, user: dict = Depends(yeu_cau_giao_viec),
+               tuan_xem: str = "", x_remote_actions: str = Header("")):
+    """Giao việc — chỉ người trong bộ phận mình và cấp dưới mình (lọc bằng chính
+    luật của lõi). Kèm khối chờ xác nhận + việc còn treo để đóng tuần."""
+    ma = _ma_tuan_hop_le(tuan_xem)
+    cap_duoi, loi = nhan_su.cap_duoi_cua(user)
+    ds_nguoi = cap_duoi or []
+    bang = tuan_lo.bang_bao_cao(ma, ds_nguoi)
+    tu, den = tuan_lo.khoang_tuan(ma)
+    return templates.TemplateResponse(request, "giao_viec.html", {
+        "user": user, "ma_tuan": ma, "tu": tu, "den": den,
+        "cap_duoi": ds_nguoi, "loi_iam": loi,
+        "bang": bang,
+        "cho_xac_nhan": tuan_lo.cho_xac_nhan(ma, user),
+        "con_treo": tuan_lo.con_treo(ma, user),
+        "loai_viec": tuan_lo.cac_loai_viec(),
+        "tuan_truoc": tuan_lo.tuan_lien_ke(ma, -1),
+        "tuan_sau": tuan_lo.tuan_lien_ke(ma, 1),
+        "tuan_nay": tuan_lo.ma_tuan(), **_co_sidebar(x_remote_actions)})
+
+
+@app.get("/bao-cao-tuan", response_class=HTMLResponse)
+def trang_bao_cao(request: Request, user: dict = Depends(yeu_cau_bao_cao),
+                  x_remote_actions: str = Header(""), tuan_xem: str = ""):
+    """Báo cáo — phạm vi theo FLOW-v3 §9.1: Leader bộ phận mình · Manager L4+ mọi bộ
+    phận · HR Leader+ toàn công ty (cờ `bao_cao_nhan_su` khai kèm bộ phận trong
+    phan_quyen.json) · Owner tất. App CHỈ TIN CỜ gateway phát."""
+    hd = cac_hanh_dong(x_remote_actions)
+    toan_cong_ty = bool({"bao_cao_cong_ty", "bao_cao_nhan_su"} & hd)
+    ma = _ma_tuan_hop_le(tuan_xem)
+    ds, loi = nhan_su.trong_pham_vi_bao_cao(user, toan_cong_ty)
+    bang = tuan_lo.bang_bao_cao(ma, ds or [])
+    tu, den = tuan_lo.khoang_tuan(ma)
+    return templates.TemplateResponse(request, "bao_cao.html", {
+        "user": user, "ma_tuan": ma, "tu": tu, "den": den,
+        "bang": bang, "loi_iam": loi, "toan_cong_ty": toan_cong_ty,
+        "tong": tuan_lo.tong_hop(bang),
+        "kho_quy_trinh": tuan_lo.kho_quy_trinh(),
+        "tuan_truoc": tuan_lo.tuan_lien_ke(ma, -1),
+        "tuan_sau": tuan_lo.tuan_lien_ke(ma, 1),
+        "tuan_nay": tuan_lo.ma_tuan(), **_co_sidebar(x_remote_actions)})
 
 
 # ---------- API (dưới /api-tasky: đường sâu dưới /tasky bị proxy viết lại) ----------
@@ -169,3 +223,55 @@ def api_tick(id: str = Form(...), buoc: str = Form(...), xong: str = Form("1"),
 def api_bao_xong(id: str = Form(...), tuan_xem: str = Form(""),
                  user: dict = Depends(lay_user)):
     return _goi(tuan_lo.bao_xong, _ma_tuan_hop_le(tuan_xem), id, user)
+
+
+# --- API của leader (gate bằng cờ hành động; luật level/bộ phận vẫn kiểm ở lõi) ---
+
+def _tim_nguoi(ten: str) -> dict:
+    """Level + bộ phận THẬT của người nhận, đọc từ IAM — không lấy từ form gửi lên,
+    kẻo client tự khai level thấp để lách luật giao việc."""
+    ds, loi = nhan_su.ds_nguoi()
+    if ds is None:
+        raise HTTPException(503, loi)
+    for n in ds:
+        if n["ten"] == ten:
+            return n
+    raise HTTPException(400, "Không tìm thấy người này trong sổ nhân sự.")
+
+
+@app.post("/api-tasky/giao")
+def api_giao(nguoi: str = Form(...), tieu_de: str = Form(...), loai_viec: str = Form(""),
+             tuan_xem: str = Form(""), user: dict = Depends(yeu_cau_giao_viec)):
+    return _goi(tuan_lo.them_viec_giao, _ma_tuan_hop_le(tuan_xem), user,
+                _tim_nguoi(nguoi), tieu_de, loai_viec)
+
+
+@app.post("/api-tasky/xac-nhan")
+def api_xac_nhan(id: str = Form(...), tuan_xem: str = Form(""),
+                 user: dict = Depends(yeu_cau_xac_nhan)):
+    return _goi(tuan_lo.xac_nhan_viec, _ma_tuan_hop_le(tuan_xem), id, user)
+
+
+@app.post("/api-tasky/tra-lai")
+def api_tra_lai(id: str = Form(...), ly_do: str = Form(""), tuan_xem: str = Form(""),
+                user: dict = Depends(yeu_cau_xac_nhan)):
+    return _goi(tuan_lo.tra_lai_viec, _ma_tuan_hop_le(tuan_xem), id, user, ly_do)
+
+
+@app.post("/api-tasky/huy")
+def api_huy(id: str = Form(...), ly_do: str = Form(""), tuan_xem: str = Form(""),
+            user: dict = Depends(yeu_cau_xac_nhan)):
+    return _goi(tuan_lo.huy_viec, _ma_tuan_hop_le(tuan_xem), id, user, ly_do)
+
+
+@app.post("/api-tasky/doi")
+def api_doi(id: str = Form(...), ly_do: str = Form(""), nguoi_moi: str = Form(""),
+            tuan_xem: str = Form(""), user: dict = Depends(yeu_cau_xac_nhan)):
+    nm = _tim_nguoi(nguoi_moi) if nguoi_moi.strip() else None
+    return _goi(tuan_lo.doi_sang_tuan_sau, _ma_tuan_hop_le(tuan_xem), id, user, ly_do, nm)
+
+
+@app.post("/api-tasky/dong-tuan")
+def api_dong_tuan(nguoi: str = Form(...), tuan_xem: str = Form(""),
+                  user: dict = Depends(yeu_cau_xac_nhan)):
+    return _goi(tuan_lo.dong_tuan, _ma_tuan_hop_le(tuan_xem), nguoi, user)
