@@ -2,6 +2,8 @@
 """Test danh bạ thực thể — mảnh ④, bản DB (Đ1 khối đế 16/08/2026).
 
 API đọc giữ chữ ký thời CSV; `duong` giờ trỏ file SQLite."""
+import sqlite3
+
 import pytest
 
 from nen.common import danh_ba
@@ -108,12 +110,33 @@ def test_lien_ket_app_va_tuong_thich_cot_cu(db):
 
 def test_doi_trang_thai_va_khai_tu_go_mem(db):
     _, _, ke = _seed(db)
-    danh_ba.doi_trang_thai_kenh(db, ke, "ngu_dong")
+    danh_ba.doi_trang_thai_kenh(db, ke, "shadow_ban")
     danh_ba.khai_tu_kenh(db, ke)
     t = danh_ba.tra_thuc_the("outland")
     assert t["trang_thai"] == "khai_tu"                  # gỡ mềm — dòng còn nguyên
     with pytest.raises(ValueError):
         danh_ba.doi_trang_thai_kenh(db, ke, "bay-bong")
+
+
+def test_khai_tu_la_nac_an_khong_dat_duoc_qua_duong_stepper(db):
+    """Owner chốt 24/08: Retired chỉ đặt qua khai_tu_kenh() (nút Retire, chỉ Owner)
+    — đường đổi trạng thái công khai KHÔNG nhận nấc ẩn."""
+    _, _, ke = _seed(db)
+    with pytest.raises(ValueError):
+        danh_ba.doi_trang_thai_kenh(db, ke, "khai_tu")
+    assert "khai_tu" not in danh_ba.TRANG_THAI_KENH
+    assert danh_ba.TRANG_THAI_KENH_AN == ("khai_tu",)
+
+
+def test_danh_muc_vong_doi_dung_chot_24_08(db):
+    """Ghim TẬP giá trị + THỨ TỰ (danh mục ảnh hưởng toàn app — đổi phải cố ý)."""
+    assert danh_ba.TRANG_THAI_KENH == ("uom_mam", "sandbox", "hoat_dong",
+                                       "monetized", "shadow_ban")
+    assert danh_ba.TRANG_THAI_NGACH == ("khai_thac", "mo_rong", "duy_tri", "nghi")
+    # giá trị đã bỏ: CHECK của DB là van cuối, không chỉ hằng số Python
+    ng = danh_ba.them_ngach(db, "Bo Cu", trang_thai="khai_thac")
+    with pytest.raises(sqlite3.IntegrityError):
+        danh_ba.sua_thuc_the(db, "ngach", ng, trang_thai="thu")
 
 
 def test_sua_truong_van_hanh_khong_doi_ma(db):

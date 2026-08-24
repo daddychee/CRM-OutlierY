@@ -206,6 +206,33 @@ def test_tab1_moi_khoi_5_dong_show_more_server_side(client):
     assert 'href="/general/api-keys?tab=api"' in trang
 
 
+def test_tab1_moi_khoi_cung_luoi_6_cot(client):
+    """Owner chốt 24/08/2026: mọi khối khóa tab 1 dùng CHUNG lưới 6 cột cố định
+    (khối không có Model vẫn giữ ô trống) → các bảng thẳng một trục; cột Usage +
+    Added đã bỏ. Ghim bằng SỐ Ô mỗi hàng, không ghim mặt chữ CSS."""
+    import re
+    _login(client, "owner-test", "mk-test")
+    conn = ket.ket_noi()
+    ket.them_api_key(conn, "youtube", "AIzaLuoiOK000000000000")      # khối KHÔNG có Model
+    ket.them_api_key(conn, "llm", "sk-luoi-glm-0000000", nha="glm")  # khối CÓ Model
+    ket.them_api_key(conn, "transcript", "sk-luoi-tran-000000")
+    conn.close()
+
+    trang = client.get("/general/api-keys").text
+    khoi = trang.split('<table class="gon luoi-khoa">')[1:]
+    assert len(khoi) >= 4                                    # youtube/llm/generate/transcript/serp…
+    for kh in khoi:
+        than = kh.split("</table>")[0]
+        assert "table-layout:fixed" in trang and than.count("<col ") == 6
+        for hang in re.findall(r"<tr>(.*?)</tr>", than, re.S):
+            if "colspan" in hang:                            # hàng gộp (No key yet / Show more)
+                assert 'colspan="6"' in hang
+                continue
+            assert hang.count("<td") in (0, 6)               # 0 = hàng <th>; còn lại đúng 6 ô
+    assert ">Usage</th>" not in trang and ">Added</th>" not in trang
+    assert 'class="usage"' not in trang
+
+
 def test_tab3_quota_log_5_dong_show_more_server_side(client):
     """Cùng LUẬT cho bảng Quota log (mã 'log'): 7 dòng log → collapsed 5 +
     Show more (2); expanded đủ + Show less; URL giữ nguyên bộ lọc."""

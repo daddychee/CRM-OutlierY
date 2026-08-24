@@ -6,9 +6,14 @@
    tên field, quyền GIỮ NGUYÊN 100% — chỉ đổi lớp trình bày.
    Lọc: niche + lifecycle SERVER-side (giữ đường ?ngach=&trang_thai= sẵn có);
    market + search CLIENT-side (thêm mới, không đụng backend). #}
-{% set nhan_vd = {'uom_mam': 'Incubating', 'sandbox': 'Sandbox', 'hoat_dong': 'Active',
-                  'monetized': 'Monetized', 'ngu_dong': 'Dormant', 'khai_tu': 'Retired'} %}
-{% set badge_vd = {'hoat_dong': 'ok', 'monetized': 'ok', 'sandbox': 'warn', 'khai_tu': 'bad'} %}
+{# Vòng đời Owner chốt 24/08/2026 — 5 nấc trên stepper (tt_kenh); 'khai_tu'
+   (Retired) là nấc ẨN: chỉ đặt qua nút Retire, vẫn hiện ở badge + bộ lọc để
+   tìm lại kênh đã gỡ. #}
+{% set nhan_vd = {'uom_mam': 'Incubating', 'sandbox': 'Testing', 'hoat_dong': 'Traction',
+                  'monetized': 'Monetized', 'shadow_ban': 'Shadowbanned',
+                  'khai_tu': 'Retired'} %}
+{% set badge_vd = {'hoat_dong': 'ok', 'monetized': 'ok', 'sandbox': 'warn',
+                   'shadow_ban': 'bad', 'khai_tu': 'bad'} %}
 {# ve_vi_tri: MỌI form POST mang vị trí đang đứng (chi tiết kênh đang mở + bộ
    lọc) — Owner 18/08 "đổi trạng thái kênh bị chuyển URL": handler redirect 303
    về GET sạch đúng chỗ (khuôn _ve_api_keys), hết kẹt URL đường POST + F5
@@ -23,7 +28,7 @@
   </select>
   <select name="trang_thai" onchange="this.form.submit()">
     <option value="">Lifecycle: All</option>
-    {% for tt in tt_kenh %}<option value="{{ tt }}" {% if tt == loc_tt %}selected{% endif %}>{{ nhan_vd.get(tt, tt) }}</option>{% endfor %}
+    {% for tt in tt_kenh_loc %}<option value="{{ tt }}" {% if tt == loc_tt %}selected{% endif %}>{{ nhan_vd.get(tt, tt) }}</option>{% endfor %}
   </select>
   <select id="loc-tt-market">
     <option value="">Market: All</option>
@@ -69,6 +74,7 @@
     <button class="s {% if tt == chi_tiet.trang_thai %}on{% endif %}" name="trang_thai"
             value="{{ tt }}" {% if tt == chi_tiet.trang_thai %}disabled{% endif %}>{{ nhan_vd.get(tt, tt) }}</button>
     {% endfor %}
+    {% if chi_tiet.trang_thai in tt_an %}<span class="badge bad" style="margin-left:8px">{{ nhan_vd.get(chi_tiet.trang_thai, chi_tiet.trang_thai) }}</span>{% endif %}
   </form>
 
   <form method="post" action="/general/channels/update" style="margin-top:14px">
@@ -85,6 +91,7 @@
       </select></div>
       <div><label>Type</label><select name="loai_kenh"><option value="">—</option>
         {% for lk in ds_loai %}<option value="{{ lk }}" {% if lk == chi_tiet.loai_kenh %}selected{% endif %}>{{ lk }}</option>{% endfor %}
+        {% if chi_tiet.loai_kenh and chi_tiet.loai_kenh not in ds_loai %}<option value="{{ chi_tiet.loai_kenh }}" selected>{{ chi_tiet.loai_kenh }} (legacy — reselect)</option>{% endif %}
       </select></div>
       <div><label>Clone of</label><select name="kenh_goc_ma"><option value="">—</option>
         {% for k in ds_kenh_moi if k.ma != chi_tiet.ma %}<option value="{{ k.ma }}" {% if k.ma == chi_tiet.kenh_goc_ma %}selected{% endif %}>{{ k.ma }}</option>{% endfor %}

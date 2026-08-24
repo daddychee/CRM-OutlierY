@@ -26,8 +26,13 @@ ROOT = Path(__file__).resolve().parents[2]
 DUONG_MAC_DINH = ROOT / "data" / "nen" / "danh_ba.db"
 MIGRATIONS = Path(__file__).resolve().parent / "danh_ba_migrations"
 
-TRANG_THAI_KENH = ("uom_mam", "sandbox", "hoat_dong", "monetized", "ngu_dong", "khai_tu")
-TRANG_THAI_NGACH = ("khai_thac", "thu", "nghi")
+# Danh mục vòng đời — Owner chốt 24/08/2026 (đổi tập giá trị, có migration 003).
+# TRANG_THAI_KENH = 5 nấc HIỆN trên stepper; 'khai_tu' (Retired) ẨN — chỉ đặt qua
+# khai_tu_kenh() (nút Retire chỉ Owner), không bấm được trên stepper.
+TRANG_THAI_KENH = ("uom_mam", "sandbox", "hoat_dong", "monetized", "shadow_ban")
+TRANG_THAI_KENH_AN = ("khai_tu",)
+TRANG_THAI_KENH_HOP_LE = TRANG_THAI_KENH + TRANG_THAI_KENH_AN
+TRANG_THAI_NGACH = ("khai_thac", "mo_rong", "duy_tri", "nghi")
 
 # Tương thích cột khóa thời CSV → app_slug (caller cũ truyền cột cũ vẫn chạy).
 _COT_CU_SANG_SLUG = {
@@ -235,7 +240,7 @@ def dat_thi_truong_ngach(conn, ngach_ma: str, ds_thi_truong: list[str]) -> None:
             "VALUES (?,?,?)", [(ngach_ma, t, _luc()) for t in ds])
 
 
-def them_ngach(conn, ten_chuan: str, trang_thai: str = "thu", ghi_chu: str = "") -> str:
+def them_ngach(conn, ten_chuan: str, trang_thai: str = "khai_thac", ghi_chu: str = "") -> str:
     if trang_thai not in TRANG_THAI_NGACH:
         raise ValueError("trạng thái ngách không hợp lệ")
     _kiem_bi_danh_ranh(conn, ten_chuan)
@@ -292,8 +297,11 @@ def sua_thuc_the(conn, loai: str, ma_thuc_the: str, **truong) -> None:
             raise ValueError(f"không có {loai} mã {ma_thuc_the}")
 
 
-def doi_trang_thai_kenh(conn, ma: str, trang_thai: str) -> None:
-    if trang_thai not in TRANG_THAI_KENH:
+def doi_trang_thai_kenh(conn, ma: str, trang_thai: str, cho_an: bool = False) -> None:
+    """cho_an=True mở thêm nấc ẨN (khai_tu) — chỉ khai_tu_kenh() dùng, để đường
+    stepper công khai không đặt được Retired."""
+    hop_le = TRANG_THAI_KENH_HOP_LE if cho_an else TRANG_THAI_KENH
+    if trang_thai not in hop_le:
         raise ValueError("trạng thái kênh không hợp lệ")
     with conn:
         cur = conn.execute("UPDATE kenh SET trang_thai=? WHERE ma=?", (trang_thai, ma))
@@ -332,7 +340,7 @@ def dat_lien_ket(conn, thuc_the_ma: str, app_slug: str, khoa: str) -> None:
 
 def khai_tu_kenh(conn, ma: str) -> None:
     """Gỡ mềm — dòng còn nguyên, trạng thái khai_tu (chỉ Owner, route kiểm)."""
-    doi_trang_thai_kenh(conn, ma, "khai_tu")
+    doi_trang_thai_kenh(conn, ma, "khai_tu", cho_an=True)
 
 
 # ---------- CỬA EXCEL (bất biến hiến pháp: text-thuần, Excel là cửa xuất/nhập) ----------

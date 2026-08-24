@@ -5,7 +5,10 @@
    kênh, modal "+ New niche", bảng Markets có số kênh. Route/field/quyền GIỮ NGUYÊN
    — chỉ đổi lớp trình bày. Lọc: tìm kiếm + trạng thái làm CLIENT-SIDE (không đụng
    backend); mọi thao tác ghi vẫn POST đúng đường cũ. #}
-{% set nhan_tt = {'khai_thac': 'Exploiting', 'thu': 'Testing', 'nghi': 'Paused'} %}
+{# Danh mục Owner chốt 24/08/2026 — thứ tự theo TRANG_THAI_NGACH (danh_ba.py). #}
+{% set nhan_tt = {'khai_thac': 'Exploiting', 'mo_rong': 'Scaling',
+                  'duy_tri': 'Maintaining', 'nghi': 'Paused'} %}
+{% set badge_tt = {'khai_thac': 'ok', 'mo_rong': 'ok', 'duy_tri': 'warn'} %}
 
 <h2>Niches</h2>
 <div class="toolbar">
@@ -30,9 +33,7 @@
     <td>{% for k in n.kenh_con %}<a class="chip-o" href="/general/channels?ngach={{ n.ma }}">{{ k }}</a>{% else %}<span class="badge">0 channels</span>{% endfor %}</td>
     <td>{% if n.lien_ket.get('niche-research') %}<span class="chip-o">{{ n.lien_ket['niche-research'] }}</span>{% else %}<span class="badge">not linked</span>{% endif %}</td>
     <td>{% for a in n.bi_danh.split(';') if a %}<span class="chip-o">{{ a }}</span>{% endfor %}</td>
-    <td>{% if n.trang_thai == 'khai_thac' %}<span class="badge ok">{{ nhan_tt['khai_thac'] }}</span>
-        {% elif n.trang_thai == 'thu' %}<span class="badge warn">{{ nhan_tt['thu'] }}</span>
-        {% else %}<span class="badge">{{ nhan_tt.get(n.trang_thai, n.trang_thai) }}</span>{% endif %}</td>
+    <td><span class="badge {{ badge_tt.get(n.trang_thai, '') }}">{{ nhan_tt.get(n.trang_thai, n.trang_thai) }}</span></td>
     <td class="phu">{{ n.tao_luc[:10] }}</td>
     <td><button type="button" class="phu" style="padding:2px 9px"
         data-mo="md-niche" data-ma="{{ n.ma }}" data-ten="{{ n.ten_chuan }}"

@@ -1512,7 +1512,11 @@ async def nen_ung_dung(request: Request):
 # khai tử (gõ lại mã) chỉ Owner. Mọi thao tác ghi nhat_ky_quyen.
 from nen.common import danh_ba  # noqa: E402
 
-_LOAI_KENH = ("compilation", "narrator", "documentary", "tre_em", "tutorial", "giai_tri")
+# Owner chốt 24/08/2026: danh mục còn 3 loại. Giá trị CŨ của kênh đã khai (vd
+# giai_tri) KHÔNG bị xóa — template thêm option grandfather "(cũ)" để mở form
+# sửa không làm mất loại lặng lẽ. Data Analytics giữ danh mục riêng 6 loại
+# (content_type_profiles.csv) — chốt không rút theo.
+_LOAI_KENH = ("compilation", "narrator", "documentary")
 _APP_LIEN_KET = ("seo-optimize", "plannery", "radary", "niche-research", "speaky",
                  "content", "vox", "flowkit", "bao-cao")
 
@@ -1599,7 +1603,7 @@ def nen_niches(request: Request, bao: str = "", loi: str = ""):
 
 @app.post("/general/niches/create")
 def nen_niches_tao(request: Request, ten_chuan: str = Form(...),
-                   trang_thai: str = Form("thu"), ghi_chu: str = Form(""),
+                   trang_thai: str = Form("khai_thac"), ghi_chu: str = Form(""),
                    thi_truong: list[str] = Form([])):
     user = _gate_danh_ba(request)
     if not isinstance(user, dict):
@@ -1620,7 +1624,7 @@ def nen_niches_tao(request: Request, ten_chuan: str = Form(...),
 
 @app.post("/general/niches/update")
 def nen_niches_sua(request: Request, ma: str = Form(...), ten_chuan: str = Form(...),
-                   trang_thai: str = Form("thu"), ghi_chu: str = Form(""),
+                   trang_thai: str = Form("khai_thac"), ghi_chu: str = Form(""),
                    thi_truong: list[str] = Form([])):
     user = _gate_danh_ba(request)
     if not isinstance(user, dict):
@@ -1732,6 +1736,9 @@ def _render_channels(request, user, bao="", loi=""):
         "ds_ngach": ngach, "ds_tt": tt, "ds_kenh": ds_kenh, "ds_kenh_moi": kenh,
         "chi_tiet": chi_tiet, "ds_loai": _LOAI_KENH, "ds_app": _APP_LIEN_KET,
         "ds_nguoi": ds_nguoi, "tt_kenh": danh_ba.TRANG_THAI_KENH,
+        # stepper chỉ 5 nấc; bộ lọc thêm nấc ẩn để còn tìm lại kênh đã Retire
+        "tt_kenh_loc": danh_ba.TRANG_THAI_KENH_HOP_LE,
+        "tt_an": danh_ba.TRANG_THAI_KENH_AN,
         "ten_ngach": {n["ma"]: n["ten_chuan"] for n in ngach},
         "ten_tt": {m["ma"]: m["ten_chuan"] for m in tt},
         "loc_ngach": loc_ngach, "loc_tt": loc_tt, "bao": bao, "loi": loi})

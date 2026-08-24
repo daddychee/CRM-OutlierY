@@ -13,10 +13,11 @@
    khóa dau···duoi qua macro khoa_ngan (đủ nhận diện hơn chỉ-đuôi). #}
 <style>
   table.gon th, table.gon td{padding:5px 11px}
-  .usage{display:inline-block;width:86px;height:7px;border-radius:999px;background:var(--vien);
-        vertical-align:middle;overflow:hidden}
-  .usage i{display:block;height:100%;background:var(--accent)}
-  .usage i.cao{background:var(--loi)}
+  /* Owner chốt 24/08/2026: MỌI khối khóa dùng CHUNG một lưới 6 cột cố định
+     (khối không có Model vẫn giữ ô trống) → các bảng thẳng một trục dọc thay vì
+     mỗi bảng tự co theo nội dung. Bỏ cột Usage + Added cùng đợt. */
+  table.luoi-khoa{table-layout:fixed;width:100%}
+  table.luoi-khoa td{overflow:hidden;text-overflow:ellipsis}
   .khoa-list{display:flex;flex-direction:column;gap:4px}
   .khoa-list form.khoa-dong{display:flex;justify-content:space-between;align-items:center;gap:8px}
   .khoa-dong .chip-o{flex:1;text-align:left}
@@ -39,7 +40,7 @@
 {% macro ve_fields() %}<input type="hidden" name="ve_tab" value="{{ tab }}">{% if tab == 'app' %}<input type="hidden" name="ve_app" value="{{ app_chon }}">{% endif %}<input type="hidden" name="ve_mo_rong" value="{{ mo_rong | sort | join(',') }}">{% endmacro %}
 {# Luật trang API (Owner 18/08 — docs/UI.md): MỌI danh sách mặc định 5 dòng,
    Show more/less server-side. Macro link dùng chung cho hàng cuối bảng. #}
-{% macro hang_mo_rong(ma, tong, cot) %}{% if not (ma in mo_rong or tong <= 5) %}<tr><td colspan="{{ cot }}"><a class="nut-mo" href="{{ url_mo_rong[ma].mo }}">Show more ({{ tong - 5 }})</a></td></tr>{% elif ma in mo_rong and tong > 5 %}<tr><td colspan="{{ cot }}"><a class="nut-mo" href="{{ url_mo_rong[ma].gon }}">Show less</a></td></tr>{% endif %}{% endmacro %}
+{% macro hang_mo_rong(ma, tong, cot=6) %}{% if not (ma in mo_rong or tong <= 5) %}<tr><td colspan="{{ cot }}"><a class="nut-mo" href="{{ url_mo_rong[ma].mo }}">Show more ({{ tong - 5 }})</a></td></tr>{% elif ma in mo_rong and tong > 5 %}<tr><td colspan="{{ cot }}"><a class="nut-mo" href="{{ url_mo_rong[ma].gon }}">Show less</a></td></tr>{% endif %}{% endmacro %}
 
 <div class="toolbar" style="margin-top:2px">
   <span class="steps">
@@ -60,15 +61,15 @@
 {% set ma_khoi = 'loai:' ~ loai %}
 {% set tong = theo_loai[loai] | length %}
 {% set day_du = ma_khoi in mo_rong or tong <= 5 %}
-{% set cot = 7 if (loai in nha_por_loai or loai == 'youtube') else 6 %}
 <h2>{{ ten }} <span class="badge {% if theo_loai[loai] %}ok{% endif %}">{{ tong }} key{{ 's' if tong != 1 }}</span></h2>
-<table class="gon">
+<table class="gon luoi-khoa">
+  <colgroup><col style="width:22%"><col style="width:22%"><col style="width:22%">
+    <col style="width:12%"><col style="width:11%"><col style="width:11%"></colgroup>
   {# Model CHỈ có nghĩa với loại llm/generate (= nha_por_loai) — Owner phê lần 4:
-     transcript/youtube hiện ô model là "tự bịa". #}
+     transcript/youtube hiện ô model là "tự bịa"; ô vẫn GIỮ CHỖ để lưới không lệch. #}
   <tr>{% if loai in nha_por_loai %}<th>Provider</th>{% else %}<th>#</th>{% endif %}
-    <th>Key (tail)</th>{% if loai in nha_por_loai %}<th>Model</th>{% endif %}
-    <th>Calls today</th>{% if loai == 'youtube' %}<th>Usage</th>{% endif %}
-    <th>Status</th><th>Added</th><th></th></tr>
+    <th>Key (tail)</th><th>{% if loai in nha_por_loai %}Model{% endif %}</th>
+    <th>Calls today</th><th>Status</th><th></th></tr>
   {% if loai in nha_por_loai %}
     {% set nha_tuple, nha_info_cuc = nha_por_loai[loai] %}
     {% set dem = namespace(n=0) %}
@@ -91,7 +92,6 @@
           </form></td>
         <td>{{ luot.get(k.duoi, 0) }}</td>
         <td>{% if k.id in dang_dung %}<span class="badge ok">in use</span>{% else %}<span class="badge">spare</span>{% endif %}</td>
-        <td class="phu">{{ k.ngay or '—' }}</td>
         <td>
           <button type="button" class="nguy" style="padding:3px 10px"
                   data-thu-hoi="{{ k.id }}" data-khoa="{{ khoa_ngan(k.dau, k.duoi) }}">Revoke</button></td></tr>
@@ -99,28 +99,24 @@
       {% endfor %}
       {% if theo_loai[loai] | selectattr('nha', 'equalto', nha) | list | length == 0 %}
       <tr><td>{{ nha_info_cuc[nha].ten }}</td><td><span class="badge">no key yet</span></td>
-        <td>—</td><td>—</td><td>—</td><td>—</td><td></td></tr>
+        <td>—</td><td>—</td><td>—</td><td></td></tr>
       {% endif %}
     {% endfor %}
   {% else %}
     {% for k in (theo_loai[loai] if day_du else theo_loai[loai][:5]) %}
     <tr><td>{{ loop.index }}</td>
       <td><span class="chip-o">{{ khoa_ngan(k.dau, k.duoi) }}</span></td>
+      <td></td>
       <td>{{ luot.get(k.duoi, 0) }}</td>
-      {% if loai == 'youtube' %}
-      {% set pct = ((luot.get(k.duoi, 0) * 100 / 10000) | round | int) %}
-      <td><span class="usage"><i class="{% if pct >= 80 %}cao{% endif %}" style="width:{{ [pct, 100] | min }}%"></i></span></td>
-      {% endif %}
       <td>{% if k.id in dang_dung %}<span class="badge ok">in use</span>{% else %}<span class="badge">spare</span>{% endif %}</td>
-      <td class="phu">{{ k.ngay or '—' }}</td>
       <td>
         <button type="button" class="nguy" style="padding:3px 10px"
                 data-thu-hoi="{{ k.id }}" data-khoa="{{ khoa_ngan(k.dau, k.duoi) }}">Revoke</button></td></tr>
     {% else %}
-    <tr><td colspan="{{ 7 if loai == 'youtube' else 6 }}" class="phu">No key yet.</td></tr>
+    <tr><td colspan="6" class="phu">No key yet.</td></tr>
     {% endfor %}
   {% endif %}
-  {{ hang_mo_rong(ma_khoi, tong, cot) }}
+  {{ hang_mo_rong(ma_khoi, tong) }}
 </table>
 {% endfor %}
 

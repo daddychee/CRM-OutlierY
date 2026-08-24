@@ -110,7 +110,7 @@ def test_post_redirect_get_giu_vi_tri(he):
     assert loc.startswith("/general/channels?")
     assert "ma=K-ASTRO" in loc and "ngach=N-SPACE" in loc and "bao=" in loc
     trang = c.get(loc).text
-    assert ">Active</span>" in trang                   # đổi THẬT + chi tiết vẫn mở
+    assert ">Traction</span>" in trang                 # đổi THẬT + chi tiết vẫn mở
 
     # nhánh lỗi cũng redirect kèm loi + giữ vị trí (không kẹt URL POST)
     r = c.post("/general/channels/trang-thai",
@@ -206,7 +206,7 @@ def test_nhan_en_va_khong_ghi_chu_man_hinh(he):
     # nhãn EN hiện ra; mã máy chỉ còn trong value/data-* (không phải chữ người đọc)
     assert ">Exploiting</span>" in b and ">khai_thac<" not in b
     b = c.get("/general/channels?ma=K-OUTLAND").text
-    assert "Sandbox" in b and "Export CSV" in b
+    assert "Testing" in b and "Export CSV" in b
     assert "chưa gán" not in b and "gõ lại" not in b        # hết chuỗi VN cũ trên màn
     # khối khai tử vẫn CHỈ Owner (quyền không đổi) — nhãn EN + gõ-lại-mã giữ nguyên
     assert "Retire channel" not in b
@@ -232,12 +232,12 @@ def test_niche_thi_truong_user_chon_khong_mac_dinh(he):
     assert sorted(n["thi_truong_cua"]) == ["TT-KOREA", "TT-US"]
     # update thay cả tập: chỉ còn Korea
     c.post("/general/niches/update", data={
-        "ma": "N-LIFE-IN", "ten_chuan": "Life In", "trang_thai": "thu",
+        "ma": "N-LIFE-IN", "ten_chuan": "Life In", "trang_thai": "duy_tri",
         "thi_truong": ["TT-KOREA"]})
     n = next(t for t in danh_ba.liet_ke("ngach") if t["ma"] == "N-LIFE-IN")
     assert n["thi_truong_cua"] == ["TT-KOREA"]
     # mã thị trường lạ → lỗi hiện trên trang, không 500
     r = c.post("/general/niches/update", data={
-        "ma": "N-LIFE-IN", "ten_chuan": "Life In", "trang_thai": "thu",
+        "ma": "N-LIFE-IN", "ten_chuan": "Life In", "trang_thai": "duy_tri",
         "thi_truong": ["TT-LA"]})
     assert r.status_code == 200 and "không tồn tại" in r.text
