@@ -195,3 +195,102 @@ Outlier Discovery → Niche Research → Content Verdict → [Outline Extractor]
 Phục vụ mô hình network đánh trend: 1 board cho cả sóng → nhiều account, mỗi account pick
 tổ hợp cluster hơi khác nhau (cùng khung, khác skin — Andrew §4.1/§4.6), cột GAPS cho 20%
 video test (§4.2 80/20).
+
+---
+
+## Tầng ĐỀ và tầng KHUNG — vì sao Outline Extractor một mình không tạo được tính mới
+
+*(Phân tích chiến lược 23/08/2026, sau khi RadarY có Mapping. Bản đầy đủ kèm số đo:
+`docs/mapping-outline.md` ở repo gốc. Mục này ghi phần thuộc về phương pháp luận của
+chính Outline Extractor.)*
+
+### Vấn đề phát hiện
+
+Bảng cluster tổng hợp **phần giao của các video đã nổi**. Điều đó dẫn tới một hệ quả
+mà v4 chưa nói ra:
+
+> **Đồng thuận của nhóm outlier là chỉ báo TRỄ của nhu cầu, và là chỉ báo SỚM của
+> bão hoà.**
+
+Việc 5 video đã nổ trên một chủ đề chính là bằng chứng rằng nhu cầu đó **đã được
+phục vụ**. Ghép phần giao của 5 người thắng rồi làm video thứ 6 nghĩa là: sản phẩm
+giống nguồn cung hiện có nhất, ra đúng lúc nguồn cung đó dồi dào nhất. Kỳ vọng hội tụ
+về trung vị của format — mà trung vị của một format đã có 5 outlier thì theo định
+nghĩa không phải outlier.
+
+Vì thế **mọi đề xuất kiểu "xếp hạng cluster theo cầu thị trường" đều sai hướng**: nó
+kéo bài viết về gần tâm của thứ đã tồn tại. Đã bác một đề xuất như vậy ngày 23/08.
+
+### Nhưng bảng cluster không vô dụng — nó đúng ở tầng khác
+
+Kết quả một video không phải một đại lượng:
+
+```
+Kết quả  ≈  PHÂN PHỐI  ×  GIỮ CHÂN
+             │              │
+             │              └── khung, nhịp, vị trí payoff  → NGHỀ, học được
+             └── đề mới × bao bì × thời điểm                → CƠ, sao chép là chết
+```
+
+Đồng thuận của người thắng nói rất chuẩn về **cách kể** — mở thế nào thì người ở lại,
+payoff đặt phút mấy, chương hai phải là gì thì không rơi. Những thứ đó khái quát hoá
+được sang chủ đề khác vì chúng là quy luật chú ý trong ngách, không phải nội dung.
+
+Chúng nói rất tệ về **kể cái gì**, vì cái đó đã bị tiêu thụ mất rồi.
+
+### Luật quy nạp (bổ sung vào "Nguyên tắc vàng")
+
+> **Trung bình hoá người thắng là ĐÚNG ở tầng CÁCH LÀM, và SAI ở tầng LÀM GÌ.**
+
+### Lỗi kiến trúc: hai quyết định đang bị nhập làm một
+
+Sơ đồ "Vị trí trong hệ tool" ở cuối file này **vốn đã tách đúng**:
+
+```
+… → Content Verdict → [Outline Extractor] → …
+      (chọn topic)     (bảng cluster, user pick)
+```
+
+Nhưng thực tế vận hành đã trôi: người vận hành dán 5 link outlier, rồi **chương của
+outline sinh ra từ những gì 5 video đó tình cờ nói**. Nghĩa là câu hỏi "kể cái gì"
+đang được trả lời bằng dữ liệu chỉ dùng được cho câu hỏi "kể thế nào". Ô *Content
+Verdict* trên sơ đồ đã bị nuốt vào Outline Extractor mà không ai để ý.
+
+Đây là **lỗi kiến trúc, không phải lỗi thiếu dữ liệu** — nên không lượng dữ liệu thị
+trường nào bơm vào tầng chương sửa được nó.
+
+### Ranh giới cứng mới (nối tiếp ranh giới "không score" ở đầu file)
+
+- **Không được để tín hiệu thị trường (từ khoá, cầu, trend) chảy vào `brief` hay
+  `angle` của cluster.** Brief phải tiếp tục sinh từ transcript. Từ khoá lọt vào
+  brief thì người viết viết theo từ khoá, và chuỗi chống bịa `brief ← beat ←
+  transcript` đứt tại đó. Đây cũng là bệnh mà luật A5 đang chống.
+- Tín hiệu thị trường được phép đổi **thứ tự và lựa chọn** chương, **không** được đổi
+  **nội dung** chương.
+
+### Luật nối khi có tầng ĐỀ đứng trước
+
+> **Câu hỏi thật của khán giả (từ tầng ĐỀ) là CỘT SỐNG của chương. Cluster chỉ là
+> CÁCH KỂ cho câu hỏi đó — không bao giờ là LÝ DO TỒN TẠI của chương.**
+
+Đảo chiều so với hiện nay (cluster đẻ ra chương, câu hỏi là trang trí). Đường ống hạ
+cánh **đã có sẵn trong mã**: `compose_outline` nhận `questions: {tên: câu hỏi nguyên
+văn}`, `misconception`, `promise/vai` — chưa ai đổ dữ liệu vào.
+
+### Thí nghiệm quyết định (chưa chạy)
+
+Toàn bộ mô hình trên đứng trên một giả định chưa kiểm chứng: **outlier thắng nhờ ĐI
+SỚM vào một đề**. Nếu giả định sai — nếu outlier phần lớn là video đi sau trên chủ đề
+đã đông mà vẫn nổ — thì đòn bẩy nằm ở bao bì và nghề, tầng ĐỀ là thừa, và tín hiệu
+thị trường chỉ nên đổ vào title/hook.
+
+Thiết kế thí nghiệm + quy tắc quyết định **đăng ký trước**: xem
+`docs/mapping-outline.md` §6–§7. Nguyên tắc: **không xây gì thêm trước khi có kết quả
+này** — sai lầm của đề xuất bị bác ngày 23/08 chính là xây trước, chứng minh sau.
+
+### Ghi chú vận hành
+
+Đo 23/08/2026: **73/149 video nguồn của 50 run** đã nằm sẵn trong pool RadarY (49%),
+trùng chính xác theo `yt_id`. Chọn video nguồn **từ chính pool** đẩy tỷ lệ này lên
+gần 100% mà không tốn dòng code nào — và làm cho mọi số liệu thị trường của video
+nguồn trở nên tra được.

@@ -196,13 +196,20 @@ def test_giao_dien_co_du_khoi_viet_tung_chuong_23_08():
     import pathlib as _pl
     html = _pl.Path(__file__).resolve().parents[1].joinpath(
         "src", "voiceprofile", "board.html").read_text(encoding="utf-8")
-    for dau in ("w_sections",          # danh sach phan ben trai
+    # Luong chot 23/08: Thiet lap xong -> nut "Nap du lieu" chuyen sang khoi viet;
+    # tung chuong hien OUTLINE cua chinh no de doc lan cuoi; roi moi chon viet
+    # tung chuong hay viet het. Khong con radio che do (chon truoc khi thay gi).
+    for dau in ("w_nap",               # nut nap du lieu, ket thuc phan thiet lap
+                "w_sections",          # danh sach phan ben trai
+                "w_brief",             # OUTLINE cua chuong dang mo
                 "w_chips",             # hang chip do
+                "w_viet_chuong",       # nut viet chuong nay
+                "w_viet_het",          # nut viet het cac phan con lai
                 "w_gopy",              # o gop y
                 "w_duyet",             # nut duyet
-                "w_vietlai",           # nut viet lai theo gop y
-                "w_mode"):             # chon che do viet-va-duyet / viet-full
+                "w_vietlai"):          # nut viet lai theo gop y
         assert dau in html, f"thieu {dau}"
+    assert "name=\"wmode\"" not in html, "van con radio che do — luong cu"
 
 
 def test_giao_dien_khong_dung_emoji_23_08():
