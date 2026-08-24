@@ -169,6 +169,26 @@
   **Ca đã lường:** tập đời cũ (không có khối Feedback) tích ô xóa file → 403 nói rõ
   "file trên NAS phải tự dọn", KHÔNG bao giờ mở đường xóa thư mục tập.
 
+- 24/08/2026 — **SỰ CỐ "MẤT CỜ AWAITING REVIEW"** (user báo: nhân sự up bản mới cho
+  leader xem nhưng mục nhảy thẳng In review). **KHÔNG phải do tập đã có round 1** —
+  dấu vết trong sổ nói khác: VR-0016 up 15:17:40 bởi hieuvn, rồi CHÍNH hieuvn nhắn
+  2 câu lúc 15:18:03 và 15:18:14 ("ANH DỊCH ĐƯỢC KHÔNG ANH", "E ĐANG HẾT CAPCUT
+  PRO"); leader (bot) mãi 17:59:47 mới review thật. App coi **"đã có bình luận" =
+  "đã có người review"** nên cờ Awaiting tắt sau 20 GIÂY, leader mất tín hiệu suốt
+  2,5 tiếng.
+  Sửa: `danh_sach_video` thêm `so_khac` = bình luận của **NGƯỜI KHÁC người đăng**;
+  `hien_thi` dùng so_khac chứ không dùng so_tong. Ghi chú của chính người up không
+  còn là review. Thêm: **nhãn NHÓM ưu tiên 'Awaiting'** — còn bản nào chưa ai xem
+  thì cả tập kêu, kể cả khi bản mới nhất đã được review (đừng để bản cũ bị bỏ quên
+  lặng lẽ). 72 test pass.
+  **BÀI HỌC (cùng họ với bug A/B của Kho-thiếu hệ cũ):** đừng lấy "có dữ liệu" làm
+  proxy cho "đã có người làm việc" — phải hỏi AI làm. Dấu vết thời gian trong sổ
+  là thứ chứng minh nguyên nhân, không phải suy đoán từ mô tả triệu chứng.
+- 24/08/2026 — **THƯ MỤC 'FB' CŨNG LÀ KHỐI FEEDBACK**: team dùng `LI086/FB/` chứ
+  không phải `Feedback/` (thấy khi soi dữ liệu thật). `TEN_THU_MUC_FEEDBACK` thành
+  frozenset {'feedback','fb'} — nhận CẢ HAI nhưng CHỈ hai tên này; tên lạ coi như
+  không có khối feedback nên không bao giờ mở đường xóa thư mục tập.
+
 ## Quyết định thiết kế (đừng phá)
 
 - **NAS CHỈ ĐỌC TUYỆT ĐỐI**: app không chép/ghi/xóa/đổi tên gì trong `VR_NAS_DIR`

@@ -131,7 +131,10 @@ async def danh_sach(request: Request, user: dict = Depends(khu_cua_toi)):
     # dang_duyet + CHƯA có bình luận nào = cho_review (Awaiting) · có rồi = dang_review.
     for v in cac_video:
         if v["trang_thai"] == "dang_duyet":
-            v["hien_thi"] = "cho_review" if v["so_tong"] == 0 else "dang_review"
+            # 'Awaiting' = CHƯA AI KHÁC người đăng bình luận. Ghi chú của chính người
+            # up ("em hết CapCut Pro", "anh xem giúp") KHÔNG phải là review — dùng
+            # so_tong ở đây từng làm cờ Awaiting tắt sau 20 giây (sự cố 24/08).
+            v["hien_thi"] = "cho_review" if v["so_khac"] == 0 else "dang_review"
         else:
             v["hien_thi"] = v["trang_thai"]
     for v in cac_video:
@@ -161,9 +164,12 @@ def _gom_tap(cac_video: list[dict]) -> list[dict]:
         # đời cũ trỏ thẳng thư mục tập thì KHÔNG (trong đó có bản master của team)
         khoi = next((kho_video.thu_muc_feedback(v) for v in ds
                      if kho_video.thu_muc_feedback(v)), "")
+        # Nhãn NHÓM ưu tiên 'Awaiting': còn bản nào chưa ai xem thì cả tập phải kêu,
+        # kể cả khi bản mới nhất đã được review (đừng để bản cũ bị bỏ quên lặng lẽ).
+        cho = next((v for v in ds if v["hien_thi"] == "cho_review"), None)
         ra.append({
             "ma": ma, "videos": ds, "so": len(ds), "moi_id": moi["id"],
-            "hien_thi": moi["hien_thi"], "ten_moi": moi["ten"],
+            "hien_thi": (cho or moi)["hien_thi"], "ten_moi": (cho or moi)["ten"],
             "mo": not xong,
             "xong": xong, "khoi_feedback": khoi,
             "don_duoc": xong and bool(khoi),

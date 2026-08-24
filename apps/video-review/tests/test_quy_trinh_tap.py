@@ -186,3 +186,55 @@ def test_nut_xoa_cung_chi_hien_o_tap_da_duyet(client, khoi):
     kho_video.doi_trang_thai("VR-0002", "da_duyet")
     assert NUT in client.get("/danh-sach", headers=_mgr()).text
     assert NUT not in client.get("/danh-sach", headers=h()).text
+
+
+def test_ghi_chu_cua_chinh_nguoi_up_khong_tinh_la_da_review(client, khoi):
+    """Sự cố 24/08: nhân sự up xong nhắn kèm một câu → mục nhảy sang In review sau
+    20 giây, leader mất hẳn cờ Awaiting. 'Đã review' phải là bình luận của NGƯỜI KHÁC."""
+    trang = client.get("/danh-sach", headers=h()).text
+    assert trang.count('<tr data-tt="cho_review"') == 2          # 2 bản, chưa ai xem
+    # hieuvn (người up VR-0001 trong fixture là 'an') tự ghi chú cho leader
+    kho_video.them_binh_luan("VR-0001", "an", "anh xem giúp em đoạn cuối nhé")
+    kho_video.them_binh_luan("VR-0001", "an", "em hết CapCut Pro")
+    trang2 = client.get("/danh-sach", headers=h()).text
+    assert trang2.count('<tr data-tt="cho_review"') == 2         # VẪN đang chờ review
+    assert "Awaiting review" in trang2
+    # leader vào xem và góp ý → lúc này mới là In review
+    kho_video.them_binh_luan("VR-0001", "leader", "nhạc to quá", ts_giay=12)
+    trang3 = client.get("/danh-sach", headers=h()).text
+    assert trang3.count('<tr data-tt="cho_review"') == 1
+    assert trang3.count('<tr data-tt="dang_review"') == 1
+
+
+def test_ban_sua_moi_lam_song_lai_co_awaiting_cua_tap(client, khoi):
+    """Tập đã có round 1 được review xong; up round 2 thì cả NHÓM phải kêu Awaiting
+    trở lại — nếu không leader không biết có bản mới cần xem."""
+    kho_video.them_binh_luan("VR-0001", "leader", "sửa đoạn mở", ts_giay=3)   # round 1 đã xem
+    d = kho_video.nas_dir() / "Life In" / "US" / "LI001" / "Feedback"
+    (d / "LI001.2.mp4").write_bytes(b"v" * 100)
+    client.post("/api-vr/nas-lien-ket",
+                data={"duong": "Life In/US/LI001/Feedback/LI001.2.mp4"}, headers=h())
+    trang = client.get("/danh-sach", headers=h()).text
+    nhom = trang[trang.index('data-tap="LI001"'):]
+    nhom = nhom[:nhom.index("</summary>")]
+    assert "Awaiting review" in nhom          # nhóm kêu Awaiting vì có bản chưa ai xem
+    # leader xem NỐT bản mới (VR-0003 = LI001.2) → cả tập mới hết kêu
+    kho_video.them_binh_luan("VR-0002", "leader", "ok bản 1", ts_giay=1)
+    kho_video.them_binh_luan("VR-0003", "leader", "ok bản 2", ts_giay=1)
+    nhom2 = client.get("/danh-sach", headers=h()).text
+    nhom2 = nhom2[nhom2.index('data-tap="LI001"'):]
+    assert "Awaiting review" not in nhom2[:nhom2.index("</summary>")]
+
+
+def test_thu_muc_FB_cung_duoc_coi_la_khoi_feedback(client):
+    """Team viết tắt 'FB' (LI086 thật đang dùng) — phải nhận, còn tên lạ thì không."""
+    goc = kho_video.nas_dir()
+    (goc / "Life In" / "US" / "LI086" / "FB").mkdir(parents=True)
+    (goc / "Life In" / "US" / "LI086" / "FB" / "LI086_1.mp4").write_bytes(b"v")
+    client.post("/api-vr/nas-lien-ket",
+                data={"duong": "Life In/US/LI086/FB/LI086_1.mp4"}, headers=h())
+    v = kho_video.lay_video("VR-0001")
+    assert kho_video.ma_tap(v) == "LI086"
+    assert kho_video.thu_muc_feedback(v) == "Life In/US/LI086/FB"
+    kho_video.doi_trang_thai("VR-0001", "da_duyet")
+    assert 'class="nut nho nguy don-nut"' in client.get("/danh-sach", headers=_mgr()).text

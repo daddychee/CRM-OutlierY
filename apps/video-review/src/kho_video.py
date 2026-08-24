@@ -29,7 +29,9 @@ ROOT = _APP_DIR.parents[1]                                # D:\AI AGENT OUTLIERY
 # 'Awaiting' suy từ 'chưa có bình luận nào', không phải giá trị lưu trong sổ.
 # 'da_xoa' là GỠ MỀM, không phải một bước duyệt. 'can_sua' đã nghỉ hưu (mig 004).
 TRANG_THAI_VIDEO = ("dang_duyet", "da_duyet", "da_xoa")
-TEN_THU_MUC_FEEDBACK = "feedback"
+# Team đặt cả 'Feedback' lẫn 'FB' (LI086 dùng FB) — nhận cả hai, nhưng CHỈ hai
+# tên này: tên lạ thì coi như không có khối feedback, không mở đường xóa thư mục.
+TEN_THU_MUC_FEEDBACK = frozenset({"feedback", "fb"})
 # .mov để được nhưng cảnh báo ở UI (tùy codec trình duyệt mới phát) — mp4/webm chắc ăn.
 DUOI_CHO_PHEP = {".mp4": "video/mp4", ".m4v": "video/mp4",
                  ".webm": "video/webm", ".mov": "video/quicktime"}
@@ -254,7 +256,7 @@ def thu_muc_feedback(video: dict) -> str:
     KHÔNG được phép xóa cả thư mục đó, trong đó có bản master của team)."""
     phan = (video.get("duong") or "").split("/")[:-1]
     for i in range(len(phan) - 1, -1, -1):
-        if phan[i].strip().lower() == TEN_THU_MUC_FEEDBACK:
+        if phan[i].strip().lower() in TEN_THU_MUC_FEEDBACK:
             return "/".join(phan[:i + 1])
     return ""
 
@@ -290,7 +292,7 @@ def ma_tap(video: dict) -> str:
     # Cấu trúc kho của team: <tập>/Feedback/<bản dựng>.mp4 — lùi lên tìm mã tập thì
     # phải NHẢY QUA thư mục 'Feedback', nếu không cả kho gom vào một nhóm 'Feedback'.
     phan = [x for x in (video.get("duong") or "").split("/")[:-1]
-            if x.strip().lower() != TEN_THU_MUC_FEEDBACK]
+            if x.strip().lower() not in TEN_THU_MUC_FEEDBACK]
     for nguon in [ten] + phan[::-1] + [video.get("ten") or ""]:
         for m in _RE_TAP.finditer(nguon):
             # bỏ qua chính MÃ CỦA APP (file đời cũ tên '2026-08-19_VR-0003_li083.mp4')
@@ -302,14 +304,20 @@ def ma_tap(video: dict) -> str:
 
 
 def danh_sach_video() -> list[dict]:
-    """Danh sách chưa-gỡ, mới nhất trước, kèm số bình luận còn mở + TỔNG bình luận
-    (so_tong = 0 là dấu hiệu 'chưa ai review' — logic hiển thị Awaiting review)."""
+    """Danh sách chưa-gỡ, mới nhất trước, kèm số bình luận còn mở, TỔNG bình luận,
+    và so_khac = bình luận của NGƯỜI KHÁC người đăng.
+
+    so_khac (KHÔNG phải so_tong) mới là dấu hiệu 'đã có người review' — sự cố
+    24/08/2026: nhân sự up xong nhắn kèm 'anh dịch được không anh' thì mục tự nhảy
+    sang In review sau 20 giây, cờ Awaiting tắt trước khi leader kịp nhìn."""
     conn = ket_noi()
     try:
         hang = conn.execute(
             "SELECT v.*, (SELECT COUNT(*) FROM binh_luan b WHERE b.video_ma = v.ma"
             "  AND b.trang_thai = 'mo') AS so_mo,"
-            " (SELECT COUNT(*) FROM binh_luan b2 WHERE b2.video_ma = v.ma) AS so_tong"
+            " (SELECT COUNT(*) FROM binh_luan b2 WHERE b2.video_ma = v.ma) AS so_tong,"
+            " (SELECT COUNT(*) FROM binh_luan b3 WHERE b3.video_ma = v.ma"
+            "  AND b3.nguoi <> v.nguoi_tao) AS so_khac"
             " FROM video v WHERE v.trang_thai != 'da_xoa' ORDER BY v.id DESC").fetchall()
         return [dict(h) for h in hang]
     finally:
