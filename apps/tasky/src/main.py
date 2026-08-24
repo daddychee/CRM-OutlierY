@@ -316,6 +316,13 @@ def api_doi(id: str = Form(...), ly_do: str = Form(""), nguoi_moi: str = Form(""
     return _goi(tuan_lo.doi_sang_tuan_sau, _ma_tuan_hop_le(tuan_xem), id, user, ly_do, nm)
 
 
+@app.post("/api-tasky/mo-lai-tuan")
+def api_mo_lai_tuan(nguoi: str = Form(...), tuan_xem: str = Form(""),
+                    user: dict = Depends(yeu_cau_xac_nhan)):
+    """Thu lại việc đóng tuần — đóng nhầm thì mở lại, có vết trong nhật ký."""
+    return _goi(tuan_lo.mo_lai_tuan, _ma_tuan_hop_le(tuan_xem), nguoi, user)
+
+
 @app.post("/api-tasky/dong-tuan")
 def api_dong_tuan(nguoi: str = Form(...), tuan_xem: str = Form(""),
                   user: dict = Depends(yeu_cau_xac_nhan)):

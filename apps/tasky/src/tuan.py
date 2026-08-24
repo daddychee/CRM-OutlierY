@@ -526,6 +526,28 @@ def dong_tuan(ma: str, nguoi: str, user: dict) -> dict:
     return so["dong"][nguoi]
 
 
+def mo_lai_tuan(ma: str, nguoi: str, user: dict) -> None:
+    """THU LẠI việc đóng tuần (Owner yêu cầu 24/08) — đóng nhầm thì mở lại được,
+    không phải chờ ai.
+
+    Quyền: đúng người đóng được tuần đó mới mở lại được (leader quản người đó, hoặc
+    Owner). Sổ giữ vết CẢ hai chiều trong nhat-ky.jsonl — mở lại là chuyện bình
+    thường, nhưng phải biết ai mở và lúc nào."""
+    with _khoa:
+        so = doc_tuan(ma)
+        if nguoi not in so.get("dong", {}):
+            raise ValueError("Tuần của người này chưa đóng.")
+        if user["level"] < OWNER_LEVEL:
+            cua_ho = [v for v in so["viec"] if v["nguoi"] == nguoi]
+            if cua_ho and not any(duoc_xac_nhan(v, user) for v in cua_ho):
+                raise PermissionError("Bạn không quản người này — không mở lại được.")
+        cu = so["dong"].pop(nguoi)
+        _ghi_tuan(so)
+    ghi_nhat_ky("mo_lai_tuan", user["ten"],
+                {"tuan": ma, "cua": nguoi, "dong_boi": cu.get("boi", ""),
+                 "dong_luc": cu.get("luc", "")})
+
+
 # ---------- đọc theo phạm vi + thống kê ----------
 
 def viec_cua(ma: str, ten: str) -> list[dict]:

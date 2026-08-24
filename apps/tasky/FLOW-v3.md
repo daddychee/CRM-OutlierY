@@ -49,6 +49,9 @@ Task chưa có checklist → ghi rõ *"chưa viết cách triển khai"*, không
 - **Xác nhận ở CẤP TASK, không ở từng bước.** Nhân sự tick bước thoải mái; task
   báo xong → leader xác nhận một lần. Báo cáo quản lý chỉ tính task **đã xác nhận**.
   Leader tự làm task của mình → tự xác nhận, báo cáo dán nhãn *"tự xác nhận"* (Đ2 v2).
+- **Đóng nhầm thì THU LẠI được** (Owner yêu cầu 24/08): nút *Mở lại* cạnh chip
+  *Đã đóng*. Quyền như lúc đóng (leader quản người đó, hoặc Owner); nhật ký giữ vết
+  cả hai chiều — ai đóng, ai mở, lúc nào.
 - Task chưa xong khi đóng tuần → chọn: **dời sang tuần sau** / **hủy** (ghi lý do).
   Dời ≥2 lần → cờ **việc kẹt**.
 - Việc thêm bất cứ lúc nào, không deadline khai báo (Đ1 v2). Task mang nhãn nguồn

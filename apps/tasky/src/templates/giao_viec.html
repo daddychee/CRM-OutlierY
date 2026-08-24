@@ -191,6 +191,7 @@
         <td class="so">{% if d.ket %}<span class="the ket">{{ d.ket }}</span>{% else %}0{% endif %}</td>
         <td class="so">{{ d.bi_tu_choi }}</td>
         <td>{% if d.da_dong %}<span class="the">Đã đóng</span>
+            <button class="nut" data-mo-lai="{{ d.nguoi }}" title="Đóng nhầm thì thu lại">Mở lại</button>
             {% else %}<button class="nut" data-dong="{{ d.nguoi }}">Đóng tuần</button>{% endif %}</td>
       </tr>
       {% endfor %}
@@ -305,6 +306,14 @@
   });
 
   var loiDong = document.getElementById("loi-dong");
+  document.querySelectorAll("[data-mo-lai]").forEach(function (b) {
+    b.addEventListener("click", function () {
+      b.disabled = true;
+      goi("mo-lai-tuan", { nguoi: b.dataset.moLai }).then(function () { location.reload(); })
+        .catch(function (e) { b.disabled = false; baoLoi(loiDong, e); });
+    });
+  });
+
   document.querySelectorAll("[data-dong]").forEach(function (b) {
     b.addEventListener("click", function () {
       b.disabled = true;

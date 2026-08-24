@@ -28,6 +28,8 @@ HR = {"X-Remote-User": "lannh", "X-Remote-Level": "3",
 
 LEADER = {"ten": "huytq", "level": 3, "bo_phan": "Vận hành"}
 NHANVIEN = {"ten": "hant", "level": 2, "bo_phan": "Vận hành"}
+NV_KHAC_BP = {"ten": "ngocpb", "level": 2, "bo_phan": "Kinh doanh"}
+OWNER = {"ten": "bot", "level": 5, "bo_phan": "Ban quản trị"}
 
 
 @pytest.fixture(autouse=True)
@@ -211,3 +213,55 @@ def test_sidebar_chi_hien_muc_nguoi_do_co_quyen(ma):
     assert "/giao-viec" not in r_nv.text and "/bao-cao-tuan" not in r_nv.text
     r_ld = client.get("/tasky", headers=LEADER_H)
     assert "/giao-viec" in r_ld.text and "/bao-cao-tuan" in r_ld.text
+
+
+# ---------- thu lại việc đóng tuần (Owner yêu cầu 24/08) ----------
+
+def test_dong_nham_thi_mo_lai_duoc(ma):
+    v = tuan.them_viec_giao(ma, LEADER, NHANVIEN, "Việc F", "Dựng video")
+    tuan.huy_viec(ma, v["id"], LEADER, "giao nhầm")
+    client.post("/api-tasky/dong-tuan", headers=LEADER_H, data={"nguoi": "hant", "tuan_xem": ma})
+    assert tuan.thong_ke_nguoi(ma, "hant")["da_dong"] is True
+
+    r = client.post("/api-tasky/mo-lai-tuan", headers=LEADER_H,
+                    data={"nguoi": "hant", "tuan_xem": ma})
+    assert r.status_code == 200
+    assert tuan.thong_ke_nguoi(ma, "hant")["da_dong"] is False
+
+
+def test_chua_dong_thi_khong_mo_lai_duoc(ma):
+    r = client.post("/api-tasky/mo-lai-tuan", headers=LEADER_H,
+                    data={"nguoi": "hant", "tuan_xem": ma})
+    assert r.status_code == 400 and "chưa đóng" in r.json()["detail"]
+
+
+def test_khong_mo_lai_tuan_cua_nguoi_minh_khong_quan(ma):
+    """Leader Vận hành không thu lại được tuần của người Kinh doanh."""
+    v = tuan.them_viec_giao(ma, OWNER, NV_KHAC_BP, "Việc KD", "Nghiên cứu")
+    tuan.huy_viec(ma, v["id"], OWNER, "dọn")
+    tuan.dong_tuan(ma, "ngocpb", OWNER)
+    with pytest.raises(PermissionError):
+        tuan.mo_lai_tuan(ma, "ngocpb", LEADER)
+
+
+def test_owner_mo_lai_duoc_tat(ma):
+    tuan.dong_tuan(ma, "hant", LEADER)
+    tuan.mo_lai_tuan(ma, "hant", OWNER)
+    assert tuan.thong_ke_nguoi(ma, "hant")["da_dong"] is False
+
+
+def test_mo_lai_de_lai_vet_ai_mo(ma, tmp_path):
+    import json
+    tuan.dong_tuan(ma, "hant", LEADER)
+    tuan.mo_lai_tuan(ma, "hant", LEADER)
+    dong = [json.loads(d) for d in
+            (tmp_path / "db" / "nhat-ky.jsonl").read_text(encoding="utf-8").splitlines()]
+    cuoi = dong[-1]
+    assert cuoi["hanh_dong"] == "mo_lai_tuan" and cuoi["ai"] == "huytq"
+    assert cuoi["dong_boi"] == "huytq"       # giữ vết ai đã đóng trước đó
+
+
+def test_nut_mo_lai_hien_canh_chip_da_dong(ma):
+    tuan.dong_tuan(ma, "hant", LEADER)
+    r = client.get("/giao-viec", headers=LEADER_H)
+    assert "Đã đóng" in r.text and 'data-mo-lai="hant"' in r.text
