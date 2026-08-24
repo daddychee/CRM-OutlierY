@@ -43,6 +43,7 @@ from nen.common.sidebar import ctx_sidebar  # noqa: E402 — cờ sidebar UI_FLO
 
 templates = Jinja2Templates(directory=str(_APP_DIR / "src" / "templates"),
                             context_processors=[ctx_sidebar])
+templates.env.filters["han"] = tuan_lo.tinh_han   # {{ v|han }} → {chu, muc, con}
 
 
 # ---------- claims (app không tự giữ user) ----------
@@ -127,7 +128,7 @@ def trang_viec(request: Request, user: dict = Depends(lay_user), tuan_xem: str =
                x_remote_actions: str = Header("")):
     """Việc của tôi — chỉ việc CỦA MÌNH (luật 1: lọc ở server, không ẩn nút)."""
     ma = _ma_tuan_hop_le(tuan_xem)
-    ds = tuan_lo.viec_cua(ma, user["ten"])
+    ds = tuan_lo.sap_xep(tuan_lo.viec_cua(ma, user["ten"]))
     tu, den = tuan_lo.khoang_tuan(ma)
     return templates.TemplateResponse(request, "viec.html", {
         "user": user, "ma_tuan": ma, "tu": tu, "den": den,
@@ -160,9 +161,9 @@ def trang_giao(request: Request, user: dict = Depends(yeu_cau_giao_viec),
         "cap_duoi": ds_nguoi, "loi_iam": loi,
         "bang": bang,
         "ngang_cap": nhan_su.ngang_cap_bo_phan_khac(user)[0] or [],
-        "da_gui": tuan_lo.yeu_cau_da_gui(ma, user),
+        "da_gui": tuan_lo.sap_xep(tuan_lo.yeu_cau_da_gui(ma, user)),
         "cho_xac_nhan": tuan_lo.cho_xac_nhan(ma, user),
-        "con_treo": tuan_lo.con_treo(ma, user),
+        "con_treo": tuan_lo.sap_xep(tuan_lo.con_treo(ma, user)),
         "loai_viec": tuan_lo.cac_loai_viec(),
         "tuan_truoc": tuan_lo.tuan_lien_ke(ma, -1),
         "tuan_sau": tuan_lo.tuan_lien_ke(ma, 1),
@@ -206,8 +207,10 @@ def _goi(ham, *a, **k):
 
 @app.post("/api-tasky/viec-tu")
 def api_viec_tu(tieu_de: str = Form(...), loai_viec: str = Form(""),
+                han: str = Form(""), gap: str = Form(""),
                 tuan_xem: str = Form(""), user: dict = Depends(lay_user)):
-    return _goi(tuan_lo.them_viec_tu, _ma_tuan_hop_le(tuan_xem), user, tieu_de, loai_viec)
+    return _goi(tuan_lo.them_viec_tu, _ma_tuan_hop_le(tuan_xem), user, tieu_de,
+                loai_viec, han, _co(gap))
 
 
 @app.post("/api-tasky/nhan")
@@ -243,6 +246,11 @@ def api_bao_xong(id: str = Form(...), tuan_xem: str = Form(""),
 
 # --- API của leader (gate bằng cờ hành động; luật level/bộ phận vẫn kiểm ở lõi) ---
 
+def _co(v: str) -> bool:
+    """Ô tick từ form: '1'/'true'/'on' là bật, còn lại tắt."""
+    return str(v).strip().lower() in ("1", "true", "on", "co", "yes")
+
+
 def _tim_nguoi(ten: str) -> dict:
     """Level + bộ phận THẬT của người nhận, đọc từ IAM — không lấy từ form gửi lên,
     kẻo client tự khai level thấp để lách luật giao việc."""
@@ -257,19 +265,30 @@ def _tim_nguoi(ten: str) -> dict:
 
 @app.post("/api-tasky/giao")
 def api_giao(nguoi: str = Form(...), tieu_de: str = Form(...), loai_viec: str = Form(""),
-             tu_yeu_cau: str = Form(""), tuan_xem: str = Form(""),
-             user: dict = Depends(yeu_cau_giao_viec)):
+             tu_yeu_cau: str = Form(""), han: str = Form(""), gap: str = Form(""),
+             tuan_xem: str = Form(""), user: dict = Depends(yeu_cau_giao_viec)):
     """Giao việc trong bộ phận. `tu_yeu_cau` = id yêu cầu phối hợp đang chẻ nhỏ."""
     return _goi(tuan_lo.them_viec_giao, _ma_tuan_hop_le(tuan_xem), user,
-                _tim_nguoi(nguoi), tieu_de, loai_viec, tu_yeu_cau)
+                _tim_nguoi(nguoi), tieu_de, loai_viec, tu_yeu_cau, han, _co(gap))
 
 
 @app.post("/api-tasky/phoi-hop")
 def api_phoi_hop(nguoi: str = Form(...), tieu_de: str = Form(...), loai_viec: str = Form(""),
+                 han: str = Form(""), gap: str = Form(""),
                  tuan_xem: str = Form(""), user: dict = Depends(yeu_cau_giao_viec)):
     """Gửi yêu cầu phối hợp sang bộ phận khác (luật ngang cấp kiểm ở lõi)."""
     return _goi(tuan_lo.yeu_cau_phoi_hop, _ma_tuan_hop_le(tuan_xem), user,
-                _tim_nguoi(nguoi), tieu_de, loai_viec)
+                _tim_nguoi(nguoi), tieu_de, loai_viec, han, _co(gap))
+
+
+@app.post("/api-tasky/danh-dau")
+def api_danh_dau(id: str = Form(...), gap: str = Form(""), han: str = Form(""),
+                 tuan_xem: str = Form(""), user: dict = Depends(lay_user)):
+    """Đổi dấu GẤP / hạn chót sau khi việc đã tồn tại (quyền kiểm ở lõi).
+    Chuỗi rỗng ở `gap` = không đụng tới; 'xoa' ở `han` = gỡ hạn."""
+    return _goi(tuan_lo.danh_dau, _ma_tuan_hop_le(tuan_xem), id, user,
+                None if gap == "" else _co(gap),
+                None if han == "" else ("" if han == "xoa" else han))
 
 
 @app.post("/api-tasky/xac-nhan")

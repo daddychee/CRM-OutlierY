@@ -58,12 +58,15 @@
 </div>
 
 {% macro the_viec(v) %}
-<article class="viec" data-id="{{ v.id }}" data-tt="{{ v.trang_thai }}" data-loai="{{ v.loai_viec }}">
+{% set hn = v|han %}
+<article class="viec{% if v.gap %} co-gap{% endif %}" data-id="{{ v.id }}" data-tt="{{ v.trang_thai }}" data-loai="{{ v.loai_viec }}">
   <div class="dinh" data-mo>
     <svg class="mui" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg>
     <div style="flex:1;min-width:0">
       <div class="ten">{{ v.tieu_de }}</div>
       <div class="duoi">
+        {% if v.gap %}<span class="the gap">GẤP</span>{% endif %}
+        {% if hn.chu %}<span class="the{% if hn.muc %} han-{{ hn.muc }}{% endif %}">{{ hn.chu }}</span>{% endif %}
         {% if v.loai_viec %}<span class="the loai">{{ v.loai_viec }}</span>{% endif %}
         {% if v.nguon == 'phoi_hop' %}<span>{{ v.nguoi_giao }} ({{ v.bo_phan_gui or 'bộ phận khác' }}) yêu cầu phối hợp</span>
         {% elif v.nguoi_giao %}<span>{{ v.nguoi_giao }} giao</span>{% else %}<span>Tôi tự thêm</span>{% endif %}
@@ -172,7 +175,8 @@
 <div class="viec" style="padding:12px 14px">
   <div class="hang" style="margin:0">
     <input id="viec-moi" placeholder="Thêm việc bạn tự nhận…">
-    <input id="loai-moi" list="ds-loai" placeholder="Loại việc (gõ mới cũng được)" style="max-width:230px;flex:0 0 auto">
+    <input id="loai-moi" list="ds-loai" placeholder="Loại việc (gõ mới cũng được)" style="max-width:200px;flex:0 0 auto">
+    <input id="han-moi" type="date" title="Hạn chót (không bắt buộc)" style="flex:0 0 auto">
     <datalist id="ds-loai">{% for l in loai_viec %}<option value="{{ l }}">{% endfor %}</datalist>
     <button class="nut chinh" id="them-viec">Thêm việc</button>
   </div>
@@ -312,7 +316,8 @@
       var ten = (oTen.value || "").trim();
       if (!ten) { return; }
       nutThem.disabled = true;
-      goi("viec-tu", { tieu_de: ten, loai_viec: (oLoai.value || "").trim() })
+      goi("viec-tu", { tieu_de: ten, loai_viec: (oLoai.value || "").trim(),
+                       han: (document.getElementById("han-moi").value || "") })
         .then(function () { location.reload(); })
         .catch(function (e) { nutThem.disabled = false; baoLoi(oLoiThem, e); });
     };

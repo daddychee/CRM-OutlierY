@@ -179,6 +179,52 @@ def duoc_xac_nhan(viec: dict, user: dict) -> bool:
 
 # ---------- thao tác ----------
 
+def _han_hop_le(han: str) -> str:
+    """Hạn chót dạng YYYY-MM-DD, rỗng = không đặt hạn. Sai định dạng → nói thẳng,
+    KHÔNG âm thầm bỏ qua (người giao tưởng đã đặt hạn mà thật ra không)."""
+    han = (han or "").strip()
+    if not han:
+        return ""
+    try:
+        return date.fromisoformat(han).isoformat()
+    except ValueError:
+        raise ValueError("Hạn chót phải dạng ngày (YYYY-MM-DD).")
+
+
+def tinh_han(viec: dict, hom_nay: date | None = None) -> dict:
+    """Nhãn hạn cho UI + mức cấp thiết. Việc đã ngã ngũ (xác nhận/hủy/từ chối/dời)
+    thì KHÔNG còn hạn để lo — không dọa người ta bằng việc đã xong."""
+    if not viec.get("han") or viec["trang_thai"] not in (CHO_NHAN, CHO_PHOI_HOP,
+                                                         DANG_LAM, BAO_XONG):
+        return {"chu": "", "muc": "", "con": None}
+    hom_nay = hom_nay or date.today()
+    try:
+        con = (date.fromisoformat(viec["han"]) - hom_nay).days
+    except ValueError:
+        return {"chu": "", "muc": "", "con": None}
+    if con < 0:
+        return {"chu": f"Quá hạn {-con} ngày", "muc": "cap", "con": con}
+    if con == 0:
+        return {"chu": "Hạn hôm nay", "muc": "cap", "con": 0}
+    if con == 1:
+        return {"chu": "Hạn ngày mai", "muc": "luu_y", "con": 1}
+    ngay = date.fromisoformat(viec["han"])
+    return {"chu": f"Hạn {ngay.day:02d}/{ngay.month:02d}",
+            "muc": "luu_y" if con <= 3 else "", "con": con}
+
+
+def sap_xep(ds: list[dict], hom_nay: date | None = None) -> list[dict]:
+    """Gấp và quá hạn nổi lên đầu — thứ cần làm trước phải nằm trên đầu màn hình.
+    Trong cùng mức thì việc có hạn gần đứng trước, rồi tới việc tạo sớm hơn."""
+    def khoa(v):
+        h = tinh_han(v, hom_nay)
+        return (0 if v.get("gap") else 1,
+                0 if h["muc"] == "cap" else 1,
+                h["con"] if h["con"] is not None else 9999,
+                v.get("luc_tao", ""))
+    return sorted(ds, key=khoa)
+
+
 def _viec_moi(tieu_de: str, loai_viec: str, nguoi: str) -> dict:
     tieu_de = (tieu_de or "").strip()
     if not tieu_de:
@@ -192,12 +238,14 @@ def _viec_moi(tieu_de: str, loai_viec: str, nguoi: str) -> dict:
             "so_lan_doi": 0, "goc_id": None,
             "nguon_ngoai": None,        # chừa cho chiều Tasky → PlannerY (§9.5)
             "tu_yeu_cau": "",           # id việc phối hợp mà việc này được chẻ ra
+            "han": "", "gap": False,    # hạn chót (ISO) + dấu GẤP (Owner chốt 24/08)
             "luc_tao": _gio(), "luc_nhan": None, "luc_bao_xong": None,
             "luc_xac_nhan": None, "nguoi_xac_nhan": None, "tu_xac_nhan": False}
 
 
 def them_viec_giao(ma: str, nguoi_giao: dict, nguoi_nhan: dict,
-                   tieu_de: str, loai_viec: str, tu_yeu_cau: str = "") -> dict:
+                   tieu_de: str, loai_viec: str, tu_yeu_cau: str = "",
+                   han: str = "", gap: bool = False) -> dict:
     """Leader giao việc → trạng thái CHỜ NHẬN. Loại việc bắt buộc: đây là khóa gom
     checklist thành quy trình sau này (§5), thiếu thì không cứu được bằng migration."""
     if not duoc_giao_cho(nguoi_giao, nguoi_nhan):
@@ -209,7 +257,8 @@ def them_viec_giao(ma: str, nguoi_giao: dict, nguoi_nhan: dict,
         so = doc_tuan(ma)
         v = _viec_moi(tieu_de, loai_viec, nguoi_nhan["ten"])
         v.update({"nguoi_giao": nguoi_giao["ten"], "nguon": "giao",
-                  "trang_thai": CHO_NHAN, "tu_yeu_cau": tu_yeu_cau or ""})
+                  "trang_thai": CHO_NHAN, "tu_yeu_cau": tu_yeu_cau or "",
+                  "han": _han_hop_le(han), "gap": bool(gap)})
         so["viec"].append(v)
         _ghi_tuan(so)
     ghi_nhat_ky("giao_viec", nguoi_giao["ten"],
@@ -219,7 +268,8 @@ def them_viec_giao(ma: str, nguoi_giao: dict, nguoi_nhan: dict,
 
 
 def yeu_cau_phoi_hop(ma: str, nguoi_gui: dict, nguoi_nhan: dict,
-                     tieu_de: str, loai_viec: str) -> dict:
+                     tieu_de: str, loai_viec: str,
+                     han: str = "", gap: bool = False) -> dict:
     """Gửi YÊU CẦU phối hợp sang bộ phận khác — trạng thái CHỜ PHỐI HỢP.
 
     Bên nhận toàn quyền: nhận rồi tự làm, hoặc chẻ việc con giao cho người của họ
@@ -235,7 +285,8 @@ def yeu_cau_phoi_hop(ma: str, nguoi_gui: dict, nguoi_nhan: dict,
         v = _viec_moi(tieu_de, loai_viec, nguoi_nhan["ten"])
         v.update({"nguoi_giao": nguoi_gui["ten"], "nguon": "phoi_hop",
                   "trang_thai": CHO_PHOI_HOP,
-                  "bo_phan_gui": nguoi_gui.get("bo_phan", "")})
+                  "bo_phan_gui": nguoi_gui.get("bo_phan", ""),
+                  "han": _han_hop_le(han), "gap": bool(gap)})
         so["viec"].append(v)
         _ghi_tuan(so)
     ghi_nhat_ky("yeu_cau_phoi_hop", nguoi_gui["ten"],
@@ -256,16 +307,39 @@ def viec_con(ma: str, id_yeu_cau: str) -> list[dict]:
     return [v for v in doc_tuan(ma)["viec"] if v.get("tu_yeu_cau") == id_yeu_cau]
 
 
-def them_viec_tu(ma: str, user: dict, tieu_de: str, loai_viec: str = "") -> dict:
+def them_viec_tu(ma: str, user: dict, tieu_de: str, loai_viec: str = "",
+                 han: str = "", gap: bool = False) -> dict:
     """Việc nhân sự tự nhận — không qua luật giao, vào thẳng ĐANG LÀM."""
     with _khoa:
         so = doc_tuan(ma)
         v = _viec_moi(tieu_de, loai_viec, user["ten"])
-        v["luc_nhan"] = v["luc_tao"]
+        v.update({"luc_nhan": v["luc_tao"], "han": _han_hop_le(han), "gap": bool(gap)})
         so["viec"].append(v)
         _ghi_tuan(so)
     ghi_nhat_ky("tu_them_viec", user["ten"],
                 {"tuan": ma, "viec": v["id"], "tieu_de": v["tieu_de"]})
+    return v
+
+
+def danh_dau(ma: str, id_viec: str, user: dict,
+             gap: bool | None = None, han: str | None = None) -> dict:
+    """Đổi dấu GẤP / hạn chót sau khi việc đã tồn tại.
+
+    Ai đổi được: người giao việc đó (hoặc Owner) — vì gấp/hạn là cam kết với người
+    cần kết quả. Việc nhân sự TỰ THÊM thì chính chủ tự đặt (việc của họ)."""
+    with _khoa:
+        so = doc_tuan(ma)
+        v = _tim(so, id_viec)
+        tu_minh = v["nguon"] == "tu_them" and v["nguoi"] == user["ten"]
+        if not (tu_minh or duoc_xac_nhan(v, user)):
+            raise PermissionError("Chỉ người giao việc (hoặc Owner) mới đổi hạn / dấu gấp.")
+        if gap is not None:
+            v["gap"] = bool(gap)
+        if han is not None:
+            v["han"] = _han_hop_le(han)
+        _ghi_tuan(so)
+    ghi_nhat_ky("danh_dau", user["ten"],
+                {"tuan": ma, "viec": id_viec, "gap": v["gap"], "han": v["han"]})
     return v
 
 
@@ -500,6 +574,9 @@ def thong_ke_nguoi(ma: str, ten: str) -> dict:
         "chua_nhan": sum(1 for v in mau_so
                          if v["trang_thai"] in (CHO_NHAN, CHO_PHOI_HOP)),
         "phoi_hop": sum(1 for v in mau_so if v["nguon"] == "phoi_hop"),
+        "gap": sum(1 for v in mau_so if v.get("gap")
+                   and v["trang_thai"] != XAC_NHAN),
+        "qua_han": sum(1 for v in mau_so if tinh_han(v)["chu"].startswith("Quá hạn")),
         "bi_tu_choi": sum(1 for v in ds if v["trang_thai"] == TU_CHOI),
         "bi_huy": sum(1 for v in ds if v["trang_thai"] == HUY),
         "ket": sum(1 for v in mau_so if v["so_lan_doi"] >= DOI_LA_KET),

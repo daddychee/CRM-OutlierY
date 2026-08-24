@@ -188,3 +188,24 @@ con mang `tu_yeu_cau` = id yêu cầu gốc để truy ngược.
 
 Thông báo thêm 3 sự kiện: bên nhận thấy *"N yêu cầu phối hợp đang chờ trả lời"*
 (quá hạn → đỏ); bên gửi thấy *"chờ bạn nghiệm thu"* và *"bị bộ phận kia từ chối"*.
+
+## 11. HẠN CHÓT + DẤU GẤP (Owner yêu cầu 24/08)
+
+Hai trường tùy chọn trên mọi việc: `han` (ngày, YYYY-MM-DD) và `gap` (dấu **GẤP**).
+
+| Điều | Luật |
+|---|---|
+| Ai đặt | Người giao lúc giao / gửi yêu cầu phối hợp; đổi sau bằng `danh_dau` — **người giao hoặc Owner**. Việc nhân sự TỰ THÊM thì chính chủ tự đặt |
+| Người làm | KHÔNG tự gỡ dấu GẤP của việc được giao (gấp là cam kết với người cần kết quả) |
+| Hạn sai định dạng | Báo lỗi thẳng, KHÔNG âm thầm bỏ qua — người giao tưởng đã đặt hạn mà thật ra không thì tệ hơn |
+| Việc đã ngã ngũ | Hết nhắc hạn (xác nhận/hủy/từ chối/dời) — không dọa người ta bằng việc đã xong |
+
+**Nhãn hạn** (tính ở lõi, UI chỉ hiển thị): `Quá hạn N ngày` / `Hạn hôm nay` (đỏ) ·
+`Hạn ngày mai`, còn ≤3 ngày (vàng) · xa hơn thì chỉ hiện ngày, không tô màu.
+
+**Sắp xếp**: việc GẤP lên đầu, rồi quá hạn / đến hạn hôm nay, rồi hạn gần dần — thứ
+cần làm trước nằm trên đầu màn hình, không phải cuộn tìm.
+
+**Thông báo** thêm 3 dòng đỏ: *N việc đã quá hạn* · *N việc đến hạn hôm nay* ·
+*N việc được đánh dấu GẤP* (không đếm trùng việc đã nằm trong hai nhóm trên);
+leader thêm *N việc của bộ phận đã quá hạn*.

@@ -59,8 +59,11 @@
     <select id="g-nguoi">
       {% for n in cap_duoi %}<option value="{{ n.ten }}">{{ n.ho_ten or n.ten }}{% if n.bo_phan %} — {{ n.bo_phan }}{% endif %}</option>{% endfor %}
     </select>
-    <input id="g-loai" list="ds-loai" placeholder="Loại việc" style="max-width:200px;flex:0 0 auto">
+    <input id="g-loai" list="ds-loai" placeholder="Loại việc" style="max-width:170px;flex:0 0 auto">
     <datalist id="ds-loai">{% for l in loai_viec %}<option value="{{ l }}">{% endfor %}</datalist>
+    <input id="g-han" type="date" title="Hạn chót (không bắt buộc)" style="flex:0 0 auto">
+    <label class="goi-y" style="display:flex;align-items:center;gap:5px;margin:0;cursor:pointer">
+      <input type="checkbox" id="g-gap"> Gấp</label>
     <button class="nut chinh" id="g-nut">Giao việc</button>
   </div>
   <div class="loi" id="g-loi" hidden></div>
@@ -81,7 +84,10 @@
     <select id="p-nguoi">
       {% for n in ngang_cap %}<option value="{{ n.ten }}">{{ n.ho_ten or n.ten }} — {{ n.bo_phan }}</option>{% endfor %}
     </select>
-    <input id="p-loai" list="ds-loai" placeholder="Loại việc" style="max-width:200px;flex:0 0 auto">
+    <input id="p-loai" list="ds-loai" placeholder="Loại việc" style="max-width:170px;flex:0 0 auto">
+    <input id="p-han" type="date" title="Cần xong trước ngày (không bắt buộc)" style="flex:0 0 auto">
+    <label class="goi-y" style="display:flex;align-items:center;gap:5px;margin:0;cursor:pointer">
+      <input type="checkbox" id="p-gap"> Gấp</label>
     <button class="nut chinh" id="p-nut">Gửi yêu cầu</button>
   </div>
   <div class="loi" id="p-loi" hidden></div>
@@ -94,7 +100,8 @@
   <ul class="viecs" style="margin-top:12px">
     {% for v in da_gui %}
     <li data-id="{{ v.id }}">
-      <div class="ten">{{ v.tieu_de }}
+      <div class="ten">{% if v.gap %}<span class="the gap">GẤP</span> {% endif %}
+        {%- set hn = v|han %}{% if hn.chu %}<span class="the{% if hn.muc %} han-{{ hn.muc }}{% endif %}">{{ hn.chu }}</span> {% endif %}{{ v.tieu_de }}
         <div class="ai">Gửi {{ v.nguoi }} ·
           {% if v.trang_thai == 'cho_phoi_hop' %}chờ họ đồng ý
           {% elif v.trang_thai == 'dang_lam' %}họ đang làm
@@ -120,7 +127,8 @@
   <ul class="viecs">
     {% for v in cho_xac_nhan %}
     <li data-id="{{ v.id }}">
-      <div class="ten">{{ v.tieu_de }}
+      <div class="ten">{% if v.gap %}<span class="the gap">GẤP</span> {% endif %}
+        {%- set hn = v|han %}{% if hn.chu %}<span class="the{% if hn.muc %} han-{{ hn.muc }}{% endif %}">{{ hn.chu }}</span> {% endif %}{{ v.tieu_de }}
         <div class="ai">{{ v.nguoi }} · {{ v.checklist|selectattr('xong')|list|length }}/{{ v.checklist|length }} bước
           {%- if v.loai_viec %} · {{ v.loai_viec }}{% endif %}</div>
       </div>
@@ -140,7 +148,8 @@
   <ul class="viecs">
     {% for v in con_treo %}
     <li data-id="{{ v.id }}">
-      <div class="ten">{{ v.tieu_de }}
+      <div class="ten">{% if v.gap %}<span class="the gap">GẤP</span> {% endif %}
+        {%- set hn = v|han %}{% if hn.chu %}<span class="the{% if hn.muc %} han-{{ hn.muc }}{% endif %}">{{ hn.chu }}</span> {% endif %}{{ v.tieu_de }}
         <div class="ai">{{ v.nguoi }} ·
           {% if v.trang_thai == 'cho_nhan' %}chưa nhận việc{% else %}đang làm{% endif %}
           {%- if v.so_lan_doi %} · đã dời {{ v.so_lan_doi }} lần{% endif %}</div>
@@ -218,7 +227,9 @@
       if (!ten) { return; }
       if (!loai) { baoLoi(gLoi, new Error("Phải chọn loại việc.")); return; }
       gNut.disabled = true;
-      goi("giao", { tieu_de: ten, nguoi: document.getElementById("g-nguoi").value, loai_viec: loai })
+      goi("giao", { tieu_de: ten, nguoi: document.getElementById("g-nguoi").value, loai_viec: loai,
+                    han: document.getElementById("g-han").value || "",
+                    gap: document.getElementById("g-gap").checked ? "1" : "" })
         .then(function () { location.reload(); })
         .catch(function (e) { gNut.disabled = false; baoLoi(gLoi, e); });
     };
@@ -238,7 +249,8 @@
       if (!loai) { baoLoi(pLoi, new Error("Phải chọn loại việc.")); return; }
       pNut.disabled = true;
       goi("phoi-hop", { tieu_de: ten, nguoi: document.getElementById("p-nguoi").value,
-                        loai_viec: loai })
+                        loai_viec: loai, han: document.getElementById("p-han").value || "",
+                        gap: document.getElementById("p-gap").checked ? "1" : "" })
         .then(function () { location.reload(); })
         .catch(function (e) { pNut.disabled = false; baoLoi(pLoi, e); });
     };
