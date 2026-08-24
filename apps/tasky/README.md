@@ -49,7 +49,7 @@ dò substring các từ đó để suy X-Remote-Role gửi sang app khác (bẫy
 ## Tiến độ
 
 - [x] **B1** Khung app + claims + đăng ký 4 chỗ (PORTS.md · apps.json · phan_quyen.json · start-all.ps1)
-- [ ] B2 Lõi dữ liệu + luật (giao / nhận / từ chối / tick / tỉ lệ) — có test, chưa UI
+- [x] **B2** Lõi `src/tuan.py`: sổ tuần + luật giao/nhận/từ chối/tick/xác nhận/dời/hủy/đóng tuần + thống kê (32 test)
 - [ ] B3 Màn *Việc của tôi*
 - [ ] B4 Màn *Giao việc* + xác nhận + đóng tuần
 - [ ] B5 Màn *Báo cáo* (4 phạm vi)
