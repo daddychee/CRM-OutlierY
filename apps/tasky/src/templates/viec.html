@@ -20,6 +20,14 @@
   </div>
 </div>
 
+{% if tk_bao %}
+<div class="bao">
+  {% for m in tk_bao %}
+  <a class="{{ m.muc_do }}" href="{{ m.duong }}"><span class="cham"></span>{{ m.chu }}<span class="di">xem →</span></a>
+  {% endfor %}
+</div>
+{% endif %}
+
 <div class="tk-so">
   <div class="tk-o">
     <div class="nhan">Việc tuần này</div>

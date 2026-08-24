@@ -107,6 +107,15 @@
     #nut-thanh-ben{display:inline-block}
     .noi-dung{max-width:100%}
   }
+  /* Huy hiệu thông báo Tasky — màu theo mức cấp thiết cao nhất */
+  :root{--tkb-cap:#d97c6c;--tkb-luu:#d6a457;--tkb-tin:#4c8fe0}
+  :root[data-theme="light"]{--tkb-cap:#b14a3c;--tkb-luu:#8a5a00;--tkb-tin:#2c6fc4}
+  .tk-badge{margin-left:auto;min-width:19px;height:19px;padding:0 6px;border-radius:999px;
+    font-size:11.5px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;
+    color:var(--th-090c12);background:var(--tkb-tin)}
+  .tk-badge.cap{background:var(--tkb-cap)}
+  .tk-badge.luu_y{background:var(--tkb-luu)}
+  html[data-theme="light"] .tk-badge{color:#ffffff}
   {% block style_them %}{% endblock %}
 
   /* Token 2 theme (spec OUTLIERY 30/07) — TỐI là mặc định, SÁNG đè qua data-theme */
@@ -166,6 +175,7 @@
         {% include "_icon_app.html" %} {{ a.ten }}{% if a.slug == 'content-ultimate' %}
         <svg class="ic mui-nhom" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>{% endif %}
         {%- if a.slug == 'tasky' %}
+        {% if tk_huy_hieu and tk_huy_hieu.so %}<span class="tk-badge {{ tk_huy_hieu.muc_do }}">{{ tk_huy_hieu.so }}</span>{% endif %}
         <svg class="ic mui-nhom mo" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>{% endif %}</a>
       {#- Mục con của Tasky: chỉ hiện khi đang ở trong app này, và CHỈ hiện mục người
           dùng có quyền (cờ tk_giao / tk_bao_cao route tính từ X-Remote-Actions —

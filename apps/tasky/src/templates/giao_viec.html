@@ -39,6 +39,14 @@
   </div>
 </div>
 
+{% if tk_bao %}
+<div class="bao">
+  {% for m in tk_bao %}
+  <a class="{{ m.muc_do }}" href="{{ m.duong }}"><span class="cham"></span>{{ m.chu }}<span class="di">xem →</span></a>
+  {% endfor %}
+</div>
+{% endif %}
+
 {% if loi_iam %}<div class="khoi"><div class="loi" style="margin:0">{{ loi_iam }}</div></div>{% endif %}
 
 <div class="khoi">

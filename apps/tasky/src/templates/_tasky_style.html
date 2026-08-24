@@ -70,3 +70,24 @@
   .the.loai{background:var(--th-182233);color:var(--th-c2cbd9)}
   .trong{color:var(--muted);font-size:13.5px;padding:14px 0}
   .loi{color:var(--th-d97c6c);font-size:12.5px;margin-top:6px}
+
+  /* Ba mức cấp thiết. Hệ chỉ có sẵn đỏ (--th-d97c6c) và accent xanh, KHÔNG có vàng
+     nên Tasky tự khai CẶP token cho cả hai theme — không viết hex trần. */
+  :root{--tk-cap:#d97c6c;--tk-cap-nen:#331a16;--tk-luu:#d6a457;--tk-luu-nen:#2e2413;
+        --tk-tin:#6ba4e8;--tk-tin-nen:#16263f}
+  :root[data-theme="light"]{--tk-cap:#b14a3c;--tk-cap-nen:#fbe9e6;--tk-luu:#8a5a00;
+        --tk-luu-nen:#fdf1de;--tk-tin:#1b5fb2;--tk-tin-nen:#e8f0fb}
+
+  .bao{display:flex;flex-direction:column;gap:7px;margin-bottom:16px}
+  .bao a{display:flex;gap:10px;align-items:center;text-decoration:none;color:var(--ink);
+    border:1px solid var(--line);border-left-width:3px;border-radius:10px;
+    padding:9px 13px;font-size:13.5px;background:var(--sidebar)}
+  .bao a:hover{border-color:var(--accent);border-left-color:currentColor}
+  .bao a.cap{border-left-color:var(--tk-cap);background:var(--tk-cap-nen)}
+  .bao a.luu_y{border-left-color:var(--tk-luu);background:var(--tk-luu-nen)}
+  .bao a.tin{border-left-color:var(--tk-tin);background:var(--tk-tin-nen)}
+  .bao .cham{width:8px;height:8px;border-radius:50%;flex:none}
+  .bao a.cap .cham{background:var(--tk-cap)}
+  .bao a.luu_y .cham{background:var(--tk-luu)}
+  .bao a.tin .cham{background:var(--tk-tin)}
+  .bao .di{margin-left:auto;color:var(--muted);font-size:12.5px}

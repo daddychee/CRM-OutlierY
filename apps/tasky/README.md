@@ -30,6 +30,7 @@ pytest
 | Biến | Mặc định | Việc |
 |---|---|---|
 | `TASKY_DIR` | `data/tasky/db` | Gốc dữ liệu: `tuan/YYYY-Www.json` + `nhat-ky.jsonl` |
+| `TASKY_GIO_CHO_NHAN` | `24` | Giao bao nhiêu giờ mà chưa ai nhận thì thông báo chuyển mức đỏ |
 
 ## Quyền (khai ở `nen/rules/phan_quyen.json`)
 
@@ -53,6 +54,7 @@ dò substring các từ đó để suy X-Remote-Role gửi sang app khác (bẫy
 - [x] **B3** Màn *Việc của tôi* + API `/api-tasky/*` (nhận · từ chối có lý do · viết/tick checklist · báo xong · tự thêm việc)
 - [x] **B4** Màn *Giao việc*: giao (lọc cấp dưới cùng bộ phận) · xác nhận / trả lại · dời / hủy / đổi người · đóng tuần
 - [x] **B5** Màn *Báo cáo*: Leader bộ phận mình · Manager mọi bộ phận · HR Leader+ toàn công ty · Owner tất
+- [x] **B7** Thông báo trong hệ: huy hiệu sidebar + khối *Cần chú ý*, 3 mức màu (đỏ gấp / vàng lưu ý / xanh tin)
 - [x] **B6 (nền)** Kho quy trình: đếm checklist theo loại việc + bước lặp nhiều nhất; <3 lần → *chưa đủ tiền lệ*. Rút quy trình + gợi ý là vòng sau.
 
 ## Việc treo

@@ -37,7 +37,7 @@ os.environ.setdefault("TASKY_DIR", str(ROOT / "data" / "tasky" / "db"))
 
 PHIEN_BAN = "0.2.0"
 app = FastAPI(title="Tasky v3")
-from src import nhan_su  # noqa: E402 — danh sách người, đọc chỉ-đọc sổ IAM chung
+from src import nhan_su, thong_bao as tb  # noqa: E402 — danh sách người, đọc chỉ-đọc sổ IAM chung
 from src import tuan as tuan_lo  # noqa: E402 — lõi sổ tuần (đọc TASKY_DIR lúc gọi hàm)
 from nen.common.sidebar import ctx_sidebar  # noqa: E402 — cờ sidebar UI_FLOW.md mục 2
 
@@ -83,12 +83,21 @@ yeu_cau_xac_nhan = _yeu_cau("xac_nhan_ket_qua", "Chỉ Leader trở lên mới x
 yeu_cau_bao_cao = _yeu_cau("bao_cao_bo_phan", "Báo cáo dành cho Leader trở lên.")
 
 
-def _co_sidebar(x_remote_actions: str) -> dict:
-    """Cờ hiện mục con sidebar — CHỈ theo cờ gateway phát, không tự suy từ level."""
+def _co_sidebar(x_remote_actions: str, ma: str = "", user: dict | None = None) -> dict:
+    """Cờ hiện mục con sidebar + huy hiệu thông báo — CHỈ theo cờ gateway phát,
+    không tự suy từ level. Thông báo sinh từ TRẠNG THÁI THẬT mỗi lần mở trang."""
     hd = cac_hanh_dong(x_remote_actions)
-    return {"tk_giao": "giao_viec" in hd,
+    co_giao = "giao_viec" in hd
+    ds = []
+    if ma and user:
+        ds = tb.cua_toi(ma, user)
+        if co_giao:
+            cap_duoi, _ = nhan_su.cap_duoi_cua(user)
+            ds += tb.cua_leader(ma, user, cap_duoi or [])
+    return {"tk_giao": co_giao,
             "tk_bao_cao": bool({"bao_cao_bo_phan", "bao_cao_cong_ty",
-                                "bao_cao_nhan_su"} & hd)}
+                                "bao_cao_nhan_su"} & hd),
+            "tk_bao": ds, "tk_huy_hieu": tb.tom_tat(ds)}
 
 
 def _ma_tuan_hop_le(ma: str) -> str:
@@ -128,7 +137,7 @@ def trang_viec(request: Request, user: dict = Depends(lay_user), tuan_xem: str =
         "loai_viec": tuan_lo.cac_loai_viec(),
         "tuan_truoc": tuan_lo.tuan_lien_ke(ma, -1),
         "tuan_sau": tuan_lo.tuan_lien_ke(ma, 1),
-        "tuan_nay": tuan_lo.ma_tuan(), **_co_sidebar(x_remote_actions)})
+        "tuan_nay": tuan_lo.ma_tuan(), **_co_sidebar(x_remote_actions, ma, user)})
 
 
 @app.get("/giao-viec", response_class=HTMLResponse)
@@ -150,7 +159,7 @@ def trang_giao(request: Request, user: dict = Depends(yeu_cau_giao_viec),
         "loai_viec": tuan_lo.cac_loai_viec(),
         "tuan_truoc": tuan_lo.tuan_lien_ke(ma, -1),
         "tuan_sau": tuan_lo.tuan_lien_ke(ma, 1),
-        "tuan_nay": tuan_lo.ma_tuan(), **_co_sidebar(x_remote_actions)})
+        "tuan_nay": tuan_lo.ma_tuan(), **_co_sidebar(x_remote_actions, ma, user)})
 
 
 @app.get("/bao-cao-tuan", response_class=HTMLResponse)
@@ -172,7 +181,7 @@ def trang_bao_cao(request: Request, user: dict = Depends(yeu_cau_bao_cao),
         "kho_quy_trinh": tuan_lo.kho_quy_trinh(),
         "tuan_truoc": tuan_lo.tuan_lien_ke(ma, -1),
         "tuan_sau": tuan_lo.tuan_lien_ke(ma, 1),
-        "tuan_nay": tuan_lo.ma_tuan(), **_co_sidebar(x_remote_actions)})
+        "tuan_nay": tuan_lo.ma_tuan(), **_co_sidebar(x_remote_actions, ma, user)})
 
 
 # ---------- API (dưới /api-tasky: đường sâu dưới /tasky bị proxy viết lại) ----------
