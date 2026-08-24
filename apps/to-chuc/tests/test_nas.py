@@ -1,15 +1,19 @@
-"""Test trang NAS công ty (01-05/08/2026): chỉ hiện khi ĐÃ cấu hình NAS_DUONG_DAN
-(không chìa đường dẫn giả); mọi người có claims đều xem được; nút copy phải có đường
-lui execCommand (LAN HTTP không có clipboard API — bài học sự cố chat 01/08);
-ổ NAS_RIENG_MANAGER ẩn hẳn với cấp thấp; smb:// quote tên share có dấu cách.
+"""Test trang NAS công ty (01-05/08/2026, nối nas_sync sau đó): chỉ hiện khi ĐÃ
+cấu hình NAS_DUONG_DAN (không chìa đường dẫn giả); mọi người có claims đều xem
+được; nút copy phải có đường lui execCommand (LAN HTTP không có clipboard API —
+bài học sự cố chat 01/08); ổ NAS_RIENG_MANAGER ẩn hẳn với cấp thấp; smb:// quote
+tên share có dấu cách.
 
 DI TRÚ V2: đăng nhập → CLAIMS gateway; bỏ các assert sidebar /lich-su /hoi-dap
-(trang của app ai-agent, không thuộc app này). Mạch nas_sync (tài khoản Windows
-đồng bộ) chưa mang sang — trang luôn chạy nhánh copy/map-ổ như hệ cũ lúc chưa bật
-đồng bộ; /nas/cai-dat/{so} vẫn phát .bat (file tự hỏi mật khẩu, không chứa gì mật)."""
+(trang của app ai-agent, không thuộc app này). nas_sync (tài khoản Windows đồng
+bộ) sống ở nen/common, GATEWAY gọi lúc đăng nhập — app này CHỈ ĐỌC trang_thai/
+bat() để vẽ khung "Tài khoản của bạn"; test dưới cùng ghim đúng việc ĐỌC đó,
+KHÔNG gọi PowerShell (conftest ép NAS_DONG_BO=false mặc định, test nào cần 'ok'
+tự bật + tự ghi sổ tay qua nas_sync._cap_nhat_so, không qua subprocess thật)."""
 
 from fastapi.testclient import TestClient
 
+from nen.common import nas_sync
 from src.main import app
 
 
@@ -81,3 +85,47 @@ def test_chua_dang_nhap_khong_xem_duoc(monkeypatch):
     monkeypatch.setenv("NAS_DUONG_DAN", r"\\192.168.1.99\kho-chung")
     r = TestClient(app).get("/nas", follow_redirects=False)
     assert r.status_code == 401   # V2: thiếu claims gateway → 401 (login là việc gateway)
+
+
+def test_tt_nas_doc_tu_nas_sync_khong_con_cung_tat(monkeypatch):
+    """nas_sync đã nối vào gateway — app CHỈ ĐỌC trang_thai()/bat() thật, không
+    còn hard-code 'tat'. NAS_DONG_BO tắt (mặc định conftest) → khung "Your
+    account" tự ẩn (dong_bo_bat=False), đúng nghĩa 'công tắc tắt'."""
+    monkeypatch.setenv("NAS_DUONG_DAN", r"\\192.168.1.99\kho-chung")
+    b = _login("thanh", 5).get("/nas").text
+    # Neo vào chuỗi CHỈ có trong khung tài khoản ("Tài khoản của bạn" còn xuất
+    # hiện ở hướng dẫn 3 bước luôn-hiện phía trên nên không dùng làm mốc được)
+    assert "Remember my credentials" not in b   # khung tài khoản ẩn khi công tắc tắt
+    assert nas_sync.trang_thai("thanh") == "tat"
+    assert nas_sync.bat() is False
+
+
+def test_tt_nas_ok_hien_khung_tai_khoan(monkeypatch):
+    """Bật công tắc + sổ có sẵn trạng thái 'ok' cho đúng người đăng nhập → khung
+    'Your account' phải HIỆN (dong_bo_bat=True) kèm đúng câu 'ready'. Ghi sổ TAY
+    qua _cap_nhat_so — không đi qua subprocess/PowerShell thật."""
+    monkeypatch.setenv("NAS_DUONG_DAN", r"\\192.168.1.99\kho-chung")
+    monkeypatch.setenv("NAS_DONG_BO", "true")
+    nas_sync._cap_nhat_so("thanh", {"trang_thai": "ok", "nhom": nas_sync.NHOM_TOAN_QUYEN,
+                                    "luc": "2026-08-18T00:00:00"})
+    b = _login("thanh", 5).get("/nas").text
+    assert nas_sync.trang_thai("thanh") == "ok"
+    assert "Tài khoản của bạn" in b and "Tài khoản NAS đã sẵn sàng." in b
+
+
+def test_nhat_ky_khong_chan_trang(monkeypatch):
+    """Nhật ký xóa phải TRẢ NGAY từ cache + quét NỀN — đo thật 22/08: Get-WinEvent
+    16,8s chạy đồng bộ trong route làm Owner treo trang ~17s. Test giả hàm quét
+    chậm 0,2s: lượt gọi đầu về ngay (rỗng), sau khi thread nền xong cache có dữ."""
+    import time as _t
+
+    import src.main as m
+    monkeypatch.setattr(m, "_nas_nk_cache", None)
+    monkeypatch.setattr(m, "_nas_quet_nhat_ky",
+                        lambda: (_t.sleep(0.2),
+                                 [{"luc": "x", "tai_khoan": "y", "duong": "z"}])[1])
+    t0 = _t.time()
+    assert m._nas_nhat_ky_xoa() == []                 # về NGAY, không chờ quét
+    assert _t.time() - t0 < 0.15
+    _t.sleep(0.5)                                     # chờ thread nền xong
+    assert m._nas_nhat_ky_xoa()[0]["tai_khoan"] == "y"  # cache đã được điền nền

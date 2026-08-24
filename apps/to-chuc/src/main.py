@@ -29,6 +29,7 @@ import os
 import re
 import shutil
 import subprocess
+import threading
 import time
 from datetime import date, datetime
 from pathlib import Path
@@ -65,7 +66,7 @@ from src.kpi import kpi_plannery, ky_hien_tai, tong_hop_kpi  # noqa: E402
 
 PHIEN_BAN = "2.0.0"
 app = FastAPI(title="Tổ chức v2")
-from nen.common import danh_ba, nhat_ky     # noqa: E402 — danh bạ đế (chỉ-đọc) + log P4
+from nen.common import danh_ba, nas_sync, nhat_ky  # noqa: E402 — danh bạ + NAS + log P4
 from nen.common.sidebar import ctx_sidebar  # noqa: E402 — cờ sidebar UI_FLOW.md mục 2
 templates = Jinja2Templates(directory=str(_APP_DIR / "src" / "templates"),
                             context_processors=[ctx_sidebar])
@@ -460,14 +461,12 @@ def finance_muc_tieu(ten: str = Form(...), ngan_sach: str = Form(...),
 
 
 # ═══════════════ NAS (01-05/08/2026 hệ cũ — mọi người có claims đều xem) ═══════════════
-# nas_sync (đồng bộ tài khoản Windows theo mật khẩu OUTLIERY) KHÔNG mang sang —
-# nó cần mật khẩu thật lúc đăng nhập nên thuộc gateway/IAM (việc treo, xem README).
-# tt_nas vì thế luôn 'tat' → trang chỉ hiện đường copy + hướng dẫn map ổ + smb://
-# (đúng hành vi hệ cũ khi NAS_DONG_BO tắt). NAS_DONG_BO ở đây chỉ còn vai trò
-# "app đang chạy NGAY TRÊN server share" → mới tra dung lượng ổ + nhật ký xóa.
-
-def _nas_dong_bo_bat() -> bool:
-    return os.getenv("NAS_DONG_BO", "false").strip().lower() == "true"
+# nas_sync (đồng bộ tài khoản Windows theo mật khẩu OUTLIERY) sống ở nen/common —
+# GATEWAY gọi lúc đăng nhập/tự đổi mật khẩu (nơi duy nhất biết mật khẩu thật);
+# app này CHỈ ĐỌC trạng thái (nas_sync.trang_thai) để vẽ khung "Tài khoản của bạn",
+# không tự đồng bộ gì. NAS_DONG_BO đọc qua nas_sync.bat() — MỘT công tắc chung
+# cho cả "app đang chạy trên server share" (tra dung lượng ổ + nhật ký xóa) LẪN
+# "gateway có đồng bộ tài khoản không" (khung tài khoản/nút Cài đặt).
 
 
 def _nas_cac_duong() -> list[str]:
@@ -525,17 +524,39 @@ def _nas_thong_tin_o(duong: str) -> dict | None:
             "trong_gb": f"{du.free / 2**30:,.0f}", "tong_gb": f"{du.total / 2**30:,.0f}"}
 
 
-_nas_nk_cache: tuple[float, list] | None = None  # (lúc đọc, dữ liệu) — cache 60s
+_nas_nk_cache: tuple[float, list] | None = None  # (lúc quét, dữ liệu) — TTL 60s
+_nas_nk_khoa_quet = threading.Lock()             # chỉ MỘT thread quét một lúc
 
 
 def _nas_nhat_ky_xoa() -> list[dict]:
-    """Nhật ký XÓA/ĐỔI TÊN trên NAS cho Manager+ (04/08/2026): đọc Event 4663
-    (audit DELETE) từ log Security — app chạy SYSTEM nên đọc được; đổi tên =
-    DELETE ở đường dẫn cũ nên cùng nguồn. Chỉ có sự kiện khi script dựng nền đã
-    bật SACL. Cache 60 giây; best-effort: lỗi → [] (panel tự ghi chú)."""
+    """Nhật ký xóa/đổi tên cho Manager+ — TRẢ NGAY cache hiện có (kể cả cũ/rỗng),
+    cache quá hạn thì kích quét NỀN cập nhật. ĐO THẬT 22/08: Get-WinEvent quét
+    2000 event Security mất 16,8s — bản cũ chạy đồng bộ trong route làm Owner
+    treo trang ~17s mỗi khi cache 60s hết hạn (đúng họ bài học Ý4 19/07: việc
+    chờ-lâu không được chạy đồng bộ trong request). Nhật ký 14 ngày không cần
+    realtime — trễ tối đa ~1 phút, đổi lấy trang mở tức thì."""
+    if _nas_nk_cache is None or time.time() - _nas_nk_cache[0] >= 60:
+        threading.Thread(target=_nas_quet_nhat_ky_nen, daemon=True).start()
+    return _nas_nk_cache[1] if _nas_nk_cache else []
+
+
+def _nas_quet_nhat_ky_nen() -> None:
+    """Chạy trong thread nền: quét thật rồi cập nhật cache. Lock non-blocking —
+    nhiều request cùng kích chỉ MỘT lượt PowerShell chạy, các lượt sau bỏ qua."""
     global _nas_nk_cache
-    if _nas_nk_cache and time.time() - _nas_nk_cache[0] < 60:
-        return _nas_nk_cache[1]
+    if not _nas_nk_khoa_quet.acquire(blocking=False):
+        return
+    try:
+        _nas_nk_cache = (time.time(), _nas_quet_nhat_ky())
+    finally:
+        _nas_nk_khoa_quet.release()
+
+
+def _nas_quet_nhat_ky() -> list[dict]:
+    """Phần quét THẬT (04/08/2026): đọc Event 4663 (audit DELETE) từ log Security
+    — app chạy SYSTEM nên đọc được; đổi tên = DELETE ở đường dẫn cũ nên cùng
+    nguồn. Chỉ có sự kiện khi script dựng nền đã bật SACL. Best-effort: lỗi → []
+    (panel tự ghi chú)."""
     goc = []
     for d in _nas_cac_duong():
         _nas_thong_tin_o(d)  # bảo đảm bảng share→đường local đã nạp
@@ -579,8 +600,7 @@ def _nas_nhat_ky_xoa() -> list[dict]:
                     break
         except Exception:
             ket_qua = []
-    _nas_nk_cache = (time.time(), ket_qua)
-    return ket_qua
+    return ket_qua   # cache do _nas_quet_nhat_ky_nen ghi — hàm này thuần quét
 
 
 @app.get("/nas", response_class=HTMLResponse)
@@ -601,18 +621,15 @@ def nas_trang(request: Request, user: dict = Depends(lay_user), chua_ok: int = 0
               "ten": (ten_o := d.rstrip("\\").split("\\")[-1] or "NAS"),
               "chu": _NAS_CHU_O[i] if i < len(_NAS_CHU_O) else "",
               "smb": f"smb://{nas_ip}/{quote(ten_o)}" if nas_ip else "",
-              "dl": _nas_thong_tin_o(d) if _nas_dong_bo_bat() else None}
+              "dl": _nas_thong_tin_o(d) if nas_sync.bat() else None}
              for i, d in enumerate(cac_duong) if i in thay_duoc]
     # Nhật ký xóa/đổi tên: CHỈ Manager+ thấy, và chỉ khi chạy trên server thật
     nhat_ky = (_nas_nhat_ky_xoa()
-               if user["level"] >= 4 and _nas_dong_bo_bat() else None)
+               if user["level"] >= 4 and nas_sync.bat() else None)
     return templates.TemplateResponse(request, "nas.html", {
         "user": user, "o_dia": o_dia, "nas_ip": nas_ip,
-        # tt_nas luôn 'tat': mạch đồng bộ tài khoản Windows chưa mang sang v2
-        # (thuộc gateway/IAM) → khung "Tài khoản của bạn" + nút Cài đặt tự ẩn,
-        # trang chỉ đường như hệ cũ khi chưa bật đồng bộ.
-        "dong_bo_bat": False, "chua_ok": chua_ok, "nhat_ky": nhat_ky,
-        "tt_nas": "tat",
+        "dong_bo_bat": nas_sync.bat(), "chua_ok": chua_ok, "nhat_ky": nhat_ky,
+        "tt_nas": nas_sync.trang_thai(user["ten"]),
         "nas_web": os.getenv("NAS_WEB", "").strip()})  # có web UI thì thêm nút mở
 
 

@@ -40,14 +40,18 @@ def _cach_ly_du_lieu(tmp_path, monkeypatch):
     monkeypatch.setenv("IAM_DB", str(tmp_path / "iam.db"))
     # Kho tài liệu gốc hồ sơ (DE.md mục 12.1) — trỏ tmp, không đụng kho thật
     monkeypatch.setenv("HO_SO_TAI_LIEU_DIR", str(tmp_path / "ho-so-tai-lieu"))
-    # NAS: mặc định chưa cấu hình + không chạy trên server (không gọi PowerShell)
+    # NAS: mặc định chưa cấu hình + không chạy trên server (không gọi PowerShell);
+    # NAS_SO_DUONG trỏ tmp phòng test nào lỡ bật NAS_DONG_BO=true không đọc/ghi sổ thật
     monkeypatch.delenv("NAS_DUONG_DAN", raising=False)
     monkeypatch.setenv("NAS_DONG_BO", "false")
     monkeypatch.setenv("NAS_RIENG_MANAGER", "")
+    monkeypatch.setenv("NAS_SO_DUONG", str(tmp_path / "nas-dong-bo.json"))
     monkeypatch.delenv("NAS_WEB", raising=False)
-    # trạng thái RAM sống giữa các test: throttle chấm công + DEK vault
+    # trạng thái RAM sống giữa các test: throttle chấm công + DEK vault + phiên NAS
     from src import cham_cong, vault
+    from nen.common import nas_sync
     cham_cong._da_ghi.clear()
+    nas_sync._da_dong_bo_phien.clear()
     vault.khoa()
     yield
     vault.khoa()
