@@ -150,8 +150,8 @@ def xoa_khoi_feedback(duong_thu_muc: str, xac_nhan_ma_tap: str, nguoi: str) -> d
     if not d.is_dir():
         raise FileNotFoundError(duong_thu_muc)
     if d.name.strip().lower() not in kho_video.TEN_THU_MUC_FEEDBACK:
-        raise PermissionError("Chỉ xóa được thư mục tên 'Feedback' (hoặc 'FB') — "
-                              "thư mục tập và kho phim gốc app không đụng tới.")
+        raise PermissionError("Chỉ xóa được thư mục tên đúng 'Feedback' — thư mục "
+                              "tập và kho phim gốc app không đụng tới.")
     rel = d.relative_to(goc.resolve()).as_posix()
     tap = kho_video.ma_tap({"ten_file": "", "duong": rel + "/x.mp4"})
     if (xac_nhan_ma_tap or "").strip().upper() != tap:

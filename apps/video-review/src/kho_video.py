@@ -29,9 +29,10 @@ ROOT = _APP_DIR.parents[1]                                # D:\AI AGENT OUTLIERY
 # 'Awaiting' suy từ 'chưa có bình luận nào', không phải giá trị lưu trong sổ.
 # 'da_xoa' là GỠ MỀM, không phải một bước duyệt. 'can_sua' đã nghỉ hưu (mig 004).
 TRANG_THAI_VIDEO = ("dang_duyet", "da_duyet", "da_xoa")
-# Team đặt cả 'Feedback' lẫn 'FB' (LI086 dùng FB) — nhận cả hai, nhưng CHỈ hai
-# tên này: tên lạ thì coi như không có khối feedback, không mở đường xóa thư mục.
-TEN_THU_MUC_FEEDBACK = frozenset({"feedback", "fb"})
+# CHỈ đúng một tên 'Feedback' (user chốt 24/08: giữ một quy ước, user sẽ nhắc
+# anh em đặt đúng). Viết tắt kiểu 'FB' KHÔNG được nhận — thư mục tên lạ coi như
+# không có khối feedback nên không bao giờ mở đường xóa cả thư mục tập.
+TEN_THU_MUC_FEEDBACK = frozenset({"feedback"})
 # .mov để được nhưng cảnh báo ở UI (tùy codec trình duyệt mới phát) — mp4/webm chắc ăn.
 DUOI_CHO_PHEP = {".mp4": "video/mp4", ".m4v": "video/mp4",
                  ".webm": "video/webm", ".mov": "video/quicktime"}

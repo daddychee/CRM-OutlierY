@@ -226,15 +226,22 @@ def test_ban_sua_moi_lam_song_lai_co_awaiting_cua_tap(client, khoi):
     assert "Awaiting review" not in nhom2[:nhom2.index("</summary>")]
 
 
-def test_thu_muc_FB_cung_duoc_coi_la_khoi_feedback(client):
-    """Team viết tắt 'FB' (LI086 thật đang dùng) — phải nhận, còn tên lạ thì không."""
+def test_chi_dung_ten_Feedback_moi_la_khoi_don_duoc(client):
+    """User chốt 24/08: giữ MỘT quy ước 'Feedback'. Viết tắt 'FB' (LI086 từng dùng)
+    vẫn gom đúng tập nhưng KHÔNG được coi là khối feedback → không có nút dọn cả
+    thư mục, phải đổi tên trên NAS cho đúng."""
     goc = kho_video.nas_dir()
     (goc / "Life In" / "US" / "LI086" / "FB").mkdir(parents=True)
     (goc / "Life In" / "US" / "LI086" / "FB" / "LI086_1.mp4").write_bytes(b"v")
     client.post("/api-vr/nas-lien-ket",
                 data={"duong": "Life In/US/LI086/FB/LI086_1.mp4"}, headers=h())
     v = kho_video.lay_video("VR-0001")
-    assert kho_video.ma_tap(v) == "LI086"
-    assert kho_video.thu_muc_feedback(v) == "Life In/US/LI086/FB"
+    assert kho_video.ma_tap(v) == "LI086"          # vẫn gom đúng tập
+    assert kho_video.thu_muc_feedback(v) == ""     # nhưng không phải khối feedback
     kho_video.doi_trang_thai("VR-0001", "da_duyet")
-    assert 'class="nut nho nguy don-nut"' in client.get("/danh-sach", headers=_mgr()).text
+    trang = client.get("/danh-sach", headers=_mgr()).text
+    assert 'class="nut nho nguy don-nut"' not in trang
+    # và server chặn thẳng nếu ai đó gọi API trỏ vào thư mục FB
+    r = client.post("/api-vr/nas-xoa-feedback",
+                    data={"duong": "Life In/US/LI086/FB", "ma_tap": "LI086"}, headers=_mgr())
+    assert r.status_code == 403

@@ -184,10 +184,14 @@
   **BÀI HỌC (cùng họ với bug A/B của Kho-thiếu hệ cũ):** đừng lấy "có dữ liệu" làm
   proxy cho "đã có người làm việc" — phải hỏi AI làm. Dấu vết thời gian trong sổ
   là thứ chứng minh nguyên nhân, không phải suy đoán từ mô tả triệu chứng.
-- 24/08/2026 — **THƯ MỤC 'FB' CŨNG LÀ KHỐI FEEDBACK**: team dùng `LI086/FB/` chứ
-  không phải `Feedback/` (thấy khi soi dữ liệu thật). `TEN_THU_MUC_FEEDBACK` thành
-  frozenset {'feedback','fb'} — nhận CẢ HAI nhưng CHỈ hai tên này; tên lạ coi như
-  không có khối feedback nên không bao giờ mở đường xóa thư mục tập.
+- 24/08/2026 — **CHỐT MỘT TÊN 'Feedback' DUY NHẤT**: soi dữ liệu thật thấy team
+  đặt `LI086/FB/`; tôi đã cho nhận cả 'fb' nhưng **user chốt giữ một quy ước, tự
+  nhắc anh em đặt đúng** → `TEN_THU_MUC_FEEDBACK = frozenset({'feedback'})`.
+  Thư mục tên khác vẫn GOM ĐÚNG TẬP nhưng không được coi là khối feedback → không
+  có nút dọn cả thư mục, và API trả 403 nếu ai đó trỏ thẳng vào. Có test ghim cả
+  hai vế. **Hệ quả cần người làm tay: `Life In/US/LI086/FB` phải đổi tên thành
+  `Feedback` trên NAS thì tập đó mới dọn được bằng app** (app không đổi tên thư
+  mục — chỉ đọc và xóa file trong khối đúng tên).
 
 ## Quyết định thiết kế (đừng phá)
 
