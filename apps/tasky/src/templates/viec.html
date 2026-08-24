@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Tasky — OUTLIERY{% endblock %}
+{% block topbar_ten %}Tasky{% endblock %}
+
+{% block style_them %}
+  .tk-card{background:var(--sidebar);border:1px solid var(--line);border-radius:14px;
+    padding:18px 20px;margin-bottom:16px}
+  .tk-card h2{margin:0 0 8px;font-size:15.5px}
+  .tk-hint{font-size:13px;color:var(--muted);line-height:1.65}
+  .tk-hint b{color:var(--ink);font-weight:600}
+{% endblock %}
+
+{% block noi_dung %}
+<div class="tk-card">
+  <h2>Việc của tôi</h2>
+  <p class="tk-hint">
+    Chào <b>{{ user.ho_ten or user.ten }}</b>{% if user.bo_phan %} — {{ user.bo_phan }}{% endif %}.<br>
+    Khung app đã dựng xong. Danh sách việc tuần và checklist triển khai lên ở bước kế tiếp.
+  </p>
+</div>
+{% endblock %}

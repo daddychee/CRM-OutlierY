@@ -1,0 +1,603 @@
+<title>Tasky</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@600;700&display=swap">
+<style>
+/* Tokens: bare :root = LIGHT. Bảng màu COPY từ base.html OUTLIERY (Breakout Signal);
+   bản nhúng thật sẽ extends base.html nên kế thừa token --th-* của hệ. */
+:root{
+  --bg:#ffffff; --panel:#ffffff; --panel2:#f7f8fa; --line:#e6e6e6; --line2:#d9d9d9;
+  --ink:#16181c; --ink2:#3a3f47; --muted:#6c6c72;
+  --accent:#2c6fc4; --accent-ink:#1b5fb2; --tint:#e8f0fb;
+  --ok:#1f7a4d; --ok-bg:#e4f2ea; --warn:#a15c00; --warn-bg:#fdf1de;
+  --danger:#b14a3c; --danger-bg:#fbe9e6;
+  --r:10px; --shadow:0 1px 2px rgba(16,24,40,.06), 0 1px 3px rgba(16,24,40,.04);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#090c12; --panel:#121826; --panel2:#141c2b; --line:#243149; --line2:#31425e;
+    --ink:#e8edf4; --ink2:#c2cbd9; --muted:#8b96a8;
+    --accent:#4c8fe0; --accent-ink:#6ba4e8; --tint:#16263f;
+    --ok:#6fbf8e; --ok-bg:#12301f; --warn:#d6a457; --warn-bg:#2e2413;
+    --danger:#d97c6c; --danger-bg:#331a16;
+    --shadow:0 1px 2px rgba(0,0,0,.4);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#090c12; --panel:#121826; --panel2:#141c2b; --line:#243149; --line2:#31425e;
+  --ink:#e8edf4; --ink2:#c2cbd9; --muted:#8b96a8;
+  --accent:#4c8fe0; --accent-ink:#6ba4e8; --tint:#16263f;
+  --ok:#6fbf8e; --ok-bg:#12301f; --warn:#d6a457; --warn-bg:#2e2413;
+  --danger:#d97c6c; --danger-bg:#331a16;
+  --shadow:0 1px 2px rgba(0,0,0,.4);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font:400 14px/1.55 Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+  -webkit-font-smoothing:antialiased}
+h1,h2,h3{margin:0;text-wrap:balance;font-weight:600;letter-spacing:-.01em}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+
+.app{display:grid;grid-template-columns:212px 1fr;min-height:100vh}
+.rail{background:var(--panel);border-right:1px solid var(--line);display:flex;
+  flex-direction:column;gap:2px;padding:14px 10px}
+.brand{display:flex;align-items:center;gap:9px;padding:6px 8px 14px}
+.mark{display:flex;align-items:flex-end;gap:2px;height:19px}
+.mark i{width:3px;background:var(--muted);border-radius:1px;display:block}
+.mark i:nth-child(1){height:7px}.mark i:nth-child(2){height:11px}
+.mark i:nth-child(3){height:9px}.mark i:nth-child(4){height:13px}
+.mark i:nth-child(5){height:19px;background:var(--accent)}
+.brand b{font:700 16px/1 "Space Grotesk",Inter,sans-serif;letter-spacing:-.02em}
+.navlab{font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);
+  padding:12px 8px 5px;font-weight:600}
+.nav{display:flex;align-items:center;gap:9px;padding:7px 9px;border-radius:8px;
+  background:none;border:0;width:100%;text-align:left;cursor:pointer;color:var(--ink2)}
+.nav:hover{background:var(--panel2);color:var(--ink)}
+.nav[aria-current="true"]{background:var(--tint);color:var(--accent-ink);font-weight:600}
+.nav svg{width:15px;height:15px;flex:none;stroke:currentColor;fill:none;stroke-width:1.6}
+.who{margin-top:auto;border-top:1px solid var(--line);padding:11px 9px 3px;font-size:12px}
+.who b{display:block;font-weight:600}.who span{color:var(--muted)}
+
+main{min-width:0;display:flex;flex-direction:column}
+.topbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+  padding:14px 22px;border-bottom:1px solid var(--line);background:var(--panel)}
+.topbar h1{font-size:15px}
+.topbar .sub{color:var(--muted);font-size:12.5px}
+.spacer{flex:1}
+.wrap{padding:20px 22px 44px;max-width:1140px}
+
+.chip{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--line2);
+  border-radius:999px;padding:2px 9px;font-size:11.5px;color:var(--muted);white-space:nowrap}
+.chip.run{background:var(--tint);border-color:transparent;color:var(--accent-ink);font-weight:600}
+.chip.wait{background:var(--warn-bg);border-color:transparent;color:var(--warn);font-weight:600}
+.chip.done{background:var(--ok-bg);border-color:transparent;color:var(--ok);font-weight:600}
+.chip.stuck{background:var(--danger-bg);border-color:transparent;color:var(--danger);font-weight:600}
+.chip.giao{background:var(--panel2);color:var(--ink2)}
+.w{display:inline-block;min-width:20px;text-align:center;border-radius:5px;padding:1px 5px;
+  font-size:11px;font-weight:600;background:var(--panel2);color:var(--muted);
+  border:1px solid var(--line);font-variant-numeric:tabular-nums}
+.w.l3{background:var(--tint);color:var(--accent-ink);border-color:transparent}
+.btn{border:1px solid var(--line2);background:var(--panel);border-radius:8px;
+  padding:7px 13px;font-size:13px;font-weight:500;cursor:pointer}
+.btn:hover{border-color:var(--accent);color:var(--accent-ink)}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.pri:hover{background:var(--accent-ink);color:#fff}
+.btn.sm{padding:4px 9px;font-size:12px;border-radius:7px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);
+  box-shadow:var(--shadow)}
+
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(168px,1fr));gap:12px;margin-bottom:18px}
+.stat{padding:13px 15px}
+.stat .lab{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.stat .val{font:600 27px/1.15 "Space Grotesk",Inter,sans-serif;margin-top:5px;
+  font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.stat .val small{font-size:13px;font-weight:500;color:var(--muted);font-family:Inter,sans-serif}
+.stat .note{font-size:12px;color:var(--muted);margin-top:3px}
+.bar{height:5px;border-radius:3px;background:var(--panel2);overflow:hidden;margin-top:9px;
+  border:1px solid var(--line)}
+.bar i{display:block;height:100%;background:var(--accent)}
+
+.goal{margin-bottom:14px;overflow:hidden}
+.goal>header{display:flex;gap:12px;align-items:flex-start;padding:13px 15px;
+  border-bottom:1px solid var(--line);background:var(--panel2)}
+.goal h3{font-size:14px}
+.goal .kv{font-size:12.5px;color:var(--muted);margin-top:3px}
+.goal .kv b{color:var(--ink2);font-weight:500}
+.goal .pct{font:600 15px/1 "Space Grotesk",Inter,sans-serif;font-variant-numeric:tabular-nums}
+.tasks{list-style:none;margin:0;padding:0}
+.tasks li{display:flex;gap:11px;align-items:flex-start;padding:10px 15px;border-top:1px solid var(--line)}
+.tasks li:first-child{border-top:0}
+.tasks li:hover{background:var(--panel2)}
+.tick{width:17px;height:17px;flex:none;margin-top:1px;border:1.5px solid var(--line2);
+  border-radius:5px;background:var(--panel);cursor:pointer;display:grid;place-items:center;padding:0}
+.tick[data-s="xong"]{background:var(--warn-bg);border-color:var(--warn)}
+.tick[data-s="xacnhan"]{background:var(--ok);border-color:var(--ok)}
+.tick[data-s="dang"]{border-color:var(--accent);border-style:dashed}
+.tick svg{width:11px;height:11px;stroke:#fff;stroke-width:2.4;fill:none;display:none}
+.tick[data-s="xacnhan"] svg{display:block}
+.tick[data-s="xong"] svg{display:block;stroke:var(--warn)}
+.t-body{flex:1;min-width:0}
+.t-top{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.t-title{font-size:13.5px}
+.t-title.off{color:var(--muted);text-decoration:line-through}
+.t-meta{font-size:12px;color:var(--muted);margin-top:2px}
+.addrow{display:flex;gap:8px;padding:10px 15px;border-top:1px dashed var(--line2);align-items:center;flex-wrap:wrap}
+.addrow input{flex:1;min-width:150px;border:1px solid var(--line);border-radius:8px;padding:7px 10px;
+  background:var(--bg);color:var(--ink);font:inherit;font-size:13px}
+.addrow input::placeholder{color:var(--muted)}
+
+.sug{border:1px solid var(--accent);border-radius:var(--r);background:var(--panel);
+  overflow:hidden;margin-bottom:14px}
+.sug>header{display:flex;gap:10px;align-items:center;padding:11px 15px;background:var(--tint);flex-wrap:wrap}
+.sug h3{font-size:13.5px;color:var(--accent-ink)}
+.sug .why{font-size:12px;color:var(--accent-ink);opacity:.85}
+.src{padding:12px 15px;border-top:1px solid var(--line)}
+.src h4{margin:0 0 2px;font-size:12px;font-weight:600}
+.src .from{font-size:11.5px;color:var(--muted);margin-bottom:8px}
+.steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:5px}
+.steps li{display:flex;gap:9px;align-items:center;font-size:13px;color:var(--ink2);
+  border:1px dashed var(--line2);border-radius:8px;padding:6px 10px;background:var(--panel2)}
+.steps li span.txt{flex:1}
+
+.tblwrap{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r);background:var(--panel)}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{text-align:left;padding:9px 13px;border-bottom:1px solid var(--line);white-space:nowrap}
+th{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);
+  font-weight:600;background:var(--panel2)}
+tbody tr:last-child td{border-bottom:0}
+tbody tr:hover{background:var(--panel2)}
+td.num{font-variant-numeric:tabular-nums;text-align:right}
+.dept{font-weight:600;background:var(--panel2)}
+.mini{display:inline-block;width:52px;height:5px;border-radius:3px;background:var(--line);
+  overflow:hidden;vertical-align:middle;margin-right:7px}
+.mini i{display:block;height:100%;background:var(--accent)}
+
+.sect{margin:22px 0 10px;display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.sect h2{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.sect hr{flex:1;border:0;border-top:1px solid var(--line)}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}
+.pad{padding:14px 16px}
+.note{font-size:12.5px;color:var(--muted)}
+.list{list-style:none;margin:9px 0 0;padding:0;display:flex;flex-direction:column;gap:9px}
+.list li{display:flex;gap:10px;align-items:flex-start;font-size:13px}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--muted);margin-top:6px;flex:none}
+.dot.d{background:var(--danger)}.dot.w{background:var(--warn)}.dot.o{background:var(--ok)}
+.man[hidden]{display:none}
+@media (max-width:820px){
+  .app{grid-template-columns:1fr}
+  .rail{flex-direction:row;overflow-x:auto;align-items:center;padding:8px}
+  .navlab,.who{display:none}.nav{width:auto;white-space:nowrap}
+}
+</style>
+
+<div class="app">
+  <aside class="rail">
+    <div class="brand"><span class="mark"><i></i><i></i><i></i><i></i><i></i></span><b>Tasky</b></div>
+    <div class="navlab">Của tôi</div>
+    <button class="nav" data-man="tuan" aria-current="true">
+      <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Tuần này</button>
+    <button class="nav" data-man="baocao">
+      <svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Báo cáo của tôi</button>
+    <div class="navlab">Quản lý</div>
+    <button class="nav" data-man="giao">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="7" r="3"/><path d="M5 21v-2a4 4 0 0 1 4-4h6a4 4 0 0 1 4 4v2"/></svg>Giao việc</button>
+    <button class="nav" data-man="lanhdao">
+      <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 9v11"/></svg>Bảng lãnh đạo</button>
+    <div class="who"><b>Nguyễn Thu Hà</b><span>Vận hành – Sản xuất · Staff</span></div>
+  </aside>
+
+  <main>
+    <div class="topbar">
+      <div>
+        <h1 id="tb-t">Tuần 35 · 24 – 30/08/2026</h1>
+        <div class="sub" id="tb-s">Hôm nay Thứ Năm 27/08 · còn 3 ngày</div>
+      </div>
+      <span class="chip run" id="tb-c">Đang chạy</span>
+      <div class="spacer"></div>
+      <button class="btn" id="theme">Sáng / Tối</button>
+      <button class="btn pri" id="tb-b">Gửi kết quả tuần</button>
+    </div>
+
+    <section class="man wrap" id="man-tuan">
+      <div class="stats">
+        <div class="stat card">
+          <div class="lab">Hiệu suất</div>
+          <div class="val">41<small>% đã xác nhận</small></div>
+          <div class="bar"><i style="width:41%"></i></div>
+          <div class="note">59% tự khai — chờ leader xác nhận</div>
+        </div>
+        <div class="stat card">
+          <div class="lab">Điểm tuần</div>
+          <div class="val">7<small>/17đ</small></div>
+          <div class="note">Giao 5/13đ · Tự thêm 2/4đ</div>
+        </div>
+        <div class="stat card">
+          <div class="lab">Việc còn lại</div>
+          <div class="val">4<small>việc</small></div>
+          <div class="note">2 đang làm · 2 chưa bắt đầu</div>
+        </div>
+        <div class="stat card">
+          <div class="lab">Việc kẹt</div>
+          <div class="val" style="color:var(--danger)">1</div>
+          <div class="note">Đã dời sang tuần thứ 3</div>
+        </div>
+      </div>
+
+      <div class="sug">
+        <header>
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="var(--accent-ink)" stroke-width="1.7"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z"/></svg>
+          <div>
+            <h3>Gợi ý cách triển khai — “Dựng 6 video kênh Hidden Laos”</h3>
+            <div class="why">Leader vừa giao lúc 09:12 · gợi ý là NHÁP — bấm Nhận từng bước mới thành việc thật</div>
+          </div>
+          <div class="spacer"></div>
+          <button class="btn sm">Nhận tất cả</button>
+          <button class="btn sm">Bỏ qua</button>
+        </header>
+
+        <div class="src">
+          <h4>Việc tương tự bạn đã làm</h4>
+          <div class="from">Từ Tasky · lặp 6 lần, gần nhất tuần 34 · trung bình 3,2 ngày</div>
+          <ul class="steps">
+            <li><span class="txt">Rà transcript + chốt outline 6 tập</span><span class="w">2</span><button class="btn sm">Nhận</button></li>
+            <li><span class="txt">Dựng thô 6 video theo script</span><span class="w l3">3</span><button class="btn sm">Nhận</button></li>
+            <li><span class="txt">Làm thumbnail + tiêu đề A/B</span><span class="w">2</span><button class="btn sm">Nhận</button></li>
+            <li><span class="txt">QC trước upload theo checklist</span><span class="w">1</span><button class="btn sm">Nhận</button></li>
+          </ul>
+        </div>
+
+        <div class="src">
+          <h4>Mẫu quy trình của bộ phận</h4>
+          <div class="from">“Sản xuất video chuẩn” · Trần Quốc Huy lưu 12/08 · đã dùng 4 lần</div>
+          <ul class="steps">
+            <li><span class="txt">Đối chiếu lịch xuất bản trong PlannerY</span><span class="w">1</span><button class="btn sm">Nhận</button></li>
+            <li><span class="txt">Gửi bản dựng lên Video Review chờ duyệt</span><span class="w">1</span><button class="btn sm">Nhận</button></li>
+          </ul>
+        </div>
+
+        <div class="src">
+          <h4>Quy trình trong kho tài liệu</h4>
+          <div class="from">AI Agent · “Quy trình QC trước upload v2” — VH-2026-4471A2 · có trích nguồn</div>
+          <ul class="steps">
+            <li><span class="txt">Kiểm bản quyền nhạc nền + footage</span><span class="w">1</span><button class="btn sm">Nhận</button></li>
+            <li><span class="txt">Đối chiếu metadata với SEO Optimize</span><span class="w">1</span><button class="btn sm">Nhận</button></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="sect"><h2>Mục tiêu tuần</h2><hr></div>
+
+      <article class="goal card">
+        <header>
+          <div style="flex:1">
+            <h3>Ra 8 video kênh Life In US</h3>
+            <div class="kv">Leader <b>Trần Quốc Huy</b> giao · Kết quả cần có: <b>8 video xuất bản đúng lịch PlannerY</b></div>
+          </div>
+          <div style="text-align:right">
+            <div class="pct">3<span style="color:var(--muted);font-size:12px">/9đ</span></div>
+            <div class="bar" style="width:78px"><i style="width:33%"></i></div>
+          </div>
+        </header>
+        <ul class="tasks">
+          <li>
+            <button class="tick" data-s="xacnhan" aria-label="Trạng thái việc"><svg viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></svg></button>
+            <div class="t-body">
+              <div class="t-top"><span class="t-title off">Viết 4 script chương 1–4</span>
+                <span class="w l3">3</span><span class="chip giao">Leader giao</span><span class="chip done">Đã xác nhận</span></div>
+              <div class="t-meta">Xong 25/08 · Quốc Huy xác nhận 26/08</div>
+            </div>
+          </li>
+          <li>
+            <button class="tick" data-s="xong" aria-label="Trạng thái việc"><svg viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></svg></button>
+            <div class="t-body">
+              <div class="t-top"><span class="t-title">Dựng 4 video</span>
+                <span class="w l3">3</span><span class="chip giao">Leader giao</span><span class="chip wait">Chờ xác nhận</span></div>
+              <div class="t-meta">Bạn tick xong 27/08 — chưa tính vào % gửi lãnh đạo</div>
+            </div>
+          </li>
+          <li>
+            <button class="tick" data-s="dang" aria-label="Trạng thái việc"></button>
+            <div class="t-body">
+              <div class="t-top"><span class="t-title">Làm 8 thumbnail</span>
+                <span class="w">2</span><span class="chip giao">Leader giao</span><span class="chip">Đang làm</span></div>
+              <div class="t-meta">Bắt đầu 26/08</div>
+            </div>
+          </li>
+          <li>
+            <button class="tick" aria-label="Trạng thái việc"></button>
+            <div class="t-body">
+              <div class="t-top"><span class="t-title">Kiểm SEO metadata 8 video</span>
+                <span class="w">1</span><span class="chip giao">Leader giao</span></div>
+            </div>
+          </li>
+        </ul>
+        <div class="addrow"><input placeholder="Chẻ thêm một việc cho mục tiêu này…"><span class="w">1</span><button class="btn sm">Thêm</button></div>
+      </article>
+
+      <article class="goal card">
+        <header>
+          <div style="flex:1">
+            <h3>Chuẩn hóa quy trình QC trước upload</h3>
+            <div class="kv">Leader <b>Trần Quốc Huy</b> giao · Kết quả cần có: <b>checklist QC một trang, áp dụng từ tuần 36</b></div>
+          </div>
+          <div style="text-align:right">
+            <div class="pct">2<span style="color:var(--muted);font-size:12px">/4đ</span></div>
+            <div class="bar" style="width:78px"><i style="width:50%"></i></div>
+          </div>
+        </header>
+        <ul class="tasks">
+          <li>
+            <button class="tick" data-s="xacnhan" aria-label="Trạng thái việc"><svg viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></svg></button>
+            <div class="t-body">
+              <div class="t-top"><span class="t-title off">Soạn checklist QC</span>
+                <span class="w">2</span><span class="chip giao">Leader giao</span><span class="chip done">Đã xác nhận</span></div>
+            </div>
+          </li>
+          <li>
+            <button class="tick" aria-label="Trạng thái việc"></button>
+            <div class="t-body">
+              <div class="t-top"><span class="t-title">Chạy thử QC trên 2 video</span>
+                <span class="w">2</span><span class="chip giao">Leader giao</span><span class="chip stuck">Việc kẹt · đã dời 2 lần</span></div>
+              <div class="t-meta">Tuần 33 → 34 → 35 · lý do lần gần nhất: “chờ bản dựng của editor”</div>
+            </div>
+          </li>
+        </ul>
+      </article>
+
+      <div class="sect"><h2>Việc tự thêm</h2><hr><span class="note">Không thuộc mục tiêu nào — vẫn tính điểm đầy đủ</span></div>
+      <article class="goal card">
+        <ul class="tasks">
+          <li>
+            <button class="tick" data-s="xacnhan" aria-label="Trạng thái việc"><svg viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></svg></button>
+            <div class="t-body"><div class="t-top"><span class="t-title off">Sửa 3 thumbnail kênh cũ theo góp ý</span>
+              <span class="w">1</span><span class="chip">Tự thêm</span><span class="chip done">Đã xác nhận</span></div></div>
+          </li>
+          <li>
+            <button class="tick" data-s="xacnhan" aria-label="Trạng thái việc"><svg viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></svg></button>
+            <div class="t-body"><div class="t-top"><span class="t-title off">Họp bàn giao editor mới</span>
+              <span class="w">1</span><span class="chip">Tự thêm</span><span class="chip done">Đã xác nhận</span></div></div>
+          </li>
+          <li>
+            <button class="tick" data-s="dang" aria-label="Trạng thái việc"></button>
+            <div class="t-body"><div class="t-top"><span class="t-title">Dựng lại intro sau feedback Video Review</span>
+              <span class="w">2</span><span class="chip">Tự thêm</span><span class="chip">Đang làm</span></div></div>
+          </li>
+        </ul>
+        <div class="addrow"><input placeholder="Thêm việc bạn tự nhận…"><span class="w">1</span><button class="btn sm">Thêm</button></div>
+      </article>
+    </section>
+
+    <section class="man wrap" id="man-baocao" hidden>
+      <div class="stats">
+        <div class="stat card">
+          <div class="lab">Hiệu suất tuần 34</div>
+          <div class="val">82<small>%</small></div>
+          <div class="bar"><i style="width:82%"></i></div>
+          <div class="note" style="color:var(--ok)">▲ 11 điểm so với tuần 33 (71%)</div>
+        </div>
+        <div class="stat card">
+          <div class="lab">Điểm đã xác nhận</div>
+          <div class="val">14<small>/17đ</small></div>
+          <div class="note">Giao 10/12đ · Tự thêm 4/5đ</div>
+        </div>
+        <div class="stat card">
+          <div class="lab">Mục tiêu đạt</div>
+          <div class="val">2<small>/3</small></div>
+          <div class="note">1 mục tiêu chuyển tiếp sang tuần 35</div>
+        </div>
+        <div class="stat card">
+          <div class="lab">Việc kẹt</div>
+          <div class="val" style="color:var(--danger)">1</div>
+          <div class="note">Đã dời 2 lần liên tiếp</div>
+        </div>
+      </div>
+
+      <div class="grid2">
+        <div class="card pad">
+          <h3 style="font-size:13.5px">Việc chưa giải quyết — và đi đâu</h3>
+          <ul class="list">
+            <li><span class="dot d"></span><div><b>Chạy thử QC trên 2 video</b> <span class="w">2</span><br>
+              <span class="note">→ Dời sang tuần 35 (lần 2) · “chờ bản dựng của editor” — đã lên cờ việc kẹt</span></div></li>
+            <li><span class="dot w"></span><div><b>Dựng bản teaser kênh phụ</b> <span class="w">1</span><br>
+              <span class="note">→ Đổi người: chuyển cho Lê Minh Đức từ tuần 35</span></div></li>
+            <li><span class="dot"></span><div><b>Khảo sát 5 kênh đối thủ mới</b> <span class="w">2</span><br>
+              <span class="note">→ Hủy · “RadarY đã có dữ liệu, không cần làm tay”</span></div></li>
+          </ul>
+        </div>
+        <div class="card pad">
+          <h3 style="font-size:13.5px">Leader nhận xét khi đóng tuần</h3>
+          <p style="margin:9px 0 0;font-size:13px;color:var(--ink2)">
+            “Script tuần này chắc tay, nhịp câu đã bớt vụn. Việc QC kẹt 2 tuần rồi — tuần 35
+            làm trước, không chờ editor nữa mà lấy 2 video cũ chạy thử.”</p>
+          <p class="note" style="margin-top:8px">— Trần Quốc Huy · đóng tuần 34 lúc 09:40 ngày 25/08</p>
+          <h3 style="font-size:13.5px;margin-top:16px">Nhịp 4 tuần gần nhất</h3>
+          <ul class="list">
+            <li style="align-items:center"><span class="note" style="width:52px">Tuần 31</span><span class="mini"><i style="width:64%"></i></span><b>64%</b></li>
+            <li style="align-items:center"><span class="note" style="width:52px">Tuần 32</span><span class="mini"><i style="width:70%"></i></span><b>70%</b></li>
+            <li style="align-items:center"><span class="note" style="width:52px">Tuần 33</span><span class="mini"><i style="width:71%"></i></span><b>71%</b></li>
+            <li style="align-items:center"><span class="note" style="width:52px">Tuần 34</span><span class="mini"><i style="width:82%"></i></span><b>82%</b></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="man wrap" id="man-giao" hidden>
+      <div class="card pad" style="margin-bottom:16px">
+        <h3 style="font-size:13.5px">Giao mục tiêu tuần 35 — Vận hành – Sản xuất</h3>
+        <p class="note" style="margin:4px 0 12px">Leader chỉ giao được trong bộ phận mình. Mỗi mục tiêu phải nêu kết quả cần có.</p>
+        <div class="addrow" style="border-top:0;padding:0 0 9px">
+          <input placeholder="Mục tiêu tuần… (ví dụ: Ra 8 video kênh Life In US)" style="min-width:250px">
+          <input placeholder="Kết quả cần có…" style="min-width:200px">
+        </div>
+        <div class="addrow" style="border-top:0;padding:0">
+          <input placeholder="Giao cho… Nguyễn Thu Hà" style="max-width:230px">
+          <button class="btn sm">Mở mẫu quy trình</button>
+          <div class="spacer"></div>
+          <button class="btn sm">Lưu thành mẫu</button>
+          <button class="btn pri sm">Giao việc</button>
+        </div>
+      </div>
+
+      <div class="sect"><h2>Bộ phận đang làm gì tuần này</h2><hr></div>
+      <div class="tblwrap">
+        <table>
+          <thead><tr><th>Người</th><th>Được giao</th><th class="num">Điểm KH</th><th class="num">Xác nhận</th><th>Chờ duyệt</th><th>Trạng thái</th></tr></thead>
+          <tbody>
+            <tr><td>Nguyễn Thu Hà</td><td>2 mục tiêu · 9 việc</td><td class="num">17</td><td class="num">7</td>
+              <td><span class="chip wait">1 việc</span></td><td><span class="chip run">Đang chạy</span></td></tr>
+            <tr><td>Lê Minh Đức</td><td>2 mục tiêu · 6 việc</td><td class="num">11</td><td class="num">6</td>
+              <td>—</td><td><span class="chip run">Đang chạy</span></td></tr>
+            <tr><td>Phạm Bảo Ngọc</td><td>1 mục tiêu · 4 việc</td><td class="num">8</td><td class="num">3</td>
+              <td><span class="chip wait">2 việc</span></td><td><span class="chip wait">Chờ xác nhận</span></td></tr>
+            <tr><td>Vũ Hải Yến</td><td>chưa có việc nào</td><td class="num">—</td><td class="num">—</td>
+              <td>—</td><td><span class="chip">Chưa khai</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="note" style="margin-top:9px">Vũ Hải Yến chưa khai việc nào — hệ hiện “—”, không hiện 0% để khỏi bị đọc nhầm thành làm việc kém.</p>
+
+      <div class="sect"><h2>Chờ bạn xác nhận · Phạm Bảo Ngọc</h2><hr></div>
+      <article class="goal card">
+        <ul class="tasks">
+          <li><button class="tick" data-s="xong" aria-label="Trạng thái việc"><svg viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></svg></button>
+            <div class="t-body"><div class="t-top"><span class="t-title">Soạn 3 kịch bản ngách Hidden Laos</span><span class="w l3">3</span><span class="chip wait">Chờ xác nhận</span></div></div>
+            <button class="btn sm">Trả lại</button><button class="btn pri sm">Xác nhận</button></li>
+          <li><button class="tick" data-s="xong" aria-label="Trạng thái việc"><svg viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></svg></button>
+            <div class="t-body"><div class="t-top"><span class="t-title">Đối chiếu 2 pool RadarY</span><span class="w">2</span><span class="chip wait">Chờ xác nhận</span></div></div>
+            <button class="btn sm">Trả lại</button><button class="btn pri sm">Xác nhận</button></li>
+          <li><button class="tick" aria-label="Trạng thái việc"></button>
+            <div class="t-body"><div class="t-top"><span class="t-title">Dựng báo cáo 8 phase cho pool ES</span><span class="w l3">3</span><span class="chip">Chưa xong</span></div>
+              <div class="t-meta">Đóng tuần phải chọn: dời sang tuần sau · hủy (ghi lý do) · đổi người</div></div>
+            <button class="btn sm">Dời</button><button class="btn sm">Hủy</button><button class="btn sm">Đổi người</button></li>
+        </ul>
+        <div class="addrow" style="justify-content:flex-end"><span class="note" style="flex:1">Xử lý hết việc còn treo rồi mới đóng được tuần cho người này.</span><button class="btn pri sm">Đóng tuần · Bảo Ngọc</button></div>
+      </article>
+    </section>
+
+    <section class="man wrap" id="man-lanhdao" hidden>
+      <div class="stats">
+        <div class="stat card"><div class="lab">Hiệu suất toàn công ty</div><div class="val">76<small>%</small></div>
+          <div class="bar"><i style="width:76%"></i></div><div class="note">Tuần 34 · 14/17 người đã đóng tuần</div></div>
+        <div class="stat card"><div class="lab">Mục tiêu đạt</div><div class="val">11<small>/15</small></div>
+          <div class="note">4 mục tiêu chuyển tiếp sang tuần 35</div></div>
+        <div class="stat card"><div class="lab">Việc kẹt toàn hệ</div><div class="val" style="color:var(--danger)">6</div>
+          <div class="note">3 việc đã dời từ 3 tuần trở lên</div></div>
+        <div class="stat card"><div class="lab">Chưa đóng tuần</div><div class="val">3<small>người</small></div>
+          <div class="note">Số của họ chưa vào bảng này</div></div>
+      </div>
+
+      <div class="tblwrap">
+        <table>
+          <thead><tr><th>Người</th><th>Chức danh</th><th>Hiệu suất</th><th class="num">Điểm KH</th>
+            <th class="num">Giao</th><th class="num">Tự thêm</th><th class="num">Kẹt</th><th>Trạng thái</th></tr></thead>
+          <tbody>
+            <tr><td class="dept" colspan="8">Vận hành – Sản xuất</td></tr>
+            <tr><td>Trần Quốc Huy</td><td>Leader</td><td><span class="mini"><i style="width:90%"></i></span>90% <span class="chip">tự xác nhận</span></td>
+              <td class="num">10</td><td class="num">6/6</td><td class="num">3/4</td><td class="num">0</td><td><span class="chip done">Đã đóng</span></td></tr>
+            <tr><td>Nguyễn Thu Hà</td><td>Staff</td><td><span class="mini"><i style="width:82%"></i></span>82%</td>
+              <td class="num">17</td><td class="num">10/12</td><td class="num">4/5</td><td class="num">1</td><td><span class="chip done">Đã đóng</span></td></tr>
+            <tr><td>Lê Minh Đức</td><td>Staff</td><td><span class="mini"><i style="width:64%"></i></span>64%</td>
+              <td class="num">14</td><td class="num">7/11</td><td class="num">2/3</td><td class="num">2</td><td><span class="chip done">Đã đóng</span></td></tr>
+            <tr><td class="dept" colspan="8">Kinh doanh</td></tr>
+            <tr><td>Phạm Bảo Ngọc</td><td>Staff</td><td><span class="mini"><i style="width:75%"></i></span>75%</td>
+              <td class="num">12</td><td class="num">7/9</td><td class="num">2/3</td><td class="num">0</td><td><span class="chip done">Đã đóng</span></td></tr>
+            <tr><td>Vũ Hải Yến</td><td>Staff</td><td><span class="mini"><i style="width:55%"></i></span>55%</td>
+              <td class="num">11</td><td class="num">4/8</td><td class="num">2/3</td><td class="num">2</td><td><span class="chip done">Đã đóng</span></td></tr>
+            <tr><td>Đỗ Khánh Huyền</td><td>Staff</td><td class="note">— chưa đóng tuần</td>
+              <td class="num">9</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td><span class="chip wait">Chờ xác nhận</span></td></tr>
+            <tr><td class="dept" colspan="8">Hành chính Nhân sự</td></tr>
+            <tr><td>Nguyễn Hoàng Lan</td><td>Manager</td><td><span class="mini"><i style="width:88%"></i></span>88% <span class="chip">tự xác nhận</span></td>
+              <td class="num">8</td><td class="num">5/6</td><td class="num">2/2</td><td class="num">0</td><td><span class="chip done">Đã đóng</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="sect"><h2>Mục tiêu tuần không đạt</h2><hr></div>
+      <div class="grid2">
+        <div class="card pad">
+          <h3 style="font-size:13.5px">Vận hành – Sản xuất</h3>
+          <ul class="list">
+            <li><span class="dot d"></span><div><b>Chuẩn hóa quy trình QC trước upload</b><br>
+              <span class="note">2/4đ · việc “Chạy thử QC” kẹt sang tuần thứ 3 — nút thắt là bản dựng của editor</span></div></li>
+            <li><span class="dot w"></span><div><b>Ra 8 video kênh Life In US</b><br>
+              <span class="note">6/8 video kịp lịch · 2 video trượt sang tuần 35</span></div></li>
+          </ul>
+        </div>
+        <div class="card pad">
+          <h3 style="font-size:13.5px">Kinh doanh</h3>
+          <ul class="list">
+            <li><span class="dot d"></span><div><b>Chốt 3 ngách mới cho pool US</b><br>
+              <span class="note">1/3 ngách · 2 việc kẹt ở khâu chờ báo cáo 8 phase</span></div></li>
+            <li><span class="dot o"></span><div><b>Nạp 20 kênh đối thủ vào RadarY</b><br>
+              <span class="note">Đạt — 24 kênh, vượt kế hoạch</span></div></li>
+          </ul>
+        </div>
+      </div>
+      <p class="note" style="margin-top:14px">Bảng này chỉ tính điểm <b>đã được leader xác nhận</b>. Người chưa đóng tuần hiện “—”, không hiện 0%.</p>
+    </section>
+  </main>
+</div>
+
+<script>
+(function(){
+  var man = document.querySelectorAll('.man'), nav = document.querySelectorAll('.nav');
+  var tit = {
+    tuan:   ['Tuần 35 · 24 – 30/08/2026','Hôm nay Thứ Năm 27/08 · còn 3 ngày','Đang chạy','run','Gửi kết quả tuần'],
+    baocao: ['Báo cáo của tôi · Tuần 34','17 – 23/08/2026 · leader đã đóng tuần 25/08','Đã đóng','done','Tải bản in'],
+    giao:   ['Giao việc · Vận hành – Sản xuất','Tuần 35 · 4 người trong bộ phận','Đang chạy','run','Giao mục tiêu mới'],
+    lanhdao:['Bảng lãnh đạo · Tuần 34','3 bộ phận · 17 nhân sự','Đã đóng','done','Tải bản in']
+  };
+  nav.forEach(function(b){
+    b.addEventListener('click', function(){
+      nav.forEach(function(x){ x.setAttribute('aria-current','false'); });
+      b.setAttribute('aria-current','true');
+      var k = b.dataset.man;
+      man.forEach(function(s){ s.hidden = (s.id !== 'man-' + k); });
+      var t = tit[k];
+      document.getElementById('tb-t').textContent = t[0];
+      document.getElementById('tb-s').textContent = t[1];
+      var c = document.getElementById('tb-c'); c.textContent = t[2]; c.className = 'chip ' + t[3];
+      document.getElementById('tb-b').textContent = t[4];
+      window.scrollTo(0,0);
+    });
+  });
+
+  var vong = ['', 'dang', 'xong', 'xacnhan'];
+  document.querySelectorAll('.tick').forEach(function(t){
+    t.addEventListener('click', function(){
+      var i = vong.indexOf(t.dataset.s || '');
+      var moi = vong[(i + 1) % vong.length];
+      if (moi) { t.dataset.s = moi; } else { t.removeAttribute('data-s'); }
+    });
+  });
+
+  document.querySelectorAll('.steps .btn').forEach(function(b){
+    b.addEventListener('click', function(){
+      var li = b.closest('li');
+      li.style.borderStyle = 'solid';
+      li.style.borderColor = 'var(--ok)';
+      var chip = document.createElement('span');
+      chip.className = 'chip done'; chip.textContent = 'Đã nhận';
+      b.replaceWith(chip);
+    });
+  });
+
+  var root = document.documentElement, KEY = 'outliery_theme';
+  try { var v = localStorage.getItem(KEY); if (v === 'dark' || v === 'light') root.setAttribute('data-theme', v); } catch (e) {}
+  // Gạt theme ở khung OUTLIERY → trang này đổi NGAY (sự kiện storage bắn cho mọi
+  // document cùng origin). Lưới tests/test_khung_app.py quét cả cây, đừng bỏ.
+  addEventListener('storage', function(s){
+    if (s.key === KEY && (s.newValue === 'light' || s.newValue === 'dark')) {
+      root.setAttribute('data-theme', s.newValue);
+    }
+  });
+  document.getElementById('theme').addEventListener('click', function(){
+    var cur = root.getAttribute('data-theme');
+    if (!cur) cur = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    var moi = cur === 'dark' ? 'light' : 'dark';
+    root.setAttribute('data-theme', moi);
+    try { localStorage.setItem(KEY, moi); } catch (e) {}
+  });
+})();
+</script>

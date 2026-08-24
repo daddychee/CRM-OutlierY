@@ -124,6 +124,9 @@ $dichVu = @(
     @{ Ten = 'plannery'; Cong = 9116; Exe = $py
        Args = 'server.py --no-browser'
        Wd = (Join-Path $root 'apps/plannery') }
+    @{ Ten = 'tasky'; Cong = 9117; Exe = $py
+       Args = '-m uvicorn src.main:app --app-dir "apps/tasky" --host 127.0.0.1 --port 9117'
+       Wd = $root }
     @{ Ten = 'caddy-tls'; Cong = 9443
        Exe = (Join-Path $root 'tools\caddy\caddy.exe')
        Args = 'run --config "' + (Join-Path $root 'tools\caddy\Caddyfile') + '"'

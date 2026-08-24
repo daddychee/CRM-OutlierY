@@ -15,6 +15,7 @@
 | 9114 | apps/video-review | Video Review — feedback video kiểu Frame.io (app V3 mới 18/08) |
 | 9115 | apps/seo-optimize | SEO Optimize (đưa vào 19/08 — APPS.md app 4/6) |
 | 9116 | apps/plannery | PlannerY — điều phối sản xuất (đưa vào 19/08 — APPS.md app 5/6) |
+| 9117 | apps/tasky | Tasky — kế hoạch tuần (app V3 mới 24/08) |
 | 9190 | apps/app-mau | App mẫu chứng minh hợp đồng app |
 | 6343 | Qdrant test (HTTP) | storage: data\qdrant — TÁCH HẲN kho thật |
 | 6344 | Qdrant test (gRPC) | phải khai tường minh kẻo rơi về 6334 đụng hệ thật |

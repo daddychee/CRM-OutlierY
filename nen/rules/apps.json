@@ -710,6 +710,42 @@
       ]
     },
     {
+      "slug": "tasky",
+      "ten": "Tasky",
+      "mo_ta": "Kế hoạch tuần: Leader giao việc cho nhân sự → nhân sự nhận việc rồi tự viết checklist cách triển khai, làm xong tick → quản lý xem khối lượng và tỉ lệ hoàn thành.",
+      "cong": 9117,
+      "tien_to": [
+        "/tasky"
+      ],
+      "health": "/health",
+      "phien_ban": "0.1.0",
+      "chay": {
+        "kieu": "uvicorn",
+        "app_dir": "apps/tasky",
+        "module": "src.main:app"
+      },
+      "du_lieu": [
+        {
+          "ten": "tuan",
+          "loai": "json",
+          "duong": "data/tasky/db/tuan",
+          "muc_quy": "vang",
+          "backup": "copy",
+          "giu": "vinh-vien",
+          "ghi_chu": "Mỗi tuần MỘT file YYYY-Www.json: việc được giao + checklist tự viết. Checklist là nguyên liệu dựng bộ quy trình sau này (FLOW-v3 §5) — không được dọn."
+        },
+        {
+          "ten": "nhat-ky",
+          "loai": "json",
+          "duong": "data/tasky/db/nhat-ky.jsonl",
+          "muc_quy": "vang",
+          "backup": "copy",
+          "giu": "vinh-vien",
+          "ghi_chu": "Vết CHỈ-THÊM: ai giao việc cho ai, ai nhận, ai từ chối kèm lý do, ai xác nhận, lúc nào"
+        }
+      ]
+    },
+    {
       "slug": "app-mau",
       "ten": "Sample App",
       "mo_ta": "App 50 dòng chứng minh hợp đồng app: nhận claims, /health, proxy.",

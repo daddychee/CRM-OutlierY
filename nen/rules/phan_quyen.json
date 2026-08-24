@@ -190,6 +190,37 @@
         "min_level": 4
       }
     },
+    "tasky": {
+      "vao": {
+        "min_level": 1
+      },
+      "giao_viec": {
+        "nhan": "Giao việc",
+        "mo_ta": "Giao việc tuần cho nhân sự cấp dưới trong bộ phận mình (app kiểm thêm: level người giao phải LỚN HƠN level người nhận)",
+        "min_level": 3
+      },
+      "xac_nhan_ket_qua": {
+        "nhan": "Xác nhận kết quả",
+        "mo_ta": "Xác nhận việc nhân sự báo xong + đóng tuần cho bộ phận",
+        "min_level": 3
+      },
+      "bao_cao_bo_phan": {
+        "nhan": "Báo cáo bộ phận",
+        "mo_ta": "Xem khối lượng + tỉ lệ hoàn thành của người trong bộ phận mình",
+        "min_level": 3
+      },
+      "bao_cao_cong_ty": {
+        "nhan": "Báo cáo toàn công ty",
+        "mo_ta": "Xem báo cáo mọi bộ phận (Manager trở lên — giữ lệ 04/08: Manager xem ngang nhau)",
+        "min_level": 4
+      },
+      "bao_cao_nhan_su": {
+        "nhan": "Báo cáo cho nhân sự",
+        "mo_ta": "HR Leader+ xem báo cáo toàn công ty để chấm công + xếp loại KPI",
+        "min_level": 3,
+        "bo_phan": "Hành chính Nhân sự"
+      }
+    },
     "plannery": {
       "vao": {
         "min_level": 1
