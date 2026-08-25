@@ -214,6 +214,20 @@
   giữa nhịp: nền rgba(217,124,108,.18) + viền sáng 2px trong khi mục thường trong
   suốt. 73 test pytest pass (test chỉ ghim các móc, hành vi do harness chứng minh).
 
+- 25/08/2026 — **VÁ "MỤC CUỐI KHÔNG CUỘN LÊN ĐƯỢC"** (user gửi ảnh: ô đỏ vẫn nằm
+  đáy). Bản đầu cuộn đúng công thức nhưng **vùng cuộn không đi quá đáy được**, nên
+  mấy bình luận CUỐI danh sách mãi mãi kẹt ở dưới — mà mốc mới nhất thường chính
+  là mục cuối, tức là ca hay gặp nhất lại là ca hỏng. Harness hôm trước thử đúng
+  mục GIỮA nên không lộ (**bài học: ca biên phải thử ở ĐẦU và CUỐI danh sách,
+  không chỉ ở giữa**). Sửa: thêm phần chừa `.bl-dem` cuối danh sách, cao =
+  chiều cao khung − mục cuối, tính lại sau mỗi lần render và khi đổi cỡ màn;
+  **chỉ chừa khi danh sách dài hơn khung** (danh sách ngắn mà chừa thì để lại một
+  khoảng trống xấu — thấy khi chụp màn hình kiểm). Đo lại bằng Chrome headless
+  trên 2 ca thật: VR-0016 (13 bình luận) và VR-0017 (6) đều đưa mục CUỐI lên cách
+  đỉnh danh sách 2px. Còn lại 136px lệch so với mép trên video là do ô soạn bình
+  luận chiếm chỗ trên đầu panel — muốn khít 0px thì phải dời ô soạn xuống đáy
+  (user chưa yêu cầu).
+
 ## Quyết định thiết kế (đừng phá)
 
 - **NAS CHỈ ĐỌC TUYỆT ĐỐI**: app không chép/ghi/xóa/đổi tên gì trong `VR_NAS_DIR`

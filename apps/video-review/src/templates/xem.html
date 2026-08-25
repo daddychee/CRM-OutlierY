@@ -88,6 +88,9 @@
   .bl-item .nut-bl:hover{background:var(--th-182233);color:var(--ink)}
   .co-ve{font-size:11.5px;color:var(--accent)}
   .bl-trong{color:var(--muted);font-size:13px;text-align:center;padding:14px 0}
+  /* Khoảng chừa cuối danh sách: không có nó thì mấy bình luận CUỐI không bao giờ
+     cuộn lên ngang video được (đụng đáy vùng cuộn) — chính lỗi user báo 25/08. */
+  .bl-dem{flex:none}
 {% endblock %}
 
 {% block noi_dung %}
@@ -332,6 +335,23 @@
     else dsEl.scrollTop = toi;                       // trình duyệt cũ: nhảy thẳng
   }
 
+  // Chừa chỗ dưới đáy = chiều cao khung trừ mục cuối, để MỌI mục (kể cả mục cuối
+  // cùng) đều lên tới đỉnh danh sách được. Tính lại sau mỗi lần render và khi đổi
+  // cỡ màn — cứng hóa một con số là sai ngay khi bình luận dài ngắn khác nhau.
+  var demEl = null;
+  function capNhatDem() {
+    if (!demEl) return;
+    demEl.style.height = "0px";                 // đo chiều cao THẬT trước đã
+    var muc = dsEl.querySelectorAll(".bl-item");
+    if (!muc.length) return;
+    // Danh sách ngắn hơn khung thì thấy hết rồi, chừa chỗ chỉ tạo một khoảng trống
+    // xấu; chỉ chừa khi danh sách dài tới mức phải cuộn.
+    if (dsEl.scrollHeight <= dsEl.clientHeight) return;
+    var cuoi = muc[muc.length - 1].offsetHeight;
+    demEl.style.height = Math.max(0, dsEl.clientHeight - cuoi - 10) + "px";
+  }
+  window.addEventListener("resize", capNhatDem);
+
   function noiBatBL(id) {
     var el = dsEl.querySelector('[data-bl="' + id + '"]');
     if (!el) return;
@@ -358,6 +378,7 @@
   // ===== danh sách bình luận =====
   function renderDS() {
     dsEl.textContent = "";
+    demEl = null;                      // phần chừa cũ vừa bị xóa cùng danh sách
     if (!BL.length) {
       var t = document.createElement("div");
       t.className = "bl-trong"; t.textContent = "No notes yet — be the first.";
@@ -403,6 +424,10 @@
       d.addEventListener("click", function () { nhayToi(b); });
       dsEl.appendChild(d);
     });
+    demEl = document.createElement("div");
+    demEl.className = "bl-dem";
+    dsEl.appendChild(demEl);
+    capNhatDem();
   }
 
   function napLai() {
