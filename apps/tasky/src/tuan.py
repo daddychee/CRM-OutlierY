@@ -157,6 +157,8 @@ def _tim(so: dict, id_viec: str) -> dict:
 def duoc_giao_cho(nguoi_giao: dict, nguoi_nhan: dict) -> bool:
     """Level cao giao level thấp, cùng bộ phận. Owner (L5) giao mọi bộ phận.
     Ngang cấp KHÔNG giao được nhau — luật nghiêm ngặt lớn hơn."""
+    if nguoi_giao["ten"] == nguoi_nhan["ten"]:
+        return True          # tự nhận việc về mình — Manager cũng là người làm việc
     if nguoi_giao["level"] <= nguoi_nhan["level"]:
         return False
     if nguoi_giao["level"] >= OWNER_LEVEL:
@@ -262,6 +264,7 @@ def _viec_moi(tieu_de: str, loai_viec: str, nguoi: str) -> dict:
             "tu_yeu_cau": "",           # id việc phối hợp mà việc này được chẻ ra
             "han": "", "gap": False,    # hạn chót (ISO) + dấu GẤP (Owner chốt 24/08)
             "muc_tieu_id": "",          # việc này phục vụ mục tiêu nào (§12)
+            "cung_viec": "",            # cùng một việc giao cho nhiều người (§14)
             "luc_tao": _gio(), "luc_nhan": None, "luc_bao_xong": None,
             "luc_xac_nhan": None, "nguoi_xac_nhan": None, "tu_xac_nhan": False}
 
@@ -293,7 +296,7 @@ def them_viec_giao(ma: str, nguoi_giao: dict, nguoi_nhan: dict,
 
 def yeu_cau_phoi_hop(ma: str, nguoi_gui: dict, nguoi_nhan: dict,
                      tieu_de: str, loai_viec: str,
-                     han: str = "", gap: bool = False) -> dict:
+                     han: str = "", gap: bool = False, muc_tieu_id: str = "") -> dict:
     """Gửi YÊU CẦU phối hợp sang bộ phận khác — trạng thái CHỜ PHỐI HỢP.
 
     Bên nhận toàn quyền: nhận rồi tự làm, hoặc chẻ việc con giao cho người của họ
@@ -310,7 +313,8 @@ def yeu_cau_phoi_hop(ma: str, nguoi_gui: dict, nguoi_nhan: dict,
         v.update({"nguoi_giao": nguoi_gui["ten"], "nguon": "phoi_hop",
                   "trang_thai": CHO_PHOI_HOP,
                   "bo_phan_gui": nguoi_gui.get("bo_phan", ""),
-                  "han": _han_hop_le(han), "gap": bool(gap)})
+                  "han": _han_hop_le(han), "gap": bool(gap),
+                  "muc_tieu_id": muc_tieu_id or ""})
         so["viec"].append(v)
         _ghi_tuan(so)
     ghi_nhat_ky("yeu_cau_phoi_hop", nguoi_gui["ten"],
@@ -367,6 +371,30 @@ def gan_nguoi(ma: str, id_viec: str, nguoi_giao: dict, nguoi_nhan: dict) -> dict
                 {"tuan": ma, "viec": id_viec, "cho": nguoi_nhan["ten"],
                  "tieu_de": v["tieu_de"]})
     return v
+
+
+def giao_nhieu_nguoi(ma: str, nguoi_giao: dict, ds_nhan: list[dict], tieu_de: str,
+                     loai_viec: str, **kw) -> list[dict]:
+    """Cùng một việc, nhiều người làm (Owner chốt 25/08).
+
+    MỖI NGƯỜI MỘT BẢN VIỆC — ai cũng tự viết checklist, tự bấm nhận, tự được nghiệm
+    thu, nên mọi luật và tỉ lệ hiện có giữ nguyên. Các bản dùng chung `cung_viec` để
+    UI gom lại thành một dòng "Việc X — 3 người".
+    """
+    if not ds_nhan:
+        raise ValueError("Phải chọn ít nhất một người.")
+    chung = "cv-" + uuid.uuid4().hex[:8] if len(ds_nhan) > 1 else ""
+    ra = []
+    for n in ds_nhan:
+        v = them_viec_giao(ma, nguoi_giao, n, tieu_de, loai_viec, **kw)
+        if chung:
+            with _khoa:
+                so = doc_tuan(ma)
+                _tim(so, v["id"])["cung_viec"] = chung
+                _ghi_tuan(so)
+            v["cung_viec"] = chung
+        ra.append(v)
+    return ra
 
 
 def them_viec_tu(ma: str, user: dict, tieu_de: str, loai_viec: str = "",
@@ -737,7 +765,9 @@ def nhom_viec(ds_viec: list[dict]) -> dict:
         tt = v["trang_thai"]
         if tt == XAC_NHAN:
             xong.append(v)
-        elif tt in (CHUA_GIAO, CHO_NHAN, CHO_PHOI_HOP, BAO_XONG):
+        elif tt in (CHUA_GIAO, CHO_NHAN, CHO_PHOI_HOP, BAO_XONG, TU_CHOI):
+            # TỪ CHỐI nằm ở đây để leader ĐỌC ĐƯỢC LÝ DO rồi giao lại — trước đó nó
+            # rơi ra ngoài cả ba nhóm nên biến mất khỏi màn hình (Owner báo 25/08)
             can.append(v)
         elif tt == DANG_LAM:
             (can if tinh_han(v)["muc"] == "cap" else chay).append(v)

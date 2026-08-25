@@ -194,18 +194,12 @@ def trang_muc_tieu(request: Request, user: dict = Depends(yeu_cau_muc_tieu),
     cap_duoi, _ = nhan_su.cap_duoi_cua(user)
     cap_duoi = cap_duoi or []
     ma = _ma_tuan_hop_le(tuan_xem)
-    # Tab "Việc lẻ" — gộp từ màn Giao việc cũ (Owner chốt 25/08: màn đó thừa)
-    nhom = tuan_lo.nhom_cho_leader(ma, user, cap_duoi)
-    for k in ("can_xu_ly", "dang_chay", "xong"):
-        nhom[k] = [v for v in nhom[k] if not v.get("muc_tieu_id")]
     return templates.TemplateResponse(request, "muc_tieu.html", {
         "user": user, "cay": cay, "chon": chon or (cay[0]["id"] if cay else "le"),   # chưa có Goal → mở tab Việc lẻ
         "cap_duoi": cap_duoi, "loai_viec": tuan_lo.cac_loai_viec(),
         "duoc_dat": mt_lo.duoc_dat_muc_tieu(user),
         "ma_tuan": ma, "tuan_nay": tuan_lo.ma_tuan(),
-        "nhom": nhom,
         "ngang_cap": nhan_su.ngang_cap_bo_phan_khac(user)[0] or [],
-        "da_gui": tuan_lo.sap_xep(tuan_lo.yeu_cau_da_gui(ma, user)),
         **_co_sidebar(x_remote_actions, ma, user)})
 
 
@@ -242,6 +236,12 @@ def trang_bao_cao(request: Request, user: dict = Depends(yeu_cau_bao_cao),
         "tong_goal": db_lo.tong_hop_goal(ds_mt),
         "nhiem_vu": db_lo.nhiem_vu_da_giao(user) if la_cong_ty else [],
         "kho_quy_trinh": tuan_lo.kho_quy_trinh(),   # gom toàn bộ checklist, không theo bộ phận
+        # Việc chờ xác nhận + bị từ chối — gồm cả việc NGOÀI Goal, vì màn Goal chỉ
+        # hiện việc thuộc Goal (bỏ tab Việc lẻ 25/08) thì chúng mất chỗ đứng.
+        "cho_xac_nhan": tuan_lo.cho_xac_nhan(ma, user),
+        "bi_tu_choi": [v for v in tuan_lo.doc_tuan(ma)["viec"]
+                       if v["trang_thai"] == tuan_lo.TU_CHOI
+                       and v.get("nguoi_giao") == user["ten"]],
         # nút Đóng tuần / Mở lại chuyển từ màn Giao việc sang đây (25/08)
         "duoc_dong": "xac_nhan_ket_qua" in hd,
         "quan_ly": {n["ten"] for n in (nhan_su.cap_duoi_cua(user)[0] or [])},
@@ -339,11 +339,12 @@ def api_giao(nguoi: str = Form(...), tieu_de: str = Form(...), loai_viec: str = 
 
 @app.post("/api-tasky/phoi-hop")
 def api_phoi_hop(nguoi: str = Form(...), tieu_de: str = Form(...), loai_viec: str = Form(""),
-                 han: str = Form(""), gap: str = Form(""),
+                 han: str = Form(""), gap: str = Form(""), muc_tieu_id: str = Form(""),
                  tuan_xem: str = Form(""), user: dict = Depends(yeu_cau_giao_viec)):
-    """Gửi yêu cầu phối hợp sang bộ phận khác (luật ngang cấp kiểm ở lõi)."""
+    """Gửi yêu cầu phối hợp sang bộ phận khác (luật ngang cấp kiểm ở lõi).
+    Gửi từ trong Goal thì gắn luôn vào Goal đó — nó là việc phục vụ Goal."""
     return _goi(tuan_lo.yeu_cau_phoi_hop, _ma_tuan_hop_le(tuan_xem), user,
-                _tim_nguoi(nguoi), tieu_de, loai_viec, han, _co(gap))
+                _tim_nguoi(nguoi), tieu_de, loai_viec, han, _co(gap), muc_tieu_id)
 
 
 @app.post("/api-tasky/danh-dau")
@@ -408,6 +409,12 @@ def api_mo_lai_muc_tieu(id: str = Form(...), user: dict = Depends(yeu_cau_muc_ti
     return _goi(mt_lo.mo_lai, id, user)
 
 
+@app.post("/api-tasky/muc-tieu/mau")
+def api_mau_muc_tieu(id: str = Form(...), mau: str = Form(""),
+                     user: dict = Depends(yeu_cau_muc_tieu)):
+    return _goi(mt_lo.dat_mau, id, user, mau)
+
+
 @app.post("/api-tasky/muc-tieu/xoa")
 def api_xoa_muc_tieu(id: str = Form(...), user: dict = Depends(yeu_cau_muc_tieu)):
     """Xóa Goal — việc con được GỠ LIÊN KẾT thành việc lẻ, không xóa theo."""
@@ -421,9 +428,10 @@ def api_che_viec(muc_tieu_id: str = Form(...), tieu_de: str = Form(...),
                  user: dict = Depends(yeu_cau_muc_tieu)):
     """Chẻ một việc từ mục tiêu. Để trống `nguoi` = chưa phân công, giao sau."""
     ma = _ma_tuan_hop_le(tuan_xem)
-    if nguoi.strip():
-        return _goi(tuan_lo.them_viec_giao, ma, user, _tim_nguoi(nguoi), tieu_de,
-                    loai_viec, "", han, _co(gap), muc_tieu_id)
+    ds = [t.strip() for t in (nguoi or "").split(",") if t.strip()]
+    if ds:
+        return _goi(tuan_lo.giao_nhieu_nguoi, ma, user, [_tim_nguoi(t) for t in ds],
+                    tieu_de, loai_viec, han=han, gap=_co(gap), muc_tieu_id=muc_tieu_id)
     return _goi(tuan_lo.them_viec_muc_tieu, ma, user, tieu_de, loai_viec,
                 muc_tieu_id, han, _co(gap))
 

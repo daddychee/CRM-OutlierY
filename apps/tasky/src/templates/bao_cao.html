@@ -214,6 +214,31 @@
   {% else %}<div class="note">Chưa có Goal nào.</div>{% endif %}
 </div>
 
+{% if cho_xac_nhan or bi_tu_choi %}
+<div class="tk-muc"><h3>Chờ bạn xử lý</h3><hr>
+  <span class="ghi">Gồm cả việc không thuộc Goal nào</span></div>
+<div class="khoi">
+  <ul class="ds2">
+    {% for v in cho_xac_nhan %}
+    <li data-id="{{ v.id }}">
+      <span class="ten2">{{ v.tieu_de }}
+        <small>{{ v.nguoi }} báo xong · {{ v.checklist|selectattr('xong')|list|length }}/{{ v.checklist|length }} bước</small></span>
+      <button class="nut sm" data-tra-lai>Trả lại</button>
+      <button class="nut chinh sm" data-xac-nhan>Xác nhận</button>
+    </li>
+    {% endfor %}
+    {% for v in bi_tu_choi %}
+    <li data-id="{{ v.id }}">
+      <span class="ten2">{{ v.tieu_de }}
+        <small><b>{{ v.nguoi }} từ chối:</b> “{{ v.ly_do or 'không ghi lý do' }}”</small></span>
+      <span class="the ket">Cần giao lại</span>
+    </li>
+    {% endfor %}
+  </ul>
+  <div class="loi" id="loi-xn" hidden></div>
+</div>
+{% endif %}
+
 <div class="tk-muc"><h3>Từng người</h3><hr>
   <span class="ghi">Chỉ tính việc leader đã xác nhận</span></div>
 <div class="khoi" style="padding:0;overflow-x:auto">
@@ -296,6 +321,12 @@
   }
   document.querySelectorAll("[data-dong]").forEach(function (b) {
     b.addEventListener("click", function () { goiApi("dong-tuan", { nguoi: b.dataset.dong }, b); });
+  });
+  document.querySelectorAll("[data-xac-nhan]").forEach(function (b) {
+    b.addEventListener("click", function () { goiApi("xac-nhan", { id: b.closest("li").dataset.id }, b); });
+  });
+  document.querySelectorAll("[data-tra-lai]").forEach(function (b) {
+    b.addEventListener("click", function () { goiApi("tra-lai", { id: b.closest("li").dataset.id, ly_do: "" }, b); });
   });
   document.querySelectorAll("[data-mo-lai]").forEach(function (b) {
     b.addEventListener("click", function () { goiApi("mo-lai-tuan", { nguoi: b.dataset.moLai }, b); });

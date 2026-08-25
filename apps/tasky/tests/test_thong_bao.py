@@ -164,5 +164,5 @@ def test_leader_thay_ca_thong_bao_cua_minh_va_cua_quan(ma):
     v = tuan.them_viec_giao(ma, LEADER, NHANVIEN, "Việc F", "Dựng video")
     tuan.nhan_viec(ma, v["id"], NHANVIEN)
     tuan.bao_xong(ma, v["id"], NHANVIEN)
-    r = client.get("/giao-viec", headers=LEADER_H)
-    assert "chờ bạn xác nhận" in r.text
+    r = client.get("/bao-cao-tuan?pham_vi=bo-phan", headers=LEADER_H)
+    assert "Chờ bạn xử lý" in r.text and "Việc F" in r.text

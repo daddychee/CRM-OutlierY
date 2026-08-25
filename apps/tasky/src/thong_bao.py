@@ -102,40 +102,40 @@ def cua_leader(ma: str, user: dict, ds_nguoi: list[dict]) -> list[dict]:
 
     cho_xn = [v for v in viec if v["trang_thai"] == t.BAO_XONG and t.duoc_xac_nhan(v, user)]
     if cho_xn:
-        ra.append(_muc(LUU_Y, f"{len(cho_xn)} việc chờ bạn xác nhận", len(cho_xn), "/muc-tieu?chon=le"))
+        ra.append(_muc(LUU_Y, f"{len(cho_xn)} việc chờ bạn xác nhận", len(cho_xn), "/bao-cao-tuan"))
 
     tu_choi = [v for v in viec if v["trang_thai"] == t.TU_CHOI and v.get("nguoi_giao") == user["ten"]]
     if tu_choi:
         ra.append(_muc(LUU_Y, f"{len(tu_choi)} việc bị từ chối — cần giao lại",
-                       len(tu_choi), "/muc-tieu?chon=le"))
+                       len(tu_choi), "/bao-cao-tuan"))
 
     gui = t.yeu_cau_da_gui(ma, user)
     xong_ph = [v for v in gui if v["trang_thai"] == t.BAO_XONG]
     if xong_ph:
         ra.append(_muc(LUU_Y, f"{len(xong_ph)} việc phối hợp chờ bạn nghiệm thu",
-                       len(xong_ph), "/muc-tieu?chon=le"))
+                       len(xong_ph), "/bao-cao-tuan"))
     tu_choi_ph = [v for v in gui if v["trang_thai"] == t.TU_CHOI]
     if tu_choi_ph:
         ra.append(_muc(LUU_Y, f"{len(tu_choi_ph)} yêu cầu phối hợp bị bộ phận kia từ chối",
-                       len(tu_choi_ph), "/muc-tieu?chon=le"))
+                       len(tu_choi_ph), "/bao-cao-tuan"))
 
     song_bp = [v for v in viec if v["trang_thai"] in (t.CHO_NHAN, t.CHO_PHOI_HOP,
                                                      t.DANG_LAM, t.BAO_XONG)]
     qua_bp = [v for v in song_bp if t.tinh_han(v)["chu"].startswith("Quá hạn")]
     if qua_bp:
         ra.append(_muc(CAP, f"{len(qua_bp)} việc của bộ phận đã quá hạn",
-                       len(qua_bp), "/muc-tieu?chon=le"))
+                       len(qua_bp), "/bao-cao-tuan"))
 
     ket = [v for v in viec if v["so_lan_doi"] >= t.DOI_LA_KET
            and v["trang_thai"] in (t.CHO_NHAN, t.DANG_LAM, t.BAO_XONG)]
     if ket:
-        ra.append(_muc(CAP, f"{len(ket)} việc của bộ phận đang kẹt", len(ket), "/muc-tieu?chon=le"))
+        ra.append(_muc(CAP, f"{len(ket)} việc của bộ phận đang kẹt", len(ket), "/bao-cao-tuan"))
 
     if _cuoi_tuan(ma):
         so = t.doc_tuan(ma)["dong"]
         chua = [n for n in ds_nguoi if n["ten"] not in so]
         if chua:
-            ra.append(_muc(LUU_Y, f"{len(chua)} người chưa đóng tuần", len(chua), "/muc-tieu?chon=le"))
+            ra.append(_muc(LUU_Y, f"{len(chua)} người chưa đóng tuần", len(chua), "/bao-cao-tuan"))
     return ra
 
 

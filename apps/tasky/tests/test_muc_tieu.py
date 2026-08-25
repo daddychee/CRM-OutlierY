@@ -581,3 +581,34 @@ def test_xoa_goal_qua_api_xoa_luon_viec_con(_so_gia):
     r = _client.post("/api-tasky/muc-tieu/xoa", headers=H_MGR, data={"id": m["id"]})
     assert r.status_code == 200 and r.json()["du_lieu"]["so_viec_xoa"] == 1
     assert tuan.viec_cua(ma, "hant") == []
+
+
+# ---------- màu nhãn cho Goal (Owner 25/08) ----------
+
+def test_dat_mau_cho_goal():
+    m = _mt()
+    assert mt.dat_mau(m["id"], MGR, "cam")["mau"] == "cam"
+    assert mt.dat_mau(m["id"], MGR, "")["mau"] == ""      # gỡ màu
+
+
+def test_mau_ngoai_bang_bi_chan():
+    """Không cho nhập hex tự do — sẽ đẻ ra màu trùng nền hoặc trùng màu cảnh báo."""
+    m = _mt()
+    with pytest.raises(ValueError):
+        mt.dat_mau(m["id"], MGR, "#ff0000")
+
+
+def test_manager_bo_phan_khac_khong_doi_mau():
+    m = _mt()
+    with pytest.raises(PermissionError):
+        mt.dat_mau(m["id"], MGR_KD, "lam")
+
+
+def test_mau_khong_dung_vao_nghia_trang_thai(_so_gia):
+    """Goal tô màu vẫn giữ nguyên chip cảnh báo — màu nhãn không thay nghĩa."""
+    ma = tuan.ma_tuan()
+    m = _mt()
+    mt.dat_mau(m["id"], MGR, "hong")
+    tuan.them_viec_muc_tieu(ma, MGR, "Chưa giao ai", "x", m["id"])
+    r = _client.get("/muc-tieu", headers=H_MGR)
+    assert "1 chưa giao" in r.text

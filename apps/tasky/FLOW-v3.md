@@ -286,3 +286,24 @@ nhân đôi, bốn khối không trùng — nên **tán ra hai màn** chứ khô
 - Tab *Việc lẻ* chỉ chứa việc **không thuộc Goal nào** (việc thuộc Goal đã nằm trong
   cây của nó — không hiện hai lần).
 - Thông báo trước trỏ `/giao-viec` nay trỏ `/muc-tieu?chon=le`.
+
+## 14. NĂM CẢI TIẾN THEO DÙNG THẬT (Owner 25/08)
+
+1. **Đọc được lý do từ chối.** Việc bị từ chối trước đó rơi ra ngoài cả ba nhóm nên
+   biến mất khỏi màn hình. Nay nó nằm ở *Cần bạn xử lý* (trong Goal) và *Chờ bạn xử
+   lý* (Báo cáo), hiện nguyên văn: **“Thu Hà từ chối: …”** để leader giao lại.
+2. **Một việc, nhiều người + tự giao cho mình.** Chọn N người → sinh **N bản việc**
+   cùng tên, chung `cung_viec`; mỗi người tự viết checklist, tự nhận, tự được nghiệm
+   thu → mọi luật và tỉ lệ hiện có giữ nguyên. `duoc_giao_cho` thêm nhánh *tự giao
+   cho chính mình* (Manager cũng là người làm việc).
+3. **Tab Goal một cỡ cố định** (198×62) + **màu nhãn tự chọn** từ bảng 6 màu
+   (`MAU_NHAN`, không cho nhập hex tự do — hex tự do sẽ đẻ ra màu trùng nền hoặc
+   trùng màu cảnh báo). Màu này là **nhãn cá nhân**, chỉ tô dải bên trái tab; nghĩa
+   trạng thái vẫn là bốn token accent/ok/warn/danger và luôn kèm chữ (§12.2).
+4. **Nhãn theo góc nhìn**: người giao thấy *“giao Thu Hà”* / *“tôi làm”*; người nhận
+   ở màn Việc của tôi thấy việc của mình như cũ.
+5. **Bỏ tab “Việc lẻ”.** Phối hợp liên bộ phận và dấu GẤP chuyển vào trong Goal —
+   yêu cầu gửi từ Goal nào thì **gắn vào Goal đó** (`muc_tieu_id`), theo dõi ngay
+   trong cây. Việc ngoài Goal vẫn tồn tại (nhân sự tự thêm) nhưng Manager xử lý
+   chúng ở **Báo cáo**, khối *Chờ bạn xử lý* — nếu không có khối này thì bỏ tab Việc
+   lẻ sẽ làm chúng mất chỗ đứng.

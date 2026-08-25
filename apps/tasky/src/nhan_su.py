@@ -43,7 +43,10 @@ def cap_duoi_cua(nguoi_giao: dict) -> tuple[list[dict] | None, str]:
     ds, loi = ds_nguoi()
     if ds is None:
         return None, loi
-    return [n for n in ds if duoc_giao_cho(nguoi_giao, n)], ""
+    # duoc_giao_cho() nay cho phép tự giao cho mình → chính user cũng nằm trong
+    # danh sách; sắp họ xuống cuối để không bấm nhầm khi giao cho quân.
+    ra = [n for n in ds if duoc_giao_cho(nguoi_giao, n)]
+    return sorted(ra, key=lambda n: n["ten"] == nguoi_giao["ten"]), ""
 
 
 def ngang_cap_bo_phan_khac(user: dict) -> tuple[list[dict] | None, str]:

@@ -73,14 +73,15 @@ def test_api_chan_gui_sai_luat(ma):
 
 
 def test_dropdown_chi_hien_quan_ly_bo_phan_khac(ma):
-    """Trang có HAI dropdown (giao việc trong bộ phận + phối hợp liên bộ phận) —
-    kiểm trong đúng khối phối hợp, không so trên cả trang."""
-    r = client.get("/giao-viec", headers=H_KD4)
-    khoi = r.text.split("Phối hợp liên bộ phận")[1].split("Bộ phận tuần này")[0]
+    """Form phối hợp nay nằm TRONG Goal (25/08) — kiểm trong đúng dropdown đó."""
+    from src import muc_tieu as mt_lo
+    mt_lo.tao(KD4, "Goal KD", "kết quả")
+    r = client.get("/muc-tieu", headers=H_KD4)
+    khoi = r.text.split("data-ph-nguoi")[1].split("</select>")[0]
     assert "Quản lý VH" in khoi and "Leader VH" in khoi
     assert "Nhân viên VH" not in khoi     # cách 2 bậc
-    assert "Nhân viên KD" not in khoi     # cùng bộ phận thì đi đường giao việc thường
-    assert "Nhân viên KD" in r.text       # nhưng vẫn có ở dropdown giao việc
+    assert "Nhân viên KD" not in khoi     # cùng bộ phận thì giao thường
+    assert "Nhân viên KD" in r.text       # vẫn có ở ô chọn người giao việc
 
 
 # ---------- bên nhận toàn quyền ----------
@@ -219,7 +220,11 @@ def test_man_viec_hien_nhom_phoi_hop_rieng(ma):
 
 
 def test_ben_gui_theo_doi_duoc_trang_thai(ma):
-    v = tuan.yeu_cau_phoi_hop(ma, KD4, VH4, "Dựng 3 video", "Dựng video")
+    """Yêu cầu gửi từ trong Goal thì gắn vào Goal — theo dõi ngay trong cây đó."""
+    from src import muc_tieu as mt_lo
+    g = mt_lo.tao(KD4, "Goal KD", "kết quả")
+    v = tuan.yeu_cau_phoi_hop(ma, KD4, VH4, "Dựng 3 video", "Dựng video",
+                              muc_tieu_id=g["id"])
     tuan.tu_choi_viec(ma, v["id"], VH4, "Đang chạy 8 video Life In")
-    r = client.get("/giao-viec", headers=H_KD4)
-    assert "họ từ chối" in r.text and "Đang chạy 8 video Life In" in r.text
+    r = client.get("/muc-tieu", headers=H_KD4)
+    assert "từ chối" in r.text and "Đang chạy 8 video Life In" in r.text

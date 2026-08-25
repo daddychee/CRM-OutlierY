@@ -69,11 +69,16 @@ def test_thieu_header_hanh_dong_thi_fail_closed():
 # ---------- màn giao việc ----------
 
 def test_chi_hien_cap_duoi_cung_bo_phan(ma):
-    r = client.get("/giao-viec", headers=LEADER_H)
+    """Ô giao việc nay nằm TRONG Goal (25/08) — phải có Goal thì mới có ô đó."""
+    from src import muc_tieu as mt_lo
+    mt_lo.tao({"ten": "huytq", "level": 4, "bo_phan": "Vận hành"}, "Goal A", "kq")
+    r = client.get("/muc-tieu", headers=LEADER_H)
     assert r.status_code == 200
     assert "Nguyễn Thu Hà" in r.text and "Lê Minh Đức" in r.text
     assert "Phạm Bảo Ngọc" not in r.text      # khác bộ phận
-    assert "Trần Quốc Huy" not in r.text      # ngang cấp chính mình
+    # CHÍNH MÌNH nay có trong danh sách — Manager tự giao việc cho mình được
+    # (Owner chốt 25/08); ngang cấp NGƯỜI KHÁC thì vẫn không.
+    assert "Trần Quốc Huy" in r.text
 
 
 def test_giao_viec_qua_api_va_level_lay_tu_so_khong_lay_tu_form(ma):
@@ -306,18 +311,19 @@ def test_duong_cu_giao_viec_van_song_bang_redirect(ma):
     assert r.status_code == 303 and r.headers["location"] == "/muc-tieu"
 
 
-def test_tab_viec_le_hien_ngay_ca_khi_chua_co_goal(ma):
-    """Lỗi tôi vừa mắc: tab Việc lẻ nằm trong nhánh 'chưa có Goal' nên biến mất."""
-    tuan.them_viec_giao(ma, LEADER, NHANVIEN, "Việc lẻ A", "x")
-    r = client.get("/muc-tieu", headers=LEADER_H)
-    assert "Việc lẻ" in r.text and "Việc lẻ A" in r.text
 
 
-def test_viec_thuoc_goal_khong_lap_lai_o_tab_viec_le(ma):
-    from src import muc_tieu as mt_lo
-    g = mt_lo.tao({"ten": "huytq", "level": 4, "bo_phan": "Vận hành"}, "Goal A", "kq")
-    tuan.them_viec_giao(ma, LEADER, NHANVIEN, "Việc thuộc Goal", "x", muc_tieu_id=g["id"])
-    tuan.them_viec_giao(ma, LEADER, NHANVIEN, "Việc lẻ B", "x")
-    r = client.get("/muc-tieu?chon=le", headers=LEADER_H)
-    khoi = r.text.split('<section class="mt-than" data-mt="le"')[1]
-    assert "Việc lẻ B" in khoi and "Việc thuộc Goal" not in khoi
+def test_viec_ngoai_goal_van_xac_nhan_duoc_o_bao_cao(ma):
+    """Bỏ tab Việc lẻ (25/08) — việc ngoài Goal chuyển sang Báo cáo để không mất chỗ."""
+    v = tuan.them_viec_giao(ma, LEADER, NHANVIEN, "Việc ngoài Goal", "x")
+    tuan.nhan_viec(ma, v["id"], NHANVIEN)
+    tuan.bao_xong(ma, v["id"], NHANVIEN)
+    r = client.get("/bao-cao-tuan?pham_vi=bo-phan", headers=LEADER_H)
+    assert "Chờ bạn xử lý" in r.text and "Việc ngoài Goal" in r.text
+
+
+def test_ly_do_tu_choi_doc_duoc_o_bao_cao(ma):
+    v = tuan.them_viec_giao(ma, LEADER, NHANVIEN, "Việc bị từ chối", "x")
+    tuan.tu_choi_viec(ma, v["id"], NHANVIEN, "Đang gánh 3 việc gấp")
+    r = client.get("/bao-cao-tuan?pham_vi=bo-phan", headers=LEADER_H)
+    assert "Đang gánh 3 việc gấp" in r.text and "Cần giao lại" in r.text

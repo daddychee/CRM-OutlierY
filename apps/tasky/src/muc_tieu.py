@@ -27,6 +27,11 @@ from src.tuan import (XAC_NHAN, _ghi_json, _goc, doc_tuan, ghi_nhat_ky, _gio, _k
 
 DANG_CHAY, DAT, MOT_PHAN, KHONG_DAT = "dang_chay", "dat", "mot_phan", "khong_dat"
 KET_QUA = (DAT, MOT_PHAN, KHONG_DAT)
+# Màu NHÃN do người dùng tự chọn (Owner 25/08) — chỉ để nhóm Goal theo mức liên
+# quan trong đầu họ, KHÔNG mang nghĩa trạng thái. Nghĩa trạng thái vẫn là bốn token
+# accent/ok/warn/danger và luôn kèm chữ (§12.2). Bảng cố định, không cho nhập hex
+# tự do: hex tự do sẽ đẻ ra màu trùng nền hoặc trùng màu cảnh báo.
+MAU_NHAN = ("", "lam", "tim", "luc", "cam", "hong", "xam")
 MANAGER_LEVEL = 4
 OWNER_LEVEL = 5
 
@@ -93,6 +98,7 @@ def tao(user: dict, tieu_de: str, ket_qua_can_dat: str, han: str = "",
               "trang_thai": DANG_CHAY,
               "ket_luan": "", "luc_chot": None, "nguoi_chot": None,
               "tu_nhiem_vu": tu_nhiem_vu or "",
+              "mau": "",
               "luc_tao": _gio()}
         ds.append(mt)
         _ghi(ds)
@@ -100,6 +106,20 @@ def tao(user: dict, tieu_de: str, ket_qua_can_dat: str, han: str = "",
                 {"muc_tieu": mt["id"], "tieu_de": mt["tieu_de"],
                  "tu_nhiem_vu": mt["tu_nhiem_vu"]})
     return mt
+
+
+def dat_mau(mt_id: str, user: dict, mau: str) -> dict:
+    """Đánh dấu màu cho Goal — nhãn cá nhân của người quản, đổi lúc nào cũng được."""
+    if mau not in MAU_NHAN:
+        raise ValueError("Màu không có trong bảng cho phép.")
+    with _khoa:
+        ds = doc_tat_ca()
+        m = _tim(ds, mt_id)
+        if not duoc_sua(m, user):
+            raise PermissionError("Chỉ Manager của Goal này (hoặc Owner) mới đổi màu.")
+        m["mau"] = mau
+        _ghi(ds)
+    return m
 
 
 def chot_ket_qua(mt_id: str, user: dict, ket_qua: str, nhan_xet: str = "") -> dict:
