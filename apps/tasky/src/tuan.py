@@ -551,6 +551,11 @@ def duoc_xoa(viec: dict, user: dict) -> tuple[bool, str, str]:
     la_owner = user["level"] >= OWNER_LEVEL
     tt = viec["trang_thai"]
 
+    # Owner là chủ hệ — dọn được mọi việc ở mọi trạng thái (cần cho việc dọn Goal
+    # test / tạo nhầm). Nhật ký vẫn giữ nguyên bản nên không mất trắng.
+    if la_owner:
+        return True, "", ""
+
     if tt in (XAC_NHAN, DOI):
         if not la_owner:
             return (False, "Việc đã nghiệm thu / đã dời nằm trong số báo cáo — "

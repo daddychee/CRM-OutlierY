@@ -142,37 +142,47 @@ def mo_lai(mt_id: str, user: dict) -> dict:
 
 
 def xoa(mt_id: str, user: dict) -> dict:
-    """Xóa hẳn một Goal.
+    """Xóa hẳn một Goal **và toàn bộ việc con** (Owner chốt 25/08: nút này để dọn
+    Goal test / tạo nhầm / trùng — để lại việc lẻ chỉ tổ sinh rác).
 
-    VIỆC CON KHÔNG BỊ XÓA THEO — chúng được **gỡ liên kết** thành việc lẻ. Xóa theo
-    là xóa công người ta đã làm; để mồ côi (trỏ vào Goal không còn) thì UI hiện chip
-    rỗng. Gỡ liên kết là đường duy nhất không mất gì.
-
-    Goal ĐÃ CHỐT chỉ Owner xóa được — nó nằm trong báo cáo đã gửi đi.
+    An toàn giữ nguyên hai chốt:
+    - Từng việc con vẫn qua đúng luật `tuan.duoc_xoa` — có việc đã nghiệm thu thì
+      chỉ Owner xóa được, vì nó nằm trong số báo cáo tuần đã chốt.
+    - Nhật ký lưu NGUYÊN BẢN Goal + nguyên bản MỌI việc bị xóa → dựng lại tay được.
     """
-    with _khoa:
-        ds = doc_tat_ca()
-        m = _tim(ds, mt_id)
-        if not duoc_sua(m, user):
-            raise PermissionError("Chỉ Manager của Goal này (hoặc Owner) mới xóa được.")
-        if m["trang_thai"] != DANG_CHAY and user["level"] < OWNER_LEVEL:
-            raise PermissionError("Goal đã chốt nằm trong báo cáo — chỉ Owner mới xóa được.")
-        _ghi([x for x in ds if x["id"] != mt_id])
+    from src.tuan import duoc_xoa as _duoc_xoa_viec
 
-    go = 0
+    ds = doc_tat_ca()
+    m = _tim(ds, mt_id)
+    if not duoc_sua(m, user):
+        raise PermissionError("Chỉ Manager của Goal này (hoặc Owner) mới xóa được.")
+    if m["trang_thai"] != DANG_CHAY and user["level"] < OWNER_LEVEL:
+        raise PermissionError("Goal đã chốt nằm trong báo cáo — chỉ Owner mới xóa được.")
+
+    # gom việc con trước, KIỂM QUYỀN TỪNG VIỆC rồi mới xóa gì cả — nửa chừng gãy
+    # thì Goal mất mà việc còn, tệ hơn không làm
+    can_xoa: list[tuple[str, dict]] = []
     for ma in cac_tuan_gan():
-        so = doc_tuan(ma)
-        dinh = [v for v in so["viec"] if v.get("muc_tieu_id") == mt_id]
-        if not dinh:
-            continue
-        for v in dinh:
-            v["muc_tieu_id"] = ""
-        _ghi_json(_goc() / "tuan" / f"{ma}.json", so)
-        go += len(dinh)
+        for v in doc_tuan(ma)["viec"]:
+            if v.get("muc_tieu_id") == mt_id:
+                duoc, vi_sao, _ = _duoc_xoa_viec(v, user)
+                if not duoc:
+                    raise PermissionError(
+                        f"Goal này có việc “{v['tieu_de']}” không xóa được: {vi_sao}")
+                can_xoa.append((ma, v))
+
+    with _khoa:
+        for ma in {ma for ma, _ in can_xoa}:
+            so = doc_tuan(ma)
+            so["viec"] = [v for v in so["viec"] if v.get("muc_tieu_id") != mt_id]
+            _ghi_json(_goc() / "tuan" / f"{ma}.json", so)
+        _ghi([x for x in doc_tat_ca() if x["id"] != mt_id])
 
     ghi_nhat_ky("xoa_muc_tieu", user["ten"],
-                {"muc_tieu": mt_id, "ban_goc": m, "viec_go_lien_ket": go})
-    return {"goal": m, "so_viec_go": go}
+                {"muc_tieu": mt_id, "ban_goc": m,
+                 "so_viec_xoa": len(can_xoa),
+                 "viec_da_xoa": [v for _, v in can_xoa]})
+    return {"goal": m, "so_viec_xoa": len(can_xoa)}
 
 
 # ---------- đọc theo phạm vi ----------

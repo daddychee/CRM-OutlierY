@@ -116,3 +116,13 @@ def test_xoa_khong_dung_toi_viec_khac(ma):
     a, b = _giao(ma, "Giữ lại"), _giao(ma, "Xóa đi")
     tuan.xoa_viec(ma, b["id"], LEADER)
     assert [x["tieu_de"] for x in tuan.viec_cua(ma, "hant")] == ["Giữ lại"]
+
+
+def test_owner_don_duoc_ca_viec_dang_lam(ma):
+    """Cần cho việc dọn Goal test — Manager vẫn bị chặn, Owner thì không."""
+    v = _giao(ma)
+    tuan.nhan_viec(ma, v["id"], NV)
+    with pytest.raises(ValueError):
+        tuan.xoa_viec(ma, v["id"], LEADER)
+    tuan.xoa_viec(ma, v["id"], OWNER)
+    assert tuan.viec_cua(ma, "hant") == []

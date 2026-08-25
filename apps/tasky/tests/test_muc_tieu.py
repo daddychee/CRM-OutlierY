@@ -465,31 +465,81 @@ def test_dung_xong_thi_nhiem_vu_het_nam_trong_danh_sach_cho(_so_gia):
 def test_xoa_goal_chua_co_viec():
     m = _mt()
     kq = mt.xoa(m["id"], MGR)
-    assert mt.doc_tat_ca() == [] and kq["so_viec_go"] == 0
+    assert mt.doc_tat_ca() == [] and kq["so_viec_xoa"] == 0
 
 
-def test_xoa_goal_thi_viec_con_THANH_VIEC_LE_khong_bi_xoa_theo():
-    """Xóa theo là xóa công người ta đã làm — việc phải còn, chỉ mất liên kết."""
+def test_xoa_goal_xoa_luon_viec_con():
+    """Owner chốt 25/08: nút này để dọn Goal test/nhầm — không để lại việc lẻ rác."""
     ma = tuan.ma_tuan()
     m = _mt()
-    v = tuan.them_viec_giao(ma, MGR, NV, "Việc đang làm dở", "x", muc_tieu_id=m["id"])
-    tuan.nhan_viec(ma, v["id"], NV)
+    tuan.them_viec_giao(ma, MGR, NV, "Việc con 1", "x", muc_tieu_id=m["id"])
+    tuan.them_viec_muc_tieu(ma, MGR, "Việc con 2", "x", m["id"])
     kq = mt.xoa(m["id"], MGR)
-
-    con = tuan.viec_cua(ma, "hant")
-    assert kq["so_viec_go"] == 1
-    assert len(con) == 1 and con[0]["tieu_de"] == "Việc đang làm dở"
-    assert con[0]["muc_tieu_id"] == ""          # thành việc lẻ, không mồ côi
+    assert kq["so_viec_xoa"] == 2 and tuan.viec_cua(ma, "hant") == []
 
 
-def test_go_lien_ket_ca_viec_o_tuan_khac():
+def test_xoa_goal_khong_dung_toi_viec_le_khac():
+    ma = tuan.ma_tuan()
+    m = _mt()
+    tuan.them_viec_giao(ma, MGR, NV, "Thuộc Goal", "x", muc_tieu_id=m["id"])
+    tuan.them_viec_giao(ma, MGR, NV, "Việc lẻ", "x")
+    mt.xoa(m["id"], MGR)
+    assert [v["tieu_de"] for v in tuan.viec_cua(ma, "hant")] == ["Việc lẻ"]
+
+
+def test_viec_con_dang_lam_van_xoa_duoc_theo_goal():
+    """Việc TỰ THÊM / đang làm của quân mình: Manager dọn được cùng Goal."""
+    ma = tuan.ma_tuan()
+    m = _mt()
+    v = tuan.them_viec_giao(ma, MGR, NV, "Đang làm dở", "x", muc_tieu_id=m["id"])
+    tuan.nhan_viec(ma, v["id"], NV)
+    with pytest.raises(PermissionError) as e:
+        mt.xoa(m["id"], MGR)
+    assert "Đang làm dở" in str(e.value)      # nói rõ việc nào chặn
+    tuan.huy_viec(ma, v["id"], MGR, "dọn Goal test")
+    assert mt.xoa(m["id"], MGR)["so_viec_xoa"] == 1
+
+
+def test_owner_don_duoc_goal_test_du_viec_dang_lam():
+    """Ca thật của Owner: Goal test có việc đang làm dở, cần xóa sạch một nhát."""
+    ma = tuan.ma_tuan()
+    m = _mt()
+    v = tuan.them_viec_giao(ma, MGR, NV, "Đang làm dở", "x", muc_tieu_id=m["id"])
+    tuan.nhan_viec(ma, v["id"], NV)
+    assert mt.xoa(m["id"], OWNER)["so_viec_xoa"] == 1
+    assert mt.doc_tat_ca() == [] and tuan.viec_cua(ma, "hant") == []
+
+
+def test_viec_con_da_nghiem_thu_thi_chi_owner_xoa_duoc_goal():
+    ma = tuan.ma_tuan()
+    m = _mt()
+    _viec_xong(ma, m, "Đã nghiệm thu")
+    with pytest.raises(PermissionError):
+        mt.xoa(m["id"], MGR)
+    assert mt.xoa(m["id"], OWNER)["so_viec_xoa"] == 1
+    assert tuan.viec_cua(ma, "hant") == []
+
+
+def test_nua_chung_gay_thi_khong_xoa_gi_ca():
+    """Kiểm quyền TỪNG việc TRƯỚC khi xóa — Goal mất mà việc còn là tệ hơn."""
+    ma = tuan.ma_tuan()
+    m = _mt()
+    tuan.them_viec_muc_tieu(ma, MGR, "Xóa được", "x", m["id"])
+    v = tuan.them_viec_giao(ma, MGR, NV, "Chặn lại", "x", muc_tieu_id=m["id"])
+    tuan.nhan_viec(ma, v["id"], NV)
+    with pytest.raises(PermissionError):
+        mt.xoa(m["id"], MGR)
+    assert len(mt.doc_tat_ca()) == 1 and len(tuan.doc_tuan(ma)["viec"]) == 2
+
+
+def test_xoa_ca_viec_o_tuan_khac():
     ma = tuan.ma_tuan()
     sau = tuan.tuan_lien_ke(ma, 1)
     m = _mt()
     tuan.them_viec_giao(ma, MGR, NV, "Tuần này", "x", muc_tieu_id=m["id"])
     tuan.them_viec_giao(sau, MGR, NV, "Tuần sau", "x", muc_tieu_id=m["id"])
-    assert mt.xoa(m["id"], MGR)["so_viec_go"] == 2
-    assert tuan.viec_cua(sau, "hant")[0]["muc_tieu_id"] == ""
+    assert mt.xoa(m["id"], MGR)["so_viec_xoa"] == 2
+    assert tuan.viec_cua(sau, "hant") == []
 
 
 def test_manager_bo_phan_khac_khong_xoa_duoc():
@@ -524,10 +574,10 @@ def test_nut_xoa_goal_hien_tren_trang(_so_gia):
     assert 'data-xoa-goal="%s"' % m["id"] in r.text
 
 
-def test_xoa_goal_qua_api_va_viec_thanh_viec_le(_so_gia):
+def test_xoa_goal_qua_api_xoa_luon_viec_con(_so_gia):
     ma = tuan.ma_tuan()
     m = _mt()
     tuan.them_viec_giao(ma, MGR, NV, "Việc con", "x", muc_tieu_id=m["id"])
     r = _client.post("/api-tasky/muc-tieu/xoa", headers=H_MGR, data={"id": m["id"]})
-    assert r.status_code == 200 and r.json()["du_lieu"]["so_viec_go"] == 1
-    assert tuan.viec_cua(ma, "hant")[0]["muc_tieu_id"] == ""
+    assert r.status_code == 200 and r.json()["du_lieu"]["so_viec_xoa"] == 1
+    assert tuan.viec_cua(ma, "hant") == []
