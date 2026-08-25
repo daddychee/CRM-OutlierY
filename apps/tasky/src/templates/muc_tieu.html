@@ -261,7 +261,7 @@
 
   {% macro nhom(ten, ds, canh) %}
   {% if ds %}
-  <details class="nhomv{% if canh %} canh{% endif %}" {% if canh or ten == 'Đang chạy' %}open{% endif %}>
+  <details class="nhomv{% if canh %} canh{% endif %}" {% if canh or ten in ('Task', 'Đang chạy') %}open{% endif %}>
     <summary>{{ ten }}<span class="dem">{{ ds|length }} việc</span></summary>
     <ul class="vs">
       {% for v in ds %}
@@ -300,26 +300,15 @@
               <input type="hidden" name="id" value="{{ v.id }}">
               <input type="hidden" name="tuan_xem" value="{{ ma_tuan }}">
               <input type="hidden" name="ve" value="{{ ve }}">
-              <input type="text" name="tieu_de" value="{{ v.tieu_de }}" placeholder="Tên việc">
-              <textarea name="mo_ta" rows="3"
-                placeholder="Mô tả — đề bài, tiêu chí nghiệm thu, lưu ý…">{{ v.mo_ta or '' }}</textarea>
+              <label><span class="nhan-o">Tên việc</span>
+                <input type="text" name="tieu_de" value="{{ v.tieu_de }}"></label>
+              <label><span class="nhan-o">Mô tả</span>
+                <textarea name="mo_ta" rows="3"
+                  placeholder="Đề bài, tiêu chí nghiệm thu, lưu ý…">{{ v.mo_ta or '' }}</textarea></label>
               <div class="hang" style="margin:6px 0 0">
                 <button class="nut" type="submit">Lưu mô tả</button>
-                <span style="flex:1"></span>
-                {% if xoa_duoc.get(v.id) %}
-                <button class="nut nguy" type="submit" form="go-{{ v.id }}"
-                  onclick="if(!this.dataset.c){this.dataset.c='1';
-                    this.textContent='Chắc chưa? Bấm lại để gỡ';return false}">Gỡ việc này</button>
-                {% endif %}
               </div>
             </form>
-            {% if xoa_duoc.get(v.id) %}
-            <form method="post" action="/tasky/viec/xoa" id="go-{{ v.id }}">
-              <input type="hidden" name="id" value="{{ v.id }}">
-              <input type="hidden" name="tuan_xem" value="{{ ma_tuan }}">
-              <input type="hidden" name="ve" value="{{ ve }}">
-            </form>
-            {% endif %}
             {% elif v.mo_ta %}
             <div class="mo-ta-doc">{{ v.mo_ta }}</div>
             {% endif %}
@@ -378,6 +367,21 @@
               <button class="nut" type="submit">Gửi</button>
             </form>
             </div>
+
+            {% if xoa_duoc.get(v.id) %}
+            {# Gỡ việc nằm DƯỚI CÙNG (Owner 25/08): việc hủy hoại thì để cuối, không
+               đặt cạnh nút Lưu — bấm nhầm là mất việc. #}
+            <form method="post" action="/tasky/viec/xoa" class="hang cuoi-phieu">
+              <input type="hidden" name="id" value="{{ v.id }}">
+              <input type="hidden" name="tuan_xem" value="{{ ma_tuan }}">
+              <input type="hidden" name="ve" value="{{ ve }}">
+              <span class="goi-y" style="flex:1;margin:0">Gõ nhầm / không cần nữa thì gỡ —
+                nhật ký vẫn giữ bản gốc.</span>
+              <button class="nut nguy" type="submit"
+                onclick="if(!this.dataset.c){this.dataset.c='1';
+                  this.textContent='Chắc chưa? Bấm lại để gỡ';return false}">Gỡ việc này</button>
+            </form>
+            {% endif %}
           </div>
         </details>
       </li>
@@ -406,7 +410,7 @@
           </div>
           <textarea data-che-mo-ta rows="2" style="margin-top:7px"
             placeholder="Mô tả — làm rõ đề bài, tiêu chí nghiệm thu… (không bắt buộc)"></textarea>
-          <input data-che-tai-lieu style="margin-top:7px"
+          <input data-che-tai-lieu style="margin-top:7px;width:100%"
             placeholder="Tài liệu: dán link, hoặc đường NAS \192.168.1.250\NAS1\… (không bắt buộc)">
         </div>
       </div>
@@ -464,7 +468,7 @@
   </details>
   {% endif %}
 
-  {{ nhom('Cần bạn xử lý', m.nhom.can_xu_ly, true) }}
+  {{ nhom('Task', m.nhom.can_xu_ly, false) }}
   {{ nhom('Đang chạy', m.nhom.dang_chay, false) }}
   {{ nhom('Đã nghiệm thu', m.nhom.xong, false) }}
 

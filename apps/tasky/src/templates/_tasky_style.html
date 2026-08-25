@@ -50,9 +50,24 @@
   .o-tick.xong{background:var(--accent);border-color:var(--accent)}
   .o-tick.xong svg{display:block}
 
+  /* MỘT luật cho MỌI ô nhập của Tasky. Trước đây mỗi khối tự khai style riêng, ô
+     nào quên thì rơi về mặc định trình duyệt — viền vuông, textarea chữ monospace
+     (Owner 25/08: "quá thô và xấu"). Khai ở đây một lần, chỗ khác chỉ lo bố cục. */
+  .noi-dung input:not([type=checkbox]):not([type=radio]):not(.o-tai-cho),
+  .noi-dung textarea, .noi-dung select{
+    border:1px solid var(--chip-line);border-radius:10px;padding:9px 12px;
+    background:var(--th-182233);color:var(--ink);font:inherit;font-size:13px;
+    line-height:1.5;transition:border-color .13s, box-shadow .13s}
+  .noi-dung textarea{width:100%;resize:vertical;min-height:64px}
+  .noi-dung input::placeholder,.noi-dung textarea::placeholder{color:var(--muted);opacity:.9}
+  .noi-dung input:not(.o-tai-cho):hover:not(:focus),.noi-dung textarea:hover:not(:focus),
+  .noi-dung select:hover:not(:focus){border-color:var(--muted)}
+  .noi-dung input:not(.o-tai-cho):focus,.noi-dung textarea:focus,.noi-dung select:focus{
+    outline:none;border-color:var(--accent);
+    box-shadow:0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent)}
+  .noi-dung select{cursor:pointer;padding-right:10px}
+
   .hang{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px}
-  .hang input,.hang select{border:1px solid var(--chip-line);border-radius:9px;padding:7px 11px;
-    background:var(--th-182233);color:var(--ink);font:inherit;font-size:13px}
   .hang input{flex:1;min-width:170px}
   .hang.chan{margin-top:12px;padding-top:10px;border-top:1px dashed var(--chip-line)}
   .nut{border:1px solid var(--chip-line);background:var(--sidebar);color:var(--ink);
@@ -184,17 +199,17 @@
   ul.td-ds .ai b{color:var(--ink);font-weight:600}
   ul.td-ds .chu{font-size:13.5px;white-space:pre-wrap;word-break:break-word}
   .td form{display:flex;gap:7px;align-items:center;flex-wrap:wrap}
-  .td input[type=text]{flex:1;min-width:170px;border:1px solid var(--chip-line);border-radius:9px;
-    padding:8px 11px;background:var(--th-182233);color:var(--ink);font:inherit;font-size:13px}
+  .td input[type=text]{flex:1;min-width:170px}
   /* Sửa TẠI CHỖ: ô nhập trông như chữ thường, chỉ lộ ra khi trỏ vào hoặc đang gõ.
      Enter là lưu (hành vi form gốc) — không cần box sửa riêng. */
-  .o-tai-cho{border:1px solid transparent;background:transparent;color:inherit;font:inherit;
-    border-radius:8px;padding:2px 6px;margin:-2px -6px;width:100%}
-  .o-tai-cho:hover{border-color:var(--chip-line);background:var(--th-141c2b)}
-  .o-tai-cho:focus{border-color:var(--accent);background:var(--th-182233);outline:none}
-  .o-tai-cho.ten-goal{font-size:16px;font-weight:600;letter-spacing:-.01em}
-  .o-tai-cho.kq{font-size:13px;color:var(--accent);font-weight:600}
-  .o-tai-cho.han{font-size:12px;color:var(--muted);width:auto}
+  .noi-dung .o-tai-cho{border:1px solid transparent;background:transparent;color:inherit;
+    font:inherit;border-radius:8px;padding:2px 6px;margin:-2px -6px;width:100%;box-shadow:none}
+  .noi-dung .o-tai-cho:hover{border-color:var(--chip-line);background:var(--th-141c2b)}
+  .noi-dung .o-tai-cho:focus{border-color:var(--accent);background:var(--th-182233);
+    outline:none;box-shadow:0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent)}
+  .noi-dung .o-tai-cho.ten-goal{font-size:16px;font-weight:600;letter-spacing:-.01em}
+  .noi-dung .o-tai-cho.kq{font-size:13px;color:var(--accent);font-weight:600}
+  .noi-dung .o-tai-cho.han{font-size:12px;color:var(--muted);width:auto;padding:2px 6px}
   .goi-sua{font-size:11.5px;color:var(--muted);opacity:0;transition:opacity .15s}
   form.sua-tai-cho:focus-within .goi-sua{opacity:1}
 
@@ -210,7 +225,14 @@
   details.phieu-viec>summary:hover{color:var(--ink)}
   .phieu-noi{margin-top:8px;padding:12px;border:1px solid var(--line);border-radius:11px;
     background:var(--th-141c2b)}
-  .o-sua-viec input[type="text"],.o-sua-viec textarea{width:100%;margin-bottom:6px}
+  /* Ô sửa đề bài: có nhãn nhỏ trên mỗi ô, tên việc to hơn phần mô tả */
+  .o-sua-viec{display:flex;flex-direction:column;gap:9px}
+  .o-sua-viec label{display:flex;flex-direction:column;gap:4px}
+  .o-sua-viec .nhan-o{font-size:11px;font-weight:600;letter-spacing:.04em;
+    text-transform:uppercase;color:var(--muted)}
+  .o-sua-viec input[type="text"]{width:100%;font-size:14px;font-weight:600}
+  .o-sua-viec textarea{width:100%}
+  .cuoi-phieu{margin-top:12px;padding-top:10px;border-top:1px dashed var(--chip-line)}
   .mo-ta-doc{font-size:13px;color:var(--th-c2cbd9);white-space:pre-wrap;
     padding:8px 10px;border-left:2px solid var(--chip-line);margin-bottom:10px}
   .khoi-tl{margin-top:11px;padding-top:10px;border-top:1px solid var(--line)}

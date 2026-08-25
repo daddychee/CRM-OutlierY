@@ -220,3 +220,28 @@ def test_nguoi_lam_khong_go_duoc_tai_lieu_cua_leader(ma, _so):
                 data={"id": v["id"], "id_tl": tl["id"], "tuan_xem": ma, "ve": "/tasky"})
     assert "loi=" in r.headers["location"]               # chốt thật ở server
     assert len(tuan._tim(tuan.doc_tuan(ma), v["id"])["tai_lieu"]) == 1
+
+
+def test_nhom_dau_ten_la_Task(ma, _so):
+    """Owner 25/08: 'Cần bạn xử lý' dễ hiểu nhầm → gọi thẳng là Task."""
+    m = mt.tao(MGR, "Goal A", "kq")
+    tuan.them_viec_giao(ma, MGR, NV, "Dựng 6 video", "san_xuat", muc_tieu_id=m["id"])
+    r = _c.get("/muc-tieu", headers=H_MGR)
+    assert ">Task<" in r.text and "Cần bạn xử lý" not in r.text
+
+
+def test_nut_go_viec_nam_DUOI_CUNG_phieu(ma, _so):
+    m = mt.tao(MGR, "Goal A", "kq")
+    tuan.them_viec_muc_tieu(ma, MGR, "Việc gõ nhầm", "x", m["id"])
+    r = _c.get("/muc-tieu", headers=H_MGR)
+    phieu = r.text.split('class="phieu-noi"')[1].split("</details>")[0]
+    assert phieu.index("Lưu mô tả") < phieu.index("Đính") < phieu.index("Gỡ việc này")
+
+
+def test_o_sua_tai_cho_khong_bi_luat_o_nhap_chung_de(_so):
+    """Ô sửa-tại-chỗ phải trông như CHỮ THƯỜNG — luật ô nhập chung không được đè
+    (đã dính một lần: khung + nền hiện lên quanh tên Goal)."""
+    mt.tao(MGR, "Goal A", "kq")
+    css = _c.get("/muc-tieu", headers=H_MGR).text
+    luat = css.split(".noi-dung input:not([type=checkbox])")[1].split("{")[0]
+    assert ":not(.o-tai-cho)" in luat
