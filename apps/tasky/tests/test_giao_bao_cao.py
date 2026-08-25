@@ -265,3 +265,31 @@ def test_nut_mo_lai_hien_canh_chip_da_dong(ma):
     tuan.dong_tuan(ma, "hant", LEADER)
     r = client.get("/giao-viec", headers=LEADER_H)
     assert "Đã đóng" in r.text and 'data-mo-lai="hant"' in r.text
+
+
+# ---------- màn Giao việc dựng lại theo ngôn ngữ mới ----------
+
+def test_gom_viec_cua_quan_theo_ba_nhom(ma):
+    v1 = tuan.them_viec_giao(ma, LEADER, NHANVIEN, "Chờ nhận", "x")       # cần xử lý
+    v2 = tuan.them_viec_giao(ma, LEADER, NHANVIEN, "Đang làm", "x")
+    tuan.nhan_viec(ma, v2["id"], NHANVIEN)                                # đang chạy
+    v3 = tuan.them_viec_giao(ma, LEADER, NHANVIEN, "Báo xong", "x")
+    tuan.nhan_viec(ma, v3["id"], NHANVIEN)
+    tuan.bao_xong(ma, v3["id"], NHANVIEN)                                 # cần xử lý
+    n = tuan.nhom_cho_leader(ma, LEADER, [{"ten": "hant"}])
+    assert len(n["can_xu_ly"]) == 2 and len(n["dang_chay"]) == 1
+    assert v1["id"] in [x["id"] for x in n["can_xu_ly"]]
+
+
+def test_canh_bao_bo_qua_muc_bang_khong(ma):
+    """Chip '0 quá hạn' là nhiễu — chỉ hiện thứ thật sự có."""
+    tuan.them_viec_giao(ma, LEADER, NHANVIEN, "Chờ nhận", "x")
+    cb = tuan.nhom_cho_leader(ma, LEADER, [{"ten": "hant"}])["canh_bao"]
+    chu = [c["chu"] for c in cb]
+    assert "1 chưa nhận" in chu and not any(c.startswith("0 ") for c in chu)
+
+
+def test_leader_khong_thay_viec_ngoai_pham_vi(ma):
+    tuan.them_viec_giao(ma, LEADER, NHANVIEN, "Việc của Hà", "x")
+    n = tuan.nhom_cho_leader(ma, LEADER, [])
+    assert n["can_xu_ly"] == [] and n["dang_chay"] == [] and n["xong"] == []

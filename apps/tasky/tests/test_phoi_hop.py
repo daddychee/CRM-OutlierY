@@ -76,7 +76,7 @@ def test_dropdown_chi_hien_quan_ly_bo_phan_khac(ma):
     """Trang có HAI dropdown (giao việc trong bộ phận + phối hợp liên bộ phận) —
     kiểm trong đúng khối phối hợp, không so trên cả trang."""
     r = client.get("/giao-viec", headers=H_KD4)
-    khoi = r.text.split("Phối hợp liên bộ phận")[1].split("Chờ bạn xác nhận")[0]
+    khoi = r.text.split("Phối hợp liên bộ phận")[1].split("Bộ phận tuần này")[0]
     assert "Quản lý VH" in khoi and "Leader VH" in khoi
     assert "Nhân viên VH" not in khoi     # cách 2 bậc
     assert "Nhân viên KD" not in khoi     # cùng bộ phận thì đi đường giao việc thường

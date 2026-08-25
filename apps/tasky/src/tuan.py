@@ -669,6 +669,43 @@ def thong_ke_nguoi(ma: str, ten: str) -> dict:
     }
 
 
+def nhom_viec(ds_viec: list[dict]) -> dict:
+    """Chia việc của một mục tiêu thành BA nhóm theo mức cần hành động (Owner chốt
+    25/08: 10 việc đổ một mạch thì dễ miss).
+
+    - `can_xu_ly`: việc của MANAGER — chưa phân công, chưa ai nhận, quá hạn, chờ nghiệm thu
+    - `dang_chay`: có người đang làm, chỉ cần liếc
+    - `xong`: đã nghiệm thu (UI thu gọn)
+    """
+    can, chay, xong = [], [], []
+    for v in ds_viec:
+        tt = v["trang_thai"]
+        if tt == XAC_NHAN:
+            xong.append(v)
+        elif tt in (CHUA_GIAO, CHO_NHAN, CHO_PHOI_HOP, BAO_XONG):
+            can.append(v)
+        elif tt == DANG_LAM:
+            (can if tinh_han(v)["muc"] == "cap" else chay).append(v)
+    return {"can_xu_ly": can, "dang_chay": chay, "xong": xong}
+
+
+def nhom_cho_leader(ma: str, user: dict, ds_nguoi: list[dict]) -> dict:
+    """Việc của QUÂN mình, gom theo mức cần hành động — cùng ngôn ngữ với màn Goal.
+
+    "Cần bạn xử lý" ở đây là việc của LEADER: chờ mình xác nhận, quá hạn, chưa ai
+    nhận, việc kẹt. Việc nhân sự đang làm đúng hạn thì chỉ cần liếc."""
+    trong = {n["ten"] for n in ds_nguoi}
+    ds = [v for v in doc_tuan(ma)["viec"] if v["nguoi"] in trong]
+    n = nhom_viec(sap_xep(ds))
+    # việc chưa ai nhận / chờ xác nhận đã nằm ở can_xu_ly nhờ nhom_viec
+    return {**n, "canh_bao": [c for c in (
+        {"muc_do": "cap", "chu": f"{len([v for v in ds if tinh_han(v)['chu'].startswith('Quá hạn')])} quá hạn"},
+        {"muc_do": "luu_y", "chu": f"{len([v for v in ds if v['trang_thai'] == BAO_XONG])} chờ bạn xác nhận"},
+        {"muc_do": "luu_y", "chu": f"{len([v for v in ds if v['trang_thai'] == CHO_NHAN])} chưa nhận"},
+        {"muc_do": "cap", "chu": f"{len([v for v in ds if v['so_lan_doi'] >= DOI_LA_KET and v['trang_thai'] in (CHO_NHAN, DANG_LAM, BAO_XONG)])} việc kẹt"},
+    ) if not c["chu"].startswith("0 ")]}
+
+
 def chua_giao(ma: str, muc_tieu_id: str = "") -> list[dict]:
     """Việc đã chẻ mà chưa có người — Manager cần thấy để giao."""
     return [v for v in doc_tuan(ma)["viec"]

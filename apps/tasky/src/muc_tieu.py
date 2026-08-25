@@ -23,7 +23,7 @@ import uuid
 from datetime import date
 
 from src.tuan import (XAC_NHAN, _ghi_json, _goc, doc_tuan, ghi_nhat_ky, _gio, _khoa,
-                      _han_hop_le, cac_tuan_gan, doc_json)
+                      _han_hop_le, cac_tuan_gan, doc_json, nhom_viec as t_nhom_viec)
 
 DANG_CHAY, DAT, MOT_PHAN, KHONG_DAT = "dang_chay", "dat", "mot_phan", "khong_dat"
 KET_QUA = (DAT, MOT_PHAN, KHONG_DAT)
@@ -183,26 +183,7 @@ def tien_do(mt_id: str, ds_viec: list[dict] | None = None) -> dict:
             "xong_het": bool(song) and len(xong) == len(song)}
 
 
-def nhom_viec(ds_viec: list[dict]) -> dict:
-    """Chia việc của một mục tiêu thành BA nhóm theo mức cần hành động (Owner chốt
-    25/08: 10 việc đổ một mạch thì dễ miss).
-
-    - `can_xu_ly`: việc của MANAGER — chưa phân công, chưa ai nhận, quá hạn, chờ nghiệm thu
-    - `dang_chay`: có người đang làm, chỉ cần liếc
-    - `xong`: đã nghiệm thu (UI thu gọn)
-    """
-    from src.tuan import (BAO_XONG, CHO_NHAN, CHO_PHOI_HOP, CHUA_GIAO, DANG_LAM,
-                          XAC_NHAN, tinh_han)
-    can, chay, xong = [], [], []
-    for v in ds_viec:
-        tt = v["trang_thai"]
-        if tt == XAC_NHAN:
-            xong.append(v)
-        elif tt in (CHUA_GIAO, CHO_NHAN, CHO_PHOI_HOP, BAO_XONG):
-            can.append(v)
-        elif tt == DANG_LAM:
-            (can if tinh_han(v)["muc"] == "cap" else chay).append(v)
-    return {"can_xu_ly": can, "dang_chay": chay, "xong": xong}
+nhom_viec = t_nhom_viec        # ở tuan.py — màn Goal và màn Giao việc dùng chung
 
 
 def canh_bao(mt: dict, ds_viec: list[dict]) -> list[dict]:
