@@ -157,16 +157,21 @@ def test_leader_chi_thay_bo_phan_minh(ma):
 
 
 def test_manager_thay_moi_bo_phan(ma):
-    """Giữ lệ 04/08: Manager XEM ngang nhau mọi bộ phận."""
+    """Giữ lệ 04/08: Manager XEM ngang nhau mọi bộ phận.
+
+    Từ 25/08 tab công ty không bóc từng người (trùng tab Bộ phận) → kiểm quyền ở
+    chính chỗ nó sống: mở lần lượt từng bộ phận."""
     _xong(ma)
-    r = client.get("/bao-cao-tuan", headers=MANAGER)
-    assert "Nguyễn Thu Hà" in r.text and "Phạm Bảo Ngọc" in r.text
+    a = client.get("/bao-cao-tuan?pham_vi=bo-phan&bo=Vận hành", headers=MANAGER)
+    b = client.get("/bao-cao-tuan?pham_vi=bo-phan&bo=Kinh doanh", headers=MANAGER)
+    assert "Nguyễn Thu Hà" in a.text and "Phạm Bảo Ngọc" in b.text
 
 
 def test_hr_leader_thay_toan_cong_ty(ma):
     _xong(ma)
-    r = client.get("/bao-cao-tuan", headers=HR)
-    assert "Nguyễn Thu Hà" in r.text and "Phạm Bảo Ngọc" in r.text
+    a = client.get("/bao-cao-tuan?pham_vi=bo-phan&bo=Vận hành", headers=HR)
+    b = client.get("/bao-cao-tuan?pham_vi=bo-phan&bo=Kinh doanh", headers=HR)
+    assert "Nguyễn Thu Hà" in a.text and "Phạm Bảo Ngọc" in b.text
 
 
 def test_bao_cao_khong_lo_checklist_chi_hien_so(ma):
@@ -177,7 +182,7 @@ def test_bao_cao_khong_lo_checklist_chi_hien_so(ma):
 
 def test_nguoi_chua_co_viec_hien_dau_gach_trong_bao_cao(ma):
     _xong(ma)
-    r = client.get("/bao-cao-tuan", headers=MANAGER)
+    r = client.get("/bao-cao-tuan?pham_vi=bo-phan", headers=MANAGER)
     assert "— chưa có việc" in r.text
 
 
@@ -189,7 +194,7 @@ def test_kho_quy_trinh_chua_du_ba_lan_thi_khong_de_xuat(ma):
     kho = tuan.kho_quy_trinh()
     assert kho[0]["so_checklist"] == 2 and kho[0]["du_de_rut"] is False
     assert kho[0]["con_thieu"] == 1
-    r = client.get("/bao-cao-tuan", headers=MANAGER)
+    r = client.get("/bao-cao-tuan?pham_vi=bo-phan", headers=MANAGER)
     assert "chưa đủ tiền lệ" in r.text
 
 

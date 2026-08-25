@@ -254,6 +254,9 @@ def trang_bao_cao(request: Request, user: dict = Depends(yeu_cau_bao_cao),
     ds_mt = mt_lo.trong_pham_vi(user, la_cong_ty)
     tu, den = tuan_lo.khoang_tuan(ma)
     return templates.TemplateResponse(request, "bao_cao.html", {
+        # Khối "Chờ bạn xử lý" là hộp việc của CHÍNH người xem, không phụ thuộc
+        # phạm vi tab → chỉ hiện MỘT lần, ở tab họ vào đầu tiên.
+        "tab_mac_dinh": "cong-ty" if duoc_cong_ty else "bo-phan",
         "user": user, "ma_tuan": ma, "tu": tu, "den": den,
         "la_cong_ty": la_cong_ty, "duoc_cong_ty": duoc_cong_ty,
         "tab": tab, "bo_phan_co": bo_phan_co, "bo_chon": bo_chon,

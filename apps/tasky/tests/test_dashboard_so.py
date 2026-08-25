@@ -159,11 +159,16 @@ def test_dashboard_nap_vendor_bieu_do(_so):
 
 
 def test_manager_mac_dinh_thay_toan_cong_ty(_so):
-    """Giữ luật 24/08 — không đổi mặc định khi làm dashboard."""
+    """Giữ luật 24/08 — không đổi mặc định khi làm dashboard.
+
+    Tab công ty KHÔNG bóc từng người nữa (25/08: trùng tab Bộ phận), nên quyền
+    'xem ngang nhau mọi bộ phận' ghim ở chỗ nó thật sự sống: mở bộ phận KHÁC."""
     ma = tuan.ma_tuan()
     _xong(ma, nguoi=NV_KD, giao=MGR_KD, ten="Việc KD")
     r = _c.get("/bao-cao-tuan", headers=H_MGR)
-    assert "Bảo Ngọc" in r.text and "Theo bộ phận" in r.text
+    assert "Theo bộ phận" in r.text and "Kinh doanh" in r.text
+    r2 = _c.get("/bao-cao-tuan?pham_vi=bo-phan&bo=Kinh doanh", headers=H_MGR)
+    assert "Bảo Ngọc" in r2.text
 
 
 def test_chuyen_ve_bo_phan_minh(_so):
@@ -179,10 +184,11 @@ def test_leader_khong_co_nut_toan_cong_ty(_so):
 
 
 def test_dashboard_hien_goal_va_canh_bao(_so):
+    """Danh sách Goal giờ nằm ở tab Bộ phận (tab công ty chỉ còn biểu đồ Goal)."""
     ma = tuan.ma_tuan()
     g = mt.tao(MGR, "Tăng AVD", "AVD ≥ 45%")
     tuan.them_viec_muc_tieu(ma, MGR, "Chưa giao ai", "x", g["id"])
-    r = _c.get("/bao-cao-tuan", headers=H_MGR)
+    r = _c.get("/bao-cao-tuan?pham_vi=bo-phan", headers=H_MGR)
     assert "Tăng AVD" in r.text and "1 chưa giao" in r.text
 
 

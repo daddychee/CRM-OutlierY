@@ -157,25 +157,8 @@
     không bằng màu (bốn màu bộ phận đo trượt chuẩn phân biệt màu — xem FLOW §12.2)</div>
   <div class="bd" id="bd-bo-phan"></div>
 </div>
-{% for b in bo_phan %}
-<article class="bp-khoi">
-  <header>
-    <div style="flex:1;min-width:170px"><h4>{{ b.bo_phan }}</h4>
-      <div class="goi-y" style="margin:0">{{ b.so_nguoi }} người</div></div>
-    {% if b.ti_le is not none %}
-    <span class="mini"><i style="width:{{ b.ti_le }}%"></i></span>
-    <b style="font-variant-numeric:tabular-nums">{{ b.ti_le }}%</b>
-    {% else %}<span class="note">— chưa ai có việc</span>{% endif %}
-  </header>
-  <div class="bp-so">
-    <div><span>Việc tuần</span><b>{{ b.so_viec or '—' }}</b></div>
-    <div><span>Nghiệm thu</span><b>{{ b.xong }}</b></div>
-    <div><span>Bước checklist</span><b>{{ b.buoc_tong }}</b></div>
-    <div><span>Việc kẹt</span><b{% if b.ket %} style="color:var(--tk-cap)"{% endif %}>{{ b.ket }}</b></div>
-    <div><span>Đã đóng tuần</span><b>{{ b.da_dong }}/{{ b.so_nguoi }}</b></div>
-  </div>
-</article>
-{% endfor %}
+{# 4 khối chi tiết từng bộ phận đã BỎ (Owner 25/08: trùng tab Bộ phận). Biểu đồ
+   trên so sánh được các bộ phận; số chi tiết của MỘT bộ phận nằm ở tab Bộ phận. #}
 {% endif %}
 
 {% if tab == 'cong-ty' %}
@@ -212,7 +195,9 @@
 </div>
 {% endif %}
 
-<div class="tk-muc"><h3>{% if la_cong_ty %}Goal toàn công ty{% else %}Goal của bộ phận{% endif %}</h3><hr></div>
+{% if tab == 'bo-phan' %}
+<div class="tk-muc"><h3>Goal của bộ phận</h3><hr>
+  <span class="ghi">Toàn bộ Goal xem ở mục Goal</span></div>
 <div class="khoi">
   {% if goal %}
   <ul class="ds2">
@@ -240,8 +225,9 @@
   </ul>
   {% else %}<div class="note">Chưa có Goal nào.</div>{% endif %}
 </div>
+{% endif %}
 
-{% if cho_xac_nhan or bi_tu_choi %}
+{% if (cho_xac_nhan or bi_tu_choi) and tab == tab_mac_dinh %}
 <div class="tk-muc"><h3>Chờ bạn xử lý</h3><hr>
   <span class="ghi">Gồm cả việc không thuộc Goal nào</span></div>
 <div class="khoi">
@@ -266,6 +252,7 @@
 </div>
 {% endif %}
 
+{% if not la_cong_ty %}
 <div class="tk-muc"><h3>Từng người</h3><hr>
   <span class="ghi">Chỉ tính việc leader đã xác nhận</span></div>
 <div class="khoi" style="padding:0;overflow-x:auto">
@@ -299,10 +286,10 @@
     </tbody>
   </table>
 </div>
-
 <div class="loi" id="loi-dong" hidden></div>
+{% endif %}
 
-{% if tab != 'nhan-su' %}
+{% if tab == 'bo-phan' %}
 <div class="tk-muc"><h3>Kho quy trình đang hình thành</h3><hr>
   <span class="ghi">Gom từ checklist thật · chưa bật gợi ý</span></div>
 <div class="khoi">

@@ -256,3 +256,36 @@ def test_moi_viec_la_mot_the_roi(ma, _so):
     assert r.text.count('<li class="the-viec">') == 2
     css = r.text.split("ul.vs li.the-viec{")[1].split("}")[0]
     assert "border:" in css and "border-radius" in css
+
+
+# ---------- §16b: mỗi tab báo cáo một vai, không lặp khối ----------
+
+H_OWNER = {"X-Remote-User": "bot", "X-Remote-Level": "5",
+           "X-Remote-Dept": "Ban%20qu%E1%BA%A3n%20tr%E1%BB%8B",
+           "X-Remote-Actions": "vao,giao_viec,xac_nhan_ket_qua,bao_cao_bo_phan,"
+                               "bao_cao_cong_ty,bao_cao_nhan_su",
+           "X-Remote-Apps": "tasky"}
+
+
+def _khoi(pham_vi):
+    import re
+    r = _c.get("/bao-cao-tuan?pham_vi=" + pham_vi, headers=H_OWNER)
+    return re.findall(r"<h3>([^<]*)</h3>", r.text)
+
+
+def test_moi_khoi_bao_cao_chi_o_MOT_tab(_so):
+    """Owner 25/08: 'Từng người', 'Goal', 'Kho quy trình' lặp ở cả ba tab."""
+    cty, bp, ns = _khoi("cong-ty"), _khoi("bo-phan"), _khoi("nhan-su")
+    assert "Theo bộ phận" in cty and "Nhiệm vụ tôi giao" in cty
+    assert "Từng người" not in cty          # bóc từng người là việc của Manager
+    assert "Kho quy trình đang hình thành" not in cty
+    assert "Goal toàn công ty" not in cty and "Goal của bộ phận" not in cty
+    assert "Từng người" in bp and "Goal của bộ phận" in bp
+    assert "Từng người" in ns and "Goal của bộ phận" not in ns
+
+
+def test_bo_bang_tung_nguoi_KHONG_cat_quyen_xem_bo_phan_khac(ma, _so):
+    """Bỏ khối trùng là việc BỐ CỤC — không được đụng luật 04/08."""
+    tuan.them_viec_giao(ma, MGR, NV, "Dựng 6 video", "san_xuat")
+    r = _c.get("/bao-cao-tuan?pham_vi=bo-phan&bo=Vận hành", headers=H_OWNER)
+    assert "Thu Hà" in r.text
