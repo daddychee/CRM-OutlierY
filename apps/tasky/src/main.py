@@ -38,7 +38,7 @@ os.environ.setdefault("TASKY_DIR", str(ROOT / "data" / "tasky" / "db"))
 
 PHIEN_BAN = "0.2.0"
 app = FastAPI(title="Tasky v3")
-from src import muc_tieu as mt_lo, nhan_su, thong_bao as tb  # noqa: E402 — danh sách người, đọc chỉ-đọc sổ IAM chung
+from src import dashboard as db_lo, muc_tieu as mt_lo, nhan_su, thong_bao as tb  # noqa: E402 — danh sách người, đọc chỉ-đọc sổ IAM chung
 from src import tuan as tuan_lo  # noqa: E402 — lõi sổ tuần (đọc TASKY_DIR lúc gọi hàm)
 from nen.common.sidebar import ctx_sidebar  # noqa: E402 — cờ sidebar UI_FLOW.md mục 2
 
@@ -217,21 +217,37 @@ def trang_muc_tieu(request: Request, user: dict = Depends(yeu_cau_muc_tieu),
 
 @app.get("/bao-cao-tuan", response_class=HTMLResponse)
 def trang_bao_cao(request: Request, user: dict = Depends(yeu_cau_bao_cao),
-                  x_remote_actions: str = Header(""), tuan_xem: str = ""):
-    """Báo cáo — phạm vi theo FLOW-v3 §9.1: Leader bộ phận mình · Manager L4+ mọi bộ
-    phận · HR Leader+ toàn công ty (cờ `bao_cao_nhan_su` khai kèm bộ phận trong
-    phan_quyen.json) · Owner tất. App CHỈ TIN CỜ gateway phát."""
+                  x_remote_actions: str = Header(""), tuan_xem: str = "",
+                  pham_vi: str = ""):
+    """Dashboard. HAI báo cáo trả lời hai câu hỏi khác nhau (§12.3):
+    - `bo-phan` (mặc định): Manager điều hành — người + việc
+    - `cong-ty`: Owner — bộ phận + Goal + nhiệm vụ mình đã giao (cần quyền)
+    """
     hd = cac_hanh_dong(x_remote_actions)
-    toan_cong_ty = bool({"bao_cao_cong_ty", "bao_cao_nhan_su"} & hd)
+    duoc_cong_ty = bool({"bao_cao_cong_ty", "bao_cao_nhan_su"} & hd)
+    # Ai có quyền toàn công ty thì MẶC ĐỊNH thấy toàn công ty (giữ luật 24/08:
+    # Manager L4 xem mọi bộ phận) — muốn xem riêng bộ phận mình thì ?pham_vi=bo-phan
+    la_cong_ty = duoc_cong_ty and pham_vi != "bo-phan"
     ma = _ma_tuan_hop_le(tuan_xem)
-    ds, loi = nhan_su.trong_pham_vi_bao_cao(user, toan_cong_ty)
-    bang = tuan_lo.bang_bao_cao(ma, ds or [])
+    ds, loi = nhan_su.trong_pham_vi_bao_cao(user, duoc_cong_ty)
+    ds = ds or []
+    trong_bc = ds if la_cong_ty else [n for n in ds
+                                      if n["bo_phan"] == (user.get("bo_phan") or "")
+                                      or n["ten"] == user["ten"]]
+    bang = tuan_lo.bang_bao_cao(ma, trong_bc)
+    ds_mt = mt_lo.trong_pham_vi(user, la_cong_ty)
     tu, den = tuan_lo.khoang_tuan(ma)
     return templates.TemplateResponse(request, "bao_cao.html", {
         "user": user, "ma_tuan": ma, "tu": tu, "den": den,
-        "bang": bang, "loi_iam": loi, "toan_cong_ty": toan_cong_ty,
+        "la_cong_ty": la_cong_ty, "duoc_cong_ty": duoc_cong_ty,
+        "bang": bang, "loi_iam": loi,
         "tong": tuan_lo.tong_hop(bang),
-        "kho_quy_trinh": tuan_lo.kho_quy_trinh(),
+        "xu_huong": db_lo.xu_huong(trong_bc, ma),
+        "bo_phan": db_lo.theo_bo_phan(ma, trong_bc) if la_cong_ty else [],
+        "goal": db_lo.goal_kem_tien_do(ds_mt),
+        "tong_goal": db_lo.tong_hop_goal(ds_mt),
+        "nhiem_vu": db_lo.nhiem_vu_da_giao(user) if la_cong_ty else [],
+        "kho_quy_trinh": tuan_lo.kho_quy_trinh(),   # gom toàn bộ checklist, không theo bộ phận
         "tuan_truoc": tuan_lo.tuan_lien_ke(ma, -1),
         "tuan_sau": tuan_lo.tuan_lien_ke(ma, 1),
         "tuan_nay": tuan_lo.ma_tuan(), **_co_sidebar(x_remote_actions, ma, user)})

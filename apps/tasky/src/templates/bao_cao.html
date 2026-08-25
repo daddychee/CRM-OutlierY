@@ -1,132 +1,338 @@
 {% extends "base.html" %}
-{% block title %}Báo cáo tuần — Tasky{% endblock %}
+{% block title %}Báo cáo — Tasky{% endblock %}
 {% block topbar_ten %}Tasky · Báo cáo{% endblock %}
 
 {% block style_them %}
   {% include "_tasky_style.html" %}
+  .o4{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:11px;margin-bottom:16px}
+  .o{background:var(--sidebar);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+  .o .lab{font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);
+    font-weight:600}
+  .o .to{font-size:27px;font-weight:600;margin-top:4px;font-variant-numeric:tabular-nums;
+    letter-spacing:-.02em;line-height:1.15}
+  .o .to small{font-size:13px;font-weight:500;color:var(--muted)}
+  .o .phu{font-size:12px;color:var(--muted);margin-top:3px}
   .khoi{background:var(--sidebar);border:1px solid var(--line);border-radius:12px;
-    padding:14px 16px;margin-bottom:14px}
-  .khoi h3{margin:0 0 4px;font-size:14px}
-  table.tk{width:100%;border-collapse:collapse;font-size:13.5px}
-  table.tk th{text-align:left;font-size:11px;color:var(--muted);text-transform:uppercase;
+    padding:13px 15px;margin-bottom:12px}
+  .khoi>h3{margin:0 0 3px;font-size:13.5px}
+  .khoi .ghi-nho{font-size:12px;color:var(--muted);margin-bottom:8px}
+  .bd{min-height:60px}
+  table.tk{width:100%;border-collapse:collapse;font-size:13px}
+  table.tk th{text-align:left;font-size:10.5px;color:var(--muted);text-transform:uppercase;
     letter-spacing:.05em;font-weight:600;padding:8px 10px;border-bottom:1px solid var(--line);
     white-space:nowrap}
   table.tk td{padding:9px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
   table.tk tr:last-child td{border-bottom:0}
   table.tk tr:hover td{background:var(--th-141c2b)}
   table.tk td.so{text-align:right;font-variant-numeric:tabular-nums}
-  table.tk td.bp{font-weight:600;background:var(--th-141c2b);color:var(--th-c2cbd9)}
-  .mini{display:inline-block;width:54px;height:5px;border-radius:3px;background:var(--th-182233);
+  .mini{display:inline-block;width:52px;height:6px;border-radius:3px;background:var(--th-182233);
     overflow:hidden;vertical-align:middle;margin-right:7px;border:1px solid var(--line)}
   .mini i{display:block;height:100%;background:var(--accent)}
+  .bp-khoi{border:1px solid var(--line);border-radius:12px;background:var(--sidebar);
+    margin-bottom:10px;overflow:hidden}
+  .bp-khoi>header{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:11px 14px;
+    border-bottom:1px solid var(--line)}
+  .bp-khoi h4{margin:0;font-size:14px}
+  .bp-so{display:flex;gap:18px;flex-wrap:wrap;padding:10px 14px;font-size:12.5px}
+  .bp-so div span{display:block;color:var(--muted);font-size:10.5px;letter-spacing:.05em;
+    text-transform:uppercase;font-weight:600;margin-bottom:2px}
+  .bp-so b{font-size:15px;font-variant-numeric:tabular-nums}
+  ul.ds2{list-style:none;margin:0;padding:0}
+  ul.ds2 li{display:flex;gap:10px;align-items:center;padding:9px 0;flex-wrap:wrap;
+    border-top:1px solid var(--line)}
+  ul.ds2 li:first-child{border-top:0}
+  .ten2{flex:1;min-width:180px;font-size:13.5px}
+  .ten2 small{display:block;color:var(--muted);font-size:12px;margin-top:1px}
+  .gat{display:flex;gap:5px;background:var(--th-141c2b);border:1px solid var(--line);
+    border-radius:9px;padding:3px}
+  .gat a{border-radius:7px;padding:4px 11px;font-size:12.5px;text-decoration:none;
+    color:var(--muted)}
+  .gat a.on{background:var(--sidebar);color:var(--ink);font-weight:600}
+  /* Frappe Charts vẽ SVG riêng — ép theo token của hệ (xem NGUON.md) */
+  .chart-container{font-family:inherit !important}
+  .chart-container .title{display:none}
+  .chart-container text{fill:var(--muted) !important}
+  .chart-container .y-axis line,.chart-container .x-axis line,
+  .chart-container line.dashed{stroke:var(--line) !important}
+  .chart-container .graph-svg-tip{background:var(--sidebar) !important;
+    border:1px solid var(--chip-line) !important;border-radius:9px !important}
+  .chart-container .graph-svg-tip .title{display:block !important;color:var(--ink) !important}
+  .chart-container .graph-svg-tip ul li strong{color:var(--ink) !important}
+  .chart-container .graph-svg-tip .svg-pointer{fill:var(--sidebar) !important}
+  .chart-container .legend-dataset-text{fill:var(--th-c2cbd9) !important}
 {% endblock %}
 
 {% block noi_dung %}
 <div class="tk-dau">
   <div>
-    <h2>Báo cáo tuần</h2>
-    <div class="khoang">Tuần {{ ma_tuan[-2:]|int }} · {{ tu[8:] }}/{{ tu[5:7] }} – {{ den[8:] }}/{{ den[5:7] }}/{{ den[:4] }}
-      · {% if toan_cong_ty %}toàn công ty{% else %}{{ user.bo_phan or 'bộ phận của bạn' }}{% endif %}</div>
+    <h2>Báo cáo{% if la_cong_ty %} toàn công ty{% else %} · {{ user.bo_phan or 'bộ phận của bạn' }}{% endif %}</h2>
+    <div class="khoang">Tuần {{ ma_tuan[-2:]|int }} · {{ tu[8:] }}/{{ tu[5:7] }} – {{ den[8:] }}/{{ den[5:7] }}/{{ den[:4] }}</div>
   </div>
   <div class="tk-lui">
-    <a href="/bao-cao-tuan?tuan_xem={{ tuan_truoc }}">← Tuần trước</a>
-    {% if ma_tuan != tuan_nay %}<a href="/bao-cao-tuan">Tuần này</a>{% endif %}
-    <a href="/bao-cao-tuan?tuan_xem={{ tuan_sau }}">Tuần sau →</a>
+    {% if duoc_cong_ty %}
+    <span class="gat">
+      <a class="{{ 'on' if la_cong_ty else '' }}" href="/bao-cao-tuan?tuan_xem={{ ma_tuan }}">Toàn công ty</a>
+      <a class="{{ '' if la_cong_ty else 'on' }}" href="/bao-cao-tuan?pham_vi=bo-phan&tuan_xem={{ ma_tuan }}">Bộ phận tôi</a>
+    </span>
+    {% endif %}
+    <a href="/bao-cao-tuan?tuan_xem={{ tuan_truoc }}{% if not la_cong_ty %}&pham_vi=bo-phan{% endif %}">← Tuần trước</a>
+    {% if ma_tuan != tuan_nay %}<a href="/bao-cao-tuan{% if not la_cong_ty %}?pham_vi=bo-phan{% endif %}">Tuần này</a>{% endif %}
+    <a href="/bao-cao-tuan?tuan_xem={{ tuan_sau }}{% if not la_cong_ty %}&pham_vi=bo-phan{% endif %}">Tuần sau →</a>
   </div>
 </div>
 
 {% if loi_iam %}<div class="khoi"><div class="loi" style="margin:0">{{ loi_iam }}</div></div>{% endif %}
 
-<div class="tk-so">
-  <div class="tk-o">
-    <div class="nhan">Tỉ lệ hoàn thành</div>
+<div class="o4">
+  <div class="o">
+    <div class="lab">Hoàn thành tuần</div>
     {% if tong.ti_le is none %}
       <div class="to" style="color:var(--muted)">—</div>
       <div class="phu">Chưa ai có việc trong tuần này</div>
     {% else %}
       <div class="to">{{ tong.ti_le }}<small>%</small></div>
       <div class="thanh"><i style="width:{{ tong.ti_le }}%"></i></div>
-      <div class="phu">{{ tong.tong_xong }}/{{ tong.tong_viec }} việc đã xác nhận</div>
+      <div class="phu">{{ tong.tong_xong }}/{{ tong.tong_viec }} việc đã nghiệm thu</div>
     {% endif %}
   </div>
-  <div class="tk-o">
-    <div class="nhan">Khối lượng</div>
-    <div class="to">{{ tong.tong_viec }}<small> việc</small></div>
-    <div class="phu">{{ tong.tong_buoc }} bước checklist · {{ tong.co_viec }} người</div>
+  <div class="o">
+    <div class="lab">Goal</div>
+    <div class="to">{{ tong_goal.dat }}<small>/{{ tong_goal.tong }} đã chốt đạt</small></div>
+    <div class="phu">{{ tong_goal.dang_chay }} đang chạy
+      {%- if tong_goal.cho_chot %} · {{ tong_goal.cho_chot }} chờ chốt{% endif %}</div>
   </div>
-  <div class="tk-o">
-    <div class="nhan">Việc kẹt</div>
-    <div class="to"{% if tong.tong_ket %} style="color:var(--th-d97c6c)"{% endif %}>{{ tong.tong_ket }}</div>
-    <div class="phu">Đã dời từ 2 tuần trở lên</div>
+  <div class="o">
+    <div class="lab">Cần để ý</div>
+    <div class="to"{% if tong.tong_ket or tong_goal.tre_han %} style="color:var(--tk-cap)"{% endif %}>{{ tong.tong_ket + tong_goal.tre_han }}</div>
+    <div class="phu">{{ tong.tong_ket }} việc kẹt · {{ tong_goal.tre_han }} Goal trễ hạn</div>
   </div>
-  <div class="tk-o">
-    <div class="nhan">Chưa có việc</div>
+  <div class="o">
+    <div class="lab">Chưa có việc</div>
     <div class="to">{{ tong.chua_co_viec }}<small> người</small></div>
-    <div class="phu">Không có số để báo cáo, không tính là 0%</div>
+    <div class="phu">Không có số để báo cáo, không tính 0%</div>
   </div>
 </div>
 
+<div class="khoi">
+  <h3>Tỉ lệ hoàn thành 8 tuần</h3>
+  <div class="ghi-nho">{% if la_cong_ty %}toàn công ty{% else %}{{ user.bo_phan }}{% endif %}
+    · rê chuột xem từng tuần · tuần chưa ai làm gì thì bỏ trống, không vẽ 0%</div>
+  <div class="bd" id="bd-xu-huong"></div>
+</div>
+
+{% if tong_goal.tong %}
+<div class="khoi">
+  <h3>{{ tong_goal.tong }} Goal đang có</h3>
+  <div class="ghi-nho">Xong hết việc chỉ là “chờ chốt” — đạt hay không do Manager kết luận</div>
+  <div class="bd" id="bd-goal"></div>
+</div>
+{% endif %}
+
+{% if la_cong_ty and bo_phan %}
+<div class="tk-muc"><h3>Theo bộ phận</h3><hr>
+  <span class="ghi">Owner nhìn bộ phận — bóc từng người là việc của Manager</span></div>
+<div class="khoi">
+  <div class="ghi-nho" style="margin:0 0 6px">Bộ phận phân biệt bằng khối riêng và tên,
+    không bằng màu (bốn màu bộ phận đo trượt chuẩn phân biệt màu — xem FLOW §12.2)</div>
+  <div class="bd" id="bd-bo-phan"></div>
+</div>
+{% for b in bo_phan %}
+<article class="bp-khoi">
+  <header>
+    <div style="flex:1;min-width:170px"><h4>{{ b.bo_phan }}</h4>
+      <div class="goi-y" style="margin:0">{{ b.so_nguoi }} người</div></div>
+    {% if b.ti_le is not none %}
+    <span class="mini"><i style="width:{{ b.ti_le }}%"></i></span>
+    <b style="font-variant-numeric:tabular-nums">{{ b.ti_le }}%</b>
+    {% else %}<span class="note">— chưa ai có việc</span>{% endif %}
+  </header>
+  <div class="bp-so">
+    <div><span>Việc tuần</span><b>{{ b.so_viec or '—' }}</b></div>
+    <div><span>Nghiệm thu</span><b>{{ b.xong }}</b></div>
+    <div><span>Bước checklist</span><b>{{ b.buoc_tong }}</b></div>
+    <div><span>Việc kẹt</span><b{% if b.ket %} style="color:var(--tk-cap)"{% endif %}>{{ b.ket }}</b></div>
+    <div><span>Đã đóng tuần</span><b>{{ b.da_dong }}/{{ b.so_nguoi }}</b></div>
+  </div>
+</article>
+{% endfor %}
+{% endif %}
+
+{% if la_cong_ty %}
+<div class="tk-muc"><h3>Nhiệm vụ tôi giao</h3><hr>
+  <span class="ghi">Manager dựng thành Goal rồi tự chẻ việc</span></div>
+<div class="khoi">
+  {% if nhiem_vu %}
+  <ul class="ds2">
+    {% for n in nhiem_vu %}
+    <li>
+      <span class="ten2">{{ n.viec.tieu_de }}
+        <small>{{ n.viec.nguoi }}{% if n.goal %} · Goal “{{ n.goal.tieu_de }}”{% endif %}</small></span>
+      {% if n.tien_do and n.tien_do.tong %}
+        <span class="mini"><i style="width:{{ n.tien_do.phan_tram or 0 }}%"></i></span>
+        <span class="note">{{ n.tien_do.xong }}/{{ n.tien_do.tong }}</span>
+      {% endif %}
+      {% if not n.goal %}
+        <span class="the cho"><svg viewBox="0 0 24 24" width="11" height="11" fill="none"
+          stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/>
+          <path d="M12 7v5l3 3"/></svg>Chưa dựng thành Goal</span>
+      {% elif n.goal.trang_thai != 'dang_chay' %}
+        <span class="the done">{{ {'dat':'Đạt','mot_phan':'Một phần','khong_dat':'Không đạt'}[n.goal.trang_thai] }}</span>
+      {% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}<div class="note">Bạn chưa giao nhiệm vụ nào cho cấp dưới.</div>{% endif %}
+</div>
+{% endif %}
+
+<div class="tk-muc"><h3>{% if la_cong_ty %}Goal toàn công ty{% else %}Goal của bộ phận{% endif %}</h3><hr></div>
+<div class="khoi">
+  {% if goal %}
+  <ul class="ds2">
+    {% for g in goal %}
+    <li>
+      <span class="ten2"><a href="/muc-tieu?chon={{ g.id }}" style="color:inherit">{{ g.tieu_de }}</a>
+        <small>Kết quả cần đạt: {{ g.ket_qua_can_dat }}{% if g.ket_luan %} — “{{ g.ket_luan }}”{% endif %}</small></span>
+      {% if g.tien_do.tong %}
+        <span class="mini"><i style="width:{{ g.tien_do.phan_tram or 0 }}%"></i></span>
+        <span class="note">{{ g.tien_do.xong }}/{{ g.tien_do.tong }}</span>
+      {% else %}<span class="note">chưa có việc</span>{% endif %}
+      {% for c in g.canh_bao[:2] %}
+      <span class="the {{ 'ket' if c.muc_do == 'cap' else 'cho' }}">
+        <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor"
+          stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/>
+          <path d="M12 7v6M12 16h.01"/></svg>{{ c.chu }}</span>
+      {% endfor %}
+      {% if g.trang_thai != 'dang_chay' %}
+        <span class="the done">{{ {'dat':'Đạt','mot_phan':'Một phần','khong_dat':'Không đạt'}[g.trang_thai] }}</span>
+      {% elif g.tien_do.xong_het %}
+        <span class="the cho">Chờ chốt</span>
+      {% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}<div class="note">Chưa có Goal nào.</div>{% endif %}
+</div>
+
+<div class="tk-muc"><h3>Từng người</h3><hr>
+  <span class="ghi">Chỉ tính việc leader đã xác nhận</span></div>
 <div class="khoi" style="padding:0;overflow-x:auto">
   <table class="tk">
-    <thead><tr><th>Người</th><th>Hoàn thành</th><th class="so">Việc</th><th class="so">Giao</th>
-      <th class="so">Tự nhận</th><th class="so">Bước tick</th><th class="so">Kẹt</th>
-      <th class="so">Từ chối</th><th>Tuần</th></tr></thead>
+    <thead><tr><th>Người</th>{% if la_cong_ty %}<th>Bộ phận</th>{% endif %}<th>Hoàn thành</th>
+      <th class="so">Việc</th><th class="so">Giao</th><th class="so">Tự nhận</th>
+      <th class="so">Bước</th><th class="so">Kẹt</th><th>Tuần</th></tr></thead>
     <tbody>
-      {% set nhom = bang|groupby('bo_phan') %}
-      {% for bp, ds in nhom %}
-        {% if nhom|length > 1 %}<tr><td class="bp" colspan="9">{{ bp or 'Chưa gán bộ phận' }}</td></tr>{% endif %}
-        {% for d in ds %}
-        <tr>
-          <td>{{ d.ho_ten or d.nguoi }}</td>
-          <td>{% if d.ti_le is none %}<span style="color:var(--muted)">— chưa có việc</span>
-              {% else %}<span class="mini"><i style="width:{{ d.ti_le }}%"></i></span>{{ d.ti_le }}%
-              ({{ d.xong }}/{{ d.so_viec }}){% if d.tu_xac_nhan %} <span class="the">tự xác nhận</span>{% endif %}{% endif %}</td>
-          <td class="so">{{ d.so_viec or '—' }}</td>
-          <td class="so">{{ d.giao }}</td>
-          <td class="so">{{ d.tu_them }}</td>
-          <td class="so">{{ d.buoc_xong }}/{{ d.buoc_tong }}</td>
-          <td class="so">{% if d.ket %}<span class="the ket">{{ d.ket }}</span>{% else %}0{% endif %}</td>
-          <td class="so">{{ d.bi_tu_choi }}</td>
-          <td>{% if d.da_dong %}<span class="the">Đã đóng</span>
-              {% elif d.cho_xac_nhan %}<span class="the cho">{{ d.cho_xac_nhan }} chờ xác nhận</span>
-              {% else %}<span class="the">Đang chạy</span>{% endif %}</td>
-        </tr>
-        {% endfor %}
+      {% for d in bang %}
+      <tr>
+        <td>{{ d.ho_ten or d.nguoi }}</td>
+        {% if la_cong_ty %}<td class="note">{{ d.bo_phan }}</td>{% endif %}
+        <td>{% if d.ti_le is none %}<span class="note">— chưa có việc</span>
+            {% else %}<span class="mini"><i style="width:{{ d.ti_le }}%"></i></span>{{ d.ti_le }}%
+            ({{ d.xong }}/{{ d.so_viec }}){% if d.tu_xac_nhan %} <span class="the">tự xác nhận</span>{% endif %}{% endif %}</td>
+        <td class="so">{{ d.so_viec or '—' }}</td>
+        <td class="so">{{ d.giao }}</td>
+        <td class="so">{{ d.tu_them }}</td>
+        <td class="so">{{ d.buoc_xong }}/{{ d.buoc_tong }}</td>
+        <td class="so">{% if d.ket %}<span class="the ket">{{ d.ket }}</span>{% else %}0{% endif %}</td>
+        <td>{% if d.da_dong %}<span class="the done">Đã đóng</span>
+            {% elif d.cho_xac_nhan %}<span class="the cho">{{ d.cho_xac_nhan }} chờ xác nhận</span>
+            {% else %}<span class="the">Đang chạy</span>{% endif %}</td>
+      </tr>
       {% endfor %}
     </tbody>
   </table>
 </div>
-<div class="goi-y">Chỉ tính việc <b>leader đã xác nhận</b>. Người chưa được giao việc nào hiện
-  “—”, không hiện 0% — để khỏi đọc nhầm thành làm việc kém.</div>
 
 <div class="tk-muc"><h3>Kho quy trình đang hình thành</h3><hr>
   <span class="ghi">Gom từ checklist thật · chưa bật gợi ý</span></div>
 <div class="khoi">
-  <div class="goi-y" style="margin-top:0">Mỗi loại việc cần <b>3 checklist của việc đã hoàn thành</b>
-    thì hệ mới rút ra được các bước lặp lại để leader duyệt thành quy trình chuẩn.
-    Chưa đủ thì không đề xuất gì.</div>
+  <div class="ghi-nho">Mỗi loại việc cần <b>3 checklist của việc đã hoàn thành</b> thì hệ mới
+    rút ra được bước lặp lại để leader duyệt. Chưa đủ thì không đề xuất gì.</div>
   {% if kho_quy_trinh %}
-  <div style="overflow-x:auto">
-    <table class="tk">
-      <thead><tr><th>Loại việc</th><th class="so">Checklist đã tích</th><th>Trạng thái</th>
-        <th>Bước lặp nhiều nhất</th></tr></thead>
-      <tbody>
-        {% for m in kho_quy_trinh %}
-        <tr>
-          <td>{{ m.loai }}</td>
-          <td class="so">{{ m.so_checklist }}</td>
-          <td>{% if m.du_de_rut %}<span class="the cho">Đủ để rút quy trình</span>
-              {% else %}<span class="the">Cần thêm {{ m.con_thieu }}</span>{% endif %}</td>
-          <td style="white-space:normal">{% if m.du_de_rut %}“{{ m.buoc_hay_nhat }}” — {{ m.lan_lap }}/{{ m.so_checklist }} lần
-              {% else %}<span style="color:var(--muted)">chưa đủ tiền lệ</span>{% endif %}</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-  {% else %}
-  <div class="goi-y" style="margin-bottom:0">Chưa có việc nào hoàn thành kèm checklist — kho quy
-    trình sẽ tự đầy lên khi mọi người dùng.</div>
-  {% endif %}
+  <div style="overflow-x:auto"><table class="tk">
+    <thead><tr><th>Loại việc</th><th class="so">Checklist</th><th>Trạng thái</th>
+      <th>Bước lặp nhiều nhất</th></tr></thead>
+    <tbody>
+      {% for m in kho_quy_trinh %}
+      <tr><td>{{ m.loai }}</td><td class="so">{{ m.so_checklist }}</td>
+        <td>{% if m.du_de_rut %}<span class="the done">Đủ để rút quy trình</span>
+            {% else %}<span class="the">Cần thêm {{ m.con_thieu }}</span>{% endif %}</td>
+        <td class="note" style="white-space:normal">{% if m.du_de_rut %}“{{ m.buoc_hay_nhat }}” — {{ m.lan_lap }}/{{ m.so_checklist }} lần
+            {% else %}chưa đủ tiền lệ{% endif %}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table></div>
+  {% else %}<div class="note">Chưa có việc nào hoàn thành kèm checklist.</div>{% endif %}
 </div>
+{% endblock %}
+
+{% block script %}
+<script src="/tasky-static/vendor/frappe-charts.min.umd.js"></script>
+<script>
+(function () {
+  var XU_HUONG = {{ xu_huong|tojson }};
+  var GOAL = {{ tong_goal|tojson }};
+  var BO_PHAN = {{ bo_phan|tojson }};
+  if (typeof frappe === "undefined") { return; }   // vendor lỗi → trang vẫn đọc được
+
+  // Thư viện vẽ bằng màu TRUYỀN VÀO JS, không đọc CSS var → đọc token rồi vẽ lại
+  // mỗi lần đổi theme. Quên gọi lại là biểu đồ giữ màu theme cũ (xem NGUON.md).
+  function mau() {
+    var s = getComputedStyle(document.documentElement);
+    return { accent: s.getPropertyValue("--accent").trim(),
+             ok: s.getPropertyValue("--tk-ok").trim(),
+             luu: s.getPropertyValue("--tk-luu").trim(),
+             cap: s.getPropertyValue("--tk-cap").trim() };
+  }
+
+  function ve() {
+    var m = mau();
+    var o = document.getElementById("bd-xu-huong");
+    if (o) {
+      o.innerHTML = "";
+      new frappe.Chart(o, {
+        data: { labels: XU_HUONG.map(function (x) { return x.nhan; }),
+                datasets: [{ name: "Hoàn thành",
+                             values: XU_HUONG.map(function (x) { return x.ti_le; }) }] },
+        type: "line", height: 190, colors: [m.accent],
+        lineOptions: { hideDots: 0, regionFill: 1 },
+        axisOptions: { xAxisMode: "tick", yAxisMode: "span" },
+        tooltipOptions: { formatTooltipY: function (v) {
+          return v === null ? "chưa có việc" : v + "%"; } }
+      });
+    }
+
+    var g = document.getElementById("bd-goal");
+    if (g) {
+      g.innerHTML = "";
+      var nhan = ["Đã chốt đạt", "Đang chạy", "Chờ chốt", "Một phần / Không đạt"];
+      var so = [GOAL.dat, GOAL.dang_chay, GOAL.cho_chot, GOAL.mot_phan + GOAL.khong_dat];
+      new frappe.Chart(g, {
+        data: { labels: nhan, datasets: [{ values: so }] },
+        type: "donut", height: 200, maxSlices: 4,
+        colors: [m.ok, m.accent, m.luu, m.cap]
+      });
+    }
+
+    var b = document.getElementById("bd-bo-phan");
+    if (b && BO_PHAN.length) {
+      b.innerHTML = "";
+      new frappe.Chart(b, {
+        data: { labels: BO_PHAN.map(function (x) { return x.bo_phan; }),
+                datasets: [{ name: "Hoàn thành",
+                             values: BO_PHAN.map(function (x) { return x.ti_le || 0; }) }] },
+        type: "bar", height: 190, colors: [m.accent],
+        barOptions: { spaceRatio: 0.6 },
+        tooltipOptions: { formatTooltipY: function (v) { return v + "%"; } }
+      });
+    }
+  }
+  ve();
+
+  // đổi theme ở khung OUTLIERY → vẽ lại (không có dòng này là giữ màu cũ)
+  addEventListener("storage", function (s) { if (s.key === "outliery_theme") { setTimeout(ve, 30); } });
+  var qs = document.querySelector('[onclick*="outliery_theme"]');
+  if (qs) { qs.addEventListener("click", function () { setTimeout(ve, 30); }); }
+})();
+</script>
 {% endblock %}
