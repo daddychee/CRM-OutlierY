@@ -136,6 +136,8 @@ def trang_viec(request: Request, user: dict = Depends(lay_user), tuan_xem: str =
     ma = _ma_tuan_hop_le(tuan_xem)
     ds = tuan_lo.sap_xep(tuan_lo.viec_cua(ma, user["ten"]))
     tu, den = tuan_lo.khoang_tuan(ma)
+    ds_mt = mt_lo.doc_tat_ca()
+    gom_mt = mt_lo.viec_theo_muc_tieu()          # MỘT lượt quét, dùng cho cả trang
     return templates.TemplateResponse(request, "viec.html", {
         "user": user, "ma_tuan": ma, "tu": tu, "den": den,
         "viec_giao": [v for v in ds if v["nguon"] == "giao"],
@@ -146,6 +148,17 @@ def trang_viec(request: Request, user: dict = Depends(lay_user), tuan_xem: str =
         "viec_con": {v["id"]: tuan_lo.viec_con(ma, v["id"])
                      for v in ds if v["nguon"] == "phoi_hop"},
         "tk": tuan_lo.thong_ke_nguoi(ma, user["ten"]),
+        # việc thuộc mục tiêu nào (chip xanh trên thẻ việc) + nhiệm vụ chờ dựng
+        "mt_theo_id": mt_lo.theo_id(ds_mt),
+        "mt_tien_do": {m["id"]: mt_lo.tien_do(m["id"], gom_mt.get(m["id"], []))
+                       for m in ds_mt},
+        # Việc cấp trên giao cho Manager mà chưa dựng thành mục tiêu → hiện nút
+        # "Dựng thành mục tiêu" (§12.1). Nhân sự thường không thấy khối này.
+        "cho_dung_mt": [v for v in ds
+                        if mt_lo.duoc_dat_muc_tieu(user)
+                        and v["trang_thai"] in (tuan_lo.CHO_NHAN, tuan_lo.DANG_LAM)
+                        and not v.get("muc_tieu_id")
+                        and mt_lo.nhiem_vu_da_dung(v["id"], ds_mt) is None],
         "loai_viec": tuan_lo.cac_loai_viec(),
         "tuan_truoc": tuan_lo.tuan_lien_ke(ma, -1),
         "tuan_sau": tuan_lo.tuan_lien_ke(ma, 1),

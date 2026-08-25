@@ -65,6 +65,16 @@
     <div style="flex:1;min-width:0">
       <div class="ten">{{ v.tieu_de }}</div>
       <div class="duoi">
+        {% if v.muc_tieu_id and mt_theo_id.get(v.muc_tieu_id) %}
+          {%- set _mt = mt_theo_id[v.muc_tieu_id] %}{% set _td = mt_tien_do.get(v.muc_tieu_id) %}
+          <a class="the muc-tieu" href="/muc-tieu?chon={{ v.muc_tieu_id }}"
+             title="Kết quả cần đạt: {{ _mt.ket_qua_can_dat }}">
+            <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round"><circle cx="12" cy="5" r="2.2"/>
+              <circle cx="6" cy="19" r="2.2"/><circle cx="18" cy="19" r="2.2"/>
+              <path d="M12 7.2v3.8M12 11h-6v5.8M12 11h6v5.8"/></svg>{{ _mt.tieu_de }}
+            {%- if _td and _td.tong %} · {{ _td.xong }}/{{ _td.tong }} việc{% endif %}</a>
+        {% endif %}
         {% if v.gap %}<span class="the gap">GẤP</span>{% endif %}
         {% if hn.chu %}<span class="the{% if hn.muc %} han-{{ hn.muc }}{% endif %}">{{ hn.chu }}</span>{% endif %}
         {% if v.loai_viec %}<span class="the loai">{{ v.loai_viec }}</span>{% endif %}
@@ -157,6 +167,26 @@
   </div>
 </article>
 {% endmacro %}
+
+{% if cho_dung_mt %}
+<div class="tk-muc"><h3>Nhiệm vụ chờ bạn dựng thành mục tiêu</h3><hr>
+  <span class="ghi">Chẻ ra việc nhỏ rồi giao cho người của mình</span></div>
+{% for v in cho_dung_mt %}
+<div class="viec" style="padding:12px 14px;margin-bottom:10px" data-nv="{{ v.id }}">
+  <div class="ten" style="font-size:14px;font-weight:600;margin-bottom:4px">{{ v.tieu_de }}</div>
+  <div class="duoi" style="margin-bottom:9px">
+    <span>{{ v.nguoi_giao }} giao</span>
+    {%- set hn = v|han %}{% if hn.chu %}<span class="the{% if hn.muc %} {{ 'ket' if hn.muc == 'cap' else 'cho' }}{% endif %}">{{ hn.chu }}</span>{% endif %}
+  </div>
+  <div class="hang" style="margin:0">
+    <input data-nv-kq placeholder="Kết quả cần đạt (bắt buộc — ví dụ: AVD ≥ 45%)">
+    <input data-nv-han type="date" style="flex:0 0 auto">
+    <button class="nut chinh" data-nv-dung>Dựng thành mục tiêu</button>
+  </div>
+  <div class="loi" data-nv-loi hidden></div>
+</div>
+{% endfor %}
+{% endif %}
 
 <div class="tk-muc"><h3>Leader giao</h3><hr></div>
 {% if viec_giao %}{% for v in viec_giao %}{{ the_viec(v) }}{% endfor %}
@@ -307,6 +337,20 @@
     }
     if (thanh && ds.length) { thanh.style.width = Math.round(100 * xong / ds.length) + "%"; }
   }
+
+  document.querySelectorAll("[data-nv-dung]").forEach(function (b) {
+    var khoi = b.closest("[data-nv]"), oLoi = khoi.querySelector("[data-nv-loi]");
+    b.addEventListener("click", function () {
+      var kq = (khoi.querySelector("[data-nv-kq]").value || "").trim();
+      if (!kq) { baoLoi(oLoi, new Error("Phải nêu kết quả cần đạt.")); return; }
+      b.disabled = true;
+      goi("muc-tieu", {
+        tieu_de: khoi.querySelector(".ten").textContent.trim(), ket_qua: kq,
+        han: khoi.querySelector("[data-nv-han]").value || "", tu_nhiem_vu: khoi.dataset.nv
+      }).then(function () { location.href = "/muc-tieu"; })
+        .catch(function (e) { b.disabled = false; baoLoi(oLoi, e); });
+    });
+  });
 
   var nutThem = document.getElementById("them-viec");
   if (nutThem) {

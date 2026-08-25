@@ -229,6 +229,20 @@ def canh_bao(mt: dict, ds_viec: list[dict]) -> list[dict]:
     return ra
 
 
+def theo_id(ds: list[dict] | None = None) -> dict[str, dict]:
+    """{id: mục tiêu} — màn việc cần tra nhanh 'việc này thuộc mục tiêu nào'."""
+    return {m["id"]: m for m in (ds if ds is not None else doc_tat_ca())}
+
+
+def nhiem_vu_da_dung(nhiem_vu_id: str, ds: list[dict] | None = None) -> dict | None:
+    """Nhiệm vụ Owner giao đã được Manager dựng thành mục tiêu chưa? None = chưa —
+    đó chính là tín hiệu Owner cần thấy (nhận việc mấy ngày mà chưa chẻ)."""
+    for m in (ds if ds is not None else doc_tat_ca()):
+        if m.get("tu_nhiem_vu") == nhiem_vu_id:
+            return m
+    return None
+
+
 def con_han(mt: dict, hom_nay: date | None = None) -> int | None:
     """Số ngày còn lại (âm = quá hạn). Không đặt hạn → None."""
     if not mt.get("han"):
