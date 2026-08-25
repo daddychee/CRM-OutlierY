@@ -182,3 +182,16 @@ def test_xoa_video_can_co_xoa_va_khong_dung_file_nas(client):
     assert client.get("/xem/VR-0001", headers=h()).status_code == 404
     assert client.get("/media/VR-0001", headers=h()).status_code == 404
     assert kho_video.duong_video(v).is_file()
+
+
+def test_trang_xem_co_luoi_noi_bat_binh_luan(client):
+    """Ghim cải tiến 24/08: tới đoạn có feedback thì mục nháy đỏ + cuộn ngang video;
+    bấm chấm tròn cũng vậy. Kiểm chứng hành vi đã chạy bằng Chrome headless —
+    test này chỉ giữ cho các móc không bị gỡ mất khi sửa template sau này."""
+    _them(client)
+    trang = client.get("/xem/VR-0001", headers=h()).text
+    assert ".bl-item.nhay" in trang and "@keyframes nhay-do" in trang
+    assert "function noiBatBL" in trang and "function cuonNgangVideo" in trang
+    assert 'd.dataset.bl = b.id' in trang            # mốc để tìm lại đúng mục
+    assert "buoc > 1.5" in trang                     # tua xa thì KHÔNG nháy hàng loạt
+    assert "prefers-reduced-motion" in trang         # máy tắt hiệu ứng vẫn thấy nổi bật

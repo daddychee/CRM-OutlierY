@@ -65,6 +65,17 @@
   .bl-ds{overflow-y:auto;display:flex;flex-direction:column;gap:8px;min-height:60px}
   .bl-item{border:1px solid var(--line);border-radius:11px;padding:9px 12px;font-size:13.5px;cursor:pointer}
   .bl-item:hover{background:var(--th-141c2b)}
+  /* Tới đoạn có feedback thì mục nháy đỏ (user chốt 24/08) — dùng box-shadow +
+     nền, KHÔNG đổi border-width kẻo cả danh sách nhích chỗ mỗi lần nháy. */
+  @keyframes nhay-do{
+    0%,100%{background:transparent;box-shadow:0 0 0 0 rgba(217,124,108,0)}
+    50%{background:rgba(217,124,108,.18);box-shadow:0 0 0 2px rgba(217,124,108,.55)}
+  }
+  .bl-item.nhay{animation:nhay-do .6s ease-in-out 3}
+  @media (prefers-reduced-motion:reduce){
+    .bl-item.nhay{animation:none;background:rgba(217,124,108,.18);
+      box-shadow:0 0 0 2px rgba(217,124,108,.55)}
+  }
   .bl-item.da-giai{opacity:.55}
   .bl-item .ai{font-weight:600;font-size:12.5px}
   .bl-item .moc{color:var(--accent);font-weight:600;font-size:12px;background:var(--th-16263f);
@@ -233,7 +244,21 @@
     document.getElementById("loi-phat").style.display = "block";
   });
   vid.addEventListener("play", function () { netDangXem = null; xoaLop(); });
-  vid.addEventListener("timeupdate", function () { mocHien.textContent = mmss(vid.currentTime); });
+  var _tTruoc = 0;
+  vid.addEventListener("timeupdate", function () {
+    mocHien.textContent = mmss(vid.currentTime);
+    // Chạy tới mốc nào có feedback thì mục đó nháy đỏ + cuộn lên ngang video.
+    // timeupdate bắn ~4 lần/giây nên bước bình thường ~0.25s: bước ÂM hoặc quá dài
+    // = người dùng vừa tua, bỏ qua kẻo nháy hàng loạt mục vừa lướt qua.
+    var t = vid.currentTime, truoc = _tTruoc;
+    _tTruoc = t;
+    if (vid.seeking) return;
+    var buoc = t - truoc;
+    if (buoc <= 0 || buoc > 1.5) return;
+    BL.forEach(function (b) {
+      if (b.ts_giay != null && b.ts_giay > truoc && b.ts_giay <= t) noiBatBL(b.id);
+    });
+  });
 
   // ===== chế độ vẽ chú thích =====
   var dangVe = false, mauHien = "#ff5f56", netMoi = [], netDangXem = null, netTay = null;
@@ -295,7 +320,31 @@
     vid.currentTime = (e.clientX - r.left) / r.width * vid.duration;
   });
 
+  // ===== nổi bật bình luận: cuộn NGANG HÀNG với video + nháy đỏ (user chốt 24/08)
+  function cuonNgangVideo(el) {
+    // Danh sách bình luận có thanh cuộn RIÊNG (.bl-ds) — cuộn trong nó, không cuộn
+    // cả trang, để khung video đứng yên. Đích: mép trên mục trùng mép trên video.
+    var dsR = dsEl.getBoundingClientRect();
+    var vidR = document.getElementById("vid-wrap").getBoundingClientRect();
+    var lech = Math.max(0, vidR.top - dsR.top);      // màn hẹp: panel nằm dưới → 0
+    var toi = dsEl.scrollTop + (el.getBoundingClientRect().top - dsR.top) - lech;
+    if (dsEl.scrollTo) dsEl.scrollTo({ top: toi, behavior: "smooth" });
+    else dsEl.scrollTop = toi;                       // trình duyệt cũ: nhảy thẳng
+  }
+
+  function noiBatBL(id) {
+    var el = dsEl.querySelector('[data-bl="' + id + '"]');
+    if (!el) return;
+    cuonNgangVideo(el);
+    el.classList.remove("nhay");
+    void el.offsetWidth;              // ép chạy lại animation khi nháy đúng mục cũ
+    el.classList.add("nhay");
+    clearTimeout(el._hetNhay);
+    el._hetNhay = setTimeout(function () { el.classList.remove("nhay"); }, 1900);
+  }
+
   function nhayToi(b) {
+    noiBatBL(b.id);
     if (b.ts_giay != null) { vid.currentTime = b.ts_giay; vid.pause(); }
     if (b.ve_json) {
       netDangXem = JSON.parse(b.ve_json);
@@ -350,6 +399,7 @@
         day.appendChild(g); day.appendChild(x);
       }
       d.appendChild(day);
+      d.dataset.bl = b.id;                 // để noiBatBL tìm lại đúng mục
       d.addEventListener("click", function () { nhayToi(b); });
       dsEl.appendChild(d);
     });

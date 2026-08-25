@@ -193,6 +193,27 @@
   `Feedback` trên NAS thì tập đó mới dọn được bằng app** (app không đổi tên thư
   mục — chỉ đọc và xóa file trong khối đúng tên).
 
+- 24/08/2026 — **NỔI BẬT FEEDBACK THEO MỐC** (user yêu cầu): (1) phát tới đoạn có
+  bình luận → mục đó **nháy đỏ + cuộn lên ngang video**; (2) bấm chấm tròn trên
+  thanh mốc → tua tới đúng giây rồi làm y hệt.
+  • Bắt "vừa đi qua mốc" trong `timeupdate` (bắn ~4 lần/giây): chỉ nháy khi
+    `truoc < ts <= nay` VÀ bước 0 < Δ ≤ 1,5s — **tua xa thì bỏ qua**, không thì
+    kéo thanh thời gian một cái là nháy hàng loạt mục vừa lướt qua.
+  • `cuonNgangVideo` cuộn TRONG `.bl-ds` (danh sách có thanh cuộn riêng), không
+    cuộn cả trang → khung video đứng yên. Trần vật lý: ô soạn bình luận chiếm
+    ~134px trên đầu panel nên mục chỉ lên tới ĐỈNH DANH SÁCH, thấp hơn mép trên
+    video đúng chừng đó — muốn khít thì phải dời ô soạn xuống đáy panel (chưa làm,
+    không ai yêu cầu).
+  • Nháy bằng `background` + `box-shadow`, KHÔNG đổi border-width (đổi là cả danh
+    sách nhích chỗ mỗi lần nháy); có nhánh `prefers-reduced-motion` để máy tắt
+    hiệu ứng vẫn thấy mục được tô.
+  **NGHIỆM THU BẰNG TRÌNH DUYỆT THẬT** (Chrome headless + harness giả lập
+  `currentTime`/`duration`, vì app này không có test JS): phát qua mốc → đúng mục
+  nháy, mục khác không nháy oan; tua xa → không nháy hàng loạt; bấm chấm → tua
+  đúng 59,146s + mục tương ứng nháy + danh sách cuộn 367px; đo `getComputedStyle`
+  giữa nhịp: nền rgba(217,124,108,.18) + viền sáng 2px trong khi mục thường trong
+  suốt. 73 test pytest pass (test chỉ ghim các móc, hành vi do harness chứng minh).
+
 ## Quyết định thiết kế (đừng phá)
 
 - **NAS CHỈ ĐỌC TUYỆT ĐỐI**: app không chép/ghi/xóa/đổi tên gì trong `VR_NAS_DIR`
