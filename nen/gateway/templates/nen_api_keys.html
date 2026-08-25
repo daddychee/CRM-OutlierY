@@ -18,12 +18,25 @@
      mỗi bảng tự co theo nội dung. Bỏ cột Usage + Added cùng đợt. */
   table.luoi-khoa{table-layout:fixed;width:100%}
   table.luoi-khoa td{overflow:hidden;text-overflow:ellipsis}
+  /* Tab 2 cùng luật lưới (Owner 24/08): cột 1-2 trước bị bóp làm chữ vỡ 3-4 dòng
+     trong khi Mode/Model/Configured thừa chỗ; cột hành động co theo nội dung nên
+     nút Save mỗi hàng một vị trí. Lưới cố định + form căn PHẢI → Save thẳng cột
+     kể cả hàng không có dropdown. */
+  table.luoi-app{table-layout:fixed;width:100%}
+  table.luoi-app td{vertical-align:top}
+  /* form.dong của base là inline-flex (co theo nội dung) nên justify-content vô
+     hiệu — phải cho nó chiếm trọn ô thì Save mới dính mép phải ở MỌI hàng, kể cả
+     hàng không có dropdown nào. */
+  table.luoi-app td form.dong{display:flex;width:100%;flex-wrap:wrap;
+    justify-content:flex-end;gap:6px}
+  table.luoi-app td form.dong select{flex:1 1 100px;min-width:0;max-width:100%}
   .khoa-list{display:flex;flex-direction:column;gap:4px}
   .khoa-list form.khoa-dong{display:flex;justify-content:space-between;align-items:center;gap:8px}
   .khoa-dong .chip-o{flex:1;text-align:left}
   /* dropdown "+ key" (kho khóa dự phòng) cùng cỡ với dòng chip — Owner phê:
      box to hơn các chip khác */
   .khoa-list form.dong{display:flex;gap:6px;align-items:center}
+  .khoa-list form.dong select{flex:1 1 auto;min-width:0}
   .khoa-list form.dong select, .khoa-list form.dong button{font-size:.8rem;padding:2px 7px}
   /* link mở/gọn danh sách phải TRÔNG NHƯ NÚT (Owner 18/08 — anchor chữ trần
      không ai nhận ra bấm được); luật docs/UI.md đi kèm luật 5-dòng. */
@@ -184,7 +197,10 @@
   </select>
 </form>
 {% set cap_app = cap_phat.get(app_chon, {}) %}
-<table class="gon">
+<table class="gon luoi-app">
+  <colgroup><col style="width:16%"><col style="width:11%"><col style="width:24%">
+    <col style="width:9%"><col style="width:11%"><col style="width:8%">
+    <col style="width:21%"></colgroup>
   <tr><th>App task (from contract)</th><th>API type</th><th>Assigned keys</th>
     <th>Mode</th><th>Model</th><th>Configured</th><th></th></tr>
   {% for v in viec_api[app_chon].viec %}

@@ -233,6 +233,23 @@ def test_tab1_moi_khoi_cung_luoi_6_cot(client):
     assert 'class="usage"' not in trang
 
 
+def test_tab2_luoi_7_cot_va_nut_save_dinh_mep_phai(client):
+    """Owner chốt 24/08: tab 2 cùng luật lưới — 7 cột cố định, mọi hàng đúng 7 ô.
+    Nút Save phải dính MÉP PHẢI ô hành động ở mọi hàng: form.dong của base là
+    inline-flex (co theo nội dung) nên justify-content vô hiệu — đo thật bằng
+    Chrome cho save_x lệch 120px giữa hàng có/không dropdown; luật display:flex +
+    width:100% là thứ chữa, ghim ở đây để đừng ai gỡ."""
+    import re
+    _login(client, "owner-test", "mk-test")
+    trang = client.get("/general/api-keys?tab=app&app=radary").text
+    than = trang.split('<table class="gon luoi-app">')[1].split("</table>")[0]
+    assert than.count("<col ") == 7
+    for hang in re.findall(r"<tr>(.*?)</tr>", than, re.S):
+        assert hang.count("<td") in (0, 7)
+    assert "table.luoi-app td form.dong{display:flex;width:100%" in trang
+    assert "justify-content:flex-end" in trang
+
+
 def test_tab3_quota_log_5_dong_show_more_server_side(client):
     """Cùng LUẬT cho bảng Quota log (mã 'log'): 7 dòng log → collapsed 5 +
     Show more (2); expanded đủ + Show less; URL giữ nguyên bộ lọc."""
