@@ -250,8 +250,17 @@ def sap_xep(ds: list[dict], hom_nay: date | None = None) -> list[dict]:
     return sorted(ds, key=khoa)
 
 
+def _gon_khoang_trang(chu: str) -> str:
+    """Gộp mọi khoảng trắng liên tiếp thành MỘT dấu cách.
+
+    HTML tự gộp khoảng trắng khi hiển thị, còn ô nhập thì giữ nguyên văn — hai
+    dấu cách trong tên việc làm người dùng tưởng "sửa rồi mà ngoài không đổi"
+    (Owner 25/08). Lưu đúng thứ người ta nhìn thấy thì hết mơ hồ."""
+    return " ".join((chu or "").split())
+
+
 def _viec_moi(tieu_de: str, loai_viec: str, nguoi: str) -> dict:
-    tieu_de = (tieu_de or "").strip()
+    tieu_de = _gon_khoang_trang(tieu_de)
     if not tieu_de:
         raise ValueError("Việc phải có tên.")
     return {"id": "v-" + uuid.uuid4().hex[:8],
@@ -600,7 +609,7 @@ def sua_viec(ma: str, id_viec: str, user: dict, tieu_de: str | None = None,
         if not _duoc_sua_de_bai(v, user):
             raise PermissionError("Chỉ người giao việc (hoặc Owner) mới sửa đề bài.")
         if tieu_de is not None and tieu_de.strip():
-            v["tieu_de"] = tieu_de.strip()[:200]
+            v["tieu_de"] = _gon_khoang_trang(tieu_de)[:200]
         if loai_viec is not None and loai_viec.strip():
             v["loai_viec"] = loai_viec.strip()[:60]
         if mo_ta is not None:

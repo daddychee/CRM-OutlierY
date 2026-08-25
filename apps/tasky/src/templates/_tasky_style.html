@@ -90,10 +90,14 @@
      nên Tasky tự khai CẶP token cho cả hai theme — không viết hex trần. */
   :root{--tk-cap:#d97c6c;--tk-cap-nen:#331a16;--tk-luu:#d6a457;--tk-luu-nen:#2e2413;
         --tk-tin:#6ba4e8;--tk-tin-nen:#16263f;--tk-ok:#6fbf8e;--tk-ok-nen:#12301f;
-        --tk-tim:#a992e0;--tk-hong:#e08bb4}
+        --tk-tim:#a992e0;--tk-hong:#e08bb4;
+        /* Viền THẺ. Viền chung --line (#243149) chỉ đạt 1.31:1 trên nền thẻ nên ở
+           bản tối trông như mất hẳn đường bao (Owner 25/08). #52678a = 2.98:1 —
+           đủ thấy mà không ồn. Bản sáng đo được 1.14:1 → hạ xuống #c4c4c4 (1.6:1). */
+        --tk-vien:#52678a}
   :root[data-theme="light"]{--tk-cap:#b14a3c;--tk-cap-nen:#fbe9e6;--tk-luu:#8a5a00;
         --tk-luu-nen:#fdf1de;--tk-tin:#1b5fb2;--tk-tin-nen:#e8f0fb;--tk-ok:#1f7a4d;
-        --tk-ok-nen:#e4f2ea;--tk-tim:#6d4fb8;--tk-hong:#b6407c}
+        --tk-ok-nen:#e4f2ea;--tk-tim:#6d4fb8;--tk-hong:#b6407c;--tk-vien:#c4c4c4}
 
   .bao{display:flex;flex-direction:column;gap:7px;margin-bottom:16px}
   .bao a{display:flex;gap:10px;align-items:center;text-decoration:none;color:var(--ink);
@@ -215,15 +219,17 @@
 
   /* ---- Phiếu chi tiết việc (§16) — mô tả, tài liệu, trao đổi, gỡ việc ---- */
   details.phieu-viec{width:100%}
-  details.phieu-viec>summary{list-style:none;cursor:pointer;font-size:12px;color:var(--muted);
-    display:inline-flex;align-items:center;gap:6px;padding:2px 0}
+  details.phieu-viec>summary{list-style:none;cursor:pointer;font-size:11.5px;color:var(--muted);
+    display:flex;align-items:center;gap:7px;padding:2px 0;justify-content:flex-end}
+  details.phieu-viec>summary .dau{padding:1px 7px;border:1px solid var(--chip-line);
+    border-radius:999px}
   details.phieu-viec>summary::-webkit-details-marker{display:none}
-  details.phieu-viec>summary::before{content:"";width:5px;height:5px;flex:none;
+  details.phieu-viec>summary::before{content:"";width:5px;height:5px;flex:none;order:9;
     border-right:1.6px solid var(--muted);border-bottom:1.6px solid var(--muted);
     transform:rotate(-45deg);transition:transform .15s}
   details.phieu-viec[open]>summary::before{transform:rotate(45deg)}
   details.phieu-viec>summary:hover{color:var(--ink)}
-  .phieu-noi{margin-top:8px;padding:12px;border:1px solid var(--line);border-radius:11px;
+  .phieu-noi{margin-top:8px;padding:12px;border:1px solid var(--tk-vien);border-radius:11px;
     background:var(--th-141c2b)}
   /* Ô sửa đề bài: có nhãn nhỏ trên mỗi ô, tên việc to hơn phần mô tả */
   .o-sua-viec{display:flex;flex-direction:column;gap:9px}

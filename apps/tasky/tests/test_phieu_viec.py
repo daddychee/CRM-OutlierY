@@ -289,3 +289,33 @@ def test_bo_bang_tung_nguoi_KHONG_cat_quyen_xem_bo_phan_khac(ma, _so):
     tuan.them_viec_giao(ma, MGR, NV, "Dựng 6 video", "san_xuat")
     r = _c.get("/bao-cao-tuan?pham_vi=bo-phan&bo=Vận hành", headers=H_OWNER)
     assert "Thu Hà" in r.text
+
+
+# ---------- §16c: sửa tên việc — cái thấy = cái lưu ----------
+
+def test_ten_viec_gon_khoang_trang_khi_luu(ma):
+    v = tuan.them_viec_giao(ma, MGR, NV, "Chuẩn bị  báo cáo   quý 2", "x")
+    assert v["tieu_de"] == "Chuẩn bị báo cáo quý 2"
+    tuan.sua_viec(ma, v["id"], MGR, tieu_de="Chuẩn bị  báo cáo  quý 3")
+    assert tuan._tim(tuan.doc_tuan(ma), v["id"])["tieu_de"] == "Chuẩn bị báo cáo quý 3"
+
+
+def test_doi_ten_viec_bang_form_thi_dong_ngoai_doi_theo(ma, _so):
+    m = mt.tao(MGR, "Goal A", "kq")
+    v = tuan.them_viec_giao(ma, MGR, NV, "Tên cũ", "x", muc_tieu_id=m["id"])
+    _c.post("/tasky/viec/sua", headers=H_MGR, follow_redirects=False,
+            data={"id": v["id"], "tieu_de": "Tên mới hẳn", "mo_ta": "",
+                  "tuan_xem": ma, "ve": "/muc-tieu?chon=" + m["id"]})
+    r = _c.get("/muc-tieu", headers=H_MGR)
+    dong = r.text.split('class="vt"')[1].split("</span>")[0]
+    assert "Tên mới hẳn" in dong and "Tên cũ" not in r.text
+
+
+def test_vien_the_dung_token_do_duoc_ca_hai_theme(_so):
+    """Owner 25/08: bản tối mất hết đường line của box. Viền chung --line chỉ đạt
+    1.31:1 trên nền thẻ; token riêng --tk-vien khai cặp tối/sáng."""
+    mt.tao(MGR, "Goal A", "kq")
+    html = _c.get("/muc-tieu", headers=H_MGR).text
+    assert "--tk-vien:#52678a" in html and "--tk-vien:#c4c4c4" in html
+    css = html.split("ul.vs li.the-viec{")[1].split("}")[0]
+    assert "var(--tk-vien)" in css

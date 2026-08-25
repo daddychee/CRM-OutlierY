@@ -9,7 +9,7 @@
     border-bottom:1px solid var(--line);scrollbar-width:thin}
   /* MỘT CỠ CỐ ĐỊNH cho mọi tab (Owner 25/08: đang to nhỏ khác nhau) */
   .mt-tab{flex:0 0 auto;display:flex;flex-direction:column;gap:6px;width:258px;height:112px;
-    border:1px solid var(--line);border-left:4px solid var(--line);border-radius:11px;
+    border:1px solid var(--tk-vien);border-left:4px solid var(--tk-vien);border-radius:11px;
     background:var(--sidebar);padding:8px 11px;cursor:pointer;text-align:left;
     position:relative;color:var(--ink);font-family:inherit;overflow:hidden}
   /* Màu NHÃN người dùng tự chọn — chỉ là dải bên trái, không đụng nghĩa trạng thái */
@@ -35,7 +35,7 @@
   .cham.ok{background:var(--tk-ok, var(--accent))}
 
   /* Đầu mục tiêu — status GỘP vào đây, không banner riêng */
-  .mt-dau{background:var(--sidebar);border:1px solid var(--line);border-radius:12px;
+  .mt-dau{background:var(--sidebar);border:1px solid var(--tk-vien);border-radius:12px;
     padding:14px 16px;margin-bottom:13px;display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap}
   .mt-dau h2{margin:0 0 5px;font-size:16px}
   .mt-dau .kq{font-size:13px;color:var(--th-c2cbd9)}
@@ -47,7 +47,7 @@
   .vong .lab{font-size:10.5px;color:var(--muted);margin-top:34px;line-height:1.3}
   .vach{width:1px;height:14px;background:var(--chip-line);margin:0 2px}
 
-  details.nhomv{border:1px solid var(--line);border-radius:11px;margin-bottom:9px;
+  details.nhomv{border:1px solid var(--tk-vien);border-radius:11px;margin-bottom:9px;
     overflow:hidden;background:var(--sidebar)}
   details.nhomv>summary{list-style:none;cursor:pointer;padding:9px 13px;display:flex;gap:9px;
     align-items:center;font-size:12.5px;font-weight:600;background:var(--th-141c2b)}
@@ -61,9 +61,9 @@
   /* MỘT việc = MỘT THẺ rời (Owner 25/08: "các việc trong Task có UI tách riêng,
      không dính liền"). Trước là danh sách gạch ngang nên hai việc trông như một khối. */
   ul.vs{list-style:none;margin:0;padding:11px;display:flex;flex-direction:column;gap:9px}
-  ul.vs li.the-viec{display:block;padding:11px 13px;border:1px solid var(--line);
+  ul.vs li.the-viec{display:block;padding:11px 13px;border:1px solid var(--tk-vien);
     border-radius:11px;background:var(--th-141c2b);transition:border-color .13s}
-  ul.vs li.the-viec:hover{border-color:var(--chip-line)}
+  ul.vs li.the-viec:hover{border-color:var(--accent)}
   ul.vs .dong-chinh{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
   ul.vs .phieu-viec{margin-top:7px}
   .cham-v{width:14px;height:14px;flex:none;border-radius:50%;border:2px solid var(--chip-line);
@@ -293,8 +293,10 @@
           {%- if v.nguoi == user.ten %}tôi làm{% else %}giao {{ v.nguoi }}{% endif %}</span>{% endif %}
         </div>
         <details class="phieu-viec" {% if loi_viec == v.id %}open{% endif %}>
-          <summary>Chi tiết việc{% if v.trao_doi %} · {{ v.trao_doi|length }} tin{% endif %}
-            {%- if v.tai_lieu %} · {{ v.tai_lieu|length }} tài liệu{% endif %}</summary>
+          <summary title="Bấm đúp vào việc để mở / thu">
+            {%- if v.trao_doi %}<span class="dau">{{ v.trao_doi|length }} tin</span>{% endif %}
+            {%- if v.tai_lieu %}<span class="dau">{{ v.tai_lieu|length }} tài liệu</span>{% endif %}
+          </summary>
           <div class="phieu-noi">
             {% set ve = '/muc-tieu?chon=' ~ m.id %}
             {% if loi_viec == v.id and loi_form %}<div class="loi">{{ loi_form }}</div>{% endif %}
@@ -545,6 +547,21 @@
     document.getElementById("t-luu").addEventListener("click", luu);
     enter(document.getElementById("t-ten"), luu);
   }
+
+  // Bấm ĐÚP vào thẻ việc = mở / thu phiếu (Owner 25/08: không muốn bấm nút nữa).
+  // Thu lại thi trang ngan di nen trinh duyet keo len dau — giữ chỗ bằng cách đo
+  // thẻ trước/sau rồi bù đúng phần lệch.
+  document.querySelectorAll("li.the-viec").forEach(function (the) {
+    var phieu = the.querySelector("details.phieu-viec");
+    if (!phieu) { return; }
+    the.addEventListener("dblclick", function (e) {
+      // gõ chữ trong phiếu (bấm đúp để chọn từ) thì KHÔNG đóng phiếu
+      if (e.target.closest("input, textarea, select, button, a, .phieu-noi")) { return; }
+      var truoc = the.getBoundingClientRect().top;
+      phieu.open = !phieu.open;
+      window.scrollBy(0, the.getBoundingClientRect().top - truoc);
+    });
+  });
 
   // Sửa tại chỗ: rời ô mà nội dung đã đổi thì tự lưu. Chỉ là TIỆN ÍCH —
   // Enter đã lưu được bằng hành vi form gốc, JS hỏng cũng không mất tính năng.
