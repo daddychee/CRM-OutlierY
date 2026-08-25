@@ -38,7 +38,7 @@ os.environ.setdefault("TASKY_DIR", str(ROOT / "data" / "tasky" / "db"))
 
 PHIEN_BAN = "0.2.0"
 app = FastAPI(title="Tasky v3")
-from src import nhan_su, thong_bao as tb  # noqa: E402 — danh sách người, đọc chỉ-đọc sổ IAM chung
+from src import muc_tieu as mt_lo, nhan_su, thong_bao as tb  # noqa: E402 — danh sách người, đọc chỉ-đọc sổ IAM chung
 from src import tuan as tuan_lo  # noqa: E402 — lõi sổ tuần (đọc TASKY_DIR lúc gọi hàm)
 from nen.common.sidebar import ctx_sidebar  # noqa: E402 — cờ sidebar UI_FLOW.md mục 2
 
@@ -87,6 +87,7 @@ def _yeu_cau(ma: str, thong_bao: str):
 yeu_cau_giao_viec = _yeu_cau("giao_viec", "Chỉ Leader trở lên mới giao được việc.")
 yeu_cau_xac_nhan = _yeu_cau("xac_nhan_ket_qua", "Chỉ Leader trở lên mới xác nhận được việc.")
 yeu_cau_bao_cao = _yeu_cau("bao_cao_bo_phan", "Báo cáo dành cho Leader trở lên.")
+yeu_cau_muc_tieu = _yeu_cau("giao_viec", "Mục tiêu dành cho Leader trở lên.")
 
 
 def _co_sidebar(x_remote_actions: str, ma: str = "", user: dict | None = None) -> dict:
@@ -173,6 +174,32 @@ def trang_giao(request: Request, user: dict = Depends(yeu_cau_giao_viec),
         "tuan_truoc": tuan_lo.tuan_lien_ke(ma, -1),
         "tuan_sau": tuan_lo.tuan_lien_ke(ma, 1),
         "tuan_nay": tuan_lo.ma_tuan(), **_co_sidebar(x_remote_actions, ma, user)})
+
+
+@app.get("/muc-tieu", response_class=HTMLResponse)
+def trang_muc_tieu(request: Request, user: dict = Depends(yeu_cau_muc_tieu),
+                   x_remote_actions: str = Header(""), chon: str = ""):
+    """Cây mục tiêu — MỘT mục tiêu một tab (Owner chốt 25/08). Dữ liệu gom sẵn ở
+    server, template chỉ hiển thị."""
+    hd = cac_hanh_dong(x_remote_actions)
+    ds = mt_lo.trong_pham_vi(user, bool({"bao_cao_cong_ty", "bao_cao_nhan_su"} & hd))
+    gom = mt_lo.viec_theo_muc_tieu()          # MỘT lượt quét cho cả trang
+    cay = []
+    for m in ds:
+        viec = gom.get(m["id"], [])
+        cay.append({**m, "tien_do": mt_lo.tien_do(m["id"], viec),
+                    "nhom": mt_lo.nhom_viec(tuan_lo.sap_xep(viec)),
+                    "canh_bao": mt_lo.canh_bao(m, viec),
+                    "con_han": mt_lo.con_han(m)})
+    cay.sort(key=lambda c: (c["trang_thai"] != mt_lo.DANG_CHAY,
+                            -len(c["canh_bao"]), c["tieu_de"]))
+    cap_duoi, _ = nhan_su.cap_duoi_cua(user)
+    return templates.TemplateResponse(request, "muc_tieu.html", {
+        "user": user, "cay": cay, "chon": chon or (cay[0]["id"] if cay else ""),
+        "cap_duoi": cap_duoi or [], "loai_viec": tuan_lo.cac_loai_viec(),
+        "duoc_dat": mt_lo.duoc_dat_muc_tieu(user),
+        "ma_tuan": tuan_lo.ma_tuan(),
+        **_co_sidebar(x_remote_actions, tuan_lo.ma_tuan(), user)})
 
 
 @app.get("/bao-cao-tuan", response_class=HTMLResponse)
@@ -326,6 +353,46 @@ def api_mo_lai_tuan(nguoi: str = Form(...), tuan_xem: str = Form(""),
                     user: dict = Depends(yeu_cau_xac_nhan)):
     """Thu lại việc đóng tuần — đóng nhầm thì mở lại, có vết trong nhật ký."""
     return _goi(tuan_lo.mo_lai_tuan, _ma_tuan_hop_le(tuan_xem), nguoi, user)
+
+
+# --- API mục tiêu (§12) ---
+
+@app.post("/api-tasky/muc-tieu")
+def api_tao_muc_tieu(tieu_de: str = Form(...), ket_qua: str = Form(...),
+                     han: str = Form(""), tu_nhiem_vu: str = Form(""),
+                     user: dict = Depends(yeu_cau_muc_tieu)):
+    return _goi(mt_lo.tao, user, tieu_de, ket_qua, han, tu_nhiem_vu)
+
+
+@app.post("/api-tasky/muc-tieu/chot")
+def api_chot_muc_tieu(id: str = Form(...), ket_qua: str = Form(...),
+                      nhan_xet: str = Form(""), user: dict = Depends(yeu_cau_muc_tieu)):
+    return _goi(mt_lo.chot_ket_qua, id, user, ket_qua, nhan_xet)
+
+
+@app.post("/api-tasky/muc-tieu/mo-lai")
+def api_mo_lai_muc_tieu(id: str = Form(...), user: dict = Depends(yeu_cau_muc_tieu)):
+    return _goi(mt_lo.mo_lai, id, user)
+
+
+@app.post("/api-tasky/muc-tieu/che-viec")
+def api_che_viec(muc_tieu_id: str = Form(...), tieu_de: str = Form(...),
+                 loai_viec: str = Form(""), nguoi: str = Form(""), han: str = Form(""),
+                 gap: str = Form(""), tuan_xem: str = Form(""),
+                 user: dict = Depends(yeu_cau_muc_tieu)):
+    """Chẻ một việc từ mục tiêu. Để trống `nguoi` = chưa phân công, giao sau."""
+    ma = _ma_tuan_hop_le(tuan_xem)
+    if nguoi.strip():
+        return _goi(tuan_lo.them_viec_giao, ma, user, _tim_nguoi(nguoi), tieu_de,
+                    loai_viec, "", han, _co(gap), muc_tieu_id)
+    return _goi(tuan_lo.them_viec_muc_tieu, ma, user, tieu_de, loai_viec,
+                muc_tieu_id, han, _co(gap))
+
+
+@app.post("/api-tasky/muc-tieu/gan-nguoi")
+def api_gan_nguoi(id: str = Form(...), nguoi: str = Form(...), tuan_xem: str = Form(""),
+                  user: dict = Depends(yeu_cau_muc_tieu)):
+    return _goi(tuan_lo.gan_nguoi, _ma_tuan_hop_le(tuan_xem), id, user, _tim_nguoi(nguoi))
 
 
 @app.post("/api-tasky/dong-tuan")

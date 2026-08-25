@@ -1,0 +1,345 @@
+{% extends "base.html" %}
+{% block title %}Mục tiêu — Tasky{% endblock %}
+{% block topbar_ten %}Tasky · Mục tiêu{% endblock %}
+
+{% block style_them %}
+  {% include "_tasky_style.html" %}
+  /* Dải tab: MỘT mục tiêu một tab, cuộn ngang khi nhiều (Owner chốt 25/08) */
+  .mt-tabs{display:flex;gap:7px;overflow-x:auto;padding-bottom:10px;margin-bottom:14px;
+    border-bottom:1px solid var(--line);scrollbar-width:thin}
+  .mt-tab{flex:0 0 auto;display:flex;flex-direction:column;gap:5px;min-width:170px;max-width:230px;
+    border:1px solid var(--line);border-radius:11px;background:var(--sidebar);padding:8px 11px;
+    cursor:pointer;text-align:left;position:relative;color:var(--ink);font-family:inherit}
+  .mt-tab:hover{border-color:var(--chip-line)}
+  .mt-tab[aria-selected="true"]{border-color:var(--accent);background:var(--th-16263f)}
+  .mt-tab .ten{font-size:12.5px;font-weight:600;white-space:nowrap;overflow:hidden;
+    text-overflow:ellipsis;padding-right:12px}
+  .mt-tab .duoi{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted)}
+  .mt-tab .thanh{flex:1;margin:0}
+  .mt-tab .cham{position:absolute;top:8px;right:9px;width:7px;height:7px;border-radius:50%}
+  .cham.cap{background:var(--tk-cap)}.cham.luu_y{background:var(--tk-luu)}
+  .cham.ok{background:var(--tk-ok, var(--accent))}
+
+  /* Đầu mục tiêu — status GỘP vào đây, không banner riêng */
+  .mt-dau{background:var(--sidebar);border:1px solid var(--line);border-radius:12px;
+    padding:14px 16px;margin-bottom:13px;display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap}
+  .mt-dau h2{margin:0 0 5px;font-size:16px}
+  .mt-dau .kq{font-size:13px;color:var(--th-c2cbd9)}
+  .mt-dau .kq b{color:var(--accent)}
+  .vong{flex:0 0 auto;width:92px;text-align:center}
+  .vong svg{width:80px;height:80px;transform:rotate(-90deg)}
+  .vong .txt{font-size:14px;font-weight:600;margin-top:-50px;position:relative;
+    font-variant-numeric:tabular-nums}
+  .vong .lab{font-size:10.5px;color:var(--muted);margin-top:34px;line-height:1.3}
+  .vach{width:1px;height:14px;background:var(--chip-line);margin:0 2px}
+
+  details.nhomv{border:1px solid var(--line);border-radius:11px;margin-bottom:9px;
+    overflow:hidden;background:var(--sidebar)}
+  details.nhomv>summary{list-style:none;cursor:pointer;padding:9px 13px;display:flex;gap:9px;
+    align-items:center;font-size:12.5px;font-weight:600;background:var(--th-141c2b)}
+  details.nhomv>summary::-webkit-details-marker{display:none}
+  details.nhomv>summary::before{content:"";width:6px;height:6px;flex:none;
+    border-right:1.6px solid var(--muted);border-bottom:1.6px solid var(--muted);
+    transform:rotate(-45deg);transition:transform .15s}
+  details.nhomv[open]>summary::before{transform:rotate(45deg)}
+  details.nhomv>summary .dem{margin-left:auto;font-weight:500;color:var(--muted);font-size:12px}
+  details.nhomv.canh>summary{background:var(--tk-cap-nen);color:var(--tk-cap)}
+  ul.vs{list-style:none;margin:0;padding:0}
+  ul.vs li{display:flex;gap:10px;align-items:center;padding:9px 13px;flex-wrap:wrap;
+    border-top:1px solid var(--line)}
+  ul.vs li:hover{background:var(--th-141c2b)}
+  .cham-v{width:14px;height:14px;flex:none;border-radius:50%;border:2px solid var(--chip-line);
+    display:grid;place-items:center;background:var(--sidebar)}
+  .cham-v.xong{background:var(--accent);border-color:var(--accent)}
+  .cham-v.xong svg{width:8px;height:8px;stroke:var(--th-090c12);stroke-width:3;fill:none}
+  .cham-v.lam{border-color:var(--accent);border-style:dashed}
+  .cham-v.cho{border-color:var(--tk-luu)}
+  .cham-v.tre{border-color:var(--tk-cap)}
+  .vt{flex:1;min-width:160px;font-size:13px}
+  .vt small{display:block;color:var(--muted);font-size:11.5px;margin-top:1px}
+  .ai-nho{font-size:12px;color:var(--th-c2cbd9);white-space:nowrap}
+  .ai-nho.trong{color:var(--muted);font-style:italic}
+  .khoi-chot{background:var(--sidebar);border:1px dashed var(--chip-line);border-radius:12px;
+    padding:13px 15px;margin-bottom:12px}
+  .khoi-chot h4{margin:0 0 3px;font-size:13.5px}
+{% endblock %}
+
+{% block noi_dung %}
+<div class="tk-dau">
+  <div>
+    <h2>Mục tiêu</h2>
+    <div class="khoang">{{ user.bo_phan or 'Toàn công ty' }} ·
+      {{ cay|selectattr('trang_thai','equalto','dang_chay')|list|length }} đang chạy</div>
+  </div>
+  {% if duoc_dat %}
+  <div class="tk-lui"><button class="nut chinh" id="mo-tao">+ Mục tiêu mới</button></div>
+  {% endif %}
+</div>
+
+{% if duoc_dat %}
+<div class="viec" id="form-tao" hidden style="padding:13px 15px;margin-bottom:13px">
+  <div class="goi-y" style="margin-top:0">Kết quả cần đạt là bắt buộc — không nêu thì
+    sau này không chốt được đạt hay chưa.</div>
+  <div class="hang">
+    <input id="t-ten" placeholder="Mục tiêu… (ví dụ: Tăng AVD kênh Life In US)">
+    <input id="t-kq" placeholder="Kết quả cần đạt (AVD ≥ 45%)" style="max-width:230px">
+    <input id="t-han" type="date" title="Hạn (không bắt buộc)" style="flex:0 0 auto">
+    <button class="nut chinh" id="t-luu">Tạo</button>
+  </div>
+  <div class="loi" id="t-loi" hidden></div>
+</div>
+{% endif %}
+
+{% if not cay %}
+<div class="trong">Chưa có mục tiêu nào{% if duoc_dat %} — bấm “+ Mục tiêu mới” để bắt đầu{% endif %}.</div>
+{% else %}
+
+<div class="mt-tabs" role="tablist">
+  {% for m in cay %}
+  <button class="mt-tab" role="tab" data-mt="{{ m.id }}"
+    aria-selected="{{ 'true' if m.id == chon else 'false' }}">
+    {%- if m.canh_bao %}<span class="cham {{ m.canh_bao[0].muc_do }}"></span>
+    {%- elif m.trang_thai != 'dang_chay' %}<span class="cham ok"></span>{% endif %}
+    <span class="ten">{{ m.tieu_de }}</span>
+    <span class="duoi">{{ m.tien_do.xong }}/{{ m.tien_do.tong }}
+      <span class="thanh" style="width:44px"><i style="width:{{ m.tien_do.phan_tram or 0 }}%"></i></span>
+      {%- if m.trang_thai != 'dang_chay' %}{{ {'dat':'đạt','mot_phan':'một phần','khong_dat':'không đạt'}[m.trang_thai] }}
+      {%- elif m.tien_do.xong_het %}chờ chốt
+      {%- elif m.han %}hạn {{ m.han[8:] }}/{{ m.han[5:7] }}{% endif %}</span>
+  </button>
+  {% endfor %}
+</div>
+
+{% for m in cay %}
+<section class="mt-than" data-mt="{{ m.id }}" {% if m.id != chon %}hidden{% endif %}>
+  <div class="mt-dau">
+    <div style="flex:1;min-width:230px">
+      <h2>{{ m.tieu_de }}</h2>
+      <div class="kq">Kết quả cần đạt: <b>{{ m.ket_qua_can_dat }}</b></div>
+      <div class="hang-the" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;align-items:center">
+        {% if m.han %}<span class="the">Hạn {{ m.han[8:] }}/{{ m.han[5:7] }}
+          {%- if m.con_han is not none %} · {% if m.con_han < 0 %}trễ {{ -m.con_han }} ngày
+          {%- elif m.con_han == 0 %}hôm nay{% else %}còn {{ m.con_han }} ngày{% endif %}{% endif %}</span>{% endif %}
+        <span class="the">{{ m.nguoi_tao }} đặt</span>
+        <span class="the">{{ m.tien_do.tong }} việc</span>
+        {% if m.canh_bao %}<span class="vach"></span>{% endif %}
+        {% for c in m.canh_bao %}
+        <span class="the {{ 'ket' if c.muc_do == 'cap' else 'cho' }}">
+          <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor"
+            stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/>
+            <path d="M12 7v6M12 16h.01"/></svg>{{ c.chu }}</span>
+        {% endfor %}
+        {% if m.trang_thai != 'dang_chay' %}
+        <span class="the done">{{ {'dat':'Đạt','mot_phan':'Một phần','khong_dat':'Không đạt'}[m.trang_thai] }}
+          · {{ m.nguoi_chot }}</span>
+        {% endif %}
+      </div>
+    </div>
+    <div class="vong">
+      <svg viewBox="0 0 100 100" aria-hidden="true">
+        <circle cx="50" cy="50" r="42" fill="none" stroke="var(--th-182233)" stroke-width="12"/>
+        <circle cx="50" cy="50" r="42" fill="none"
+          stroke="{{ 'var(--tk-ok, var(--accent))' if m.trang_thai == 'dat' else 'var(--accent)' }}"
+          stroke-width="12" stroke-linecap="round" stroke-dasharray="264"
+          stroke-dashoffset="{{ (264 * (100 - (m.tien_do.phan_tram or 0)) / 100)|round|int }}"/>
+      </svg>
+      <div class="txt">{% if m.tien_do.tong %}{{ m.tien_do.xong }}/{{ m.tien_do.tong }}{% else %}—{% endif %}</div>
+      <div class="lab">việc đã<br>nghiệm thu</div>
+    </div>
+  </div>
+
+  {% if m.trang_thai == 'dang_chay' and m.tien_do.xong_het %}
+  <div class="khoi-chot" data-chot="{{ m.id }}">
+    <h4>Làm xong hết việc — nhưng có đạt mục tiêu không?</h4>
+    <p class="goi-y" style="margin:0 0 10px">Máy chỉ đếm được việc đã nghiệm thu.
+      Kết quả thật do bạn kết luận, lưu kèm tên bạn.</p>
+    <div class="hang">
+      <input data-nx placeholder="Nhận xét (bắt buộc khi Một phần / Không đạt)…">
+      <button class="nut chinh" data-kq="dat">Đạt</button>
+      <button class="nut" data-kq="mot_phan">Một phần</button>
+      <button class="nut" data-kq="khong_dat">Không đạt</button>
+    </div>
+    <div class="loi" data-loi-chot hidden></div>
+  </div>
+  {% elif m.trang_thai != 'dang_chay' %}
+  <div class="khoi-chot">
+    <h4>Đã chốt: {{ {'dat':'Đạt','mot_phan':'Một phần','khong_dat':'Không đạt'}[m.trang_thai] }}</h4>
+    <p class="goi-y" style="margin:0">{{ m.ket_luan or '(không ghi nhận xét)' }}
+      — {{ m.nguoi_chot }}{% if m.luc_chot %}, {{ m.luc_chot[8:10] }}/{{ m.luc_chot[5:7] }}{% endif %}</p>
+    <div class="hang"><button class="nut" data-mo-lai="{{ m.id }}">Mở lại</button></div>
+    <div class="loi" data-loi-chot hidden></div>
+  </div>
+  {% endif %}
+
+  {% macro nhom(ten, ds, canh) %}
+  {% if ds %}
+  <details class="nhomv{% if canh %} canh{% endif %}" {% if canh or ten == 'Đang chạy' %}open{% endif %}>
+    <summary>{{ ten }}<span class="dem">{{ ds|length }} việc</span></summary>
+    <ul class="vs">
+      {% for v in ds %}
+      {% set hn = v|han %}
+      <li>
+        <span class="cham-v {% if v.trang_thai == 'xac_nhan' %}xong{% elif hn.muc == 'cap' %}tre{% elif v.trang_thai == 'dang_lam' %}lam{% elif v.trang_thai in ('cho_nhan','cho_phoi_hop','bao_xong') %}cho{% endif %}">
+          {%- if v.trang_thai == 'xac_nhan' %}<svg viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></svg>{% endif %}</span>
+        <span class="vt">{{ v.tieu_de }}
+          <small>{% if v.trang_thai == 'chua_giao' %}Chưa phân công
+            {%- elif v.trang_thai == 'cho_nhan' %}Chờ nhận việc
+            {%- elif v.trang_thai == 'bao_xong' %}Báo xong — chờ nghiệm thu
+            {%- elif v.trang_thai == 'xac_nhan' %}Đã nghiệm thu
+            {%- else %}{{ v.checklist|selectattr('xong')|list|length }}/{{ v.checklist|length }} bước{% endif %}
+            {%- if hn.chu %} · {{ hn.chu }}{% endif %}</small></span>
+        {% if v.gap %}<span class="the gap">GẤP</span>{% endif %}
+        {% if v.trang_thai == 'chua_giao' %}
+          <select data-gan-nguoi="{{ v.id }}">
+            <option value="">Giao cho…</option>
+            {% for n in cap_duoi %}<option value="{{ n.ten }}">{{ n.ho_ten or n.ten }}</option>{% endfor %}
+          </select>
+        {% else %}<span class="ai-nho">{{ v.nguoi }}</span>{% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+  </details>
+  {% endif %}
+  {% endmacro %}
+
+  {{ nhom('Cần bạn xử lý', m.nhom.can_xu_ly, true) }}
+  {{ nhom('Đang chạy', m.nhom.dang_chay, false) }}
+  {{ nhom('Đã nghiệm thu', m.nhom.xong, false) }}
+
+  {% if m.trang_thai == 'dang_chay' %}
+  <div class="viec" style="padding:11px 13px">
+    <div class="hang" style="margin:0">
+      <input data-che-ten placeholder="Thêm việc cần làm để đạt mục tiêu này…">
+      <select data-che-nguoi>
+        <option value="">Chưa phân công</option>
+        {% for n in cap_duoi %}<option value="{{ n.ten }}">{{ n.ho_ten or n.ten }}</option>{% endfor %}
+      </select>
+      <input data-che-loai list="ds-loai" placeholder="Loại việc" style="max-width:150px;flex:0 0 auto">
+      <input data-che-han type="date" style="flex:0 0 auto">
+      <button class="nut chinh" data-che="{{ m.id }}">+ Thêm việc</button>
+    </div>
+    <div class="loi" data-loi-che hidden></div>
+  </div>
+  {% endif %}
+</section>
+{% endfor %}
+<datalist id="ds-loai">{% for l in loai_viec %}<option value="{{ l }}">{% endfor %}</datalist>
+{% endif %}
+{% endblock %}
+
+{% block script %}
+<script>
+(function () {
+  var TUAN = {{ ma_tuan|tojson }};
+
+  function goi(duong, du_lieu) {
+    var fd = new FormData();
+    fd.append("tuan_xem", TUAN);
+    Object.keys(du_lieu).forEach(function (k) { fd.append(k, du_lieu[k]); });
+    return fetch("/api-tasky/" + duong, { method: "POST", body: fd }).then(function (r) {
+      return r.json().catch(function () { return {}; }).then(function (d) {
+        if (!r.ok) { throw new Error(d.detail || "Không lưu được, thử lại giúp tôi."); }
+        return d;
+      });
+    });
+  }
+  function baoLoi(o, e) { if (o) { o.textContent = e.message || String(e); o.hidden = false; } }
+  function enter(o, ham) {
+    // Bộ gõ tiếng Việt phát 2 keydown (isComposing / keyCode 229) — lọc kẻo gửi đôi
+    o.addEventListener("keydown", function (e) {
+      if (e.key === "Enter" && !e.isComposing && e.keyCode !== 229) { e.preventDefault(); ham(); }
+    });
+  }
+
+  // chuyển tab mục tiêu
+  var tabs = Array.prototype.slice.call(document.querySelectorAll(".mt-tab"));
+  var than = document.querySelectorAll(".mt-than");
+  function mo(i) {
+    var t = tabs[i]; if (!t) { return; }
+    tabs.forEach(function (x) { x.setAttribute("aria-selected", "false"); });
+    t.setAttribute("aria-selected", "true");
+    than.forEach(function (s) { s.hidden = (s.dataset.mt !== t.dataset.mt); });
+    t.scrollIntoView({ block: "nearest", inline: "nearest" });
+  }
+  tabs.forEach(function (t, i) { t.addEventListener("click", function () { mo(i); }); });
+  addEventListener("keydown", function (e) {
+    if (e.target && /INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) { return; }
+    var i = tabs.findIndex(function (x) { return x.getAttribute("aria-selected") === "true"; });
+    if (e.key === "ArrowRight") { mo(Math.min(i + 1, tabs.length - 1)); }
+    if (e.key === "ArrowLeft") { mo(Math.max(i - 1, 0)); }
+  });
+
+  // tạo mục tiêu
+  var moTao = document.getElementById("mo-tao");
+  if (moTao) {
+    var form = document.getElementById("form-tao"), tLoi = document.getElementById("t-loi");
+    moTao.addEventListener("click", function () {
+      form.hidden = !form.hidden;
+      if (!form.hidden) { document.getElementById("t-ten").focus(); }
+    });
+    var luu = function () {
+      var ten = (document.getElementById("t-ten").value || "").trim();
+      var kq = (document.getElementById("t-kq").value || "").trim();
+      if (!ten) { return; }
+      if (!kq) { baoLoi(tLoi, new Error("Phải nêu kết quả cần đạt.")); return; }
+      goi("muc-tieu", { tieu_de: ten, ket_qua: kq,
+                        han: document.getElementById("t-han").value || "" })
+        .then(function () { location.reload(); }).catch(function (e) { baoLoi(tLoi, e); });
+    };
+    document.getElementById("t-luu").addEventListener("click", luu);
+    enter(document.getElementById("t-ten"), luu);
+  }
+
+  // chẻ việc
+  document.querySelectorAll("[data-che]").forEach(function (b) {
+    var khoi = b.closest(".viec"), oLoi = khoi.querySelector("[data-loi-che]");
+    var chay = function () {
+      var ten = (khoi.querySelector("[data-che-ten]").value || "").trim();
+      var loai = (khoi.querySelector("[data-che-loai]").value || "").trim();
+      if (!ten) { return; }
+      if (!loai) { baoLoi(oLoi, new Error("Phải chọn loại việc.")); return; }
+      goi("muc-tieu/che-viec", {
+        muc_tieu_id: b.dataset.che, tieu_de: ten, loai_viec: loai,
+        nguoi: khoi.querySelector("[data-che-nguoi]").value || "",
+        han: khoi.querySelector("[data-che-han]").value || ""
+      }).then(function () { location.reload(); }).catch(function (e) { baoLoi(oLoi, e); });
+    };
+    b.addEventListener("click", chay);
+    enter(khoi.querySelector("[data-che-ten]"), chay);
+  });
+
+  // giao người cho việc chưa phân công
+  document.querySelectorAll("[data-gan-nguoi]").forEach(function (sel) {
+    sel.addEventListener("change", function () {
+      if (!sel.value) { return; }
+      sel.disabled = true;
+      goi("muc-tieu/gan-nguoi", { id: sel.dataset.ganNguoi, nguoi: sel.value })
+        .then(function () { location.reload(); })
+        .catch(function (e) { sel.disabled = false; alert(e.message); });
+    });
+  });
+
+  // chốt kết quả
+  document.querySelectorAll("[data-chot]").forEach(function (khoi) {
+    var oLoi = khoi.querySelector("[data-loi-chot]");
+    khoi.querySelectorAll("[data-kq]").forEach(function (b) {
+      b.addEventListener("click", function () {
+        var nx = (khoi.querySelector("[data-nx]").value || "").trim();
+        if (b.dataset.kq !== "dat" && !nx) {
+          baoLoi(oLoi, new Error("Chưa đạt trọn thì phải ghi nhận xét.")); return;
+        }
+        goi("muc-tieu/chot", { id: khoi.dataset.chot, ket_qua: b.dataset.kq, nhan_xet: nx })
+          .then(function () { location.reload(); }).catch(function (e) { baoLoi(oLoi, e); });
+      });
+    });
+  });
+
+  document.querySelectorAll("[data-mo-lai]").forEach(function (b) {
+    b.addEventListener("click", function () {
+      goi("muc-tieu/mo-lai", { id: b.dataset.moLai }).then(function () { location.reload(); })
+        .catch(function (e) { alert(e.message); });
+    });
+  });
+})();
+</script>
+{% endblock %}

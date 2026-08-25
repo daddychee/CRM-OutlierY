@@ -2149,6 +2149,7 @@ _ALIAS: dict[str, tuple[str, str]] = {
     "/video-review": ("video-review", "danh-sach"),
     "/tasky": ("tasky", "tasky"),
     "/giao-viec": ("tasky", "giao-viec"),
+    "/muc-tieu": ("tasky", "muc-tieu"),
     "/bao-cao-tuan": ("tasky", "bao-cao-tuan"),
     "/nas": ("to-chuc", "nas"),
     "/kpi": ("to-chuc", "kpi"),

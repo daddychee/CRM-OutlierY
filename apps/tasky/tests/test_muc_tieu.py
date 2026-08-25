@@ -283,3 +283,136 @@ def test_che_viec_thieu_muc_tieu_bi_chan():
     ma = tuan.ma_tuan()
     with pytest.raises(ValueError):
         tuan.them_viec_muc_tieu(ma, MGR, "Việc lạc", "Nghiên cứu", "")
+
+
+# ---------- gom nhóm + cảnh báo cho màn cây ----------
+
+def _che(ma, m, ten="Việc mới"):
+    return tuan.them_viec_muc_tieu(ma, MGR, ten, "Nghiên cứu", m["id"])
+
+
+def test_ba_nhom_dung_muc_can_hanh_dong():
+    ma = tuan.ma_tuan()
+    m = _mt()
+    _che(ma, m, "Chưa giao")                                   # → cần xử lý
+    tuan.them_viec_giao(ma, MGR, NV, "Chờ nhận", "x", muc_tieu_id=m["id"])   # → cần xử lý
+    dl = tuan.them_viec_giao(ma, MGR, NV, "Đang làm", "x", muc_tieu_id=m["id"])
+    tuan.nhan_viec(ma, dl["id"], NV)                           # → đang chạy
+    _viec_xong(ma, m, "Đã xong")                               # → xong
+
+    n = mt.nhom_viec(mt.viec_cua_muc_tieu(m["id"]))
+    assert len(n["can_xu_ly"]) == 2 and len(n["dang_chay"]) == 1 and len(n["xong"]) == 1
+
+
+def test_viec_dang_lam_ma_qua_han_thi_nhay_len_nhom_can_xu_ly():
+    from datetime import date, timedelta
+    ma = tuan.ma_tuan()
+    m = _mt()
+    v = tuan.them_viec_giao(ma, MGR, NV, "Trễ", "x", muc_tieu_id=m["id"],
+                            han=(date.today() - timedelta(days=1)).isoformat())
+    tuan.nhan_viec(ma, v["id"], NV)
+    n = mt.nhom_viec(mt.viec_cua_muc_tieu(m["id"]))
+    assert len(n["can_xu_ly"]) == 1 and n["dang_chay"] == []
+
+
+def test_canh_bao_gom_dung_thu_va_luon_co_chu():
+    ma = tuan.ma_tuan()
+    m = _mt()
+    _che(ma, m, "Chưa giao 1")
+    _che(ma, m, "Chưa giao 2")
+    tuan.them_viec_giao(ma, MGR, NV, "Chờ nhận", "x", muc_tieu_id=m["id"])
+    cb = mt.canh_bao(m, mt.viec_cua_muc_tieu(m["id"]))
+    chu = [c["chu"] for c in cb]
+    assert "2 chưa giao" in chu and "1 chưa nhận" in chu
+    assert all(c["chu"] and c["muc_do"] in ("cap", "luu_y") for c in cb)
+
+
+def test_muc_tieu_tre_han_thi_canh_bao():
+    from datetime import date, timedelta
+    m = _mt(han=(date.today() - timedelta(days=2)).isoformat())
+    assert any("Trễ hạn 2 ngày" == c["chu"] for c in mt.canh_bao(m, []))
+
+
+def test_viec_da_xong_khong_sinh_canh_bao():
+    """Không dọa người ta bằng việc đã nghiệm thu."""
+    ma = tuan.ma_tuan()
+    m = _mt()
+    _viec_xong(ma, m)
+    assert mt.canh_bao(m, mt.viec_cua_muc_tieu(m["id"])) == []
+
+
+def test_gom_viec_moi_muc_tieu_trong_mot_luot():
+    """Trang cây đọc sổ MỘT lần cho tất cả mục tiêu, không quét lại theo từng cái."""
+    ma = tuan.ma_tuan()
+    a, b = _mt(tieu_de="MT A"), _mt(tieu_de="MT B")
+    _che(ma, a, "Việc A1")
+    _che(ma, b, "Việc B1")
+    tuan.them_viec_tu(ma, NV, "Việc lẻ không thuộc mục tiêu", "x")
+    gom = mt.viec_theo_muc_tieu()
+    assert set(gom) == {a["id"], b["id"]}
+    assert [v["tieu_de"] for v in gom[a["id"]]] == ["Việc A1"]
+
+
+# ---------- trang cây ----------
+
+from fastapi.testclient import TestClient          # noqa: E402
+from src import main                               # noqa: E402
+
+_client = TestClient(main.app)
+H_MGR = {"X-Remote-User": "huytq", "X-Remote-Level": "4", "X-Remote-Dept": "V%E1%BA%ADn%20h%C3%A0nh",
+         "X-Remote-Actions": "vao,giao_viec,xac_nhan_ket_qua,bao_cao_bo_phan",
+         "X-Remote-Apps": "tasky"}
+H_NV = {"X-Remote-User": "hant", "X-Remote-Level": "2", "X-Remote-Dept": "V%E1%BA%ADn%20h%C3%A0nh",
+        "X-Remote-Actions": "vao", "X-Remote-Apps": "tasky"}
+
+
+@pytest.fixture()
+def _so_gia(monkeypatch):
+    monkeypatch.setattr(main.nhan_su, "ds_nguoi", lambda: ([
+        {"ten": "huytq", "level": 4, "bo_phan": "Vận hành", "ho_ten": "Trần Quốc Huy"},
+        {"ten": "hant", "level": 2, "bo_phan": "Vận hành", "ho_ten": "Nguyễn Thu Hà"}], ""))
+
+
+def test_nhan_vien_khong_vao_duoc_man_muc_tieu():
+    assert _client.get("/muc-tieu", headers=H_NV).status_code == 403
+
+
+def test_trang_hien_cay_va_canh_bao(_so_gia):
+    ma = tuan.ma_tuan()
+    m = _mt()
+    _che(ma, m, "Rà 10 video đối thủ")
+    r = _client.get("/muc-tieu", headers=H_MGR)
+    assert r.status_code == 200
+    assert "Tăng AVD kênh Life In" in r.text and "AVD ≥ 45%" in r.text
+    assert "1 chưa giao" in r.text and "Rà 10 video đối thủ" in r.text
+
+
+def test_tao_muc_tieu_qua_api(_so_gia):
+    r = _client.post("/api-tasky/muc-tieu", headers=H_MGR,
+                     data={"tieu_de": "Ra 8 video", "ket_qua": "8 video đúng lịch"})
+    assert r.status_code == 200 and len(mt.doc_tat_ca()) == 1
+
+
+def test_che_viec_va_gan_nguoi_qua_api(_so_gia):
+    ma = tuan.ma_tuan()
+    m = _mt()
+    r = _client.post("/api-tasky/muc-tieu/che-viec", headers=H_MGR,
+                     data={"muc_tieu_id": m["id"], "tieu_de": "Việc X",
+                           "loai_viec": "Nghiên cứu", "tuan_xem": ma})
+    assert r.status_code == 200
+    v = tuan.chua_giao(ma, m["id"])[0]
+    r2 = _client.post("/api-tasky/muc-tieu/gan-nguoi", headers=H_MGR,
+                      data={"id": v["id"], "nguoi": "hant", "tuan_xem": ma})
+    assert r2.status_code == 200 and tuan.viec_cua(ma, "hant")[0]["trang_thai"] == tuan.CHO_NHAN
+
+
+def test_chot_qua_api_bat_nhan_xet(_so_gia):
+    m = _mt()
+    r = _client.post("/api-tasky/muc-tieu/chot", headers=H_MGR,
+                     data={"id": m["id"], "ket_qua": "mot_phan"})
+    assert r.status_code == 400 and "nhận xét" in r.json()["detail"]
+
+
+def test_sidebar_co_muc_con_muc_tieu(_so_gia):
+    r = _client.get("/muc-tieu", headers=H_MGR)
+    assert 'href="/muc-tieu"' in r.text and "Mục tiêu</a>" in r.text

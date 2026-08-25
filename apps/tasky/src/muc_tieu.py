@@ -160,6 +160,17 @@ def viec_cua_muc_tieu(mt_id: str, so_tuan: int = 26) -> list[dict]:
     return ra
 
 
+def viec_theo_muc_tieu(so_tuan: int = 26) -> dict[str, list[dict]]:
+    """Gom việc của MỌI mục tiêu trong MỘT lượt quét — trang cây có 9 mục tiêu thì
+    đọc 26 file một lần, không phải 9×26 lần."""
+    gom: dict[str, list[dict]] = {}
+    for ma in cac_tuan_gan(so_tuan):
+        for v in doc_tuan(ma)["viec"]:
+            if v.get("muc_tieu_id"):
+                gom.setdefault(v["muc_tieu_id"], []).append(v)
+    return gom
+
+
 def tien_do(mt_id: str, ds_viec: list[dict] | None = None) -> dict:
     """Tiến độ = việc ĐÃ NGHIỆM THU / tổng việc (luật 1). Chưa có việc nào → None,
     KHÔNG trả 0% (van chống bịa — cùng lệ với tỉ lệ hoàn thành của người)."""
@@ -170,6 +181,52 @@ def tien_do(mt_id: str, ds_viec: list[dict] | None = None) -> dict:
             "chua_giao": sum(1 for v in song if not v.get("nguoi")),
             "phan_tram": round(100 * len(xong) / len(song)) if song else None,
             "xong_het": bool(song) and len(xong) == len(song)}
+
+
+def nhom_viec(ds_viec: list[dict]) -> dict:
+    """Chia việc của một mục tiêu thành BA nhóm theo mức cần hành động (Owner chốt
+    25/08: 10 việc đổ một mạch thì dễ miss).
+
+    - `can_xu_ly`: việc của MANAGER — chưa phân công, chưa ai nhận, quá hạn, chờ nghiệm thu
+    - `dang_chay`: có người đang làm, chỉ cần liếc
+    - `xong`: đã nghiệm thu (UI thu gọn)
+    """
+    from src.tuan import (BAO_XONG, CHO_NHAN, CHO_PHOI_HOP, CHUA_GIAO, DANG_LAM,
+                          XAC_NHAN, tinh_han)
+    can, chay, xong = [], [], []
+    for v in ds_viec:
+        tt = v["trang_thai"]
+        if tt == XAC_NHAN:
+            xong.append(v)
+        elif tt in (CHUA_GIAO, CHO_NHAN, CHO_PHOI_HOP, BAO_XONG):
+            can.append(v)
+        elif tt == DANG_LAM:
+            (can if tinh_han(v)["muc"] == "cap" else chay).append(v)
+    return {"can_xu_ly": can, "dang_chay": chay, "xong": xong}
+
+
+def canh_bao(mt: dict, ds_viec: list[dict]) -> list[dict]:
+    """Dải nhắc gọn trong ĐẦU mục tiêu (Owner 25/08: status là thông tin phụ, gộp
+    vào khối trên, không dựng banner riêng). Mỗi mục có chữ — màu không đứng một mình."""
+    from src.tuan import CHO_NHAN, CHUA_GIAO, DOI_LA_KET, XAC_NHAN, tinh_han
+    song = [v for v in ds_viec if v["trang_thai"] not in ("tu_choi", "huy", "doi", XAC_NHAN)]
+    ra = []
+    qua = [v for v in song if tinh_han(v)["chu"].startswith("Quá hạn")]
+    if qua:
+        ra.append({"muc_do": "cap", "chu": f"{len(qua)} quá hạn", "so": len(qua)})
+    chua = [v for v in song if v["trang_thai"] == CHUA_GIAO]
+    if chua:
+        ra.append({"muc_do": "cap", "chu": f"{len(chua)} chưa giao", "so": len(chua)})
+    cho = [v for v in song if v["trang_thai"] == CHO_NHAN]
+    if cho:
+        ra.append({"muc_do": "luu_y", "chu": f"{len(cho)} chưa nhận", "so": len(cho)})
+    ket = [v for v in song if v["so_lan_doi"] >= DOI_LA_KET]
+    if ket:
+        ra.append({"muc_do": "cap", "chu": f"{len(ket)} việc kẹt", "so": len(ket)})
+    n = con_han(mt)
+    if n is not None and n < 0 and mt["trang_thai"] == DANG_CHAY:
+        ra.append({"muc_do": "cap", "chu": f"Trễ hạn {-n} ngày", "so": 1})
+    return ra
 
 
 def con_han(mt: dict, hom_nay: date | None = None) -> int | None:

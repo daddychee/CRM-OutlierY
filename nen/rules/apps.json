@@ -717,6 +717,7 @@
       "tien_to": [
         "/tasky",
         "/giao-viec",
+        "/muc-tieu",
         "/bao-cao-tuan",
         "/api-tasky",
         "/tasky-static"
