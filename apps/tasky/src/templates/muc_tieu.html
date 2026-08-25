@@ -157,6 +157,9 @@
         {% endif %}
       </div>
     </div>
+    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px">
+    <button class="nut sm" data-xoa-goal="{{ m.id }}"
+      title="Việc con KHÔNG bị xóa theo — chúng thành việc lẻ">Xóa Goal</button>
     <div class="vong">
       <svg viewBox="0 0 100 100" aria-hidden="true">
         <circle cx="50" cy="50" r="42" fill="none" stroke="var(--th-182233)" stroke-width="12"/>
@@ -168,7 +171,9 @@
       <div class="txt">{% if m.tien_do.tong %}{{ m.tien_do.xong }}/{{ m.tien_do.tong }}{% else %}—{% endif %}</div>
       <div class="lab">việc đã<br>nghiệm thu</div>
     </div>
+    </div>
   </div>
+  <div class="loi" data-loi-goal="{{ m.id }}" hidden></div>
 
   {% if m.trang_thai == 'dang_chay' and m.tien_do.xong_het %}
   <div class="khoi-chot" data-chot="{{ m.id }}">
@@ -493,6 +498,26 @@
         goi("muc-tieu/chot", { id: khoi.dataset.chot, ket_qua: b.dataset.kq, nhan_xet: nx })
           .then(function () { location.reload(); }).catch(function (e) { baoLoi(oLoi, e); });
       });
+    });
+  });
+
+  // Xóa Goal — hai bước, nói rõ việc con sẽ thành việc lẻ chứ không mất
+  document.querySelectorAll("[data-xoa-goal]").forEach(function (b) {
+    var id = b.dataset.xoaGoal;
+    b.addEventListener("click", function () {
+      if (!b.dataset.chac) {
+        b.dataset.chac = "1"; b.textContent = "Chắc chưa? Việc con thành việc lẻ";
+        setTimeout(function () {
+          if (b.dataset.chac) { delete b.dataset.chac; b.textContent = "Xóa Goal"; }
+        }, 5000);
+        return;
+      }
+      b.disabled = true;
+      goi("muc-tieu/xoa", { id: id }).then(function () { location.href = "/muc-tieu"; })
+        .catch(function (e) {
+          b.disabled = false; delete b.dataset.chac; b.textContent = "Xóa Goal";
+          baoLoi(document.querySelector('[data-loi-goal="' + id + '"]'), e);
+        });
     });
   });
 

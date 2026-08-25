@@ -458,3 +458,76 @@ def test_dung_xong_thi_nhiem_vu_het_nam_trong_danh_sach_cho(_so_gia):
     assert "dựng thành Goal" in _client.get("/tasky", headers=H_MGR).text
     mt.tao(MGR, "Nhiệm vụ A", "kết quả X", tu_nhiem_vu=nv["id"])
     assert "dựng thành Goal" not in _client.get("/tasky", headers=H_MGR).text
+
+
+# ---------- xóa Goal (Owner yêu cầu 25/08) ----------
+
+def test_xoa_goal_chua_co_viec():
+    m = _mt()
+    kq = mt.xoa(m["id"], MGR)
+    assert mt.doc_tat_ca() == [] and kq["so_viec_go"] == 0
+
+
+def test_xoa_goal_thi_viec_con_THANH_VIEC_LE_khong_bi_xoa_theo():
+    """Xóa theo là xóa công người ta đã làm — việc phải còn, chỉ mất liên kết."""
+    ma = tuan.ma_tuan()
+    m = _mt()
+    v = tuan.them_viec_giao(ma, MGR, NV, "Việc đang làm dở", "x", muc_tieu_id=m["id"])
+    tuan.nhan_viec(ma, v["id"], NV)
+    kq = mt.xoa(m["id"], MGR)
+
+    con = tuan.viec_cua(ma, "hant")
+    assert kq["so_viec_go"] == 1
+    assert len(con) == 1 and con[0]["tieu_de"] == "Việc đang làm dở"
+    assert con[0]["muc_tieu_id"] == ""          # thành việc lẻ, không mồ côi
+
+
+def test_go_lien_ket_ca_viec_o_tuan_khac():
+    ma = tuan.ma_tuan()
+    sau = tuan.tuan_lien_ke(ma, 1)
+    m = _mt()
+    tuan.them_viec_giao(ma, MGR, NV, "Tuần này", "x", muc_tieu_id=m["id"])
+    tuan.them_viec_giao(sau, MGR, NV, "Tuần sau", "x", muc_tieu_id=m["id"])
+    assert mt.xoa(m["id"], MGR)["so_viec_go"] == 2
+    assert tuan.viec_cua(sau, "hant")[0]["muc_tieu_id"] == ""
+
+
+def test_manager_bo_phan_khac_khong_xoa_duoc():
+    m = _mt()
+    with pytest.raises(PermissionError):
+        mt.xoa(m["id"], MGR_KD)
+
+
+def test_goal_da_chot_chi_owner_xoa_duoc():
+    m = _mt()
+    mt.chot_ket_qua(m["id"], MGR, mt.DAT)
+    with pytest.raises(PermissionError) as e:
+        mt.xoa(m["id"], MGR)
+    assert "báo cáo" in str(e.value)
+    mt.xoa(m["id"], OWNER)
+    assert mt.doc_tat_ca() == []
+
+
+def test_nhat_ky_giu_nguyen_ban_goal_bi_xoa(tmp_path):
+    import json
+    m = _mt(tieu_de="Goal quan trọng")
+    mt.xoa(m["id"], MGR)
+    dong = [json.loads(d) for d in
+            (tmp_path / "db" / "nhat-ky.jsonl").read_text(encoding="utf-8").splitlines()]
+    assert dong[-1]["hanh_dong"] == "xoa_muc_tieu"
+    assert dong[-1]["ban_goc"]["tieu_de"] == "Goal quan trọng"
+
+
+def test_nut_xoa_goal_hien_tren_trang(_so_gia):
+    m = _mt()
+    r = _client.get("/muc-tieu", headers=H_MGR)
+    assert 'data-xoa-goal="%s"' % m["id"] in r.text
+
+
+def test_xoa_goal_qua_api_va_viec_thanh_viec_le(_so_gia):
+    ma = tuan.ma_tuan()
+    m = _mt()
+    tuan.them_viec_giao(ma, MGR, NV, "Việc con", "x", muc_tieu_id=m["id"])
+    r = _client.post("/api-tasky/muc-tieu/xoa", headers=H_MGR, data={"id": m["id"]})
+    assert r.status_code == 200 and r.json()["du_lieu"]["so_viec_go"] == 1
+    assert tuan.viec_cua(ma, "hant")[0]["muc_tieu_id"] == ""

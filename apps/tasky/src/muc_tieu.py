@@ -141,6 +141,40 @@ def mo_lai(mt_id: str, user: dict) -> dict:
     return mt
 
 
+def xoa(mt_id: str, user: dict) -> dict:
+    """Xóa hẳn một Goal.
+
+    VIỆC CON KHÔNG BỊ XÓA THEO — chúng được **gỡ liên kết** thành việc lẻ. Xóa theo
+    là xóa công người ta đã làm; để mồ côi (trỏ vào Goal không còn) thì UI hiện chip
+    rỗng. Gỡ liên kết là đường duy nhất không mất gì.
+
+    Goal ĐÃ CHỐT chỉ Owner xóa được — nó nằm trong báo cáo đã gửi đi.
+    """
+    with _khoa:
+        ds = doc_tat_ca()
+        m = _tim(ds, mt_id)
+        if not duoc_sua(m, user):
+            raise PermissionError("Chỉ Manager của Goal này (hoặc Owner) mới xóa được.")
+        if m["trang_thai"] != DANG_CHAY and user["level"] < OWNER_LEVEL:
+            raise PermissionError("Goal đã chốt nằm trong báo cáo — chỉ Owner mới xóa được.")
+        _ghi([x for x in ds if x["id"] != mt_id])
+
+    go = 0
+    for ma in cac_tuan_gan():
+        so = doc_tuan(ma)
+        dinh = [v for v in so["viec"] if v.get("muc_tieu_id") == mt_id]
+        if not dinh:
+            continue
+        for v in dinh:
+            v["muc_tieu_id"] = ""
+        _ghi_json(_goc() / "tuan" / f"{ma}.json", so)
+        go += len(dinh)
+
+    ghi_nhat_ky("xoa_muc_tieu", user["ten"],
+                {"muc_tieu": mt_id, "ban_goc": m, "viec_go_lien_ket": go})
+    return {"goal": m, "so_viec_go": go}
+
+
 # ---------- đọc theo phạm vi ----------
 
 def trong_pham_vi(user: dict, toan_cong_ty: bool = False) -> list[dict]:

@@ -408,6 +408,12 @@ def api_mo_lai_muc_tieu(id: str = Form(...), user: dict = Depends(yeu_cau_muc_ti
     return _goi(mt_lo.mo_lai, id, user)
 
 
+@app.post("/api-tasky/muc-tieu/xoa")
+def api_xoa_muc_tieu(id: str = Form(...), user: dict = Depends(yeu_cau_muc_tieu)):
+    """Xóa Goal — việc con được GỠ LIÊN KẾT thành việc lẻ, không xóa theo."""
+    return _goi(mt_lo.xoa, id, user)
+
+
 @app.post("/api-tasky/muc-tieu/che-viec")
 def api_che_viec(muc_tieu_id: str = Form(...), tieu_de: str = Form(...),
                  loai_viec: str = Form(""), nguoi: str = Form(""), han: str = Form(""),
