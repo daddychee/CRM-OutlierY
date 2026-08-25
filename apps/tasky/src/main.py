@@ -26,6 +26,8 @@ import os
 from pathlib import Path
 from urllib.parse import unquote
 
+from urllib.parse import urlencode
+
 from fastapi import Depends, FastAPI, Form, Header, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
@@ -131,7 +133,7 @@ async def health():
 
 @app.get("/tasky", response_class=HTMLResponse)
 def trang_viec(request: Request, user: dict = Depends(lay_user), tuan_xem: str = "",
-               x_remote_actions: str = Header("")):
+               x_remote_actions: str = Header(""), loi: str = "", loi_viec: str = ""):
     """Việc của tôi — chỉ việc CỦA MÌNH (luật 1: lọc ở server, không ẩn nút)."""
     ma = _ma_tuan_hop_le(tuan_xem)
     ds = tuan_lo.sap_xep(tuan_lo.viec_cua(ma, user["ten"]))
@@ -148,6 +150,7 @@ def trang_viec(request: Request, user: dict = Depends(lay_user), tuan_xem: str =
         "viec_con": {v["id"]: tuan_lo.viec_con(ma, v["id"])
                      for v in ds if v["nguon"] == "phoi_hop"},
         "tk": tuan_lo.thong_ke_nguoi(ma, user["ten"]),
+        "loi_form": loi, "loi_viec": loi_viec,
         "xoa_duoc": {v["id"]: tuan_lo.duoc_xoa(v, user)[0] for v in ds},
         "trao_doi": {v["id"]: (v.get("trao_doi") or []) for v in ds},
         # việc thuộc mục tiêu nào (chip xanh trên thẻ việc) + nhiệm vụ chờ dựng
@@ -177,7 +180,8 @@ def trang_giao_cu():
 @app.get("/muc-tieu", response_class=HTMLResponse)
 def trang_muc_tieu(request: Request, user: dict = Depends(yeu_cau_muc_tieu),
                    x_remote_actions: str = Header(""), chon: str = "",
-                   tuan_xem: str = "", da_don: str = ""):
+                   tuan_xem: str = "", da_don: str = "",
+                   loi: str = "", loi_viec: str = ""):
     """Cây mục tiêu — MỘT mục tiêu một tab (Owner chốt 25/08). Dữ liệu gom sẵn ở
     server, template chỉ hiển thị."""
     hd = cac_hanh_dong(x_remote_actions)
@@ -200,7 +204,10 @@ def trang_muc_tieu(request: Request, user: dict = Depends(yeu_cau_muc_tieu),
         "cap_duoi": cap_duoi, "loai_viec": tuan_lo.cac_loai_viec(),
         "duoc_dat": mt_lo.duoc_dat_muc_tieu(user),
         "la_owner": user["level"] >= mt_lo.OWNER_LEVEL,
-        "da_don": da_don,
+        "da_don": da_don, "loi_form": loi, "loi_viec": loi_viec,
+        # nút "Gỡ việc" trong phiếu chi tiết — luật ở lõi, template chỉ hỏi
+        "xoa_duoc": {v["id"]: tuan_lo.duoc_xoa(v, user)[0]
+                     for ds_v in gom.values() for v in ds_v},
         "con_viec_cu": sum(1 for ma in tuan_lo.cac_tuan_gan()
                            for v in tuan_lo.doc_tuan(ma)["viec"]
                            if not v.get("muc_tieu_id")),
@@ -468,6 +475,67 @@ def form_trao_doi(id: str = Form(...), chu: str = Form(""), ve: str = Form("/tas
     return RedirectResponse(ve if ve.startswith("/") else "/tasky", status_code=303)
 
 
+def _ve_kem_loi(ve: str, loi: str = "", id_viec: str = "") -> str:
+    """Quay lại đúng trang vừa thao tác. Lỗi ĐI THEO URL chứ không nuốt lặng lẽ —
+    dán sai đường dẫn tài liệu mà im re thì người dùng tưởng đã lưu."""
+    duong = ve if ve.startswith("/") else "/tasky"
+    if not loi:
+        return duong
+    q = urlencode({"loi": loi[:200], "loi_viec": id_viec})
+    return duong + ("&" if "?" in duong else "?") + q
+
+
+@app.post("/tasky/viec/sua")
+def form_sua_viec(id: str = Form(...), tieu_de: str = Form(""), mo_ta: str = Form(""),
+                  loai_viec: str = Form(""), tuan_xem: str = Form(""),
+                  ve: str = Form("/tasky"), user: dict = Depends(lay_user)):
+    """Sửa đề bài + mô tả của một việc — FORM THUẦN (§16)."""
+    loi = ""
+    try:
+        tuan_lo.sua_viec(_ma_tuan_hop_le(tuan_xem), id, user,
+                         tieu_de=tieu_de, mo_ta=mo_ta, loai_viec=loai_viec)
+    except (ValueError, PermissionError) as e:
+        loi = str(e)
+    return RedirectResponse(_ve_kem_loi(ve, loi, id), status_code=303)
+
+
+@app.post("/tasky/viec/tai-lieu")
+def form_them_tai_lieu(id: str = Form(...), dia_chi: str = Form(""), ten: str = Form(""),
+                       tuan_xem: str = Form(""), ve: str = Form("/tasky"),
+                       user: dict = Depends(lay_user)):
+    loi = ""
+    try:
+        tuan_lo.them_tai_lieu(_ma_tuan_hop_le(tuan_xem), id, user, dia_chi, ten)
+    except (ValueError, PermissionError) as e:
+        loi = str(e)
+    return RedirectResponse(_ve_kem_loi(ve, loi, id), status_code=303)
+
+
+@app.post("/tasky/viec/tai-lieu/xoa")
+def form_xoa_tai_lieu(id: str = Form(...), id_tl: str = Form(...),
+                      tuan_xem: str = Form(""), ve: str = Form("/tasky"),
+                      user: dict = Depends(lay_user)):
+    loi = ""
+    try:
+        tuan_lo.xoa_tai_lieu(_ma_tuan_hop_le(tuan_xem), id, user, id_tl)
+    except (ValueError, PermissionError) as e:
+        loi = str(e)
+    return RedirectResponse(_ve_kem_loi(ve, loi, id), status_code=303)
+
+
+@app.post("/tasky/viec/xoa")
+def form_xoa_viec(id: str = Form(...), tuan_xem: str = Form(""),
+                  ve: str = Form("/tasky"), user: dict = Depends(lay_user)):
+    """Gỡ hẳn một việc khỏi Goal. Luật ai-gỡ-được nằm ở `tuan.duoc_xoa` — việc đang
+    làm dở vẫn phải Hủy kèm lý do, không xóa trắng công của người ta."""
+    loi = ""
+    try:
+        tuan_lo.xoa_viec(_ma_tuan_hop_le(tuan_xem), id, user)
+    except (ValueError, PermissionError) as e:
+        loi = str(e)
+    return RedirectResponse(_ve_kem_loi(ve, loi, id), status_code=303)
+
+
 @app.post("/muc-tieu/don-viec-cu")
 def form_don_viec_cu(user: dict = Depends(yeu_cau_muc_tieu)):
     """Dọn MỌI việc không thuộc Goal nào — dùng một lần để xóa việc tạo từ trước khi
@@ -509,16 +577,33 @@ def api_xoa_muc_tieu(id: str = Form(...), user: dict = Depends(yeu_cau_muc_tieu)
 @app.post("/api-tasky/muc-tieu/che-viec")
 def api_che_viec(muc_tieu_id: str = Form(...), tieu_de: str = Form(...),
                  loai_viec: str = Form(""), nguoi: str = Form(""), han: str = Form(""),
-                 gap: str = Form(""), tuan_xem: str = Form(""),
+                 gap: str = Form(""), tuan_xem: str = Form(""), mo_ta: str = Form(""),
+                 tai_lieu: str = Form(""),
                  user: dict = Depends(yeu_cau_muc_tieu)):
-    """Chẻ một việc từ mục tiêu. Để trống `nguoi` = chưa phân công, giao sau."""
+    """Chẻ một việc từ mục tiêu. Để trống `nguoi` = chưa phân công, giao sau.
+
+    `mo_ta` + `tai_lieu` là phần SETUP ban đầu; sau đó vẫn bổ sung được trong phiếu
+    chi tiết của việc — nên chúng đính SAU khi việc đã tạo, và đính hỏng (dán sai
+    đường dẫn) KHÔNG làm hỏng việc vừa tạo."""
     ma = _ma_tuan_hop_le(tuan_xem)
     ds = [t.strip() for t in (nguoi or "").split(",") if t.strip()]
     if ds:
-        return _goi(tuan_lo.giao_nhieu_nguoi, ma, user, [_tim_nguoi(t) for t in ds],
-                    tieu_de, loai_viec, han=han, gap=_co(gap), muc_tieu_id=muc_tieu_id)
-    return _goi(tuan_lo.them_viec_muc_tieu, ma, user, tieu_de, loai_viec,
-                muc_tieu_id, han, _co(gap))
+        ra = _goi(tuan_lo.giao_nhieu_nguoi, ma, user, [_tim_nguoi(t) for t in ds],
+                  tieu_de, loai_viec, han=han, gap=_co(gap), muc_tieu_id=muc_tieu_id)
+        moi = ra["du_lieu"]                      # nhiều người → nhiều bản việc
+    else:
+        ra = _goi(tuan_lo.them_viec_muc_tieu, ma, user, tieu_de, loai_viec,
+                  muc_tieu_id, han, _co(gap))
+        moi = [ra["du_lieu"]]
+    for v in moi:
+        try:
+            if mo_ta.strip():
+                tuan_lo.sua_viec(ma, v["id"], user, mo_ta=mo_ta)
+            if tai_lieu.strip():
+                tuan_lo.them_tai_lieu(ma, v["id"], user, tai_lieu)
+        except (ValueError, PermissionError) as e:
+            ra["canh_bao"] = str(e)
+    return ra
 
 
 @app.post("/api-tasky/muc-tieu/gan-nguoi")

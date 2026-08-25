@@ -120,8 +120,20 @@
   /* Khối THÊM VIỆC — nổi hẳn, ba bước rõ ràng thay vì một hàng ô lộn xộn */
   .them-viec{background:var(--sidebar);border:1px solid var(--accent);border-radius:12px;
     overflow:hidden;margin-bottom:12px}
-  .them-viec > header{display:flex;align-items:center;gap:8px;padding:10px 14px;
+  /* Owner 25/08: box cứng luôn mở là sai — thêm việc chỉ là bước SETUP đầu, nên nó
+     là một NÚT ở đầu danh sách; bấm mới bung phiếu ra. Dùng thẻ details nên không cần JS,
+     JS hỏng vẫn thêm được việc. */
+  .them-viec > summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:8px;
+    padding:10px 14px;
     background:var(--th-16263f);font-size:13px;font-weight:600;color:var(--accent)}
+  .them-viec > summary::-webkit-details-marker{display:none}
+  .them-viec > summary:hover{filter:brightness(1.08)}
+  .them-viec > summary .nhan-dong{display:none}
+  .them-viec[open] > summary .nhan-mo{display:none}
+  .them-viec[open] > summary .nhan-dong{display:inline;font-weight:500;color:var(--muted)}
+  .them-viec[open] > summary svg{transform:rotate(45deg);transition:transform .15s}
+  .them-viec:not([open]){border-color:var(--chip-line)}
+  .them-viec:not([open]):hover{border-color:var(--accent)}
   .them-viec .noi{padding:12px 14px}
   .buoc-nhap{display:flex;gap:10px;align-items:flex-start;padding:9px 0;
     border-top:1px dashed var(--chip-line)}
@@ -185,3 +197,32 @@
   .o-tai-cho.han{font-size:12px;color:var(--muted);width:auto}
   .goi-sua{font-size:11.5px;color:var(--muted);opacity:0;transition:opacity .15s}
   form.sua-tai-cho:focus-within .goi-sua{opacity:1}
+
+  /* ---- Phiếu chi tiết việc (§16) — mô tả, tài liệu, trao đổi, gỡ việc ---- */
+  details.phieu-viec{width:100%}
+  details.phieu-viec>summary{list-style:none;cursor:pointer;font-size:12px;color:var(--muted);
+    display:inline-flex;align-items:center;gap:6px;padding:2px 0}
+  details.phieu-viec>summary::-webkit-details-marker{display:none}
+  details.phieu-viec>summary::before{content:"";width:5px;height:5px;flex:none;
+    border-right:1.6px solid var(--muted);border-bottom:1.6px solid var(--muted);
+    transform:rotate(-45deg);transition:transform .15s}
+  details.phieu-viec[open]>summary::before{transform:rotate(45deg)}
+  details.phieu-viec>summary:hover{color:var(--ink)}
+  .phieu-noi{margin-top:8px;padding:12px;border:1px solid var(--line);border-radius:11px;
+    background:var(--th-141c2b)}
+  .o-sua-viec input[type="text"],.o-sua-viec textarea{width:100%;margin-bottom:6px}
+  .mo-ta-doc{font-size:13px;color:var(--th-c2cbd9);white-space:pre-wrap;
+    padding:8px 10px;border-left:2px solid var(--chip-line);margin-bottom:10px}
+  .khoi-tl{margin-top:11px;padding-top:10px;border-top:1px solid var(--line)}
+  .nhan-khoi{font-size:11.5px;font-weight:600;color:var(--muted);text-transform:uppercase;
+    letter-spacing:.04em;margin-bottom:6px}
+  ul.ds-tl{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:5px}
+  ul.ds-tl li{display:flex;gap:8px;align-items:center;font-size:12.5px;
+    background:var(--sidebar);border:1px solid var(--line);border-radius:8px;padding:5px 9px}
+  ul.ds-tl li a{color:var(--accent);text-decoration:none;word-break:break-all}
+  ul.ds-tl li a:hover{text-decoration:underline}
+  ul.ds-tl li span{word-break:break-all}
+  ul.ds-tl li small{color:var(--muted);margin-left:auto;white-space:nowrap}
+  ul.ds-tl li form{margin:0}
+  .nut.nguy{border-color:var(--tk-cap);color:var(--tk-cap)}
+  .nut.nguy:hover{background:var(--tk-cap-nen)}

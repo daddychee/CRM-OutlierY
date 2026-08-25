@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import threading
 import uuid
 from datetime import date, datetime, timedelta
@@ -266,6 +267,8 @@ def _viec_moi(tieu_de: str, loai_viec: str, nguoi: str) -> dict:
             "muc_tieu_id": "",          # việc này phục vụ mục tiêu nào (§12)
             "cung_viec": "",            # cùng một việc giao cho nhiều người (§14)
             "trao_doi": [],             # cuộc trao đổi trong việc (§15) — CHỈ THÊM
+            "mo_ta": "",                # đề bài chi tiết, người giao viết (§16)
+            "tai_lieu": [],             # link/đường NAS đính kèm (§16)
             "luc_tao": _gio(), "luc_nhan": None, "luc_bao_xong": None,
             "luc_xac_nhan": None, "nguoi_xac_nhan": None, "tu_xac_nhan": False}
 
@@ -575,6 +578,90 @@ def chuyen_vao_goal(ma: str, id_viec: str, user: dict, muc_tieu_id: str) -> dict
     ghi_nhat_ky("chuyen_vao_goal", user["ten"],
                 {"tuan": ma, "viec": id_viec, "muc_tieu": muc_tieu_id})
     return v
+
+
+def _duoc_sua_de_bai(viec: dict, user: dict) -> bool:
+    """Ai sửa được ĐỀ BÀI (tên việc, mô tả): người giao (hoặc Owner). Việc nhân sự
+    tự thêm thì chính chủ — cùng luật với `danh_dau`, không đẻ luật mới."""
+    tu_minh = viec.get("nguon") == "tu_them" and viec["nguoi"] == user["ten"]
+    return tu_minh or duoc_xac_nhan(viec, user)
+
+
+def sua_viec(ma: str, id_viec: str, user: dict, tieu_de: str | None = None,
+             mo_ta: str | None = None, loai_viec: str | None = None) -> dict:
+    """Sửa đề bài sau khi việc đã tạo — gõ nhầm tên, hoặc bổ sung mô tả sau.
+
+    Người LÀM không sửa đề bài; họ ghi lưu ý bằng trao đổi (chỉ-thêm, có dấu vết ai
+    nói gì lúc nào) — nếu cho cả hai bên sửa chung một ô thì đè nhau, mất chứng cứ.
+    """
+    with _khoa:
+        so = doc_tuan(ma)
+        v = _tim(so, id_viec)
+        if not _duoc_sua_de_bai(v, user):
+            raise PermissionError("Chỉ người giao việc (hoặc Owner) mới sửa đề bài.")
+        if tieu_de is not None and tieu_de.strip():
+            v["tieu_de"] = tieu_de.strip()[:200]
+        if loai_viec is not None and loai_viec.strip():
+            v["loai_viec"] = loai_viec.strip()[:60]
+        if mo_ta is not None:
+            v["mo_ta"] = mo_ta.strip()[:4000]
+        _ghi_tuan(so)
+    ghi_nhat_ky("sua_viec", user["ten"], {"tuan": ma, "viec": id_viec})
+    return v
+
+
+def _dia_chi_hop_le(dia_chi: str) -> str:
+    """Nhận link web hoặc đường NAS. Chặn `javascript:`/`data:` — chuỗi này sẽ đi
+    thẳng vào thuộc tính href, nhận bừa là mở cửa cho script chạy trong phiên người
+    khác."""
+    dc = (dia_chi or "").strip()
+    if not dc:
+        raise ValueError("Chưa có đường dẫn tài liệu.")
+    if (dc.lower().startswith(("http://", "https://"))
+            or dc.startswith("\\")            # \máy	hư-mục
+            or re.match(r"^[A-Za-z]:[\\/]", dc)):   # G:\… trên máy đã map ổ
+        return dc[:500]
+    raise ValueError("Chỉ nhận link http(s) hoặc đường NAS trong công ty.")
+
+
+def them_tai_lieu(ma: str, id_viec: str, user: dict, dia_chi: str,
+                  ten: str = "") -> dict:
+    """Đính tài liệu vào việc — LƯU ĐƯỜNG DẪN, không chép file.
+
+    Tài liệu công ty đã nằm ở NAS và kho tri thức, mỗi nơi có luật quyền riêng; chép
+    bản thứ hai vào Tasky là đẻ thêm một kho phải canh quyền và canh bản mới nhất.
+    """
+    dc = _dia_chi_hop_le(dia_chi)
+    with _khoa:
+        so = doc_tuan(ma)
+        v = _tim(so, id_viec)
+        if not duoc_doc_trao_doi(v, user):
+            raise PermissionError("Bạn không có phần trong việc này.")
+        tl = {"id": "tl-" + uuid.uuid4().hex[:6], "dia_chi": dc,
+              "ten": (ten or "").strip()[:120] or dc,
+              "ai": user["ten"], "luc": _gio()}
+        v.setdefault("tai_lieu", []).append(tl)
+        _ghi_tuan(so)
+    ghi_nhat_ky("them_tai_lieu", user["ten"],
+                {"tuan": ma, "viec": id_viec, "dia_chi": dc})
+    return tl
+
+
+def xoa_tai_lieu(ma: str, id_viec: str, user: dict, id_tl: str) -> None:
+    """Gỡ một tài liệu: người đã đính, người giao việc, hoặc Owner."""
+    with _khoa:
+        so = doc_tuan(ma)
+        v = _tim(so, id_viec)
+        ds = v.get("tai_lieu") or []
+        tl = next((x for x in ds if x["id"] == id_tl), None)
+        if tl is None:
+            raise ValueError("Không thấy tài liệu này.")
+        if not (tl["ai"] == user["ten"] or duoc_xac_nhan(v, user)):
+            raise PermissionError("Chỉ người đính (hoặc người giao việc) mới gỡ được.")
+        v["tai_lieu"] = [x for x in ds if x["id"] != id_tl]
+        _ghi_tuan(so)
+    ghi_nhat_ky("xoa_tai_lieu", user["ten"],
+                {"tuan": ma, "viec": id_viec, "ban_goc": tl})
 
 
 def duoc_doc_trao_doi(viec: dict, user: dict) -> bool:

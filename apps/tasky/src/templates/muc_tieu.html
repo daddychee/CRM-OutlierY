@@ -8,7 +8,7 @@
   .mt-tabs{display:flex;gap:7px;overflow-x:auto;padding-bottom:10px;margin-bottom:14px;
     border-bottom:1px solid var(--line);scrollbar-width:thin}
   /* MỘT CỠ CỐ ĐỊNH cho mọi tab (Owner 25/08: đang to nhỏ khác nhau) */
-  .mt-tab{flex:0 0 auto;display:flex;flex-direction:column;gap:6px;width:258px;height:82px;
+  .mt-tab{flex:0 0 auto;display:flex;flex-direction:column;gap:6px;width:258px;height:112px;
     border:1px solid var(--line);border-left:4px solid var(--line);border-radius:11px;
     background:var(--sidebar);padding:8px 11px;cursor:pointer;text-align:left;
     position:relative;color:var(--ink);font-family:inherit;overflow:hidden}
@@ -22,8 +22,12 @@
   .o-mau button[aria-pressed="true"]{outline:2px solid var(--accent);outline-offset:2px}
   .mt-tab:hover{border-color:var(--chip-line)}
   .mt-tab[aria-selected="true"]{border-color:var(--accent);background:var(--th-16263f)}
-  .mt-tab .ten{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;
-    text-overflow:ellipsis;padding-right:12px}
+  /* Goal phải RẤT RÕ RÀNG (Owner 25/08): hiện đủ tên, không cắt "…" giữa chữ.
+     Vẫn giữ MỘT CỠ ô — cho xuống tối đa 3 dòng rồi thẻ mới dừng. */
+  .mt-tab .ten{font-size:14px;font-weight:600;line-height:1.35;padding-right:12px;
+    display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;
+    word-break:break-word}
+  .mt-tab .duoi{margin-top:auto}
   .mt-tab .duoi{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--muted)}
   .mt-tab .thanh{flex:1;margin:0}
   .mt-tab .cham{position:absolute;top:8px;right:9px;width:7px;height:7px;border-radius:50%}
@@ -131,6 +135,10 @@
     </form>
   </div>
 </div>
+{% endif %}
+
+{% if loi_form and not loi_viec %}
+<div class="loi" style="margin-bottom:12px">{{ loi_form }}</div>
 {% endif %}
 
 <div class="mt-tabs" role="tablist">
@@ -279,12 +287,77 @@
         {% else %}<span class="ai-nho" title="Bạn đã giao việc này cho {{ v.nguoi }}">
           {%- if v.nguoi == user.ten %}tôi làm{% else %}giao {{ v.nguoi }}{% endif %}</span>{% endif %}
       </li>
-      {% if v.trang_thai not in ('chua_giao',) %}
       <li style="padding-top:0;border-top:0">
-        <details style="width:100%">
-          <summary style="cursor:pointer;font-size:12px;color:var(--muted);list-style:none">
-            Trao đổi{% if v.trao_doi %} · {{ v.trao_doi|length }} tin{% endif %}</summary>
-          <div class="td" style="margin-top:8px;border-top:0;padding-top:0">
+        <details class="phieu-viec" {% if loi_viec == v.id %}open{% endif %}>
+          <summary>Chi tiết việc{% if v.trao_doi %} · {{ v.trao_doi|length }} tin{% endif %}
+            {%- if v.tai_lieu %} · {{ v.tai_lieu|length }} tài liệu{% endif %}</summary>
+          <div class="phieu-noi">
+            {% set ve = '/muc-tieu?chon=' ~ m.id %}
+            {% if loi_viec == v.id and loi_form %}<div class="loi">{{ loi_form }}</div>{% endif %}
+
+            {% if v.nguoi_giao == user.ten or user.level >= 5 or v.nguon == 'tu_them' %}
+            <form method="post" action="/tasky/viec/sua" class="o-sua-viec">
+              <input type="hidden" name="id" value="{{ v.id }}">
+              <input type="hidden" name="tuan_xem" value="{{ ma_tuan }}">
+              <input type="hidden" name="ve" value="{{ ve }}">
+              <input type="text" name="tieu_de" value="{{ v.tieu_de }}" placeholder="Tên việc">
+              <textarea name="mo_ta" rows="3"
+                placeholder="Mô tả — đề bài, tiêu chí nghiệm thu, lưu ý…">{{ v.mo_ta or '' }}</textarea>
+              <div class="hang" style="margin:6px 0 0">
+                <button class="nut" type="submit">Lưu mô tả</button>
+                <span style="flex:1"></span>
+                {% if xoa_duoc.get(v.id) %}
+                <button class="nut nguy" type="submit" form="go-{{ v.id }}"
+                  onclick="if(!this.dataset.c){this.dataset.c='1';
+                    this.textContent='Chắc chưa? Bấm lại để gỡ';return false}">Gỡ việc này</button>
+                {% endif %}
+              </div>
+            </form>
+            {% if xoa_duoc.get(v.id) %}
+            <form method="post" action="/tasky/viec/xoa" id="go-{{ v.id }}">
+              <input type="hidden" name="id" value="{{ v.id }}">
+              <input type="hidden" name="tuan_xem" value="{{ ma_tuan }}">
+              <input type="hidden" name="ve" value="{{ ve }}">
+            </form>
+            {% endif %}
+            {% elif v.mo_ta %}
+            <div class="mo-ta-doc">{{ v.mo_ta }}</div>
+            {% endif %}
+
+            <div class="khoi-tl">
+              <div class="nhan-khoi">Tài liệu</div>
+              {% if v.tai_lieu %}
+              <ul class="ds-tl">
+                {% for tl in v.tai_lieu %}
+                <li>
+                  {% if tl.dia_chi.startswith('http') %}
+                  <a href="{{ tl.dia_chi }}" target="_blank" rel="noopener">{{ tl.ten }}</a>
+                  {% else %}<span title="Đường NAS — copy dán vào Explorer">{{ tl.ten }}</span>{% endif %}
+                  <small>{{ tl.ai }}</small>
+                  <form method="post" action="/tasky/viec/tai-lieu/xoa">
+                    <input type="hidden" name="id" value="{{ v.id }}">
+                    <input type="hidden" name="id_tl" value="{{ tl.id }}">
+                    <input type="hidden" name="tuan_xem" value="{{ ma_tuan }}">
+                    <input type="hidden" name="ve" value="{{ ve }}">
+                    <button class="nut sm" type="submit" title="Gỡ tài liệu">Gỡ</button>
+                  </form>
+                </li>
+                {% endfor %}
+              </ul>
+              {% endif %}
+              <form method="post" action="/tasky/viec/tai-lieu" class="hang" style="margin:7px 0 0">
+                <input type="hidden" name="id" value="{{ v.id }}">
+                <input type="hidden" name="tuan_xem" value="{{ ma_tuan }}">
+                <input type="hidden" name="ve" value="{{ ve }}">
+                <input type="text" name="dia_chi" placeholder="Dán link hoặc đường dẫn NAS…">
+                <input type="text" name="ten" placeholder="Đặt tên (tùy)" style="max-width:150px;flex:0 0 auto">
+                <button class="nut" type="submit">Đính</button>
+              </form>
+              <div class="goi-y" style="margin-top:5px">Lưu ĐƯỜNG DẪN, không chép file —
+                bản mới nhất luôn nằm ở NAS / kho tài liệu.</div>
+            </div>
+
+            <div class="td" style="margin-top:10px">
             {% if v.trao_doi %}
             <ul class="td-ds">
               {% for t in v.trao_doi %}
@@ -298,31 +371,30 @@
             <form method="post" action="/tasky/trao-doi">
               <input type="hidden" name="id" value="{{ v.id }}">
               <input type="hidden" name="tuan_xem" value="{{ ma_tuan }}">
-              <input type="hidden" name="ve" value="/muc-tieu?chon={{ m.id }}">
-              <input type="text" name="chu" placeholder="Nhắn cho {{ v.nguoi }}…" maxlength="1000">
+              <input type="hidden" name="ve" value="{{ ve }}">
+              <input type="text" name="chu"
+                placeholder="Nhắn {% if v.nguoi %}cho {{ v.nguoi }}{% else %}vào việc này{% endif %}…"
+                maxlength="1000">
               <button class="nut" type="submit">Gửi</button>
             </form>
+            </div>
           </div>
         </details>
       </li>
-      {% endif %}
       {% endfor %}
     </ul>
   </details>
   {% endif %}
   {% endmacro %}
 
-  {{ nhom('Cần bạn xử lý', m.nhom.can_xu_ly, true) }}
-  {{ nhom('Đang chạy', m.nhom.dang_chay, false) }}
-  {{ nhom('Đã nghiệm thu', m.nhom.xong, false) }}
-
   {% if m.trang_thai == 'dang_chay' %}
-  <div class="them-viec">
-    <header>
+  <details class="them-viec">
+    <summary>
       <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor"
         stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
-      Thêm việc để đạt Goal này
-    </header>
+      <span class="nhan-mo">Thêm việc để đạt Goal này</span>
+      <span class="nhan-dong">Đóng phiếu — việc vừa thêm nằm trong danh sách bên dưới</span>
+    </summary>
     <div class="noi">
       <div class="buoc-nhap">
         <span class="so-buoc">1</span>
@@ -332,6 +404,10 @@
             <input data-che-ten placeholder="Ví dụ: Rà 10 video top của 3 kênh đối thủ">
             <input data-che-loai list="ds-loai" placeholder="Loại việc" style="max-width:160px;flex:0 0 auto">
           </div>
+          <textarea data-che-mo-ta rows="2" style="margin-top:7px"
+            placeholder="Mô tả — làm rõ đề bài, tiêu chí nghiệm thu… (không bắt buộc)"></textarea>
+          <input data-che-tai-lieu style="margin-top:7px"
+            placeholder="Tài liệu: dán link, hoặc đường NAS \192.168.1.250\NAS1\… (không bắt buộc)">
         </div>
       </div>
 
@@ -385,9 +461,14 @@
       {% endif %}
       <div class="loi" data-loi-che hidden></div>
     </div>
-  </div>
-  </div>
+  </details>
   {% endif %}
+
+  {{ nhom('Cần bạn xử lý', m.nhom.can_xu_ly, true) }}
+  {{ nhom('Đang chạy', m.nhom.dang_chay, false) }}
+  {{ nhom('Đã nghiệm thu', m.nhom.xong, false) }}
+
+
 </section>
 {% endfor %}
 
@@ -507,8 +588,14 @@
       goi("muc-tieu/che-viec", {
         muc_tieu_id: b.dataset.che, tieu_de: ten, loai_viec: loai,
         nguoi: ai.join(","), han: khoi.querySelector("[data-che-han]").value || "",
-        gap: khoi.querySelector("[data-che-gap]").getAttribute("aria-pressed") === "true" ? "1" : ""
-      }).then(function () { location.reload(); }).catch(function (e) { baoLoi(oLoi, e); });
+        gap: khoi.querySelector("[data-che-gap]").getAttribute("aria-pressed") === "true" ? "1" : "",
+        mo_ta: khoi.querySelector("[data-che-mo-ta]").value || "",
+        tai_lieu: khoi.querySelector("[data-che-tai-lieu]").value || ""
+      }).then(function (r) {
+        // đính tài liệu hỏng thì việc VẪN tạo — nói rõ qua banner, đừng nuốt
+        location.href = "/muc-tieu?chon=" + b.dataset.che
+          + (r && r.canh_bao ? "&loi=" + encodeURIComponent(r.canh_bao) : "");
+      }).catch(function (e) { baoLoi(oLoi, e); });
     };
     b.addEventListener("click", chay);
     enter(khoi.querySelector("[data-che-ten]"), chay);
