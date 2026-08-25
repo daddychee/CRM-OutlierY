@@ -163,6 +163,45 @@
       </div>
       {% endif %}
     {% endif %}
+    {% if loi_viec == v.id and loi_form %}<div class="loi">{{ loi_form }}</div>{% endif %}
+    {% if v.mo_ta %}
+    <div class="mo-ta-doc" title="Mô tả do người giao việc viết">{{ v.mo_ta }}</div>
+    {% endif %}
+    {% if v.trang_thai not in ('tu_choi', 'huy') %}
+    <div class="khoi-tl">
+      <div class="nhan-khoi">Tài liệu</div>
+      {% if v.tai_lieu %}
+      <ul class="ds-tl">
+        {% for tl in v.tai_lieu %}
+        <li>
+          {% if tl.dia_chi.startswith('http') %}
+          <a href="{{ tl.dia_chi }}" target="_blank" rel="noopener">{{ tl.ten }}</a>
+          {% else %}<span title="Đường NAS — copy dán vào Explorer">{{ tl.ten }}</span>{% endif %}
+          <small>{{ tl.ai }}</small>
+          {% if tl.ai == user.ten or v.nguoi_giao == user.ten or user.level >= 5 %}
+          <form method="post" action="/tasky/viec/tai-lieu/xoa">
+            <input type="hidden" name="id" value="{{ v.id }}">
+            <input type="hidden" name="id_tl" value="{{ tl.id }}">
+            <input type="hidden" name="tuan_xem" value="{{ ma_tuan }}">
+            <input type="hidden" name="ve" value="/tasky?tuan_xem={{ ma_tuan }}">
+            <button class="nut sm" type="submit">Gỡ</button>
+          </form>
+          {% endif %}
+        </li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+      <form method="post" action="/tasky/viec/tai-lieu" class="hang" style="margin:7px 0 0">
+        <input type="hidden" name="id" value="{{ v.id }}">
+        <input type="hidden" name="tuan_xem" value="{{ ma_tuan }}">
+        <input type="hidden" name="ve" value="/tasky?tuan_xem={{ ma_tuan }}">
+        <input type="text" name="dia_chi" placeholder="Dán link hoặc đường dẫn NAS…">
+        <input type="text" name="ten" placeholder="Đặt tên (tùy)" style="max-width:150px;flex:0 0 auto">
+        <button class="nut" type="submit">Đính</button>
+      </form>
+    </div>
+    {% endif %}
+
     {% if v.trang_thai not in ('tu_choi', 'huy') %}
     <div class="td">
       <div class="nhan">

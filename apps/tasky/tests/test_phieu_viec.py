@@ -195,3 +195,28 @@ def test_tai_lieu_dan_bay_khong_lam_hong_viec_vua_tao(ma, _so):
 def test_bao_loi_dinh_tai_lieu_hien_len_trang_khong_nuot(_so):
     r = _c.get("/muc-tieu?loi=Ch%E1%BB%89+nh%E1%BA%ADn+link+http", headers=H_MGR)
     assert "Chỉ nhận link http" in r.text
+
+
+def test_nguoi_lam_thay_de_bai_va_tai_lieu_o_man_viec_cua_minh(ma, _so):
+    """Đề bài giao cho họ mà họ không thấy thì mô tả vô nghĩa."""
+    v = tuan.them_viec_giao(ma, MGR, NV, "Dựng 6 video", "san_xuat")
+    tuan.sua_viec(ma, v["id"], MGR, mo_ta="Ưu tiên kênh Life In US")
+    tuan.them_tai_lieu(ma, v["id"], MGR, "https://nas.vn/brief.docx", "Brief")
+    H_NV = {**H_MGR, "X-Remote-User": "hant", "X-Remote-Level": "2",
+            "X-Remote-Actions": "vao"}
+    r = _c.get("/tasky", headers=H_NV)
+    assert "Ưu tiên kênh Life In US" in r.text
+    assert 'href="https://nas.vn/brief.docx"' in r.text
+    assert 'action="/tasky/viec/tai-lieu"' in r.text     # tự đính thêm được
+
+
+def test_nguoi_lam_khong_go_duoc_tai_lieu_cua_leader(ma, _so):
+    v = tuan.them_viec_giao(ma, MGR, NV, "Dựng 6 video", "san_xuat")
+    tl = tuan.them_tai_lieu(ma, v["id"], MGR, "https://nas.vn/brief.docx", "Brief")
+    H_NV = {**H_MGR, "X-Remote-User": "hant", "X-Remote-Level": "2",
+            "X-Remote-Actions": "vao"}
+    assert 'value="%s"' % tl["id"] not in _c.get("/tasky", headers=H_NV).text
+    r = _c.post("/tasky/viec/tai-lieu/xoa", headers=H_NV, follow_redirects=False,
+                data={"id": v["id"], "id_tl": tl["id"], "tuan_xem": ma, "ve": "/tasky"})
+    assert "loi=" in r.headers["location"]               # chốt thật ở server
+    assert len(tuan._tim(tuan.doc_tuan(ma), v["id"])["tai_lieu"]) == 1
