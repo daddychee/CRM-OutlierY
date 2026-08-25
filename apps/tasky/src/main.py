@@ -27,7 +27,7 @@ from pathlib import Path
 from urllib.parse import unquote
 
 from fastapi import Depends, FastAPI, Form, Header, HTTPException, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
@@ -166,32 +166,17 @@ def trang_viec(request: Request, user: dict = Depends(lay_user), tuan_xem: str =
         "tuan_nay": tuan_lo.ma_tuan(), **_co_sidebar(x_remote_actions, ma, user)})
 
 
-@app.get("/giao-viec", response_class=HTMLResponse)
-def trang_giao(request: Request, user: dict = Depends(yeu_cau_giao_viec),
-               tuan_xem: str = "", x_remote_actions: str = Header("")):
-    """Giao việc — chỉ người trong bộ phận mình và cấp dưới mình (lọc bằng chính
-    luật của lõi). Kèm khối chờ xác nhận + việc còn treo để đóng tuần."""
-    ma = _ma_tuan_hop_le(tuan_xem)
-    cap_duoi, loi = nhan_su.cap_duoi_cua(user)
-    ds_nguoi = cap_duoi or []
-    bang = tuan_lo.bang_bao_cao(ma, ds_nguoi)
-    tu, den = tuan_lo.khoang_tuan(ma)
-    return templates.TemplateResponse(request, "giao_viec.html", {
-        "user": user, "ma_tuan": ma, "tu": tu, "den": den,
-        "cap_duoi": ds_nguoi, "loi_iam": loi,
-        "bang": bang,
-        "ngang_cap": nhan_su.ngang_cap_bo_phan_khac(user)[0] or [],
-        "da_gui": tuan_lo.sap_xep(tuan_lo.yeu_cau_da_gui(ma, user)),
-        "nhom": tuan_lo.nhom_cho_leader(ma, user, ds_nguoi),
-        "loai_viec": tuan_lo.cac_loai_viec(),
-        "tuan_truoc": tuan_lo.tuan_lien_ke(ma, -1),
-        "tuan_sau": tuan_lo.tuan_lien_ke(ma, 1),
-        "tuan_nay": tuan_lo.ma_tuan(), **_co_sidebar(x_remote_actions, ma, user)})
+@app.get("/giao-viec")
+def trang_giao_cu():
+    """Màn Giao việc GỘP vào Goal (tab Việc lẻ) + Báo cáo (bảng bộ phận + đóng tuần)
+    — Owner chốt 25/08 là nó thừa. Giữ đường cũ để bookmark của team không chết."""
+    return RedirectResponse("/muc-tieu", status_code=303)
 
 
 @app.get("/muc-tieu", response_class=HTMLResponse)
 def trang_muc_tieu(request: Request, user: dict = Depends(yeu_cau_muc_tieu),
-                   x_remote_actions: str = Header(""), chon: str = ""):
+                   x_remote_actions: str = Header(""), chon: str = "",
+                   tuan_xem: str = ""):
     """Cây mục tiêu — MỘT mục tiêu một tab (Owner chốt 25/08). Dữ liệu gom sẵn ở
     server, template chỉ hiển thị."""
     hd = cac_hanh_dong(x_remote_actions)
@@ -207,12 +192,21 @@ def trang_muc_tieu(request: Request, user: dict = Depends(yeu_cau_muc_tieu),
     cay.sort(key=lambda c: (c["trang_thai"] != mt_lo.DANG_CHAY,
                             -len(c["canh_bao"]), c["tieu_de"]))
     cap_duoi, _ = nhan_su.cap_duoi_cua(user)
+    cap_duoi = cap_duoi or []
+    ma = _ma_tuan_hop_le(tuan_xem)
+    # Tab "Việc lẻ" — gộp từ màn Giao việc cũ (Owner chốt 25/08: màn đó thừa)
+    nhom = tuan_lo.nhom_cho_leader(ma, user, cap_duoi)
+    for k in ("can_xu_ly", "dang_chay", "xong"):
+        nhom[k] = [v for v in nhom[k] if not v.get("muc_tieu_id")]
     return templates.TemplateResponse(request, "muc_tieu.html", {
-        "user": user, "cay": cay, "chon": chon or (cay[0]["id"] if cay else ""),
-        "cap_duoi": cap_duoi or [], "loai_viec": tuan_lo.cac_loai_viec(),
+        "user": user, "cay": cay, "chon": chon or (cay[0]["id"] if cay else "le"),   # chưa có Goal → mở tab Việc lẻ
+        "cap_duoi": cap_duoi, "loai_viec": tuan_lo.cac_loai_viec(),
         "duoc_dat": mt_lo.duoc_dat_muc_tieu(user),
-        "ma_tuan": tuan_lo.ma_tuan(),
-        **_co_sidebar(x_remote_actions, tuan_lo.ma_tuan(), user)})
+        "ma_tuan": ma, "tuan_nay": tuan_lo.ma_tuan(),
+        "nhom": nhom,
+        "ngang_cap": nhan_su.ngang_cap_bo_phan_khac(user)[0] or [],
+        "da_gui": tuan_lo.sap_xep(tuan_lo.yeu_cau_da_gui(ma, user)),
+        **_co_sidebar(x_remote_actions, ma, user)})
 
 
 @app.get("/bao-cao-tuan", response_class=HTMLResponse)
@@ -248,6 +242,9 @@ def trang_bao_cao(request: Request, user: dict = Depends(yeu_cau_bao_cao),
         "tong_goal": db_lo.tong_hop_goal(ds_mt),
         "nhiem_vu": db_lo.nhiem_vu_da_giao(user) if la_cong_ty else [],
         "kho_quy_trinh": tuan_lo.kho_quy_trinh(),   # gom toàn bộ checklist, không theo bộ phận
+        # nút Đóng tuần / Mở lại chuyển từ màn Giao việc sang đây (25/08)
+        "duoc_dong": "xac_nhan_ket_qua" in hd,
+        "quan_ly": {n["ten"] for n in (nhan_su.cap_duoi_cua(user)[0] or [])},
         "tuan_truoc": tuan_lo.tuan_lien_ke(ma, -1),
         "tuan_sau": tuan_lo.tuan_lien_ke(ma, 1),
         "tuan_nay": tuan_lo.ma_tuan(), **_co_sidebar(x_remote_actions, ma, user)})

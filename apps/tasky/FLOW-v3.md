@@ -269,3 +269,20 @@ truyền vào JS, không đọc CSS var → đổi theme phải **đọc token r
 
 Bề rộng nội dung giữ **`.noi-dung` max-width 900px** như mọi app khác — dashboard
 xếp lưới trong khổ đó, không tự nới rộng.
+
+## 13. GỘP MÀN GIAO VIỆC (Owner chốt 25/08)
+
+Owner soi lại: *"cái giao việc đúng là hơi thừa thật nhỉ"*. Đối chiếu thì ba khối bị
+nhân đôi, bốn khối không trùng — nên **tán ra hai màn** chứ không xóa trắng:
+
+| Khối cũ | Đi đâu |
+|---|---|
+| Form giao việc lẻ · phối hợp liên bộ phận · xác nhận/trả lại/dời/hủy/xóa | → tab **“Việc lẻ”** trong màn Goal |
+| Bảng bộ phận + nút Đóng tuần / Mở lại | → màn **Báo cáo** (nơi đã có bảng từng người) |
+| Ba nhóm việc, chip status gộp | → giữ nguyên cách trình bày ở cả hai nơi |
+
+- `/giao-viec` **redirect 303** sang `/muc-tieu` — team đã bookmark, không để chết.
+- Sidebar còn hai mục con: **Goal** và **Báo cáo**.
+- Tab *Việc lẻ* chỉ chứa việc **không thuộc Goal nào** (việc thuộc Goal đã nằm trong
+  cây của nó — không hiện hai lần).
+- Thông báo trước trỏ `/giao-viec` nay trỏ `/muc-tieu?chon=le`.

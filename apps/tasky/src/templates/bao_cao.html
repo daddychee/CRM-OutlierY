@@ -235,6 +235,11 @@
         <td class="so">{{ d.buoc_xong }}/{{ d.buoc_tong }}</td>
         <td class="so">{% if d.ket %}<span class="the ket">{{ d.ket }}</span>{% else %}0{% endif %}</td>
         <td>{% if d.da_dong %}<span class="the done">Đã đóng</span>
+            {%- if duoc_dong and d.nguoi in quan_ly %}
+            <button class="nut sm" data-mo-lai="{{ d.nguoi }}" title="Đóng nhầm thì thu lại">Mở lại</button>{% endif %}
+            {% elif duoc_dong and d.nguoi in quan_ly %}
+            <button class="nut sm" data-dong="{{ d.nguoi }}">Đóng tuần</button>
+            {%- if d.cho_xac_nhan %} <span class="the cho">{{ d.cho_xac_nhan }} chờ xác nhận</span>{% endif %}
             {% elif d.cho_xac_nhan %}<span class="the cho">{{ d.cho_xac_nhan }} chờ xác nhận</span>
             {% else %}<span class="the">Đang chạy</span>{% endif %}</td>
       </tr>
@@ -242,6 +247,8 @@
     </tbody>
   </table>
 </div>
+
+<div class="loi" id="loi-dong" hidden></div>
 
 <div class="tk-muc"><h3>Kho quy trình đang hình thành</h3><hr>
   <span class="ghi">Gom từ checklist thật · chưa bật gợi ý</span></div>
@@ -269,6 +276,31 @@
 {% block script %}
 <script src="/tasky-static/vendor/frappe-charts.min.umd.js"></script>
 <script>
+(function () {
+  // Đóng tuần / Mở lại — chuyển từ màn Giao việc sang đây (25/08)
+  function goiApi(duong, du_lieu, nut) {
+    var fd = new FormData();
+    fd.append("tuan_xem", {{ ma_tuan|tojson }});
+    Object.keys(du_lieu).forEach(function (k) { fd.append(k, du_lieu[k]); });
+    nut.disabled = true;
+    fetch("/api-tasky/" + duong, { method: "POST", body: fd }).then(function (r) {
+      return r.json().catch(function () { return {}; }).then(function (d) {
+        if (!r.ok) { throw new Error(d.detail || "Không lưu được."); }
+        location.reload();
+      });
+    }).catch(function (e) {
+      nut.disabled = false;
+      var o = document.getElementById("loi-dong");
+      if (o) { o.textContent = e.message; o.hidden = false; }
+    });
+  }
+  document.querySelectorAll("[data-dong]").forEach(function (b) {
+    b.addEventListener("click", function () { goiApi("dong-tuan", { nguoi: b.dataset.dong }, b); });
+  });
+  document.querySelectorAll("[data-mo-lai]").forEach(function (b) {
+    b.addEventListener("click", function () { goiApi("mo-lai-tuan", { nguoi: b.dataset.moLai }, b); });
+  });
+})();
 (function () {
   var XU_HUONG = {{ xu_huong|tojson }};
   var GOAL = {{ tong_goal|tojson }};

@@ -209,10 +209,12 @@ def test_viec_chua_xac_nhan_khong_vao_kho_quy_trinh(ma):
 def test_sidebar_chi_hien_muc_nguoi_do_co_quyen(ma):
     """Mục con dựng trong vòng lặp sb_apps (X-Remote-Apps) và chỉ hiện khi có CỜ
     hành động tương ứng — nhân viên không thấy đường vào Giao việc / Báo cáo."""
+    # so trên THUỘC TÍNH href, không so chuỗi trần: JS trong trang có
+    # location.href = "/muc-tieu" nên chuỗi trần khớp cả với nhân viên
     r_nv = client.get("/tasky", headers=NV_H)
-    assert "/giao-viec" not in r_nv.text and "/bao-cao-tuan" not in r_nv.text
+    assert 'href="/muc-tieu"' not in r_nv.text and 'href="/bao-cao-tuan"' not in r_nv.text
     r_ld = client.get("/tasky", headers=LEADER_H)
-    assert "/giao-viec" in r_ld.text and "/bao-cao-tuan" in r_ld.text
+    assert 'href="/muc-tieu"' in r_ld.text and 'href="/bao-cao-tuan"' in r_ld.text
 
 
 # ---------- thu lại việc đóng tuần (Owner yêu cầu 24/08) ----------
@@ -262,8 +264,9 @@ def test_mo_lai_de_lai_vet_ai_mo(ma, tmp_path):
 
 
 def test_nut_mo_lai_hien_canh_chip_da_dong(ma):
+    """Nút Đóng tuần / Mở lại chuyển sang màn Báo cáo (gộp màn Giao việc 25/08)."""
     tuan.dong_tuan(ma, "hant", LEADER)
-    r = client.get("/giao-viec", headers=LEADER_H)
+    r = client.get("/bao-cao-tuan?pham_vi=bo-phan", headers=LEADER_H)
     assert "Đã đóng" in r.text and 'data-mo-lai="hant"' in r.text
 
 
@@ -293,3 +296,28 @@ def test_leader_khong_thay_viec_ngoai_pham_vi(ma):
     tuan.them_viec_giao(ma, LEADER, NHANVIEN, "Việc của Hà", "x")
     n = tuan.nhom_cho_leader(ma, LEADER, [])
     assert n["can_xu_ly"] == [] and n["dang_chay"] == [] and n["xong"] == []
+
+
+# ---------- gộp màn Giao việc (25/08) ----------
+
+def test_duong_cu_giao_viec_van_song_bang_redirect(ma):
+    """Team đã bookmark /giao-viec — không để chết, chuyển sang Goal."""
+    r = client.get("/giao-viec", headers=LEADER_H, follow_redirects=False)
+    assert r.status_code == 303 and r.headers["location"] == "/muc-tieu"
+
+
+def test_tab_viec_le_hien_ngay_ca_khi_chua_co_goal(ma):
+    """Lỗi tôi vừa mắc: tab Việc lẻ nằm trong nhánh 'chưa có Goal' nên biến mất."""
+    tuan.them_viec_giao(ma, LEADER, NHANVIEN, "Việc lẻ A", "x")
+    r = client.get("/muc-tieu", headers=LEADER_H)
+    assert "Việc lẻ" in r.text and "Việc lẻ A" in r.text
+
+
+def test_viec_thuoc_goal_khong_lap_lai_o_tab_viec_le(ma):
+    from src import muc_tieu as mt_lo
+    g = mt_lo.tao({"ten": "huytq", "level": 4, "bo_phan": "Vận hành"}, "Goal A", "kq")
+    tuan.them_viec_giao(ma, LEADER, NHANVIEN, "Việc thuộc Goal", "x", muc_tieu_id=g["id"])
+    tuan.them_viec_giao(ma, LEADER, NHANVIEN, "Việc lẻ B", "x")
+    r = client.get("/muc-tieu?chon=le", headers=LEADER_H)
+    khoi = r.text.split('<section class="mt-than" data-mt="le"')[1]
+    assert "Việc lẻ B" in khoi and "Việc thuộc Goal" not in khoi
