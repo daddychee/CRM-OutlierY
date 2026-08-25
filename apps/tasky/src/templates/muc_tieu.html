@@ -13,16 +13,13 @@
     background:var(--sidebar);padding:8px 11px;cursor:pointer;text-align:left;
     position:relative;color:var(--ink);font-family:inherit;overflow:hidden}
   /* Màu NHÃN người dùng tự chọn — chỉ là dải bên trái, không đụng nghĩa trạng thái */
-  .mt-tab.mau-lam{border-left-color:var(--tk-tin)}
-  .mt-tab.mau-tim{border-left-color:var(--tk-tim)}
-  .mt-tab.mau-luc{border-left-color:var(--tk-ok)}
-  .mt-tab.mau-cam{border-left-color:var(--tk-luu)}
-  .mt-tab.mau-hong{border-left-color:var(--tk-hong)}
-  .mt-tab.mau-xam{border-left-color:var(--muted)}
-  .o-mau{display:flex;gap:5px;align-items:center;flex-wrap:wrap}
-  .o-mau button{width:17px;height:17px;border-radius:5px;border:1px solid var(--chip-line);
+  .mt-tab{border-left-width:5px}
+  .o-mau{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+  .o-mau .nhan-mau{font-size:11.5px;color:var(--muted)}
+  .o-mau button{width:22px;height:22px;border-radius:6px;border:1px solid var(--chip-line);
     cursor:pointer;padding:0}
-  .o-mau button[aria-pressed="true"]{outline:2px solid var(--ink);outline-offset:1px}
+  .o-mau button:hover{transform:scale(1.12)}
+  .o-mau button[aria-pressed="true"]{outline:2px solid var(--accent);outline-offset:2px}
   .mt-tab:hover{border-color:var(--chip-line)}
   .mt-tab[aria-selected="true"]{border-color:var(--accent);background:var(--th-16263f)}
   .mt-tab .ten{font-size:12.5px;font-weight:600;white-space:nowrap;overflow:hidden;
@@ -119,7 +116,7 @@
 
 <div class="mt-tabs" role="tablist">
   {% for m in cay %}
-  <button class="mt-tab{% if m.mau %} mau-{{ m.mau }}{% endif %}" role="tab" data-mt="{{ m.id }}"
+  <button class="mt-tab{% if m.mau %} mau-nen-{{ m.mau }}{% endif %}" role="tab" data-mt="{{ m.id }}"
     aria-selected="{{ 'true' if m.id == chon else 'false' }}">
     {%- if m.canh_bao %}<span class="cham {{ m.canh_bao[0].muc_do }}"></span>
     {%- elif m.trang_thai != 'dang_chay' %}<span class="cham ok"></span>{% endif %}
@@ -142,7 +139,7 @@
 
 {% for m in cay %}
 <section class="mt-than" data-mt="{{ m.id }}" {% if m.id != chon %}hidden{% endif %}>
-  <div class="mt-dau">
+  <div class="mt-dau{% if m.mau %} mau-nen-{{ m.mau }}{% endif %}">
     <div style="flex:1;min-width:230px">
       <h2>{{ m.tieu_de }}</h2>
       <div class="kq">Kết quả cần đạt: <b>{{ m.ket_qua_can_dat }}</b></div>
@@ -167,6 +164,7 @@
     </div>
     <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px">
     <div class="o-mau" data-mau-goal="{{ m.id }}" title="Đánh dấu màu để dễ nhớ — màu này chỉ là nhãn của bạn">
+      <span class="nhan-mau">Màu:</span>
       {% for c in ['', 'lam', 'tim', 'luc', 'cam', 'hong', 'xam'] %}
       <button type="button" data-mau="{{ c }}" aria-pressed="{{ 'true' if m.mau == c else 'false' }}"
         title="{{ {'':'Bỏ màu','lam':'Xanh lam','tim':'Tím','luc':'Xanh lá','cam':'Cam','hong':'Hồng','xam':'Xám'}[c] }}"
@@ -252,36 +250,72 @@
   {{ nhom('Đã nghiệm thu', m.nhom.xong, false) }}
 
   {% if m.trang_thai == 'dang_chay' %}
-  <div class="viec" style="padding:11px 13px">
-    <div class="hang" style="margin:0">
-      <input data-che-ten placeholder="Thêm việc cần làm để đạt Goal này…">
-      <input data-che-loai list="ds-loai" placeholder="Loại việc" style="max-width:140px;flex:0 0 auto">
-      <input data-che-han type="date" style="flex:0 0 auto">
-      <label class="goi-y" style="display:flex;align-items:center;gap:5px;margin:0;cursor:pointer">
-        <input type="checkbox" data-che-gap> Gấp</label>
-      <button class="nut chinh" data-che="{{ m.id }}">+ Thêm việc</button>
+  <div class="them-viec">
+    <header>
+      <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor"
+        stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+      Thêm việc để đạt Goal này
+    </header>
+    <div class="noi">
+      <div class="buoc-nhap">
+        <span class="so-buoc">1</span>
+        <div class="than-buoc">
+          <div class="nhan-buoc">Việc cần làm</div>
+          <div class="hang">
+            <input data-che-ten placeholder="Ví dụ: Rà 10 video top của 3 kênh đối thủ">
+            <input data-che-loai list="ds-loai" placeholder="Loại việc" style="max-width:160px;flex:0 0 auto">
+          </div>
+        </div>
+      </div>
+
+      <div class="buoc-nhap">
+        <span class="so-buoc">2</span>
+        <div class="than-buoc">
+          <div class="nhan-buoc">Giao cho ai — chọn nhiều người được, mỗi người một bản việc
+            và tự viết checklist riêng. Không chọn ai = để đó, giao sau.</div>
+          <div class="chon-nguoi" data-che-nguoi>
+            {% for n in cap_duoi %}
+            <label{% if n.ten == user.ten %} class="toi"{% endif %}>
+              <input type="checkbox" value="{{ n.ten }}">{{ n.ho_ten or n.ten }}
+              {%- if n.ten == user.ten %} (tôi){% endif %}</label>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+      <div class="buoc-nhap">
+        <span class="so-buoc">3</span>
+        <div class="than-buoc">
+          <div class="nhan-buoc">Hạn và mức ưu tiên (không bắt buộc)</div>
+          <div class="hang">
+            <input data-che-han type="date" style="flex:0 0 auto">
+            <label class="the" style="cursor:pointer;gap:6px">
+              <input type="checkbox" data-che-gap> Đánh dấu GẤP</label>
+            <span class="spacer" style="flex:1"></span>
+            <button class="nut chinh" data-che="{{ m.id }}">+ Thêm việc</button>
+          </div>
+        </div>
+      </div>
+
+      {% if ngang_cap %}
+      <div class="buoc-nhap">
+        <span class="so-buoc" style="background:var(--th-16263f);color:var(--accent)">↗</span>
+        <div class="than-buoc">
+          <div class="nhan-buoc">Hoặc nhờ bộ phận khác làm giúp — họ có quyền từ chối;
+            xong thì bạn nghiệm thu.</div>
+          <div class="hang">
+            <select data-ph-nguoi>
+              <option value="">Chọn quản lý bộ phận khác…</option>
+              {% for n in ngang_cap %}<option value="{{ n.ten }}">{{ n.ho_ten or n.ten }} — {{ n.bo_phan }}</option>{% endfor %}
+            </select>
+            <button class="nut" data-ph="{{ m.id }}">Gửi yêu cầu phối hợp</button>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+      <div class="loi" data-loi-che hidden></div>
     </div>
-    <div class="goi-y" style="margin-top:8px">Giao cho ai (chọn nhiều người được — mỗi
-      người một bản việc, tự viết checklist riêng). Không chọn ai = chưa phân công.</div>
-    <div class="o-mau" style="margin-top:6px" data-che-nguoi>
-      {% for n in cap_duoi %}
-      <label class="the" style="cursor:pointer;gap:5px">
-        <input type="checkbox" value="{{ n.ten }}"> {{ n.ho_ten or n.ten }}
-        {%- if n.ten == user.ten %} (tôi){% endif %}</label>
-      {% endfor %}
-    </div>
-    {% if ngang_cap %}
-    <div class="hang" style="margin-top:9px;padding-top:9px;border-top:1px dashed var(--chip-line)">
-      <span class="goi-y" style="flex:1;min-width:150px;margin:0">Cần bộ phận khác làm giúp?
-        Họ có quyền từ chối; xong thì bạn nghiệm thu.</span>
-      <select data-ph-nguoi>
-        <option value="">Nhờ bộ phận khác…</option>
-        {% for n in ngang_cap %}<option value="{{ n.ten }}">{{ n.ho_ten or n.ten }} — {{ n.bo_phan }}</option>{% endfor %}
-      </select>
-      <button class="nut" data-ph="{{ m.id }}">Gửi yêu cầu</button>
-    </div>
-    {% endif %}
-    <div class="loi" data-loi-che hidden></div>
+  </div>
   </div>
   {% endif %}
 </section>

@@ -108,3 +108,34 @@
   .the.muc-tieu{background:var(--tk-tin-nen);border-color:transparent;color:var(--tk-tin);
     font-weight:600;text-decoration:none;gap:4px}
   .the.muc-tieu:hover{filter:brightness(1.12)}
+
+  /* Màu nhãn Goal — phải NHÌN THẤY: nền nhạt + viền trái dày, không chỉ một sợi chỉ */
+  .mau-nen-lam{background:var(--tk-tin-nen)!important;border-left-color:var(--tk-tin)!important}
+  .mau-nen-tim{background:var(--th-1d2840)!important;border-left-color:var(--tk-tim)!important}
+  .mau-nen-luc{background:var(--tk-ok-nen)!important;border-left-color:var(--tk-ok)!important}
+  .mau-nen-cam{background:var(--tk-luu-nen)!important;border-left-color:var(--tk-luu)!important}
+  .mau-nen-hong{background:var(--th-1d2840)!important;border-left-color:var(--tk-hong)!important}
+  .mau-nen-xam{background:var(--th-182233)!important;border-left-color:var(--muted)!important}
+
+  /* Khối THÊM VIỆC — nổi hẳn, ba bước rõ ràng thay vì một hàng ô lộn xộn */
+  .them-viec{background:var(--sidebar);border:1px solid var(--accent);border-radius:12px;
+    overflow:hidden;margin-bottom:12px}
+  .them-viec > header{display:flex;align-items:center;gap:8px;padding:10px 14px;
+    background:var(--th-16263f);font-size:13px;font-weight:600;color:var(--accent)}
+  .them-viec .noi{padding:12px 14px}
+  .buoc-nhap{display:flex;gap:10px;align-items:flex-start;padding:9px 0;
+    border-top:1px dashed var(--chip-line)}
+  .buoc-nhap:first-child{border-top:0;padding-top:0}
+  .buoc-nhap .so-buoc{width:20px;height:20px;flex:none;border-radius:50%;font-size:11px;
+    font-weight:700;display:grid;place-items:center;background:var(--th-182233);
+    color:var(--muted);margin-top:5px}
+  .buoc-nhap .than-buoc{flex:1;min-width:0}
+  .buoc-nhap .nhan-buoc{font-size:12px;color:var(--muted);margin-bottom:5px}
+  .buoc-nhap .hang{margin:0}
+  .chon-nguoi{display:flex;gap:6px;flex-wrap:wrap}
+  .chon-nguoi label{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--chip-line);
+    border-radius:999px;padding:4px 11px;font-size:12.5px;cursor:pointer;background:var(--th-141c2b)}
+  .chon-nguoi label:hover{border-color:var(--accent)}
+  .chon-nguoi label:has(input:checked){background:var(--th-16263f);border-color:var(--accent);
+    color:var(--accent);font-weight:600}
+  .chon-nguoi label.toi{border-style:dashed}

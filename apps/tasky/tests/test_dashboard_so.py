@@ -192,3 +192,67 @@ def test_khoi_nhiem_vu_chi_o_pham_vi_cong_ty(_so):
                         "Nhiệm vụ cho leader", "x")
     assert "Nhiệm vụ tôi giao" in _c.get("/bao-cao-tuan", headers=H_MGR).text
     assert "Nhiệm vụ tôi giao" not in _c.get("/bao-cao-tuan?pham_vi=bo-phan", headers=H_MGR).text
+
+
+def test_nhiem_vu_da_doi_khong_hien_hai_dong():
+    """Owner báo 25/08: một nhiệm vụ hiện hai dòng — bản đã dời + bản mới."""
+    ma = tuan.ma_tuan()
+    v = tuan.them_viec_giao(ma, OWNER, MGR, "Tổng doanh thu các kênh", "x")
+    tuan.doi_sang_tuan_sau(ma, v["id"], OWNER, "chưa làm kịp")
+    ds = db.nhiem_vu_da_giao(OWNER)
+    assert len(ds) == 1 and ds[0]["viec"]["so_lan_doi"] == 1
+
+
+def test_gom_nhiem_vu_cu_vao_goal_roi_xoa_sach(_so):
+    """Owner 25/08: dọn nhiệm vụ tồn từ bản cũ — gom vào Goal test rồi xóa cả cụm."""
+    ma = tuan.ma_tuan()
+    v = tuan.them_viec_giao(ma, OWNER, MGR, "Việc tồn bản cũ", "x")
+    g = mt.tao(OWNER, "Goal dọn dẹp", "xóa hết")
+    r = _c.post("/api-tasky/chuyen-goal", headers=H_MGR,
+                data={"id": v["id"], "muc_tieu_id": g["id"], "tuan_xem": ma})
+    assert r.status_code == 200
+    assert mt.tien_do(g["id"])["tong"] == 1
+    assert db.nhiem_vu_da_giao(OWNER) == []        # hết nằm ở khối nhiệm vụ
+    mt.xoa(g["id"], OWNER)
+    assert tuan.viec_cua(ma, MGR["ten"]) == []     # xóa Goal là sạch cả việc
+
+
+# ---------- ba tab báo cáo (Owner 25/08: một trang quá dài) ----------
+
+def test_ba_tab_va_mac_dinh_theo_quyen(_so):
+    r = _c.get("/bao-cao-tuan", headers=H_MGR)
+    assert "Toàn công ty" in r.text and "Bộ phận" in r.text and "Nhân sự" in r.text
+    r2 = _c.get("/bao-cao-tuan", headers=H_LEADER)
+    assert "Toàn công ty" not in r2.text     # Leader không có tab này
+
+
+def test_tab_bo_phan_chon_duoc_bo_phan(_so):
+    ma = tuan.ma_tuan()
+    _xong(ma, nguoi=NV_KD, giao=MGR_KD, ten="Việc KD")
+    r = _c.get("/bao-cao-tuan?pham_vi=bo-phan&bo=Kinh doanh", headers=H_MGR)
+    assert "Hải Yến" in r.text and "Thu Hà" not in r.text
+
+
+def test_tab_nhan_su_chi_hien_mot_nguoi(_so):
+    """Kiểm trong BẢNG, không so cả trang: ô chọn người vẫn liệt kê mọi người."""
+    ma = tuan.ma_tuan()
+    _xong(ma, ten="Việc của Hà")
+    r = _c.get("/bao-cao-tuan?pham_vi=nhan-su&bo=Vận hành&ai=hant", headers=H_MGR)
+    bang = r.text.split("Từng người")[1]
+    assert "Thu Hà" in bang and "Quốc Huy" not in bang
+
+
+def test_khoi_nhiem_vu_chi_o_tab_toan_cong_ty(_so):
+    ma = tuan.ma_tuan()
+    tuan.them_viec_giao(ma, OWNER, MGR, "Nhiệm vụ", "x")
+    h_owner = dict(H_MGR); h_owner["X-Remote-User"] = "bot"; h_owner["X-Remote-Level"] = "5"
+    assert "Nhiệm vụ tôi giao" in _c.get("/bao-cao-tuan?pham_vi=cong-ty", headers=h_owner).text
+    assert "Nhiệm vụ tôi giao" not in _c.get("/bao-cao-tuan?pham_vi=bo-phan", headers=h_owner).text
+
+
+def test_leader_khong_lot_sang_tab_cong_ty_bang_URL(_so):
+    """Gõ tay ?pham_vi=cong-ty không nới quyền — vẫn về bộ phận mình."""
+    ma = tuan.ma_tuan()
+    _xong(ma, nguoi=NV_KD, giao=MGR_KD, ten="Việc KD")
+    r = _c.get("/bao-cao-tuan?pham_vi=cong-ty", headers=H_LEADER)
+    assert "Hải Yến" not in r.text

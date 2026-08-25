@@ -561,6 +561,21 @@ def huy_viec(ma: str, id_viec: str, user: dict, ly_do: str) -> dict:
     return v
 
 
+def chuyen_vao_goal(ma: str, id_viec: str, user: dict, muc_tieu_id: str) -> dict:
+    """Gắn một việc đang lẻ vào Goal (Owner 25/08: dùng để gom việc bản cũ vào một
+    Goal rồi xóa cả cụm). Quyền như xác nhận việc đó."""
+    with _khoa:
+        so = doc_tuan(ma)
+        v = _tim(so, id_viec)
+        if not duoc_xac_nhan(v, user):
+            raise PermissionError("Chỉ người giao việc (hoặc Owner) mới chuyển được.")
+        v["muc_tieu_id"] = muc_tieu_id or ""
+        _ghi_tuan(so)
+    ghi_nhat_ky("chuyen_vao_goal", user["ten"],
+                {"tuan": ma, "viec": id_viec, "muc_tieu": muc_tieu_id})
+    return v
+
+
 def duoc_xoa(viec: dict, user: dict) -> tuple[bool, str, str]:
     """Xóa HẲN một việc. Trả (được?, lý do, loại lỗi) — loại là "quyen" hoặc
     "trang_thai" để chỗ gọi ném đúng ngoại lệ, KHÔNG dò chuỗi tiếng Việt.

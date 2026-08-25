@@ -69,17 +69,38 @@
     <div class="khoang">Tuần {{ ma_tuan[-2:]|int }} · {{ tu[8:] }}/{{ tu[5:7] }} – {{ den[8:] }}/{{ den[5:7] }}/{{ den[:4] }}</div>
   </div>
   <div class="tk-lui">
-    {% if duoc_cong_ty %}
-    <span class="gat">
-      <a class="{{ 'on' if la_cong_ty else '' }}" href="/bao-cao-tuan?tuan_xem={{ ma_tuan }}">Toàn công ty</a>
-      <a class="{{ '' if la_cong_ty else 'on' }}" href="/bao-cao-tuan?pham_vi=bo-phan&tuan_xem={{ ma_tuan }}">Bộ phận tôi</a>
-    </span>
-    {% endif %}
-    <a href="/bao-cao-tuan?tuan_xem={{ tuan_truoc }}{% if not la_cong_ty %}&pham_vi=bo-phan{% endif %}">← Tuần trước</a>
-    {% if ma_tuan != tuan_nay %}<a href="/bao-cao-tuan{% if not la_cong_ty %}?pham_vi=bo-phan{% endif %}">Tuần này</a>{% endif %}
-    <a href="/bao-cao-tuan?tuan_xem={{ tuan_sau }}{% if not la_cong_ty %}&pham_vi=bo-phan{% endif %}">Tuần sau →</a>
+    {% set giu = '&bo=' ~ bo_chon ~ '&ai=' ~ ai_chon %}
+    <a href="/bao-cao-tuan?pham_vi={{ tab }}&tuan_xem={{ tuan_truoc }}{{ giu }}">← Tuần trước</a>
+    {% if ma_tuan != tuan_nay %}<a href="/bao-cao-tuan?pham_vi={{ tab }}{{ giu }}">Tuần này</a>{% endif %}
+    <a href="/bao-cao-tuan?pham_vi={{ tab }}&tuan_xem={{ tuan_sau }}{{ giu }}">Tuần sau →</a>
   </div>
 </div>
+
+<div class="gat" style="margin-bottom:14px;display:inline-flex">
+  {% if duoc_cong_ty %}
+  <a class="{{ 'on' if tab == 'cong-ty' else '' }}"
+     href="/bao-cao-tuan?pham_vi=cong-ty&tuan_xem={{ ma_tuan }}">Toàn công ty</a>
+  {% endif %}
+  <a class="{{ 'on' if tab == 'bo-phan' else '' }}"
+     href="/bao-cao-tuan?pham_vi=bo-phan&tuan_xem={{ ma_tuan }}&bo={{ bo_chon }}">Bộ phận</a>
+  <a class="{{ 'on' if tab == 'nhan-su' else '' }}"
+     href="/bao-cao-tuan?pham_vi=nhan-su&tuan_xem={{ ma_tuan }}&bo={{ bo_chon }}&ai={{ ai_chon }}">Nhân sự</a>
+</div>
+
+{% if tab != 'cong-ty' %}
+<div class="khoi" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+  <span class="note">Xem</span>
+  <select id="chon-bo">
+    {% for b in bo_phan_co %}<option value="{{ b }}"{% if b == bo_chon %} selected{% endif %}>{{ b }}</option>{% endfor %}
+  </select>
+  {% if tab == 'nhan-su' %}
+  <select id="chon-ai">
+    {% for n in ai_co %}<option value="{{ n.ten }}"{% if n.ten == ai_chon %} selected{% endif %}>{{ n.ho_ten or n.ten }}</option>{% endfor %}
+  </select>
+  {% endif %}
+  <span class="note">tuần {{ ma_tuan[-2:]|int }}</span>
+</div>
+{% endif %}
 
 {% if loi_iam %}<div class="khoi"><div class="loi" style="margin:0">{{ loi_iam }}</div></div>{% endif %}
 
@@ -157,7 +178,7 @@
 {% endfor %}
 {% endif %}
 
-{% if la_cong_ty %}
+{% if tab == 'cong-ty' %}
 <div class="tk-muc"><h3>Nhiệm vụ tôi giao</h3><hr>
   <span class="ghi">Manager dựng thành Goal rồi tự chẻ việc</span></div>
 <div class="khoi">
@@ -170,6 +191,12 @@
       {% if n.tien_do and n.tien_do.tong %}
         <span class="mini"><i style="width:{{ n.tien_do.phan_tram or 0 }}%"></i></span>
         <span class="note">{{ n.tien_do.xong }}/{{ n.tien_do.tong }}</span>
+      {% endif %}
+      {% if not n.goal and ds_goal %}
+        <select data-gom="{{ n.viec.id }}" data-tuan="{{ n.tuan }}" style="max-width:190px">
+          <option value="">Gom vào Goal…</option>
+          {% for g in ds_goal %}<option value="{{ g.id }}">{{ g.tieu_de }}</option>{% endfor %}
+        </select>
       {% endif %}
       {% if not n.goal %}
         <span class="the cho"><svg viewBox="0 0 24 24" width="11" height="11" fill="none"
@@ -275,6 +302,7 @@
 
 <div class="loi" id="loi-dong" hidden></div>
 
+{% if tab != 'nhan-su' %}
 <div class="tk-muc"><h3>Kho quy trình đang hình thành</h3><hr>
   <span class="ghi">Gom từ checklist thật · chưa bật gợi ý</span></div>
 <div class="khoi">
@@ -296,7 +324,6 @@
   </table></div>
   {% else %}<div class="note">Chưa có việc nào hoàn thành kèm checklist.</div>{% endif %}
 </div>
-{% endblock %}
 
 {% block script %}
 <script src="/tasky-static/vendor/frappe-charts.min.umd.js"></script>
@@ -306,7 +333,7 @@
   function goiApi(duong, du_lieu, nut) {
     var fd = new FormData();
     fd.append("tuan_xem", {{ ma_tuan|tojson }});
-    Object.keys(du_lieu).forEach(function (k) { fd.append(k, du_lieu[k]); });
+    Object.keys(du_lieu).forEach(function (k) { fd.set(k, du_lieu[k]); });
     nut.disabled = true;
     fetch("/api-tasky/" + duong, { method: "POST", body: fd }).then(function (r) {
       return r.json().catch(function () { return {}; }).then(function (d) {
@@ -330,6 +357,25 @@
   });
   document.querySelectorAll("[data-mo-lai]").forEach(function (b) {
     b.addEventListener("click", function () { goiApi("mo-lai-tuan", { nguoi: b.dataset.moLai }, b); });
+  });
+  // Gom nhiệm vụ tồn từ bản cũ vào một Goal — xóa Goal đó là dọn sạch cả cụm
+  var cb = document.getElementById("chon-bo"), ca = document.getElementById("chon-ai");
+  function doiCanh() {
+    var u = new URL(location.href);
+    u.searchParams.set("pham_vi", {{ tab|tojson }});
+    if (cb) { u.searchParams.set("bo", cb.value); }
+    if (ca) { u.searchParams.set("ai", ca.value); }
+    location.href = u.toString();
+  }
+  if (cb) { cb.addEventListener("change", function () { if (ca) { ca.value = ""; } doiCanh(); }); }
+  if (ca) { ca.addEventListener("change", doiCanh); }
+
+  document.querySelectorAll("[data-gom]").forEach(function (sel) {
+    sel.addEventListener("change", function () {
+      if (!sel.value) { return; }
+      goiApi("chuyen-goal", { id: sel.dataset.gom, muc_tieu_id: sel.value,
+                              tuan_xem: sel.dataset.tuan }, sel);
+    });
   });
 })();
 (function () {
@@ -398,4 +444,6 @@
   if (qs) { qs.addEventListener("click", function () { setTimeout(ve, 30); }); }
 })();
 </script>
+{% endblock %}
+{% endif %}
 {% endblock %}

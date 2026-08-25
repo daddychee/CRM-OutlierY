@@ -206,7 +206,7 @@ def trang_muc_tieu(request: Request, user: dict = Depends(yeu_cau_muc_tieu),
 @app.get("/bao-cao-tuan", response_class=HTMLResponse)
 def trang_bao_cao(request: Request, user: dict = Depends(yeu_cau_bao_cao),
                   x_remote_actions: str = Header(""), tuan_xem: str = "",
-                  pham_vi: str = ""):
+                  pham_vi: str = "", bo: str = "", ai: str = ""):
     """Dashboard. HAI báo cáo trả lời hai câu hỏi khác nhau (§12.3):
     - `bo-phan` (mặc định): Manager điều hành — người + việc
     - `cong-ty`: Owner — bộ phận + Goal + nhiệm vụ mình đã giao (cần quyền)
@@ -215,19 +215,36 @@ def trang_bao_cao(request: Request, user: dict = Depends(yeu_cau_bao_cao),
     duoc_cong_ty = bool({"bao_cao_cong_ty", "bao_cao_nhan_su"} & hd)
     # Ai có quyền toàn công ty thì MẶC ĐỊNH thấy toàn công ty (giữ luật 24/08:
     # Manager L4 xem mọi bộ phận) — muốn xem riêng bộ phận mình thì ?pham_vi=bo-phan
-    la_cong_ty = duoc_cong_ty and pham_vi != "bo-phan"
+    # BA TAB (Owner 25/08: một trang quá dài) — cong-ty / bo-phan / nhan-su.
+    # Ai không có quyền toàn công ty thì chỉ có hai tab sau.
+    tab = pham_vi if pham_vi in ("cong-ty", "bo-phan", "nhan-su") else (
+        "cong-ty" if duoc_cong_ty else "bo-phan")
+    if tab == "cong-ty" and not duoc_cong_ty:
+        tab = "bo-phan"
+    la_cong_ty = tab == "cong-ty"
     ma = _ma_tuan_hop_le(tuan_xem)
     ds, loi = nhan_su.trong_pham_vi_bao_cao(user, duoc_cong_ty)
     ds = ds or []
-    trong_bc = ds if la_cong_ty else [n for n in ds
-                                      if n["bo_phan"] == (user.get("bo_phan") or "")
-                                      or n["ten"] == user["ten"]]
+    bo_phan_co = sorted({n["bo_phan"] for n in ds if n["bo_phan"]})
+    bo_chon = bo if bo in bo_phan_co else (user.get("bo_phan") or
+                                           (bo_phan_co[0] if bo_phan_co else ""))
+    if la_cong_ty:
+        trong_bc = ds
+    else:
+        trong_bc = [n for n in ds if n["bo_phan"] == bo_chon or n["ten"] == user["ten"]]
+    ai_co = sorted(trong_bc, key=lambda n: n.get("ho_ten") or n["ten"])
+    ai_chon = ai if any(n["ten"] == ai for n in ai_co) else (
+        ai_co[0]["ten"] if ai_co else "")
+    if tab == "nhan-su" and ai_chon:
+        trong_bc = [n for n in trong_bc if n["ten"] == ai_chon]
     bang = tuan_lo.bang_bao_cao(ma, trong_bc)
     ds_mt = mt_lo.trong_pham_vi(user, la_cong_ty)
     tu, den = tuan_lo.khoang_tuan(ma)
     return templates.TemplateResponse(request, "bao_cao.html", {
         "user": user, "ma_tuan": ma, "tu": tu, "den": den,
         "la_cong_ty": la_cong_ty, "duoc_cong_ty": duoc_cong_ty,
+        "tab": tab, "bo_phan_co": bo_phan_co, "bo_chon": bo_chon,
+        "ai_co": ai_co, "ai_chon": ai_chon,
         "bang": bang, "loi_iam": loi,
         "tong": tuan_lo.tong_hop(bang),
         "xu_huong": db_lo.xu_huong(trong_bc, ma),
@@ -235,6 +252,7 @@ def trang_bao_cao(request: Request, user: dict = Depends(yeu_cau_bao_cao),
         "goal": db_lo.goal_kem_tien_do(ds_mt),
         "tong_goal": db_lo.tong_hop_goal(ds_mt),
         "nhiem_vu": db_lo.nhiem_vu_da_giao(user) if la_cong_ty else [],
+        "ds_goal": [{"id": g["id"], "tieu_de": g["tieu_de"]} for g in ds_mt],
         "kho_quy_trinh": tuan_lo.kho_quy_trinh(),   # gom toàn bộ checklist, không theo bộ phận
         # Việc chờ xác nhận + bị từ chối — gồm cả việc NGOÀI Goal, vì màn Goal chỉ
         # hiện việc thuộc Goal (bỏ tab Việc lẻ 25/08) thì chúng mất chỗ đứng.
@@ -407,6 +425,13 @@ def api_chot_muc_tieu(id: str = Form(...), ket_qua: str = Form(...),
 @app.post("/api-tasky/muc-tieu/mo-lai")
 def api_mo_lai_muc_tieu(id: str = Form(...), user: dict = Depends(yeu_cau_muc_tieu)):
     return _goi(mt_lo.mo_lai, id, user)
+
+
+@app.post("/api-tasky/chuyen-goal")
+def api_chuyen_goal(id: str = Form(...), muc_tieu_id: str = Form(""),
+                    tuan_xem: str = Form(""), user: dict = Depends(yeu_cau_muc_tieu)):
+    """Gom việc lẻ vào một Goal — dùng để dọn nhiệm vụ tồn từ bản cũ."""
+    return _goi(tuan_lo.chuyen_vao_goal, _ma_tuan_hop_le(tuan_xem), id, user, muc_tieu_id)
 
 
 @app.post("/api-tasky/muc-tieu/mau")

@@ -109,6 +109,9 @@ def nhiem_vu_da_giao(user: dict, so_tuan: int = 26) -> list[dict]:
             if v.get("nguoi_giao") != user["ten"] or v.get("muc_tieu_id"):
                 continue
             g = mt.nhiem_vu_da_dung(v["id"], ds_mt)
+            if v["trang_thai"] == t.DOI:
+                continue          # đã dời sang tuần sau → bản MỚI đại diện, nếu không
+                                  # lọc thì một nhiệm vụ hiện hai dòng (Owner báo 25/08)
             if g is None and v["trang_thai"] in (t.XAC_NHAN, t.HUY, t.TU_CHOI):
                 continue          # việc thường đã ngã ngũ — không phải nhiệm vụ treo
             ra.append({"viec": v, "tuan": ma, "goal": g,
