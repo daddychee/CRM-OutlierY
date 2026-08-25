@@ -319,3 +319,54 @@ def test_vien_the_dung_token_do_duoc_ca_hai_theme(_so):
     assert "--tk-vien:#52678a" in html and "--tk-vien:#c4c4c4" in html
     css = html.split("ul.vs li.the-viec{")[1].split("}")[0]
     assert "var(--tk-vien)" in css
+
+
+# ---------- §16d: chip trạng thái trên thẻ việc ----------
+
+from datetime import date, timedelta                      # noqa: E402
+
+
+def _han_sau(n):
+    return (date.today() + timedelta(days=n)).isoformat()
+
+
+def test_chip_trang_thai_theo_tien_do(ma):
+    v = tuan.them_viec_muc_tieu(ma, MGR, "V", "x", "mt-1")
+    assert tuan.the_trang_thai(v)[0]["chu"] == "Chưa giao"
+    v2 = tuan.them_viec_giao(ma, MGR, NV, "V2", "x")
+    assert tuan.the_trang_thai(v2)[0]["chu"] == "Chưa ai nhận"
+    tuan.nhan_viec(ma, v2["id"], NV)
+    v2 = tuan._tim(tuan.doc_tuan(ma), v2["id"])
+    assert tuan.the_trang_thai(v2)[0]["chu"] == "Đã nhận"
+    tuan.bao_xong(ma, v2["id"], NV)
+    v2 = tuan._tim(tuan.doc_tuan(ma), v2["id"])
+    assert tuan.the_trang_thai(v2)[0]["chu"] == "Chờ nghiệm thu"
+
+
+def test_chip_han_chi_hien_khi_that_su_gap(ma):
+    xa = tuan.them_viec_giao(ma, MGR, NV, "Xa", "x", han=_han_sau(9))
+    gan = tuan.them_viec_giao(ma, MGR, NV, "Gần", "x", han=_han_sau(1))
+    qua = tuan.them_viec_giao(ma, MGR, NV, "Quá", "x", han=_han_sau(-3))
+    assert [c["chu"] for c in tuan.the_trang_thai(xa)] == ["Chưa ai nhận"]
+    assert "Gần đến hạn" in [c["chu"] for c in tuan.the_trang_thai(gan)]
+    assert "Quá deadline" in [c["chu"] for c in tuan.the_trang_thai(qua)]
+
+
+def test_viec_da_nghiem_thu_khong_bi_doa_qua_han(ma):
+    v = tuan.them_viec_giao(ma, MGR, NV, "Xong rồi", "x", han=_han_sau(-5))
+    tuan.nhan_viec(ma, v["id"], NV)
+    tuan.bao_xong(ma, v["id"], NV)
+    tuan.xac_nhan_viec(ma, v["id"], MGR)
+    v = tuan._tim(tuan.doc_tuan(ma), v["id"])
+    assert [c["chu"] for c in tuan.the_trang_thai(v)] == ["Đã nghiệm thu"]
+
+
+def test_the_viec_hien_giao_cho_ai_va_chip_trang_thai(ma, _so):
+    m = mt.tao(MGR, "Goal A", "kq")
+    tuan.them_viec_giao(ma, MGR, NV, "Dựng 6 video", "x",
+                        muc_tieu_id=m["id"], han=_han_sau(-2))
+    r = _c.get("/muc-tieu", headers=H_MGR)
+    the = r.text.split('<li class="the-viec">')[1].split("</li>")[0]
+    assert "Giao cho <b>Thu Hà</b>" in the        # tên người, không phải tài khoản
+    assert "Chưa ai nhận" in the and "Quá deadline" in the
+    assert the.index("Dựng 6 video") < the.index("Giao cho")   # nằm DƯỚI tên + hạn

@@ -64,7 +64,8 @@
   ul.vs li.the-viec{display:block;padding:11px 13px;border:1px solid var(--tk-vien);
     border-radius:11px;background:var(--th-141c2b);transition:border-color .13s}
   ul.vs li.the-viec:hover{border-color:var(--accent)}
-  ul.vs .dong-chinh{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  ul.vs .dong-chinh{display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap}
+  ul.vs .dong-chinh>.cham-v{margin-top:3px}
   ul.vs .phieu-viec{margin-top:7px}
   .cham-v{width:14px;height:14px;flex:none;border-radius:50%;border:2px solid var(--chip-line);
     display:grid;place-items:center;background:var(--sidebar)}
@@ -73,8 +74,15 @@
   .cham-v.lam{border-color:var(--accent);border-style:dashed}
   .cham-v.cho{border-color:var(--tk-luu)}
   .cham-v.tre{border-color:var(--tk-cap)}
-  .vt{flex:1;min-width:160px;font-size:13px}
-  .vt small{display:block;color:var(--muted);font-size:11.5px;margin-top:1px}
+  .vt{flex:1;min-width:190px;font-size:13.5px;font-weight:500}
+  .vt small{display:block;color:var(--muted);font-size:11.5px;margin-top:2px;font-weight:400}
+  .giao-cho{display:inline-flex;align-items:center;gap:6px;margin-top:5px;
+    font-size:12px;color:var(--th-c2cbd9);font-weight:400}
+  .giao-cho b{color:var(--ink);font-weight:600}
+  .giao-cho select{font-size:12px;padding:5px 9px}
+  /* Cột chip bên phải — dùng đúng khoảng trống còn lại của thẻ */
+  .chip-cot{display:flex;gap:6px;align-items:center;flex-wrap:wrap;
+    justify-content:flex-end;margin-left:auto;flex:0 0 auto}
   .ai-nho{font-size:12px;color:var(--th-c2cbd9);white-space:nowrap}
   .ai-nho.trong{color:var(--muted);font-style:italic}
   .khoi-chot{background:var(--sidebar);border:1px dashed var(--chip-line);border-radius:12px;
@@ -275,22 +283,26 @@
         <span class="cham-v {% if v.trang_thai == 'xac_nhan' %}xong{% elif hn.muc == 'cap' %}tre{% elif v.trang_thai == 'dang_lam' %}lam{% elif v.trang_thai in ('cho_nhan','cho_phoi_hop','bao_xong') %}cho{% endif %}">
           {%- if v.trang_thai == 'xac_nhan' %}<svg viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></svg>{% endif %}</span>
         <span class="vt">{{ v.tieu_de }}
-          <small>{% if v.trang_thai == 'tu_choi' %}<b>{{ v.nguoi }} từ chối:</b> “{{ v.ly_do or 'không ghi lý do' }}”
-            {%- elif v.trang_thai == 'chua_giao' %}Chưa phân công
-            {%- elif v.trang_thai == 'cho_nhan' %}Chờ nhận việc
-            {%- elif v.trang_thai == 'bao_xong' %}Báo xong — chờ nghiệm thu
-            {%- elif v.trang_thai == 'xac_nhan' %}Đã nghiệm thu
-            {%- else %}{{ v.checklist|selectattr('xong')|list|length }}/{{ v.checklist|length }} bước{% endif %}
-            {%- if hn.chu %} · {{ hn.chu }}{% endif %}</small></span>
-        {% if v.gap %}<span class="the gap">GẤP</span>{% endif %}
-        {% if v.cung_viec %}<span class="the">cùng làm</span>{% endif %}
-        {% if v.trang_thai == 'chua_giao' %}
-          <select data-gan-nguoi="{{ v.id }}">
-            <option value="">Giao cho…</option>
-            {% for n in cap_duoi %}<option value="{{ n.ten }}">{{ n.ho_ten or n.ten }}</option>{% endfor %}
-          </select>
-        {% else %}<span class="ai-nho" title="Bạn đã giao việc này cho {{ v.nguoi }}">
-          {%- if v.nguoi == user.ten %}tôi làm{% else %}giao {{ v.nguoi }}{% endif %}</span>{% endif %}
+          <small>{% if hn.chu %}{{ hn.chu }}{% elif v.han %}Hạn {{ v.han[8:] }}/{{ v.han[5:7] }}{% else %}Không đặt hạn{% endif %}
+            {%- if v.checklist %} · {{ v.checklist|selectattr('xong')|list|length }}/{{ v.checklist|length }} bước{% endif %}
+            {%- if v.trang_thai == 'tu_choi' %} · <b>{{ ten_hien.get(v.nguoi, v.nguoi) }} từ chối:</b>
+              “{{ v.ly_do or 'không ghi lý do' }}”{% endif %}</small>
+          {# Giao cho ai nằm NGAY DƯỚI cụm tên + hạn (Owner 25/08) — trước đó dạt
+             sang mép phải nên đọc một thẻ phải liếc hai đầu. #}
+          <span class="giao-cho">
+            {%- if v.trang_thai == 'chua_giao' %}
+            <select data-gan-nguoi="{{ v.id }}">
+              <option value="">Giao cho…</option>
+              {% for n in cap_duoi %}<option value="{{ n.ten }}">{{ n.ho_ten or n.ten }}</option>{% endfor %}
+            </select>
+            {%- elif v.nguoi == user.ten %}<b>Tôi làm</b>
+            {%- else %}Giao cho <b>{{ ten_hien.get(v.nguoi, v.nguoi) }}</b>{% endif %}
+            {%- if v.cung_viec %} <span class="the">cùng làm</span>{% endif %}
+          </span></span>
+        <span class="chip-cot">
+          {% if v.gap %}<span class="the gap">GẤP</span>{% endif %}
+          {% for c in v|chip %}<span class="the tt {{ c.muc }}">{{ c.chu }}</span>{% endfor %}
+        </span>
         </div>
         <details class="phieu-viec" {% if loi_viec == v.id %}open{% endif %}>
           <summary title="Bấm đúp vào việc để mở / thu">

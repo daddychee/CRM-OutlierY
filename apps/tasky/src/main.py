@@ -51,6 +51,7 @@ templates = Jinja2Templates(directory=str(_APP_DIR / "src" / "templates"),
 app.mount("/tasky-static", StaticFiles(directory=str(_APP_DIR / "src" / "static")),
           name="tasky-static")
 templates.env.filters["han"] = tuan_lo.tinh_han   # {{ v|han }} → {chu, muc, con}
+templates.env.filters["chip"] = tuan_lo.the_trang_thai   # {{ v|chip }} → [{chu, muc}]
 
 
 # ---------- claims (app không tự giữ user) ----------
@@ -198,6 +199,10 @@ def trang_muc_tieu(request: Request, user: dict = Depends(yeu_cau_muc_tieu),
                             -len(c["canh_bao"]), c["tieu_de"]))
     cap_duoi, _ = nhan_su.cap_duoi_cua(user)
     cap_duoi = cap_duoi or []
+    moi_nguoi, _ = nhan_su.ds_nguoi()
+    # tên đẹp để hiện "Giao cho Hương Giang" thay vì tài khoản huonggiangsss;
+    # chỉ là NHÃN — việc nào được thấy vẫn do bộ lọc quyền quyết từ trước.
+    ten_hien = {n["ten"]: (n.get("ho_ten") or n["ten"]) for n in (moi_nguoi or [])}
     ma = _ma_tuan_hop_le(tuan_xem)
     return templates.TemplateResponse(request, "muc_tieu.html", {
         "user": user, "cay": cay, "chon": chon or (cay[0]["id"] if cay else "le"),   # chưa có Goal → mở tab Việc lẻ
@@ -212,7 +217,7 @@ def trang_muc_tieu(request: Request, user: dict = Depends(yeu_cau_muc_tieu),
                            for v in tuan_lo.doc_tuan(ma)["viec"]
                            if not v.get("muc_tieu_id")),
         "ma_tuan": ma, "tuan_nay": tuan_lo.ma_tuan(),
-        "ngang_cap": nhan_su.ngang_cap_bo_phan_khac(user)[0] or [],
+        "ngang_cap": nhan_su.ngang_cap_bo_phan_khac(user)[0] or [], "ten_hien": ten_hien,
         **_co_sidebar(x_remote_actions, ma, user)})
 
 

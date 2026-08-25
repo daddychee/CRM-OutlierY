@@ -43,6 +43,7 @@ TRONG_MAU_SO = (CHO_NHAN, CHO_PHOI_HOP, DANG_LAM, BAO_XONG, XAC_NHAN, DOI)
 LEADER_LEVEL = 3
 OWNER_LEVEL = 5
 DOI_LA_KET = 2          # dời từ 2 lần trở lên → cờ "việc kẹt"
+GAN_HAN_NGAY = 2        # còn ≤ 2 ngày mới gọi là "gần đến hạn" (§16)
 
 _khoa = threading.Lock()
 
@@ -236,6 +237,36 @@ def tinh_han(viec: dict, hom_nay: date | None = None) -> dict:
     ngay = date.fromisoformat(viec["han"])
     return {"chu": f"Hạn {ngay.day:02d}/{ngay.month:02d}",
             "muc": "luu_y" if con <= 3 else "", "con": con}
+
+
+def the_trang_thai(viec: dict, hom_nay: date | None = None) -> list[dict]:
+    """Chip trạng thái cho thẻ việc (Owner 25/08) — LÕI quyết, template chỉ vẽ.
+
+    Tối đa HAI chip vì đó là hai câu hỏi khác nhau: việc đang ở đâu (ai cầm) và
+    hạn có gấp không. Chip hạn chỉ hiện khi thật sự gấp — còn 5 ngày mà đã tô màu
+    thì lần nào cũng đỏ, người ta thôi nhìn.
+    """
+    tt = viec["trang_thai"]
+    tien_do = {
+        CHUA_GIAO: ("Chưa giao", "luu_y"),
+        CHO_NHAN: ("Chưa ai nhận", "luu_y"),
+        CHO_PHOI_HOP: ("Chờ bộ phận khác nhận", "luu_y"),
+        DANG_LAM: ("Đã nhận", "tin"),
+        BAO_XONG: ("Chờ nghiệm thu", "tin"),
+        XAC_NHAN: ("Đã nghiệm thu", "ok"),
+        TU_CHOI: ("Bị từ chối", "cap"),
+        HUY: ("Đã hủy", ""),
+        DOI: ("Đã dời sang tuần sau", ""),
+    }.get(tt)
+    ra = [{"chu": tien_do[0], "muc": tien_do[1]}] if tien_do else []
+
+    h = tinh_han(viec, hom_nay)          # rỗng khi việc đã ngã ngũ
+    if h["con"] is not None:
+        if h["con"] < 0:
+            ra.append({"chu": "Quá deadline", "muc": "cap"})
+        elif h["con"] <= GAN_HAN_NGAY:
+            ra.append({"chu": "Gần đến hạn", "muc": "luu_y"})
+    return ra
 
 
 def sap_xep(ds: list[dict], hom_nay: date | None = None) -> list[dict]:
