@@ -32,7 +32,11 @@ TU_CHOI, HUY, DOI = "tu_choi", "huy", "doi"
 # CHO_NHAN ở chỗ người gửi KHÔNG có quyền trên người nhận — đây là lời mời, không
 # phải lệnh; bên kia từ chối là hết chuyện.
 CHO_PHOI_HOP = "cho_phoi_hop"
-TRANG_THAI = (CHO_NHAN, CHO_PHOI_HOP, DANG_LAM, BAO_XONG, XAC_NHAN, TU_CHOI, HUY, DOI)
+# Việc Manager chẻ ra từ mục tiêu mà CHƯA chọn người (§12) — nó tồn tại trong cây,
+# đếm vào tổng việc của mục tiêu, nhưng chưa thuộc về ai nên không vào tỉ lệ của ai.
+CHUA_GIAO = "chua_giao"
+TRANG_THAI = (CHUA_GIAO, CHO_NHAN, CHO_PHOI_HOP, DANG_LAM, BAO_XONG, XAC_NHAN,
+              TU_CHOI, HUY, DOI)
 # Trạng thái ĐƯỢC TÍNH vào mẫu số tỉ lệ hoàn thành (xem docstring).
 TRONG_MAU_SO = (CHO_NHAN, CHO_PHOI_HOP, DANG_LAM, BAO_XONG, XAC_NHAN, DOI)
 LEADER_LEVEL = 3
@@ -325,6 +329,44 @@ def yeu_cau_da_gui(ma: str, user: dict) -> list[dict]:
 def viec_con(ma: str, id_yeu_cau: str) -> list[dict]:
     """Việc bên nhận đã chẻ ra giao cho người bộ phận mình từ một yêu cầu."""
     return [v for v in doc_tuan(ma)["viec"] if v.get("tu_yeu_cau") == id_yeu_cau]
+
+
+def them_viec_muc_tieu(ma: str, user: dict, tieu_de: str, loai_viec: str,
+                       muc_tieu_id: str, han: str = "", gap: bool = False) -> dict:
+    """Manager chẻ một việc từ mục tiêu, CHƯA chọn người — cây hiện ngay, giao sau."""
+    if not muc_tieu_id:
+        raise ValueError("Việc này phải thuộc một mục tiêu.")
+    if not (loai_viec or "").strip():
+        raise ValueError("Phải chọn loại việc.")
+    with _khoa:
+        so = doc_tuan(ma)
+        v = _viec_moi(tieu_de, loai_viec, "")
+        v.update({"nguoi_giao": user["ten"], "nguon": "giao", "trang_thai": CHUA_GIAO,
+                  "muc_tieu_id": muc_tieu_id, "han": _han_hop_le(han), "gap": bool(gap)})
+        so["viec"].append(v)
+        _ghi_tuan(so)
+    ghi_nhat_ky("che_viec", user["ten"],
+                {"tuan": ma, "viec": v["id"], "muc_tieu": muc_tieu_id,
+                 "tieu_de": v["tieu_de"]})
+    return v
+
+
+def gan_nguoi(ma: str, id_viec: str, nguoi_giao: dict, nguoi_nhan: dict) -> dict:
+    """Giao một việc đang CHƯA GIAO cho ai đó — vẫn qua đúng luật giao việc (§9.2)."""
+    if not duoc_giao_cho(nguoi_giao, nguoi_nhan):
+        raise PermissionError("Chỉ giao được cho người cấp dưới trong bộ phận mình.")
+    with _khoa:
+        so = doc_tuan(ma)
+        v = _tim(so, id_viec)
+        if v["trang_thai"] != CHUA_GIAO:
+            raise ValueError("Việc này đã có người rồi.")
+        v.update({"nguoi": nguoi_nhan["ten"], "nguoi_giao": nguoi_giao["ten"],
+                  "trang_thai": CHO_NHAN, "luc_tao": _gio()})
+        _ghi_tuan(so)
+    ghi_nhat_ky("giao_viec", nguoi_giao["ten"],
+                {"tuan": ma, "viec": id_viec, "cho": nguoi_nhan["ten"],
+                 "tieu_de": v["tieu_de"]})
+    return v
 
 
 def them_viec_tu(ma: str, user: dict, tieu_de: str, loai_viec: str = "",
@@ -625,6 +667,13 @@ def thong_ke_nguoi(ma: str, ten: str) -> dict:
         "ti_le": round(100 * len(xong) / len(mau_so)) if mau_so else None,
         "da_dong": ten in doc_tuan(ma)["dong"],
     }
+
+
+def chua_giao(ma: str, muc_tieu_id: str = "") -> list[dict]:
+    """Việc đã chẻ mà chưa có người — Manager cần thấy để giao."""
+    return [v for v in doc_tuan(ma)["viec"]
+            if v["trang_thai"] == CHUA_GIAO
+            and (not muc_tieu_id or v.get("muc_tieu_id") == muc_tieu_id)]
 
 
 def con_treo(ma: str, user: dict) -> list[dict]:

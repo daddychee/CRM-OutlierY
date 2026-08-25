@@ -232,3 +232,54 @@ def test_moi_thao_tac_de_lai_vet(tmp_path):
     dong = [json.loads(d) for d in
             (tmp_path / "db" / "nhat-ky.jsonl").read_text(encoding="utf-8").splitlines()]
     assert [d["hanh_dong"] for d in dong] == ["tao_muc_tieu", "chot_muc_tieu"]
+
+
+# ---------- việc chẻ ra mà chưa giao ai (§12) ----------
+
+def test_che_viec_chua_giao_ai():
+    ma = tuan.ma_tuan()
+    m = _mt()
+    v = tuan.them_viec_muc_tieu(ma, MGR, "Rà 10 video đối thủ", "Nghiên cứu", m["id"])
+    assert v["trang_thai"] == tuan.CHUA_GIAO and v["nguoi"] == ""
+    assert [x["id"] for x in tuan.chua_giao(ma, m["id"])] == [v["id"]]
+
+
+def test_viec_chua_giao_van_dem_vao_tong_cua_muc_tieu():
+    """Cây phải nói thật rằng mục tiêu còn 1 việc chưa ai làm."""
+    ma = tuan.ma_tuan()
+    m = _mt()
+    tuan.them_viec_muc_tieu(ma, MGR, "Việc chưa giao", "Nghiên cứu", m["id"])
+    t = mt.tien_do(m["id"])
+    assert t["tong"] == 1 and t["xong"] == 0 and t["chua_giao"] == 1
+
+
+def test_viec_chua_giao_khong_vao_ti_le_cua_ai():
+    ma = tuan.ma_tuan()
+    m = _mt()
+    tuan.them_viec_muc_tieu(ma, MGR, "Việc chưa giao", "Nghiên cứu", m["id"])
+    assert tuan.thong_ke_nguoi(ma, "hant")["ti_le"] is None
+
+
+def test_gan_nguoi_van_qua_luat_giao_viec():
+    ma = tuan.ma_tuan()
+    m = _mt()
+    v = tuan.them_viec_muc_tieu(ma, MGR, "Việc X", "Nghiên cứu", m["id"])
+    with pytest.raises(PermissionError):
+        tuan.gan_nguoi(ma, v["id"], MGR, {"ten": "kd2", "level": 2, "bo_phan": "Kinh doanh"})
+    d = tuan.gan_nguoi(ma, v["id"], MGR, NV)
+    assert d["trang_thai"] == tuan.CHO_NHAN and d["nguoi"] == "hant"
+
+
+def test_gan_nguoi_hai_lan_bi_chan():
+    ma = tuan.ma_tuan()
+    m = _mt()
+    v = tuan.them_viec_muc_tieu(ma, MGR, "Việc X", "Nghiên cứu", m["id"])
+    tuan.gan_nguoi(ma, v["id"], MGR, NV)
+    with pytest.raises(ValueError):
+        tuan.gan_nguoi(ma, v["id"], MGR, NV)
+
+
+def test_che_viec_thieu_muc_tieu_bi_chan():
+    ma = tuan.ma_tuan()
+    with pytest.raises(ValueError):
+        tuan.them_viec_muc_tieu(ma, MGR, "Việc lạc", "Nghiên cứu", "")
