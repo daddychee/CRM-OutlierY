@@ -139,3 +139,22 @@
   .chon-nguoi label:has(input:checked){background:var(--th-16263f);border-color:var(--accent);
     color:var(--accent);font-weight:600}
   .chon-nguoi label.toi{border-style:dashed}
+
+  /* Chọn người: MỘT dropdown, người đã chọn thành chip bên cạnh (bấm x để bỏ) */
+  .da-chon{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:7px}
+  .da-chon:empty{display:none}
+  .chip-ai{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:4px 6px 4px 11px;
+    font-size:12.5px;background:var(--th-16263f);color:var(--accent);border:1px solid var(--accent);
+    font-weight:600}
+  .chip-ai button{border:0;background:none;color:inherit;cursor:pointer;font-size:14px;
+    line-height:1;padding:0 3px;opacity:.7}
+  .chip-ai button:hover{opacity:1}
+  /* Nút GẤP: một nút bật/tắt rõ ràng, không phải ô tick lạc lõng */
+  .nut-gap{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--chip-line);
+    background:var(--th-141c2b);color:var(--muted);border-radius:9px;padding:7px 13px;
+    font-size:13px;font-weight:600;cursor:pointer}
+  .nut-gap:hover{border-color:var(--tk-cap);color:var(--tk-cap)}
+  .nut-gap svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2}
+  .nut-gap[aria-pressed="true"]{background:var(--tk-cap);border-color:var(--tk-cap);
+    color:var(--th-090c12)}
+  html[data-theme="light"] .nut-gap[aria-pressed="true"]{color:#ffffff}

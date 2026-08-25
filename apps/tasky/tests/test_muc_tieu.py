@@ -612,3 +612,43 @@ def test_mau_khong_dung_vao_nghia_trang_thai(_so_gia):
     tuan.them_viec_muc_tieu(ma, MGR, "Chưa giao ai", "x", m["id"])
     r = _client.get("/muc-tieu", headers=H_MGR)
     assert "1 chưa giao" in r.text
+
+
+# ---------- màu bằng FORM (không phụ thuộc JS) + dọn việc cũ ----------
+
+def test_doi_mau_bang_form_post(_so_gia):
+    """Owner báo bấm màu không ăn HAI lần liền → bỏ JS, dùng form POST + 303."""
+    m = _mt()
+    r = _client.post("/muc-tieu/mau", headers=H_MGR,
+                     data={"id": m["id"], "mau": "cam"}, follow_redirects=False)
+    assert r.status_code == 303 and mt.doc_tat_ca()[0]["mau"] == "cam"
+
+
+def test_form_mau_ve_dung_goal_dang_xem(_so_gia):
+    m = _mt()
+    r = _client.post("/muc-tieu/mau", headers=H_MGR,
+                     data={"id": m["id"], "mau": "luc"}, follow_redirects=False)
+    assert r.headers["location"] == "/muc-tieu?chon=" + m["id"]
+
+
+def test_nut_mau_la_the_button_trong_form(_so_gia):
+    """Không còn phụ thuộc JS: nút màu phải là submit của form thật."""
+    _mt()
+    r = _client.get("/muc-tieu", headers=H_MGR)
+    assert 'action="/muc-tieu/mau"' in r.text and 'type="submit" name="mau"' in r.text
+
+
+def test_don_viec_cu_xoa_viec_ngoai_goal(_so_gia):
+    ma = tuan.ma_tuan()
+    g = _mt()
+    tuan.them_viec_giao(ma, MGR, NV, "Việc thuộc Goal", "x", muc_tieu_id=g["id"])
+    tuan.them_viec_giao(ma, MGR, NV, "Việc cũ 1", "x")
+    tuan.them_viec_giao(ma, MGR, NV, "Việc cũ 2", "x")
+    h_owner = dict(H_MGR); h_owner["X-Remote-User"] = "bot"; h_owner["X-Remote-Level"] = "5"
+    r = _client.post("/muc-tieu/don-viec-cu", headers=h_owner, follow_redirects=False)
+    assert r.status_code == 303 and "da_don=2" in r.headers["location"]
+    assert [v["tieu_de"] for v in tuan.viec_cua(ma, "hant")] == ["Việc thuộc Goal"]
+
+
+def test_chi_owner_don_duoc_viec_cu(_so_gia):
+    assert _client.post("/muc-tieu/don-viec-cu", headers=H_MGR).status_code == 403

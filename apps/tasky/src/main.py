@@ -176,7 +176,7 @@ def trang_giao_cu():
 @app.get("/muc-tieu", response_class=HTMLResponse)
 def trang_muc_tieu(request: Request, user: dict = Depends(yeu_cau_muc_tieu),
                    x_remote_actions: str = Header(""), chon: str = "",
-                   tuan_xem: str = ""):
+                   tuan_xem: str = "", da_don: str = ""):
     """Cây mục tiêu — MỘT mục tiêu một tab (Owner chốt 25/08). Dữ liệu gom sẵn ở
     server, template chỉ hiển thị."""
     hd = cac_hanh_dong(x_remote_actions)
@@ -198,6 +198,11 @@ def trang_muc_tieu(request: Request, user: dict = Depends(yeu_cau_muc_tieu),
         "user": user, "cay": cay, "chon": chon or (cay[0]["id"] if cay else "le"),   # chưa có Goal → mở tab Việc lẻ
         "cap_duoi": cap_duoi, "loai_viec": tuan_lo.cac_loai_viec(),
         "duoc_dat": mt_lo.duoc_dat_muc_tieu(user),
+        "la_owner": user["level"] >= mt_lo.OWNER_LEVEL,
+        "da_don": da_don,
+        "con_viec_cu": sum(1 for ma in tuan_lo.cac_tuan_gan()
+                           for v in tuan_lo.doc_tuan(ma)["viec"]
+                           if not v.get("muc_tieu_id")),
         "ma_tuan": ma, "tuan_nay": tuan_lo.ma_tuan(),
         "ngang_cap": nhan_su.ngang_cap_bo_phan_khac(user)[0] or [],
         **_co_sidebar(x_remote_actions, ma, user)})
@@ -425,6 +430,37 @@ def api_chot_muc_tieu(id: str = Form(...), ket_qua: str = Form(...),
 @app.post("/api-tasky/muc-tieu/mo-lai")
 def api_mo_lai_muc_tieu(id: str = Form(...), user: dict = Depends(yeu_cau_muc_tieu)):
     return _goi(mt_lo.mo_lai, id, user)
+
+
+@app.post("/muc-tieu/mau")
+def form_mau_muc_tieu(id: str = Form(...), mau: str = Form(""),
+                      user: dict = Depends(yeu_cau_muc_tieu)):
+    """Đổi màu bằng FORM THUẦN — trước đó làm bằng JS và Owner báo bấm không ăn hai
+    lần liền; form POST + 303 thì hỏng JS cũng không chết tính năng."""
+    try:
+        mt_lo.dat_mau(id, user, mau)
+    except (ValueError, PermissionError):
+        pass
+    return RedirectResponse(f"/muc-tieu?chon={id}", status_code=303)
+
+
+@app.post("/muc-tieu/don-viec-cu")
+def form_don_viec_cu(user: dict = Depends(yeu_cau_muc_tieu)):
+    """Dọn MỌI việc không thuộc Goal nào — dùng một lần để xóa việc tạo từ trước khi
+    có Goal (Owner yêu cầu 25/08). Chỉ Owner; nhật ký giữ nguyên bản từng việc."""
+    if user["level"] < mt_lo.OWNER_LEVEL:
+        raise HTTPException(403, "Chỉ Owner mới dọn được việc cũ.")
+    dem = 0
+    for ma in tuan_lo.cac_tuan_gan():
+        for v in list(tuan_lo.doc_tuan(ma)["viec"]):
+            if v.get("muc_tieu_id"):
+                continue
+            try:
+                tuan_lo.xoa_viec(ma, v["id"], user)
+                dem += 1
+            except (ValueError, PermissionError):
+                pass
+    return RedirectResponse(f"/muc-tieu?da_don={dem}", status_code=303)
 
 
 @app.post("/api-tasky/chuyen-goal")
