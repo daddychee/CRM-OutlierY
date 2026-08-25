@@ -58,10 +58,14 @@
   details.nhomv[open]>summary::before{transform:rotate(45deg)}
   details.nhomv>summary .dem{margin-left:auto;font-weight:500;color:var(--muted);font-size:12px}
   details.nhomv.canh>summary{background:var(--tk-cap-nen);color:var(--tk-cap)}
-  ul.vs{list-style:none;margin:0;padding:0}
-  ul.vs li{display:flex;gap:10px;align-items:center;padding:9px 13px;flex-wrap:wrap;
-    border-top:1px solid var(--line)}
-  ul.vs li:hover{background:var(--th-141c2b)}
+  /* MỘT việc = MỘT THẺ rời (Owner 25/08: "các việc trong Task có UI tách riêng,
+     không dính liền"). Trước là danh sách gạch ngang nên hai việc trông như một khối. */
+  ul.vs{list-style:none;margin:0;padding:11px;display:flex;flex-direction:column;gap:9px}
+  ul.vs li.the-viec{display:block;padding:11px 13px;border:1px solid var(--line);
+    border-radius:11px;background:var(--th-141c2b);transition:border-color .13s}
+  ul.vs li.the-viec:hover{border-color:var(--chip-line)}
+  ul.vs .dong-chinh{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  ul.vs .phieu-viec{margin-top:7px}
   .cham-v{width:14px;height:14px;flex:none;border-radius:50%;border:2px solid var(--chip-line);
     display:grid;place-items:center;background:var(--sidebar)}
   .cham-v.xong{background:var(--accent);border-color:var(--accent)}
@@ -266,7 +270,8 @@
     <ul class="vs">
       {% for v in ds %}
       {% set hn = v|han %}
-      <li>
+      <li class="the-viec">
+        <div class="dong-chinh">
         <span class="cham-v {% if v.trang_thai == 'xac_nhan' %}xong{% elif hn.muc == 'cap' %}tre{% elif v.trang_thai == 'dang_lam' %}lam{% elif v.trang_thai in ('cho_nhan','cho_phoi_hop','bao_xong') %}cho{% endif %}">
           {%- if v.trang_thai == 'xac_nhan' %}<svg viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></svg>{% endif %}</span>
         <span class="vt">{{ v.tieu_de }}
@@ -286,8 +291,7 @@
           </select>
         {% else %}<span class="ai-nho" title="Bạn đã giao việc này cho {{ v.nguoi }}">
           {%- if v.nguoi == user.ten %}tôi làm{% else %}giao {{ v.nguoi }}{% endif %}</span>{% endif %}
-      </li>
-      <li style="padding-top:0;border-top:0">
+        </div>
         <details class="phieu-viec" {% if loi_viec == v.id %}open{% endif %}>
           <summary>Chi tiết việc{% if v.trao_doi %} · {{ v.trao_doi|length }} tin{% endif %}
             {%- if v.tai_lieu %} · {{ v.tai_lieu|length }} tài liệu{% endif %}</summary>

@@ -245,3 +245,14 @@ def test_o_sua_tai_cho_khong_bi_luat_o_nhap_chung_de(_so):
     css = _c.get("/muc-tieu", headers=H_MGR).text
     luat = css.split(".noi-dung input:not([type=checkbox])")[1].split("{")[0]
     assert ":not(.o-tai-cho)" in luat
+
+
+def test_moi_viec_la_mot_the_roi(ma, _so):
+    """Owner 25/08: việc trong Task phải tách rời, không dính liền thành một khối."""
+    m = mt.tao(MGR, "Goal A", "kq")
+    for t in ("Việc 1", "Việc 2"):
+        tuan.them_viec_muc_tieu(ma, MGR, t, "x", m["id"])
+    r = _c.get("/muc-tieu", headers=H_MGR)
+    assert r.text.count('<li class="the-viec">') == 2
+    css = r.text.split("ul.vs li.the-viec{")[1].split("}")[0]
+    assert "border:" in css and "border-radius" in css
