@@ -148,6 +148,7 @@ def trang_viec(request: Request, user: dict = Depends(lay_user), tuan_xem: str =
         "viec_con": {v["id"]: tuan_lo.viec_con(ma, v["id"])
                      for v in ds if v["nguon"] == "phoi_hop"},
         "tk": tuan_lo.thong_ke_nguoi(ma, user["ten"]),
+        "xoa_duoc": {v["id"]: tuan_lo.duoc_xoa(v, user)[0] for v in ds},
         # việc thuộc mục tiêu nào (chip xanh trên thẻ việc) + nhiệm vụ chờ dựng
         "mt_theo_id": mt_lo.theo_id(ds_mt),
         "mt_tien_do": {m["id"]: mt_lo.tien_do(m["id"], gom_mt.get(m["id"], []))
@@ -296,6 +297,13 @@ def api_tick(id: str = Form(...), buoc: str = Form(...), xong: str = Form("1"),
              tuan_xem: str = Form(""), user: dict = Depends(lay_user)):
     return _goi(tuan_lo.tick_buoc, _ma_tuan_hop_le(tuan_xem), id, buoc, user,
                 xong not in ("0", "false", ""))
+
+
+@app.post("/api-tasky/xoa")
+def api_xoa(id: str = Form(...), tuan_xem: str = Form(""),
+            user: dict = Depends(lay_user)):
+    """Xóa hẳn một việc (luật + quyền kiểm ở lõi; nhật ký giữ nguyên bản)."""
+    return _goi(tuan_lo.xoa_viec, _ma_tuan_hop_le(tuan_xem), id, user)
 
 
 @app.post("/api-tasky/bao-xong")

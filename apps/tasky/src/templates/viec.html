@@ -163,6 +163,13 @@
       </div>
       {% endif %}
     {% endif %}
+    {% if xoa_duoc.get(v.id) %}
+    <div class="hang" style="margin-top:9px">
+      <span class="goi-y" style="flex:1;margin:0">Gõ nhầm hay không cần nữa thì xóa hẳn —
+        nhật ký vẫn giữ bản gốc.</span>
+      <button class="nut sm" data-xoa>Xóa việc này</button>
+    </div>
+    {% endif %}
     <div class="loi" data-loi hidden></div>
   </div>
 </article>
@@ -301,6 +308,23 @@
                       loai_viec: v.dataset.loai || "", tu_yeu_cau: id })
           .then(function () { location.reload(); })
           .catch(function (e) { conGiao.disabled = false; baoLoi(oLoi, e); });
+      });
+    }
+
+    var xoa = v.querySelector("[data-xoa]");
+    if (xoa) {
+      xoa.addEventListener("click", function () {
+        if (!xoa.dataset.chac) {
+          xoa.dataset.chac = "1"; xoa.textContent = "Chắc chưa? Bấm lại để xóa";
+          setTimeout(function () {
+            if (xoa.dataset.chac) { delete xoa.dataset.chac; xoa.textContent = "Xóa việc này"; }
+          }, 4000);
+          return;
+        }
+        xoa.disabled = true;
+        goi("xoa", { id: id }).then(function () { location.reload(); })
+          .catch(function (e) { xoa.disabled = false; delete xoa.dataset.chac;
+                                xoa.textContent = "Xóa việc này"; baoLoi(oLoi, e); });
       });
     }
 

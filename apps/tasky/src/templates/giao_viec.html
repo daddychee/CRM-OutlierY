@@ -184,6 +184,9 @@
       {% elif v.trang_thai in ('cho_nhan', 'dang_lam') %}
         <button class="nut sm" data-doi>Dời</button>
         <button class="nut sm" data-huy>Hủy</button>
+        {% if v.trang_thai == 'cho_nhan' %}<button class="nut sm" data-xoa>Xóa</button>{% endif %}
+      {% elif v.trang_thai in ('tu_choi', 'huy') %}
+        <button class="nut sm" data-xoa>Xóa</button>
       {% endif %}
     </li>
     {% if v.trang_thai in ('cho_nhan', 'dang_lam') %}
@@ -339,6 +342,24 @@
       if (viec === "huy" && !ly) { baoLoi(loiTreo, new Error("Phải ghi lý do hủy.")); return; }
       goi(viec, viec === "doi" ? { id: id, ly_do: ly, nguoi_moi: nm } : { id: id, ly_do: ly })
         .then(function () { location.reload(); }).catch(function (e) { baoLoi(loiTreo, e); });
+    });
+  });
+
+  // Xóa hẳn — hai bước: bấm lần đầu đổi thành "Chắc chưa?", bấm lại mới xóa.
+  // Không dùng confirm() của trình duyệt (lệ hệ: không hộp thoại chặn).
+  document.querySelectorAll("[data-xoa]").forEach(function (b) {
+    b.addEventListener("click", function () {
+      if (!b.dataset.chac) {
+        b.dataset.chac = "1"; b.textContent = "Chắc chưa?";
+        setTimeout(function () {
+          if (b.dataset.chac) { delete b.dataset.chac; b.textContent = "Xóa"; }
+        }, 4000);
+        return;
+      }
+      b.disabled = true;
+      goi("xoa", { id: b.closest("li").dataset.id }).then(function () { location.reload(); })
+        .catch(function (e) { b.disabled = false; delete b.dataset.chac;
+                              b.textContent = "Xóa"; baoLoi(loiTreo, e); });
     });
   });
 

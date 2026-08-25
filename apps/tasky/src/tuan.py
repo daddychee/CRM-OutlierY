@@ -533,6 +533,56 @@ def huy_viec(ma: str, id_viec: str, user: dict, ly_do: str) -> dict:
     return v
 
 
+def duoc_xoa(viec: dict, user: dict) -> tuple[bool, str, str]:
+    """Xóa HẲN một việc. Trả (được?, lý do, loại lỗi) — loại là "quyen" hoặc
+    "trang_thai" để chỗ gọi ném đúng ngoại lệ, KHÔNG dò chuỗi tiếng Việt.
+
+    Luật (theo lệ gỡ-mềm-trước của hệ):
+    - Việc CHƯA AI LÀM (chưa giao / chờ nhận / chờ phối hợp) hoặc đã đóng vô hại
+      (bị từ chối / đã hủy) → người giao, chính chủ, hoặc Owner xóa được. Gõ nhầm
+      thì xóa cho sạch, không để lại rác.
+    - Việc ĐANG LÀM / ĐÃ BÁO XONG → KHÔNG xóa; dùng Hủy kèm lý do. Người ta đã bỏ
+      công, xóa trắng là xóa cả dấu vết công đó.
+    - Việc ĐÃ NGHIỆM THU hoặc ĐÃ DỜI → chỉ Owner, vì xóa sẽ đổi số của báo cáo tuần
+      đã chốt (hoặc bỏ mồ côi việc đã sinh ở tuần sau).
+    """
+    la_chu = viec["nguoi"] == user["ten"]
+    la_nguoi_giao = viec.get("nguoi_giao") == user["ten"]
+    la_owner = user["level"] >= OWNER_LEVEL
+    tt = viec["trang_thai"]
+
+    if tt in (XAC_NHAN, DOI):
+        if not la_owner:
+            return (False, "Việc đã nghiệm thu / đã dời nằm trong số báo cáo — "
+                    "chỉ Owner mới xóa được.", "quyen")
+        return True, "", ""
+    if tt in (DANG_LAM, BAO_XONG):
+        # Việc TỰ THÊM là việc của chính mình, chưa ai nghiệm thu → chủ nó xóa được;
+        # việc người khác giao thì phải Hủy kèm lý do (giữ dấu vết công đã bỏ ra).
+        if viec.get("nguon") == "tu_them" and (la_chu or la_owner):
+            return True, "", ""
+        return (False, "Việc đang làm thì dùng Hủy kèm lý do, không xóa trắng.",
+                "trang_thai")
+    if la_owner or la_nguoi_giao or la_chu:
+        return True, "", ""
+    return False, "Chỉ người giao việc (hoặc Owner) mới xóa được.", "quyen"
+
+
+def xoa_viec(ma: str, id_viec: str, user: dict) -> dict:
+    """Xóa hẳn khỏi sổ tuần. Nhật ký giữ NGUYÊN BẢN việc bị xóa — sai thì còn đường
+    dựng lại bằng tay, không mất trắng."""
+    with _khoa:
+        so = doc_tuan(ma)
+        v = _tim(so, id_viec)
+        duoc, vi_sao, loai = duoc_xoa(v, user)
+        if not duoc:
+            raise (PermissionError(vi_sao) if loai == "quyen" else ValueError(vi_sao))
+        so["viec"] = [x for x in so["viec"] if x["id"] != id_viec]
+        _ghi_tuan(so)
+    ghi_nhat_ky("xoa_viec", user["ten"], {"tuan": ma, "viec": id_viec, "ban_goc": v})
+    return v
+
+
 def doi_sang_tuan_sau(ma: str, id_viec: str, user: dict,
                       ly_do: str = "", nguoi_moi: dict | None = None) -> dict:
     """Đóng tuần: việc chưa xong → dời. Tuần này ghi DOI (vẫn tính là chưa hoàn
