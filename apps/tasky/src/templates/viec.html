@@ -72,7 +72,7 @@
             <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor"
               stroke-width="2" stroke-linecap="round"><circle cx="12" cy="5" r="2.2"/>
               <circle cx="6" cy="19" r="2.2"/><circle cx="18" cy="19" r="2.2"/>
-              <path d="M12 7.2v3.8M12 11h-6v5.8M12 11h6v5.8"/></svg>{{ _mt.tieu_de }}
+              <path d="M12 7.2v3.8M12 11h-6v5.8M12 11h6v5.8"/></svg>Goal: {{ _mt.tieu_de }}
             {%- if _td and _td.tong %} · {{ _td.xong }}/{{ _td.tong }} việc{% endif %}</a>
         {% endif %}
         {% if v.gap %}<span class="the gap">GẤP</span>{% endif %}
@@ -169,7 +169,7 @@
 {% endmacro %}
 
 {% if cho_dung_mt %}
-<div class="tk-muc"><h3>Nhiệm vụ chờ bạn dựng thành mục tiêu</h3><hr>
+<div class="tk-muc"><h3>Nhiệm vụ chờ bạn dựng thành Goal</h3><hr>
   <span class="ghi">Chẻ ra việc nhỏ rồi giao cho người của mình</span></div>
 {% for v in cho_dung_mt %}
 <div class="viec" style="padding:12px 14px;margin-bottom:10px" data-nv="{{ v.id }}">
@@ -181,7 +181,7 @@
   <div class="hang" style="margin:0">
     <input data-nv-kq placeholder="Kết quả cần đạt (bắt buộc — ví dụ: AVD ≥ 45%)">
     <input data-nv-han type="date" style="flex:0 0 auto">
-    <button class="nut chinh" data-nv-dung>Dựng thành mục tiêu</button>
+    <button class="nut chinh" data-nv-dung>Dựng thành Goal</button>
   </div>
   <div class="loi" data-nv-loi hidden></div>
 </div>

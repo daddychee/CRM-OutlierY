@@ -1,6 +1,6 @@
 {% extends "base.html" %}
-{% block title %}Mục tiêu — Tasky{% endblock %}
-{% block topbar_ten %}Tasky · Mục tiêu{% endblock %}
+{% block title %}Goal — Tasky{% endblock %}
+{% block topbar_ten %}Tasky · Goal{% endblock %}
 
 {% block style_them %}
   {% include "_tasky_style.html" %}
@@ -67,21 +67,21 @@
 {% block noi_dung %}
 <div class="tk-dau">
   <div>
-    <h2>Mục tiêu</h2>
+    <h2>Goal</h2>
     <div class="khoang">{{ user.bo_phan or 'Toàn công ty' }} ·
       {{ cay|selectattr('trang_thai','equalto','dang_chay')|list|length }} đang chạy</div>
   </div>
   {% if duoc_dat %}
-  <div class="tk-lui"><button class="nut chinh" id="mo-tao">+ Mục tiêu mới</button></div>
+  <div class="tk-lui"><button class="nut chinh" id="mo-tao">+ Goal mới</button></div>
   {% endif %}
 </div>
 
 {% if duoc_dat %}
 <div class="viec" id="form-tao" hidden style="padding:13px 15px;margin-bottom:13px">
   <div class="goi-y" style="margin-top:0">Kết quả cần đạt là bắt buộc — không nêu thì
-    sau này không chốt được đạt hay chưa.</div>
+    sau này không chốt được Goal đạt hay chưa.</div>
   <div class="hang">
-    <input id="t-ten" placeholder="Mục tiêu… (ví dụ: Tăng AVD kênh Life In US)">
+    <input id="t-ten" placeholder="Goal… (ví dụ: Tăng AVD kênh Life In US)">
     <input id="t-kq" placeholder="Kết quả cần đạt (AVD ≥ 45%)" style="max-width:230px">
     <input id="t-han" type="date" title="Hạn (không bắt buộc)" style="flex:0 0 auto">
     <button class="nut chinh" id="t-luu">Tạo</button>
@@ -91,7 +91,7 @@
 {% endif %}
 
 {% if not cay %}
-<div class="trong">Chưa có mục tiêu nào{% if duoc_dat %} — bấm “+ Mục tiêu mới” để bắt đầu{% endif %}.</div>
+<div class="trong">Chưa có Goal nào{% if duoc_dat %} — bấm “+ Goal mới” để bắt đầu{% endif %}.</div>
 {% else %}
 
 <div class="mt-tabs" role="tablist">
@@ -150,7 +150,7 @@
 
   {% if m.trang_thai == 'dang_chay' and m.tien_do.xong_het %}
   <div class="khoi-chot" data-chot="{{ m.id }}">
-    <h4>Làm xong hết việc — nhưng có đạt mục tiêu không?</h4>
+    <h4>Làm xong hết việc — nhưng Goal có đạt không?</h4>
     <p class="goi-y" style="margin:0 0 10px">Máy chỉ đếm được việc đã nghiệm thu.
       Kết quả thật do bạn kết luận, lưu kèm tên bạn.</p>
     <div class="hang">
@@ -209,7 +209,7 @@
   {% if m.trang_thai == 'dang_chay' %}
   <div class="viec" style="padding:11px 13px">
     <div class="hang" style="margin:0">
-      <input data-che-ten placeholder="Thêm việc cần làm để đạt mục tiêu này…">
+      <input data-che-ten placeholder="Thêm việc cần làm để đạt Goal này…">
       <select data-che-nguoi>
         <option value="">Chưa phân công</option>
         {% for n in cap_duoi %}<option value="{{ n.ten }}">{{ n.ho_ten or n.ten }}</option>{% endfor %}

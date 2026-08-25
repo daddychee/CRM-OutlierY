@@ -415,7 +415,7 @@ def test_chot_qua_api_bat_nhan_xet(_so_gia):
 
 def test_sidebar_co_muc_con_muc_tieu(_so_gia):
     r = _client.get("/muc-tieu", headers=H_MGR)
-    assert 'href="/muc-tieu"' in r.text and "Mục tiêu</a>" in r.text
+    assert 'href="/muc-tieu"' in r.text and "Goal</a>" in r.text
 
 
 # ---------- nối hai đầu: màn việc ↔ mục tiêu ----------
@@ -426,7 +426,7 @@ def test_the_viec_hien_chip_muc_tieu_kem_tien_do(_so_gia):
     tuan.them_viec_giao(ma, MGR, NV, "Feedback 6 script", "x", muc_tieu_id=m["id"])
     _viec_xong(ma, m, "Việc đã xong")
     r = _client.get("/tasky", headers=H_NV)
-    assert "Tăng AVD kênh Life In" in r.text and "1/2 việc" in r.text
+    assert "Goal: Tăng AVD kênh Life In" in r.text and "1/2 việc" in r.text
 
 
 def test_viec_khong_thuoc_muc_tieu_thi_khong_co_chip(_so_gia):
@@ -440,7 +440,7 @@ def test_manager_thay_nhiem_vu_cho_dung_thanh_muc_tieu(_so_gia):
     ma = tuan.ma_tuan()
     tuan.them_viec_giao(ma, OWNER, MGR, "Nâng chất lượng giữ chân video Mỹ", "Định hướng")
     r = _client.get("/tasky", headers=H_MGR)
-    assert "Nhiệm vụ chờ bạn dựng thành mục tiêu" in r.text
+    assert "Nhiệm vụ chờ bạn dựng thành Goal" in r.text
     assert "Nâng chất lượng giữ chân video Mỹ" in r.text
 
 
@@ -449,12 +449,12 @@ def test_nhan_vien_khong_thay_khoi_dung_muc_tieu(_so_gia):
     ma = tuan.ma_tuan()
     tuan.them_viec_giao(ma, MGR, NV, "Việc thường", "x")
     r = _client.get("/tasky", headers=H_NV)
-    assert "Nhiệm vụ chờ bạn dựng thành mục tiêu" not in r.text
+    assert "Nhiệm vụ chờ bạn dựng thành Goal" not in r.text
 
 
 def test_dung_xong_thi_nhiem_vu_het_nam_trong_danh_sach_cho(_so_gia):
     ma = tuan.ma_tuan()
     nv = tuan.them_viec_giao(ma, OWNER, MGR, "Nhiệm vụ A", "Định hướng")
-    assert "Nhiệm vụ chờ bạn dựng" in _client.get("/tasky", headers=H_MGR).text
+    assert "dựng thành Goal" in _client.get("/tasky", headers=H_MGR).text
     mt.tao(MGR, "Nhiệm vụ A", "kết quả X", tu_nhiem_vu=nv["id"])
-    assert "Nhiệm vụ chờ bạn dựng" not in _client.get("/tasky", headers=H_MGR).text
+    assert "dựng thành Goal" not in _client.get("/tasky", headers=H_MGR).text
