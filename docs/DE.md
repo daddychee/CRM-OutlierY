@@ -454,6 +454,26 @@ sqlite-snapshot như iam.db.
   **LƯU Ý VẬN HÀNH**: migration tự chạy ở lần mở kết nối kế tiếp (đã VACUUM INTO
   `data/nen/backup/iam-truoc-thoi-viec-*.db` trước); phải RESTART gateway +
   to-chuc mới ăn code mới (bài học 19/08: template mới + Python cũ = câm lặng).
+- 25/08/2026 — **Đ4 mở màn: PLANNERY ĐẤU VÀO ĐẾ** (Owner chốt 2 mức: người do đế
+  quyết danh sách · ô kênh là dropdown bắt buộc; `leaves` để đợt sau). Đế mở **hai
+  cửa đọc loopback** dùng chung cho mọi app phụ về sau: `/api/nhan-su/danh-sach`
+  (mỗi dòng MỘT CON NGƯỜI, kèm `planner_id` dẫn xuất `iam.planner_id_cua`, trả CẢ
+  người đã thôi việc kèm trạng thái, KHÔNG lộ cccd/địa chỉ/ngày sinh/sđt) và
+  `/api/danh-ba/kenh` (kênh + ngách + `lien_ket_app`, trả cả kênh khai tử kèm
+  trạng thái — lọc là luật của app). PlannerY: ô gõ tên người/kênh tự do ĐÃ GỠ,
+  thay bằng dropdown từ đế; kênh mang `kenh_ma`, dự án mang `ngach_ma`; khối đối
+  chiếu chỉ ra chỗ lệch nhưng NGƯỜI BẤM MỚI GHI, và mọi ghi vẫn qua `POST
+  /api/plan` (CAS `_rev`) — không ai ghi thẳng plan.json. Nền chết → nói thẳng lý
+  do, không trả danh sách rỗng (van chống bịa). Chiều "đế biết khóa app" đi bằng
+  `python -m scripts.lien_ket_plannery` (mặc định liệt kê, `--chay` mới ghi kèm
+  backup) vì sửa liên kết chỉ Owner (mục 1 Q4). ĐO TRÊN DỮ LIỆU THẬT: bắt đúng
+  NS-013 đã thôi việc vẫn nằm trong kế hoạch, NS-016 (Editor) chưa từng có trong
+  PlannerY, 7 kênh chưa gắn danh bạ (5 có gợi ý theo tên; *Astro Mind* và
+  *INVESTIGATE1* chưa có trong danh bạ — Owner tạo ở General rồi ghép). Nghiệm thu
+  Chrome headless trên BẢN SAO CÔ LẬP (gateway 9009 + plannery 9198, DB copy bằng
+  VACUUM INTO) — hệ thật cổng 9000 không bị đụng. **CẦN LÀM ĐỂ ĂN BẢN MỚI: restart
+  gateway + plannery** (bài học 19/08: template mới + tiến trình cũ = câm lặng).
+  Root 233 test; plannery 35 (+3 fail test_engine baseline V2).
 
 ## 14. PERMISSIONS THIẾT KẾ LẠI (16/08 — mockup v2 CHỜ OWNER DUYỆT, chưa code)
 
