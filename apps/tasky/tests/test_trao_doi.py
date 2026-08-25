@@ -147,7 +147,17 @@ def test_doi_ten_goal_bang_form(_so):
     assert r.status_code == 303 and mt.doc_tat_ca()[0]["tieu_de"] == "Tên mới"
 
 
-def test_form_sua_goal_hien_tren_trang(_so):
+def test_sua_goal_TAI_CHO_khong_co_box_rieng(_so):
+    """Owner 25/08: box 'Sửa Goal này' thừa — sửa thẳng trên tiêu đề đang hiển thị."""
     mt.tao(MGR, "Goal A", "kq")
     r = _c.get("/muc-tieu", headers=H_MGR)
-    assert 'action="/muc-tieu/sua"' in r.text and "Sửa Goal này" in r.text
+    assert 'action="/muc-tieu/sua"' in r.text
+    assert 'class="o-tai-cho ten-goal" name="tieu_de"' in r.text
+    assert "Sửa Goal này" not in r.text
+
+
+def test_goal_da_chot_thi_khong_sua_tai_cho(_so):
+    m = mt.tao(MGR, "Goal A", "kq")
+    mt.chot_ket_qua(m["id"], MGR, mt.DAT)
+    r = _c.get("/muc-tieu", headers=H_MGR)
+    assert 'name="tieu_de"' not in r.text      # đã chốt → chỉ đọc

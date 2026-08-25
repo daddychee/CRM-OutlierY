@@ -160,8 +160,25 @@
 <section class="mt-than" data-mt="{{ m.id }}" {% if m.id != chon %}hidden{% endif %}>
   <div class="mt-dau{% if m.mau %} mau-nen-{{ m.mau }}{% endif %}">
     <div style="flex:1;min-width:230px">
+      {% if m.trang_thai == 'dang_chay' %}
+      <form class="sua-tai-cho" method="post" action="/muc-tieu/sua">
+        <input type="hidden" name="id" value="{{ m.id }}">
+        <input class="o-tai-cho ten-goal" name="tieu_de" value="{{ m.tieu_de }}"
+          title="Sửa tên rồi nhấn Enter để lưu">
+        <div class="kq" style="display:flex;align-items:center;gap:6px;margin-top:4px">
+          <span style="flex:0 0 auto">Kết quả cần đạt:</span>
+          <input class="o-tai-cho kq" name="ket_qua" value="{{ m.ket_qua_can_dat }}"
+            title="Sửa rồi nhấn Enter để lưu">
+          <input class="o-tai-cho han" type="date" name="han" value="{{ m.han }}"
+            title="Hạn — sửa rồi nhấn Enter">
+          <button type="submit" style="display:none">Lưu</button>
+          <span class="goi-sua">Enter để lưu</span>
+        </div>
+      </form>
+      {% else %}
       <h2>{{ m.tieu_de }}</h2>
       <div class="kq">Kết quả cần đạt: <b>{{ m.ket_qua_can_dat }}</b></div>
+      {% endif %}
       <div class="hang-the" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;align-items:center">
         {% if m.han %}<span class="the">Hạn {{ m.han[8:] }}/{{ m.han[5:7] }}
           {%- if m.con_han is not none %} · {% if m.con_han < 0 %}trễ {{ -m.con_han }} ngày
@@ -209,23 +226,7 @@
     </div>
   </div>
   <div class="loi" data-loi-goal="{{ m.id }}" hidden></div>
-  {% if m.trang_thai == 'dang_chay' %}
-  <details class="hop-phu" style="margin-bottom:12px">
-    <summary>Sửa Goal này</summary>
-    <div class="noi">
-      <form class="sua-goal" method="post" action="/muc-tieu/sua" style="margin-top:0;border:0;padding-top:0">
-        <input type="hidden" name="id" value="{{ m.id }}">
-        <input type="text" name="tieu_de" value="{{ m.tieu_de }}" style="flex:1;min-width:190px"
-          placeholder="Tên Goal">
-        <input type="text" name="ket_qua" value="{{ m.ket_qua_can_dat }}" style="flex:1;min-width:170px"
-          placeholder="Kết quả cần đạt">
-        <input type="date" name="han" value="{{ m.han }}">
-        <button class="nut chinh" type="submit">Lưu</button>
-      </form>
-      <div class="goi-y" style="margin-top:7px">Để trống một ô nghĩa là giữ nguyên giá trị cũ.</div>
-    </div>
-  </details>
-  {% endif %}
+
 
   {% if m.trang_thai == 'dang_chay' and m.tien_do.xong_het %}
   <div class="khoi-chot" data-chot="{{ m.id }}">
@@ -455,6 +456,17 @@
     document.getElementById("t-luu").addEventListener("click", luu);
     enter(document.getElementById("t-ten"), luu);
   }
+
+  // Sửa tại chỗ: rời ô mà nội dung đã đổi thì tự lưu. Chỉ là TIỆN ÍCH —
+  // Enter đã lưu được bằng hành vi form gốc, JS hỏng cũng không mất tính năng.
+  document.querySelectorAll("form.sua-tai-cho").forEach(function (f) {
+    f.querySelectorAll(".o-tai-cho").forEach(function (o) {
+      var cu = o.value;
+      o.addEventListener("blur", function () {
+        if (o.value !== cu && o.value.trim()) { f.submit(); }
+      });
+    });
+  });
 
   // dropdown thêm người → chip; bấm x để bỏ
   document.querySelectorAll("[data-chon-ai]").forEach(function (sel) {
