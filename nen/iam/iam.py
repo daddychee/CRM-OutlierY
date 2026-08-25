@@ -441,6 +441,15 @@ def liet_ke_nguoi(conn: sqlite3.Connection) -> list[dict]:
     return [dict(r) for r in conn.execute("SELECT * FROM nguoi ORDER BY ma").fetchall()]
 
 
+def planner_id_cua(ma_nguoi: str) -> str:
+    """Khóa nối PlannerY DẪN XUẤT từ mã hồ sơ: NS-005 -> ns_ns005 (khuôn
+    plannery_sync hệ cũ; to-chuc/KPI đang dùng đúng công thức này). Dẫn xuất chứ
+    không phải cột tự do: mã hồ sơ bất biến nên khóa cũng bất biến, hết cảnh nối
+    người bằng họ tên (bẫy map-theo-tên 05/08)."""
+    ma = (ma_nguoi or "").strip()
+    return ("ns_" + ma.replace("-", "").lower()) if ma else ""
+
+
 # ---------- quyền ----------
 
 def gan_override(conn: sqlite3.Connection, ai_lam: dict, ten_dich: str,

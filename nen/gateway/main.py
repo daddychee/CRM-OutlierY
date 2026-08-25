@@ -1979,6 +1979,62 @@ def api_danh_ba_ngach(request: Request):
             for t in danh_ba.liet_ke("ngach")]
 
 
+@app.get("/api/danh-ba/kenh")
+def api_danh_ba_kenh(request: Request):
+    """App phụ (bind loopback) đọc KÊNH NHÀ từ danh bạ — PlannerY 25/08 là app
+    tiêu thụ đầu tiên (ô kênh của nó là dropdown từ đây, hết gõ tên tự do:
+    DE.md luật 2). Trả cả kênh khai tử kèm `trang_thai` để app đang trỏ kênh đó
+    vẫn hiện đúng tên, việc ẩn khỏi ô chọn là luật của app."""
+    if request.client and request.client.host not in ("127.0.0.1", "::1"):
+        return JSONResponse({"loi": "chi loopback"}, status_code=403)
+    ten_ngach = {t["ma"]: t.get("ten_chuan", "") for t in danh_ba.liet_ke("ngach")}
+    return [{"ma": t["ma"], "ten": t.get("ten_chuan", ""),
+             "ngach_ma": t.get("ngach_ma") or "",
+             "ngach_ten": ten_ngach.get(t.get("ngach_ma") or "", ""),
+             "thi_truong_ma": t.get("thi_truong_ma") or "",
+             "loai_kenh": t.get("loai_kenh") or "",
+             "trang_thai": t.get("trang_thai") or "",
+             "phu_trach": t.get("phu_trach") or "",
+             "lien_ket": t.get("lien_ket", {})}
+            for t in danh_ba.liet_ke("kenh")]
+
+
+@app.get("/api/nhan-su/danh-sach")
+def api_nhan_su_danh_sach(request: Request):
+    """App phụ (bind loopback) đọc DANH SÁCH NGƯỜI từ sổ IAM — mỗi dòng là MỘT
+    CON NGƯỜI (hồ sơ NS), tài khoản chỉ là trường phụ (khuôn HR Hub).
+
+    Có `planner_id` dẫn xuất để PlannerY nối người theo MÃ, và trả CẢ người đã
+    thôi việc kèm `trang_thai`: app cần biết ai đã nghỉ mà còn nằm trong kế hoạch
+    (đo 25/08: NS-013 đã nghỉ vẫn ở trong plan.json) — lọc là luật của app.
+    KHÔNG trả cccd/địa chỉ/ngày sinh/sđt: cửa này là danh sách vận hành, dữ liệu
+    nhạy cảm chỉ đi qua đường riêng có vết từng lượt xem."""
+    if request.client and request.client.host not in ("127.0.0.1", "::1"):
+        return JSONResponse({"loi": "chi loopback"}, status_code=403)
+    conn = iam.ket_noi()
+    try:
+        tk_theo_nguoi = {}
+        for tk in iam.liet_ke_tai_khoan(conn):
+            if tk.get("nguoi_ma"):
+                tk_theo_nguoi.setdefault(tk["nguoi_ma"], tk)
+        ra = []
+        for n in iam.liet_ke_nguoi(conn):
+            tk = tk_theo_nguoi.get(n["ma"]) or {}
+            ra.append({"ma": n["ma"], "ho_ten": n.get("ho_ten", ""),
+                       "bo_phan": n.get("bo_phan", ""),
+                       "vi_tri": n.get("vi_tri", ""),
+                       "cap_bac": n.get("cap_bac", ""),
+                       "trang_thai": n.get("trang_thai", ""),
+                       "planner_id": (n.get("planner_id")
+                                      or iam.planner_id_cua(n["ma"])),
+                       "tai_khoan": tk.get("ten", ""),
+                       "level": int(tk.get("level") or 0),
+                       "khoa": bool(tk.get("khoa"))})
+        return {"nguoi": ra}
+    finally:
+        conn.close()
+
+
 # ---------- PHÂN CÔNG (trục B — DE.md; Owner chốt 24/08/2026) ----------
 # Trục A (năng lực) đi bằng header X-Remote-Actions mỗi request. Trục B (ai làm việc
 # trên ĐỐI TƯỢNG nào) không đi được bằng header — danh sách dài và đổi theo từng đối
