@@ -158,3 +158,23 @@
   .nut-gap[aria-pressed="true"]{background:var(--tk-cap);border-color:var(--tk-cap);
     color:var(--th-090c12)}
   html[data-theme="light"] .nut-gap[aria-pressed="true"]{color:#ffffff}
+
+  /* Cuộc trao đổi trong việc — chỉ-thêm, đọc từ trên xuống */
+  .td{margin-top:11px;padding-top:10px;border-top:1px dashed var(--chip-line)}
+  .td > .nhan{font-size:12px;color:var(--muted);margin-bottom:7px;display:flex;gap:6px;
+    align-items:center}
+  ul.td-ds{list-style:none;margin:0 0 9px;padding:0;display:flex;flex-direction:column;gap:7px;
+    max-height:230px;overflow-y:auto}
+  ul.td-ds li{background:var(--th-141c2b);border:1px solid var(--line);border-radius:10px;
+    padding:7px 11px}
+  ul.td-ds li.toi{background:var(--th-16263f);border-color:var(--accent)}
+  ul.td-ds .ai{font-size:11.5px;color:var(--muted);margin-bottom:2px}
+  ul.td-ds .ai b{color:var(--ink);font-weight:600}
+  ul.td-ds .chu{font-size:13.5px;white-space:pre-wrap;word-break:break-word}
+  .td form{display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+  .td input[type=text]{flex:1;min-width:170px;border:1px solid var(--chip-line);border-radius:9px;
+    padding:8px 11px;background:var(--th-182233);color:var(--ink);font:inherit;font-size:13px}
+  .sua-goal{display:flex;gap:7px;flex-wrap:wrap;align-items:center;margin-top:9px;
+    padding-top:9px;border-top:1px dashed var(--chip-line)}
+  .sua-goal input{border:1px solid var(--chip-line);border-radius:9px;padding:7px 10px;
+    background:var(--th-182233);color:var(--ink);font:inherit;font-size:13px}

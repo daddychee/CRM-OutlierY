@@ -149,6 +149,7 @@ def trang_viec(request: Request, user: dict = Depends(lay_user), tuan_xem: str =
                      for v in ds if v["nguon"] == "phoi_hop"},
         "tk": tuan_lo.thong_ke_nguoi(ma, user["ten"]),
         "xoa_duoc": {v["id"]: tuan_lo.duoc_xoa(v, user)[0] for v in ds},
+        "trao_doi": {v["id"]: (v.get("trao_doi") or []) for v in ds},
         # việc thuộc mục tiêu nào (chip xanh trên thẻ việc) + nhiệm vụ chờ dựng
         "mt_theo_id": mt_lo.theo_id(ds_mt),
         "mt_tien_do": {m["id"]: mt_lo.tien_do(m["id"], gom_mt.get(m["id"], []))
@@ -442,6 +443,29 @@ def form_mau_muc_tieu(id: str = Form(...), mau: str = Form(""),
     except (ValueError, PermissionError):
         pass
     return RedirectResponse(f"/muc-tieu?chon={id}", status_code=303)
+
+
+@app.post("/muc-tieu/sua")
+def form_sua_muc_tieu(id: str = Form(...), tieu_de: str = Form(""),
+                      ket_qua: str = Form(""), han: str = Form(""),
+                      user: dict = Depends(yeu_cau_muc_tieu)):
+    """Sửa Goal bằng FORM THUẦN (cùng lệ với đổi màu — không phụ thuộc JS)."""
+    try:
+        mt_lo.sua(id, user, tieu_de, ket_qua, han if han else None)
+    except (ValueError, PermissionError):
+        pass
+    return RedirectResponse(f"/muc-tieu?chon={id}", status_code=303)
+
+
+@app.post("/tasky/trao-doi")
+def form_trao_doi(id: str = Form(...), chu: str = Form(""), ve: str = Form("/tasky"),
+                  tuan_xem: str = Form(""), user: dict = Depends(lay_user)):
+    """Nhắn vào việc — FORM THUẦN, quay lại đúng trang vừa nhắn."""
+    try:
+        tuan_lo.them_trao_doi(_ma_tuan_hop_le(tuan_xem), id, user, chu)
+    except (ValueError, PermissionError):
+        pass
+    return RedirectResponse(ve if ve.startswith("/") else "/tasky", status_code=303)
 
 
 @app.post("/muc-tieu/don-viec-cu")

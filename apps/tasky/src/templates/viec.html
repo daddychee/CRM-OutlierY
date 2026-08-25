@@ -163,6 +163,33 @@
       </div>
       {% endif %}
     {% endif %}
+    {% if v.trang_thai not in ('tu_choi', 'huy') %}
+    <div class="td">
+      <div class="nhan">
+        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor"
+          stroke-width="1.8" stroke-linecap="round"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 8.5 8.5 0 0 1-3.8-.9L3 21l1.9-5.1A8.4 8.4 0 0 1 12 3a8.4 8.4 0 0 1 9 8.5z"/></svg>
+        Trao đổi{% if trao_doi.get(v.id) %} · {{ trao_doi[v.id]|length }} tin{% endif %}
+      </div>
+      {% if trao_doi.get(v.id) %}
+      <ul class="td-ds">
+        {% for t in trao_doi[v.id] %}
+        <li{% if t.ai == user.ten %} class="toi"{% endif %}>
+          <div class="ai"><b>{{ t.ten or t.ai }}</b> · {{ t.luc[8:10] }}/{{ t.luc[5:7] }} {{ t.luc[11:16] }}</div>
+          <div class="chu">{{ t.chu }}</div>
+        </li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+      <form method="post" action="/tasky/trao-doi">
+        <input type="hidden" name="id" value="{{ v.id }}">
+        <input type="hidden" name="tuan_xem" value="{{ ma_tuan }}">
+        <input type="hidden" name="ve" value="/tasky?tuan_xem={{ ma_tuan }}">
+        <input type="text" name="chu" placeholder="Nhắn cho {% if v.nguoi_giao and v.nguoi_giao != user.ten %}{{ v.nguoi_giao }}{% else %}người liên quan{% endif %}…" maxlength="1000">
+        <button class="nut" type="submit">Gửi</button>
+      </form>
+    </div>
+    {% endif %}
+
     {% if xoa_duoc.get(v.id) %}
     <div class="hang" style="margin-top:9px">
       <span class="goi-y" style="flex:1;margin:0">Gõ nhầm hay không cần nữa thì xóa hẳn —

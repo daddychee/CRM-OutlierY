@@ -209,6 +209,23 @@
     </div>
   </div>
   <div class="loi" data-loi-goal="{{ m.id }}" hidden></div>
+  {% if m.trang_thai == 'dang_chay' %}
+  <details class="hop-phu" style="margin-bottom:12px">
+    <summary>Sửa Goal này</summary>
+    <div class="noi">
+      <form class="sua-goal" method="post" action="/muc-tieu/sua" style="margin-top:0;border:0;padding-top:0">
+        <input type="hidden" name="id" value="{{ m.id }}">
+        <input type="text" name="tieu_de" value="{{ m.tieu_de }}" style="flex:1;min-width:190px"
+          placeholder="Tên Goal">
+        <input type="text" name="ket_qua" value="{{ m.ket_qua_can_dat }}" style="flex:1;min-width:170px"
+          placeholder="Kết quả cần đạt">
+        <input type="date" name="han" value="{{ m.han }}">
+        <button class="nut chinh" type="submit">Lưu</button>
+      </form>
+      <div class="goi-y" style="margin-top:7px">Để trống một ô nghĩa là giữ nguyên giá trị cũ.</div>
+    </div>
+  </details>
+  {% endif %}
 
   {% if m.trang_thai == 'dang_chay' and m.tien_do.xong_het %}
   <div class="khoi-chot" data-chot="{{ m.id }}">
@@ -261,6 +278,33 @@
         {% else %}<span class="ai-nho" title="Bạn đã giao việc này cho {{ v.nguoi }}">
           {%- if v.nguoi == user.ten %}tôi làm{% else %}giao {{ v.nguoi }}{% endif %}</span>{% endif %}
       </li>
+      {% if v.trang_thai not in ('chua_giao',) %}
+      <li style="padding-top:0;border-top:0">
+        <details style="width:100%">
+          <summary style="cursor:pointer;font-size:12px;color:var(--muted);list-style:none">
+            Trao đổi{% if v.trao_doi %} · {{ v.trao_doi|length }} tin{% endif %}</summary>
+          <div class="td" style="margin-top:8px;border-top:0;padding-top:0">
+            {% if v.trao_doi %}
+            <ul class="td-ds">
+              {% for t in v.trao_doi %}
+              <li{% if t.ai == user.ten %} class="toi"{% endif %}>
+                <div class="ai"><b>{{ t.ten or t.ai }}</b> · {{ t.luc[8:10] }}/{{ t.luc[5:7] }} {{ t.luc[11:16] }}</div>
+                <div class="chu">{{ t.chu }}</div>
+              </li>
+              {% endfor %}
+            </ul>
+            {% endif %}
+            <form method="post" action="/tasky/trao-doi">
+              <input type="hidden" name="id" value="{{ v.id }}">
+              <input type="hidden" name="tuan_xem" value="{{ ma_tuan }}">
+              <input type="hidden" name="ve" value="/muc-tieu?chon={{ m.id }}">
+              <input type="text" name="chu" placeholder="Nhắn cho {{ v.nguoi }}…" maxlength="1000">
+              <button class="nut" type="submit">Gửi</button>
+            </form>
+          </div>
+        </details>
+      </li>
+      {% endif %}
       {% endfor %}
     </ul>
   </details>

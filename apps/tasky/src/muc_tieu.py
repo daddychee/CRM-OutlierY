@@ -108,6 +108,26 @@ def tao(user: dict, tieu_de: str, ket_qua_can_dat: str, han: str = "",
     return mt
 
 
+def sua(mt_id: str, user: dict, tieu_de: str = "", ket_qua_can_dat: str = "",
+        han: str | None = None) -> dict:
+    """Sửa tên / kết quả cần đạt / hạn của Goal. Trường để trống = giữ nguyên."""
+    with _khoa:
+        ds = doc_tat_ca()
+        m = _tim(ds, mt_id)
+        if not duoc_sua(m, user):
+            raise PermissionError("Chỉ Manager của Goal này (hoặc Owner) mới sửa được.")
+        if tieu_de.strip():
+            m["tieu_de"] = tieu_de.strip()[:200]
+        if ket_qua_can_dat.strip():
+            m["ket_qua_can_dat"] = ket_qua_can_dat.strip()[:300]
+        if han is not None:
+            m["han"] = _han_hop_le(han)
+        _ghi(ds)
+    ghi_nhat_ky("sua_muc_tieu", user["ten"],
+                {"muc_tieu": mt_id, "tieu_de": m["tieu_de"], "han": m["han"]})
+    return m
+
+
 def dat_mau(mt_id: str, user: dict, mau: str) -> dict:
     """Đánh dấu màu cho Goal — nhãn cá nhân của người quản, đổi lúc nào cũng được."""
     if mau not in MAU_NHAN:

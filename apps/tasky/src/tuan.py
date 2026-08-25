@@ -265,6 +265,7 @@ def _viec_moi(tieu_de: str, loai_viec: str, nguoi: str) -> dict:
             "han": "", "gap": False,    # hạn chót (ISO) + dấu GẤP (Owner chốt 24/08)
             "muc_tieu_id": "",          # việc này phục vụ mục tiêu nào (§12)
             "cung_viec": "",            # cùng một việc giao cho nhiều người (§14)
+            "trao_doi": [],             # cuộc trao đổi trong việc (§15) — CHỈ THÊM
             "luc_tao": _gio(), "luc_nhan": None, "luc_bao_xong": None,
             "luc_xac_nhan": None, "nguoi_xac_nhan": None, "tu_xac_nhan": False}
 
@@ -574,6 +575,44 @@ def chuyen_vao_goal(ma: str, id_viec: str, user: dict, muc_tieu_id: str) -> dict
     ghi_nhat_ky("chuyen_vao_goal", user["ten"],
                 {"tuan": ma, "viec": id_viec, "muc_tieu": muc_tieu_id})
     return v
+
+
+def duoc_doc_trao_doi(viec: dict, user: dict) -> bool:
+    """Ai đọc/viết được cuộc trao đổi trong một việc: NGƯỜI LÀM, NGƯỜI GIAO, Owner.
+
+    Giữ đúng luật 1 (§9.1): đồng nghiệp ngang cấp không xem việc của nhau, nên cũng
+    không đọc được trao đổi trong đó.
+    """
+    return (user["level"] >= OWNER_LEVEL
+            or viec["nguoi"] == user["ten"]
+            or viec.get("nguoi_giao") == user["ten"])
+
+
+def them_trao_doi(ma: str, id_viec: str, user: dict, chu: str) -> dict:
+    """Nhắn một câu vào việc. CHỈ THÊM — không sửa, không xóa: trao đổi là chứng cứ
+    của quá trình, sửa được thì mất tác dụng đối chiếu (cùng lệ nhật ký của hệ)."""
+    chu = (chu or "").strip()
+    if not chu:
+        raise ValueError("Chưa nhập nội dung.")
+    with _khoa:
+        so = doc_tuan(ma)
+        v = _tim(so, id_viec)
+        if not duoc_doc_trao_doi(v, user):
+            raise PermissionError("Bạn không có phần trong việc này.")
+        v.setdefault("trao_doi", []).append(
+            {"id": "td-" + uuid.uuid4().hex[:6], "ai": user["ten"],
+             "ten": user.get("ho_ten") or user["ten"],
+             "luc": _gio(), "chu": chu[:1000]})
+        _ghi_tuan(so)
+    ghi_nhat_ky("trao_doi", user["ten"], {"tuan": ma, "viec": id_viec})
+    return v["trao_doi"][-1]
+
+
+def doc_trao_doi(ma: str, id_viec: str, user: dict) -> list[dict]:
+    v = _tim(doc_tuan(ma), id_viec)
+    if not duoc_doc_trao_doi(v, user):
+        raise PermissionError("Bạn không có phần trong việc này.")
+    return v.get("trao_doi") or []
 
 
 def duoc_xoa(viec: dict, user: dict) -> tuple[bool, str, str]:

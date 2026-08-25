@@ -307,3 +307,21 @@ nhân đôi, bốn khối không trùng — nên **tán ra hai màn** chứ khô
    trong cây. Việc ngoài Goal vẫn tồn tại (nhân sự tự thêm) nhưng Manager xử lý
    chúng ở **Báo cáo**, khối *Chờ bạn xử lý* — nếu không có khối này thì bỏ tab Việc
    lẻ sẽ làm chúng mất chỗ đứng.
+
+## 15. TRAO ĐỔI TRONG VIỆC + SỬA GOAL (Owner 25/08)
+
+**Trao đổi**: mỗi việc có một cuộc trao đổi **CHỈ THÊM** — không sửa, không xóa, cùng
+lệ với nhật ký: trao đổi là chứng cứ của quá trình, sửa được thì mất tác dụng đối chiếu.
+
+| Điều | Luật |
+|---|---|
+| Ai đọc / viết | **Người làm · người giao · Owner**. Đồng nghiệp ngang cấp không đọc được (giữ luật 1 §9.1) |
+| Ở đâu | Màn *Việc của tôi* (trong thân việc) và màn *Goal* (mỗi việc một `<details>` gấp lại) |
+| Việc đã từ chối / hủy | Không mở ô nhắn — việc đã đóng |
+
+**Sửa Goal**: đổi tên / kết quả cần đạt / hạn; ô để trống = giữ nguyên. Quyền như chốt
+kết quả (Manager của Goal hoặc Owner). Goal đã chốt thì không sửa.
+
+**Cả hai làm bằng FORM POST + 303**, không phụ thuộc JS — sau ca “đổi màu bấm không
+ăn” hai lần liền (§14), mọi thao tác ghi dữ liệu quan trọng ở app này ưu tiên form
+thuần; JS chỉ để tăng tiện, không để giữ tính năng sống.
