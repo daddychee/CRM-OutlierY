@@ -1,0 +1,453 @@
+<title>Tasky Báo Cáo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@600;700&display=swap">
+<style>
+:root{
+  --bg:#ffffff; --panel:#ffffff; --panel2:#f7f8fa; --line:#e6e6e6; --line2:#d9d9d9;
+  --ink:#16181c; --ink2:#3a3f47; --muted:#6c6c72;
+  --accent:#2c6fc4; --accent-ink:#1b5fb2; --tint:#e8f0fb;
+  --ok:#1f7a4d; --ok-bg:#e4f2ea; --warn:#8a5a00; --warn-bg:#fdf1de;
+  --danger:#b14a3c; --danger-bg:#fbe9e6;
+  --shadow:0 1px 2px rgba(16,24,40,.06), 0 1px 3px rgba(16,24,40,.04);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#090c12; --panel:#121826; --panel2:#141c2b; --line:#243149; --line2:#31425e;
+    --ink:#e8edf4; --ink2:#c2cbd9; --muted:#8b96a8;
+    --accent:#4c8fe0; --accent-ink:#6ba4e8; --tint:#16263f;
+    --ok:#6fbf8e; --ok-bg:#12301f; --warn:#d6a457; --warn-bg:#2e2413;
+    --danger:#d97c6c; --danger-bg:#331a16;
+    --shadow:0 1px 2px rgba(0,0,0,.4);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#090c12; --panel:#121826; --panel2:#141c2b; --line:#243149; --line2:#31425e;
+  --ink:#e8edf4; --ink2:#c2cbd9; --muted:#8b96a8;
+  --accent:#4c8fe0; --accent-ink:#6ba4e8; --tint:#16263f;
+  --ok:#6fbf8e; --ok-bg:#12301f; --warn:#d6a457; --warn-bg:#2e2413;
+  --danger:#d97c6c; --danger-bg:#331a16;
+  --shadow:0 1px 2px rgba(0,0,0,.4);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font:400 14px/1.55 Inter,system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
+h1,h2,h3,h4{margin:0;text-wrap:balance;font-weight:600;letter-spacing:-.01em}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+svg.ic{width:14px;height:14px;flex:none;stroke:currentColor;fill:none;stroke-width:1.8;
+  stroke-linecap:round;stroke-linejoin:round}
+
+.top{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 22px;
+  border-bottom:1px solid var(--line);background:var(--panel);position:sticky;top:0;z-index:5}
+.mark{display:flex;align-items:flex-end;gap:2px;height:18px}
+.mark i{width:3px;background:var(--muted);border-radius:1px;display:block}
+.mark i:nth-child(1){height:6px}.mark i:nth-child(2){height:10px}
+.mark i:nth-child(3){height:8px}.mark i:nth-child(4){height:12px}
+.mark i:nth-child(5){height:18px;background:var(--accent)}
+.wm{font:700 15px/1 "Space Grotesk",Inter,sans-serif;letter-spacing:-.02em}
+.spacer{flex:1}
+.btn{border:1px solid var(--line2);background:var(--panel);border-radius:8px;
+  padding:6px 12px;font-size:13px;font-weight:500;cursor:pointer;display:inline-flex;
+  align-items:center;gap:6px}
+.btn:hover{border-color:var(--accent);color:var(--accent-ink)}
+.btn.sm{padding:3px 9px;font-size:12px;border-radius:7px}
+.doi-vai{display:flex;gap:6px;background:var(--panel2);border:1px solid var(--line);
+  border-radius:9px;padding:3px}
+.doi-vai button{border:0;background:none;border-radius:7px;padding:5px 12px;font-size:13px;
+  cursor:pointer;color:var(--muted);display:inline-flex;align-items:center;gap:6px}
+.doi-vai button[aria-selected="true"]{background:var(--panel);color:var(--ink);font-weight:600;
+  box-shadow:var(--shadow)}
+
+.wrap{padding:18px 22px 48px;max-width:1120px}
+.dau{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.dau h2{font-size:17px}
+.dau .sub{font-size:12.5px;color:var(--muted)}
+
+/* chip trạng thái — LUÔN kèm chữ + icon, không bao giờ chỉ màu */
+.chip{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--line2);
+  border-radius:999px;padding:2px 9px;font-size:11.5px;color:var(--muted);white-space:nowrap}
+.chip.ok{background:var(--ok-bg);border-color:transparent;color:var(--ok);font-weight:600}
+.chip.warn{background:var(--warn-bg);border-color:transparent;color:var(--warn);font-weight:600}
+.chip.dan{background:var(--danger-bg);border-color:transparent;color:var(--danger);font-weight:600}
+.chip.acc{background:var(--tint);border-color:transparent;color:var(--accent-ink);font-weight:600}
+.chip svg{width:11px;height:11px;stroke-width:2.2}
+
+.o4{display:grid;grid-template-columns:repeat(auto-fit,minmax(168px,1fr));gap:12px;margin-bottom:18px}
+.o{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:13px 15px;
+  box-shadow:var(--shadow)}
+.o .lab{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.o .to{font:600 26px/1.15 "Space Grotesk",Inter,sans-serif;margin-top:5px;
+  font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.o .to small{font-size:13px;font-weight:500;color:var(--muted);font-family:Inter,sans-serif}
+.o .phu{font-size:12px;color:var(--muted);margin-top:3px}
+.thanh{height:6px;border-radius:3px;background:var(--panel2);overflow:hidden;margin-top:8px;
+  border:1px solid var(--line)}
+.thanh i{display:block;height:100%;background:var(--accent)}
+
+.muc{display:flex;align-items:center;gap:9px;margin:22px 0 10px;flex-wrap:wrap}
+.muc h3{font-size:12.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.muc hr{flex:1;border:0;border-top:1px solid var(--line)}
+.muc .ghi{font-size:12.5px;color:var(--muted)}
+
+.hop{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+  box-shadow:var(--shadow);margin-bottom:12px;overflow:hidden}
+.hop .noi{padding:14px 16px}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);white-space:nowrap}
+th{font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);
+  font-weight:600;background:var(--panel2)}
+tbody tr:last-child td{border-bottom:0}
+tbody tr:hover td{background:var(--panel2)}
+td.so{text-align:right;font-variant-numeric:tabular-nums}
+.mini{display:inline-block;width:56px;height:6px;border-radius:3px;background:var(--panel2);
+  overflow:hidden;vertical-align:middle;margin-right:8px;border:1px solid var(--line)}
+.mini i{display:block;height:100%;background:var(--accent)}
+.tblwrap{overflow-x:auto}
+
+/* sparkline — MỘT series, một màu accent, chấm cuối nhấn */
+.spark{display:inline-flex;align-items:center;gap:8px}
+.spark svg{width:74px;height:22px;overflow:visible}
+.spark .num{font-size:12.5px;color:var(--ink2);font-variant-numeric:tabular-nums}
+
+/* khối bộ phận (facet — thay cho việc tô màu theo bộ phận) */
+.bp{border:1px solid var(--line);border-radius:12px;background:var(--panel);margin-bottom:11px;
+  box-shadow:var(--shadow);overflow:hidden}
+.bp>header{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:12px 15px;
+  border-bottom:1px solid var(--line)}
+.bp h4{font-size:14px}
+.bp .ai{font-size:12.5px;color:var(--muted)}
+.bp .so-lieu{display:flex;gap:18px;flex-wrap:wrap;padding:11px 15px;font-size:12.5px}
+.bp .so-lieu div span{display:block;color:var(--muted);font-size:11px;
+  letter-spacing:.05em;text-transform:uppercase;font-weight:600;margin-bottom:2px}
+.bp .so-lieu b{font:600 15px/1.2 "Space Grotesk",Inter,sans-serif;font-variant-numeric:tabular-nums}
+
+ul.ds{list-style:none;margin:0;padding:0}
+ul.ds li{display:flex;gap:11px;align-items:center;padding:10px 15px;flex-wrap:wrap;
+  border-top:1px solid var(--line)}
+ul.ds li:first-child{border-top:0}
+ul.ds li:hover{background:var(--panel2)}
+.ten{flex:1;min-width:190px;font-size:13.5px}
+.ten small{display:block;color:var(--muted);font-size:12px;margin-top:1px}
+.note{font-size:12.5px;color:var(--muted)}
+.man[hidden]{display:none}
+@media (max-width:720px){ .bp .so-lieu{gap:12px} }
+</style>
+
+<div class="top">
+  <span class="mark"><i></i><i></i><i></i><i></i><i></i></span>
+  <b class="wm">Tasky</b>
+  <div class="doi-vai" role="tablist">
+    <button role="tab" aria-selected="true" data-man="mgr">
+      <svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="7" r="3"/><path d="M5 21v-2a4 4 0 0 1 4-4h6a4 4 0 0 1 4 4v2"/></svg>Báo cáo Manager</button>
+    <button role="tab" aria-selected="false" data-man="owner">
+      <svg class="ic" viewBox="0 0 24 24"><path d="M3 21h18M5 21V8l7-5 7 5v13M9 21v-6h6v6"/></svg>Báo cáo Owner</button>
+  </div>
+  <div class="spacer"></div>
+  <button class="btn" id="theme">Sáng / Tối</button>
+  <button class="btn">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>Tải bản in</button>
+</div>
+
+<!-- ══════════════ BÁO CÁO MANAGER — điều hành bộ phận ══════════════ -->
+<section class="man wrap" id="man-mgr">
+  <div class="dau">
+    <h2>Vận hành – Sản xuất · Tuần 34</h2>
+    <span class="sub">17 – 23/08 · Trần Quốc Huy · để điều hành tuần tới</span>
+  </div>
+
+  <div class="o4">
+    <div class="o">
+      <div class="lab">Tỉ lệ hoàn thành</div>
+      <div class="to">78<small>%</small></div>
+      <div class="thanh"><i style="width:78%"></i></div>
+      <div class="phu">14/18 việc đã nghiệm thu</div>
+    </div>
+    <div class="o">
+      <div class="lab">Khối lượng</div>
+      <div class="to">18<small> việc</small></div>
+      <div class="phu">61 bước checklist · 3 người</div>
+    </div>
+    <div class="o">
+      <div class="lab">Cần xử lý</div>
+      <div class="to" style="color:var(--danger)">4</div>
+      <div class="phu">2 quá hạn · 1 kẹt · 1 chưa nhận</div>
+    </div>
+    <div class="o">
+      <div class="lab">Chưa đóng tuần</div>
+      <div class="to">1<small> người</small></div>
+      <div class="phu">Số của họ chưa vào báo cáo</div>
+    </div>
+  </div>
+
+  <div class="muc"><h3>Từng người</h3><hr>
+    <span class="ghi">Ai đang gánh nhiều, ai đang tắc</span></div>
+  <div class="hop"><div class="tblwrap">
+    <table>
+      <thead><tr><th>Người</th><th>Hoàn thành</th><th class="so">Việc</th><th class="so">Giao</th>
+        <th class="so">Tự nhận</th><th class="so">Bước</th><th>Cần để ý</th><th>Tuần</th></tr></thead>
+      <tbody>
+        <tr><td>Trần Quốc Huy <span class="chip">Leader</span></td>
+          <td><span class="mini"><i style="width:100%"></i></span>4/4
+            <span class="chip">tự xác nhận</span></td>
+          <td class="so">4</td><td class="so">3</td><td class="so">1</td><td class="so">12/12</td>
+          <td>—</td><td><span class="chip ok"><svg class="ic" viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></svg>Đã đóng</span></td></tr>
+        <tr><td>Nguyễn Thu Hà</td>
+          <td><span class="mini"><i style="width:83%"></i></span>5/6</td>
+          <td class="so">6</td><td class="so">5</td><td class="so">1</td><td class="so">21/24</td>
+          <td><span class="chip dan"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16h.01"/></svg>1 quá hạn</span></td>
+          <td><span class="chip ok"><svg class="ic" viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></svg>Đã đóng</span></td></tr>
+        <tr><td>Lê Minh Đức</td>
+          <td><span class="mini"><i style="width:63%"></i></span>5/8</td>
+          <td class="so">8</td><td class="so">6</td><td class="so">2</td><td class="so">28/35</td>
+          <td><span class="chip dan"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16h.01"/></svg>1 quá hạn</span>
+            <span class="chip warn"><svg class="ic" viewBox="0 0 24 24"><path d="M3 12h4l3 8 4-16 3 8h4"/></svg>1 kẹt</span></td>
+          <td><span class="chip warn"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>Chờ xác nhận</span></td></tr>
+        <tr><td>Vũ Hải Yến</td>
+          <td class="note">— chưa được giao việc nào</td>
+          <td class="so">—</td><td class="so">0</td><td class="so">0</td><td class="so">—</td>
+          <td>—</td><td><span class="chip">Chưa khai</span></td></tr>
+      </tbody>
+    </table>
+  </div></div>
+  <div class="note">Người chưa được giao việc hiện “—”, không hiện 0% — để khỏi đọc nhầm thành làm việc kém.</div>
+
+  <div class="muc"><h3>Mục tiêu của bộ phận</h3><hr>
+    <span class="ghi">Tiến độ đếm theo việc đã nghiệm thu</span></div>
+  <div class="hop"><ul class="ds">
+    <li>
+      <span class="ten">Tăng AVD video kênh Life In US<small>Kết quả cần đạt: AVD ≥ 45% · hiện 38%</small></span>
+      <span class="mini" style="width:84px"><i style="width:30%"></i></span>
+      <span class="note" style="min-width:52px">3/10</span>
+      <span class="chip dan"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16h.01"/></svg>2 quá hạn</span>
+      <span class="chip">Hạn 12/09</span>
+    </li>
+    <li>
+      <span class="ten">Chuẩn hóa quy trình QC trước upload<small>Kết quả cần đạt: checklist QC một trang</small></span>
+      <span class="mini" style="width:84px"><i style="width:100%"></i></span>
+      <span class="note" style="min-width:52px">3/3</span>
+      <span class="chip warn"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>Chờ bạn chốt kết quả</span>
+      <span class="chip">Hạn 25/08</span>
+    </li>
+    <li>
+      <span class="ten">Ra 8 video kênh Hidden Laos<small>Chốt 23/08 — “8/8 video lên đúng lịch”</small></span>
+      <span class="mini" style="width:84px"><i style="width:100%"></i></span>
+      <span class="note" style="min-width:52px">6/6</span>
+      <span class="chip ok"><svg class="ic" viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></svg>Đạt</span>
+    </li>
+  </ul></div>
+
+  <div class="muc"><h3>Nhịp 4 tuần</h3><hr></div>
+  <div class="hop"><div class="noi" style="display:flex;gap:26px;flex-wrap:wrap;align-items:center">
+    <div class="spark">
+      <svg viewBox="0 0 100 24" aria-hidden="true">
+        <polyline points="2,17 34,14 66,13 98,7" fill="none" stroke="var(--accent)"
+          stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="98" cy="7" r="3" fill="var(--accent)"/>
+      </svg>
+      <span class="num">64% → 70% → 71% → <b>78%</b></span>
+    </div>
+    <div class="note">Tuần 31 → 34 · bộ phận Vận hành – Sản xuất</div>
+  </div></div>
+
+  <div class="muc"><h3>Kho quy trình đang hình thành</h3><hr>
+    <span class="ghi">Gom từ checklist thật · chưa bật gợi ý</span></div>
+  <div class="hop"><div class="tblwrap">
+    <table>
+      <thead><tr><th>Loại việc</th><th class="so">Checklist đã tích</th><th>Trạng thái</th>
+        <th>Bước lặp nhiều nhất</th></tr></thead>
+      <tbody>
+        <tr><td>Dựng video</td><td class="so">7</td>
+          <td><span class="chip acc"><svg class="ic" viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></svg>Đủ để rút quy trình</span></td>
+          <td class="note" style="white-space:normal">“Gửi bản dựng lên Video Review” — 6/7 lần</td></tr>
+        <tr><td>Viết script</td><td class="so">5</td>
+          <td><span class="chip acc"><svg class="ic" viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></svg>Đủ để rút quy trình</span></td>
+          <td class="note" style="white-space:normal">“Dựng outline trước khi viết” — 5/5 lần</td></tr>
+        <tr><td>Quy trình nội bộ</td><td class="so">2</td>
+          <td><span class="chip">Cần thêm 1</span></td>
+          <td class="note">chưa đủ tiền lệ</td></tr>
+      </tbody>
+    </table>
+  </div></div>
+</section>
+
+<!-- ══════════════ BÁO CÁO OWNER — toàn công ty ══════════════ -->
+<section class="man wrap" id="man-owner" hidden>
+  <div class="dau">
+    <h2>Toàn công ty · Tuần 34</h2>
+    <span class="sub">17 – 23/08 · 3 bộ phận · 17 nhân sự · nhìn theo bộ phận và mục tiêu</span>
+  </div>
+
+  <div class="o4">
+    <div class="o">
+      <div class="lab">Tỉ lệ hoàn thành</div>
+      <div class="to">74<small>%</small></div>
+      <div class="thanh"><i style="width:74%"></i></div>
+      <div class="phu">43/58 việc · 14/17 người đã đóng tuần</div>
+    </div>
+    <div class="o">
+      <div class="lab">Mục tiêu</div>
+      <div class="to">2<small>/9 đã chốt đạt</small></div>
+      <div class="phu">6 đang chạy · 1 chờ Manager chốt</div>
+    </div>
+    <div class="o">
+      <div class="lab">Mục tiêu trễ hạn</div>
+      <div class="to" style="color:var(--danger)">2</div>
+      <div class="phu">Kinh doanh 1 · Vận hành 1</div>
+    </div>
+    <div class="o">
+      <div class="lab">Việc kẹt toàn hệ</div>
+      <div class="to">6</div>
+      <div class="phu">3 việc đã dời từ 3 tuần trở lên</div>
+    </div>
+  </div>
+
+  <div class="muc"><h3>Nhiệm vụ tôi giao cho Manager</h3><hr>
+    <span class="ghi">Manager dựng thành mục tiêu rồi tự chẻ việc</span></div>
+  <div class="hop"><ul class="ds">
+    <li>
+      <span class="ten">Nâng chất lượng giữ chân video kênh Mỹ<small>Giao Quốc Huy 18/08 → mục tiêu “Tăng AVD ≥ 45%”</small></span>
+      <span class="mini" style="width:84px"><i style="width:30%"></i></span>
+      <span class="note" style="min-width:52px">3/10</span>
+      <span class="chip acc"><svg class="ic" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Đã dựng thành mục tiêu</span>
+    </li>
+    <li>
+      <span class="ten">Mở 2 ngách mới cho pool US<small>Giao Bảo Ngọc 15/08 → mục tiêu “Chốt 3 ngách mới”</small></span>
+      <span class="mini" style="width:84px"><i style="width:33%"></i></span>
+      <span class="note" style="min-width:52px">2/6</span>
+      <span class="chip dan"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16h.01"/></svg>Trễ hạn 3 ngày</span>
+    </li>
+    <li>
+      <span class="ten">Chuẩn hóa hồ sơ nhân sự mới<small>Giao Hoàng Lan 20/08</small></span>
+      <span class="note" style="flex:0 0 auto">chưa dựng mục tiêu</span>
+      <span class="chip warn"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>Nhận 4 ngày, chưa chẻ việc</span>
+    </li>
+    <li>
+      <span class="ten">Ra đều 8 video/tuần kênh Hidden Laos<small>Giao Quốc Huy 04/08 · chốt 23/08</small></span>
+      <span class="mini" style="width:84px"><i style="width:100%"></i></span>
+      <span class="note" style="min-width:52px">6/6</span>
+      <span class="chip ok"><svg class="ic" viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></svg>Đạt</span>
+    </li>
+  </ul></div>
+
+  <div class="muc"><h3>Theo bộ phận</h3><hr>
+    <span class="ghi">Owner nhìn bộ phận — bóc từng người là việc của Manager</span></div>
+
+  <article class="bp">
+    <header>
+      <div style="flex:1;min-width:190px">
+        <h4>Vận hành – Sản xuất</h4>
+        <div class="ai">Manager Trần Quốc Huy · 10 người</div>
+      </div>
+      <div class="spark">
+        <svg viewBox="0 0 100 24" aria-hidden="true">
+          <polyline points="2,17 34,14 66,13 98,7" fill="none" stroke="var(--accent)"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="98" cy="7" r="3" fill="var(--accent)"/>
+        </svg><span class="num">78%</span>
+      </div>
+      <button class="btn sm">Xem chi tiết</button>
+    </header>
+    <div class="so-lieu">
+      <div><span>Mục tiêu</span><b>3</b> <span class="note" style="display:inline">1 chờ chốt</span></div>
+      <div><span>Việc tuần</span><b>18</b></div>
+      <div><span>Hoàn thành</span><b>78%</b></div>
+      <div><span>Cần để ý</span><b style="color:var(--danger)">4</b></div>
+      <div><span>Đóng tuần</span><b>3/4</b></div>
+    </div>
+  </article>
+
+  <article class="bp">
+    <header>
+      <div style="flex:1;min-width:190px">
+        <h4>Kinh doanh</h4>
+        <div class="ai">Manager Phạm Bảo Ngọc · 5 người</div>
+      </div>
+      <div class="spark">
+        <svg viewBox="0 0 100 24" aria-hidden="true">
+          <polyline points="2,8 34,10 66,15 98,17" fill="none" stroke="var(--accent)"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="98" cy="17" r="3" fill="var(--accent)"/>
+        </svg><span class="num">61%</span>
+      </div>
+      <button class="btn sm">Xem chi tiết</button>
+    </header>
+    <div class="so-lieu">
+      <div><span>Mục tiêu</span><b>4</b> <span class="note" style="display:inline">1 trễ hạn</span></div>
+      <div><span>Việc tuần</span><b>26</b></div>
+      <div><span>Hoàn thành</span><b>61%</b></div>
+      <div><span>Cần để ý</span><b style="color:var(--danger)">5</b></div>
+      <div><span>Đóng tuần</span><b>4/5</b></div>
+    </div>
+    <ul class="ds">
+      <li><span class="ten">Ba tuần liền tỉ lệ đi xuống: 74% → 68% → 61%<small>Nút thắt: 2 việc kẹt ở khâu chờ báo cáo 8 phase</small></span>
+        <span class="chip dan"><svg class="ic" viewBox="0 0 24 24"><path d="M3 7l7 7 4-4 7 7"/><path d="M21 17v-4h-4"/></svg>Cần hỏi Manager</span></li>
+    </ul>
+  </article>
+
+  <article class="bp">
+    <header>
+      <div style="flex:1;min-width:190px">
+        <h4>Hành chính Nhân sự</h4>
+        <div class="ai">Manager Nguyễn Hoàng Lan · 2 người</div>
+      </div>
+      <div class="spark">
+        <svg viewBox="0 0 100 24" aria-hidden="true">
+          <polyline points="2,12 34,9 66,8 98,6" fill="none" stroke="var(--accent)"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="98" cy="6" r="3" fill="var(--accent)"/>
+        </svg><span class="num">88%</span>
+      </div>
+      <button class="btn sm">Xem chi tiết</button>
+    </header>
+    <div class="so-lieu">
+      <div><span>Mục tiêu</span><b>2</b></div>
+      <div><span>Việc tuần</span><b>14</b></div>
+      <div><span>Hoàn thành</span><b>88%</b></div>
+      <div><span>Cần để ý</span><b>0</b></div>
+      <div><span>Đóng tuần</span><b>2/2</b></div>
+    </div>
+  </article>
+
+  <div class="muc"><h3>Mục tiêu đã chốt trong tháng</h3><hr>
+    <span class="ghi">Kết quả do Manager kết luận, kèm nhận xét</span></div>
+  <div class="hop"><ul class="ds">
+    <li><span class="ten">Ra 8 video kênh Hidden Laos<small>Vận hành · “8/8 video lên đúng lịch, 2 tập cuối trễ nửa ngày” — Quốc Huy 23/08</small></span>
+      <span class="chip ok"><svg class="ic" viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></svg>Đạt</span></li>
+    <li><span class="ten">Dọn dữ liệu nhân sự sau di trú<small>HCNS · “Xong 17/17 hồ sơ” — Hoàng Lan 16/08</small></span>
+      <span class="chip ok"><svg class="ic" viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></svg>Đạt</span></li>
+    <li><span class="ten">Tăng CTR thumbnail kênh ES lên 6%<small>Kinh doanh · “Làm đủ việc nhưng CTR chỉ lên 5,1% — cần đổi hướng thử nghiệm” — Bảo Ngọc 09/08</small></span>
+      <span class="chip warn"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3l9 16H3z"/><path d="M12 9v4M12 16h.01"/></svg>Một phần</span></li>
+  </ul></div>
+  <div class="note">Làm xong hết việc <b>không</b> tự thành “đạt” — mục tiêu CTR trên là ví dụ: việc đủ,
+    kết quả chưa tới. Đây là chỗ Owner nhìn ra vấn đề mà bảng tỉ lệ hoàn thành không nói được.</div>
+</section>
+
+<script>
+(function () {
+  var nut = document.querySelectorAll(".doi-vai button"), man = document.querySelectorAll(".man");
+  nut.forEach(function (b) {
+    b.addEventListener("click", function () {
+      nut.forEach(function (x) { x.setAttribute("aria-selected", "false"); });
+      b.setAttribute("aria-selected", "true");
+      man.forEach(function (s) { s.hidden = (s.id !== "man-" + b.dataset.man); });
+      window.scrollTo(0, 0);
+    });
+  });
+
+  var root = document.documentElement, KEY = "outliery_theme";
+  try { var v = localStorage.getItem(KEY); if (v === "dark" || v === "light") root.setAttribute("data-theme", v); } catch (e) {}
+  addEventListener("storage", function (s) {
+    if (s.key === KEY && (s.newValue === "light" || s.newValue === "dark")) {
+      root.setAttribute("data-theme", s.newValue);
+    }
+  });
+  document.getElementById("theme").addEventListener("click", function () {
+    var cur = root.getAttribute("data-theme");
+    if (!cur) cur = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    var moi = cur === "dark" ? "light" : "dark";
+    root.setAttribute("data-theme", moi);
+    try { localStorage.setItem(KEY, moi); } catch (e) {}
+  });
+})();
+</script>

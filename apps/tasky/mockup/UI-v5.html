@@ -1,0 +1,474 @@
+<title>Tasky Hai Phía</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@600;700&display=swap">
+<style>
+:root{
+  --bg:#ffffff; --panel:#ffffff; --panel2:#f7f8fa; --line:#e6e6e6; --line2:#d9d9d9;
+  --ink:#16181c; --ink2:#3a3f47; --muted:#6c6c72;
+  --accent:#2c6fc4; --accent-ink:#1b5fb2; --tint:#e8f0fb;
+  --ok:#1f7a4d; --ok-bg:#e4f2ea; --warn:#8a5a00; --warn-bg:#fdf1de;
+  --danger:#b14a3c; --danger-bg:#fbe9e6;
+  --shadow:0 1px 2px rgba(16,24,40,.06), 0 1px 3px rgba(16,24,40,.04);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#090c12; --panel:#121826; --panel2:#141c2b; --line:#243149; --line2:#31425e;
+    --ink:#e8edf4; --ink2:#c2cbd9; --muted:#8b96a8;
+    --accent:#4c8fe0; --accent-ink:#6ba4e8; --tint:#16263f;
+    --ok:#6fbf8e; --ok-bg:#12301f; --warn:#d6a457; --warn-bg:#2e2413;
+    --danger:#d97c6c; --danger-bg:#331a16;
+    --shadow:0 1px 2px rgba(0,0,0,.4);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#090c12; --panel:#121826; --panel2:#141c2b; --line:#243149; --line2:#31425e;
+  --ink:#e8edf4; --ink2:#c2cbd9; --muted:#8b96a8;
+  --accent:#4c8fe0; --accent-ink:#6ba4e8; --tint:#16263f;
+  --ok:#6fbf8e; --ok-bg:#12301f; --warn:#d6a457; --warn-bg:#2e2413;
+  --danger:#d97c6c; --danger-bg:#331a16;
+  --shadow:0 1px 2px rgba(0,0,0,.4);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font:400 14px/1.55 Inter,system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
+h1,h2,h3,h4{margin:0;text-wrap:balance;font-weight:600;letter-spacing:-.01em}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+
+.top{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 20px;
+  border-bottom:1px solid var(--line);background:var(--panel);position:sticky;top:0;z-index:5}
+.mark{display:flex;align-items:flex-end;gap:2px;height:18px}
+.mark i{width:3px;background:var(--muted);border-radius:1px;display:block}
+.mark i:nth-child(1){height:6px}.mark i:nth-child(2){height:10px}
+.mark i:nth-child(3){height:8px}.mark i:nth-child(4){height:12px}
+.mark i:nth-child(5){height:18px;background:var(--accent)}
+.top b.wm{font:700 15px/1 "Space Grotesk",Inter,sans-serif;letter-spacing:-.02em}
+.top .sub{color:var(--muted);font-size:12.5px}
+.spacer{flex:1}
+.btn{border:1px solid var(--line2);background:var(--panel);border-radius:8px;
+  padding:6px 12px;font-size:13px;font-weight:500;cursor:pointer}
+.btn:hover{border-color:var(--accent);color:var(--accent-ink)}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.pri:hover{background:var(--accent-ink);color:#fff}
+.btn.sm{padding:3px 9px;font-size:12px;border-radius:7px}
+.chip{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--line2);
+  border-radius:999px;padding:1px 8px;font-size:11.5px;color:var(--muted);white-space:nowrap}
+.chip.ok{background:var(--ok-bg);border-color:transparent;color:var(--ok);font-weight:600}
+.chip.warn{background:var(--warn-bg);border-color:transparent;color:var(--warn);font-weight:600}
+.chip.dan{background:var(--danger-bg);border-color:transparent;color:var(--danger);font-weight:600}
+.chip.acc{background:var(--tint);border-color:transparent;color:var(--accent-ink);font-weight:600}
+.cham{width:6px;height:6px;border-radius:50%;display:inline-block}
+
+/* ── Hai khung cạnh nhau ── */
+.doi{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:16px;
+  padding:16px 20px 40px;align-items:start;max-width:1440px}
+.khung{border:1px solid var(--line);border-radius:14px;background:var(--panel);
+  box-shadow:var(--shadow);overflow:hidden}
+.khung>.nhan{display:flex;align-items:center;gap:9px;padding:9px 14px;
+  border-bottom:1px solid var(--line);background:var(--panel2);font-size:12.5px}
+.khung>.nhan b{font-size:13px}
+.khung>.nhan .ai{color:var(--muted)}
+.khung .than{padding:14px}
+
+/* dải tab mục tiêu (thu nhỏ trong khung) */
+.tabs{display:flex;gap:7px;overflow-x:auto;padding-bottom:9px;margin-bottom:12px;
+  border-bottom:1px solid var(--line)}
+.tab{flex:0 0 auto;border:1px solid var(--line);border-radius:9px;background:var(--panel2);
+  padding:6px 11px;cursor:pointer;font-size:12.5px;display:flex;align-items:center;gap:7px}
+.tab[aria-selected="true"]{border-color:var(--accent);background:var(--tint);
+  color:var(--accent-ink);font-weight:600}
+
+/* đầu mục tiêu — STATUS GỘP VÀO ĐÂY, không còn banner riêng */
+.dau{display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap;margin-bottom:12px}
+.dau h2{font-size:16px;margin-bottom:4px}
+.dau .kq{font-size:13px;color:var(--ink2)}
+.dau .kq b{color:var(--accent-ink)}
+.hang-chip{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;align-items:center}
+.hang-chip .vach{width:1px;height:14px;background:var(--line2);margin:0 2px}
+button.chip{cursor:pointer}
+button.chip:hover{filter:brightness(1.08)}
+.vong{flex:0 0 auto;text-align:center;width:86px}
+.vong svg{width:74px;height:74px;transform:rotate(-90deg)}
+.vong .txt{font:600 14px/1 "Space Grotesk",Inter,sans-serif;margin-top:-46px;position:relative;
+  font-variant-numeric:tabular-nums}
+.vong .lab{font-size:11px;color:var(--muted);margin-top:32px;line-height:1.3}
+
+/* nhóm việc */
+details.nhom{border:1px solid var(--line);border-radius:10px;margin-bottom:9px;overflow:hidden}
+details.nhom>summary{list-style:none;cursor:pointer;padding:9px 12px;display:flex;gap:9px;
+  align-items:center;font-size:12.5px;font-weight:600;background:var(--panel2)}
+details.nhom>summary::-webkit-details-marker{display:none}
+details.nhom>summary::before{content:"";width:6px;height:6px;flex:none;
+  border-right:1.6px solid var(--muted);border-bottom:1.6px solid var(--muted);
+  transform:rotate(-45deg);transition:transform .15s}
+details.nhom[open]>summary::before{transform:rotate(45deg)}
+details.nhom>summary .dem{margin-left:auto;font-weight:500;color:var(--muted);font-size:12px}
+details.nhom.canh>summary{background:var(--danger-bg);color:var(--danger)}
+ul.viecs{list-style:none;margin:0;padding:0}
+ul.viecs li{display:flex;gap:10px;align-items:center;padding:8px 12px;flex-wrap:wrap;
+  border-top:1px solid var(--line)}
+ul.viecs li:hover{background:var(--panel2)}
+.dot{width:14px;height:14px;flex:none;border-radius:50%;border:2px solid var(--line2);
+  display:grid;place-items:center;background:var(--panel)}
+.dot.xong{background:var(--ok);border-color:var(--ok)}
+.dot.xong svg{width:8px;height:8px;stroke:var(--panel);stroke-width:3;fill:none}
+.dot.lam{border-color:var(--accent);border-style:dashed}
+.dot.cho{border-color:var(--warn)}
+.dot.tre{border-color:var(--danger)}
+.vt{flex:1;min-width:150px;font-size:13px}
+.vt small{display:block;color:var(--muted);font-size:11.5px;margin-top:1px}
+.ai{font-size:12px;color:var(--ink2);white-space:nowrap}
+.ai.trong{color:var(--muted);font-style:italic}
+.them{display:flex;gap:7px;align-items:center;padding:10px 12px;flex-wrap:wrap;
+  border-top:1px dashed var(--line2)}
+.them input,.them select{border:1px solid var(--line);border-radius:8px;padding:6px 9px;
+  background:var(--bg);color:var(--ink);font:inherit;font-size:12.5px}
+.them input{flex:1;min-width:140px}
+
+/* phía nhân sự */
+.nhac-nho{display:flex;gap:8px;align-items:center;font-size:12.5px;padding:8px 11px;
+  border-radius:9px;background:var(--tint);color:var(--accent-ink);margin-bottom:11px;font-weight:500}
+.the-viec{border:1px solid var(--line);border-radius:11px;margin-bottom:10px;overflow:hidden}
+.the-viec.moi{border-color:var(--accent);box-shadow:0 0 0 3px var(--tint)}
+.the-viec>.dinh{padding:11px 13px}
+.the-viec h4{font-size:13.5px;margin-bottom:5px}
+.the-viec .mt-chip{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:7px}
+.the-viec .than2{border-top:1px solid var(--line);background:var(--panel2);padding:9px 13px}
+ul.ck{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px}
+ul.ck li{display:flex;gap:9px;align-items:center;padding:4px 5px;border-radius:7px;font-size:13px}
+ul.ck li:hover{background:var(--panel)}
+ul.ck li.xong span{color:var(--muted);text-decoration:line-through}
+.tick{width:16px;height:16px;flex:none;border:1.5px solid var(--line2);border-radius:5px;
+  background:var(--panel);cursor:pointer;display:grid;place-items:center;padding:0}
+.tick svg{width:10px;height:10px;stroke:#fff;stroke-width:2.6;fill:none;display:none}
+.tick.on{background:var(--accent);border-color:var(--accent)}
+.tick.on svg{display:block}
+.hang{display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin-top:9px}
+.hang input{flex:1;min-width:130px;border:1px solid var(--line);border-radius:8px;padding:6px 9px;
+  background:var(--bg);color:var(--ink);font:inherit;font-size:12.5px}
+.note{font-size:12px;color:var(--muted)}
+.buoc-dem{font-size:12px;color:var(--muted);white-space:nowrap}
+@media (max-width:980px){ .doi{grid-template-columns:1fr} }
+</style>
+
+<div class="top">
+  <span class="mark"><i></i><i></i><i></i><i></i><i></i></span>
+  <b class="wm">Tasky</b>
+  <span class="sub">Hai phía cùng một việc — thao tác bên trái, xem kết quả bên phải</span>
+  <div class="spacer"></div>
+  <button class="btn" id="theme">Sáng / Tối</button>
+  <button class="btn" id="reset">Làm lại demo</button>
+</div>
+
+<div class="doi">
+  <!-- ══════════ PHÍA MANAGER ══════════ -->
+  <section class="khung">
+    <div class="nhan"><span class="cham" style="background:var(--accent)"></span>
+      <b>Màn Manager</b><span class="ai">— Trần Quốc Huy · Vận hành – Sản xuất</span></div>
+    <div class="than">
+      <div class="tabs" role="tablist">
+        <button class="tab" role="tab" aria-selected="true">
+          <span class="cham" style="background:var(--danger)"></span>Tăng AVD Life In</button>
+        <button class="tab" role="tab" aria-selected="false">
+          <span class="cham" style="background:var(--warn)"></span>Chuẩn hóa QC</button>
+        <button class="tab" role="tab" aria-selected="false">Ra 8 video Hidden Laos</button>
+        <button class="tab" role="tab" aria-selected="false">Tuyển editor</button>
+      </div>
+
+      <div class="dau">
+        <div style="flex:1;min-width:210px">
+          <h2>Tăng AVD video kênh Life In US</h2>
+          <div class="kq">Kết quả cần đạt: <b>AVD ≥ 45%</b> · hiện đo được 38%</div>
+          <div class="hang-chip">
+            <span class="chip">Hạn 12/09 · còn 19 ngày</span>
+            <span class="chip">10 việc · 4 người</span>
+            <span class="vach"></span>
+            <button class="chip dan"><span class="cham" style="background:currentColor"></span>2 quá hạn</button>
+            <button class="chip dan" id="chip-chua-giao"><span class="cham" style="background:currentColor"></span><span id="so-chua-giao">3</span> chưa giao</button>
+            <button class="chip warn"><span class="cham" style="background:currentColor"></span><span id="so-cho-nhan">1</span> chưa nhận</button>
+          </div>
+        </div>
+        <div class="vong">
+          <svg viewBox="0 0 100 100" aria-hidden="true">
+            <circle cx="50" cy="50" r="42" fill="none" stroke="var(--line)" stroke-width="12"/>
+            <circle id="vong-tien" cx="50" cy="50" r="42" fill="none" stroke="var(--accent)"
+              stroke-width="12" stroke-linecap="round" stroke-dasharray="264" stroke-dashoffset="185"/>
+          </svg>
+          <div class="txt" id="vong-txt">3/10</div>
+          <div class="lab">việc đã<br>nghiệm thu</div>
+        </div>
+      </div>
+
+      <details class="nhom canh" open>
+        <summary>Cần bạn xử lý <span class="dem" id="dem-canh">5 việc</span></summary>
+        <ul class="viecs" id="ds-canh">
+          <li><span class="dot tre"></span>
+            <span class="vt">Feedback lại 6 script theo nhịp mới<small>Quá hạn 2 ngày · 2/5 bước</small></span>
+            <span class="ai">Thu Hà</span><span class="chip dan">Quá hạn</span></li>
+          <li><span class="dot tre"></span>
+            <span class="vt">Dựng lại intro 12 giây cho 4 tập<small>Quá hạn 1 ngày</small></span>
+            <span class="ai">Minh Đức</span><span class="chip dan">Quá hạn</span></li>
+          <li><span class="dot cho"></span>
+            <span class="vt">Đo lại AVD sau 7 ngày<small>Giao hôm qua — chưa bấm nhận</small></span>
+            <span class="ai">Thu Hà</span><span class="chip warn">Chờ nhận</span></li>
+          <li id="li-demo"><span class="dot"></span>
+            <span class="vt">Rà 10 video top của 3 kênh đối thủ<small id="demo-phu">Chưa phân công</small></span>
+            <span class="ai trong" id="demo-ai">chưa giao</span>
+            <span id="demo-dieu-khien">
+              <select id="demo-nguoi"><option value="Thu Hà">Nguyễn Thu Hà</option><option>Lê Minh Đức</option></select>
+              <button class="btn sm pri" id="demo-giao">Giao</button>
+            </span>
+            <span id="demo-chip"></span></li>
+          <li><span class="dot"></span>
+            <span class="vt">Viết hướng dẫn nhịp mở đầu cho team<small>Chưa phân công</small></span>
+            <span class="ai trong">chưa giao</span>
+            <select><option>Giao cho…</option><option>Nguyễn Thu Hà</option></select>
+            <button class="btn sm">Giao</button></li>
+        </ul>
+        <div class="them">
+          <input placeholder="Thêm việc cho mục tiêu này…">
+          <select><option>Giao cho… (để trống cũng được)</option><option>Nguyễn Thu Hà</option><option>Lê Minh Đức</option></select>
+          <input type="date" style="flex:0 0 auto">
+          <button class="btn sm pri">＋ Thêm</button>
+        </div>
+      </details>
+
+      <details class="nhom" open>
+        <summary>Đang chạy <span class="dem" id="dem-chay">2 việc</span></summary>
+        <ul class="viecs" id="ds-chay">
+          <li><span class="dot lam"></span>
+            <span class="vt">Cắt lại 8 thumbnail theo hướng mới<small>3/6 bước · hạn 28/08</small></span>
+            <span class="ai">Hải Yến</span><span class="chip acc">Đang làm</span></li>
+          <li><span class="dot lam"></span>
+            <span class="vt">Thử 2 kiểu hook đầu video<small>1/4 bước · hạn 30/08</small></span>
+            <span class="ai">Minh Đức</span><span class="chip acc">Đang làm</span></li>
+        </ul>
+      </details>
+
+      <details class="nhom">
+        <summary>Đã nghiệm thu <span class="dem" id="dem-xong">3 việc</span></summary>
+        <ul class="viecs" id="ds-xong">
+          <li><span class="dot xong"><svg viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></svg></span>
+            <span class="vt">Họp phân tích 5 video đối thủ<small>Nghiệm thu 21/08</small></span>
+            <span class="ai">Thu Hà</span></li>
+          <li><span class="dot xong"><svg viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></svg></span>
+            <span class="vt">Bảng so sánh nhịp mở đầu<small>Nghiệm thu 22/08</small></span>
+            <span class="ai">Minh Đức</span></li>
+          <li><span class="dot xong"><svg viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></svg></span>
+            <span class="vt">Chốt tiêu chí AVD cho 3 kênh<small>Nghiệm thu 23/08</small></span>
+            <span class="ai">Hải Yến</span></li>
+        </ul>
+      </details>
+    </div>
+  </section>
+
+  <!-- ══════════ PHÍA NHÂN SỰ ══════════ -->
+  <section class="khung">
+    <div class="nhan"><span class="cham" style="background:var(--ok)"></span>
+      <b>Màn nhân sự</b><span class="ai">— Nguyễn Thu Hà · Staff</span></div>
+    <div class="than">
+      <div class="nhac-nho" id="nhac-nv" hidden>
+        <span class="cham" style="background:currentColor"></span>
+        <span id="nhac-chu">1 việc mới được giao cho bạn</span></div>
+
+      <!-- việc demo: xuất hiện khi Manager bấm Giao -->
+      <div class="the-viec moi" id="the-demo" hidden>
+        <div class="dinh">
+          <div class="mt-chip">
+            <span class="chip acc">Thuộc mục tiêu: Tăng AVD ≥ 45%</span>
+            <span class="chip" id="mt-tien">đang 3/10 việc</span>
+          </div>
+          <h4>Rà 10 video top của 3 kênh đối thủ</h4>
+          <div class="note" id="demo-trang-thai">Quốc Huy vừa giao · chưa có hạn</div>
+
+          <div class="hang" id="khoi-nhan">
+            <button class="btn pri sm" id="nv-nhan">Nhận việc</button>
+            <button class="btn sm" id="nv-tuchoi">Từ chối</button>
+          </div>
+          <div class="hang" id="khoi-tuchoi" hidden>
+            <input placeholder="Vì sao bạn từ chối? (bắt buộc)">
+            <button class="btn sm">Xác nhận từ chối</button>
+          </div>
+        </div>
+
+        <div class="than2" id="khoi-ck" hidden>
+          <div class="note" style="margin-bottom:7px">Cách tôi sẽ triển khai — tự viết, tick khi xong:</div>
+          <ul class="ck" id="ck">
+            <li><button class="tick"><svg viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></svg></button>
+              <span>Liệt kê 3 kênh đối thủ cùng ngách</span></li>
+            <li><button class="tick"><svg viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></svg></button>
+              <span>Lấy 10 video top mỗi kênh</span></li>
+            <li><button class="tick"><svg viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></svg></button>
+              <span>Ghi nhịp mở đầu + điểm giữ chân</span></li>
+          </ul>
+          <div class="hang">
+            <input placeholder="Thêm một bước…"><button class="btn sm">Thêm bước</button>
+            <span class="spacer"></span>
+            <span class="buoc-dem" id="ck-dem">0/3 bước</span>
+            <button class="btn sm" id="nv-baoxong">Báo xong</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- việc sẵn có -->
+      <div class="the-viec">
+        <div class="dinh">
+          <div class="mt-chip">
+            <span class="chip acc">Thuộc mục tiêu: Tăng AVD ≥ 45%</span>
+            <span class="chip dan">Quá hạn 2 ngày</span>
+          </div>
+          <h4>Feedback lại 6 script theo nhịp mới</h4>
+          <div class="note">Quốc Huy giao 20/08 · 2/5 bước</div>
+        </div>
+      </div>
+
+      <div class="the-viec">
+        <div class="dinh">
+          <div class="mt-chip">
+            <span class="chip acc">Thuộc mục tiêu: Tăng AVD ≥ 45%</span>
+            <span class="chip warn">Chờ bạn nhận</span>
+          </div>
+          <h4>Đo lại AVD sau 7 ngày, ghi vào báo cáo</h4>
+          <div class="note">Quốc Huy giao hôm qua 09:12</div>
+          <div class="hang">
+            <button class="btn pri sm">Nhận việc</button>
+            <button class="btn sm">Từ chối</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="the-viec">
+        <div class="dinh">
+          <div class="mt-chip"><span class="chip">Việc tôi tự nhận</span></div>
+          <h4>Dựng lại intro sau feedback Video Review</h4>
+          <div class="note">1/3 bước · không thuộc mục tiêu nào</div>
+        </div>
+      </div>
+
+      <div class="note" style="padding:2px 2px 0">Nhân sự <b>chỉ xem</b> mục tiêu, không sửa được
+        cấu trúc cây — bấm chip mục tiêu để xem toàn cảnh.</div>
+    </div>
+  </section>
+</div>
+
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+
+  // Tab mục tiêu (demo: chỉ mục tiêu đầu có nội dung)
+  var tabs = document.querySelectorAll(".tab");
+  tabs.forEach(function (t) {
+    t.addEventListener("click", function () {
+      tabs.forEach(function (x) { x.setAttribute("aria-selected", "false"); });
+      t.setAttribute("aria-selected", "true");
+    });
+  });
+
+  function veVong(xong) {
+    var pct = xong / 10;
+    $("vong-tien").setAttribute("stroke-dashoffset", String(Math.round(264 * (1 - pct))));
+    $("vong-txt").textContent = xong + "/10";
+    $("mt-tien").textContent = "đang " + xong + "/10 việc";
+  }
+
+  // ── Manager bấm Giao → việc hiện sang màn nhân sự
+  $("demo-giao").addEventListener("click", function () {
+    var ten = $("demo-nguoi").value;
+    $("demo-dieu-khien").hidden = true;
+    $("demo-ai").textContent = ten;
+    $("demo-ai").classList.remove("trong");
+    $("demo-phu").textContent = "Vừa giao — chờ nhận";
+    $("li-demo").querySelector(".dot").className = "dot cho";
+    $("demo-chip").innerHTML = '<span class="chip warn">Chờ nhận</span>';
+    $("so-chua-giao").textContent = "2";
+    $("so-cho-nhan").textContent = "2";
+
+    $("the-demo").hidden = false;
+    $("nhac-nv").hidden = false;
+    $("nhac-chu").textContent = "1 việc mới được giao cho bạn";
+  });
+
+  // ── Nhân sự nhận việc → Manager thấy chuyển sang Đang chạy
+  $("nv-nhan").addEventListener("click", function () {
+    $("khoi-nhan").hidden = true;
+    $("khoi-ck").hidden = false;
+    $("the-demo").classList.remove("moi");
+    $("demo-trang-thai").textContent = "Bạn đã nhận việc — viết các bước rồi tick khi làm xong";
+    $("nhac-nv").hidden = true;
+
+    var li = $("li-demo");
+    li.querySelector(".dot").className = "dot lam";
+    li.querySelector("#demo-phu").textContent = "0/3 bước";
+    $("demo-chip").innerHTML = '<span class="chip acc">Đang làm</span>';
+    $("ds-chay").appendChild(li);
+    $("so-cho-nhan").textContent = "1";
+    $("dem-canh").textContent = "4 việc";
+    $("dem-chay").textContent = "3 việc";
+  });
+
+  $("nv-tuchoi").addEventListener("click", function () {
+    $("khoi-nhan").hidden = true;
+    $("khoi-tuchoi").hidden = false;
+  });
+
+  // ── Tick bước → Manager thấy tiến độ bước đổi theo
+  var ticks = $("ck").querySelectorAll(".tick");
+  ticks.forEach(function (t) {
+    t.addEventListener("click", function () {
+      t.classList.toggle("on");
+      t.closest("li").classList.toggle("xong", t.classList.contains("on"));
+      var xong = $("ck").querySelectorAll(".tick.on").length;
+      $("ck-dem").textContent = xong + "/3 bước";
+      var phu = $("demo-phu");
+      if (phu) { phu.textContent = xong + "/3 bước"; }
+    });
+  });
+
+  // ── Nhân sự báo xong → Manager có nút Nghiệm thu
+  $("nv-baoxong").addEventListener("click", function () {
+    $("demo-trang-thai").textContent = "Đã báo xong — chờ Quốc Huy nghiệm thu";
+    $("khoi-ck").hidden = true;
+    var li = $("li-demo");
+    li.querySelector(".dot").className = "dot cho";
+    li.querySelector("#demo-phu").textContent = "Thu Hà báo xong — chờ bạn nghiệm thu";
+    $("demo-chip").innerHTML =
+      '<span class="chip warn">Chờ nghiệm thu</span> ' +
+      '<button class="btn sm pri" id="mgr-xn">Nghiệm thu</button>';
+    $("ds-canh").appendChild(li);
+    $("dem-canh").textContent = "5 việc";
+    $("dem-chay").textContent = "2 việc";
+
+    $("mgr-xn").addEventListener("click", function () {
+      li.querySelector(".dot").className = "dot xong";
+      li.querySelector(".dot").innerHTML = '<svg viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></svg>';
+      li.querySelector("#demo-phu").textContent = "Nghiệm thu hôm nay";
+      $("demo-chip").innerHTML = "";
+      $("ds-xong").appendChild(li);
+      $("dem-canh").textContent = "4 việc";
+      $("dem-xong").textContent = "4 việc";
+      veVong(4);
+      $("demo-trang-thai").textContent = "Quốc Huy đã nghiệm thu — việc này xong";
+      $("the-demo").querySelector(".mt-chip").insertAdjacentHTML(
+        "beforeend", '<span class="chip ok">Đã nghiệm thu</span>');
+    });
+  });
+
+  $("reset").addEventListener("click", function () { location.reload(); });
+
+  var root = document.documentElement, KEY = "outliery_theme";
+  try { var v = localStorage.getItem(KEY); if (v === "dark" || v === "light") root.setAttribute("data-theme", v); } catch (e) {}
+  addEventListener("storage", function (s) {
+    if (s.key === KEY && (s.newValue === "light" || s.newValue === "dark")) {
+      root.setAttribute("data-theme", s.newValue);
+    }
+  });
+  $("theme").addEventListener("click", function () {
+    var cur = root.getAttribute("data-theme");
+    if (!cur) cur = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    var moi = cur === "dark" ? "light" : "dark";
+    root.setAttribute("data-theme", moi);
+    try { localStorage.setItem(KEY, moi); } catch (e) {}
+  });
+})();
+</script>

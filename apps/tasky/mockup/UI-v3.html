@@ -1,0 +1,370 @@
+<title>Tasky Mục tiêu</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@600;700&display=swap">
+<style>
+:root{
+  --bg:#ffffff; --panel:#ffffff; --panel2:#f7f8fa; --line:#e6e6e6; --line2:#d9d9d9;
+  --ink:#16181c; --ink2:#3a3f47; --muted:#6c6c72;
+  --accent:#2c6fc4; --accent-ink:#1b5fb2; --tint:#e8f0fb;
+  --ok:#1f7a4d; --ok-bg:#e4f2ea; --warn:#8a5a00; --warn-bg:#fdf1de;
+  --danger:#b14a3c; --danger-bg:#fbe9e6;
+  --shadow:0 1px 2px rgba(16,24,40,.06), 0 1px 3px rgba(16,24,40,.04);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#090c12; --panel:#121826; --panel2:#141c2b; --line:#243149; --line2:#31425e;
+    --ink:#e8edf4; --ink2:#c2cbd9; --muted:#8b96a8;
+    --accent:#4c8fe0; --accent-ink:#6ba4e8; --tint:#16263f;
+    --ok:#6fbf8e; --ok-bg:#12301f; --warn:#d6a457; --warn-bg:#2e2413;
+    --danger:#d97c6c; --danger-bg:#331a16;
+    --shadow:0 1px 2px rgba(0,0,0,.4);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#090c12; --panel:#121826; --panel2:#141c2b; --line:#243149; --line2:#31425e;
+  --ink:#e8edf4; --ink2:#c2cbd9; --muted:#8b96a8;
+  --accent:#4c8fe0; --accent-ink:#6ba4e8; --tint:#16263f;
+  --ok:#6fbf8e; --ok-bg:#12301f; --warn:#d6a457; --warn-bg:#2e2413;
+  --danger:#d97c6c; --danger-bg:#331a16;
+  --shadow:0 1px 2px rgba(0,0,0,.4);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font:400 14px/1.55 Inter,system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
+h1,h2,h3{margin:0;text-wrap:balance;font-weight:600;letter-spacing:-.01em}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+
+.app{display:grid;grid-template-columns:206px 1fr;min-height:100vh}
+.rail{background:var(--panel);border-right:1px solid var(--line);display:flex;
+  flex-direction:column;gap:2px;padding:14px 10px}
+.brand{display:flex;align-items:center;gap:9px;padding:6px 8px 14px}
+.mark{display:flex;align-items:flex-end;gap:2px;height:19px}
+.mark i{width:3px;background:var(--muted);border-radius:1px;display:block}
+.mark i:nth-child(1){height:7px}.mark i:nth-child(2){height:11px}
+.mark i:nth-child(3){height:9px}.mark i:nth-child(4){height:13px}
+.mark i:nth-child(5){height:19px;background:var(--accent)}
+.brand b{font:700 16px/1 "Space Grotesk",Inter,sans-serif;letter-spacing:-.02em}
+.nav{display:flex;align-items:center;gap:9px;padding:8px 9px;border-radius:8px;
+  background:none;border:0;width:100%;text-align:left;cursor:pointer;color:var(--ink2)}
+.nav:hover{background:var(--panel2);color:var(--ink)}
+.nav[aria-current="true"]{background:var(--tint);color:var(--accent-ink);font-weight:600}
+.nav.con{padding-left:32px;font-size:13px}
+.nav svg{width:15px;height:15px;flex:none;stroke:currentColor;fill:none;stroke-width:1.6}
+.who{margin-top:auto;border-top:1px solid var(--line);padding:11px 9px 3px;font-size:12px}
+.who b{display:block;font-weight:600}.who span{color:var(--muted)}
+
+main{min-width:0;display:flex;flex-direction:column}
+.topbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:14px 22px;
+  border-bottom:1px solid var(--line);background:var(--panel)}
+.topbar h1{font-size:15px}.topbar .sub{color:var(--muted);font-size:12.5px}
+.spacer{flex:1}
+.wrap{padding:20px 22px 44px;max-width:1000px}
+.btn{border:1px solid var(--line2);background:var(--panel);border-radius:8px;
+  padding:7px 13px;font-size:13px;font-weight:500;cursor:pointer}
+.btn:hover{border-color:var(--accent);color:var(--accent-ink)}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.pri:hover{background:var(--accent-ink);color:#fff}
+.btn.sm{padding:4px 10px;font-size:12px;border-radius:7px}
+.chip{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--line2);
+  border-radius:999px;padding:2px 9px;font-size:11.5px;color:var(--muted);white-space:nowrap}
+.chip.ok{background:var(--ok-bg);border-color:transparent;color:var(--ok);font-weight:600}
+.chip.warn{background:var(--warn-bg);border-color:transparent;color:var(--warn);font-weight:600}
+.chip.dan{background:var(--danger-bg);border-color:transparent;color:var(--danger);font-weight:600}
+.chip.acc{background:var(--tint);border-color:transparent;color:var(--accent-ink);font-weight:600}
+
+/* ── Cây mục tiêu ── */
+.mt{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+  box-shadow:var(--shadow);margin-bottom:16px;overflow:hidden}
+.mt>header{display:flex;gap:12px;align-items:flex-start;padding:14px 16px;cursor:pointer}
+.mt>header:hover{background:var(--panel2)}
+.nut-goc{width:22px;height:22px;flex:none;border-radius:50%;border:2px solid var(--accent);
+  display:grid;place-items:center;margin-top:1px}
+.nut-goc i{width:8px;height:8px;border-radius:50%;background:var(--accent);display:block}
+.mt h3{font-size:15px;margin-bottom:5px}
+.dl{font-size:13px;color:var(--ink2);display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.dl b{font-weight:600;color:var(--accent-ink)}
+.mt .so{text-align:right;min-width:126px}
+.mt .so .num{font:600 15px/1 "Space Grotesk",Inter,sans-serif;font-variant-numeric:tabular-nums}
+.bar{height:6px;border-radius:3px;background:var(--panel2);overflow:hidden;margin-top:8px;
+  border:1px solid var(--line)}
+.bar i{display:block;height:100%;background:var(--accent)}
+.than{border-top:1px solid var(--line);background:var(--panel2);padding:6px 16px 14px}
+
+/* nhánh cây */
+ul.nhanh{list-style:none;margin:0;padding:0 0 0 10px}
+ul.nhanh>li{position:relative;padding:9px 0 9px 26px;display:flex;gap:10px;align-items:center;
+  flex-wrap:wrap}
+ul.nhanh>li::before{content:"";position:absolute;left:0;top:0;bottom:0;
+  border-left:1px solid var(--line2)}
+ul.nhanh>li:last-child::before{bottom:calc(100% - 22px)}
+ul.nhanh>li::after{content:"";position:absolute;left:0;top:22px;width:17px;
+  border-top:1px solid var(--line2)}
+.dot{width:15px;height:15px;flex:none;border-radius:50%;border:2px solid var(--line2);
+  display:grid;place-items:center;background:var(--panel)}
+.dot.xong{background:var(--ok);border-color:var(--ok)}
+.dot.xong svg{width:9px;height:9px;stroke:var(--panel);stroke-width:3;fill:none}
+.dot.lam{border-color:var(--accent);border-style:dashed}
+.dot.cho{border-color:var(--warn)}
+.viec-ten{flex:1;min-width:190px;font-size:13.5px}
+.viec-ten small{display:block;color:var(--muted);font-size:12px;margin-top:2px}
+.ai{font-size:12.5px;color:var(--ink2);white-space:nowrap}
+.ai.trong{color:var(--muted);font-style:italic}
+.them{display:flex;gap:8px;align-items:center;padding:8px 0 2px 26px;flex-wrap:wrap}
+.them input,.them select{border:1px solid var(--line);border-radius:8px;padding:6px 10px;
+  background:var(--bg);color:var(--ink);font:inherit;font-size:13px}
+.them input{flex:1;min-width:170px}
+
+.chot{margin-top:12px;padding:12px 14px;border:1px dashed var(--line2);border-radius:10px;
+  background:var(--panel)}
+.chot h4{margin:0 0 4px;font-size:13px}
+.chot p{margin:0 0 10px;font-size:12.5px;color:var(--muted)}
+.chot .hang{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.chot input[type=text]{flex:1;min-width:200px;border:1px solid var(--line);border-radius:8px;
+  padding:7px 10px;background:var(--bg);color:var(--ink);font:inherit;font-size:13px}
+
+.hop{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;
+  margin-bottom:16px;box-shadow:var(--shadow)}
+.hop h3{font-size:14px;margin-bottom:6px}
+.note{font-size:12.5px;color:var(--muted)}
+.muc{display:flex;align-items:center;gap:9px;margin:22px 0 10px;flex-wrap:wrap}
+.muc h2{font-size:12.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.muc hr{flex:1;border:0;border-top:1px solid var(--line)}
+.man[hidden]{display:none}
+@media (max-width:820px){
+  .app{grid-template-columns:1fr}
+  .rail{flex-direction:row;overflow-x:auto;align-items:center;padding:8px}
+  .who{display:none}.nav{width:auto;white-space:nowrap}.nav.con{padding-left:9px}
+}
+</style>
+
+<div class="app">
+  <aside class="rail">
+    <div class="brand"><span class="mark"><i></i><i></i><i></i><i></i><i></i></span><b>Tasky</b></div>
+    <button class="nav" data-man="cay" aria-current="true">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="2.5"/><circle cx="6" cy="19" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="M12 7.5v4M12 11.5H6v5M12 11.5h6v5"/></svg>Mục tiêu</button>
+    <button class="nav" data-man="nhansu">
+      <svg viewBox="0 0 24 24"><path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/></svg>Việc của tôi</button>
+    <button class="nav con" data-man="cay">Giao việc</button>
+    <button class="nav con" data-man="cay">Báo cáo</button>
+    <div class="who"><b>Trần Quốc Huy</b><span>Vận hành – Sản xuất · Manager</span></div>
+  </aside>
+
+  <main>
+    <div class="topbar">
+      <div>
+        <h1 id="tb-t">Mục tiêu · Vận hành – Sản xuất</h1>
+        <div class="sub" id="tb-s">3 mục tiêu đang chạy · 1 chờ bạn chốt kết quả</div>
+      </div>
+      <div class="spacer"></div>
+      <button class="btn" id="theme">Sáng / Tối</button>
+      <button class="btn pri">＋ Mục tiêu mới</button>
+    </div>
+
+    <!-- ═══ MÀN CÂY MỤC TIÊU (Manager) ═══ -->
+    <section class="man wrap" id="man-cay">
+
+      <!-- Mục tiêu 1: định lượng KHÔNG đo ngay được (ví dụ của Owner) -->
+      <article class="mt" open>
+        <header data-mo>
+          <span class="nut-goc"><i></i></span>
+          <div style="flex:1;min-width:0">
+            <h3>Tăng AVD video kênh Life In US</h3>
+            <div class="dl"><span>Kết quả cần đạt: <b>AVD ≥ 45%</b> (hiện 38%)</span>
+              <span class="chip">Hạn 12/09</span>
+              <span class="chip">Manager Quốc Huy đặt</span></div>
+          </div>
+          <div class="so">
+            <span class="num">2<span style="color:var(--muted);font-size:12px">/5 việc</span></span>
+            <div class="bar"><i style="width:40%"></i></div>
+            <div class="note" style="margin-top:4px">Tiến độ theo việc đã nghiệm thu</div>
+          </div>
+        </header>
+        <div class="than">
+          <ul class="nhanh">
+            <li>
+              <span class="dot xong"><svg viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></svg></span>
+              <span class="viec-ten">Họp phân tích 5 video đối thủ giữ chân tốt
+                <small>Đã nghiệm thu 21/08 · 4/4 bước</small></span>
+              <span class="ai">Thu Hà</span><span class="chip ok">Xong</span>
+            </li>
+            <li>
+              <span class="dot xong"><svg viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></svg></span>
+              <span class="viec-ten">Dựng bảng so sánh nhịp mở đầu 30 giây
+                <small>Đã nghiệm thu 22/08 · 3/3 bước</small></span>
+              <span class="ai">Minh Đức</span><span class="chip ok">Xong</span>
+            </li>
+            <li>
+              <span class="dot lam"></span>
+              <span class="viec-ten">Feedback lại 6 script theo nhịp mới
+                <small>2/5 bước · hạn 28/08</small></span>
+              <span class="ai">Thu Hà</span><span class="chip acc">Đang làm</span>
+            </li>
+            <li>
+              <span class="dot cho"></span>
+              <span class="viec-ten">Dựng lại intro 12 giây cho 4 tập
+                <small>Chưa nhận việc — giao 09:12 hôm nay</small></span>
+              <span class="ai">Minh Đức</span><span class="chip warn">Chờ nhận</span>
+            </li>
+            <li>
+              <span class="dot"></span>
+              <span class="viec-ten">Đo lại AVD sau 7 ngày, ghi vào báo cáo
+                <small>Chưa phân công</small></span>
+              <span class="ai trong">chưa giao</span>
+              <select><option>Giao cho…</option><option>Nguyễn Thu Hà</option><option>Lê Minh Đức</option></select>
+              <button class="btn sm">Giao</button>
+            </li>
+          </ul>
+          <div class="them">
+            <input placeholder="Thêm việc cần làm để đạt mục tiêu này…">
+            <select><option>Giao cho… (để trống cũng được)</option><option>Nguyễn Thu Hà</option><option>Lê Minh Đức</option></select>
+            <button class="btn">＋ Thêm việc</button>
+          </div>
+        </div>
+      </article>
+
+      <!-- Mục tiêu 2: xong hết việc → chờ Manager chốt -->
+      <article class="mt">
+        <header data-mo>
+          <span class="nut-goc" style="border-color:var(--warn)"><i style="background:var(--warn)"></i></span>
+          <div style="flex:1;min-width:0">
+            <h3>Chuẩn hóa quy trình QC trước upload</h3>
+            <div class="dl"><span>Kết quả cần đạt: <b>checklist QC một trang, áp dụng từ tuần 36</b></span>
+              <span class="chip">Hạn 25/08</span></div>
+          </div>
+          <div class="so">
+            <span class="num">3<span style="color:var(--muted);font-size:12px">/3 việc</span></span>
+            <div class="bar"><i style="width:100%"></i></div>
+            <div class="note" style="margin-top:4px;color:var(--warn)">Chờ bạn chốt kết quả</div>
+          </div>
+        </header>
+        <div class="than" hidden>
+          <ul class="nhanh">
+            <li><span class="dot xong"><svg viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></svg></span>
+              <span class="viec-ten">Soạn checklist QC</span><span class="ai">Thu Hà</span><span class="chip ok">Xong</span></li>
+            <li><span class="dot xong"><svg viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></svg></span>
+              <span class="viec-ten">Chạy thử trên 2 video</span><span class="ai">Minh Đức</span><span class="chip ok">Xong</span></li>
+            <li><span class="dot xong"><svg viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></svg></span>
+              <span class="viec-ten">Phổ biến cho cả nhóm</span><span class="ai">Thu Hà</span><span class="chip ok">Xong</span></li>
+          </ul>
+          <div class="chot">
+            <h4>Làm xong hết việc — nhưng có đạt mục tiêu không?</h4>
+            <p>Máy chỉ đếm được việc đã nghiệm thu. Kết quả thật do bạn kết luận, và nó
+              được lưu lại kèm tên bạn.</p>
+            <div class="hang">
+              <input type="text" placeholder="Nhận xét (bắt buộc khi Một phần / Không đạt)…">
+              <button class="btn pri sm">Đạt</button>
+              <button class="btn sm">Một phần</button>
+              <button class="btn sm">Không đạt</button>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <!-- Mục tiêu 3: đã chốt -->
+      <article class="mt">
+        <header data-mo>
+          <span class="nut-goc" style="border-color:var(--ok)"><i style="background:var(--ok)"></i></span>
+          <div style="flex:1;min-width:0">
+            <h3>Ra 8 video kênh Hidden Laos</h3>
+            <div class="dl"><span>Kết quả cần đạt: <b>8 video xuất bản đúng lịch</b></span>
+              <span class="chip ok">Đạt</span>
+              <span class="chip">Chốt 23/08 · Quốc Huy</span></div>
+          </div>
+          <div class="so"><span class="num">6<span style="color:var(--muted);font-size:12px">/6 việc</span></span>
+            <div class="bar"><i style="width:100%"></i></div></div>
+        </header>
+        <div class="than" hidden>
+          <div class="note" style="padding:8px 0 0">Nhận xét khi chốt: “8/8 video lên đúng lịch,
+            2 tập cuối trễ nửa ngày do chờ thumbnail — chấp nhận được.”</div>
+        </div>
+      </article>
+
+      <div class="muc"><h2>Việc lẻ ngoài mục tiêu</h2><hr>
+        <span class="note">Vẫn giao bình thường ở màn Giao việc — không bắt buộc mọi việc phải thuộc một mục tiêu</span></div>
+      <div class="hop">
+        <div class="note" style="margin:0">Tuần này bộ phận có <b>4 việc lẻ</b> (sửa gấp, hỗ trợ
+          bộ phận khác, việc nhân sự tự nhận). Chúng vẫn vào báo cáo và tỉ lệ hoàn thành như cũ.</div>
+      </div>
+    </section>
+
+    <!-- ═══ MÀN NHÂN SỰ THẤY GÌ ═══ -->
+    <section class="man wrap" id="man-nhansu" hidden>
+      <div class="hop" style="border-left:3px solid var(--accent)">
+        <h3>Feedback lại 6 script theo nhịp mới</h3>
+        <div class="dl" style="margin-bottom:10px">
+          <span class="chip acc">Thuộc mục tiêu: Tăng AVD ≥ 45%</span>
+          <span class="chip">đang 2/5 việc</span>
+          <span class="chip">Quốc Huy giao</span>
+          <span class="chip warn">Hạn 28/08</span>
+        </div>
+        <div class="note" style="margin-bottom:12px">Bạn đang góp vào mục tiêu chung — nhìn được
+          cả bức tranh, không chỉ việc của mình.</div>
+        <ul class="nhanh" style="padding-left:0">
+          <li style="padding-left:0"><span class="dot xong"><svg viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></svg></span>
+            <span class="viec-ten">Đọc lại bảng so sánh nhịp mở đầu</span></li>
+          <li style="padding-left:0"><span class="dot xong"><svg viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></svg></span>
+            <span class="viec-ten">Sửa mở đầu script tập 1–2</span></li>
+          <li style="padding-left:0"><span class="dot"></span>
+            <span class="viec-ten">Sửa mở đầu script tập 3–6</span></li>
+          <li style="padding-left:0"><span class="dot"></span>
+            <span class="viec-ten">Gửi Quốc Huy soát lại</span></li>
+          <li style="padding-left:0"><span class="dot"></span>
+            <span class="viec-ten">Ghi nhận xét vào sổ nhịp câu</span></li>
+        </ul>
+        <div class="them" style="padding-left:0">
+          <input placeholder="Thêm một bước…"><button class="btn sm">Thêm bước</button>
+        </div>
+      </div>
+      <div class="hop">
+        <div class="note" style="margin:0">Ở màn <b>Việc của tôi</b>, mỗi việc thuộc mục tiêu sẽ
+          có chip xanh <span class="chip acc">Thuộc mục tiêu: …</span> — bấm vào xem cả cây, nhưng
+          <b>chỉ xem</b>: nhân sự không sửa được cấu trúc mục tiêu.</div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script>
+(function () {
+  var man = document.querySelectorAll(".man"), nav = document.querySelectorAll(".nav");
+  var tit = {
+    cay: ["Mục tiêu · Vận hành – Sản xuất", "3 mục tiêu đang chạy · 1 chờ bạn chốt kết quả"],
+    nhansu: ["Việc của tôi · Nguyễn Thu Hà", "Một việc thuộc mục tiêu — thấy cả bức tranh"]
+  };
+  nav.forEach(function (b) {
+    b.addEventListener("click", function () {
+      nav.forEach(function (x) { x.setAttribute("aria-current", "false"); });
+      b.setAttribute("aria-current", "true");
+      var k = b.dataset.man;
+      man.forEach(function (s) { s.hidden = (s.id !== "man-" + k); });
+      document.getElementById("tb-t").textContent = tit[k][0];
+      document.getElementById("tb-s").textContent = tit[k][1];
+      window.scrollTo(0, 0);
+    });
+  });
+
+  document.querySelectorAll(".mt > header[data-mo]").forEach(function (h) {
+    h.addEventListener("click", function () {
+      var than = h.parentElement.querySelector(".than");
+      if (than) { than.hidden = !than.hidden; }
+    });
+  });
+
+  var root = document.documentElement, KEY = "outliery_theme";
+  try { var v = localStorage.getItem(KEY); if (v === "dark" || v === "light") root.setAttribute("data-theme", v); } catch (e) {}
+  addEventListener("storage", function (s) {
+    if (s.key === KEY && (s.newValue === "light" || s.newValue === "dark")) {
+      root.setAttribute("data-theme", s.newValue);
+    }
+  });
+  document.getElementById("theme").addEventListener("click", function () {
+    var cur = root.getAttribute("data-theme");
+    if (!cur) cur = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    var moi = cur === "dark" ? "light" : "dark";
+    root.setAttribute("data-theme", moi);
+    try { localStorage.setItem(KEY, moi); } catch (e) {}
+  });
+})();
+</script>

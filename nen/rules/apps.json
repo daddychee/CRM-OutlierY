@@ -718,7 +718,8 @@
         "/tasky",
         "/giao-viec",
         "/bao-cao-tuan",
-        "/api-tasky"
+        "/api-tasky",
+        "/tasky-static"
       ],
       "health": "/health",
       "phien_ban": "0.2.0",

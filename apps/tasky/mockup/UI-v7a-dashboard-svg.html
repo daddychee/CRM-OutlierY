@@ -1,0 +1,317 @@
+<title>Dashboard SVG Thuần</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@600;700&display=swap">
+<style>
+:root{
+  --bg:#ffffff; --panel:#ffffff; --panel2:#f7f8fa; --line:#e6e6e6; --line2:#d9d9d9;
+  --ink:#16181c; --ink2:#3a3f47; --muted:#6c6c72;
+  --accent:#2c6fc4; --accent-ink:#1b5fb2; --tint:#e8f0fb;
+  --ok:#1f7a4d; --ok-bg:#e4f2ea; --warn:#8a5a00; --warn-bg:#fdf1de;
+  --danger:#b14a3c; --danger-bg:#fbe9e6;
+  --shadow:0 1px 2px rgba(16,24,40,.06), 0 1px 3px rgba(16,24,40,.04);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#090c12; --panel:#121826; --panel2:#141c2b; --line:#243149; --line2:#31425e;
+    --ink:#e8edf4; --ink2:#c2cbd9; --muted:#8b96a8;
+    --accent:#4c8fe0; --accent-ink:#6ba4e8; --tint:#16263f;
+    --ok:#6fbf8e; --ok-bg:#12301f; --warn:#d6a457; --warn-bg:#2e2413;
+    --danger:#d97c6c; --danger-bg:#331a16;
+    --shadow:0 1px 2px rgba(0,0,0,.4);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#090c12; --panel:#121826; --panel2:#141c2b; --line:#243149; --line2:#31425e;
+  --ink:#e8edf4; --ink2:#c2cbd9; --muted:#8b96a8;
+  --accent:#4c8fe0; --accent-ink:#6ba4e8; --tint:#16263f;
+  --ok:#6fbf8e; --ok-bg:#12301f; --warn:#d6a457; --warn-bg:#2e2413;
+  --danger:#d97c6c; --danger-bg:#331a16;
+  --shadow:0 1px 2px rgba(0,0,0,.4);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font:400 14px/1.55 Inter,system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
+h1,h2,h3,h4{margin:0;text-wrap:balance;font-weight:600;letter-spacing:-.01em}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+svg.ic{width:14px;height:14px;flex:none;stroke:currentColor;fill:none;stroke-width:1.8;
+  stroke-linecap:round;stroke-linejoin:round}
+
+.top{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 22px;
+  border-bottom:1px solid var(--line);background:var(--panel);position:sticky;top:0;z-index:5}
+.mark{display:flex;align-items:flex-end;gap:2px;height:18px}
+.mark i{width:3px;background:var(--muted);border-radius:1px;display:block}
+.mark i:nth-child(1){height:6px}.mark i:nth-child(2){height:10px}
+.mark i:nth-child(3){height:8px}.mark i:nth-child(4){height:12px}
+.mark i:nth-child(5){height:18px;background:var(--accent)}
+.wm{font:700 15px/1 "Space Grotesk",Inter,sans-serif;letter-spacing:-.02em}
+.spacer{flex:1}
+.btn{border:1px solid var(--line2);background:var(--panel);border-radius:8px;padding:6px 12px;
+  font-size:13px;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.btn:hover{border-color:var(--accent);color:var(--accent-ink)}
+.nhan-ban{font-size:11.5px;color:var(--muted);border:1px dashed var(--line2);border-radius:7px;
+  padding:3px 9px}
+
+.wrap{padding:16px 22px 44px;max-width:1240px}
+.luoi{display:grid;gap:13px;grid-template-columns:repeat(12,1fr)}
+.o{background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:14px 16px;
+  box-shadow:var(--shadow);min-width:0}
+.o.k3{grid-column:span 3}.o.k4{grid-column:span 4}.o.k5{grid-column:span 5}
+.o.k6{grid-column:span 6}.o.k7{grid-column:span 7}.o.k8{grid-column:span 8}.o.k12{grid-column:span 12}
+@media (max-width:1080px){ .o.k3{grid-column:span 6}.o.k4,.o.k5,.o.k6,.o.k7,.o.k8{grid-column:span 12} }
+@media (max-width:620px){ .o.k3{grid-column:span 12} }
+
+.lab{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.to{font:600 32px/1.1 "Space Grotesk",Inter,sans-serif;margin-top:6px;
+  font-variant-numeric:tabular-nums;letter-spacing:-.025em}
+.to small{font-size:14px;font-weight:500;color:var(--muted);font-family:Inter,sans-serif}
+.phu{font-size:12px;color:var(--muted);margin-top:4px;display:flex;align-items:center;gap:5px}
+.phu.len{color:var(--ok)}.phu.xuong{color:var(--danger)}
+.dau-o{display:flex;align-items:baseline;gap:9px;margin-bottom:10px;flex-wrap:wrap}
+.dau-o h3{font-size:13.5px}
+.dau-o .ghi{font-size:12px;color:var(--muted)}
+.chip{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--line2);border-radius:999px;
+  padding:2px 9px;font-size:11.5px;color:var(--muted);white-space:nowrap}
+.chip.ok{background:var(--ok-bg);border-color:transparent;color:var(--ok);font-weight:600}
+.chip.warn{background:var(--warn-bg);border-color:transparent;color:var(--warn);font-weight:600}
+.chip.dan{background:var(--danger-bg);border-color:transparent;color:var(--danger);font-weight:600}
+.chip.acc{background:var(--tint);border-color:transparent;color:var(--accent-ink);font-weight:600}
+.chip svg{width:11px;height:11px;stroke-width:2.2}
+
+/* biểu đồ vẽ tay */
+svg.bd{width:100%;height:auto;display:block;overflow:visible}
+.gt{stroke:var(--line);stroke-width:1}
+.nhan-truc{font-size:9.5px;fill:var(--muted)}
+.duong{fill:none;stroke:var(--accent);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.vung{fill:var(--accent);opacity:.10}
+.diem-cuoi{fill:var(--accent)}
+.cot{fill:var(--accent);rx:3}
+.o-nhiet{rx:2.5}
+.chu-nho{font-size:11px;fill:var(--ink2)}
+.chu-nhat{font-size:11px;fill:var(--muted)}
+
+.hang-bp{display:flex;align-items:center;gap:11px;padding:7px 0}
+.hang-bp .ten{width:150px;font-size:13px;flex:none;white-space:nowrap;overflow:hidden;
+  text-overflow:ellipsis}
+.hang-bp .thanh{flex:1;height:22px;background:var(--panel2);border:1px solid var(--line);
+  border-radius:6px;overflow:hidden;position:relative}
+.hang-bp .thanh i{display:block;height:100%;background:var(--accent);border-radius:5px 3px 3px 5px}
+.hang-bp .so{width:44px;text-align:right;font-variant-numeric:tabular-nums;font-size:13px;
+  font-weight:600}
+ul.ds{list-style:none;margin:0;padding:0}
+ul.ds li{display:flex;gap:10px;align-items:center;padding:9px 0;border-top:1px solid var(--line);
+  flex-wrap:wrap}
+ul.ds li:first-child{border-top:0}
+.ten2{flex:1;min-width:190px;font-size:13.5px}
+.ten2 small{display:block;color:var(--muted);font-size:12px;margin-top:1px}
+.mini{display:inline-block;width:58px;height:6px;border-radius:3px;background:var(--panel2);
+  overflow:hidden;vertical-align:middle;border:1px solid var(--line)}
+.mini i{display:block;height:100%;background:var(--accent)}
+.note{font-size:12.5px;color:var(--muted)}
+.chu-thich{display:flex;gap:12px;flex-wrap:wrap;margin-top:9px;font-size:11.5px;color:var(--muted)}
+.chu-thich span{display:inline-flex;align-items:center;gap:5px}
+.o-mau{width:10px;height:10px;border-radius:3px;display:inline-block}
+</style>
+
+<div class="top">
+  <span class="mark"><i></i><i></i><i></i><i></i><i></i></span>
+  <b class="wm">Tasky</b>
+  <span class="nhan-ban">Bản A · SVG tự vẽ · 0KB phụ thuộc</span>
+  <div class="spacer"></div>
+  <button class="btn" id="theme">
+    <svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>Sáng / Tối</button>
+</div>
+
+<div class="wrap">
+  <div class="dau-o" style="margin-bottom:14px">
+    <h2 style="font-size:17px">Dashboard Owner · Tuần 34</h2>
+    <span class="ghi">17 – 23/08 · 3 bộ phận · 17 nhân sự</span>
+  </div>
+
+  <div class="luoi">
+    <!-- 4 KPI -->
+    <div class="o k3">
+      <div class="lab">Hoàn thành tuần</div>
+      <div class="to">74<small>%</small></div>
+      <div class="phu len"><svg class="ic" viewBox="0 0 24 24"><path d="M4 16l6-6 4 4 6-8"/><path d="M20 6h-5M20 6v5"/></svg>+6 điểm so tuần trước</div>
+    </div>
+    <div class="o k3">
+      <div class="lab">Mục tiêu đã chốt đạt</div>
+      <div class="to">2<small>/9</small></div>
+      <div class="phu">6 đang chạy · 1 chờ Manager chốt</div>
+    </div>
+    <div class="o k3">
+      <div class="lab">Mục tiêu trễ hạn</div>
+      <div class="to" style="color:var(--danger)">2</div>
+      <div class="phu xuong"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16h.01"/></svg>Kinh doanh 1 · Vận hành 1</div>
+    </div>
+    <div class="o k3">
+      <div class="lab">Nhiệm vụ tôi giao</div>
+      <div class="to">4</div>
+      <div class="phu"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>1 chưa dựng thành mục tiêu</div>
+    </div>
+
+    <!-- Xu hướng 8 tuần -->
+    <div class="o k8">
+      <div class="dau-o"><h3>Tỉ lệ hoàn thành 8 tuần</h3><span class="ghi">toàn công ty</span>
+        <span class="spacer"></span><span class="chip acc">tuần 34: 74%</span></div>
+      <svg class="bd" viewBox="0 0 620 170" role="img" aria-label="Tỉ lệ hoàn thành 8 tuần, từ 58% lên 74%">
+        <line class="gt" x1="34" y1="20" x2="612" y2="20"/>
+        <line class="gt" x1="34" y1="60" x2="612" y2="60"/>
+        <line class="gt" x1="34" y1="100" x2="612" y2="100"/>
+        <line class="gt" x1="34" y1="140" x2="612" y2="140"/>
+        <text class="nhan-truc" x="4" y="24">100%</text>
+        <text class="nhan-truc" x="10" y="64">75%</text>
+        <text class="nhan-truc" x="10" y="104">50%</text>
+        <text class="nhan-truc" x="10" y="144">25%</text>
+        <path class="vung" d="M34,153 L34,127 116,120 198,113 280,108 362,101 444,96 526,88 612,78 L612,153 Z"/>
+        <polyline class="duong" points="34,127 116,120 198,113 280,108 362,101 444,96 526,88 612,78"/>
+        <circle class="diem-cuoi" cx="612" cy="78" r="4.5"/>
+        <text class="chu-nho" x="590" y="66" text-anchor="end" font-weight="600">74%</text>
+        <text class="chu-nhat" x="34" y="167">T27</text>
+        <text class="chu-nhat" x="280" y="167">T30</text>
+        <text class="chu-nhat" x="600" y="167" text-anchor="end">T34</text>
+      </svg>
+    </div>
+
+    <!-- Donut mục tiêu -->
+    <div class="o k4">
+      <div class="dau-o"><h3>9 mục tiêu đang có</h3></div>
+      <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap">
+        <svg class="bd" style="width:132px;flex:none" viewBox="0 0 120 120" role="img"
+          aria-label="2 đạt, 6 đang chạy, 1 chờ chốt">
+          <circle cx="60" cy="60" r="46" fill="none" stroke="var(--line)" stroke-width="15"/>
+          <circle cx="60" cy="60" r="46" fill="none" stroke="var(--ok)" stroke-width="15"
+            stroke-dasharray="64 225" stroke-dashoffset="0" transform="rotate(-90 60 60)"/>
+          <circle cx="60" cy="60" r="46" fill="none" stroke="var(--accent)" stroke-width="15"
+            stroke-dasharray="193 96" stroke-dashoffset="-68" transform="rotate(-90 60 60)"/>
+          <circle cx="60" cy="60" r="46" fill="none" stroke="var(--warn)" stroke-width="15"
+            stroke-dasharray="29 260" stroke-dashoffset="-265" transform="rotate(-90 60 60)"/>
+          <text x="60" y="58" text-anchor="middle" font-size="21" font-weight="700"
+            fill="var(--ink)" font-family="Space Grotesk, Inter">9</text>
+          <text x="60" y="74" text-anchor="middle" font-size="10" fill="var(--muted)">mục tiêu</text>
+        </svg>
+        <div style="flex:1;min-width:130px">
+          <div class="chu-thich" style="flex-direction:column;gap:7px;margin:0">
+            <span><i class="o-mau" style="background:var(--ok)"></i>Đã chốt đạt — <b>2</b></span>
+            <span><i class="o-mau" style="background:var(--accent)"></i>Đang chạy — <b>6</b></span>
+            <span><i class="o-mau" style="background:var(--warn)"></i>Chờ Manager chốt — <b>1</b></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- So sánh bộ phận -->
+    <div class="o k5">
+      <div class="dau-o"><h3>Hoàn thành theo bộ phận</h3>
+        <span class="ghi">tuần 34</span></div>
+      <div class="hang-bp"><span class="ten">Hành chính Nhân sự</span>
+        <span class="thanh"><i style="width:88%"></i></span><span class="so">88%</span></div>
+      <div class="hang-bp"><span class="ten">Vận hành – Sản xuất</span>
+        <span class="thanh"><i style="width:78%"></i></span><span class="so">78%</span></div>
+      <div class="hang-bp"><span class="ten">Kinh doanh</span>
+        <span class="thanh"><i style="width:61%;background:var(--danger)"></i></span>
+        <span class="so" style="color:var(--danger)">61%</span></div>
+      <div class="note" style="margin-top:8px">Kinh doanh tô đỏ vì <b>ba tuần liền đi xuống</b> —
+        màu ở đây mang nghĩa cảnh báo, luôn kèm chữ.</div>
+    </div>
+
+    <!-- Heatmap bộ phận × 8 tuần -->
+    <div class="o k7">
+      <div class="dau-o"><h3>Nhịp 8 tuần theo bộ phận</h3>
+        <span class="ghi">ô đậm = tỉ lệ cao</span></div>
+      <svg class="bd" viewBox="0 0 560 138" role="img"
+        aria-label="Lưới nhiệt tỉ lệ hoàn thành ba bộ phận qua tám tuần">
+        <text class="chu-nhat" x="0" y="34">Vận hành</text>
+        <text class="chu-nhat" x="0" y="72">Kinh doanh</text>
+        <text class="chu-nhat" x="0" y="110">HCNS</text>
+        <g id="nhiet"></g>
+        <text class="chu-nhat" x="98" y="130">T27</text>
+        <text class="chu-nhat" x="290" y="130">T30</text>
+        <text class="chu-nhat" x="540" y="130" text-anchor="end">T34</text>
+      </svg>
+      <div class="chu-thich">
+        <span>Thấp <i class="o-mau" style="background:var(--accent);opacity:.18"></i>
+          <i class="o-mau" style="background:var(--accent);opacity:.42"></i>
+          <i class="o-mau" style="background:var(--accent);opacity:.68"></i>
+          <i class="o-mau" style="background:var(--accent)"></i> Cao</span>
+        <span>Hàng Kinh doanh nhạt dần từ T32 — thấy được xu hướng mà bảng số không nói ra</span>
+      </div>
+    </div>
+
+    <!-- Nhiệm vụ Owner giao -->
+    <div class="o k12">
+      <div class="dau-o"><h3>Nhiệm vụ tôi giao cho Manager</h3>
+        <span class="ghi">Manager dựng thành mục tiêu rồi tự chẻ việc</span></div>
+      <ul class="ds">
+        <li><span class="ten2">Nâng chất lượng giữ chân video kênh Mỹ<small>Quốc Huy · mục tiêu “Tăng AVD ≥ 45%”</small></span>
+          <span class="mini"><i style="width:30%"></i></span><span class="note">3/10</span>
+          <span class="chip acc"><svg class="ic" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Đã dựng mục tiêu</span></li>
+        <li><span class="ten2">Mở 2 ngách mới cho pool US<small>Bảo Ngọc · mục tiêu “Chốt 3 ngách mới”</small></span>
+          <span class="mini"><i style="width:33%"></i></span><span class="note">2/6</span>
+          <span class="chip dan"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16h.01"/></svg>Trễ 3 ngày</span></li>
+        <li><span class="ten2">Chuẩn hóa hồ sơ nhân sự mới<small>Hoàng Lan · giao 20/08</small></span>
+          <span class="note" style="flex:0 0 auto">chưa dựng mục tiêu</span>
+          <span class="chip warn"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>Nhận 4 ngày, chưa chẻ việc</span></li>
+        <li><span class="ten2">Ra đều 8 video/tuần kênh Hidden Laos<small>Quốc Huy · chốt 23/08 — “8/8 đúng lịch”</small></span>
+          <span class="mini"><i style="width:100%"></i></span><span class="note">6/6</span>
+          <span class="chip ok"><svg class="ic" viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></svg>Đạt</span></li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  // Lưới nhiệt: vẽ bằng vòng lặp — dữ liệu thật sẽ do server bơm xuống
+  var dl = [
+    [58, 62, 66, 64, 70, 71, 74, 78],   // Vận hành
+    [70, 72, 75, 74, 68, 65, 63, 61],   // Kinh doanh
+    [66, 70, 74, 78, 80, 83, 86, 88]    // HCNS
+  ];
+  var g = document.getElementById("nhiet"), o = 78, w = 58, h = 26, kh = 6;
+  dl.forEach(function (hang, i) {
+    hang.forEach(function (v, j) {
+      var r = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+      r.setAttribute("x", o + j * (w + kh));
+      r.setAttribute("y", 14 + i * (h + 12));
+      r.setAttribute("width", w); r.setAttribute("height", h);
+      r.setAttribute("class", "o-nhiet");
+      r.setAttribute("fill", "var(--accent)");
+      // độ đậm theo giá trị — một hue, sáng→đậm (sequential đúng chuẩn)
+      r.setAttribute("opacity", String(0.14 + 0.86 * Math.max(0, (v - 50)) / 45));
+      var t = document.createElementNS("http://www.w3.org/2000/svg", "title");
+      t.textContent = ["Vận hành", "Kinh doanh", "HCNS"][i] + " · tuần " + (27 + j) + ": " + v + "%";
+      r.appendChild(t);
+      g.appendChild(r);
+
+      var s = document.createElementNS("http://www.w3.org/2000/svg", "text");
+      s.setAttribute("x", o + j * (w + kh) + w / 2);
+      s.setAttribute("y", 14 + i * (h + 12) + 17);
+      s.setAttribute("text-anchor", "middle");
+      s.setAttribute("font-size", "10.5");
+      s.setAttribute("font-weight", "600");
+      s.setAttribute("fill", v >= 72 ? "var(--panel)" : "var(--ink2)");
+      s.textContent = v;
+      g.appendChild(s);
+    });
+  });
+
+  var root = document.documentElement, KEY = "outliery_theme";
+  try { var v = localStorage.getItem(KEY); if (v === "dark" || v === "light") root.setAttribute("data-theme", v); } catch (e) {}
+  addEventListener("storage", function (s) {
+    if (s.key === KEY && (s.newValue === "light" || s.newValue === "dark")) {
+      root.setAttribute("data-theme", s.newValue);
+    }
+  });
+  document.getElementById("theme").addEventListener("click", function () {
+    var cur = root.getAttribute("data-theme");
+    if (!cur) cur = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    var moi = cur === "dark" ? "light" : "dark";
+    root.setAttribute("data-theme", moi);
+    try { localStorage.setItem(KEY, moi); } catch (e) {}
+    // KHÔNG cần vẽ lại gì cả — SVG ăn thẳng var(--*), đổi theme là đổi màu theo
+  });
+})();
+</script>

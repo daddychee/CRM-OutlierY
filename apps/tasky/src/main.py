@@ -28,6 +28,7 @@ from urllib.parse import unquote
 
 from fastapi import Depends, FastAPI, Form, Header, HTTPException, Request
 from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 _APP_DIR = Path(__file__).resolve().parents[1]          # apps/tasky
@@ -43,6 +44,10 @@ from nen.common.sidebar import ctx_sidebar  # noqa: E402 — cờ sidebar UI_FLO
 
 templates = Jinja2Templates(directory=str(_APP_DIR / "src" / "templates"),
                             context_processors=[ctx_sidebar])
+# Vendor chart (Frappe Charts) — LAN không ra Internet nên chép về, không CDN.
+# Xem src/static/vendor/NGUON.md.
+app.mount("/tasky-static", StaticFiles(directory=str(_APP_DIR / "src" / "static")),
+          name="tasky-static")
 templates.env.filters["han"] = tuan_lo.tinh_han   # {{ v|han }} → {chu, muc, con}
 
 

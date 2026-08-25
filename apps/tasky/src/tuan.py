@@ -85,30 +85,48 @@ def _gio() -> str:
 
 # ---------- đọc / ghi ----------
 
+def doc_json(duong: Path, mac_dinh: dict) -> dict:
+    """Đọc JSON khoan dung: chưa có file / file hỏng → mặc định, không nổ."""
+    if not duong.is_file():
+        return dict(mac_dinh)
+    try:
+        d = json.loads(duong.read_text(encoding="utf-8"))
+    except ValueError:
+        return dict(mac_dinh)
+    return d if isinstance(d, dict) else dict(mac_dinh)
+
+
+def _ghi_json(duong: Path, du_lieu: dict) -> None:
+    """Ghi nguyên tử: tmp + os.replace — mất điện giữa chừng không để lại file cụt."""
+    duong.parent.mkdir(parents=True, exist_ok=True)
+    tam = duong.with_name(duong.name + ".tmp")
+    tam.write_text(json.dumps(du_lieu, ensure_ascii=False, indent=1), encoding="utf-8")
+    os.replace(tam, duong)
+
+
+def cac_tuan_gan(so_tuan: int = 26) -> list[str]:
+    """Mã các tuần đã có sổ, mới nhất trước — dùng cho thứ sống XUYÊN TUẦN
+    (mục tiêu, kho quy trình)."""
+    thu_muc = _goc() / "tuan"
+    if not thu_muc.is_dir():
+        return []
+    return [p.stem for p in sorted(thu_muc.glob("*.json"), reverse=True)[:so_tuan]]
+
+
 def doc_tuan(ma: str) -> dict:
     """Sổ một tuần. Chưa có file / file hỏng → sổ RỖNG hợp lệ (đọc khoan dung,
     không dựng ngoại lệ cho ca 'tuần chưa ai khai gì')."""
     tu, den = khoang_tuan(ma)
     trong = {"tuan": ma, "tu": tu, "den": den, "viec": [], "dong": {}}
-    p = _duong_tuan(ma)
-    if not p.is_file():
-        return trong
-    try:
-        d = json.loads(p.read_text(encoding="utf-8"))
-    except ValueError:
-        return trong
-    if not isinstance(d, dict) or not isinstance(d.get("viec"), list):
+    d = doc_json(_duong_tuan(ma), trong)
+    if not isinstance(d.get("viec"), list):
         return trong
     d.setdefault("dong", {})
     return d
 
 
 def _ghi_tuan(so: dict) -> None:
-    p = _duong_tuan(so["tuan"])
-    p.parent.mkdir(parents=True, exist_ok=True)
-    tam = p.with_name(p.name + ".tmp")
-    tam.write_text(json.dumps(so, ensure_ascii=False, indent=1), encoding="utf-8")
-    os.replace(tam, p)
+    _ghi_json(_duong_tuan(so["tuan"]), so)
 
 
 def ghi_nhat_ky(hanh_dong: str, ai: str, chi_tiet: dict) -> None:
@@ -239,13 +257,14 @@ def _viec_moi(tieu_de: str, loai_viec: str, nguoi: str) -> dict:
             "nguon_ngoai": None,        # chừa cho chiều Tasky → PlannerY (§9.5)
             "tu_yeu_cau": "",           # id việc phối hợp mà việc này được chẻ ra
             "han": "", "gap": False,    # hạn chót (ISO) + dấu GẤP (Owner chốt 24/08)
+            "muc_tieu_id": "",          # việc này phục vụ mục tiêu nào (§12)
             "luc_tao": _gio(), "luc_nhan": None, "luc_bao_xong": None,
             "luc_xac_nhan": None, "nguoi_xac_nhan": None, "tu_xac_nhan": False}
 
 
 def them_viec_giao(ma: str, nguoi_giao: dict, nguoi_nhan: dict,
                    tieu_de: str, loai_viec: str, tu_yeu_cau: str = "",
-                   han: str = "", gap: bool = False) -> dict:
+                   han: str = "", gap: bool = False, muc_tieu_id: str = "") -> dict:
     """Leader giao việc → trạng thái CHỜ NHẬN. Loại việc bắt buộc: đây là khóa gom
     checklist thành quy trình sau này (§5), thiếu thì không cứu được bằng migration."""
     if not duoc_giao_cho(nguoi_giao, nguoi_nhan):
@@ -258,7 +277,8 @@ def them_viec_giao(ma: str, nguoi_giao: dict, nguoi_nhan: dict,
         v = _viec_moi(tieu_de, loai_viec, nguoi_nhan["ten"])
         v.update({"nguoi_giao": nguoi_giao["ten"], "nguon": "giao",
                   "trang_thai": CHO_NHAN, "tu_yeu_cau": tu_yeu_cau or "",
-                  "han": _han_hop_le(han), "gap": bool(gap)})
+                  "han": _han_hop_le(han), "gap": bool(gap),
+                  "muc_tieu_id": muc_tieu_id or ""})
         so["viec"].append(v)
         _ghi_tuan(so)
     ghi_nhat_ky("giao_viec", nguoi_giao["ten"],
@@ -564,12 +584,9 @@ def cac_loai_viec(so_tuan: int = 12) -> list[str]:
     """Danh sách loại việc ĐÃ DÙNG (mới nhất trước) để gợi ý khi khai việc — danh
     mục tự lớn dần, gõ tên mới là thành loại mới (khuôn tag từ khóa của AI Agent).
     Quét vài tuần gần nhất là đủ; kho rỗng → [] chứ không bịa danh mục mẫu."""
-    thu_muc = _goc() / "tuan"
-    if not thu_muc.is_dir():
-        return []
     ra: list[str] = []
-    for p in sorted(thu_muc.glob("*.json"), reverse=True)[:so_tuan]:
-        for v in doc_tuan(p.stem)["viec"]:
+    for ma in cac_tuan_gan(so_tuan):
+        for v in doc_tuan(ma)["viec"]:
             loai = (v.get("loai_viec") or "").strip()
             if loai and loai not in ra:
                 ra.append(loai)
@@ -626,12 +643,9 @@ def kho_quy_trinh(so_tuan: int = 26, du_de_rut: int = 3) -> list[dict]:
     "chưa đủ tiền lệ". Chuẩn hóa bước để gom = thường hóa + gộp khoảng trắng (đủ để
     đếm; gộp bước gần giống là việc của vòng sau, làm khi có dữ liệu thật).
     """
-    thu_muc = _goc() / "tuan"
-    if not thu_muc.is_dir():
-        return []
     gom: dict[str, dict] = {}
-    for p in sorted(thu_muc.glob("*.json"), reverse=True)[:so_tuan]:
-        for v in doc_tuan(p.stem)["viec"]:
+    for ma in cac_tuan_gan(so_tuan):
+        for v in doc_tuan(ma)["viec"]:
             loai = (v.get("loai_viec") or "").strip()
             if not loai or v["trang_thai"] != XAC_NHAN or not v["checklist"]:
                 continue

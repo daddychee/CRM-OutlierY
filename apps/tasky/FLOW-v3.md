@@ -212,3 +212,60 @@ cần làm trước nằm trên đầu màn hình, không phải cuộn tìm.
 **Thông báo** thêm 3 dòng đỏ: *N việc đã quá hạn* · *N việc đến hạn hôm nay* ·
 *N việc được đánh dấu GẤP* (không đếm trùng việc đã nằm trong hai nhóm trên);
 leader thêm *N việc của bộ phận đã quá hạn*.
+
+## 12. MỤC TIÊU + DASHBOARD (Owner chốt 24-25/08)
+
+### 12.1 Chuỗi ba tầng
+
+```
+Owner giao NHIỆM VỤ cho Manager  →  Manager dựng thành MỤC TIÊU  →  chẻ VIỆC  →  giao nhân sự
+   (việc thường, Owner L5             (có KẾT QUẢ CẦN ĐẠT,             (checklist do
+    giao mọi bộ phận)                  hạn riêng, xuyên tuần)           nhân sự tự viết)
+```
+
+Mục tiêu giữ `tu_nhiem_vu` = id việc Owner giao → Owner theo dõi được nhiệm vụ mình
+giao đã dựng thành mục tiêu chưa, đang tới đâu. Việc giữ `muc_tieu_id`.
+
+| Điều | Luật |
+|---|---|
+| Ai đặt mục tiêu | **Manager L4+** (Owner chốt: công việc bắt đầu từ Manager). Leader vẫn giao việc lẻ như cũ |
+| Kết quả cần đạt | **Bắt buộc** khai bằng chữ (*"AVD ≥ 45%"*, *"8 video xuất bản"*) — không khai thì sau không chốt được |
+| Tiến độ | **việc đã NGHIỆM THU ÷ tổng việc con**. KHÔNG trọng số: việc *"họp phân tích đối thủ"* không đóng góp được X% AVD, ép gán là bịa số (Owner bác 25/08) |
+| Xong hết việc | **KHÔNG tự thành "đạt"** — chuyển sang chờ Manager kết luận |
+| Chốt kết quả | Đạt / Một phần / Không đạt + **nhận xét bắt buộc khi chưa đạt trọn**. Lưu kèm tên người chốt |
+| Chốt nhầm | Mở lại được (cùng khuôn thu-lại-đóng-tuần), có vết |
+| Việc lẻ | **Không bắt buộc** thuộc mục tiêu — ép thì đẻ ra mục tiêu rác kiểu "việc linh tinh" |
+
+### 12.2 LUẬT MÀU (Owner cho dùng màu tự do, nhưng phải có luật)
+
+Đo bằng validator dataviz (Machado 2009, OKLab ΔE) trên cả hai nền — kết quả buộc
+hai điều dưới, không phải sở thích:
+
+**Cấm tô màu theo bộ phận / theo người.** Thử mọi bộ bốn hue trong dải sáng cho nền
+tối đều có ít nhất một cặp ΔE < 15 (mắt thường không phân biệt nổi). Bộ phận tách
+bằng **khối riêng + tên**.
+
+**Màu chỉ mang bốn nghĩa, dùng y hệt ở mọi màn:**
+
+| Token | Nghĩa duy nhất | Ví dụ |
+|---|---|---|
+| `--accent` | đang chạy · tiến độ | thanh tiến độ, việc đang làm, chip mục tiêu |
+| `--ok` | đã xong · đạt | việc nghiệm thu, mục tiêu chốt Đạt |
+| `--warn` | chờ người · sắp tới hạn | chờ nhận, chờ xác nhận, chờ chốt, hạn ≤3 ngày |
+| `--danger` | quá hạn · kẹt · không đạt | quá hạn, dời ≥2 lần, mục tiêu Không đạt |
+
+**Mỗi chỗ dùng màu PHẢI kèm chữ + icon line** — cặp `--warn`/`--danger` đo được
+ΔE 10.1, dưới ngưỡng, nên màu một mình không đủ phân biệt. Icon: line-SVG một nét,
+`stroke-width` 1.8, **không emoji**.
+
+**Biểu đồ**: một chuỗi số liệu → một màu `--accent`. Donut trạng thái dùng đúng bốn
+token trên + chú thích bằng chữ. Lưới nhiệt: một hue, đổi độ đậm (sequential).
+
+### 12.3 Dashboard — Frappe Charts (Owner chốt 25/08 sau khi so hai bản thật)
+
+Vendor `src/static/vendor/frappe-charts.min.umd.js` (MIT, ~68KB) — chép về vì máy
+LAN không ra Internet; xem `NGUON.md`. **Cái giá đã biết:** thư viện vẽ bằng màu
+truyền vào JS, không đọc CSS var → đổi theme phải **đọc token rồi vẽ lại**.
+
+Bề rộng nội dung giữ **`.noi-dung` max-width 900px** như mọi app khác — dashboard
+xếp lưới trong khổ đó, không tự nới rộng.
