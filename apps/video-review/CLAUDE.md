@@ -228,6 +228,29 @@
   luận chiếm chỗ trên đầu panel — muốn khít 0px thì phải dời ô soạn xuống đáy
   (user chưa yêu cầu).
 
+- 26/08/2026 — **HAI BÁO ĐỘNG GIẢ TRÊN CÙNG MỘT TRANG** (user gửi ảnh VR-0019
+  LI088.2: banner "file changed" + dòng đỏ "can't play the file" trong khi video
+  chạy ngon). Cả hai đều SAI, và gốc là một: **nhân sự bấm liên kết lúc Windows
+  còn đang chép file lên NAS**.
+  • *Vân tay*: dung lượng khớp TỪNG BYTE (Explorer đặt sẵn cỡ file ngay khi bắt
+    đầu chép) nhưng NGÀY SỬA nhích 174 giây (11:33:39 → 11:36:33 lúc chép xong) →
+    app kết luận "ai đó ghi đè bản khác". Sửa: **chỉ DUNG LƯỢNG mới là bằng chứng
+    nội dung đổi**; ngày sửa nhích một mình là lành tính (chép xong, dời file,
+    tool backup chạm vào) và vân tay **tự chữa** — ghi lại mtime mới rồi thôi.
+    Thêm nút **"This is the cut I meant"** (người ĐĂNG hoặc Leader+) để nhận file
+    hiện tại làm bản đang review khi bản dựng được xuất đè hợp lệ.
+  • *Dòng đỏ codec*: một cú lỗi tải khúc lúc file đang chép dở bắn `error` →
+    thông điệp hiện ra rồi **đứng lì mãi mãi**, không ai dẹp. Sửa: `loadeddata`/
+    `playing`/`canplay` mà `videoWidth > 0` thì ẩn thông điệp; video CHỈ CÓ TIẾNG
+    (videoWidth = 0) vẫn báo như cũ.
+  76 test pass. Nghiệm thu: bản ghi thật VR-0019 hết banner, vân tay tự chữa về
+  11:36:33, danh sách 0 dòng "file changed"; harness Chrome headless chứng minh
+  đủ 3 vế của dòng đỏ (lỗi → hiện, phát được → dẹp, chỉ-có-tiếng → vẫn báo).
+  **BÀI HỌC:** cảnh báo dựa trên metadata hệ thống (mtime) phải hỏi "cái gì làm
+  nó đổi mà nội dung KHÔNG đổi" trước khi tin; và mọi thông điệp lỗi hiện ra phải
+  có đường TỰ TẮT khi điều kiện hết, không thì một trục trặc thoáng qua thành lời
+  buộc tội vĩnh viễn.
+
 ## Quyết định thiết kế (đừng phá)
 
 - **NAS CHỈ ĐỌC TUYỆT ĐỐI**: app không chép/ghi/xóa/đổi tên gì trong `VR_NAS_DIR`

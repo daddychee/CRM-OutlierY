@@ -96,11 +96,48 @@ def tinh_trang_file(video: dict) -> dict:
     st = p.stat()
     doi = False
     if (video.get("nguon") or "kho") == "nas":
+        # CHỈ DUNG LƯỢNG mới là bằng chứng nội dung đổi. Ngày sửa nhích vì đủ thứ
+        # lý do lành tính — sự cố 26/08: nhân sự bấm liên kết lúc Windows đang chép
+        # dở lên NAS (Explorer đặt sẵn dung lượng đầy đủ nên byte khớp ngay, mtime
+        # còn chạy tới lúc chép xong 3 phút sau) → app la "file bị ghi đè" oan.
+        doi = bool(video.get("kich_thuoc")) and st.st_size != video["kich_thuoc"]
         cu_mt = video.get("nas_mtime")
-        doi = (bool(video.get("kich_thuoc")) and st.st_size != video["kich_thuoc"]) or (
-            cu_mt is not None and abs(st.st_mtime - float(cu_mt)) > 2)
+        if not doi and cu_mt is not None and abs(st.st_mtime - float(cu_mt)) > 2:
+            # nội dung y nguyên → tự cập nhật lại vân tay, khỏi so đi so lại mãi
+            _ghi_mtime(video["ma"], st.st_mtime)
+            video["nas_mtime"] = st.st_mtime
     return {"co": True, "doi": doi, "duong_hien": str(p),
             "kich_thuoc_hien": st.st_size}
+
+
+def _ghi_mtime(ma: str, mtime: float) -> None:
+    conn = ket_noi()
+    try:
+        conn.execute("UPDATE video SET nas_mtime=? WHERE ma=?", (mtime, ma))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def cap_nhat_van_tay(ma: str) -> dict:
+    """Nhận file HIỆN TẠI trên NAS làm đúng bản đang review (nút trên banner cảnh
+    báo). Ghi lại dung lượng + ngày sửa + codec — dùng khi bản dựng được xuất đè
+    hợp lệ, hoặc khi cảnh báo đến từ một lần chép dở."""
+    v = lay_video(ma)
+    if v is None:
+        raise KeyError(ma)
+    p = duong_video(v)
+    if p is None or not p.is_file():
+        raise FileNotFoundError(ma)
+    st = p.stat()
+    conn = ket_noi()
+    try:
+        conn.execute("UPDATE video SET kich_thuoc=?, nas_mtime=?, codec=? WHERE ma=?",
+                     (st.st_size, st.st_mtime, doc_codec(p), ma))
+        conn.commit()
+    finally:
+        conn.close()
+    return {"ma": ma, "kich_thuoc": st.st_size}
 
 
 # Codec trình duyệt giải mã được trong thẻ <video>. HEVC/H.265 KHÔNG nằm đây:

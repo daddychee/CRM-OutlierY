@@ -105,8 +105,14 @@
   NAS and add that file. Notes on this entry stay where they are.</div>
 {% elif tt_file.doi %}
 <div class="bang-canh doi"><b>File changed on the NAS since it was linked</b>
-  Someone overwrote it with a different export under the same name, so existing timestamped notes
-  may point at the wrong moment. Add the new export as its own entry to keep notes trustworthy.</div>
+  The file is a different size than when it was added, so existing timestamped notes may point at
+  the wrong moment. Add the new export as its own entry to keep notes trustworthy — or, if this is
+  still the cut you meant, accept it as the current version.
+  {% if user.ten == video.nguoi_tao or user.co_duyet %}
+  <div style="margin-top:8px"><button class="nut nho phu" type="button" id="nut-nhan-ban">This is the cut I meant</button>
+  <span id="nhan-ban-loi" style="font-size:12.5px;margin-left:8px"></span></div>
+  {% endif %}
+</div>
 {% endif %}
 <div class="vr-head">
   <h2>{{ video.ten }} <span style="color:var(--muted);font-size:12.5px;font-weight:400">
@@ -247,6 +253,30 @@
     document.getElementById("loi-phat").style.display = "block";
   });
   vid.addEventListener("play", function () { netDangXem = null; xoaLop(); });
+  // Video phát được thật thì DẸP thông điệp lỗi codec/tải: sự cố 26/08 — một cú
+  // lỗi tải khúc lúc file đang chép dở làm dòng đỏ "can't play the file" đứng lì
+  // trên màn hình trong khi video chạy ngon lành.
+  ["loadeddata", "playing", "canplay"].forEach(function (ten) {
+    vid.addEventListener(ten, function () {
+      if (vid.videoWidth) document.getElementById("loi-phat").style.display = "none";
+    });
+  });
+
+  var nutNhan = document.getElementById("nut-nhan-ban");
+  if (nutNhan) nutNhan.addEventListener("click", function () {
+    if (!nutNhan.dataset.chac) {
+      nutNhan.dataset.chac = "1";
+      nutNhan.textContent = "Accept current file — sure?";
+      return;
+    }
+    nutNhan.disabled = true;
+    fetch("/api-vr/nhan-ban-hien-tai/" + VIDEO_MA, { method: "POST" })
+      .then(function (r) { if (!r.ok) throw 0; location.reload(); })
+      .catch(function () {
+        nutNhan.disabled = false; nutNhan.textContent = "This is the cut I meant";
+        document.getElementById("nhan-ban-loi").textContent = "Could not update — try again.";
+      });
+  });
   var _tTruoc = 0;
   vid.addEventListener("timeupdate", function () {
     mocHien.textContent = mmss(vid.currentTime);

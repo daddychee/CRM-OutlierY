@@ -195,3 +195,50 @@ def test_trang_xem_co_luoi_noi_bat_binh_luan(client):
     assert 'd.dataset.bl = b.id' in trang            # mốc để tìm lại đúng mục
     assert "buoc > 1.5" in trang                     # tua xa thì KHÔNG nháy hàng loạt
     assert "prefers-reduced-motion" in trang         # máy tắt hiệu ứng vẫn thấy nổi bật
+
+
+def test_van_tay_chi_bao_khi_DUNG_LUONG_doi(client):
+    """Sự cố 26/08: liên kết lúc Windows còn chép dở → dung lượng khớp (Explorer đặt
+    sẵn cỡ file) mà NGÀY SỬA nhích 3 phút → app la 'file bị ghi đè' oan.
+    Ngày sửa nhích một mình KHÔNG còn là bằng chứng, và vân tay tự chữa lại."""
+    import os
+    _them(client)
+    v = kho_video.lay_video("VR-0001")
+    p = kho_video.duong_video(v)
+    os.utime(p, (p.stat().st_atime, p.stat().st_mtime + 600))     # chỉ dời ngày sửa
+    tt = kho_video.tinh_trang_file(kho_video.lay_video("VR-0001"))
+    assert tt["co"] is True and tt["doi"] is False
+    assert "file changed" not in client.get("/danh-sach", headers=h()).text
+    # tự chữa: mtime mới đã được ghi lại, lần sau khỏi so đi so lại
+    assert abs(kho_video.lay_video("VR-0001")["nas_mtime"] - p.stat().st_mtime) < 1
+    # đổi NỘI DUNG (khác dung lượng) thì vẫn phải kêu
+    p.write_bytes(b"y" * 999)
+    assert kho_video.tinh_trang_file(kho_video.lay_video("VR-0001"))["doi"] is True
+
+
+def test_nhan_ban_hien_tai_xoa_canh_bao(client):
+    """Bản dựng xuất đè hợp lệ: người ĐĂNG (hoặc Leader+) nhận file hiện tại làm
+    bản đang review; người ngoài không được đụng."""
+    _them(client)
+    v = kho_video.lay_video("VR-0001")
+    kho_video.duong_video(v).write_bytes(b"y" * 4321)
+    assert kho_video.tinh_trang_file(kho_video.lay_video("VR-0001"))["doi"] is True
+    assert client.post("/api-vr/nhan-ban-hien-tai/VR-0001",
+                       headers=h(ten="nguoi-la")).status_code == 403
+    assert client.post("/api-vr/nhan-ban-hien-tai/VR-0001", headers=h()).status_code == 200
+    v2 = kho_video.lay_video("VR-0001")
+    assert v2["kich_thuoc"] == 4321
+    assert kho_video.tinh_trang_file(v2)["doi"] is False
+    # Leader cũng xác nhận được (người đăng nghỉ phép thì review vẫn chạy)
+    kho_video.duong_video(v2).write_bytes(b"z" * 55)
+    assert client.post("/api-vr/nhan-ban-hien-tai/VR-0001",
+                       headers=h(ten="chi", actions="duyet")).status_code == 200
+
+
+def test_thong_diep_loi_phat_duoc_don_khi_video_chay(client):
+    """Ghim bản vá 26/08: dòng đỏ 'can't play the file' phải biến mất khi video
+    thật sự phát được (trước đây một cú lỗi tải khúc là nó đứng lì trên màn)."""
+    _them(client)
+    trang = client.get("/xem/VR-0001", headers=h()).text
+    assert '["loadeddata", "playing", "canplay"]' in trang
+    assert 'document.getElementById("loi-phat").style.display = "none"' in trang

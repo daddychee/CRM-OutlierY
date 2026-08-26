@@ -316,6 +316,20 @@ async def api_nas_lien_ket(duong: str = Form(...), ten: str = Form(""),
             "canh_codec": kho_video.canh_bao_codec(ban_ghi.get("codec", ""))}
 
 
+@app.post("/api-vr/nhan-ban-hien-tai/{ma}")
+async def api_nhan_ban_hien_tai(ma: str, user: dict = Depends(khu_cua_toi)):
+    """Nhận file HIỆN TẠI trên NAS làm đúng bản đang review — xóa cảnh báo 'file
+    changed'. Người ĐĂNG video hoặc Leader+ quyết, vì chỉ họ biết bản mới có đúng
+    là bản mình định cho review hay không."""
+    video = _video_song(ma)
+    if user["ten"] != video["nguoi_tao"] and not user["co_duyet"]:
+        raise HTTPException(403, "Chỉ người đăng video hoặc Leader trở lên xác nhận được.")
+    try:
+        return kho_video.cap_nhat_van_tay(ma)
+    except FileNotFoundError:
+        raise HTTPException(404, "File gốc không còn ở nơi đã liên kết (NAS).")
+
+
 # ---------- dọn thư mục NAS sau khi review xong (xem src/don_nas.py) ----------
 
 @app.get("/api-vr/nas-thu-muc/{ma}")
