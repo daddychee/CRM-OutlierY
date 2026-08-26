@@ -262,3 +262,24 @@
   ul.ds-tl li form{margin:0}
   .nut.nguy{border-color:var(--tk-cap);color:var(--tk-cap)}
   .nut.nguy:hover{background:var(--tk-cap-nen)}
+
+  /* ---- BOARD KANBAN (§17 bước 2) — cột theo trục, thẻ là việc ---- */
+  .board{display:flex;gap:11px;overflow-x:auto;padding-bottom:12px;align-items:flex-start}
+  .board .cot{flex:0 0 292px;background:var(--sidebar);border:1px solid var(--tk-vien);
+    border-radius:13px;display:flex;flex-direction:column;max-height:calc(100vh - 250px)}
+  .board .cot>header{padding:10px 13px;border-bottom:1px solid var(--line);display:flex;
+    align-items:center;gap:8px;font-size:12px;font-weight:700;letter-spacing:.04em;
+    text-transform:uppercase;color:var(--muted)}
+  .board .cot>header .dem{margin-left:auto;font-weight:600;letter-spacing:0}
+  .board .cot.dich{border-color:var(--accent);background:var(--th-16263f)}
+  .board ul.vs{padding:9px;gap:8px;overflow-y:auto}
+  .board .cot-trong{padding:14px 13px;color:var(--muted);font-size:12px;text-align:center}
+  .board li.the-viec[draggable="true"]{cursor:grab}
+  .board li.the-viec.dang-keo{opacity:.45}
+  .nhom-theo{display:inline-flex;align-items:center;gap:5px;padding:3px 5px;
+    border:1px solid var(--tk-vien);border-radius:10px}
+  .nhom-theo button{border:0;background:none;color:var(--muted);border-radius:7px;
+    padding:5px 10px;font:inherit;font-size:12.5px;cursor:pointer}
+  .nhom-theo button:hover{color:var(--ink)}
+  .nhom-theo button.on{background:var(--th-16263f);color:var(--accent);font-weight:600}
+  .quay{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:13px}

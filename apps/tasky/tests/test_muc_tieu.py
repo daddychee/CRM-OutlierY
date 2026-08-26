@@ -382,7 +382,7 @@ def test_trang_hien_cay_va_canh_bao(_so_gia):
     ma = tuan.ma_tuan()
     m = _mt()
     _che(ma, m, "Rà 10 video đối thủ")
-    r = _client.get("/task", headers=H_MGR)
+    r = _client.get("/task?goal=%s" % m["id"], headers=H_MGR)
     assert r.status_code == 200
     assert "Tăng AVD kênh Life In" in r.text and "AVD ≥ 45%" in r.text
     assert "1 chưa giao" in r.text and "Rà 10 video đối thủ" in r.text
@@ -571,7 +571,7 @@ def test_nhat_ky_giu_nguyen_ban_goal_bi_xoa(tmp_path):
 
 def test_nut_xoa_goal_hien_tren_trang(_so_gia):
     m = _mt()
-    r = _client.get("/task", headers=H_MGR)
+    r = _client.get("/task?goal=%s" % m["id"], headers=H_MGR)
     assert 'data-xoa-goal="%s"' % m["id"] in r.text
 
 
@@ -611,7 +611,7 @@ def test_mau_khong_dung_vao_nghia_trang_thai(_so_gia):
     m = _mt()
     mt.dat_mau(m["id"], MGR, "hong")
     tuan.them_viec_muc_tieu(ma, MGR, "Chưa giao ai", "x", m["id"])
-    r = _client.get("/task", headers=H_MGR)
+    r = _client.get("/task?goal=%s" % m["id"], headers=H_MGR)
     assert "1 chưa giao" in r.text
 
 
@@ -634,8 +634,8 @@ def test_form_mau_ve_dung_goal_dang_xem(_so_gia):
 
 def test_nut_mau_la_the_button_trong_form(_so_gia):
     """Không còn phụ thuộc JS: nút màu phải là submit của form thật."""
-    _mt()
-    r = _client.get("/task", headers=H_MGR)
+    m = _mt()
+    r = _client.get("/task?goal=%s" % m["id"], headers=H_MGR)
     assert 'action="/muc-tieu/mau"' in r.text and 'type="submit" name="mau"' in r.text
 
 

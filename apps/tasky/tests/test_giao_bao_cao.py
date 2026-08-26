@@ -30,6 +30,7 @@ LEADER = {"ten": "huytq", "level": 3, "bo_phan": "Vận hành"}
 NHANVIEN = {"ten": "hant", "level": 2, "bo_phan": "Vận hành"}
 NV_KHAC_BP = {"ten": "ngocpb", "level": 2, "bo_phan": "Kinh doanh"}
 OWNER = {"ten": "bot", "level": 5, "bo_phan": "Ban quản trị"}
+NV2 = {"ten": "ducm", "level": 2, "bo_phan": "Vận hành"}      # cùng bộ phận LEADER
 
 
 @pytest.fixture(autouse=True)
@@ -55,15 +56,30 @@ def _xong(ma, tieu_de="Dựng 6 video", loai="Dựng video", nguoi=NHANVIEN):
 
 # ---------- gate ----------
 
-def test_nhan_vien_khong_vao_duoc_man_giao_viec_va_bao_cao():
-    assert client.get("/giao-viec", headers=NV_H).status_code == 403
+def test_nhan_vien_vao_task_duoc_nhung_chi_thay_viec_cua_minh(ma):
+    """Từ 26/08 màn 'việc của tôi' GỘP vào mục Task (Owner chốt). Nhân viên vào
+    được, nhưng lọc quyền vẫn ở SERVER: không thấy việc của người khác."""
+    _xong(ma, "Việc của Hà", nguoi=NHANVIEN)
+    _xong(ma, "Việc của Đức", nguoi=NV2)
+    r = client.get("/task", headers=NV_H)
+    assert r.status_code == 200
+    assert "Việc của Hà" in r.text and "Việc của Đức" not in r.text
+
+
+def test_nhan_vien_van_khong_vao_duoc_bao_cao():
     assert client.get("/bao-cao-tuan", headers=NV_H).status_code == 403
 
 
-def test_thieu_header_hanh_dong_thi_fail_closed():
-    """Không có X-Remote-Actions → 403, app không tự suy quyền từ level."""
-    r = client.get("/giao-viec", headers={"X-Remote-User": "huytq", "X-Remote-Level": "5"})
-    assert r.status_code == 403
+def test_thieu_header_hanh_dong_thi_fail_closed(ma):
+    """Không có X-Remote-Actions → app KHÔNG tự suy quyền từ level.
+
+    Báo cáo vẫn 403. Board Task mở được (ai cũng cần chỗ làm việc) nhưng coi như
+    KHÔNG có quyền giao việc: chỉ thấy việc của chính mình, dù level 5."""
+    h = {"X-Remote-User": "huytq", "X-Remote-Level": "5"}
+    assert client.get("/bao-cao-tuan", headers=h).status_code == 403
+    _xong(ma, "Việc của Hà", nguoi=NHANVIEN)
+    r = client.get("/task", headers=h)
+    assert r.status_code == 200 and "Việc của Hà" not in r.text
 
 
 # ---------- màn giao việc ----------

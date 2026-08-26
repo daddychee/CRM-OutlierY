@@ -39,8 +39,8 @@ def test_the_goal_hien_du_ten_khong_cat_bang_ellipsis(_so):
 
 
 def test_them_viec_la_nut_mo_ra_khong_phai_box_cung(_so):
-    mt.tao(MGR, "Goal A", "kq")
-    r = _c.get("/task", headers=H_MGR)
+    m = mt.tao(MGR, "Goal A", "kq")
+    r = _c.get("/task?goal=" + m["id"], headers=H_MGR)
     assert '<details class="them-viec">' in r.text     # đóng sẵn, bấm mới bung
     assert '<div class="them-viec">' not in r.text
 
@@ -48,7 +48,7 @@ def test_them_viec_la_nut_mo_ra_khong_phai_box_cung(_so):
 def test_nut_them_viec_nam_TREN_danh_sach_viec(ma, _so):
     m = mt.tao(MGR, "Goal A", "kq")
     tuan.them_viec_muc_tieu(ma, MGR, "Rà 10 video", "x", m["id"])
-    r = _c.get("/task", headers=H_MGR)
+    r = _c.get("/task?goal=" + m["id"], headers=H_MGR)
     assert r.text.index('<details class="them-viec"') < r.text.index("Rà 10 video")
 
 
@@ -129,7 +129,7 @@ def test_phieu_hien_mo_ta_va_tai_lieu_da_dinh(ma, _so):
     v = tuan.them_viec_giao(ma, MGR, NV, "Dựng 6 video", "san_xuat", muc_tieu_id=m["id"])
     tuan.sua_viec(ma, v["id"], MGR, mo_ta="Ưu tiên kênh Life In US")
     tuan.them_tai_lieu(ma, v["id"], MGR, "https://nas.vn/ke-hoach.xlsx", "Kế hoạch T9")
-    r = _c.get("/task", headers=H_MGR)
+    r = _c.get("/task?goal=" + m["id"], headers=H_MGR)
     assert "Ưu tiên kênh Life In US" in r.text
     assert 'href="https://nas.vn/ke-hoach.xlsx"' in r.text and "Kế hoạch T9" in r.text
     assert 'action="/tasky/viec/tai-lieu"' in r.text
@@ -193,8 +193,9 @@ def test_tai_lieu_dan_bay_khong_lam_hong_viec_vua_tao(ma, _so):
 
 
 def test_bao_loi_dinh_tai_lieu_hien_len_trang_khong_nuot(_so):
-    mt.tao(MGR, "Goal A", "kq")
-    r = _c.get("/task?loi=Ch%E1%BB%89+nh%E1%BA%ADn+link+http", headers=H_MGR)
+    m = mt.tao(MGR, "Goal A", "kq")
+    r = _c.get("/task?goal=%s&loi=Ch%%E1%%BB%%89+nh%%E1%%BA%%ADn+link+http" % m["id"],
+               headers=H_MGR)
     assert "Chỉ nhận link http" in r.text
 
 
@@ -223,18 +224,20 @@ def test_nguoi_lam_khong_go_duoc_tai_lieu_cua_leader(ma, _so):
     assert len(tuan._tim(tuan.doc_tuan(ma), v["id"])["tai_lieu"]) == 1
 
 
-def test_nhom_dau_ten_la_Task(ma, _so):
-    """Owner 25/08: 'Cần bạn xử lý' dễ hiểu nhầm → gọi thẳng là Task."""
+def test_board_bon_cot_theo_khau(ma, _so):
+    """Từ 26/08 mục Task là BOARD: mặc định nhóm theo trạng thái (khâu nào ùn)."""
     m = mt.tao(MGR, "Goal A", "kq")
     tuan.them_viec_giao(ma, MGR, NV, "Dựng 6 video", "san_xuat", muc_tieu_id=m["id"])
-    r = _c.get("/task", headers=H_MGR)
-    assert ">Task<" in r.text and "Cần bạn xử lý" not in r.text
+    r = _c.get("/task?goal=" + m["id"], headers=H_MGR)
+    for ten in ("Chưa nhận", "Đang làm", "Báo xong", "Đã nghiệm thu"):
+        assert ten in r.text
+    assert "Cần bạn xử lý" not in r.text
 
 
 def test_nut_go_viec_nam_DUOI_CUNG_phieu(ma, _so):
     m = mt.tao(MGR, "Goal A", "kq")
     tuan.them_viec_muc_tieu(ma, MGR, "Việc gõ nhầm", "x", m["id"])
-    r = _c.get("/task", headers=H_MGR)
+    r = _c.get("/task?goal=" + m["id"], headers=H_MGR)
     phieu = r.text.split('class="phieu-noi"')[1].split("</details>")[0]
     assert phieu.index("Lưu mô tả") < phieu.index("Đính") < phieu.index("Gỡ việc này")
 
@@ -253,8 +256,8 @@ def test_moi_viec_la_mot_the_roi(ma, _so):
     m = mt.tao(MGR, "Goal A", "kq")
     for t in ("Việc 1", "Việc 2"):
         tuan.them_viec_muc_tieu(ma, MGR, t, "x", m["id"])
-    r = _c.get("/task", headers=H_MGR)
-    assert r.text.count('<li class="the-viec">') == 2
+    r = _c.get("/task?goal=" + m["id"], headers=H_MGR)
+    assert r.text.count('<li class="the-viec"') == 2
     css = r.text.split("ul.vs li.the-viec{")[1].split("}")[0]
     assert "border:" in css and "border-radius" in css
 
@@ -307,7 +310,7 @@ def test_doi_ten_viec_bang_form_thi_dong_ngoai_doi_theo(ma, _so):
     _c.post("/tasky/viec/sua", headers=H_MGR, follow_redirects=False,
             data={"id": v["id"], "tieu_de": "Tên mới hẳn", "mo_ta": "",
                   "tuan_xem": ma, "ve": "/task?goal=" + m["id"]})
-    r = _c.get("/task", headers=H_MGR)
+    r = _c.get("/task?goal=" + m["id"], headers=H_MGR)
     dong = r.text.split('class="vt"')[1].split("</span>")[0]
     assert "Tên mới hẳn" in dong and "Tên cũ" not in r.text
 
@@ -366,8 +369,8 @@ def test_the_viec_hien_giao_cho_ai_va_chip_trang_thai(ma, _so):
     m = mt.tao(MGR, "Goal A", "kq")
     tuan.them_viec_giao(ma, MGR, NV, "Dựng 6 video", "x",
                         muc_tieu_id=m["id"], han=_han_sau(-2))
-    r = _c.get("/task", headers=H_MGR)
-    the = r.text.split('<li class="the-viec">')[1].split("</li>")[0]
+    r = _c.get("/task?goal=" + m["id"], headers=H_MGR)
+    the = r.text.split('<li class="the-viec"')[1].split("</li>")[0]
     assert "Giao cho <b>Thu Hà</b>" in the        # tên người, không phải tài khoản
     assert "Chưa ai nhận" in the and "Quá deadline" in the
     assert the.index("Dựng 6 video") < the.index("Giao cho")   # nằm DƯỚI tên + hạn

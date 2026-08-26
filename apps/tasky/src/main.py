@@ -244,37 +244,101 @@ def trang_muc_tieu(request: Request, user: dict = Depends(yeu_cau_muc_tieu),
 
 
 @app.get("/task", response_class=HTMLResponse)
-def trang_task(request: Request, user: dict = Depends(yeu_cau_muc_tieu),
-               x_remote_actions: str = Header(""), goal: str = "",
-               tuan_xem: str = "", loi: str = "", loi_viec: str = ""):
-    """MỤC TASK — việc con của MỘT Goal (Owner chốt 26/08: Tasky = Goal / Task /
-    Report; trang Goal chỉ theo dõi mục tiêu, việc nằm ở đây).
+def trang_task(request: Request, user: dict = Depends(lay_user),
+               x_remote_actions: str = Header(""), goal: str = "", truc: str = "",
+               ai: str = "", tuan_xem: str = "", loi: str = "", loi_viec: str = ""):
+    """MỤC TASK — board kanban (Owner chốt 26/08).
 
-    Chưa chọn Goal thì mở Goal đầu tiên trong phạm vi của người xem — không có
-    Goal nào thì đẩy về trang Goal, đừng dựng board rỗng vô nghĩa."""
+    Cột đổi được theo TRỤC: trạng thái (khâu nào đang ùn) · goal (kiểu Trello) ·
+    người (ai đang ôm bao nhiêu). Số cột do BỘ LỌC quyết chứ không do số Goal, nên
+    không bao giờ cuộn ngang vô tận.
+
+    Nhân viên (không có quyền giao việc) mặc định thấy việc CỦA MÌNH — màn 'việc
+    của tôi' cũ chính là board này với bộ lọc đó.
+    """
     hd = cac_hanh_dong(x_remote_actions)
-    ds = mt_lo.trong_pham_vi(user, bool({"bao_cao_cong_ty", "bao_cao_nhan_su"} & hd))
-    if not ds:
-        return RedirectResponse("/muc-tieu", status_code=303)
-    m = next((x for x in ds if x["id"] == goal), ds[0])
-    viec = mt_lo.viec_cua_muc_tieu(m["id"])
-    g = {**m, "tien_do": mt_lo.tien_do(m["id"], viec),
-         "canh_bao": mt_lo.canh_bao(m, viec),
-         "con_han": mt_lo.con_han(m),
-         "nhom": mt_lo.nhom_viec(tuan_lo.sap_xep(viec))}
-    cap_duoi, _ = nhan_su.cap_duoi_cua(user)
-    moi_nguoi, _ = nhan_su.ds_nguoi()
+    la_quan_ly = "giao_viec" in hd
+    ds_mt = mt_lo.trong_pham_vi(user, bool({"bao_cao_cong_ty", "bao_cao_nhan_su"} & hd))
     ma = _ma_tuan_hop_le(tuan_xem)
+
+    # Goal đang mở: rỗng = xem MỌI Goal (board toàn cảnh)
+    m = next((x for x in ds_mt if x["id"] == goal), None)
+    cap_duoi, _ = nhan_su.cap_duoi_cua(user)
+    if m is not None:
+        viec = mt_lo.viec_cua_muc_tieu(m["id"])
+    elif la_quan_ly:
+        # MỌI việc trong tầm, kể cả việc CHƯA GẮN GOAL nào — không giấu đi, chúng
+        # hiện ở cột "Chưa thuộc Goal nào" để còn gom vào Goal
+        viec = [v for ma_t in tuan_lo.cac_tuan_gan()
+                for v in tuan_lo.doc_tuan(ma_t)["viec"]]
+    else:
+        viec = tuan_lo.viec_cua(ma, user["ten"])
+
+    # LỌC QUYỀN Ở SERVER (luật 1): không có quyền giao việc → chỉ việc của mình;
+    # có quyền → việc của quân mình (Owner/cấp công ty thì cap_duoi đã là tất cả)
+    if not la_quan_ly:
+        viec = [v for v in viec if v["nguoi"] == user["ten"]]
+    elif m is None:
+        trong = {n["ten"] for n in (cap_duoi or [])} | {user["ten"], ""}
+        viec = [v for v in viec
+                if v.get("nguoi", "") in trong or v.get("nguoi_giao") == user["ten"]]
+    ai = ai if ai != "toi" else user["ten"]
+    if ai:
+        viec = [v for v in viec if v["nguoi"] == ai]
+    viec = [v for v in viec if v["trang_thai"] != tuan_lo.DOI]   # bản mới ở tuần sau
+
+    # Mặc định theo VAI: nhân viên nhìn theo khâu (việc của tôi đang ở đâu);
+    # quản lý xem toàn cảnh thì nhìn theo Goal (kiểu Trello).
+    truc = truc if truc in tuan_lo.TRUC else (
+        "goal" if (la_quan_ly and not m) else "trang_thai")
+    moi_nguoi, _ = nhan_su.ds_nguoi()
+    ten_hien = {n["ten"]: (n.get("ho_ten") or n["ten"]) for n in (moi_nguoi or [])}
+    cot = tuan_lo.dung_cot(tuan_lo.sap_xep(viec), truc, ds_mt, ten_hien)
+
+    g = None
+    if m:
+        vm = mt_lo.viec_cua_muc_tieu(m["id"])
+        g = {**m, "tien_do": mt_lo.tien_do(m["id"], vm),
+             "canh_bao": mt_lo.canh_bao(m, vm), "con_han": mt_lo.con_han(m)}
     return templates.TemplateResponse(request, "task.html", {
-        "user": user, "g": g, "ds_goal": ds,
+        "user": user, "g": g, "ds_goal": ds_mt, "cot": cot, "truc": truc,
+        "ai": "" if ai == user["ten"] and not la_quan_ly else ai,
+        "la_quan_ly": la_quan_ly, "so_viec": len(viec),
+        "nguoi_loc": sorted((cap_duoi or []) + [n for n in (moi_nguoi or [])
+                                                if n["ten"] == user["ten"]],
+                            key=lambda n: (n.get("ho_ten") or n["ten"]).lower()),
         "cap_duoi": cap_duoi or [], "loai_viec": tuan_lo.cac_loai_viec(),
         "ngang_cap": nhan_su.ngang_cap_bo_phan_khac(user)[0] or [],
-        "ten_hien": {n["ten"]: (n.get("ho_ten") or n["ten"]) for n in (moi_nguoi or [])},
+        "ten_hien": ten_hien,
         "xoa_duoc": {v["id"]: tuan_lo.duoc_xoa(v, user)[0] for v in viec},
+        "keo_duoc": {v["id"]: [c["ma"] for c in cot
+                               if tuan_lo.keo_duoc(v, truc, c["ma"], user)[0]]
+                     for v in viec},
         "loi_form": loi, "loi_viec": loi_viec,
         "la_owner": user["level"] >= mt_lo.OWNER_LEVEL,
         "ma_tuan": ma, "tuan_nay": tuan_lo.ma_tuan(),
         **_co_sidebar(x_remote_actions, ma, user)})
+
+
+@app.post("/api-tasky/keo")
+def api_keo(id: str = Form(...), truc: str = Form(...), cot: str = Form(...),
+            tuan_xem: str = Form(""), user: dict = Depends(lay_user)):
+    """Thả một thẻ sang cột khác. Mỗi nước đi gọi ĐÚNG hàm nghiệp vụ đã có — board
+    không có đường ghi riêng, nên không thể lách luật bằng cách kéo."""
+    ma = _ma_tuan_hop_le(tuan_xem)
+    v = tuan_lo._tim(tuan_lo.doc_tuan(ma), id)
+    duoc, vi_sao = tuan_lo.keo_duoc(v, truc, cot, user)
+    if not duoc:
+        raise HTTPException(403, vi_sao)
+    if truc == "trang_thai":
+        ham = {"dang_lam": lambda: tuan_lo.nhan_viec(ma, id, user),
+               "bao_xong": lambda: tuan_lo.bao_xong(ma, id, user),
+               "xac_nhan": lambda: tuan_lo.xac_nhan_viec(ma, id, user),
+               "chua_nhan": lambda: tuan_lo.tra_lai_viec(ma, id, user)}[cot]
+        return _goi(ham)
+    if truc == "goal":
+        return _goi(tuan_lo.chuyen_vao_goal, ma, id, user, cot)
+    return _goi(tuan_lo.gan_lai_nguoi, ma, id, user, _tim_nguoi(cot) if cot else None)
 
 
 @app.get("/bao-cao-tuan", response_class=HTMLResponse)

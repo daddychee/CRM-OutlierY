@@ -417,6 +417,38 @@ def gan_nguoi(ma: str, id_viec: str, nguoi_giao: dict, nguoi_nhan: dict) -> dict
     return v
 
 
+def gan_lai_nguoi(ma: str, id_viec: str, nguoi_giao: dict,
+                  nguoi_nhan: dict | None) -> dict:
+    """Giao LẠI một việc cho người khác, hoặc gỡ người (nguoi_nhan=None).
+
+    Chỉ làm được khi việc CHƯA AI BẮT TAY VÀO: chưa giao / chờ nhận / bị từ chối.
+    Việc đang làm dở hoặc đã báo xong thì phải Trả lại (hoặc Hủy kèm lý do) trước —
+    giao thẳng cho người khác là xóa trắng công người đang làm mà họ không biết.
+    """
+    with _khoa:
+        so = doc_tuan(ma)
+        v = _tim(so, id_viec)
+        if v["trang_thai"] not in (CHUA_GIAO, CHO_NHAN, TU_CHOI):
+            raise ValueError("Việc đang làm dở thì Trả lại hoặc Hủy trước, "
+                             "rồi mới giao cho người khác.")
+        if not (v.get("nguoi_giao") == nguoi_giao["ten"]
+                or nguoi_giao["level"] >= OWNER_LEVEL):
+            raise PermissionError("Chỉ người giao việc (hoặc Owner) mới giao lại.")
+        if nguoi_nhan is None:
+            v.update({"nguoi": "", "trang_thai": CHUA_GIAO, "ly_do": ""})
+        else:
+            if not duoc_giao_cho(nguoi_giao, nguoi_nhan):
+                raise PermissionError(
+                    "Chỉ giao được cho người cấp dưới trong bộ phận mình.")
+            v.update({"nguoi": nguoi_nhan["ten"], "trang_thai": CHO_NHAN,
+                      "ly_do": "", "luc_nhan": None})
+        _ghi_tuan(so)
+    ghi_nhat_ky("gan_lai_nguoi", nguoi_giao["ten"],
+                {"tuan": ma, "viec": id_viec,
+                 "cho": nguoi_nhan["ten"] if nguoi_nhan else ""})
+    return v
+
+
 def giao_nhieu_nguoi(ma: str, nguoi_giao: dict, ds_nhan: list[dict], tieu_de: str,
                      loai_viec: str, **kw) -> list[dict]:
     """Cùng một việc, nhiều người làm (Owner chốt 25/08).
@@ -953,6 +985,98 @@ def nhom_viec(ds_viec: list[dict]) -> dict:
         elif tt == DANG_LAM:
             (can if tinh_han(v)["muc"] == "cap" else chay).append(v)
     return {"can_xu_ly": can, "dang_chay": chay, "xong": xong}
+
+
+# ---- BOARD KANBAN (§17 bước 2, Owner chốt 26/08) ----------------------------
+# Cột của board = một TRỤC. Kéo thẻ sang cột khác nghĩa là gì thì do trục quyết,
+# và mỗi nghĩa đều là một hàm ĐÃ CÓ ở dưới — board không đẻ luật mới.
+TRUC = ("trang_thai", "goal", "nguoi")
+
+COT_TRANG_THAI = (
+    ("chua_nhan", "Chưa nhận", (CHUA_GIAO, CHO_NHAN, CHO_PHOI_HOP, TU_CHOI)),
+    ("dang_lam", "Đang làm", (DANG_LAM,)),
+    ("bao_xong", "Báo xong", (BAO_XONG,)),
+    ("xac_nhan", "Đã nghiệm thu", (XAC_NHAN,)),
+)
+
+
+def cot_theo_trang_thai(ds_viec: list[dict]) -> list[dict]:
+    """Bốn cột theo khâu. Việc ĐÃ DỜI sang tuần sau không hiện — bản mới ở tuần sau
+    mới là bản đang sống (cùng lệ với báo cáo)."""
+    ra = []
+    for ma_cot, ten, cac_tt in COT_TRANG_THAI:
+        ra.append({"ma": ma_cot, "ten": ten,
+                   "viec": [v for v in ds_viec if v["trang_thai"] in cac_tt]})
+    return ra
+
+
+def cot_theo_goal(ds_viec: list[dict], ds_mt: list[dict]) -> list[dict]:
+    """Mỗi Goal một cột (kiểu Trello). Chỉ dựng cột cho Goal CÓ TRONG danh sách
+    truyền vào — tức đã lọc quyền ở tầng gọi."""
+    theo = {}
+    for v in ds_viec:
+        theo.setdefault(v.get("muc_tieu_id") or "", []).append(v)
+    ra = [{"ma": m["id"], "ten": m["tieu_de"], "viec": theo.get(m["id"], [])}
+          for m in ds_mt]
+    if theo.get(""):        # việc cũ chưa gắn Goal nào — không giấu đi
+        ra.append({"ma": "", "ten": "Chưa thuộc Goal nào", "viec": theo[""]})
+    return ra
+
+
+def cot_theo_nguoi(ds_viec: list[dict], ten_hien: dict | None = None) -> list[dict]:
+    """Mỗi người một cột — nhìn ra ai đang ôm bao nhiêu việc. Cột 'Chưa giao' đứng
+    đầu vì đó là việc cần hành động ngay."""
+    ten_hien = ten_hien or {}
+    theo = {}
+    for v in ds_viec:
+        theo.setdefault(v.get("nguoi") or "", []).append(v)
+    ra = [{"ma": "", "ten": "Chưa giao", "viec": theo.pop("", [])}] if theo.get("") else []
+    for ten in sorted(theo, key=lambda t: ten_hien.get(t, t).lower()):
+        ra.append({"ma": ten, "ten": ten_hien.get(ten, ten), "viec": theo[ten]})
+    return ra
+
+
+def dung_cot(ds_viec: list[dict], truc: str, ds_mt: list[dict] | None = None,
+             ten_hien: dict | None = None) -> list[dict]:
+    """Dựng cột theo trục. Trục lạ → về trạng thái (mặc định an toàn)."""
+    if truc == "goal":
+        return cot_theo_goal(ds_viec, ds_mt or [])
+    if truc == "nguoi":
+        return cot_theo_nguoi(ds_viec, ten_hien)
+    return cot_theo_trang_thai(ds_viec)
+
+
+def keo_duoc(viec: dict, truc: str, cot_dich: str, user: dict) -> tuple[bool, str]:
+    """Kéo thẻ sang cột `cot_dich` có hợp lệ không — HỎI TRƯỚC KHI KÉO để UI khóa
+    sẵn, nhưng server VẪN kiểm lại lúc thả (chốt thật ở server).
+
+    Không nới một ly quyền nào: mỗi nước đi ứng đúng một hàm hiện có, luật của hàm
+    đó là luật cuối cùng."""
+    tt = viec["trang_thai"]
+    if truc == "trang_thai":
+        if cot_dich == "dang_lam":              # = nhận việc
+            return (viec["nguoi"] == user["ten"] and tt in (CHO_NHAN, CHO_PHOI_HOP),
+                    "Chỉ người được giao mới nhận việc này.")
+        if cot_dich == "bao_xong":              # = báo xong
+            return (viec["nguoi"] == user["ten"] and tt == DANG_LAM,
+                    "Chỉ người đang làm mới báo xong.")
+        if cot_dich == "xac_nhan":              # = nghiệm thu
+            return (tt == BAO_XONG and duoc_xac_nhan(viec, user),
+                    "Chỉ người giao việc (hoặc Owner) mới nghiệm thu.")
+        if cot_dich == "chua_nhan":             # = trả lại việc
+            return (tt in (BAO_XONG, DANG_LAM) and duoc_xac_nhan(viec, user),
+                    "Chỉ người giao việc mới trả lại.")
+        return False, "Không đổi được sang cột này."
+    if truc == "goal":
+        return (duoc_xac_nhan(viec, user) or viec.get("nguoi_giao") == user["ten"],
+                "Chỉ người giao việc (hoặc Owner) mới chuyển việc sang Goal khác.")
+    if truc == "nguoi":
+        if tt not in (CHUA_GIAO, CHO_NHAN, TU_CHOI):
+            return False, ("Việc đang làm dở thì Trả lại hoặc Hủy trước, "
+                           "rồi mới giao cho người khác.")
+        return (viec.get("nguoi_giao") == user["ten"] or user["level"] >= OWNER_LEVEL,
+                "Chỉ người giao việc (hoặc Owner) mới giao lại.")
+    return False, "Trục không hợp lệ."
 
 
 def nhom_cho_leader(ma: str, user: dict, ds_nguoi: list[dict]) -> dict:

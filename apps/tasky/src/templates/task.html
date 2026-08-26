@@ -79,18 +79,35 @@
 {% endblock %}
 
 {% block noi_dung %}
-<div class="quay">
+<form class="quay" method="get" action="/task">
   <a class="nut" href="/muc-tieu">&lt; Tất cả Goal</a>
-  <form method="get" action="/task" style="margin:0">
-    <select name="goal" onchange="this.form.submit()">
-      {% for m in ds_goal %}
-      <option value="{{ m.id }}"{% if m.id == g.id %} selected{% endif %}>{{ m.tieu_de }}</option>
-      {% endfor %}
-    </select>
-  </form>
-  <span class="ghi">{{ ds_goal|length }} Goal · đang mở Goal này</span>
-</div>
+  <select name="goal" onchange="this.form.submit()">
+    <option value="">Mọi Goal</option>
+    {% for m in ds_goal %}
+    <option value="{{ m.id }}"{% if g and m.id == g.id %} selected{% endif %}>{{ m.tieu_de }}</option>
+    {% endfor %}
+  </select>
+  {% if la_quan_ly %}
+  <select name="ai" onchange="this.form.submit()" title="Lọc theo người làm">
+    <option value="">Mọi người</option>
+    {% for n in nguoi_loc %}
+    <option value="{{ n.ten }}"{% if n.ten == ai %} selected{% endif %}>{{ n.ho_ten or n.ten }}</option>
+    {% endfor %}
+  </select>
+  {% endif %}
+  <span class="nhom-theo">
+    <span class="ghi">Nhóm theo</span>
+    {% for t, nhan in [('trang_thai', 'Trạng thái'), ('goal', 'Goal'), ('nguoi', 'Người')] %}
+    <button type="submit" name="truc" value="{{ t }}"
+      class="{{ 'on' if truc == t else '' }}">{{ nhan }}</button>
+    {% endfor %}
+  </span>
+  <span style="flex:1"></span>
+  <span class="ghi">{{ so_viec }} việc</span>
+</form>
 
+
+{% if g %}
 {# Đầu Goal: sửa tại chỗ tên / kết quả / hạn, màu nhãn, xóa Goal, vòng tiến độ.
    Các thao tác QUẢN LÝ GOAL nằm ở đây — nơi đang làm việc với Goal đó; trang Goal
    chỉ là danh sách + tổng quan (Owner chốt 26/08). #}
@@ -267,149 +284,161 @@
     </div>
   </details>
   {% endif %}
+{% else %}
+<div class="viec" style="padding:11px 14px;margin-bottom:13px">
+  <span class="goi-y" style="margin:0">Đang xem việc của <b>mọi Goal</b>.
+    Chọn một Goal ở trên để thêm việc, chốt kết quả hoặc sửa Goal đó.</span>
+</div>
+{% endif %}
 
-  
-{% macro nhom(ten, ds, canh) %}
-  {% if ds %}
-  <details class="nhomv{% if canh %} canh{% endif %}" {% if canh or ten in ('Task', 'Đang chạy') %}open{% endif %}>
-    <summary>{{ ten }}<span class="dem">{{ ds|length }} việc</span></summary>
-    <ul class="vs">
-      {% for v in ds %}
-      {% set hn = v|han %}
-      <li class="the-viec">
-        <div class="dong-chinh">
-        <span class="cham-v {% if v.trang_thai == 'xac_nhan' %}xong{% elif hn.muc == 'cap' %}tre{% elif v.trang_thai == 'dang_lam' %}lam{% elif v.trang_thai in ('cho_nhan','cho_phoi_hop','bao_xong') %}cho{% endif %}">
-          {%- if v.trang_thai == 'xac_nhan' %}<svg viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></svg>{% endif %}</span>
-        <span class="vt">{{ v.tieu_de }}
-          <small>{% if hn.chu %}{{ hn.chu }}{% elif v.han %}Hạn {{ v.han[8:] }}/{{ v.han[5:7] }}{% else %}Không đặt hạn{% endif %}
-            {%- if v.checklist %} · {{ v.checklist|selectattr('xong')|list|length }}/{{ v.checklist|length }} bước{% endif %}
-            {%- if v.trang_thai == 'tu_choi' %} · <b>{{ ten_hien.get(v.nguoi, v.nguoi) }} từ chối:</b>
-              “{{ v.ly_do or 'không ghi lý do' }}”{% endif %}</small>
-          {# Giao cho ai nằm NGAY DƯỚI cụm tên + hạn (Owner 25/08) — trước đó dạt
-             sang mép phải nên đọc một thẻ phải liếc hai đầu. #}
-          <span class="giao-cho">
-            {%- if v.trang_thai == 'chua_giao' %}
-            <select data-gan-nguoi="{{ v.id }}">
-              <option value="">Giao cho…</option>
-              {% for n in cap_duoi %}<option value="{{ n.ten }}">{{ n.ho_ten or n.ten }}</option>{% endfor %}
-            </select>
-            {%- elif v.nguoi == user.ten %}<b>Tôi làm</b>
-            {%- else %}Giao cho <b>{{ ten_hien.get(v.nguoi, v.nguoi) }}</b>{% endif %}
-            {%- if v.cung_viec %} <span class="the">cùng làm</span>{% endif %}
-          </span></span>
-        <span class="chip-cot">
-          {% if v.gap %}<span class="the gap">GẤP</span>{% endif %}
-          {% for c in v|chip %}<span class="the tt {{ c.muc }}">{{ c.chu }}</span>{% endfor %}
-        </span>
-        </div>
-        <details class="phieu-viec" {% if loi_viec == v.id %}open{% endif %}>
-          <summary title="Bấm đúp vào việc để mở / thu">
-            {%- if v.trao_doi %}<span class="dau">{{ v.trao_doi|length }} tin</span>{% endif %}
-            {%- if v.tai_lieu %}<span class="dau">{{ v.tai_lieu|length }} tài liệu</span>{% endif %}
-          </summary>
-          <div class="phieu-noi">
-            {% set ve = '/muc-tieu?chon=' ~ g.id %}
-            {% if loi_viec == v.id and loi_form %}<div class="loi">{{ loi_form }}</div>{% endif %}
+{% macro the_viec(v) %}
+  {% set hn = v|han %}
+  <li class="the-viec" data-viec="{{ v.id }}"
+    draggable="{{ 'true' if keo_duoc.get(v.id) else 'false' }}">
+      <div class="dong-chinh">
+      <span class="cham-v {% if v.trang_thai == 'xac_nhan' %}xong{% elif hn.muc == 'cap' %}tre{% elif v.trang_thai == 'dang_lam' %}lam{% elif v.trang_thai in ('cho_nhan','cho_phoi_hop','bao_xong') %}cho{% endif %}">
+        {%- if v.trang_thai == 'xac_nhan' %}<svg viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></svg>{% endif %}</span>
+      <span class="vt">{{ v.tieu_de }}
+        <small>{% if hn.chu %}{{ hn.chu }}{% elif v.han %}Hạn {{ v.han[8:] }}/{{ v.han[5:7] }}{% else %}Không đặt hạn{% endif %}
+          {%- if v.checklist %} · {{ v.checklist|selectattr('xong')|list|length }}/{{ v.checklist|length }} bước{% endif %}
+          {%- if v.trang_thai == 'tu_choi' %} · <b>{{ ten_hien.get(v.nguoi, v.nguoi) }} từ chối:</b>
+            “{{ v.ly_do or 'không ghi lý do' }}”{% endif %}</small>
+        {# Giao cho ai nằm NGAY DƯỚI cụm tên + hạn (Owner 25/08) — trước đó dạt
+           sang mép phải nên đọc một thẻ phải liếc hai đầu. #}
+        <span class="giao-cho">
+          {%- if v.trang_thai == 'chua_giao' %}
+          <select data-gan-nguoi="{{ v.id }}">
+            <option value="">Giao cho…</option>
+            {% for n in cap_duoi %}<option value="{{ n.ten }}">{{ n.ho_ten or n.ten }}</option>{% endfor %}
+          </select>
+          {%- elif v.nguoi == user.ten %}<b>Tôi làm</b>
+          {%- else %}Giao cho <b>{{ ten_hien.get(v.nguoi, v.nguoi) }}</b>{% endif %}
+          {%- if v.cung_viec %} <span class="the">cùng làm</span>{% endif %}
+        </span></span>
+      <span class="chip-cot">
+        {% if v.gap %}<span class="the gap">GẤP</span>{% endif %}
+        {% for c in v|chip %}<span class="the tt {{ c.muc }}">{{ c.chu }}</span>{% endfor %}
+      </span>
+      </div>
+      <details class="phieu-viec" {% if loi_viec == v.id %}open{% endif %}>
+        <summary title="Bấm đúp vào việc để mở / thu">
+          {%- if v.trao_doi %}<span class="dau">{{ v.trao_doi|length }} tin</span>{% endif %}
+          {%- if v.tai_lieu %}<span class="dau">{{ v.tai_lieu|length }} tài liệu</span>{% endif %}
+        </summary>
+        <div class="phieu-noi">
+          {% set ve = '/muc-tieu?chon=' ~ g.id %}
+          {% if loi_viec == v.id and loi_form %}<div class="loi">{{ loi_form }}</div>{% endif %}
 
-            {% if v.nguoi_giao == user.ten or user.level >= 5 or v.nguon == 'tu_them' %}
-            <form method="post" action="/tasky/viec/sua" class="o-sua-viec">
-              <input type="hidden" name="id" value="{{ v.id }}">
-              <input type="hidden" name="tuan_xem" value="{{ ma_tuan }}">
-              <input type="hidden" name="ve" value="{{ ve }}">
-              <label><span class="nhan-o">Tên việc</span>
-                <input type="text" name="tieu_de" value="{{ v.tieu_de }}"></label>
-              <label><span class="nhan-o">Mô tả</span>
-                <textarea name="mo_ta" rows="3"
-                  placeholder="Đề bài, tiêu chí nghiệm thu, lưu ý…">{{ v.mo_ta or '' }}</textarea></label>
-              <div class="hang" style="margin:6px 0 0">
-                <button class="nut" type="submit">Lưu mô tả</button>
-              </div>
-            </form>
-            {% elif v.mo_ta %}
-            <div class="mo-ta-doc">{{ v.mo_ta }}</div>
-            {% endif %}
-
-            <div class="khoi-tl">
-              <div class="nhan-khoi">Tài liệu</div>
-              {% if v.tai_lieu %}
-              <ul class="ds-tl">
-                {% for tl in v.tai_lieu %}
-                <li>
-                  {% if tl.dia_chi.startswith('http') %}
-                  <a href="{{ tl.dia_chi }}" target="_blank" rel="noopener">{{ tl.ten }}</a>
-                  {% else %}<span title="Đường NAS — copy dán vào Explorer">{{ tl.ten }}</span>{% endif %}
-                  <small>{{ tl.ai }}</small>
-                  <form method="post" action="/tasky/viec/tai-lieu/xoa">
-                    <input type="hidden" name="id" value="{{ v.id }}">
-                    <input type="hidden" name="id_tl" value="{{ tl.id }}">
-                    <input type="hidden" name="tuan_xem" value="{{ ma_tuan }}">
-                    <input type="hidden" name="ve" value="{{ ve }}">
-                    <button class="nut sm" type="submit" title="Gỡ tài liệu">Gỡ</button>
-                  </form>
-                </li>
-                {% endfor %}
-              </ul>
-              {% endif %}
-              <form method="post" action="/tasky/viec/tai-lieu" class="hang" style="margin:7px 0 0">
-                <input type="hidden" name="id" value="{{ v.id }}">
-                <input type="hidden" name="tuan_xem" value="{{ ma_tuan }}">
-                <input type="hidden" name="ve" value="{{ ve }}">
-                <input type="text" name="dia_chi" placeholder="Dán link hoặc đường dẫn NAS…">
-                <input type="text" name="ten" placeholder="Đặt tên (tùy)" style="max-width:150px;flex:0 0 auto">
-                <button class="nut" type="submit">Đính</button>
-              </form>
-              <div class="goi-y" style="margin-top:5px">Lưu ĐƯỜNG DẪN, không chép file —
-                bản mới nhất luôn nằm ở NAS / kho tài liệu.</div>
+          {% if v.nguoi_giao == user.ten or user.level >= 5 or v.nguon == 'tu_them' %}
+          <form method="post" action="/tasky/viec/sua" class="o-sua-viec">
+            <input type="hidden" name="id" value="{{ v.id }}">
+            <input type="hidden" name="tuan_xem" value="{{ ma_tuan }}">
+            <input type="hidden" name="ve" value="{{ ve }}">
+            <label><span class="nhan-o">Tên việc</span>
+              <input type="text" name="tieu_de" value="{{ v.tieu_de }}"></label>
+            <label><span class="nhan-o">Mô tả</span>
+              <textarea name="mo_ta" rows="3"
+                placeholder="Đề bài, tiêu chí nghiệm thu, lưu ý…">{{ v.mo_ta or '' }}</textarea></label>
+            <div class="hang" style="margin:6px 0 0">
+              <button class="nut" type="submit">Lưu mô tả</button>
             </div>
+          </form>
+          {% elif v.mo_ta %}
+          <div class="mo-ta-doc">{{ v.mo_ta }}</div>
+          {% endif %}
 
-            <div class="td" style="margin-top:10px">
-            {% if v.trao_doi %}
-            <ul class="td-ds">
-              {% for t in v.trao_doi %}
-              <li{% if t.ai == user.ten %} class="toi"{% endif %}>
-                <div class="ai"><b>{{ t.ten or t.ai }}</b> · {{ t.luc[8:10] }}/{{ t.luc[5:7] }} {{ t.luc[11:16] }}</div>
-                <div class="chu">{{ t.chu }}</div>
+          <div class="khoi-tl">
+            <div class="nhan-khoi">Tài liệu</div>
+            {% if v.tai_lieu %}
+            <ul class="ds-tl">
+              {% for tl in v.tai_lieu %}
+              <li>
+                {% if tl.dia_chi.startswith('http') %}
+                <a href="{{ tl.dia_chi }}" target="_blank" rel="noopener">{{ tl.ten }}</a>
+                {% else %}<span title="Đường NAS — copy dán vào Explorer">{{ tl.ten }}</span>{% endif %}
+                <small>{{ tl.ai }}</small>
+                <form method="post" action="/tasky/viec/tai-lieu/xoa">
+                  <input type="hidden" name="id" value="{{ v.id }}">
+                  <input type="hidden" name="id_tl" value="{{ tl.id }}">
+                  <input type="hidden" name="tuan_xem" value="{{ ma_tuan }}">
+                  <input type="hidden" name="ve" value="{{ ve }}">
+                  <button class="nut sm" type="submit" title="Gỡ tài liệu">Gỡ</button>
+                </form>
               </li>
               {% endfor %}
             </ul>
             {% endif %}
-            <form method="post" action="/tasky/trao-doi">
+            <form method="post" action="/tasky/viec/tai-lieu" class="hang" style="margin:7px 0 0">
               <input type="hidden" name="id" value="{{ v.id }}">
               <input type="hidden" name="tuan_xem" value="{{ ma_tuan }}">
               <input type="hidden" name="ve" value="{{ ve }}">
-              <input type="text" name="chu"
-                placeholder="Nhắn {% if v.nguoi %}cho {{ v.nguoi }}{% else %}vào việc này{% endif %}…"
-                maxlength="1000">
-              <button class="nut" type="submit">Gửi</button>
+              <input type="text" name="dia_chi" placeholder="Dán link hoặc đường dẫn NAS…">
+              <input type="text" name="ten" placeholder="Đặt tên (tùy)" style="max-width:150px;flex:0 0 auto">
+              <button class="nut" type="submit">Đính</button>
             </form>
-            </div>
-
-            {% if xoa_duoc.get(v.id) %}
-            {# Gỡ việc nằm DƯỚI CÙNG (Owner 25/08): việc hủy hoại thì để cuối, không
-               đặt cạnh nút Lưu — bấm nhầm là mất việc. #}
-            <form method="post" action="/tasky/viec/xoa" class="hang cuoi-phieu">
-              <input type="hidden" name="id" value="{{ v.id }}">
-              <input type="hidden" name="tuan_xem" value="{{ ma_tuan }}">
-              <input type="hidden" name="ve" value="{{ ve }}">
-              <span class="goi-y" style="flex:1;margin:0">Gõ nhầm / không cần nữa thì gỡ —
-                nhật ký vẫn giữ bản gốc.</span>
-              <button class="nut nguy" type="submit"
-                onclick="if(!this.dataset.c){this.dataset.c='1';
-                  this.textContent='Chắc chưa? Bấm lại để gỡ';return false}">Gỡ việc này</button>
-            </form>
-            {% endif %}
+            <div class="goi-y" style="margin-top:5px">Lưu ĐƯỜNG DẪN, không chép file —
+              bản mới nhất luôn nằm ở NAS / kho tài liệu.</div>
           </div>
-        </details>
-      </li>
-      {% endfor %}
-    </ul>
-  </details>
-  {% endif %}
-  {% endmacro %}
 
-  {{ nhom('Task', g.nhom.can_xu_ly, false) }}
-  {{ nhom('Đang chạy', g.nhom.dang_chay, false) }}
-  {{ nhom('Đã nghiệm thu', g.nhom.xong, false) }}
+          <div class="td" style="margin-top:10px">
+          {% if v.trao_doi %}
+          <ul class="td-ds">
+            {% for t in v.trao_doi %}
+            <li{% if t.ai == user.ten %} class="toi"{% endif %}>
+              <div class="ai"><b>{{ t.ten or t.ai }}</b> · {{ t.luc[8:10] }}/{{ t.luc[5:7] }} {{ t.luc[11:16] }}</div>
+              <div class="chu">{{ t.chu }}</div>
+            </li>
+            {% endfor %}
+          </ul>
+          {% endif %}
+          <form method="post" action="/tasky/trao-doi">
+            <input type="hidden" name="id" value="{{ v.id }}">
+            <input type="hidden" name="tuan_xem" value="{{ ma_tuan }}">
+            <input type="hidden" name="ve" value="{{ ve }}">
+            <input type="text" name="chu"
+              placeholder="Nhắn {% if v.nguoi %}cho {{ v.nguoi }}{% else %}vào việc này{% endif %}…"
+              maxlength="1000">
+            <button class="nut" type="submit">Gửi</button>
+          </form>
+          </div>
+
+          {% if xoa_duoc.get(v.id) %}
+          {# Gỡ việc nằm DƯỚI CÙNG (Owner 25/08): việc hủy hoại thì để cuối, không
+             đặt cạnh nút Lưu — bấm nhầm là mất việc. #}
+          <form method="post" action="/tasky/viec/xoa" class="hang cuoi-phieu">
+            <input type="hidden" name="id" value="{{ v.id }}">
+            <input type="hidden" name="tuan_xem" value="{{ ma_tuan }}">
+            <input type="hidden" name="ve" value="{{ ve }}">
+            <span class="goi-y" style="flex:1;margin:0">Gõ nhầm / không cần nữa thì gỡ —
+              nhật ký vẫn giữ bản gốc.</span>
+            <button class="nut nguy" type="submit"
+              onclick="if(!this.dataset.c){this.dataset.c='1';
+                this.textContent='Chắc chưa? Bấm lại để gỡ';return false}">Gỡ việc này</button>
+          </form>
+          {% endif %}
+        </div>
+      </details>
+    </li>
+{% endmacro %}
+
+{% macro cot_board(c) %}
+<section class="cot" data-cot="{{ c.ma }}">
+  <header>{{ c.ten }}<span class="dem">{{ c.viec|length }}</span></header>
+  <ul class="vs">
+    {% for v in c.viec %}{{ the_viec(v) }}{% endfor %}
+  </ul>
+  {% if c.viec|length == 0 %}<div class="cot-trong">Chưa có việc</div>{% endif %}
+</section>
+{% endmacro %}
+
+<div class="loi" data-loi-board hidden style="margin-bottom:10px"></div>
+<div class="board">
+  {% for c in cot %}{{ cot_board(c) }}{% endfor %}
+</div>
+{% if so_viec == 0 %}
+<div class="trong">Chưa có việc nào{% if g %} trong Goal này{% endif %}.
+  {%- if la_quan_ly %} Bấm “Thêm việc để đạt Goal này” ở trên.{% endif %}</div>
+{% endif %}
 {% endblock %}
 
 {% block script %}
@@ -474,6 +503,47 @@
     document.getElementById("t-luu").addEventListener("click", luu);
     enter(document.getElementById("t-ten"), luu);
   }
+
+  // KÉO–THẢ thẻ giữa các cột. Chỉ là TIỆN ÍCH: mọi nước đi đều làm được bằng nút
+  // trong phiếu, và server kiểm lại quyền lúc thả (keo_duoc ở lõi) — nên JS hỏng
+  // thì không mất tính năng nào, và không ai lách luật bằng cách kéo.
+  var TRUC = {{ truc|tojson }};
+  var dangKeo = null;
+  document.querySelectorAll('li.the-viec[draggable="true"]').forEach(function (the) {
+    the.addEventListener("dragstart", function (e) {
+      dangKeo = the; the.classList.add("dang-keo");
+      e.dataTransfer.effectAllowed = "move";
+      e.dataTransfer.setData("text/plain", the.dataset.viec);
+    });
+    the.addEventListener("dragend", function () {
+      the.classList.remove("dang-keo"); dangKeo = null;
+      document.querySelectorAll(".board .cot").forEach(function (c) { c.classList.remove("dich"); });
+    });
+  });
+  document.querySelectorAll(".board .cot").forEach(function (cot) {
+    cot.addEventListener("dragover", function (e) {
+      if (!dangKeo || cot.contains(dangKeo)) { return; }
+      e.preventDefault(); cot.classList.add("dich");
+    });
+    cot.addEventListener("dragleave", function () { cot.classList.remove("dich"); });
+    cot.addEventListener("drop", function (e) {
+      e.preventDefault(); cot.classList.remove("dich");
+      if (!dangKeo || cot.contains(dangKeo)) { return; }
+      var fd = new FormData();
+      fd.append("id", dangKeo.dataset.viec);
+      fd.append("truc", TRUC); fd.append("cot", cot.dataset.cot);
+      fd.append("tuan_xem", TUAN);
+      fetch("/api-tasky/keo", { method: "POST", body: fd }).then(function (r) {
+        return r.json().catch(function () { return {}; }).then(function (d) {
+          if (!r.ok) { throw new Error(d.detail || "Không chuyển được."); }
+          location.reload();
+        });
+      }).catch(function (err) {
+        var o = document.querySelector("[data-loi-board]");
+        if (o) { o.hidden = false; o.textContent = err.message; }
+      });
+    });
+  });
 
   // Bấm ĐÚP vào thẻ việc = mở / thu phiếu (Owner 25/08: không muốn bấm nút nữa).
   // Thu lại thi trang ngan di nen trinh duyet keo len dau — giữ chỗ bằng cách đo

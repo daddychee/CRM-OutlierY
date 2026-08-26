@@ -75,8 +75,8 @@ def test_api_chan_gui_sai_luat(ma):
 def test_dropdown_chi_hien_quan_ly_bo_phan_khac(ma):
     """Form phối hợp nay nằm TRONG Goal (25/08) — kiểm trong đúng dropdown đó."""
     from src import muc_tieu as mt_lo
-    mt_lo.tao(KD4, "Goal KD", "kết quả")
-    r = client.get("/task", headers=H_KD4)
+    g = mt_lo.tao(KD4, "Goal KD", "kết quả")
+    r = client.get("/task?goal=" + g["id"], headers=H_KD4)
     khoi = r.text.split("data-ph-nguoi")[1].split("</select>")[0]
     assert "Quản lý VH" in khoi and "Leader VH" in khoi
     assert "Nhân viên VH" not in khoi     # cách 2 bậc
@@ -222,9 +222,9 @@ def test_man_viec_hien_nhom_phoi_hop_rieng(ma):
 def test_ben_gui_theo_doi_duoc_trang_thai(ma):
     """Yêu cầu gửi từ trong Goal thì gắn vào Goal — theo dõi ngay trong cây đó."""
     from src import muc_tieu as mt_lo
-    g = mt_lo.tao(KD4, "Goal KD", "kết quả")
+    g = g = mt_lo.tao(KD4, "Goal KD", "kết quả")
     v = tuan.yeu_cau_phoi_hop(ma, KD4, VH4, "Dựng 3 video", "Dựng video",
                               muc_tieu_id=g["id"])
     tuan.tu_choi_viec(ma, v["id"], VH4, "Đang chạy 8 video Life In")
-    r = client.get("/task", headers=H_KD4)
+    r = client.get("/task?goal=" + g["id"], headers=H_KD4)
     assert "từ chối" in r.text and "Đang chạy 8 video Life In" in r.text
