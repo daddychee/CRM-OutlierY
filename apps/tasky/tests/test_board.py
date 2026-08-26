@@ -259,3 +259,23 @@ def test_nut_them_viec_o_cuoi_cot_chi_khi_cot_la_GOAL(ma, _so):
     moc = 'class="them-cuoi"'
     assert moc not in _c.get("/task?truc=trang_thai", headers=H_MGR).text
     assert moc not in _c.get("/task?truc=goal", headers=H_NV).text   # NV không giao việc
+
+
+def test_phieu_viec_la_CUA_SO_NOI_khong_nhet_trong_cot(ma, _so):
+    """Owner 26/08: bấm đúp phải mở cửa sổ nổi như Trello — nhét phiếu vào cột
+    274px thì nội dung (ô nhập, link tài liệu) vỡ hết."""
+    g = mt.tao(MGR, "G", "kq")
+    v = tuan.them_viec_giao(ma, MGR, NV, "Việc A", "x", muc_tieu_id=g["id"])
+    r = _c.get("/task?goal=" + g["id"], headers=H_MGR)
+    assert 'dialog class="phieu-viec" data-phieu="%s"' % v["id"] in r.text
+    assert 'details class="phieu-viec"' not in r.text
+    assert "showModal" in r.text                      # bấm đúp mở modal
+
+
+def test_loi_form_mo_san_dung_phieu(ma, _so):
+    """Dán sai đường dẫn tài liệu → quay lại với ?loi_viec= và phiếu mở sẵn."""
+    g = mt.tao(MGR, "G", "kq")
+    v = tuan.them_viec_giao(ma, MGR, NV, "Việc A", "x", muc_tieu_id=g["id"])
+    r = _c.get("/task?goal=%s&loi=Sai&loi_viec=%s" % (g["id"], v["id"]), headers=H_MGR)
+    kh = r.text.split('data-phieu="%s"' % v["id"])[1].split(">")[0]
+    assert "open" in kh

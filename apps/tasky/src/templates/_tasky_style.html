@@ -329,9 +329,35 @@
   .quay{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:13px}
 
   /* phiếu chi tiết trong thẻ board: nằm gọn, không phá bề rộng cột */
-  /* Mũi tên mở phiếu: nép sát mép phải, không chiếm một dòng riêng như trước */
-  .board details.phieu-viec{margin-top:-16px}
-  .board details.phieu-viec>summary{justify-content:flex-end;padding:0;font-size:11px;
-    min-height:14px}
-  .board details.phieu-viec[open]{margin-top:4px}
-  .board .phieu-noi{padding:10px;margin-top:6px}
+
+  /* ---- PHIẾU VIỆC = CỬA SỔ NỔI (Owner 26/08: "mở ra tab mới, tham khảo Trello")
+     Nhét phiếu vào cột 274px thì nội dung vỡ; Trello mở thẻ thành cửa sổ giữa màn. ---- */
+  dialog.phieu-viec{width:min(760px, 94vw);max-height:88vh;padding:0;border:1px solid var(--tk-vien);
+    border-radius:14px;background:var(--sidebar);color:var(--ink);overflow:hidden;
+    box-shadow:0 24px 60px rgba(0,0,0,.5)}
+  dialog.phieu-viec::backdrop{background:rgba(6,9,14,.62)}
+  html[data-theme="light"] dialog.phieu-viec::backdrop{background:rgba(20,24,30,.38)}
+  .phieu-dau{display:flex;align-items:flex-start;gap:12px;padding:16px 18px 12px;
+    border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--sidebar);z-index:2}
+  .phieu-ten{flex:1;font-size:17px;font-weight:600;line-height:1.35;letter-spacing:-.01em}
+  .phieu-dong{border:0;background:none;color:var(--muted);cursor:pointer;padding:4px;
+    border-radius:8px;line-height:0}
+  .phieu-dong svg{width:20px;height:20px}
+  .phieu-dong:hover{background:var(--th-182233);color:var(--ink)}
+  /* trong cửa sổ nổi: khối trao đổi cuộn riêng, không đẩy dài cả phiếu */
+  dialog.phieu-viec .td{max-height:min(52vh, 420px);display:flex;flex-direction:column}
+  dialog.phieu-viec ul.td-ds{overflow-y:auto;flex:1;min-height:0}
+  dialog.phieu-viec .phieu-noi{padding:16px 18px 20px;margin:0;border:0;background:none;
+    overflow-y:auto;max-height:calc(88vh - 62px)}
+  /* Hai cột như Trello: nội dung bên trái, trao đổi bên phải */
+  @media (min-width:820px){
+    dialog.phieu-viec .phieu-noi{display:grid;gap:20px;
+      grid-template-columns:minmax(0,1fr) minmax(0,300px);align-items:start}
+    dialog.phieu-viec .phieu-noi>.o-sua-viec,
+    dialog.phieu-viec .phieu-noi>.mo-ta-doc,
+    dialog.phieu-viec .phieu-noi>.khoi-tl{grid-column:1}
+    dialog.phieu-viec .phieu-noi>.td{grid-column:2;grid-row:1 / span 4;margin-top:0;
+      border-left:1px solid var(--line);padding-left:16px}
+    dialog.phieu-viec .phieu-noi>.loi,
+    dialog.phieu-viec .phieu-noi>.cuoi-phieu{grid-column:1 / -1}
+  }

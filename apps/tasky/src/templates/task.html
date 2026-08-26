@@ -359,11 +359,16 @@
           {% endif %}
         </div>
       </div>
-      <details class="phieu-viec" {% if loi_viec == v.id %}open{% endif %}>
-        <summary title="Bấm đúp vào việc để mở / thu">
-          {%- if v.trao_doi %}<span class="dau">{{ v.trao_doi|length }} tin</span>{% endif %}
-          {%- if v.tai_lieu %}<span class="dau">{{ v.tai_lieu|length }} tài liệu</span>{% endif %}
-        </summary>
+      {# Phiếu chi tiết mở thành CỬA SỔ NỔI giữa màn như Trello (Owner 26/08) —
+         nhét vào cột 274px thì nội dung vỡ hết. Dùng <dialog>: Esc đóng sẵn,
+         nền mờ sẵn, không cần thư viện. #}
+      <dialog class="phieu-viec" data-phieu="{{ v.id }}"{% if loi_viec == v.id %} open{% endif %}>
+        <div class="phieu-dau">
+          <div class="phieu-ten">{{ v.tieu_de }}</div>
+          <button class="phieu-dong" type="button" aria-label="Đóng">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+        </div>
         <div class="phieu-noi">
           {% set ve = '/muc-tieu?chon=' ~ g.id %}
           {% if loi_viec == v.id and loi_form %}<div class="loi">{{ loi_form }}</div>{% endif %}
@@ -420,6 +425,11 @@
           </div>
 
           <div class="td" style="margin-top:10px">
+          <div class="nhan-khoi" style="display:flex;align-items:center;gap:6px">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor"
+              stroke-width="1.9" stroke-linecap="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.4A8 8 0 1 1 21 12z"/></svg>
+            Trao đổi{% if v.trao_doi %} · {{ v.trao_doi|length }}{% endif %}
+          </div>
           {% if v.trao_doi %}
           <ul class="td-ds">
             {% for t in v.trao_doi %}
@@ -456,7 +466,7 @@
           </form>
           {% endif %}
         </div>
-      </details>
+      </dialog>
     </li>
 {% endmacro %}
 
@@ -593,16 +603,26 @@
   // Thu lại thi trang ngan di nen trinh duyet keo len dau — giữ chỗ bằng cách đo
   // thẻ trước/sau rồi bù đúng phần lệch.
   document.querySelectorAll("li.the-viec").forEach(function (the) {
-    var phieu = the.querySelector("details.phieu-viec");
+    var phieu = the.querySelector("dialog.phieu-viec");
     if (!phieu) { return; }
     the.addEventListener("dblclick", function (e) {
-      // gõ chữ trong phiếu (bấm đúp để chọn từ) thì KHÔNG đóng phiếu
-      if (e.target.closest("input, textarea, select, button, a, .phieu-noi")) { return; }
-      var truoc = the.getBoundingClientRect().top;
-      phieu.open = !phieu.open;
-      window.scrollBy(0, the.getBoundingClientRect().top - truoc);
+      // bấm đúp trong ô nhập (chọn từ) hoặc trên chính phiếu thì bỏ qua
+      if (e.target.closest("input, textarea, select, button, a, .phieu-viec")) { return; }
+      if (phieu.showModal) { phieu.showModal(); } else { phieu.open = true; }
+    });
+    phieu.querySelectorAll(".phieu-dong").forEach(function (n) {
+      n.addEventListener("click", function () { phieu.close ? phieu.close() : (phieu.open = false); });
+    });
+    // bấm ra NỀN MỜ ngoài phiếu = đóng (lệ Trello)
+    phieu.addEventListener("click", function (e) {
+      if (e.target === phieu) { phieu.close ? phieu.close() : (phieu.open = false); }
     });
   });
+  // lỗi form quay lại kèm ?loi_viec= → mở sẵn đúng phiếu đó
+  (function () {
+    var p = document.querySelector("dialog.phieu-viec[open]");
+    if (p && p.showModal) { p.removeAttribute("open"); p.showModal(); }
+  })();
 
   // Sửa tại chỗ: rời ô mà nội dung đã đổi thì tự lưu. Chỉ là TIỆN ÍCH —
   // Enter đã lưu được bằng hành vi form gốc, JS hỏng cũng không mất tính năng.
