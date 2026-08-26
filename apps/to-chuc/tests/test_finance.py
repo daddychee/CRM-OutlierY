@@ -176,7 +176,7 @@ def test_route_ledger_dao_va_render():
         "ghi_chu": "gói tháng", "vi": VI}, follow_redirects=False)
     assert r.status_code == 303
     b = c.get(f"/finance?tab=ledger&thang={THANG_NAY}").text
-    assert "CHI-PROXY" in b and k1 in b and "Reverse" in b
+    assert "CHI-PROXY" in b and k1 in b and ">Đảo<" in b
     bt = tai_chinh.doc_so()[0]
     r2 = c.post("/finance/dao", data={"id": bt["id"], "thang": THANG_NAY},
                 follow_redirects=False)
@@ -185,7 +185,7 @@ def test_route_ledger_dao_va_render():
     # đảo lần 2 qua route → 422 (sổ chỉ-thêm, không đảo đúp)
     assert c.post("/finance/dao", data={"id": bt["id"]}).status_code == 422
     b2 = c.get(f"/finance?tab=ledger&thang={THANG_NAY}").text
-    assert "reversed" in b2 and "Reversal" in b2
+    assert "đã đảo" in b2 and ">Đảo</span>" in b2
     # bút toán sai danh mục qua route → 422, sổ không nhận dòng rác
     assert c.post("/finance/but-toan", data={
         "ngay": HOM_NAY, "danh_muc": "XXX", "so_tien": "5",
@@ -199,11 +199,11 @@ def test_route_categories_va_pnl_render():
     tai_chinh.them_but_toan("kt", HOM_NAY, "THU-ADS", 100, "Vận hành chung", kenh_ma=k1, vi=VI)
     c = _client()
     b = c.get(f"/finance?tab=categories&thang={THANG_NAY}").text
-    assert "THU-ADS" in b and "CHI-LUONG" in b and "$100" in b
+    assert "THU-ADS" in b and "CHI-LUONG" in b and "100 ₫" in b
     b2 = c.get(f"/finance?tab=pnl&thang={THANG_NAY}").text
     assert k1 in b2 and "Outland Test" in b2
     b3 = c.get("/finance?tab=goals").text
-    assert "Vận hành chung" in b3 and "$1,000" in b3
+    assert "Vận hành chung" in b3 and "1.000 ₫" in b3
 
 
 # ---------- A1: ví tiền (rules/danh_muc_vi.csv) ----------
@@ -259,7 +259,7 @@ def test_route_wallets_render_va_form_co_o_vi():
     tai_chinh.them_but_toan("kt", HOM_NAY, "THU-ADS", 2140, "Vận hành chung", vi=VI_USD)
     c = _client()
     b = c.get("/finance?tab=wallets").text
-    assert "Payoneer" in b and "$2,140" in b
+    assert "Payoneer" in b and "$2,140" in b   # ví USD giữ nguyên tệ
     assert "không tính vào tiền khả dụng" in b      # ví phải thu gắn nhãn rõ
     assert 'name="vi"' in c.get("/finance?tab=ledger").text   # form bắt chọn ví
 

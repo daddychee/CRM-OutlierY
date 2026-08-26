@@ -169,8 +169,8 @@ def test_route_payroll_render_va_duyet_chi_owner():
                                         "X-Remote-Apps": "to-chuc,finance"})
     c = _c()
     b = c.get(f"/finance?tab=payroll&ky_luong={KY}").text
-    assert "Bảng lương kỳ 2026-08" in b and "ngày làm việc của tháng: 26" in b
-    assert "Máy không tự trừ tiền của ai" in b
+    assert "kỳ 2026-08" in b and "ngày làm việc 26" in b
+    assert "không trừ lương" in b        # nhãn ở khối Đi muộn
     # điều chỉnh thiếu lý do → 422 (lý do bắt buộc)
     assert c.post("/finance/luong/dieu-chinh",
                   data={"ten": "thiennc", "ky": KY, "so_tien": "-500000",
