@@ -43,6 +43,32 @@ CHỈ Owner). Chi tiết env + việc treo: README.md.
   khoản chưa nối `doi_nhom_nen`/`vo_hieu_nen` — người bị đổi cấp/khóa giữ quyền NAS
   cũ tới lần đăng nhập/đổi mật khẩu kế tiếp.
 
+- 26/08/2026 — **FINANCE HUB: nghiên cứu lõi mã nguồn mở → 18 tính năng, Owner chốt
+  spec + giao diện**. Sổ riêng: `docs/finance-hub.md` (quyết định, cái đã bác bỏ,
+  schema bút toán sau đợt A, thứ tự thi công). Chốt chính: **KHÔNG thay engine bằng
+  beancount/hledger** (engine một-người, dòng lệnh, không RBAC) — mượn 6 khái niệm
+  + xuất `.beancount` để dùng Fava làm phòng báo cáo. Mockup: v2 `docs/mockup-de/
+  finance-hub-v2.html` (đã chốt), v3 `finance-hub-v3.html` (thêm D1–D4 Owner bổ sung
+  26/08: bảng lương từ chấm công · tài khoản trả phí không kèm mật khẩu · chi phí
+  ngách theo ngày công · lịch chốt 10–12 và trả lương 15), v4 `finance-hub-v4.html`
+  (Dashboard 6 biểu đồ + D5 phiếu lương + D6 cảnh báo đi muộn) — **chờ duyệt**.
+  **Owner chốt vòng 3 (26/08):** chấm công chỉ đo GIỜ CÓ MẶT (mở CRM), trong phiên
+  không đo — `tong_giay` nghỉ hưu khỏi bảng lương, `so_ngay` là số dùng; **đi muộn
+  chỉ CẢNH BÁO, máy không tự trừ lương**, đường duy nhất ảnh hưởng lương là ô "điều
+  chỉnh HR" có lý do bắt buộc; quyền Finance mở cho **cả giỏ `nhan_su`** (HR) lẫn
+  `ke_toan` — bỏ ý định tách giỏ `finance_luong` (cơ cấu 2 người); HR xuất + gửi
+  phiếu lương kèm báo cáo hiệu suất, phiếu là **trang HTML in được** (KHÔNG WeasyPrint
+  — máy này thiếu GTK, 3 test `test_remake_dep` fail từ 29/07); dashboard dùng
+  **frappe-charts vendor** như Tasky, nhớ bẫy "thư viện không đọc CSS var, đổi theme
+  phải vẽ lại". Spec thi công: `docs/finance-hub-spec.md`.
+  **Mã ô mockup = mã tính năng trong sổ** (A1…D4), một hệ mã cho cả UI lẫn spec.
+  BA ĐIỂM CHẠM APP KHÁC (Luật 4 — đọc, không ghi): `cham_cong.bang_cong_thang` +
+  `chot_ky` cho bảng lương; `data/plannery/plan.json` `projects[].ngach_ma` +
+  `assignments[]` cho chi phí ngách (person_id `ns_<mã NS>` khớp IAM); `quota_log`
+  cho tiền API. **Vault chỉ cho `vault_id`** — metadata gia hạn ở sổ Finance riêng,
+  mật khẩu không rời két. LƯU Ý: sổ tiền đang RỖNG (0 bút toán) nên đổi cấu trúc
+  bản ghi bây giờ là miễn phí — đợt A phải xong trước khi mở cho kế toán ghi thật.
+
 ## Bài học / bẫy riêng app
 
 - **Điểm hứng chấm công đổi tầng**: hệ cũ hứng MỌI app ở cổng 8000; v2 app chỉ hứng

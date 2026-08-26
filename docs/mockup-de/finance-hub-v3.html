@@ -1,0 +1,591 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MOCKUP v3 — Finance Hub</title>
+<link rel="stylesheet" href="style.css">
+<style>
+/* Bổ sung riêng vòng 2+3 — KHÔNG sửa style.css chung. */
+.dot{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.04em;border-radius:4px;
+  padding:1px 6px;margin-left:6px;vertical-align:2px}
+.dot-a{background:#16263f;color:#7fb0e8;border:1px solid #2b4a76}
+.dot-b{background:#1c2a20;color:#93a89a;border:1px solid #3a5a40}
+.dot-c{background:#2e2618;color:#d9b36c;border:1px solid #6b5a2e}
+.dot-d{background:#2b1b33;color:#c79ad9;border:1px solid #5b3a6b}
+.sub{font-size:11.5px;color:var(--muted);font-family:ui-monospace,monospace}
+.goc{font-size:11.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+.hai-cot{display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:16px}
+.vi-luoi{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-top:4px}
+.vi{background:#0e1420;border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.vi .ten{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px}
+.vi .so{font-size:17px;font-weight:700;font-variant-numeric:tabular-nums;margin-top:2px}
+.viec{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #1a2436;font-size:13.5px}
+.viec:last-child{border-bottom:0}
+.viec .mo-ta{flex:1}
+.dau{width:6px;height:6px;border-radius:99px;flex:0 0 6px}
+.dau.canh{background:var(--warn)}.dau.gap{background:var(--bad)}.dau.thuong{background:var(--muted)}
+.dau.xong{background:var(--ok)}
+.tt{font-size:11px;color:var(--muted);font-family:ui-monospace,monospace}
+.keo{border:1px dashed var(--line);border-radius:12px;padding:20px;text-align:center;color:var(--muted);font-size:13px;background:#0e1420}
+.ghim{font-size:12px;color:var(--muted);border-left:2px solid var(--line);padding-left:10px;margin:10px 0 0}
+.canh-do{background:var(--badbg);border:1px solid #5c3a30;color:#e8a493;border-radius:9px;padding:8px 12px;font-size:12.5px;margin:10px 0 0}
+.canh-vang{background:var(--warnbg);border:1px solid #6b5a2e;color:#e6c987;border-radius:9px;padding:8px 12px;font-size:12.5px;margin:10px 0 0}
+th.nh,td.nh{border-left:1px solid var(--line)}
+tfoot td{border-top:1px solid var(--line);border-bottom:0;font-weight:600}
+/* vòng 3 — dải lịch tài chính */
+.lich{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:10px;margin-top:4px}
+.moc{background:#0e1420;border:1px solid var(--line);border-radius:10px;padding:10px 12px;position:relative}
+.moc.dang{border-color:#2b4a76;background:#101a2b}
+.moc .ngay{font-size:11px;color:var(--muted);font-family:ui-monospace,monospace;letter-spacing:.03em}
+.moc .viec-ten{font-size:13.5px;font-weight:600;margin:3px 0 5px}
+.moc .tt-moc{font-size:11.5px}
+.khoa{font-size:11.5px;color:var(--muted);display:flex;align-items:center;gap:5px;margin-top:6px}
+</style></head><body>
+
+<div class="sidebar">
+  <div class="brand"><span class="bars">&#9614;&#9613;&#9612;&#9611;&#9608;</span> OUTLIERY</div>
+  <div class="sb-note">Mockup vòng 3 &mdash; 26/08/2026<br>v2 đã chốt; vòng này thêm D1&ndash;D4</div>
+  <div class="nav">
+    <div class="lbl">Mockup khối đế</div>
+    <a href="channels.html">Channels</a>
+    <a href="niches.html">Niches</a>
+    <a href="api-keys.html">API Keys</a>
+    <a href="permissions.html">Permissions</a>
+    <a href="hr-hub.html">HR Hub</a>
+    <a href="finance-hub.html">Finance Hub <span class="tt">v1</span></a>
+    <a href="finance-hub-v2.html">Finance Hub <span class="tt">v2</span></a>
+    <a class="active" href="finance-hub-v3.html">Finance Hub v3</a>
+    <div class="lbl">Chú giải đợt</div>
+    <div style="padding:2px 10px;font-size:12px;color:#c2cbd9;line-height:2">
+      <span class="dot dot-a" style="margin:0">A</span> nền &mdash; sổ còn rỗng<br>
+      <span class="dot dot-b" style="margin:0">B</span> ra quyết định<br>
+      <span class="dot dot-c" style="margin:0">C</span> tự động &amp; kỷ luật<br>
+      <span class="dot dot-d" style="margin:0">D</span> Owner bổ sung 26/08
+    </div>
+  </div>
+</div>
+
+<div class="main">
+  <div class="topbar"><h1>Finance &mdash; khu thu chi</h1></div>
+
+  <div class="mock-banner"><b>MOCKUP v3 &mdash; chưa có logic.</b> Vòng 2 đã chốt; vòng này thêm 4 khối Owner yêu cầu: <b>D1</b> bảng lương từ chấm công &middot; <b>D2</b> tài khoản trả phí &middot; <b>D3</b> chi phí ngách theo ngày công &middot; <b>D4</b> lịch chốt 10&ndash;12 và trả lương 15. Mã ô trùng mã trong sổ <span class="sub">docs/finance-hub.md</span>.</div>
+
+  <div class="stat-row">
+    <div class="stat"><div class="n" style="color:var(--ok)">108.356.000 &#8363;</div><div class="t">Thu 08/2026 <span class="goc">&middot; $4.120</span></div></div>
+    <div class="stat"><div class="n" style="color:var(--bad)">120.084.000 &#8363;</div><div class="t">Chi 08/2026</div></div>
+    <div class="stat"><div class="n" style="color:var(--bad)">&minus;11.728.000 &#8363;</div><div class="t">Dòng tiền ròng</div></div>
+    <div class="stat"><div class="n" style="color:var(--warn)">6,6 tháng</div><div class="t">còn nuôi được <span class="dot dot-b">B3</span></div></div>
+  </div>
+
+  <div class="tabs">
+    <button class="active" onclick="mo('tq',this)">Tổng quan</button>
+    <button onclick="mo('so',this)">Sổ thu chi</button>
+    <button onclick="mo('vi',this)">Ví &amp; chốt kỳ</button>
+    <button onclick="mo('ns',this)">Ngân sách</button>
+    <button onclick="mo('kenh',this)">Kênh &amp; ngách</button>
+    <button onclick="mo('luong',this)">Lương</button>
+    <button onclick="mo('tb',this)">Thuê bao</button>
+    <button onclick="mo('td',this)">Tự động</button>
+  </div>
+
+  <!-- ===================== TỔNG QUAN ===================== -->
+  <div class="pane show" id="p-tq">
+    <div class="khoi"><span class="ma-o">D4</span>
+      <h2>Lịch tài chính tháng 09 <span class="dot dot-d">D</span> <span class="phu">kỳ kế toán vẫn là tháng dương lịch &mdash; đây là lịch việc</span></h2>
+      <div class="lich">
+        <div class="moc"><div class="ngay">10&ndash;12/09</div><div class="viec-ten">Google chốt tiền tháng 08</div>
+          <div class="tt-moc"><span class="badge b-warn">còn 15 ngày</span></div>
+          <div class="khoa">nạp CSV &rarr; đối soát &rarr; ghi doanh thu thật <span class="sub">B5</span></div></div>
+        <div class="moc"><div class="ngay">sau đối soát</div><div class="viec-ten">Chốt kỳ 08/2026</div>
+          <div class="tt-moc"><span class="badge b-mut">chờ đối soát</span></div>
+          <div class="khoa">&#128274; khóa tới khi đối soát xong <span class="sub">C5</span></div></div>
+        <div class="moc"><div class="ngay">15/09</div><div class="viec-ten">Trả lương kỳ 08</div>
+          <div class="tt-moc"><span class="badge b-mut">chờ chốt công</span></div>
+          <div class="khoa">&#128274; khóa tới khi công được chốt <span class="sub">D1</span></div></div>
+        <div class="moc dang"><div class="ngay">hôm nay 26/08</div><div class="viec-ten">Kỳ 08 đang mở</div>
+          <div class="tt-moc"><span class="badge b-acc">ghi sổ bình thường</span></div>
+          <div class="khoa">7 bút toán trong kỳ</div></div>
+      </div>
+      <div class="ghim">Hai ràng buộc có chủ đích: <b>không chốt kỳ trước khi đối soát AdSense</b> (chốt trên doanh thu ước tính là chốt lên số sai) và <b>không duyệt lương trước khi công được chốt</b>. Trễ hạn thì nhắc, không tự chạy.</div>
+    </div>
+
+    <div class="hai-cot">
+      <div class="khoi"><span class="ma-o">A1</span>
+        <h2>Tiền đang nằm ở đâu <span class="dot dot-a">A</span></h2>
+        <div class="vi-luoi">
+          <div class="vi"><div class="ten">Payoneer <span class="badge b-mut">USD</span></div><div class="so">110.723.000 &#8363;</div><div class="goc">$4.210 &middot; tỷ giá 26.300</div></div>
+          <div class="vi"><div class="ten">Vietcombank <span class="badge b-mut">VND</span></div><div class="so">58.400.000 &#8363;</div><div class="goc">&nbsp;</div></div>
+          <div class="vi"><div class="ten">Tiền mặt</div><div class="so">3.600.000 &#8363;</div><div class="goc">&nbsp;</div></div>
+          <div class="vi" style="border-style:dashed"><div class="ten">AdSense chờ chi trả</div><div class="so" style="color:var(--muted)">78.374.000 &#8363;</div><div class="goc">$2.980 &middot; chưa về ví</div></div>
+        </div>
+        <div class="ghim">Khả dụng 172.723.000 &#8363;. Tiền AdSense chưa chi trả <b>không</b> tính vào số nuôi được &mdash; nó chưa phải tiền của mình.</div>
+      </div>
+
+      <div class="khoi"><span class="ma-o">B3</span>
+        <h2>Mức đốt &amp; thời gian còn sống <span class="dot dot-b">B</span></h2>
+        <table>
+          <tr><td>Chi trung bình 3 tháng</td><td class="num">118.400.000 &#8363;</td></tr>
+          <tr><td>&nbsp;&nbsp;<span class="sub">trong đó thuê bao định kỳ</span></td><td class="num sub">11.374.000 &#8363;</td></tr>
+          <tr><td>&nbsp;&nbsp;<span class="sub">trong đó lương</span></td><td class="num sub">26.322.000 &#8363;</td></tr>
+          <tr><td>Doanh thu trung bình 3 tháng</td><td class="num">92.100.000 &#8363;</td></tr>
+          <tr><td>Đốt ròng trung bình tháng</td><td class="num" style="color:var(--warn)">26.300.000 &#8363;</td></tr>
+          <tr><td><b>Số dư khả dụng nuôi được</b></td><td class="num"><b>6,6 tháng</b></td></tr>
+        </table>
+        <div class="canh-vang">Dưới ngưỡng 8 tháng Owner đặt. Ngưỡng sửa trong Cài đặt, không nằm trong code.</div>
+      </div>
+    </div>
+
+    <div class="hai-cot">
+      <div class="khoi"><span class="ma-o">D2</span>
+        <h2>Thuê bao đến hạn <span class="dot dot-d">D</span></h2>
+        <div class="viec"><span class="dau canh"></span><span class="mo-ta">Proxy 911 <span class="sub">$86 &middot; tự động gia hạn</span></span><span class="tt">13/09</span><button class="nut" style="padding:4px 10px">Ghi</button></div>
+        <div class="viec"><span class="dau canh"></span><span class="mo-ta">Z.ai quota LLM <span class="sub">$200</span></span><span class="tt">01/09</span><button class="nut" style="padding:4px 10px">Ghi</button></div>
+        <div class="viec"><span class="dau gap"></span><span class="mo-ta">ElevenLabs voice <span class="sub">$49 &middot; đã đánh dấu SẮP BỎ</span></span><span class="tt">20/09</span><button class="nut nguy" style="padding:4px 10px">Bỏ gia hạn</button></div>
+        <div class="ghim">Bỏ 1 dịch vụ &ldquo;sắp bỏ&rdquo; &rarr; tiết kiệm <b>1.288.700 &#8363;/tháng</b>. Máy không tự ghi và cũng không tự hủy &mdash; hủy là việc tay trên trang nhà cung cấp, ở đây chỉ ghi nhận quyết định.</div>
+      </div>
+
+      <div class="khoi"><span class="ma-o">TQ</span>
+        <h2>Việc cần làm</h2>
+        <div class="viec"><span class="dau gap"></span><span class="mo-ta">3 bút toán thiếu chứng từ <span class="sub">A3</span></span><a href="#" onclick="di(1);return false">Mở sổ</a></div>
+        <div class="viec"><span class="dau gap"></span><span class="mo-ta">1 người chưa có xếp loại kỳ 08 <span class="sub">D1</span></span><a href="#" onclick="di(5);return false">Xem lương</a></div>
+        <div class="viec"><span class="dau canh"></span><span class="mo-ta">Ngân sách &ldquo;Hồi sinh OLD&rdquo; vượt 110% <span class="sub">B4</span></span><a href="#" onclick="di(3);return false">Xem</a></div>
+        <div class="viec"><span class="dau xong"></span><span class="mo-ta">Kỳ 07/2026 đã chốt sổ <span class="sub">C5</span></span><span class="tt">lanne &middot; 12/08</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== SỔ THU CHI ===================== -->
+  <div class="pane" id="p-so">
+    <div class="khoi"><span class="ma-o">A4</span>
+      <h2>Sổ thu chi &mdash; 08/2026 <span class="dot dot-a">A</span></h2>
+      <div class="toolbar">
+        <select><option>Kỳ: 08/2026</option></select>
+        <select><option>Loại: tất cả</option><option>Thu</option><option>Chi</option><option>Đảo</option></select>
+        <select><option>Ví: tất cả</option><option>Payoneer</option><option>Vietcombank</option><option>Tiền mặt</option></select>
+        <select><option>Kênh: tất cả</option><option>K-OUTLAND</option><option>K-TIME-VAULT</option><option>K-COSMIC-DEPTH</option></select>
+        <select><option>Mục tiêu: tất cả</option><option>Vận hành LIFE IN</option><option>Nuôi kênh SPACE Q3</option></select>
+        <input type="text" placeholder="tìm trong ghi chú…" style="min-width:160px">
+        <span style="flex:1"></span>
+        <button class="nut" onclick="modal(1)">+ Bút toán mới</button>
+        <button class="nut phu">&#8681; CSV</button>
+        <button class="nut phu">&#8681; .beancount</button>
+      </div>
+      <table>
+        <tr><th>Ngày</th><th>Loại</th><th>Danh mục</th><th class="num">Số tiền</th><th class="num nh">Quy VND</th>
+            <th class="nh">Ví</th><th>Kênh</th><th>Mục tiêu</th><th>Chứng từ</th><th>Người ghi</th><th>Ghi chú</th></tr>
+
+        <tr><td>14/08</td><td><span class="badge b-ok">Thu</span></td><td>AdSense</td>
+            <td class="num">$2.140</td><td class="num nh">56.282.000</td>
+            <td class="nh"><span class="chip">Payoneer</span></td>
+            <td><span class="chip">K-OUTLAND</span></td><td>Vận hành LIFE IN</td>
+            <td>&#128206; sao kê</td><td>lanne</td>
+            <td>kỳ 07 <span class="badge b-ok">đã về ví</span></td></tr>
+
+        <tr><td>12/08</td><td><span class="badge b-ok">Thu</span></td><td>AdSense</td>
+            <td class="num">$1.980</td><td class="num nh">52.074.000</td>
+            <td class="nh"><span class="chip">Payoneer</span></td>
+            <td><span class="chip">K-TIME-VAULT</span></td><td>Vận hành chung</td>
+            <td>&#128206; sao kê</td><td>lanne</td>
+            <td>kỳ 07 <span class="badge b-ok">đã về ví</span></td></tr>
+
+        <tr><td>13/08</td><td><span class="badge b-bad">Chi</span></td><td>Proxy / IP</td>
+            <td class="num">$86</td><td class="num nh">2.261.800</td>
+            <td class="nh"><span class="chip">Payoneer</span></td>
+            <td><span class="chip">K-COSMIC-DEPTH</span></td><td>Nuôi kênh SPACE Q3</td>
+            <td>&#128206; hóa đơn</td><td>lanne</td>
+            <td>gói tháng <span class="badge b-acc">thuê bao D2</span></td></tr>
+
+        <tr><td>11/08</td><td><span class="badge b-bad">Chi</span></td><td>API / công cụ</td>
+            <td class="num">$736</td><td class="num nh">19.356.800</td>
+            <td class="nh"><span class="chip">Payoneer</span></td>
+            <td><span class="badge b-mut">chung hệ</span></td><td>Vận hành chung</td>
+            <td>&#128206; nhật ký quota</td><td>hệ thống</td>
+            <td>tổng hợp tháng <span class="badge b-acc">từ quota log C3</span></td></tr>
+
+        <tr><td>15/08</td><td><span class="badge b-bad">Chi</span></td><td>Lương</td>
+            <td class="num">26.322.000 &#8363;</td><td class="num nh">26.322.000</td>
+            <td class="nh"><span class="chip">Vietcombank</span></td>
+            <td><span class="badge b-mut">chung hệ</span></td><td>Vận hành chung</td>
+            <td>&#128206; bảng lương 07</td><td>Bot</td>
+            <td>kỳ 07, 3 người <span class="badge b-acc">từ chấm công D1</span></td></tr>
+
+        <tr><td>12/08</td><td><span class="badge b-bad">Chi</span></td><td>Thuê ngoài</td>
+            <td class="num">4.500.000 &#8363;</td><td class="num nh">4.500.000</td>
+            <td class="nh"><span class="chip">Vietcombank</span></td>
+            <td><span class="chip">K-HIDDEN-GLOBE</span></td><td>Vận hành LIFE IN</td>
+            <td><span class="badge b-warn">thiếu</span></td><td>lanne</td>
+            <td>voice 6 video</td></tr>
+
+        <tr><td>10/08</td><td><span class="badge b-mut">Đảo</span></td><td>Proxy / IP</td>
+            <td class="num">&minus;$43</td><td class="num nh">&minus;1.130.900</td>
+            <td class="nh"><span class="chip">Payoneer</span></td>
+            <td><span class="chip">K-COSMIC-DEPTH</span></td><td>Nuôi kênh SPACE Q3</td>
+            <td>&#128206; kế thừa</td><td>lanne</td>
+            <td>ghi nhầm gói &rarr; <span class="sub">BT-260810-4f</span></td></tr>
+      </table>
+      <div class="ghim">Sổ chỉ-thêm: dòng đã ghi không sửa, không xóa. Sai thì ghi <b>bút toán đảo</b> &mdash; dòng đảo kế thừa chứng từ gốc để dấu vết không đứt <span class="sub">A3</span>.</div>
+    </div>
+  </div>
+
+  <!-- ===================== VÍ & CHỐT KỲ ===================== -->
+  <div class="pane" id="p-vi">
+    <div class="khoi"><span class="ma-o">A1</span>
+      <h2>Ví tiền <span class="dot dot-a">A</span> <span class="phu">danh mục ví để trong rules/danh_muc_vi.csv, sửa bằng Excel</span></h2>
+      <table>
+        <tr><th>Ví</th><th>Loại</th><th>Tiền tệ</th><th class="num">Số dư theo sổ</th><th class="num">Quy VND</th><th>Bút toán cuối</th></tr>
+        <tr><td><b>Payoneer</b></td><td>ví điện tử</td><td>USD</td><td class="num">$4.210</td><td class="num">110.723.000 &#8363;</td><td>14/08</td></tr>
+        <tr><td><b>Vietcombank</b></td><td>ngân hàng</td><td>VND</td><td class="num">58.400.000 &#8363;</td><td class="num">58.400.000 &#8363;</td><td>15/08</td></tr>
+        <tr><td><b>Tiền mặt</b></td><td>quỹ</td><td>VND</td><td class="num">3.600.000 &#8363;</td><td class="num">3.600.000 &#8363;</td><td>05/08</td></tr>
+        <tr><td><b>AdSense chờ chi trả</b></td><td>khoản phải thu</td><td>USD</td><td class="num">$2.980</td><td class="num">78.374.000 &#8363;</td><td>31/07</td></tr>
+        <tfoot><tr><td colspan="4"><b>Khả dụng</b> (không tính khoản phải thu)</td><td class="num"><b>172.723.000 &#8363;</b></td><td></td></tr></tfoot>
+      </table>
+    </div>
+
+    <div class="khoi"><span class="ma-o">C5</span>
+      <h2>Chốt kỳ &amp; đối chiếu số dư <span class="dot dot-c">C</span> <span class="phu">theo lịch D4 &mdash; chốt sau khi Google tổng tiền ngày 10&ndash;12</span></h2>
+      <div class="steps" style="margin-bottom:12px">
+        <span class="s">06/2026 đã chốt</span><span>&rarr;</span>
+        <span class="s">07/2026 đã chốt <span class="sub">12/08</span></span><span>&rarr;</span>
+        <span class="s on">08/2026 đang mở &mdash; chốt dự kiến 10&ndash;12/09</span>
+      </div>
+      <table>
+        <tr><th>Ví</th><th class="num">Sổ tính ra</th><th class="num">Khai số dư thật</th><th class="num">Lệch</th><th>Kết luận</th></tr>
+        <tr><td>Payoneer</td><td class="num">$4.210</td><td class="num"><input type="text" value="4 210" style="width:100px;text-align:right"></td><td class="num">$0</td><td><span class="badge b-ok">khớp</span></td></tr>
+        <tr><td>Vietcombank</td><td class="num">58.400.000</td><td class="num"><input type="text" value="58 400 000" style="width:118px;text-align:right"></td><td class="num">0</td><td><span class="badge b-ok">khớp</span></td></tr>
+        <tr><td>Tiền mặt</td><td class="num">3.600.000</td><td class="num"><input type="text" value="3 380 000" style="width:118px;text-align:right"></td><td class="num" style="color:var(--bad)">&minus;220.000</td><td><span class="badge b-warn">chưa giải trình</span></td></tr>
+      </table>
+      <div class="canh-do">Chốt kỳ đang khóa vì <b>hai</b> lý do: còn 1 ví lệch chưa giải trình, và chi trả AdSense kỳ 08 chưa đối soát (Google chốt ngày 10&ndash;12/09).</div>
+      <div style="margin-top:12px"><button class="nut" disabled style="opacity:.45;cursor:not-allowed">Chốt kỳ 08/2026</button>
+        <button class="nut phu">Ghi bút toán giải trình lệch</button></div>
+      <div class="ghim">Sau khi chốt, bút toán ngày cũ vẫn ghi được nhưng bị đánh dấu <b>điều chỉnh kỳ trước</b> và hiện riêng &mdash; không sửa lịch sử, không giấu chênh lệch.</div>
+    </div>
+  </div>
+
+  <!-- ===================== NGÂN SÁCH ===================== -->
+  <div class="pane" id="p-ns">
+    <div class="khoi"><span class="ma-o">B4</span>
+      <h2>Ngân sách kỳ 08/2026 <span class="dot dot-b">B</span> <span class="phu">thay tab Mục tiêu của bản v1 &mdash; mục tiêu vẫn là trục gắn bút toán</span></h2>
+      <table>
+        <tr><th>Mục tiêu</th><th class="num">Hạn mức tháng</th><th class="num">Chuyển tiếp</th><th class="num">Đã chi</th><th style="min-width:120px">Tiến độ</th><th class="num">Còn lại</th><th>Trạng thái</th></tr>
+        <tr><td><b>Vận hành LIFE IN</b><div class="sub">12 kênh</div></td>
+            <td class="num">45.000.000</td><td class="num">+2.100.000</td><td class="num">41.800.000</td>
+            <td><div class="usage"><i style="width:89%;background:var(--warn)"></i></div></td>
+            <td class="num">5.300.000</td><td><span class="badge b-warn">89%</span></td></tr>
+        <tr><td><b>Nuôi kênh SPACE Q3</b><div class="sub">6 kênh</div></td>
+            <td class="num">30.000.000</td><td class="num">+4.100.000</td><td class="num">22.400.000</td>
+            <td><div class="usage"><i style="width:66%"></i></div></td>
+            <td class="num">11.700.000</td><td><span class="badge b-ok">66%</span></td></tr>
+        <tr><td><b>Hồi sinh OLD</b><div class="sub">K-TIME-VAULT</div></td>
+            <td class="num">12.000.000</td><td class="num">0</td><td class="num">13.200.000</td>
+            <td><div class="usage"><i style="width:100%;background:var(--bad)"></i></div></td>
+            <td class="num" style="color:var(--bad)">&minus;1.200.000</td><td><span class="badge b-bad">110%</span></td></tr>
+        <tr><td><b>Vận hành chung</b><div class="sub">không thuộc kênh nào</div></td>
+            <td class="num">25.000.000</td><td class="num">&minus;1.400.000</td><td class="num">19.600.000</td>
+            <td><div class="usage"><i style="width:83%;background:var(--warn)"></i></div></td>
+            <td class="num">4.000.000</td><td><span class="badge b-warn">83%</span></td></tr>
+      </table>
+      <div class="ghim">Cột <b>Chuyển tiếp</b> = phần thừa (hoặc thiếu) của tháng trước mang sang, bật/tắt theo từng mục tiêu. Vượt hạn mức <b>không chặn</b> ghi bút toán &mdash; chỉ cảnh báo trong form và trên Tổng quan.</div>
+    </div>
+  </div>
+
+  <!-- ===================== KÊNH & NGÁCH ===================== -->
+  <div class="pane" id="p-kenh">
+    <div class="khoi"><span class="ma-o">D3</span>
+      <h2>Chi phí sản xuất theo ngách <span class="dot dot-d">D</span> <span class="phu">nhân công quy từ NGÀY CÔNG &mdash; nguồn: chấm công + phân công PlannerY</span></h2>
+      <table>
+        <tr><th>Ngách</th><th>Người tham gia</th><th class="num">Ngày công</th><th class="num">Đơn giá TB / ngày</th>
+            <th class="num nh">Chi phí nhân công</th><th class="num">Chi tiền mặt</th><th class="num">Tổng chi phí sản xuất</th></tr>
+        <tr><td><b>LIFE IN</b><div class="sub">N-LIFE-IN &middot; 12 kênh</div></td>
+            <td><span class="chip">NS-005</span><span class="chip">NS-006</span><span class="chip" style="opacity:.5">NS-018 chưa tính</span></td>
+            <td class="num">21,5</td><td class="num">612.000</td>
+            <td class="num nh">13.161.000</td><td class="num">12.740.000</td><td class="num"><b>25.901.000</b></td></tr>
+        <tr><td><b>SPACE</b><div class="sub">N-SPACE &middot; 6 kênh</div></td>
+            <td><span class="chip">NS-006</span></td>
+            <td class="num">10,5</td><td class="num">652.000</td>
+            <td class="num nh">6.848.000</td><td class="num">11.230.000</td><td class="num"><b>18.078.000</b></td></tr>
+        <tr><td><b>OLD</b><div class="sub">N-OLD &middot; K-TIME-VAULT</div></td>
+            <td><span class="chip">NS-005</span></td>
+            <td class="num">11,0</td><td class="num">574.000</td>
+            <td class="num nh">6.313.000</td><td class="num">13.200.000</td><td class="num"><b>19.513.000</b></td></tr>
+        <tr><td><b>Chưa phân công</b><div class="sub">ngày công không thuộc ngách nào</div></td>
+            <td><span class="chip" style="opacity:.5">NS-018</span></td>
+            <td class="num">1,0</td><td class="num">&mdash;</td>
+            <td class="num nh"><span class="badge b-mut">lương chưa duyệt</span></td><td class="num">&mdash;</td><td class="num">&mdash;</td></tr>
+        <tfoot><tr><td colspan="4"><b>Tổng &mdash; khớp bảng lương đã duyệt kỳ 08</b></td>
+            <td class="num nh"><b>26.322.000</b></td><td class="num">37.170.000</td><td class="num"><b>63.492.000</b></td></tr></tfoot>
+      </table>
+      <div class="ghim">Người <b>không</b> có phân công nào thì ngày công về hàng &ldquo;chưa phân công&rdquo;, không rải bừa cho các ngách. Người kiêm nhiều ngách hiện chia đều; khi PlannerY có lịch video gắn tên thì tự đổi sang chia theo số video &mdash; dữ liệu chính xác hơn thắng.</div>
+      <div class="canh-vang">Chỉ tính lương <b>đã duyệt</b>. Kỳ chưa duyệt thì cột nhân công hiện &ldquo;chưa chốt&rdquo; &mdash; không lấy lương dự kiến làm chi phí.</div>
+    </div>
+
+    <div class="khoi"><span class="ma-o">B1</span>
+      <h2>Lãi / lỗ theo kênh &mdash; 08/2026 <span class="dot dot-b">B</span></h2>
+      <div class="toolbar">
+        <select><option>Phân bổ chi phí chung: theo ngày công (D3)</option><option>theo doanh thu</option><option>chia đều</option><option>theo lượt xem</option><option>theo số video xuất bản</option><option>không phân bổ</option></select>
+        <select><option>Ngách: tất cả</option><option>LIFE IN</option><option>SPACE</option><option>OLD</option></select>
+      </div>
+      <table>
+        <tr><th>Kênh</th><th>Ngách</th><th>Vòng đời</th><th class="num">Thu</th><th class="num">Chi trực tiếp</th>
+            <th class="num nh">Phân bổ chung</th><th class="num nh">Lãi/lỗ sau phân bổ</th></tr>
+        <tr><td><b>K-OUTLAND</b><div class="sub">OUTLAND</div></td><td>LIFE IN</td><td><span class="badge b-ok">monetized</span></td>
+            <td class="num">56.282.000</td><td class="num">8.240.000</td>
+            <td class="num nh">12.100.000</td><td class="num nh" style="color:var(--ok)"><b>+35.942.000</b></td></tr>
+        <tr><td><b>K-TIME-VAULT</b><div class="sub">TIME VAULT</div></td><td>OLD</td><td><span class="badge b-ok">monetized</span></td>
+            <td class="num">52.074.000</td><td class="num">13.200.000</td>
+            <td class="num nh">11.200.000</td><td class="num nh" style="color:var(--ok)"><b>+27.674.000</b></td></tr>
+        <tr><td><b>K-COSMIC-DEPTH</b><div class="sub">Cosmic Depth &middot; NS-015</div></td><td>SPACE</td><td><span class="badge b-acc">hoạt động</span></td>
+            <td class="num">0</td><td class="num">4.392.000</td>
+            <td class="num nh">1.100.000</td><td class="num nh" style="color:var(--bad)"><b>&minus;5.492.000</b></td></tr>
+        <tr><td><b>K-HIDDEN-GLOBE</b><div class="sub">HIDDEN GLOBE</div></td><td>LIFE IN</td><td><span class="badge b-acc">hoạt động</span></td>
+            <td class="num">0</td><td class="num">4.500.000</td>
+            <td class="num nh">900.000</td><td class="num nh" style="color:var(--bad)"><b>&minus;5.400.000</b></td></tr>
+        <tr><td><b>K-ZZZ-HISTORY-CLUB</b><div class="sub">Zzz History Club &middot; NS-015</div></td><td>SPACE</td><td><span class="badge b-warn">ươm mầm</span></td>
+            <td class="num">0</td><td class="num">6.838.000</td>
+            <td class="num nh">500.000</td><td class="num nh" style="color:var(--bad)"><b>&minus;7.338.000</b></td></tr>
+        <tfoot><tr><td colspan="3"><b>Chung hệ</b> <span class="sub">API, tool, lương &mdash; đã phân bổ hết xuống kênh</span></td>
+            <td class="num">0</td><td class="num">25.800.000</td>
+            <td class="num nh">&minus;25.800.000</td><td class="num nh"><b>0</b></td></tr></tfoot>
+      </table>
+      <div class="ghim">Bản v1 để toàn bộ chi phí chung ở hàng &ldquo;chung hệ&rdquo; &mdash; nên mọi kênh đều trông có lãi. Cột <b>Phân bổ chung</b> tính lúc đọc theo quy tắc chọn ở trên, <b>không sinh bút toán</b>, sổ gốc giữ nguyên.</div>
+    </div>
+
+    <div class="khoi"><span class="ma-o">B2</span>
+      <h2>Đơn vị kinh tế <span class="dot dot-b">B</span> <span class="phu">nối Data Analytics (lượt xem, RPM) + PlannerY (số video)</span></h2>
+      <table>
+        <tr><th>Kênh</th><th class="num">Video xuất bản</th><th class="num">Chi phí / video</th><th class="num">Lượt xem</th>
+            <th class="num">Chi phí / 1K view</th><th class="num">Biên lãi</th><th>Hoàn vốn</th></tr>
+        <tr><td><b>K-OUTLAND</b></td><td class="num">18</td><td class="num">1.130.000</td><td class="num">1.240.000</td>
+            <td class="num">16.400</td><td class="num" style="color:var(--ok)">64%</td><td>ngày thứ 47</td></tr>
+        <tr><td><b>K-TIME-VAULT</b></td><td class="num">12</td><td class="num">2.033.000</td><td class="num">980.000</td>
+            <td class="num">24.900</td><td class="num" style="color:var(--ok)">53%</td><td>ngày thứ 78</td></tr>
+        <tr><td><b>K-COSMIC-DEPTH</b></td><td class="num">9</td><td class="num">610.000</td><td class="num">41.000</td>
+            <td class="num">134.000</td><td class="num">&mdash;</td><td><span class="badge b-mut">chưa monetize</span></td></tr>
+        <tr><td><b>K-ZZZ-HISTORY-CLUB</b></td><td class="num">3</td><td class="num">2.446.000</td><td class="num">2.100</td>
+            <td class="num"><span class="badge b-mut">chưa đủ dữ liệu</span></td><td class="num">&mdash;</td><td><span class="badge b-mut">chưa đủ dữ liệu</span></td></tr>
+      </table>
+      <div class="ghim">Giữ nguyên van chống bịa của engine chẩn đoán: dưới ngưỡng mẫu thì ghi <b>chưa đủ dữ liệu</b>, không tính bừa ra một con số trông hợp lý.</div>
+    </div>
+  </div>
+
+  <!-- ===================== LƯƠNG ===================== -->
+  <div class="pane" id="p-luong">
+    <div class="khoi"><span class="ma-o">D1</span>
+      <h2>Bảng lương kỳ 08/2026 <span class="dot dot-d">D</span> <span class="phu">trả ngày 15/09 &mdash; chiết xuất từ chấm công HR Hub</span></h2>
+      <div class="steps" style="margin-bottom:12px">
+        <span class="s">1. Chấm công đăng nhập CRM</span><span>&rarr;</span>
+        <span class="s on">2. HR chốt công kỳ</span><span>&rarr;</span>
+        <span class="s">3. Xếp loại KPI</span><span>&rarr;</span>
+        <span class="s">4. Owner duyệt</span><span>&rarr;</span>
+        <span class="s">5. Bút toán CHI-LUONG</span>
+      </div>
+      <div class="toolbar">
+        <select><option>Kỳ: 08/2026</option></select>
+        <select><option>Ngày công chuẩn: 23</option><option>22</option><option>ngày làm việc thực của tháng</option></select>
+        <span style="flex:1"></span>
+        <button class="nut phu">&#8681; Bảng lương CSV</button>
+      </div>
+      <table>
+        <tr><th>Nhân sự</th><th>Vị trí</th><th class="num">Công chốt</th><th class="num">Nghỉ</th><th>Xếp loại</th>
+            <th class="num">Lương cơ bản</th><th class="num">Hệ số</th><th class="num nh">Đề nghị chi</th><th class="num nh">Đơn giá / ngày</th></tr>
+        <tr><td><b>NS-005</b> Trần Hồng Ngọc</td><td>content</td><td class="num">22 / 23</td><td class="num">3</td>
+            <td><span class="badge b-ok">A</span></td>
+            <td class="num">12.000.000</td><td class="num">1,10</td>
+            <td class="num nh">12.626.000</td><td class="num nh">574.000</td></tr>
+        <tr><td><b>NS-006</b> Nguyễn Chu Thiện</td><td>editor</td><td class="num">21 / 23</td><td class="num">0</td>
+            <td><span class="badge b-ok">B</span></td>
+            <td class="num">15.000.000</td><td class="num">1,00</td>
+            <td class="num nh">13.696.000</td><td class="num nh">652.000</td></tr>
+        <tr><td><b>NS-018</b> Nghiêm Trường Nam</td><td>content</td><td class="num">23 / 23</td><td class="num">0</td>
+            <td><span class="badge b-warn">chưa đánh giá</span></td>
+            <td class="num">11.000.000</td><td class="num">&mdash;</td>
+            <td class="num nh"><span class="badge b-warn">&mdash;</span></td><td class="num nh">&mdash;</td></tr>
+        <tfoot><tr><td colspan="7"><b>Tổng đề nghị chi kỳ 08</b> <span class="sub">2 / 3 người đủ dữ liệu</span></td>
+            <td class="num nh"><b>26.322.000</b></td><td class="num nh"></td></tr></tfoot>
+      </table>
+      <div class="canh-vang">NS-018 chưa có xếp loại kỳ này &mdash; ô để trống kèm lý do, <b>không suy ra số</b>. Duyệt được phần còn lại; người thiếu dữ liệu ghi bù bằng bút toán sau, không giữ cả bảng lại.</div>
+      <div style="margin-top:12px">
+        <button class="nut">Owner duyệt &amp; sinh 2 bút toán CHI-LUONG</button>
+        <button class="nut phu">Xem chi tiết chấm công &rarr; HR Hub</button>
+      </div>
+      <div class="ghim">Nguồn công là <b>hiện diện trên hệ công cụ</b> (đăng nhập CRM + nhịp tim + lúc đóng app), không phải máy chấm vân tay &mdash; làm việc ngoài hệ không được đếm. Bảng lương là bảng <b>đọc-tính</b>, không phải sổ thứ hai: sổ tiền chỉ nhận bút toán sau khi Owner duyệt.</div>
+    </div>
+
+    <div class="khoi"><span class="ma-o">D1b</span>
+      <h2>Ngày công đã dùng cho ngách nào <span class="dot dot-d">D</span> <span class="phu">phân công lấy từ PlannerY &mdash; đầu vào của D3</span></h2>
+      <table>
+        <tr><th>Nhân sự</th><th class="num">Công chốt</th><th>Ngách được phân công</th><th class="num">Chia</th><th class="num">Ngày công / ngách</th></tr>
+        <tr><td><b>NS-005</b> Trần Hồng Ngọc</td><td class="num">22</td>
+            <td><span class="chip">LIFE IN</span><span class="chip">OLD</span></td><td class="num">đều</td>
+            <td class="num">11,0 &middot; 11,0</td></tr>
+        <tr><td><b>NS-006</b> Nguyễn Chu Thiện</td><td class="num">21</td>
+            <td><span class="chip">LIFE IN</span><span class="chip">SPACE</span></td><td class="num">đều</td>
+            <td class="num">10,5 &middot; 10,5</td></tr>
+        <tr><td><b>NS-018</b> Nghiêm Trường Nam</td><td class="num">23</td>
+            <td><span class="chip">LIFE IN</span><span class="badge b-mut">1 ngày chưa phân công</span></td><td class="num">đều</td>
+            <td class="num">22,0 &middot; 1,0</td></tr>
+      </table>
+      <div class="ghim">Bảng này để <b>kiểm chứng</b> con số D3 &mdash; nhìn ra ngay ai đang dồn công vào ngách nào, và ngày công nào chưa có địa chỉ.</div>
+    </div>
+  </div>
+
+  <!-- ===================== THUÊ BAO ===================== -->
+  <div class="pane" id="p-tb">
+    <div class="khoi"><span class="ma-o">D2</span>
+      <h2>Tài khoản trả phí <span class="dot dot-d">D</span> <span class="phu">metadata gia hạn &mdash; KHÔNG chứa mật khẩu</span></h2>
+      <div class="stat-row" style="margin-bottom:12px">
+        <div class="stat"><div class="n">11.374.000 &#8363;</div><div class="t">chi thuê bao / tháng</div></div>
+        <div class="stat"><div class="n" style="color:var(--warn)">3</div><div class="t">gia hạn trong 14 ngày tới</div></div>
+        <div class="stat"><div class="n" style="color:var(--ok)">1.615.000 &#8363;</div><div class="t">tiết kiệm / tháng nếu bỏ 2 mục &ldquo;sắp bỏ&rdquo;</div></div>
+      </div>
+      <div class="toolbar">
+        <select><option>Trạng thái: tất cả</option><option>đang dùng</option><option>sắp bỏ</option><option>đã hủy</option></select>
+        <select><option>Nhóm: tất cả</option><option>proxy</option><option>API / LLM</option><option>công cụ</option><option>email</option><option>khác</option></select>
+        <span style="flex:1"></span>
+        <button class="nut">+ Dịch vụ</button>
+      </div>
+      <table>
+        <tr><th>Dịch vụ</th><th>Nhóm</th><th class="num">Phí</th><th>Chu kỳ</th><th>Gia hạn kế</th>
+            <th>Tự động</th><th>Gắn</th><th>Đăng nhập</th><th>Trạng thái</th><th></th></tr>
+
+        <tr><td><b>Proxy 911</b><div class="sub">911proxy.com</div></td><td>proxy</td>
+            <td class="num">$86</td><td>tháng</td><td>13/09 <span class="badge b-warn">18 ngày</span></td>
+            <td><span class="badge b-ok">có</span></td><td><span class="chip">K-COSMIC-DEPTH</span></td>
+            <td><a href="#">&#128273; Vault</a></td><td><span class="badge b-ok">đang dùng</span></td>
+            <td><button class="nut phu" style="padding:3px 9px">Sửa</button></td></tr>
+
+        <tr><td><b>Z.ai &mdash; quota LLM</b><div class="sub">api.z.ai</div></td><td>API / LLM</td>
+            <td class="num">$200</td><td>tháng</td><td>01/09 <span class="badge b-warn">6 ngày</span></td>
+            <td><span class="badge b-ok">có</span></td><td><span class="badge b-mut">chung hệ</span></td>
+            <td><a href="#">&#128273; Vault</a></td><td><span class="badge b-ok">đang dùng</span></td>
+            <td><button class="nut phu" style="padding:3px 9px">Sửa</button></td></tr>
+
+        <tr><td><b>ElevenLabs</b><div class="sub">voice</div></td><td>công cụ</td>
+            <td class="num">$49</td><td>tháng</td><td>20/09</td>
+            <td><span class="badge b-ok">có</span></td><td><span class="badge b-mut">chung hệ</span></td>
+            <td><a href="#">&#128273; Vault</a></td><td><span class="badge b-warn">sắp bỏ</span></td>
+            <td><button class="nut nguy" style="padding:3px 9px">Bỏ gia hạn</button></td></tr>
+
+        <tr><td><b>Canva Teams</b><div class="sub">thumbnail</div></td><td>công cụ</td>
+            <td class="num">1.290.000 &#8363;</td><td>tháng</td><td>05/09 <span class="badge b-warn">10 ngày</span></td>
+            <td><span class="badge b-ok">có</span></td><td><span class="badge b-mut">chung hệ</span></td>
+            <td><span class="tt">&mdash;</span></td><td><span class="badge b-ok">đang dùng</span></td>
+            <td><button class="nut phu" style="padding:3px 9px">Sửa</button></td></tr>
+
+        <tr><td><b>Google Workspace</b><div class="sub">6 hộp thư</div></td><td>email</td>
+            <td class="num">$36</td><td>tháng</td><td>28/09</td>
+            <td><span class="badge b-ok">có</span></td><td><span class="badge b-mut">chung hệ</span></td>
+            <td><a href="#">&#128273; Vault</a></td><td><span class="badge b-ok">đang dùng</span></td>
+            <td><button class="nut phu" style="padding:3px 9px">Sửa</button></td></tr>
+
+        <tr><td><b>Kho ảnh stock</b><div class="sub">gói năm</div></td><td>công cụ</td>
+            <td class="num">$149</td><td>năm</td><td>02/02/2027</td>
+            <td><span class="badge b-bad">không</span></td><td><span class="badge b-mut">chung hệ</span></td>
+            <td><span class="tt">&mdash;</span></td><td><span class="badge b-warn">sắp bỏ</span></td>
+            <td><button class="nut phu" style="padding:3px 9px">Sửa</button></td></tr>
+
+        <tr style="opacity:.55"><td><b>SpeakY OmniVoice</b><div class="sub">đã thay bằng local</div></td><td>công cụ</td>
+            <td class="num">$29</td><td>tháng</td><td><span class="tt">&mdash;</span></td>
+            <td><span class="badge b-mut">&mdash;</span></td><td><span class="badge b-mut">chung hệ</span></td>
+            <td><span class="tt">&mdash;</span></td><td><span class="badge b-mut">đã hủy 07/08</span></td>
+            <td></td></tr>
+      </table>
+      <div class="ghim"><b>Không có cột mật khẩu, và sẽ không bao giờ có.</b> Cột Đăng nhập chỉ là đường dẫn sang mục tương ứng trong Vault (chỉ Owner, mở phải có master, mỗi lượt xem đều vào nhật ký). Finance giữ metadata gia hạn; Vault giữ bí mật &mdash; hai kho, hai vai.</div>
+      <div class="ghim">Dịch vụ có chu kỳ <b>chính là</b> khoản định kỳ: đến hạn thì hiện ở &ldquo;Thuê bao đến hạn&rdquo; trên Tổng quan, bấm Ghi là mở form điền sẵn. Máy không tự ghi bút toán và cũng không tự hủy dịch vụ &mdash; hủy là việc tay trên trang nhà cung cấp, ở đây chỉ ghi nhận quyết định để tháng sau khỏi mất tiền oan.</div>
+    </div>
+  </div>
+
+  <!-- ===================== TỰ ĐỘNG ===================== -->
+  <div class="pane" id="p-td">
+    <div class="khoi"><span class="ma-o">B5</span>
+      <h2>Đối soát chi trả AdSense <span class="dot dot-b">B</span> <span class="phu">chạy ngày 10&ndash;12 hằng tháng theo lịch D4</span></h2>
+      <div class="steps" style="margin-bottom:12px">
+        <span class="s on">1. Nạp CSV chi trả</span><span>&rarr;</span>
+        <span class="s">2. Máy khớp kênh</span><span>&rarr;</span>
+        <span class="s">3. Người duyệt</span><span>&rarr;</span>
+        <span class="s">4. Vào sổ</span>
+      </div>
+      <div class="keo">Kéo tệp CSV chi trả từ Google vào đây &mdash; hoặc <a href="#">chọn tệp</a></div>
+      <table style="margin-top:12px">
+        <tr><th>Kênh trong tệp</th><th>Khớp danh bạ</th><th class="num">Ước tính đã ghi</th><th class="num">Tiền thật</th><th class="num">Chênh</th><th>Xử lý</th></tr>
+        <tr><td>OUTLAND</td><td><span class="chip">K-OUTLAND</span> <span class="badge b-ok">chắc chắn</span></td>
+            <td class="num">$2.140</td><td class="num">$2.140</td><td class="num">$0</td><td><span class="badge b-ok">khớp</span></td></tr>
+        <tr><td>TIME VAULT</td><td><span class="chip">K-TIME-VAULT</span> <span class="badge b-ok">chắc chắn</span></td>
+            <td class="num">$1.980</td><td class="num">$1.954</td><td class="num" style="color:var(--warn)">&minus;$26</td>
+            <td><span class="badge b-warn">ghi chênh lệch</span></td></tr>
+        <tr><td>The Space Archive</td><td><span class="chip">K-THE-SPACE-ARCHIV</span> <span class="badge b-warn">đoán theo tên</span></td>
+            <td class="num">&mdash;</td><td class="num">$312</td><td class="num">&mdash;</td>
+            <td><select style="padding:3px 6px"><option>Chọn kênh…</option><option selected>K-THE-SPACE-ARCHIV</option><option>K-CELESTIAL-FABLES</option></select></td></tr>
+      </table>
+      <div style="margin-top:12px"><button class="nut">Duyệt &amp; ghi 3 bút toán</button> <button class="nut phu">Bỏ qua</button></div>
+      <div class="ghim">Máy dựng bút toán <b>nháp</b>, người chốt mới vào sổ. Chênh lệch giữa ước tính và tiền thật vào mã khoản riêng, không trộn vào doanh thu <span class="sub">A2</span>. Đối soát xong mới mở được nút chốt kỳ <span class="sub">C5</span>.</div>
+    </div>
+
+    <div class="hai-cot">
+      <div class="khoi"><span class="ma-o">C3</span>
+        <h2>Tiền API từ nhật ký quota <span class="dot dot-c">C</span></h2>
+        <table>
+          <tr><th>App</th><th>Việc</th><th class="num">Lượt</th><th class="num">Thành tiền</th></tr>
+          <tr><td>seo-optimize</td><td>trích kênh, sinh metadata</td><td class="num">1.284</td><td class="num">$214</td></tr>
+          <tr><td>content-ultimate</td><td>viết kịch bản</td><td class="num">96</td><td class="num">$308</td></tr>
+          <tr><td>radary</td><td>quét pool</td><td class="num">18.400</td><td class="num">$92</td></tr>
+          <tr><td>ai-agent</td><td>hỏi đáp, trích nguồn</td><td class="num">742</td><td class="num">$122</td></tr>
+          <tfoot><tr><td colspan="3"><b>Tháng 08/2026</b></td><td class="num"><b>$736</b></td></tr></tfoot>
+        </table>
+        <div style="margin-top:10px"><button class="nut">Tạo bút toán tổng hợp</button> <button class="nut phu">Bảng đơn giá</button></div>
+        <div class="ghim">Đơn giá theo API và model để trong rules CSV. Một bút toán tổng hợp mỗi tháng, chi tiết giữ ở bảng này.</div>
+      </div>
+
+      <div class="khoi"><span class="ma-o">C2</span>
+        <h2>Luật gợi ý phân loại <span class="dot dot-c">C</span></h2>
+        <table>
+          <tr><th>Khớp trong ghi chú</th><th>Gợi ý danh mục</th><th>Ví</th><th>Kênh</th></tr>
+          <tr><td><span class="chip">proxy</span> <span class="chip">911</span></td><td>CHI-PROXY</td><td>Payoneer</td><td>&mdash;</td></tr>
+          <tr><td><span class="chip">z.ai</span> <span class="chip">glm</span></td><td>CHI-API</td><td>Payoneer</td><td>chung hệ</td></tr>
+          <tr><td><span class="chip">voice</span> <span class="chip">thumbnail</span></td><td>CHI-NGOAI</td><td>Vietcombank</td><td>&mdash;</td></tr>
+        </table>
+        <div class="ghim">Luật để trong rules CSV như mọi luật khác. Gợi ý chỉ <b>điền sẵn</b> ô trong form &mdash; người ghi sửa được, không áp thầm.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== MODAL BÚT TOÁN MỚI ===================== -->
+<div class="modal-bg" id="mb" onclick="if(event.target===this)modal(0)">
+  <div class="modal">
+    <h3>Bút toán mới <span class="dot dot-a">A1</span><span class="dot dot-a">A2</span><span class="dot dot-a">A3</span></h3>
+    <div class="form-grid">
+      <div><label>Ngày</label><input type="date" value="2026-08-26" style="width:100%"></div>
+      <div><label>Danh mục</label><select style="width:100%"><option>CHI-PROXY &mdash; Proxy / IP</option><option>THU-ADS &mdash; AdSense</option><option>CHI-API &mdash; API / công cụ</option><option>CHI-NGOAI &mdash; Thuê ngoài</option><option>CHI-LUONG &mdash; Lương</option></select></div>
+      <div><label>Số tiền</label><input type="text" value="86" style="width:100%"></div>
+      <div><label>Tiền tệ</label><select style="width:100%"><option>USD</option><option>VND</option></select></div>
+      <div><label>Tỷ giá ngày 26/08</label><input type="text" value="26 300" style="width:100%"></div>
+      <div><label>Quy VND</label><input type="text" value="2 261 800" disabled style="width:100%;opacity:.6"></div>
+      <div><label>Ví</label><select style="width:100%"><option>Payoneer</option><option>Vietcombank</option><option>Tiền mặt</option></select></div>
+      <div><label>Mục tiêu</label><select style="width:100%"><option>Nuôi kênh SPACE Q3</option><option>Vận hành LIFE IN</option><option>Vận hành chung</option></select></div>
+      <div><label>Kênh</label><select style="width:100%"><option>K-COSMIC-DEPTH &mdash; Cosmic Depth</option><option>&mdash; chung hệ &mdash;</option><option>K-OUTLAND &mdash; OUTLAND</option></select></div>
+      <div><label>Số chứng từ</label><input type="text" placeholder="INV-2026-08-13" style="width:100%"></div>
+    </div>
+    <label>Ghi chú</label>
+    <input type="text" value="proxy 911 gói tháng" style="width:100%">
+    <div class="badge b-acc" style="margin-top:8px">Gợi ý từ luật C2: danh mục CHI-PROXY &middot; ví Payoneer &mdash; đã điền sẵn, sửa được</div>
+    <label>Chứng từ đính kèm</label>
+    <div class="keo" style="padding:14px">Kéo ảnh hóa đơn vào đây &mdash; hoặc <a href="#">chọn tệp</a></div>
+    <div class="canh-vang">Ngân sách &ldquo;Nuôi kênh SPACE Q3&rdquo; sẽ lên 74% sau bút toán này <span class="sub">B4</span></div>
+    <div style="margin-top:14px;display:flex;gap:8px">
+      <button class="nut" onclick="modal(0)">Lưu bút toán</button>
+      <button class="nut phu" onclick="modal(0)">Hủy</button>
+    </div>
+  </div>
+</div>
+
+<script>
+function mo(t, nut){
+  document.querySelectorAll('.pane').forEach(function(p){ p.classList.remove('show'); });
+  document.getElementById('p-'+t).classList.add('show');
+  document.querySelectorAll('.tabs button').forEach(function(b){ b.classList.remove('active'); });
+  nut.classList.add('active');
+  window.scrollTo(0,0);
+}
+function di(i){ document.querySelectorAll('.tabs button')[i].click(); }
+function modal(m){ document.getElementById('mb').classList.toggle('show', !!m); }
+document.addEventListener('keydown', function(e){ if(e.key === 'Escape') modal(0); });
+</script>
+</body></html>
