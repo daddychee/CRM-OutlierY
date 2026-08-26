@@ -297,55 +297,55 @@
      Cột hẹp và cố định, thẻ gọn: dải nhãn màu → tiêu đề → hàng badge. Mật độ là
      điểm mạnh của Trello: liếc một cột thấy được 6-8 việc chứ không phải 3. */
   .board{display:flex;gap:10px;overflow-x:auto;padding:2px 2px 14px;align-items:flex-start}
-  .board .cot{flex:0 0 274px;background:var(--tr-cot);border:1px solid var(--tr-the-vien);
+  .board .cot{flex:0 0 320px;background:var(--tr-cot);border:1px solid var(--tr-the-vien);
     border-radius:12px;display:flex;flex-direction:column;max-height:calc(100vh - 232px)}
-  .board .cot>header{padding:11px 13px 8px;display:flex;align-items:center;gap:8px;
-    font-size:13px;font-weight:600;color:var(--ink);letter-spacing:-.01em}
+  .board .cot>header{padding:13px 15px 10px;display:flex;align-items:center;gap:8px;
+    font-size:14px;font-weight:600;color:var(--ink);letter-spacing:-.01em}
   .board .cot>header .dem{margin-left:auto;font-size:12px;font-weight:600;color:var(--tr-im-chu);
     font-variant-numeric:tabular-nums;background:var(--tr-im-nen);border-radius:999px;
     min-width:22px;height:20px;display:inline-flex;align-items:center;justify-content:center;padding:0 7px}
   .board .cot.dich{border-color:var(--accent);background:var(--th-16263f)}
-  .board ul.vs{list-style:none;margin:0;padding:0 9px 4px;display:flex;flex-direction:column;
-    gap:8px;overflow-y:auto}
+  .board ul.vs{list-style:none;margin:0;padding:0 11px 6px;display:flex;flex-direction:column;
+    gap:10px;overflow-y:auto}
   .board .cot-trong{padding:12px 13px 16px;color:var(--muted);font-size:12px}
   .board .them-cuoi{display:block;margin:4px 9px 9px;padding:8px 10px;border-radius:9px;
     color:var(--muted);font-size:12.5px;text-decoration:none}
   .board .them-cuoi:hover{background:var(--tr-im-nen);color:var(--tr-im-chu)}
 
   .board li.the-viec{display:block;background:var(--tr-the);border:1px solid var(--tr-the-vien);
-    border-radius:9px;padding:8px 10px 9px;transition:border-color .12s, box-shadow .12s}
+    border-radius:11px;padding:12px 14px 13px;transition:border-color .12s, box-shadow .12s}
   .board li.the-viec:hover{border-color:var(--accent);box-shadow:0 1px 6px rgba(0,0,0,.28)}
   .board li.the-viec[draggable="true"]{cursor:grab}
   .board li.the-viec.dang-keo{opacity:.42}
 
   /* dải nhãn màu trên đỉnh thẻ — mỗi nhãn có tooltip chữ, màu không đứng một mình */
-  .nhan-dai{display:flex;gap:4px;margin-bottom:6px}
+  .nhan-dai{display:flex;gap:5px;margin-bottom:8px}
   .nhan-dai:empty{display:none}
-  .nhan-dai .nh{width:28px;height:6px;border-radius:99px;display:inline-block}
+  .nhan-dai .nh{width:36px;height:8px;border-radius:99px;display:inline-block}
   .nhan-dai .nh.cap{background:var(--tr-red)}
   .nhan-dai .nh.luu_y{background:var(--tr-yellow)}
   .nhan-dai .nh.tin{background:var(--tr-blue)}
   .nhan-dai .nh.ok{background:var(--tr-green)}
   .nhan-dai .nh.im{background:var(--tr-xam)}
 
-  .the-viec .tieu-de{font-size:13px;font-weight:500;line-height:1.38;color:var(--ink);
-    display:flex;gap:6px;align-items:flex-start;word-break:break-word}
+  .the-viec .tieu-de{font-size:14px;font-weight:600;line-height:1.4;color:var(--ink);
+    display:flex;gap:7px;align-items:flex-start;word-break:break-word}
   .the-viec .tieu-de .tick{width:14px;height:14px;flex:none;margin-top:2px;color:var(--tr-green)}
   .the-viec .ly-do{font-size:11.5px;color:var(--tr-cap-chu);margin-top:4px;line-height:1.35}
 
   /* hàng badge dưới thẻ: hạn, số bước, mô tả, tin, tài liệu, avatar người làm */
-  .the-viec .badge{display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-top:7px}
+  .the-viec .badge{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:9px}
   .the-viec .badge .lap{flex:1}
-  .the-viec .bg{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;
-    border-radius:6px;padding:2px 6px;background:var(--tr-im-nen);color:var(--tr-im-chu);
+  .the-viec .bg{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;
+    border-radius:7px;padding:3px 8px;background:var(--tr-im-nen);color:var(--tr-im-chu);
     white-space:nowrap}
-  .the-viec .bg svg{width:12px;height:12px}
+  .the-viec .bg svg{width:13px;height:13px}
   .the-viec .bg.cap{background:var(--tr-cap-nen);color:var(--tr-cap-chu)}
   .the-viec .bg.luu_y{background:var(--tr-luu-nen);color:var(--tr-luu-chu)}
   .the-viec .bg.tin{background:var(--tr-tin-nen);color:var(--tr-tin-chu)}
   .the-viec .bg.ok{background:var(--tr-ok-nen);color:var(--tr-ok-chu)}
-  .the-viec .av{width:24px;height:24px;border-radius:50%;flex:none;display:grid;
-    place-items:center;font-size:10px;font-weight:700;letter-spacing:.02em;
+  .the-viec .av{width:28px;height:28px;border-radius:50%;flex:none;display:grid;
+    place-items:center;font-size:11px;font-weight:700;letter-spacing:.02em;
     background:var(--tr-im-nen);color:var(--tr-im-chu)}
   .the-viec .av.toi{background:var(--accent);color:var(--th-090c12)}
   .the-viec .badge select{font-size:11.5px;padding:4px 7px;max-width:150px}
