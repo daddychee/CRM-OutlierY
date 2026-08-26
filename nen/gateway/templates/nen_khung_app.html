@@ -66,7 +66,10 @@
   .main{flex:1;display:flex;flex-direction:column;min-width:0}
   .topbar{height:52px;flex:0 0 52px;display:flex;align-items:center;gap:10px;
     padding:0 22px;border-bottom:1px solid var(--line);background:var(--bg)}
-  .topbar h1{font-size:15px;font-weight:600;margin:0;display:flex;align-items:center;gap:8px;color:var(--th-c2cbd9)}
+  {# Owner 26/08: tên app là TIÊU ĐỀ trang — in đậm, viết hoa, màu chữ chính
+     (trước 15px/600 màu mờ nên chìm ngang hàng chú thích). Dùng chung mọi app khung. #}
+  .topbar h1{font-size:15px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;
+    margin:0;display:flex;align-items:center;gap:8px;color:var(--th-e8edf4)}
   .topbar .spacer{flex:1}
   .topbar .ngay{font-size:13px;color:var(--th-9aa5b5)}
   iframe.khung-app{flex:1;width:100%;border:0;background:var(--bg)}
