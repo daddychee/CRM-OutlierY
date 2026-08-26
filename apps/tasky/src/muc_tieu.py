@@ -294,6 +294,67 @@ def canh_bao(mt: dict, ds_viec: list[dict]) -> list[dict]:
     return ra
 
 
+def tong_quan(ds_mt: list[dict], gom: dict[str, list[dict]] | None = None) -> dict:
+    """Bốn số của TRANG GOAL — chỉ nói về GOAL, không nói về tuần/người/bộ phận.
+
+    Owner chốt 26/08: Goal là mục theo dõi mục tiêu; tỉ lệ theo tuần, theo người,
+    theo bộ phận nằm bên Report — vừa cắt trùng xong, không mở lại.
+
+    `chua_co_viec` là số đáng để ý nhất: Goal đặt ra rồi mà chưa chẻ việc nào là
+    Goal đang bị bỏ quên, không có tỉ lệ nào nói ra được điều đó.
+    """
+    gom = viec_theo_muc_tieu() if gom is None else gom
+    ra = {"tong": len(ds_mt), "dang_chay": 0, "cho_chot": 0, "dat": 0,
+          "mot_phan": 0, "khong_dat": 0, "tre_han": 0, "chua_co_viec": 0,
+          "viec_tong": 0, "viec_xong": 0}
+    for m in ds_mt:
+        td = tien_do(m["id"], gom.get(m["id"], []))
+        ra["viec_tong"] += td["tong"]
+        ra["viec_xong"] += td["xong"]
+        if m["trang_thai"] != DANG_CHAY:
+            ra[m["trang_thai"]] += 1
+            continue
+        if td["xong_het"]:
+            ra["cho_chot"] += 1
+        else:
+            ra["dang_chay"] += 1
+        if not td["tong"]:
+            ra["chua_co_viec"] += 1
+        n = con_han(m)
+        if n is not None and n < 0:
+            ra["tre_han"] += 1
+    # Van chống bịa: chưa có việc nào thì KHÔNG có tỉ lệ, không trả 0%
+    ra["ti_le"] = (round(100 * ra["viec_xong"] / ra["viec_tong"])
+                   if ra["viec_tong"] else None)
+    return ra
+
+
+def sap_xep_goal(cay: list[dict], theo: str = "gan_han") -> list[dict]:
+    """Sắp xếp danh sách Goal. Goal CÒN CHẠY luôn đứng trước Goal đã chốt — chốt
+    rồi thì không còn phải làm gì nữa."""
+    khoa = {
+        "gan_han": lambda g: (g.get("con_han") is None, g.get("con_han") or 0),
+        "moi_nhat": lambda g: g.get("luc_tao") or "",
+        "ten": lambda g: (g["tieu_de"] or "").lower(),
+    }.get(theo) or (lambda g: (g.get("con_han") is None, g.get("con_han") or 0))
+    ds = sorted(cay, key=khoa, reverse=(theo == "moi_nhat"))
+    return sorted(ds, key=lambda g: g["trang_thai"] != DANG_CHAY)
+
+
+def can_de_y(cay: list[dict]) -> tuple[list[dict], list[dict]]:
+    """Tách 'Cần để ý' ra khỏi phần còn lại — Goal sắp cháy không được trôi xuống
+    dưới khi danh sách dài (Owner 26/08). Điều kiện: có cảnh báo cấp, hoặc trễ hạn,
+    hoặc còn ≤ 3 ngày, hoặc đang chạy mà chưa có việc nào."""
+    gap, thuong = [], []
+    for g in cay:
+        n = g.get("con_han")
+        nong = (any(c["muc_do"] == "cap" for c in g.get("canh_bao") or [])
+                or (n is not None and n <= 3)
+                or (g["trang_thai"] == DANG_CHAY and not g["tien_do"]["tong"]))
+        (gap if nong and g["trang_thai"] == DANG_CHAY else thuong).append(g)
+    return gap, thuong
+
+
 def theo_id(ds: list[dict] | None = None) -> dict[str, dict]:
     """{id: mục tiêu} — màn việc cần tra nhanh 'việc này thuộc mục tiêu nào'."""
     return {m["id"]: m for m in (ds if ds is not None else doc_tat_ca())}

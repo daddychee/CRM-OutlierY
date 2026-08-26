@@ -1,0 +1,75 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8">
+<title>Tasky — Goal: phương án C (giữ dải ngang, thêm tìm + nhóm)</title>
+<link rel="stylesheet" href="_khung.css">
+<style>
+  .dai{display:flex;gap:9px;overflow-x:auto;padding:2px 2px 12px}
+  .tab{flex:0 0 auto;width:246px;height:104px;border:1px solid var(--vien);border-left:5px solid var(--vien);
+    border-radius:11px;background:var(--panel);padding:11px 13px;display:flex;flex-direction:column;gap:6px;cursor:pointer}
+  .tab.on{border-color:var(--accent);background:var(--th-16263f)}
+  .tab .ten{font-size:13.5px;font-weight:600;line-height:1.3}
+  .tab .day{display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--muted);margin-top:auto}
+  .nhom{display:flex;align-items:center;gap:9px;color:var(--muted);font-size:11.5px;
+    font-weight:700;letter-spacing:.05em;text-transform:uppercase;margin:6px 0 8px}
+  .nhom hr{flex:1;border:0;border-top:1px solid var(--line)}
+  .gap-canh{position:relative}
+  .mui{position:absolute;top:34%;width:26px;height:26px;border-radius:50%;background:var(--panel);
+    border:1px solid var(--vien);display:grid;place-items:center;cursor:pointer;z-index:2}
+  .mui.trai{left:-9px}.mui.phai{right:-9px}
+  .thu{border:1px solid var(--line);border-radius:11px;padding:10px 13px;color:var(--muted);
+    font-size:12.5px;display:flex;align-items:center;gap:8px;cursor:pointer;margin-top:4px}
+</style></head><body>
+<div class="man">
+  <nav class="sb"><div class="brand">AI AGENT OUTLIERY</div>
+    <a href="#">Tasky</a><a href="#" class="on">Goal</a><a href="#">Báo cáo</a></nav>
+  <main class="than">
+    <h1>Goal</h1><div class="phu">Ban quản trị · 7 đang chạy</div>
+    <div class="thanh-cong-cu">
+      <input placeholder="Tìm Goal…" style="flex:1;max-width:260px">
+      <select style="min-width:230px"><option>Nhảy tới Goal…</option>
+        <option>BUILD AGENT AUTO NGÂM</option><option>HỆ THỐNG TÀI NGUYÊN SEO</option></select>
+      <span style="flex:1"></span><button class="nut chinh">+ Goal mới</button>
+    </div>
+
+    <div class="nhom">Cần để ý · 2<hr></div>
+    <div class="dai gap-canh">
+      <div class="tab" style="border-left-color:var(--luc)"><div class="ten">Hệ Thống Tài nguyên</div>
+        <div class="day"><span class="tt" style="width:46px"><i style="width:33%"></i></span>1/3
+          <span style="flex:1"></span><span class="chip cap">3 ngày</span></div></div>
+      <div class="tab" style="border-left-color:var(--tim)"><div class="ten">Định hướng kinh doanh T9/2026</div>
+        <div class="day"><span class="tt" style="width:46px"><i style="width:0%"></i></span>0/2
+          <span style="flex:1"></span><span class="chip cap">1 ngày</span></div></div>
+    </div>
+
+    <div class="nhom">Đang chạy · 5<hr></div>
+    <div class="dai gap-canh">
+      <div class="mui trai"><svg class="ic" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div>
+      <div class="tab on" style="border-left-color:var(--hong)"><div class="ten">HỆ THỐNG TÀI NGUYÊN SEO</div>
+        <div class="day"><span class="tt" style="width:46px"><i style="width:0%"></i></span>0/3
+          <span style="flex:1"></span>26/11</div></div>
+      <div class="tab" style="border-left-color:var(--hong)"><div class="ten">BUILD AGENT AUTO NGÂM</div>
+        <div class="day"><span class="tt" style="width:46px"><i style="width:0%"></i></span>0/1
+          <span style="flex:1"></span>19/10</div></div>
+      <div class="tab" style="border-left-color:var(--hong)"><div class="ten">ĐƯA KÊNH ĐẠT ĐIỀU KIỆN BẬT KIẾM TIỀN</div>
+        <div class="day"><span class="tt" style="width:46px"><i style="width:50%"></i></span>2/4
+          <span style="flex:1"></span>31/10</div></div>
+      <div class="tab" style="border-left-color:var(--hong)"><div class="ten">MỞ RỘNG KÊNH</div>
+        <div class="day"><span class="tt" style="width:46px"><i style="width:0%"></i></span>0/0
+          <span style="flex:1"></span>31/10</div></div>
+      <div class="tab" style="border-left-color:var(--hong)"><div class="ten">TỐI ƯU CHẤT LƯỢNG DOANH THU</div>
+        <div class="day"><span class="tt" style="width:46px"><i style="width:20%"></i></span>1/5
+          <span style="flex:1"></span>31/10</div></div>
+      <div class="mui phai"><svg class="ic" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></div>
+    </div>
+
+    <div class="thu"><svg class="ic" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+      Đã chốt · 12 Goal (thu gọn)</div>
+
+    <div style="margin-top:18px;border:1px dashed var(--vien);border-radius:12px;padding:14px">
+      <div style="font-size:16px;font-weight:600">HỆ THỐNG TÀI NGUYÊN SEO</div>
+      <div class="ghi" style="margin:4px 0 8px">Kết quả cần đạt: Bộ tài nguyên chuẩn hóa · hạn 26/11</div>
+      <div class="ghi">+ Thêm việc · Task (3 việc) — y như hiện nay; trang vẫn dựng sẵn MỌI Goal rồi ẩn</div>
+    </div>
+  </main>
+</div>
+<div class="nhan-pa">Phương án C — Vá rẻ: giữ dải ngang + tìm + nhóm</div>
+</body></html>

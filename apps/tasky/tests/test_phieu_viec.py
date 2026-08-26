@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""§16 — phiếu việc: Goal hiện đủ chữ, thêm việc là NÚT chứ không box cứng.
+"""§16 — phiếu việc (từ 26/08 nằm ở mục TASK, không còn trên trang Goal).
 
 Owner 25/08: "Ô Goal vẫn chưa hiển thị rõ hết text — Goal phải rất rõ ràng";
 "Nút thêm việc phải ở trên cùng… box thêm việc không nên là box cứng mà chỉ là
@@ -29,18 +29,18 @@ def _so(monkeypatch):
 
 
 def test_the_goal_hien_du_ten_khong_cat_bang_ellipsis(_so):
+    """Thẻ Goal (trang Goal) phải hiện đủ tên, không cắt bằng '…'."""
     mt.tao(MGR, TEN_DAI, "kq")
     r = _c.get("/muc-tieu", headers=H_MGR)
-    # so trong ĐÚNG thẻ tab — 'class="mt-tab' còn khớp cả dải 'mt-tabs' bao ngoài
-    the = r.text.split('<button class="mt-tab')[1].split("</button>")[0]
-    assert TEN_DAI in the                       # tên vào HTML nguyên vẹn
-    css = r.text.split(".mt-tab .ten{")[1].split("}")[0]
-    assert "line-clamp" in css and "text-overflow:ellipsis" not in css
+    the = r.text.split('<a class="g-the')[1].split("</a>")[0]
+    assert TEN_DAI in the
+    css = r.text.split(".g-the .ten{")[1].split("}")[0]
+    assert "text-overflow:ellipsis" not in css
 
 
 def test_them_viec_la_nut_mo_ra_khong_phai_box_cung(_so):
     mt.tao(MGR, "Goal A", "kq")
-    r = _c.get("/muc-tieu", headers=H_MGR)
+    r = _c.get("/task", headers=H_MGR)
     assert '<details class="them-viec">' in r.text     # đóng sẵn, bấm mới bung
     assert '<div class="them-viec">' not in r.text
 
@@ -48,7 +48,7 @@ def test_them_viec_la_nut_mo_ra_khong_phai_box_cung(_so):
 def test_nut_them_viec_nam_TREN_danh_sach_viec(ma, _so):
     m = mt.tao(MGR, "Goal A", "kq")
     tuan.them_viec_muc_tieu(ma, MGR, "Rà 10 video", "x", m["id"])
-    r = _c.get("/muc-tieu", headers=H_MGR)
+    r = _c.get("/task", headers=H_MGR)
     assert r.text.index('<details class="them-viec"') < r.text.index("Rà 10 video")
 
 
@@ -129,7 +129,7 @@ def test_phieu_hien_mo_ta_va_tai_lieu_da_dinh(ma, _so):
     v = tuan.them_viec_giao(ma, MGR, NV, "Dựng 6 video", "san_xuat", muc_tieu_id=m["id"])
     tuan.sua_viec(ma, v["id"], MGR, mo_ta="Ưu tiên kênh Life In US")
     tuan.them_tai_lieu(ma, v["id"], MGR, "https://nas.vn/ke-hoach.xlsx", "Kế hoạch T9")
-    r = _c.get("/muc-tieu", headers=H_MGR)
+    r = _c.get("/task", headers=H_MGR)
     assert "Ưu tiên kênh Life In US" in r.text
     assert 'href="https://nas.vn/ke-hoach.xlsx"' in r.text and "Kế hoạch T9" in r.text
     assert 'action="/tasky/viec/tai-lieu"' in r.text
@@ -138,7 +138,7 @@ def test_phieu_hien_mo_ta_va_tai_lieu_da_dinh(ma, _so):
 def test_dinh_tai_lieu_bang_form_va_bao_loi_khi_dan_bay(ma, _so):
     m = mt.tao(MGR, "Goal A", "kq")
     v = tuan.them_viec_giao(ma, MGR, NV, "Dựng 6 video", "san_xuat", muc_tieu_id=m["id"])
-    ve = "/muc-tieu?chon=" + m["id"]
+    ve = "/task?goal=" + m["id"]
     r = _c.post("/tasky/viec/tai-lieu", headers=H_MGR, follow_redirects=False,
                 data={"id": v["id"], "dia_chi": "https://a.vn/x", "ten": "Brief",
                       "tuan_xem": ma, "ve": ve})
@@ -154,7 +154,7 @@ def test_go_viec_bang_form_thuan(ma, _so):
     m = mt.tao(MGR, "Goal A", "kq")
     v = tuan.them_viec_muc_tieu(ma, MGR, "Việc gõ nhầm", "x", m["id"])
     r = _c.post("/tasky/viec/xoa", headers=H_MGR, follow_redirects=False,
-                data={"id": v["id"], "tuan_xem": ma, "ve": "/muc-tieu"})
+                data={"id": v["id"], "tuan_xem": ma, "ve": "/task"})
     assert r.status_code == 303
     assert tuan.doc_tuan(ma)["viec"] == []
 
@@ -193,7 +193,8 @@ def test_tai_lieu_dan_bay_khong_lam_hong_viec_vua_tao(ma, _so):
 
 
 def test_bao_loi_dinh_tai_lieu_hien_len_trang_khong_nuot(_so):
-    r = _c.get("/muc-tieu?loi=Ch%E1%BB%89+nh%E1%BA%ADn+link+http", headers=H_MGR)
+    mt.tao(MGR, "Goal A", "kq")
+    r = _c.get("/task?loi=Ch%E1%BB%89+nh%E1%BA%ADn+link+http", headers=H_MGR)
     assert "Chỉ nhận link http" in r.text
 
 
@@ -226,14 +227,14 @@ def test_nhom_dau_ten_la_Task(ma, _so):
     """Owner 25/08: 'Cần bạn xử lý' dễ hiểu nhầm → gọi thẳng là Task."""
     m = mt.tao(MGR, "Goal A", "kq")
     tuan.them_viec_giao(ma, MGR, NV, "Dựng 6 video", "san_xuat", muc_tieu_id=m["id"])
-    r = _c.get("/muc-tieu", headers=H_MGR)
+    r = _c.get("/task", headers=H_MGR)
     assert ">Task<" in r.text and "Cần bạn xử lý" not in r.text
 
 
 def test_nut_go_viec_nam_DUOI_CUNG_phieu(ma, _so):
     m = mt.tao(MGR, "Goal A", "kq")
     tuan.them_viec_muc_tieu(ma, MGR, "Việc gõ nhầm", "x", m["id"])
-    r = _c.get("/muc-tieu", headers=H_MGR)
+    r = _c.get("/task", headers=H_MGR)
     phieu = r.text.split('class="phieu-noi"')[1].split("</details>")[0]
     assert phieu.index("Lưu mô tả") < phieu.index("Đính") < phieu.index("Gỡ việc này")
 
@@ -242,7 +243,7 @@ def test_o_sua_tai_cho_khong_bi_luat_o_nhap_chung_de(_so):
     """Ô sửa-tại-chỗ phải trông như CHỮ THƯỜNG — luật ô nhập chung không được đè
     (đã dính một lần: khung + nền hiện lên quanh tên Goal)."""
     mt.tao(MGR, "Goal A", "kq")
-    css = _c.get("/muc-tieu", headers=H_MGR).text
+    css = _c.get("/task", headers=H_MGR).text
     luat = css.split(".noi-dung input:not([type=checkbox])")[1].split("{")[0]
     assert ":not(.o-tai-cho)" in luat
 
@@ -252,7 +253,7 @@ def test_moi_viec_la_mot_the_roi(ma, _so):
     m = mt.tao(MGR, "Goal A", "kq")
     for t in ("Việc 1", "Việc 2"):
         tuan.them_viec_muc_tieu(ma, MGR, t, "x", m["id"])
-    r = _c.get("/muc-tieu", headers=H_MGR)
+    r = _c.get("/task", headers=H_MGR)
     assert r.text.count('<li class="the-viec">') == 2
     css = r.text.split("ul.vs li.the-viec{")[1].split("}")[0]
     assert "border:" in css and "border-radius" in css
@@ -305,8 +306,8 @@ def test_doi_ten_viec_bang_form_thi_dong_ngoai_doi_theo(ma, _so):
     v = tuan.them_viec_giao(ma, MGR, NV, "Tên cũ", "x", muc_tieu_id=m["id"])
     _c.post("/tasky/viec/sua", headers=H_MGR, follow_redirects=False,
             data={"id": v["id"], "tieu_de": "Tên mới hẳn", "mo_ta": "",
-                  "tuan_xem": ma, "ve": "/muc-tieu?chon=" + m["id"]})
-    r = _c.get("/muc-tieu", headers=H_MGR)
+                  "tuan_xem": ma, "ve": "/task?goal=" + m["id"]})
+    r = _c.get("/task", headers=H_MGR)
     dong = r.text.split('class="vt"')[1].split("</span>")[0]
     assert "Tên mới hẳn" in dong and "Tên cũ" not in r.text
 
@@ -315,7 +316,7 @@ def test_vien_the_dung_token_do_duoc_ca_hai_theme(_so):
     """Owner 25/08: bản tối mất hết đường line của box. Viền chung --line chỉ đạt
     1.31:1 trên nền thẻ; token riêng --tk-vien khai cặp tối/sáng."""
     mt.tao(MGR, "Goal A", "kq")
-    html = _c.get("/muc-tieu", headers=H_MGR).text
+    html = _c.get("/task", headers=H_MGR).text
     assert "--tk-vien:#52678a" in html and "--tk-vien:#c4c4c4" in html
     css = html.split("ul.vs li.the-viec{")[1].split("}")[0]
     assert "var(--tk-vien)" in css
@@ -365,7 +366,7 @@ def test_the_viec_hien_giao_cho_ai_va_chip_trang_thai(ma, _so):
     m = mt.tao(MGR, "Goal A", "kq")
     tuan.them_viec_giao(ma, MGR, NV, "Dựng 6 video", "x",
                         muc_tieu_id=m["id"], han=_han_sau(-2))
-    r = _c.get("/muc-tieu", headers=H_MGR)
+    r = _c.get("/task", headers=H_MGR)
     the = r.text.split('<li class="the-viec">')[1].split("</li>")[0]
     assert "Giao cho <b>Thu Hà</b>" in the        # tên người, không phải tài khoản
     assert "Chưa ai nhận" in the and "Quá deadline" in the

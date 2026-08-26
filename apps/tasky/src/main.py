@@ -26,6 +26,7 @@ import os
 from pathlib import Path
 from urllib.parse import unquote
 
+import unicodedata
 from urllib.parse import urlencode
 
 from fastapi import Depends, FastAPI, Form, Header, HTTPException, Request
@@ -50,6 +51,13 @@ templates = Jinja2Templates(directory=str(_APP_DIR / "src" / "templates"),
 # Xem src/static/vendor/NGUON.md.
 app.mount("/tasky-static", StaticFiles(directory=str(_APP_DIR / "src" / "static")),
           name="tasky-static")
+def _khong_dau(chu: str) -> str:
+    """So chữ KHÔNG DẤU, không phân biệt hoa thường — gõ 'seo' phải ra 'SEO',
+    gõ 'tai nguyen' phải ra 'Tài nguyên' (lệ ô tìm của hệ)."""
+    x = unicodedata.normalize("NFD", (chu or "").casefold())
+    return "".join(c for c in x if unicodedata.category(c) != "Mn").replace("đ", "d")
+
+
 templates.env.filters["han"] = tuan_lo.tinh_han   # {{ v|han }} → {chu, muc, con}
 templates.env.filters["chip"] = tuan_lo.the_trang_thai   # {{ v|chip }} → [{chu, muc}]
 
@@ -173,51 +181,99 @@ def trang_viec(request: Request, user: dict = Depends(lay_user), tuan_xem: str =
 
 @app.get("/giao-viec")
 def trang_giao_cu():
-    """Màn Giao việc GỘP vào Goal (tab Việc lẻ) + Báo cáo (bảng bộ phận + đóng tuần)
-    — Owner chốt 25/08 là nó thừa. Giữ đường cũ để bookmark của team không chết."""
-    return RedirectResponse("/muc-tieu", status_code=303)
+    """Màn Giao việc cũ đã gộp đi (25/08). Từ 26/08 Tasky có ba mục Goal / Task /
+    Report, nên bookmark cũ trỏ về TASK — đó mới là nơi giao việc."""
+    return RedirectResponse("/task", status_code=303)
 
 
 @app.get("/muc-tieu", response_class=HTMLResponse)
 def trang_muc_tieu(request: Request, user: dict = Depends(yeu_cau_muc_tieu),
-                   x_remote_actions: str = Header(""), chon: str = "",
-                   tuan_xem: str = "", da_don: str = "",
-                   loi: str = "", loi_viec: str = ""):
-    """Cây mục tiêu — MỘT mục tiêu một tab (Owner chốt 25/08). Dữ liệu gom sẵn ở
-    server, template chỉ hiển thị."""
+                   x_remote_actions: str = Header(""), tuan_xem: str = "",
+                   da_don: str = "", loi: str = "", tim: str = "", loc: str = "",
+                   bo: str = "", sap: str = "gan_han", kieu: str = ""):
+    """TRANG GOAL — chỉ theo dõi MỤC TIÊU (Owner chốt 26/08: Tasky có ba mục
+    Goal / Task / Report; việc con chuyển hẳn sang mục Task).
+
+    Trang này KHÔNG dựng việc con nữa: chỉ tổng quan + danh sách Goal. Bấm một
+    Goal là sang board Task đã lọc sẵn Goal đó."""
     hd = cac_hanh_dong(x_remote_actions)
     ds = mt_lo.trong_pham_vi(user, bool({"bao_cao_cong_ty", "bao_cao_nhan_su"} & hd))
     gom = mt_lo.viec_theo_muc_tieu()          # MỘT lượt quét cho cả trang
-    cay = []
-    for m in ds:
-        viec = gom.get(m["id"], [])
-        cay.append({**m, "tien_do": mt_lo.tien_do(m["id"], viec),
-                    "nhom": mt_lo.nhom_viec(tuan_lo.sap_xep(viec)),
-                    "canh_bao": mt_lo.canh_bao(m, viec),
-                    "con_han": mt_lo.con_han(m)})
-    cay.sort(key=lambda c: (c["trang_thai"] != mt_lo.DANG_CHAY,
-                            -len(c["canh_bao"]), c["tieu_de"]))
-    cap_duoi, _ = nhan_su.cap_duoi_cua(user)
-    cap_duoi = cap_duoi or []
+    cay = [{**m, "tien_do": mt_lo.tien_do(m["id"], gom.get(m["id"], [])),
+            "canh_bao": mt_lo.canh_bao(m, gom.get(m["id"], [])),
+            "con_han": mt_lo.con_han(m)} for m in ds]
+    tong_quan = mt_lo.tong_quan(ds, gom)
+
+    # lọc: chữ tìm (không dấu) / trạng thái / bộ phận người đặt
     moi_nguoi, _ = nhan_su.ds_nguoi()
-    # tên đẹp để hiện "Giao cho Hương Giang" thay vì tài khoản huonggiangsss;
-    # chỉ là NHÃN — việc nào được thấy vẫn do bộ lọc quyền quyết từ trước.
-    ten_hien = {n["ten"]: (n.get("ho_ten") or n["ten"]) for n in (moi_nguoi or [])}
+    moi_nguoi = moi_nguoi or []
+    bo_cua = {n["ten"]: n.get("bo_phan") or "" for n in moi_nguoi}
+    if tim.strip():
+        k = _khong_dau(tim)
+        cay = [g for g in cay if k in _khong_dau(g["tieu_de"])
+               or k in _khong_dau(g.get("ket_qua_can_dat") or "")]
+    if loc in ("dang_chay", "cho_chot", "da_chot"):
+        def hop(g):
+            if loc == "da_chot":
+                return g["trang_thai"] != mt_lo.DANG_CHAY
+            if g["trang_thai"] != mt_lo.DANG_CHAY:
+                return False
+            return g["tien_do"]["xong_het"] if loc == "cho_chot" else not g["tien_do"]["xong_het"]
+        cay = [g for g in cay if hop(g)]
+    if bo:
+        cay = [g for g in cay if bo_cua.get(g["nguoi_tao"]) == bo]
+
+    cay = mt_lo.sap_xep_goal(cay, sap)
+    gap, thuong = mt_lo.can_de_y(cay)
+    ten_hien = {n["ten"]: (n.get("ho_ten") or n["ten"]) for n in moi_nguoi}
     ma = _ma_tuan_hop_le(tuan_xem)
     return templates.TemplateResponse(request, "muc_tieu.html", {
-        "user": user, "cay": cay, "chon": chon or (cay[0]["id"] if cay else "le"),   # chưa có Goal → mở tab Việc lẻ
-        "cap_duoi": cap_duoi, "loai_viec": tuan_lo.cac_loai_viec(),
+        "user": user, "gap": gap, "thuong": thuong, "tong_quan": tong_quan,
+        "tim": tim, "loc": loc, "bo": bo, "sap": sap,
+        # kiểu hiển thị: nhiều Goal thì mặc định DÒNG cho đỡ miss (Owner 26/08)
+        "kieu": kieu if kieu in ("the", "dong") else ("dong" if len(cay) > 12 else "the"),
+        "bo_phan_co": sorted({v for v in bo_cua.values() if v}),
         "duoc_dat": mt_lo.duoc_dat_muc_tieu(user),
         "la_owner": user["level"] >= mt_lo.OWNER_LEVEL,
-        "da_don": da_don, "loi_form": loi, "loi_viec": loi_viec,
-        # nút "Gỡ việc" trong phiếu chi tiết — luật ở lõi, template chỉ hỏi
-        "xoa_duoc": {v["id"]: tuan_lo.duoc_xoa(v, user)[0]
-                     for ds_v in gom.values() for v in ds_v},
-        "con_viec_cu": sum(1 for ma in tuan_lo.cac_tuan_gan()
-                           for v in tuan_lo.doc_tuan(ma)["viec"]
+        "da_don": da_don, "loi_form": loi, "ten_hien": ten_hien,
+        "con_viec_cu": sum(1 for ma_t in tuan_lo.cac_tuan_gan()
+                           for v in tuan_lo.doc_tuan(ma_t)["viec"]
                            if not v.get("muc_tieu_id")),
         "ma_tuan": ma, "tuan_nay": tuan_lo.ma_tuan(),
-        "ngang_cap": nhan_su.ngang_cap_bo_phan_khac(user)[0] or [], "ten_hien": ten_hien,
+        **_co_sidebar(x_remote_actions, ma, user)})
+
+
+@app.get("/task", response_class=HTMLResponse)
+def trang_task(request: Request, user: dict = Depends(yeu_cau_muc_tieu),
+               x_remote_actions: str = Header(""), goal: str = "",
+               tuan_xem: str = "", loi: str = "", loi_viec: str = ""):
+    """MỤC TASK — việc con của MỘT Goal (Owner chốt 26/08: Tasky = Goal / Task /
+    Report; trang Goal chỉ theo dõi mục tiêu, việc nằm ở đây).
+
+    Chưa chọn Goal thì mở Goal đầu tiên trong phạm vi của người xem — không có
+    Goal nào thì đẩy về trang Goal, đừng dựng board rỗng vô nghĩa."""
+    hd = cac_hanh_dong(x_remote_actions)
+    ds = mt_lo.trong_pham_vi(user, bool({"bao_cao_cong_ty", "bao_cao_nhan_su"} & hd))
+    if not ds:
+        return RedirectResponse("/muc-tieu", status_code=303)
+    m = next((x for x in ds if x["id"] == goal), ds[0])
+    viec = mt_lo.viec_cua_muc_tieu(m["id"])
+    g = {**m, "tien_do": mt_lo.tien_do(m["id"], viec),
+         "canh_bao": mt_lo.canh_bao(m, viec),
+         "con_han": mt_lo.con_han(m),
+         "nhom": mt_lo.nhom_viec(tuan_lo.sap_xep(viec))}
+    cap_duoi, _ = nhan_su.cap_duoi_cua(user)
+    moi_nguoi, _ = nhan_su.ds_nguoi()
+    ma = _ma_tuan_hop_le(tuan_xem)
+    return templates.TemplateResponse(request, "task.html", {
+        "user": user, "g": g, "ds_goal": ds,
+        "cap_duoi": cap_duoi or [], "loai_viec": tuan_lo.cac_loai_viec(),
+        "ngang_cap": nhan_su.ngang_cap_bo_phan_khac(user)[0] or [],
+        "ten_hien": {n["ten"]: (n.get("ho_ten") or n["ten"]) for n in (moi_nguoi or [])},
+        "xoa_duoc": {v["id"]: tuan_lo.duoc_xoa(v, user)[0] for v in viec},
+        "loi_form": loi, "loi_viec": loi_viec,
+        "la_owner": user["level"] >= mt_lo.OWNER_LEVEL,
+        "ma_tuan": ma, "tuan_nay": tuan_lo.ma_tuan(),
         **_co_sidebar(x_remote_actions, ma, user)})
 
 

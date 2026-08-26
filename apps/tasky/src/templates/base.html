@@ -185,6 +185,10 @@
         <a class="nav-item nav-con{% if request.url.path == '/muc-tieu' %} active{% endif %}" href="/muc-tieu">
           <svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="5" r="2.2"/><circle cx="6" cy="19" r="2.2"/><circle cx="18" cy="19" r="2.2"/><path d="M12 7.2v3.8M12 11h-6v5.8M12 11h6v5.8"/></svg> Goal</a>
         {% endif %}
+        {% if tk_giao %}
+        <a class="nav-item nav-con{% if request.url.path == '/task' %} active{% endif %}" href="/task">
+          <svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="7" height="16" rx="1.6"/><rect x="14" y="4" width="7" height="10" rx="1.6"/></svg> Task</a>
+        {% endif %}
         {% if tk_bao_cao %}
         <a class="nav-item nav-con{% if request.url.path == '/bao-cao-tuan' %} active{% endif %}" href="/bao-cao-tuan">
           <svg class="ic" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg> Báo cáo</a>

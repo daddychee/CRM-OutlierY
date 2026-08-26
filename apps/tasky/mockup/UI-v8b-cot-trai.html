@@ -1,0 +1,90 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8">
+<title>Tasky — Goal: phương án B (cột trái + chi tiết)</title>
+<link rel="stylesheet" href="_khung.css">
+<style>
+  .than{display:flex;padding:0;min-height:100vh}
+  .cot{width:290px;flex:0 0 290px;border-right:1px solid var(--line);background:var(--panel);
+    padding:16px 12px;display:flex;flex-direction:column;gap:9px}
+  .muc{border:1px solid transparent;border-left:4px solid var(--vien);border-radius:10px;
+    padding:9px 11px;cursor:pointer;display:flex;flex-direction:column;gap:5px}
+  .muc:hover{background:var(--th-182233)}
+  .muc.on{background:var(--th-16263f);border-color:var(--accent);border-left-color:var(--accent)}
+  .muc .ten{font-size:13px;font-weight:600;line-height:1.3}
+  .muc .day{display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--muted)}
+  .muc .tt{width:52px}
+  .noi{flex:1;padding:20px 24px;min-width:0}
+  .khoi{border:1px solid var(--vien);border-radius:12px;background:var(--panel);padding:14px 16px;margin-bottom:12px}
+  .viec{border:1px solid var(--vien);border-radius:11px;background:var(--th-141c2b);
+    padding:11px 13px;margin-bottom:9px;display:flex;gap:10px;align-items:flex-start}
+  .nhan-nhom{font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
+    color:var(--muted);margin:14px 0 8px}
+  .cham{width:13px;height:13px;border-radius:50%;margin-top:2px;flex:none}
+</style></head><body>
+<div class="man">
+  <nav class="sb"><div class="brand">AI AGENT OUTLIERY</div>
+    <a href="#">Tasky</a><a href="#" class="on">Goal</a><a href="#">Báo cáo</a></nav>
+  <main class="than">
+    <div class="cot">
+      <input placeholder="Tìm Goal…">
+      <select><option>Đang chạy (7)</option><option>Chờ chốt (2)</option><option>Đã chốt (12)</option></select>
+      <div class="muc" style="border-left-color:var(--luc)">
+        <div class="ten">Hệ Thống Tài nguyên</div>
+        <div class="day"><span class="tt"><i style="width:33%"></i></span>1/3
+          <span style="flex:1"></span><span class="chip cap">3 ngày</span></div></div>
+      <div class="muc" style="border-left-color:var(--tim)">
+        <div class="ten">Định hướng kinh doanh T9/2026</div>
+        <div class="day"><span class="tt"><i style="width:0%"></i></span>0/2
+          <span style="flex:1"></span><span class="chip cap">1 ngày</span></div></div>
+      <div class="muc on" style="border-left-color:var(--hong)">
+        <div class="ten">HỆ THỐNG TÀI NGUYÊN SEO</div>
+        <div class="day"><span class="tt"><i style="width:0%"></i></span>0/3
+          <span style="flex:1"></span>26/11</div></div>
+      <div class="muc" style="border-left-color:var(--hong)">
+        <div class="ten">BUILD AGENT AUTO NGÂM</div>
+        <div class="day"><span class="tt"><i style="width:0%"></i></span>0/1
+          <span style="flex:1"></span>19/10</div></div>
+      <div class="muc" style="border-left-color:var(--hong)">
+        <div class="ten">ĐƯA KÊNH ĐẠT ĐIỀU KIỆN BẬT KIẾM TIỀN</div>
+        <div class="day"><span class="tt"><i style="width:50%"></i></span>2/4
+          <span style="flex:1"></span>31/10</div></div>
+      <div class="muc" style="border-left-color:var(--hong)">
+        <div class="ten">MỞ RỘNG KÊNH</div>
+        <div class="day"><span class="tt"><i style="width:0%"></i></span>0/0
+          <span style="flex:1"></span>31/10</div></div>
+      <div class="muc" style="border-left-color:var(--hong)">
+        <div class="ten">TỐI ƯU CHẤT LƯỢNG DOANH THU</div>
+        <div class="day"><span class="tt"><i style="width:20%"></i></span>1/5
+          <span style="flex:1"></span>31/10</div></div>
+      <button class="nut chinh" style="margin-top:6px">+ Goal mới</button>
+    </div>
+
+    <div class="noi">
+      <div class="khoi">
+        <div style="font-size:16px;font-weight:600">HỆ THỐNG TÀI NGUYÊN SEO</div>
+        <div class="ghi" style="margin:4px 0 9px">Kết quả cần đạt: Bộ tài nguyên chuẩn hóa · hạn 26/11 · Đặng Hương Giang đặt</div>
+        <div style="display:flex;gap:7px;flex-wrap:wrap">
+          <span class="chip xam">3 việc</span><span class="chip luu">3 chưa nhận</span></div>
+      </div>
+      <button class="nut" style="width:100%;text-align:left;color:var(--accent);border-color:var(--accent)">
+        + Thêm việc để đạt Goal này</button>
+      <div class="nhan-nhom">Task · 3 việc</div>
+      <div class="viec"><span class="cham" style="border:2px solid var(--luu)"></span>
+        <div style="flex:1"><div style="font-weight:600">Rà 10 video top của 3 kênh đối thủ</div>
+          <div class="ghi">Hạn 26/11</div>
+          <div style="font-size:12px;margin-top:4px">Giao cho <b>Phạm Hoàng Phương Thảo</b></div></div>
+        <span class="chip luu">Chưa ai nhận</span></div>
+      <div class="viec"><span class="cham" style="border:2px dashed var(--accent)"></span>
+        <div style="flex:1"><div style="font-weight:600">Chuẩn hóa bộ từ khóa</div>
+          <div class="ghi">Hạn 30/09 · 2/5 bước</div>
+          <div style="font-size:12px;margin-top:4px">Giao cho <b>Đặng Hương Giang</b></div></div>
+        <span class="chip tin">Đã nhận</span></div>
+      <div class="viec"><span class="cham" style="border:2px solid var(--ok);background:var(--ok)"></span>
+        <div style="flex:1"><div style="font-weight:600">Dựng khung thư mục tài nguyên</div>
+          <div class="ghi">Xong 21/08 · 5/5 bước</div>
+          <div style="font-size:12px;margin-top:4px">Giao cho <b>Đặng Hương Giang</b></div></div>
+        <span class="chip ok">Đã nghiệm thu</span></div>
+    </div>
+  </main>
+</div>
+<div class="nhan-pa">Phương án B — Cột trái danh sách + chi tiết bên phải</div>
+</body></html>

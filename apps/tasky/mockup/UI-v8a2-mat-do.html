@@ -1,0 +1,180 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8">
+<title>Tasky — Goal A2: mật độ hiển thị khi nhiều Goal</title>
+<link rel="stylesheet" href="_khung.css">
+<style>
+  .khu{margin-bottom:30px}
+  .nhan-khu{display:flex;align-items:center;gap:10px;margin:0 0 12px;font-size:12px;
+    font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--accent)}
+  .nhan-khu hr{flex:1;border:0;border-top:1px solid var(--line)}
+  .giai{color:var(--muted);font-size:12.5px;margin:-4px 0 12px;font-weight:400;
+    letter-spacing:0;text-transform:none}
+
+  /* ---- Kiểu 1: thẻ (mặc định, ≤ 12 Goal) ---- */
+  .luoi{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(250px,1fr))}
+  .the{border:1px solid var(--vien);border-left-width:5px;border-radius:12px;background:var(--panel);
+    padding:11px 13px;display:flex;flex-direction:column;gap:7px;cursor:pointer}
+  .the:hover{border-color:var(--accent)}
+  .the .ten{font-size:13.5px;font-weight:600;line-height:1.3}
+  .the .day{display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--muted)}
+  .the .day b{color:var(--ink);font-variant-numeric:tabular-nums}
+
+  /* ---- Kiểu 2: DÒNG gọn (mặc định khi > 12 Goal) ---- */
+  .bang{border:1px solid var(--vien);border-radius:12px;overflow:hidden;background:var(--panel)}
+  .dong{display:flex;align-items:center;gap:12px;padding:9px 13px;border-top:1px solid var(--line);
+    cursor:pointer;border-left:4px solid transparent}
+  .dong:first-child{border-top:0}
+  .dong:hover{background:var(--th-182233)}
+  .dong .ten{flex:1;min-width:0;font-size:13px;font-weight:600;white-space:nowrap;
+    overflow:hidden;text-overflow:ellipsis}
+  .dong .nguoi{width:150px;flex:none;font-size:12px;color:var(--muted);white-space:nowrap;
+    overflow:hidden;text-overflow:ellipsis}
+  .dong .so{width:46px;flex:none;font-size:12px;color:var(--muted);
+    font-variant-numeric:tabular-nums;text-align:right}
+  .dong .tt{width:64px;flex:none}
+  .dong .han{width:66px;flex:none;font-size:12px;color:var(--muted);text-align:right;
+    font-variant-numeric:tabular-nums}
+  .dong .cot-chip{width:118px;flex:none;display:flex;justify-content:flex-end}
+
+  .gat{display:flex;gap:6px;align-items:center;margin-left:auto}
+  .gat button{border:1px solid var(--vien);background:var(--panel);color:var(--muted);
+    border-radius:8px;padding:6px 10px;font-size:12px;cursor:pointer;display:flex;gap:6px;align-items:center}
+  .gat button.on{border-color:var(--accent);color:var(--accent);background:var(--th-16263f)}
+  .day-tren{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+</style></head><body>
+<div class="man">
+  <nav class="sb"><div class="brand">AI AGENT OUTLIERY</div>
+    <a href="#">Tasky</a><a href="#" class="on">Goal</a><a href="#">Báo cáo</a></nav>
+  <main class="than">
+    <h1>Goal</h1><div class="phu">Toàn công ty · 23 đang chạy · 41 đã chốt</div>
+
+    <div class="day-tren">
+      <input placeholder="Tìm Goal…" style="flex:1;max-width:250px">
+      <select><option>Mọi bộ phận</option></select>
+      <select><option>Đang chạy</option></select>
+      <select><option>Gần hạn nhất</option></select>
+      <div class="gat">
+        <button><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>Thẻ</button>
+        <button class="on"><svg class="ic" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg>Dòng</button>
+      </div>
+    </div>
+
+    <div class="khu">
+      <div class="nhan-khu">Cần để ý · 3<hr></div>
+      <div class="giai">Sắp trễ hạn, quá hạn, hoặc chưa ai nhận việc nào — luôn nổi lên đầu, không bị trôi</div>
+      <div class="luoi">
+        <article class="the" style="border-left-color:var(--luc)">
+          <div class="ten">Hệ Thống Tài nguyên</div>
+          <div class="day"><span class="tt" style="width:52px"><i style="width:33%"></i></span><b>1/3</b>
+            <span style="flex:1"></span><span class="chip cap">Còn 3 ngày</span></div>
+          <div class="ghi">bot · Ban quản trị</div></article>
+        <article class="the" style="border-left-color:var(--tim)">
+          <div class="ten">Định hướng kinh doanh T9/2026</div>
+          <div class="day"><span class="tt" style="width:52px"><i style="width:0%"></i></span><b>0/2</b>
+            <span style="flex:1"></span><span class="chip cap">Còn 1 ngày</span></div>
+          <div class="ghi">bot · Ban quản trị</div></article>
+        <article class="the" style="border-left-color:var(--hong)">
+          <div class="ten">MỞ RỘNG KÊNH</div>
+          <div class="day"><span class="tt" style="width:52px"><i style="width:0%"></i></span><b>0/0</b>
+            <span style="flex:1"></span><span class="chip luu">Chưa có việc</span></div>
+          <div class="ghi">Đặng Hương Giang · Kinh doanh</div></article>
+      </div>
+    </div>
+
+    <div class="khu">
+      <div class="nhan-khu">Đang chạy · 20<hr></div>
+      <div class="giai">Nhiều Goal thì tự chuyển sang kiểu DÒNG — mỗi Goal một dòng 38px, 20 Goal vừa một màn hình, quét mắt theo cột thay vì đọc từng khối</div>
+      <div class="bang">
+        <div class="dong" style="border-left-color:var(--hong)">
+          <div class="ten">ĐƯA KÊNH ĐẠT ĐIỀU KIỆN BẬT KIẾM TIỀN</div>
+          <div class="nguoi">Đặng Hương Giang</div>
+          <div class="tt"><i style="width:50%"></i></div><div class="so">2/4</div>
+          <div class="han">31/10</div><div class="cot-chip"><span class="chip tin">Đang chạy</span></div></div>
+        <div class="dong" style="border-left-color:var(--hong)">
+          <div class="ten">HỆ THỐNG TÀI NGUYÊN SEO</div>
+          <div class="nguoi">Đặng Hương Giang</div>
+          <div class="tt"><i style="width:0%"></i></div><div class="so">0/3</div>
+          <div class="han">26/11</div><div class="cot-chip"><span class="chip luu">Chưa ai nhận</span></div></div>
+        <div class="dong" style="border-left-color:var(--hong)">
+          <div class="ten">BUILD AGENT AUTO NGÂM</div>
+          <div class="nguoi">Đặng Hương Giang</div>
+          <div class="tt"><i style="width:0%"></i></div><div class="so">0/1</div>
+          <div class="han">19/10</div><div class="cot-chip"><span class="chip luu">Chưa ai nhận</span></div></div>
+        <div class="dong" style="border-left-color:var(--hong)">
+          <div class="ten">TỐI ƯU CHẤT LƯỢNG DOANH THU</div>
+          <div class="nguoi">Đặng Hương Giang</div>
+          <div class="tt"><i style="width:20%"></i></div><div class="so">1/5</div>
+          <div class="han">31/10</div><div class="cot-chip"><span class="chip tin">Đang chạy</span></div></div>
+        <div class="dong" style="border-left-color:var(--tin)">
+          <div class="ten">Chuẩn hóa quy trình dựng video</div>
+          <div class="nguoi">Phạm Hoàng Phương Thảo</div>
+          <div class="tt"><i style="width:70%"></i></div><div class="so">7/10</div>
+          <div class="han">15/09</div><div class="cot-chip"><span class="chip tin">Đang chạy</span></div></div>
+        <div class="dong" style="border-left-color:var(--tin)">
+          <div class="ten">Tuyển 3 editor mới</div>
+          <div class="nguoi">Nguyễn Hoàng Lan</div>
+          <div class="tt"><i style="width:100%"></i></div><div class="so">4/4</div>
+          <div class="han">20/09</div><div class="cot-chip"><span class="chip ok">Chờ chốt</span></div></div>
+        <div class="dong" style="border-left-color:var(--luu)">
+          <div class="ten">Rà soát chi phí vận hành quý 4</div>
+          <div class="nguoi">Nguyễn Hoàng Lan</div>
+          <div class="tt"><i style="width:12%"></i></div><div class="so">1/8</div>
+          <div class="han">30/09</div><div class="cot-chip"><span class="chip tin">Đang chạy</span></div></div>
+        <div class="dong" style="border-left-color:var(--luc)">
+          <div class="ten">Dựng kho tài nguyên nhạc nền bản quyền</div>
+          <div class="nguoi">Trần Việt Thanh</div>
+          <div class="tt"><i style="width:40%"></i></div><div class="so">2/5</div>
+          <div class="han">10/10</div><div class="cot-chip"><span class="chip tin">Đang chạy</span></div></div>
+        <div class="dong" style="border-left-color:var(--luc)">
+          <div class="ten">Tối ưu thumbnail 4 kênh chủ lực</div>
+          <div class="nguoi">Trần Việt Thanh</div>
+          <div class="tt"><i style="width:33%"></i></div><div class="so">2/6</div>
+          <div class="han">05/10</div><div class="cot-chip"><span class="chip tin">Đang chạy</span></div></div>
+        <div class="dong" style="border-left-color:var(--tim)">
+          <div class="ten">Chuyển toàn bộ báo cáo tuần sang Tasky</div>
+          <div class="nguoi">bot</div>
+          <div class="tt"><i style="width:60%"></i></div><div class="so">3/5</div>
+          <div class="han">12/09</div><div class="cot-chip"><span class="chip tin">Đang chạy</span></div></div>
+        <div class="dong" style="border-left-color:var(--hong)">
+          <div class="ten">Mở rộng thị trường Tây Ban Nha</div>
+          <div class="nguoi">Đặng Hương Giang</div>
+          <div class="tt"><i style="width:25%"></i></div><div class="so">1/4</div>
+          <div class="han">30/11</div><div class="cot-chip"><span class="chip tin">Đang chạy</span></div></div>
+        <div class="dong" style="border-left-color:var(--tin)">
+          <div class="ten">Đào tạo quy trình mới cho nhân sự vận hành</div>
+          <div class="nguoi">Phạm Hoàng Phương Thảo</div>
+          <div class="tt"><i style="width:0%"></i></div><div class="so">0/6</div>
+          <div class="han">28/10</div><div class="cot-chip"><span class="chip luu">Chưa ai nhận</span></div></div>
+        <div class="dong" style="border-left-color:var(--luu)">
+          <div class="ten">Chuẩn hóa hợp đồng cộng tác viên</div>
+          <div class="nguoi">Nguyễn Hoàng Lan</div>
+          <div class="tt"><i style="width:80%"></i></div><div class="so">4/5</div>
+          <div class="han">18/09</div><div class="cot-chip"><span class="chip tin">Đang chạy</span></div></div>
+        <div class="dong" style="border-left-color:var(--luc)">
+          <div class="ten">Nâng cấp máy dựng cho team sản xuất</div>
+          <div class="nguoi">Trần Việt Thanh</div>
+          <div class="tt"><i style="width:50%"></i></div><div class="so">1/2</div>
+          <div class="han">25/09</div><div class="cot-chip"><span class="chip tin">Đang chạy</span></div></div>
+        <div class="dong" style="border-left-color:var(--tim)">
+          <div class="ten">Xây bộ chỉ số theo dõi hiệu suất kênh</div>
+          <div class="nguoi">bot</div>
+          <div class="tt"><i style="width:10%"></i></div><div class="so">1/10</div>
+          <div class="han">15/11</div><div class="cot-chip"><span class="chip tin">Đang chạy</span></div></div>
+        <div class="dong" style="border-left-color:var(--hong)">
+          <div class="ten">Test 5 định dạng video ngắn</div>
+          <div class="nguoi">Đặng Hương Giang</div>
+          <div class="tt"><i style="width:60%"></i></div><div class="so">3/5</div>
+          <div class="han">08/10</div><div class="cot-chip"><span class="chip tin">Đang chạy</span></div></div>
+      </div>
+    </div>
+
+    <div class="khu">
+      <div class="nhan-khu">Đã chốt · 41<hr></div>
+      <div class="giai">Thu gọn sẵn — bấm mới mở, không chiếm chỗ của việc đang chạy</div>
+      <div class="bang"><div class="dong" style="color:var(--muted)">
+        <svg class="ic" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+        <div class="ten" style="font-weight:400;color:var(--muted)">41 Goal đã chốt (28 đạt · 9 một phần · 4 không đạt)</div></div></div>
+    </div>
+  </main>
+</div>
+<div class="nhan-pa">A2 — Cùng phương án A, thêm kiểu DÒNG cho trường hợp nhiều Goal</div>
+</body></html>

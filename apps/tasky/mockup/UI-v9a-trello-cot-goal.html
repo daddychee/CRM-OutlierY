@@ -1,0 +1,134 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8">
+<title>Tasky — Kanban 9A: mỗi Goal một cột</title>
+<link rel="stylesheet" href="_khung.css">
+<style>
+  .than{padding:16px 0 0;display:flex;flex-direction:column;min-width:0}
+  .dau{padding:0 20px 12px}
+  .bang{display:flex;gap:12px;overflow-x:auto;padding:4px 20px 20px;align-items:flex-start;flex:1}
+  .cot{flex:0 0 286px;background:var(--panel);border:1px solid var(--vien);border-radius:13px;
+    display:flex;flex-direction:column;max-height:calc(100vh - 130px)}
+  .cot>header{padding:11px 13px;border-bottom:1px solid var(--line);border-left:4px solid var(--vien);
+    border-radius:12px 12px 0 0}
+  .cot h3{margin:0 0 5px;font-size:13.5px;line-height:1.3}
+  .cot .meta{display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--muted)}
+  .the-viec{background:var(--th-141c2b);border:1px solid var(--vien);border-radius:10px;
+    padding:9px 11px;margin:8px 10px 0;cursor:grab;display:flex;flex-direction:column;gap:6px}
+  .the-viec:hover{border-color:var(--accent)}
+  .the-viec .ten{font-size:12.5px;font-weight:600;line-height:1.35}
+  .the-viec .chan{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted)}
+  .av{width:20px;height:20px;border-radius:50%;background:var(--th-31425e);color:var(--ink);
+    font-size:9.5px;font-weight:700;display:grid;place-items:center;flex:none}
+  .them{margin:8px 10px 10px;color:var(--muted);font-size:12px;padding:7px 9px;border-radius:9px;
+    border:1px dashed var(--vien);cursor:pointer}
+  .cuon{overflow-y:auto;padding-bottom:2px}
+  .cot-them{flex:0 0 250px;border:1px dashed var(--vien);border-radius:13px;padding:13px;
+    color:var(--muted);font-size:12.5px;cursor:pointer}
+</style></head><body>
+<div class="man">
+  <nav class="sb"><div class="brand">AI AGENT OUTLIERY</div>
+    <a href="#">Tasky</a><a href="#" class="on">Goal</a><a href="#">Báo cáo</a></nav>
+  <main class="than">
+    <div class="dau">
+      <h1 style="margin-bottom:2px">Goal</h1>
+      <div class="phu" style="margin-bottom:10px">Toàn công ty · 23 đang chạy — mỗi cột một Goal, thẻ là việc</div>
+      <div class="thanh-cong-cu" style="margin:0">
+        <input placeholder="Tìm việc / Goal…" style="flex:1;max-width:240px">
+        <select><option>Mọi bộ phận</option></select>
+        <select><option>Mọi người</option></select>
+        <span style="flex:1"></span><button class="nut chinh">+ Goal mới</button>
+      </div>
+    </div>
+
+    <div class="bang">
+      <section class="cot" style="border-left-color:var(--luc)">
+        <header style="border-left-color:var(--luc)">
+          <h3>Hệ Thống Tài nguyên</h3>
+          <div class="meta"><span class="tt" style="width:60px"><i style="width:33%"></i></span>1/3
+            <span style="flex:1"></span><span class="chip cap">Còn 3 ngày</span></div></header>
+        <div class="cuon">
+          <div class="the-viec"><div class="ten">Dựng khung thư mục dùng chung</div>
+            <div class="chan"><span class="av">HG</span>Hạn 28/08<span style="flex:1"></span>
+              <span class="chip cap">Quá deadline</span></div></div>
+          <div class="the-viec"><div class="ten">Gom tài nguyên rời về một nơi</div>
+            <div class="chan"><span class="av">PT</span>Hạn 30/08 · 2/5 bước<span style="flex:1"></span>
+              <span class="chip tin">Đã nhận</span></div></div>
+          <div class="the-viec"><div class="ten">Viết hướng dẫn sử dụng kho</div>
+            <div class="chan"><span class="av">—</span>Chưa đặt hạn<span style="flex:1"></span>
+              <span class="chip luu">Chưa giao</span></div></div>
+        </div>
+        <div class="them">+ Thêm việc</div>
+      </section>
+
+      <section class="cot" style="border-left-color:var(--tim)">
+        <header style="border-left-color:var(--tim)">
+          <h3>Định hướng kinh doanh T9/2026</h3>
+          <div class="meta"><span class="tt" style="width:60px"><i style="width:0%"></i></span>0/2
+            <span style="flex:1"></span><span class="chip cap">Còn 1 ngày</span></div></header>
+        <div class="cuon">
+          <div class="the-viec"><div class="ten">Chuẩn bị báo cáo quý 3</div>
+            <div class="chan"><span class="av">HG</span>Hạn 28/08<span style="flex:1"></span>
+              <span class="chip luu">Chưa ai nhận</span></div></div>
+          <div class="the-viec"><div class="ten">Báo cáo về nhân sự</div>
+            <div class="chan"><span class="av">PT</span>Hạn 28/08<span style="flex:1"></span>
+              <span class="chip luu">Chưa ai nhận</span></div></div>
+        </div>
+        <div class="them">+ Thêm việc</div>
+      </section>
+
+      <section class="cot" style="border-left-color:var(--hong)">
+        <header style="border-left-color:var(--hong)">
+          <h3>ĐƯA KÊNH ĐẠT ĐIỀU KIỆN BẬT KIẾM TIỀN</h3>
+          <div class="meta"><span class="tt" style="width:60px"><i style="width:50%"></i></span>2/4
+            <span style="flex:1"></span>31/10</div></header>
+        <div class="cuon">
+          <div class="the-viec"><div class="ten">Đủ 1.000 sub cho kênh Life In US</div>
+            <div class="chan"><span class="av">HG</span>Hạn 15/09<span style="flex:1"></span>
+              <span class="chip tin">Đã nhận</span></div></div>
+          <div class="the-viec"><div class="ten">Đủ 4.000 giờ xem kênh Shadow Files</div>
+            <div class="chan"><span class="av">TT</span>Hạn 30/09<span style="flex:1"></span>
+              <span class="chip tin">Đã nhận</span></div></div>
+          <div class="the-viec"><div class="ten">Nộp hồ sơ bật kiếm tiền</div>
+            <div class="chan"><span class="av">HG</span>Hạn 31/10<span style="flex:1"></span>
+              <span class="chip xam">Đã nghiệm thu</span></div></div>
+          <div class="the-viec"><div class="ten">Rà chính sách nội dung 4 kênh</div>
+            <div class="chan"><span class="av">TT</span>Xong 20/08<span style="flex:1"></span>
+              <span class="chip ok">Đã nghiệm thu</span></div></div>
+        </div>
+        <div class="them">+ Thêm việc</div>
+      </section>
+
+      <section class="cot" style="border-left-color:var(--hong)">
+        <header style="border-left-color:var(--hong)">
+          <h3>HỆ THỐNG TÀI NGUYÊN SEO</h3>
+          <div class="meta"><span class="tt" style="width:60px"><i style="width:0%"></i></span>0/3
+            <span style="flex:1"></span>26/11</div></header>
+        <div class="cuon">
+          <div class="the-viec"><div class="ten">Rà 10 video top của 3 kênh đối thủ</div>
+            <div class="chan"><span class="av">PT</span>Hạn 26/11<span style="flex:1"></span>
+              <span class="chip luu">Chưa ai nhận</span></div></div>
+          <div class="the-viec"><div class="ten">Chuẩn hóa bộ từ khóa</div>
+            <div class="chan"><span class="av">HG</span>Hạn 30/09<span style="flex:1"></span>
+              <span class="chip luu">Chưa ai nhận</span></div></div>
+        </div>
+        <div class="them">+ Thêm việc</div>
+      </section>
+
+      <section class="cot" style="border-left-color:var(--tin)">
+        <header style="border-left-color:var(--tin)">
+          <h3>Chuẩn hóa quy trình dựng video</h3>
+          <div class="meta"><span class="tt" style="width:60px"><i style="width:70%"></i></span>7/10
+            <span style="flex:1"></span>15/09</div></header>
+        <div class="cuon">
+          <div class="the-viec"><div class="ten">Viết SOP dựng video ngắn</div>
+            <div class="chan"><span class="av">PT</span>Hạn 05/09<span style="flex:1"></span>
+              <span class="chip tin">Đã nhận</span></div></div>
+        </div>
+        <div class="them">+ Thêm việc</div>
+      </section>
+
+      <div class="cot-them">+ Thêm Goal &nbsp;·&nbsp; còn 18 Goal nữa → cuộn ngang</div>
+    </div>
+  </main>
+</div>
+<div class="nhan-pa">9A — Kanban kiểu Trello: MỖI GOAL MỘT CỘT, thẻ là việc</div>
+</body></html>

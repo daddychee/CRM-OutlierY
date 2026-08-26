@@ -72,7 +72,7 @@ def test_chi_hien_cap_duoi_cung_bo_phan(ma):
     """Ô giao việc nay nằm TRONG Goal (25/08) — phải có Goal thì mới có ô đó."""
     from src import muc_tieu as mt_lo
     mt_lo.tao({"ten": "huytq", "level": 4, "bo_phan": "Vận hành"}, "Goal A", "kq")
-    r = client.get("/muc-tieu", headers=LEADER_H)
+    r = client.get("/task", headers=LEADER_H)
     assert r.status_code == 200
     assert "Nguyễn Thu Hà" in r.text and "Lê Minh Đức" in r.text
     assert "Phạm Bảo Ngọc" not in r.text      # khác bộ phận
@@ -220,11 +220,11 @@ def test_sidebar_chi_hien_muc_nguoi_do_co_quyen(ma):
     """Mục con dựng trong vòng lặp sb_apps (X-Remote-Apps) và chỉ hiện khi có CỜ
     hành động tương ứng — nhân viên không thấy đường vào Giao việc / Báo cáo."""
     # so trên THUỘC TÍNH href, không so chuỗi trần: JS trong trang có
-    # location.href = "/muc-tieu" nên chuỗi trần khớp cả với nhân viên
+    # location.href = "/task" nên chuỗi trần khớp cả với nhân viên
     r_nv = client.get("/tasky", headers=NV_H)
-    assert 'href="/muc-tieu"' not in r_nv.text and 'href="/bao-cao-tuan"' not in r_nv.text
+    assert 'href="/task"' not in r_nv.text and 'href="/bao-cao-tuan"' not in r_nv.text
     r_ld = client.get("/tasky", headers=LEADER_H)
-    assert 'href="/muc-tieu"' in r_ld.text and 'href="/bao-cao-tuan"' in r_ld.text
+    assert 'href="/task"' in r_ld.text and 'href="/bao-cao-tuan"' in r_ld.text
 
 
 # ---------- thu lại việc đóng tuần (Owner yêu cầu 24/08) ----------
@@ -313,7 +313,7 @@ def test_leader_khong_thay_viec_ngoai_pham_vi(ma):
 def test_duong_cu_giao_viec_van_song_bang_redirect(ma):
     """Team đã bookmark /giao-viec — không để chết, chuyển sang Goal."""
     r = client.get("/giao-viec", headers=LEADER_H, follow_redirects=False)
-    assert r.status_code == 303 and r.headers["location"] == "/muc-tieu"
+    assert r.status_code == 303 and r.headers["location"] == "/task"
 
 
 
