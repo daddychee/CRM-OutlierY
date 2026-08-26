@@ -648,9 +648,9 @@ function tinhQuyVnd() {
     {% for d in dvkt.dong %}
     <tr><td><b class="tk">{{ d.kenh_ma }}</b> {{ d.ten }}</td>
       <td class="so">{{ d.so_video }}</td>
-      <td class="so">{% if d.chi_moi_video %}{{ d.chi_moi_video | vnd }}{% else %}<span class="badge">chưa đủ dữ liệu</span>{% endif %}</td>
-      <td class="so">{% if d.luot_xem %}{{ d.luot_xem }}{% else %}<span class="thieu">—</span>{% endif %}</td>
-      <td class="so">{% if d.chi_moi_1k_view %}{{ d.chi_moi_1k_view | vnd }}{% else %}<span class="badge">chưa nối lượt xem</span>{% endif %}</td>
+      <td class="so">{% if d.chi_moi_video is not none %}{{ d.chi_moi_video | vnd }}{% else %}<span class="badge">chưa đủ dữ liệu</span>{% endif %}</td>
+      <td class="so">{% if d.luot_xem is not none %}{{ d.luot_xem }}{% else %}<span class="thieu">—</span>{% endif %}</td>
+      <td class="so">{% if d.chi_moi_1k_view is not none %}{{ d.chi_moi_1k_view | vnd }}{% else %}<span class="badge">chưa nối lượt xem</span>{% endif %}</td>
       <td class="so {% if d.bien_lai and d.bien_lai > 0 %}duong{% endif %}">
         {% if d.bien_lai is not none %}{{ d.bien_lai }}%{% else %}<span class="thieu">—</span>{% endif %}</td></tr>
     {% else %}

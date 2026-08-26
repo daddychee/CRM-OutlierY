@@ -897,7 +897,10 @@ def pnl_phan_bo(thang: str, quy_tac: str = "doanh_thu",
             trong_so = {ma: 1.0 for ma in kenh}   # KHÔNG im lặng bỏ chi phí chung
 
     tong_ts = sum(trong_so.values())
-    can_chia = chung["chi"] - chung["thu"]
+    # Chung hệ THU nhiều hơn CHI (nạp vốn, hoàn tiền…) → KHÔNG có chi phí chung
+    # để rải. Rải số âm sẽ thành cộng tiền cho kênh, làm kênh "lãi" nhiều hơn cả
+    # doanh thu của chính nó — con số vô nghĩa.
+    can_chia = max(0.0, chung["chi"] - chung["thu"])
     dong, da_chia = [], 0.0
     for ma, m in sorted(kenh.items()):
         pb = round(can_chia * trong_so[ma] / tong_ts, 2) if tong_ts else 0.0

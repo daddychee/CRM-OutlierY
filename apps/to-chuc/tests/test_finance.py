@@ -831,3 +831,36 @@ def test_vi_vnd_khong_hien_ky_hieu_do():
     tai_chinh.them_but_toan("kt", HOM_NAY, "THU-KHAC", 23_500_000, "Vận hành chung", vi=VI)
     b = _client().get("/finance?tab=wallets").text
     assert "23.500.000 ₫" in b and "$23,500,000" not in b
+
+
+def test_phan_bo_khong_chia_am_khi_chung_he_lai():
+    """Chung hệ THU nhiều hơn CHI (ví dụ nạp vốn) → không có chi phí chung để
+    rải. Không được biến thành 'phân bổ âm' cộng tiền cho kênh, làm kênh lãi
+    nhiều hơn cả doanh thu của nó."""
+    k1, _ = _seed_kenh()
+    _seed_muc_tieu()
+    tai_chinh.them_but_toan("kt", HOM_NAY, "THU-ADS", 60_000_000, "Vận hành chung",
+                            kenh_ma=k1, vi=VI)
+    tai_chinh.them_but_toan("kt", HOM_NAY, "THU-KHAC", 180_000_000, "Vận hành chung",
+                            vi=VI)                       # nạp vốn — chung hệ
+    tai_chinh.them_but_toan("kt", HOM_NAY, "CHI-API", 8_000_000, "Vận hành chung", vi=VI)
+    kq = tai_chinh.pnl_phan_bo(THANG_NAY, "doanh_thu")
+    d = {x["kenh_ma"]: x for x in kq["dong"]}
+    assert d[k1]["phan_bo"] == 0                          # không rải số âm
+    assert d[k1]["lai_lo_sau"] == 60_000_000              # lãi đúng bằng thu của nó
+    assert kq["chung_he_con_lai"] == kq["chung_he"]       # giữ nguyên ở hàng chung hệ
+
+
+def test_chi_phi_video_bang_0_hien_so_khong_phai_chua_du_du_lieu():
+    k1, _ = _seed_kenh()
+    _seed_muc_tieu()
+    import json, os
+    from pathlib import Path
+    Path(os.environ["PLANNERY_PLAN"]).write_text(json.dumps({
+        "people": [], "assignments": [], "projects": [{"id": "p", "ngach_ma": "N-X",
+        "channels": [{"kenh_ma": k1, "videos": [{"publish_date": f"{THANG_NAY}-05"}]}]}]}),
+        encoding="utf-8")
+    tai_chinh.them_but_toan("kt", HOM_NAY, "THU-ADS", 10_000_000, "Vận hành chung",
+                            kenh_ma=k1, vi=VI)
+    b = _client().get(f"/finance?tab=pnl&thang={THANG_NAY}").text
+    assert "chưa đủ dữ liệu" not in b.split("Đơn vị kinh tế")[1][:900]

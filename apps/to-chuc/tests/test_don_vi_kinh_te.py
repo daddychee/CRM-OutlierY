@@ -75,3 +75,16 @@ def test_plannery_chet_thi_bao_thieu_nguon():
     _seed_kenh()
     kq = don_vi_kinh_te.don_vi_kinh_te(THANG)         # không seed plan.json
     assert kq["thieu_nguon"] is True and kq["dong"] == []
+
+
+def test_chi_0_van_tinh_duoc_chi_phi_moi_video():
+    """Kênh có video nhưng chi trực tiếp = 0 thì chi phí/video là 0, KHÔNG phải
+    'chưa đủ dữ liệu' — thiếu dữ liệu và bằng không là hai chuyện khác nhau."""
+    k1, _ = _seed_kenh()
+    _seed_plannery(k1, 18)
+    tai_chinh.them_muc_tieu("Vận hành chung", 0)
+    tai_chinh.them_but_toan("kt", "2026-08-10", "THU-ADS", 60_000_000,
+                            "Vận hành chung", kenh_ma=k1, vi=VI)
+    d = {x["kenh_ma"]: x for x in don_vi_kinh_te.don_vi_kinh_te(THANG)["dong"]}
+    assert d[k1]["chi_moi_video"] == 0
+    assert d[k1]["bien_lai"] == 100
