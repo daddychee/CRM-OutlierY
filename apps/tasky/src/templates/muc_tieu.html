@@ -197,10 +197,7 @@
     {% elif g.tien_do.xong_het %}<span class="the tt ok">Chờ chốt</span>
     {% else %}<span class="the tt tin">Đang chạy</span>{% endif %}
   </div>
-  <div class="chan-the">
-    <span class="ghi" style="font-size:11.5px">{{ ten_hien.get(g.nguoi_tao, g.nguoi_tao) }} đặt</span>
-    <a class="sang-task" href="/task?goal={{ g.id }}" title="Mở board Task của Goal này">Task →</a>
-  </div>
+  <div class="ghi" style="font-size:11.5px">{{ ten_hien.get(g.nguoi_tao, g.nguoi_tao) }} đặt</div>
 </article>
 {% endmacro %}
 
@@ -221,7 +218,6 @@
     {% elif not g.tien_do.tong %}<span class="the tt luu_y">Chưa có việc</span>
     {% elif g.tien_do.xong_het %}<span class="the tt ok">Chờ chốt</span>
     {% else %}<span class="the tt tin">Đang chạy</span>{% endif %}
-    <a class="sang-task" href="/task?goal={{ g.id }}" title="Mở board Task">→</a>
   </div>
 </div>
 {% endmacro %}

@@ -129,13 +129,13 @@ def test_moi_goal_co_mot_cua_so_noi(ma, _so):
     assert "Việc trong Goal" in r.text                   # xem việc ngay trong popup
 
 
-def test_the_goal_khong_con_la_link_dieu_huong(ma, _so):
-    """Thẻ mở popup; sang board Task là một đường RIÊNG, rõ ràng."""
-    g = mt.tao(MGR, "Goal A", "kq")
+def test_the_goal_khong_co_duong_dieu_huong_nao(ma, _so):
+    """Owner 26/08: bỏ nút 'Task →' — bấm đúp là làm được mọi thứ ngay tại trang,
+    nút sang màn rời là thứ duy nhất còn đưa người dùng ra 'khối cũ'."""
+    mt.tao(MGR, "Goal A", "kq")
     r = _c.get("/muc-tieu", headers=H_MGR)
     the = r.text.split('<article class="g-the')[1].split("</article>")[0]
-    assert '<a class="sang-task" href="/task?goal=%s"' % g["id"] in the
-    assert the.count("<a ") == 1                        # chỉ đúng một đường sang Task
+    assert 'href="/task' not in the and "sang-task" not in r.text
 
 
 def test_goal_da_chot_thi_popup_chi_doc(ma, _so):
