@@ -864,3 +864,10 @@ def test_chi_phi_video_bang_0_hien_so_khong_phai_chua_du_du_lieu():
                             kenh_ma=k1, vi=VI)
     b = _client().get(f"/finance?tab=pnl&thang={THANG_NAY}").text
     assert "chưa đủ dữ liệu" not in b.split("Đơn vị kinh tế")[1][:900]
+
+
+def test_phi_thue_bao_vnd_hien_dong_khong_hien_do():
+    _seed_dich_vu(ten="Canva Teams", phi=1_290_000, tien_te="VND", vi=VI,
+                  danh_muc="CHI-NGOAI")
+    b = _client().get("/finance?tab=subs").text
+    assert "1.290.000 ₫" in b and "$1,290,000" not in b

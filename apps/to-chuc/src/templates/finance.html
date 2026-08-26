@@ -193,7 +193,7 @@
     {% for d in den_han %}
     <div class="cho">
       <span class="dau {% if d.qua_han %}gap{% else %}canh{% endif %}"></span>
-      <span class="ten">{{ d.ten }} <span class="thieu">{{ d.phi | tien }} {{ d.tien_te }}</span>
+      <span class="ten">{{ d.ten }} <span class="thieu">{{ d.phi | theo_te(d.tien_te) }} {{ d.tien_te }}</span>
         {% if d.trang_thai == 'sap_bo' %}<span class="badge">sắp bỏ</span>{% endif %}</span>
       <span class="tk">{{ d.ngay_gia_han }}</span>
       <a class="nut phu" style="padding:2px 10px;font-size:.78rem;text-decoration:none"
@@ -940,7 +940,7 @@ function tinhQuyVnd() {
     <tr {% if d.trang_thai == 'da_huy' %}style="opacity:.55"{% endif %}>
       <td><b>{{ d.ten }}</b>{% if d.nha_cung_cap %}<div class="thieu">{{ d.nha_cung_cap }}</div>{% endif %}</td>
       <td>{{ d.nhom }}</td>
-      <td class="so">{{ d.phi | tien }} <span class="thieu">{{ d.tien_te }}</span></td>
+      <td class="so">{{ d.phi | theo_te(d.tien_te) }} <span class="thieu">{{ d.tien_te }}</span></td>
       <td>{{ d.chu_ky }}</td>
       <td>{{ d.ngay_gia_han }}</td>
       <td>{% if d.tu_dong_gia_han %}<span class="badge ok">có</span>{% else %}<span class="badge">không</span>{% endif %}</td>

@@ -26,6 +26,9 @@
 **Đã chạy trên CRM** — 10 tab: Tổng quan · Sổ thu chi · Ví & chốt kỳ · Ngân sách ·
 Kênh · Ngách · Lương · Thuê bao · Tự động · Danh mục.
 
+**Hướng dẫn sử dụng cho người dùng cuối:** `docs/hdsd-finance/` — 10 tài liệu
+theo tab, kèm 12 ảnh chụp từ chính giao diện đang chạy (không phải bản vẽ).
+
 **Không còn tính năng nào của mockup v4 thiếu module.** Sổ tiền vẫn rỗng — chờ
 Owner nhập dữ liệu vận hành (mục 10).
 
