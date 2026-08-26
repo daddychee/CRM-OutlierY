@@ -31,6 +31,7 @@ _khoa = threading.Lock()
 
 KENH_CHUNG = ""          # kenh_ma rỗng = bút toán 'chung hệ'
 LOAI = ("thu", "chi", "dao")
+LOAI_VI = ("vi_dien_tu", "ngan_hang", "quy", "phai_thu")   # phai_thu KHÔNG là tiền khả dụng
 TRANG_THAI_MT = ("dang_chay", "tam_dung", "xong")
 
 
@@ -60,6 +61,36 @@ def doc_danh_muc() -> list[dict]:
 
 def _loai_theo_ma() -> dict[str, str]:
     return {d["ma"]: d["loai"] for d in doc_danh_muc()}
+
+
+# ---------- danh mục ví (A1 — rules CSV, luật ngoài code) ----------
+
+def _duong_danh_muc_vi() -> Path:
+    return Path(os.getenv("DANH_MUC_VI",
+                          _APP_DIR / "rules" / "danh_muc_vi.csv"))
+
+
+def doc_danh_muc_vi() -> list[dict]:
+    """[{ma, ten, loai, tien_te, ghi_chu}] — loai ∈ LOAI_VI; dòng thiếu mã hoặc
+    loại lạ bị bỏ qua (đọc khoan dung như doc_danh_muc)."""
+    p = _duong_danh_muc_vi()
+    if not p.is_file():
+        return []
+    ra = []
+    with p.open(encoding="utf-8-sig", newline="") as f:
+        for d in csv.DictReader(f):
+            ma = (d.get("ma") or "").strip()
+            loai = (d.get("loai") or "").strip().lower()
+            if ma and loai in LOAI_VI:
+                ra.append({"ma": ma, "ten": (d.get("ten") or "").strip(),
+                           "loai": loai,
+                           "tien_te": (d.get("tien_te") or "VND").strip().upper(),
+                           "ghi_chu": (d.get("ghi_chu") or "").strip()})
+    return ra
+
+
+def _vi_theo_ma() -> dict[str, dict]:
+    return {d["ma"]: d for d in doc_danh_muc_vi()}
 
 
 # ---------- sổ mục tiêu (muc-tieu.json — ghi nguyên tử) ----------
@@ -155,10 +186,10 @@ def _kenh_hop_le(kenh_ma: str) -> bool:
 
 def them_but_toan(nguoi_ghi: str, ngay: str, danh_muc: str, so_tien,
                   muc_tieu: str, kenh_ma: str = KENH_CHUNG, chung_tu: str = "",
-                  ghi_chu: str = "") -> dict:
+                  ghi_chu: str = "", vi: str = "") -> dict:
     """Ghi MỘT bút toán mới. loai suy từ DANH MỤC (dropdown quyết thu/chi — không
     có cửa chọn lệch); mục tiêu BẮT BUỘC tồn tại (DE.md 13.6); kênh phải có trong
-    danh bạ đế hoặc rỗng = chung hệ."""
+    danh bạ đế hoặc rỗng = chung hệ; VÍ bắt buộc (A1 — tiền phải biết nằm ở đâu)."""
     try:
         date.fromisoformat(ngay)
     except (TypeError, ValueError):
@@ -178,9 +209,13 @@ def them_but_toan(nguoi_ghi: str, ngay: str, danh_muc: str, so_tien,
     kenh_ma = (kenh_ma or "").strip()
     if kenh_ma and not _kenh_hop_le(kenh_ma):
         raise ValueError(f"Kênh '{kenh_ma}' không có trong danh bạ đế.")
+    vi = (vi or "").strip()
+    if vi not in _vi_theo_ma():
+        raise ValueError(f"Ví '{vi}' không có trong rules/danh_muc_vi.csv.")
     b = {"id": f"BT-{datetime.now():%y%m%d%H%M%S}-{secrets.token_hex(2)}",
          "ngay": ngay, "loai": loai, "danh_muc": danh_muc.strip(),
          "so_tien": so_tien, "muc_tieu": muc_tieu, "kenh_ma": kenh_ma,
+         "vi": vi,
          "nguoi_ghi": nguoi_ghi, "chung_tu": (chung_tu or "").strip()[:200],
          "ghi_chu": (ghi_chu or "").strip()[:500],
          "tao_luc": datetime.now().isoformat(timespec="seconds")}
@@ -205,6 +240,7 @@ def dao_but_toan(nguoi_ghi: str, id_goc: str, ghi_chu: str = "") -> dict:
              "ngay": date.today().isoformat(), "loai": "dao",
              "danh_muc": goc.get("danh_muc", ""), "so_tien": -float(goc.get("so_tien", 0)),
              "muc_tieu": goc.get("muc_tieu", ""), "kenh_ma": goc.get("kenh_ma", ""),
+             "vi": goc.get("vi", ""),
              "nguoi_ghi": nguoi_ghi, "chung_tu": "", "tham_chieu": id_goc,
              "ghi_chu": (ghi_chu or "").strip() or f"Đảo bút toán {id_goc}",
              "tao_luc": datetime.now().isoformat(timespec="seconds")}
@@ -281,4 +317,41 @@ def pnl_theo_kenh(thang: str) -> dict[str, dict]:
             continue
         m = ra.setdefault(b.get("kenh_ma", "") or KENH_CHUNG, {"thu": 0.0, "chi": 0.0})
         m[phia] += float(b.get("so_tien") or 0)
+    return ra
+
+
+def so_du_vi() -> dict[str, dict]:
+    """{mã ví: {nguyen_te, tien_te, but_toan_cuoi}} — thu cộng, chi trừ; dòng đảo
+    mang danh mục gốc + số tiền âm nên tự bù đúng bên. Ví chưa phát sinh bút toán
+    nào thì KHÔNG hiện (không vẽ dòng 0 giả).
+
+    ponytail: chỉ nguyên tệ — quy VND cần tỷ giá, để A2 thêm khóa 'quy_vnd'.
+    """
+    loai_map = _loai_theo_ma()
+    vi_map = _vi_theo_ma()
+    ra: dict[str, dict] = {}
+    for b in doc_so():
+        ma = (b.get("vi") or "").strip()
+        phia = _phia(b, loai_map)
+        if not ma or not phia:
+            continue
+        m = ra.setdefault(ma, {"nguyen_te": 0.0,
+                               "tien_te": vi_map.get(ma, {}).get("tien_te", "VND"),
+                               "but_toan_cuoi": ""})
+        tien = float(b.get("so_tien") or 0)
+        m["nguyen_te"] += tien if phia == "thu" else -tien
+        m["but_toan_cuoi"] = max(m["but_toan_cuoi"], b.get("ngay") or "")
+    return ra
+
+
+def tien_kha_dung() -> dict[str, float]:
+    """{tiền tệ: tổng} của tiền THẬT đang có — bỏ ví loại 'phai_thu' (AdSense chưa
+    chi trả chưa phải tiền của mình). Số dư 0 không hiện."""
+    vi_map = _vi_theo_ma()
+    ra: dict[str, float] = {}
+    for ma, m in so_du_vi().items():
+        if vi_map.get(ma, {}).get("loai") == "phai_thu":
+            continue
+        if m["nguyen_te"]:
+            ra[m["tien_te"]] = ra.get(m["tien_te"], 0.0) + m["nguyen_te"]
     return ra

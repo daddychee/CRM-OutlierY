@@ -401,7 +401,7 @@ def finance_trang(request: Request, tab: str = "ledger", thang: str = "",
                   user: dict = Depends(yeu_cau_finance)):
     """Finance Hub — 4 tab theo mockup finance-hub.html: Ledger (sổ chỉ-thêm +
     đảo) · Goals (mục tiêu) · Categories (rules CSV + tổng) · Channel P&L."""
-    if tab not in ("ledger", "goals", "categories", "pnl"):
+    if tab not in ("ledger", "goals", "categories", "pnl", "wallets"):
         tab = "ledger"
     thang = _thang_hop_le(thang)
 
@@ -424,17 +424,20 @@ def finance_trang(request: Request, tab: str = "ledger", thang: str = "",
         "dm_tong": tai_chinh.tong_hop_danh_muc(thang),
         "muc_tieu": muc_tieu, "mt_tong": mt_tong,
         "ds_kenh": ds_kenh, "kenh_cua": kenh_cua, "ten_ngach": ten_ngach,
-        "pnl": tai_chinh.pnl_theo_kenh(thang)})
+        "pnl": tai_chinh.pnl_theo_kenh(thang),
+        "danh_muc_vi": tai_chinh.doc_danh_muc_vi(),
+        "so_du_vi": tai_chinh.so_du_vi(), "kha_dung": tai_chinh.tien_kha_dung()})
 
 
 @app.post("/finance/but-toan")
 def finance_but_toan(ngay: str = Form(...), danh_muc: str = Form(...),
                      so_tien: str = Form(...), muc_tieu: str = Form(...),
                      kenh_ma: str = Form(""), chung_tu: str = Form(""),
-                     ghi_chu: str = Form(""), user: dict = Depends(yeu_cau_finance)):
+                     ghi_chu: str = Form(""), vi: str = Form(""),
+                     user: dict = Depends(yeu_cau_finance)):
     try:
         b = tai_chinh.them_but_toan(user["ten"], ngay, danh_muc, so_tien,
-                                    muc_tieu, kenh_ma, chung_tu, ghi_chu)
+                                    muc_tieu, kenh_ma, chung_tu, ghi_chu, vi)
     except ValueError as e:
         raise HTTPException(422, str(e))
     nhat_ky.ghi("to-chuc", user["ten"], "but_toan",
