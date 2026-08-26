@@ -154,3 +154,11 @@ def test_nguoi_khong_duoc_sua_thi_popup_khong_co_o_sua(ma, _so):
     if 'data-goal-modal="%s"' % g["id"] in r.text:
         hop = r.text.split('data-goal-modal="%s"' % g["id"])[1].split("</dialog>")[0]
         assert 'name="tieu_de"' not in hop and "data-xoa-goal" not in hop
+
+
+def test_popup_goal_khong_hep_hon_popup_viec(_so):
+    """Owner 26/08: popup Goal phải to như popup việc bên Task, đừng thu lại."""
+    import re
+    css = _c.get("/muc-tieu", headers=H_MGR).text
+    rong = dict(re.findall(r"dialog\.(mt-modal|phieu-viec)\{width:min\((\d+)px", css))
+    assert int(rong["mt-modal"]) >= int(rong["phieu-viec"]), rong
