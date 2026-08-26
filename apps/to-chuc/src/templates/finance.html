@@ -34,6 +34,16 @@
   .usage{height:7px;border-radius:999px;background:var(--th-1d2840);overflow:hidden}
   .usage i{display:block;height:100%;background:var(--accent)}
   .duong{color:var(--accent)}
+  .lich-luoi{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px;margin:.4rem 0}
+  .moc{border:1px solid var(--line);border-radius:11px;padding:10px 13px;background:var(--chip)}
+  .moc.den{border-color:var(--th-31425e)}
+  .moc.tre{border-color:var(--th-d97c6c)}
+  .moc-han{font-size:.75rem;color:var(--muted);font-family:var(--mono,monospace)}
+  .moc-ten{font-size:.9rem;font-weight:600;margin:.2rem 0 .35rem}
+  .bd-luoi{display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:14px;margin-top:1rem}
+  .bd-o{border:1px solid var(--line);border-radius:12px;padding:10px 14px;background:var(--chip)}
+  .bd-o h4{font-size:.86rem;margin:.1rem 0 .3rem;font-weight:600}
+  .bd-o .chart-container text{fill:var(--muted)}
   .am{color:var(--th-d97c6c)}
 {% endblock %}
 
@@ -47,13 +57,143 @@
 </div>
 
 <div class="tab-nav">
-  <a href="/finance?tab=ledger&thang={{ thang }}" class="{% if tab == 'ledger' %}active{% endif %}">Ledger</a>
-  <a href="/finance?tab=goals&thang={{ thang }}" class="{% if tab == 'goals' %}active{% endif %}">Goals</a>
-  <a href="/finance?tab=categories&thang={{ thang }}" class="{% if tab == 'categories' %}active{% endif %}">Categories</a>
-  <a href="/finance?tab=pnl&thang={{ thang }}" class="{% if tab == 'pnl' %}active{% endif %}">Channel P&amp;L</a>
-  <a href="/finance?tab=wallets&thang={{ thang }}" class="{% if tab == 'wallets' %}active{% endif %}">Wallets</a>
-  <a href="/finance?tab=subs" class="{% if tab == 'subs' %}active{% endif %}">Subscriptions</a>
-  <a href="/finance?tab=payroll" class="{% if tab == 'payroll' %}active{% endif %}">Payroll</a>
+  <a href="/finance?tab=dashboard&thang={{ thang }}" class="{% if tab == 'dashboard' %}active{% endif %}">Tổng quan</a>
+  <a href="/finance?tab=ledger&thang={{ thang }}" class="{% if tab == 'dashboard' %}
+<div class="khoi-lich">
+  <h3 class="hub-tieu">
+    <svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>
+    Lịch tài chính — kỳ {{ ky_truoc }}
+  </h3>
+  <div class="lich-luoi">
+    {% for m in moc_ky %}
+    <div class="moc {% if m.trang_thai == 'tre_han' %}tre{% elif m.trang_thai == 'den_han' %}den{% endif %}">
+      <div class="moc-han">{{ m.han }}</div>
+      <div class="moc-ten">{{ m.ten }}</div>
+      <div>
+        {% if m.trang_thai == 'xong' %}<span class="badge ok">xong</span>
+        {% elif m.trang_thai == 'den_han' %}<span class="badge do">đến hạn</span>
+        {% elif m.trang_thai == 'tre_han' %}<span class="badge do">trễ hạn</span>
+        {% elif m.trang_thai == 'chua_co_module' %}<span class="badge">chưa có module</span>
+        {% else %}<span class="badge">chờ đến hạn</span>{% endif %}
+      </div>
+      {% if m.khoa_vi %}<div class="thieu" style="margin-top:.3rem">{{ m.khoa_vi }}</div>{% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  <div class="canh">Kỳ kế toán vẫn là tháng dương lịch — đây là lịch việc: Google chốt tiền ngày 10–12, lương trả ngày 15. Trễ hạn thì nhắc, không tự chạy.</div>
+</div>
+
+{% if bd and bd.co_du_lieu %}
+<div class="bd-luoi">
+  <div class="bd-o"><h4>Dòng tiền 12 tháng</h4><div id="bd-dong-tien"></div></div>
+  <div class="bd-o"><h4>Số dư tích lũy</h4><div id="bd-so-du"></div></div>
+  <div class="bd-o"><h4>Cơ cấu chi {{ thang }}</h4><div id="bd-co-cau"></div></div>
+  <div class="bd-o"><h4>Lãi / lỗ theo kênh</h4><div id="bd-kenh"></div></div>
+  <div class="bd-o"><h4>Thuê bao theo nhóm</h4><div id="bd-thue-bao"></div></div>
+</div>
+<script src="/to-chuc-static/vendor/frappe-charts.min.umd.js"></script>
+<script>
+/* Thư viện vẽ bằng màu TRUYỀN VÀO JS, không đọc CSS var → đổi theme phải đọc
+   token rồi vẽ lại (bẫy đã ghi ở src/static/vendor/NGUON.md). */
+var BD = {{ bd | tojson }};
+function mauBieuDo() {
+  var st = getComputedStyle(document.documentElement);
+  function t(n, mac) { var v = st.getPropertyValue(n).trim(); return v || mac; }
+  return { accent: t('--accent', '#4C8FE0'), ok: t('--ok', '#93a89a'),
+           bad: t('--th-d97c6c', '#d97c6c'), warn: t('--warn', '#d9b36c') };
+}
+function veBieuDo() {
+  if (typeof frappe === 'undefined') return;
+  var m = mauBieuDo();
+  function trieu(v) { return (v / 1000000).toFixed(1) + ' tr ₫'; }
+  function ve(id, cfg) {
+    var o = document.getElementById(id);
+    if (!o) return;
+    o.innerHTML = '';
+    new frappe.Chart(o, cfg);
+  }
+  ve('bd-dong-tien', { data: { labels: BD.thang, datasets: [
+        { name: 'Thu', values: BD.thu, chartType: 'bar' },
+        { name: 'Chi', values: BD.chi, chartType: 'bar' } ] },
+      type: 'axis-mixed', height: 210, colors: [m.ok, m.bad],
+      axisOptions: { xAxisMode: 'tick' }, tooltipOptions: { formatTooltipY: trieu } });
+  ve('bd-so-du', { data: { labels: BD.thang, datasets: [{ name: 'Số dư', values: BD.so_du }] },
+      type: 'line', height: 210, colors: [m.accent],
+      lineOptions: { hideDots: 0, regionFill: 1 }, tooltipOptions: { formatTooltipY: trieu } });
+  if (BD.co_cau_nhan.length) {
+    ve('bd-co-cau', { data: { labels: BD.co_cau_nhan, datasets: [{ values: BD.co_cau_so }] },
+        type: 'bar', height: 210, colors: [m.accent],
+        barOptions: { spaceRatio: 0.5 }, tooltipOptions: { formatTooltipY: trieu } });
+  }
+  if (BD.kenh_nhan.length) {
+    ve('bd-kenh', { data: { labels: BD.kenh_nhan, datasets: [{ values: BD.kenh_so }] },
+        type: 'bar', height: 210, colors: [m.accent],
+        barOptions: { spaceRatio: 0.5 }, tooltipOptions: { formatTooltipY: trieu } });
+  }
+  if (BD.thue_bao_nhan.length) {
+    ve('bd-thue-bao', { data: { labels: BD.thue_bao_nhan, datasets: [{ values: BD.thue_bao_so }] },
+        type: 'bar', height: 210, colors: [m.warn],
+        barOptions: { spaceRatio: 0.5 }, tooltipOptions: { formatTooltipY: trieu } });
+  }
+}
+window.addEventListener('load', veBieuDo);
+window.addEventListener('storage', function (e) { if (e.key === 'outliery_theme') veBieuDo(); });
+</script>
+{% else %}
+<div class="canh">Chưa có bút toán nào — biểu đồ hiện khi sổ có dữ liệu. Không vẽ trục rỗng cho có.</div>
+{% endif %}
+
+{% elif tab == 'ngach' %}
+<h3 class="hub-tieu">
+  <svg class="ic" viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h10"/></svg>
+  Chi phí sản xuất theo ngách — kỳ {{ chi_ngach.ky }}
+  <form method="get" action="/finance" style="display:inline-flex;gap:.4rem;align-items:center">
+    <input type="hidden" name="tab" value="ngach">
+    <input type="month" name="ky_luong" value="{{ chi_ngach.ky }}" class="o">
+    <button type="submit" class="nut phu" style="padding:.3rem .8rem;font-size:.82rem">Xem</button>
+  </form>
+</h3>
+{% if chi_ngach.thieu_nguon %}
+<div class="canh">Không đọc được phân công từ PlannerY — khối này để trống, không dựng số.</div>
+{% else %}
+<div class="bang-cuon">
+<table class="bang">
+  <tr><th>Ngách</th><th>Người tham gia</th><th class="so">Ngày công</th>
+    <th class="so">Chi phí nhân công</th><th class="so">Chi tiền mặt</th><th class="so">Tổng</th></tr>
+  {% for d in chi_ngach.dong %}
+  <tr><td><b class="tk">{{ d.ngach_ma }}</b> {{ d.ten }}</td>
+    <td>{% for n in d.nguoi %}<span class="badge">{{ n }}</span> {% endfor %}</td>
+    <td class="so">{{ '%.1f' | format(d.ngay_cong) }}</td>
+    <td class="so">{% if d.chua_duyet_luong %}<span class="badge do">lương chưa duyệt</span><br>{% endif %}{{ d.nhan_cong | vnd }}</td>
+    <td class="so">{{ d.tien_mat | vnd }}</td>
+    <td class="so"><b>{{ d.tong | vnd }}</b></td></tr>
+  {% else %}
+  <tr><td colspan="6">Kỳ này chưa có ngày công nào gắn ngách.</td></tr>
+  {% endfor %}
+  {% if chi_ngach.chua_phan_cong.ngay_cong %}
+  <tr><td><b>Chưa phân công</b><div class="thieu">ngày công không thuộc ngách nào</div></td>
+    <td>{% for n in chi_ngach.chua_phan_cong.nguoi %}<span class="badge">{{ n }}</span> {% endfor %}</td>
+    <td class="so">{{ '%.1f' | format(chi_ngach.chua_phan_cong.ngay_cong) }}</td>
+    <td class="so">{% if chi_ngach.chua_phan_cong.nhan_cong is none %}<span class="badge do">—</span>{% else %}{{ chi_ngach.chua_phan_cong.nhan_cong | vnd }}{% endif %}</td>
+    <td class="so">—</td><td class="so">—</td></tr>
+  {% endif %}
+  <tfoot><tr><td colspan="3"><b>Tổng — khớp bảng lương đã duyệt</b></td>
+    <td class="so"><b>{{ chi_ngach.tong_nhan_cong | vnd }}</b></td>
+    <td class="so"><b>{{ chi_ngach.tong_tien_mat | vnd }}</b></td><td></td></tr></tfoot>
+</table>
+</div>
+{% if chi_ngach.chua_phan_cong.ghi_chu %}<div class="canh">{{ chi_ngach.chua_phan_cong.ghi_chu }}</div>{% endif %}
+<div class="canh">Ngày công chia đều cho các ngách người đó được phân công trong PlannerY. Người không có phân công nào thì ngày công về hàng “chưa phân công”, <b>không rải bừa</b>. Lương chưa duyệt thì ngày công chưa thành chi phí.</div>
+{% endif %}
+
+{% elif tab == 'ledger' %}active{% endif %}">Sổ thu chi</a>
+  <a href="/finance?tab=wallets&thang={{ thang }}" class="{% if tab == 'wallets' %}active{% endif %}">Ví</a>
+  <a href="/finance?tab=goals&thang={{ thang }}" class="{% if tab == 'goals' %}active{% endif %}">Mục tiêu</a>
+  <a href="/finance?tab=pnl&thang={{ thang }}" class="{% if tab == 'pnl' %}active{% endif %}">Kênh</a>
+  <a href="/finance?tab=ngach&ky_luong={{ ky_luong or thang }}" class="{% if tab == 'ngach' %}active{% endif %}">Ngách</a>
+  <a href="/finance?tab=payroll" class="{% if tab == 'payroll' %}active{% endif %}">Lương</a>
+  <a href="/finance?tab=subs" class="{% if tab == 'subs' %}active{% endif %}">Thuê bao</a>
+  <a href="/finance?tab=categories&thang={{ thang }}" class="{% if tab == 'categories' %}active{% endif %}">Danh mục</a>
 </div>
 
 {% if tab == 'ledger' %}
@@ -235,7 +375,7 @@
 <table class="bang">
   <tr><th>Nhân sự</th><th>Vị trí</th><th class="so">Ngày công</th><th class="so">Đi muộn</th>
     <th>Xếp loại</th><th class="so">Lương cơ bản</th><th class="so">Hệ số</th>
-    <th class="so">Điều chỉnh HR</th><th class="so">Thực nhận</th></tr>
+    <th class="so">Điều chỉnh HR</th><th class="so">Thực nhận</th><th></th></tr>
   {% for d in bl.dong %}
   <tr><td><b class="tk">{{ d.ma or '—' }}</b> {{ d.ho_ten or d.ten }}</td>
     <td>{{ d.vi_tri or '—' }}</td>
@@ -251,12 +391,18 @@
     <td class="so">{% if d.dieu_chinh %}<span class="{% if d.dieu_chinh < 0 %}am{% endif %}">{{ d.dieu_chinh | vnd }}</span>
         <div class="thieu">{{ d.ly_do_dieu_chinh }}</div>{% else %}0{% endif %}</td>
     <td class="so">{% if d.thuc_nhan %}<b>{{ d.thuc_nhan | vnd }}</b>
-        {% else %}<span class="badge do">— {{ d.thieu }}</span>{% endif %}</td></tr>
+        {% else %}<span class="badge do">— {{ d.thieu }}</span>{% endif %}</td>
+    <td>{% if bl.da_duyet and d.thuc_nhan %}
+        <a class="nut phu" style="padding:2px 10px;font-size:.78rem;text-decoration:none"
+           href="/finance/luong/phieu/{{ bl.ky }}/{{ d.ten }}" target="_blank">Phiếu</a>
+      {% endif %}</td></tr>
   {% else %}
   <tr><td colspan="9">Chưa có nhân sự nào trong sổ.</td></tr>
   {% endfor %}
   <tfoot><tr><td colspan="8"><b>Tổng đề nghị chi kỳ {{ bl.ky }}</b></td>
-    <td class="so"><b>{{ bl.tong | vnd }}</b></td></tr></tfoot>
+    <td class="so"><b>{{ bl.tong | vnd }}</b></td>
+    <td>{% if bl.da_duyet %}<a class="nut phu" style="padding:2px 10px;font-size:.78rem;text-decoration:none"
+        href="/finance/luong/phieu.zip?ky={{ bl.ky }}">⇩ Cả kỳ</a>{% endif %}</td></tr></tfoot>
 </table>
 </div>
 

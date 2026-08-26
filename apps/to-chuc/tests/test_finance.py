@@ -586,3 +586,28 @@ def test_route_thue_bao_them_va_ghi_but_toan():
     assert bt["danh_muc"] == "CHI-API" and bt["so_tien"] == 200.0
     assert bt["nguon"] == "thue_bao" and bt["vi"] == VI_USD
     assert tai_chinh.doc_dich_vu()[0]["ngay_gia_han"] == "2026-10-01"
+
+
+# ---------- UI-final: dashboard + tab ngách ----------
+
+def test_route_dashboard_va_bieu_do():
+    _seed_vai_but_toan()
+    c = _client()
+    b = c.get("/finance?tab=dashboard&thang=2026-08").text
+    assert "Lịch tài chính" in b and "10…" in b or "2026-09-10" in b
+    assert "frappe-charts.min.umd.js" in b        # vendor, KHÔNG CDN
+    assert "bd-dong-tien" in b
+    # tệp vendor phục vụ được
+    assert c.get("/to-chuc-static/vendor/frappe-charts.min.umd.js").status_code == 200
+
+
+def test_dashboard_kho_rong_thi_khong_ve_truc_rong():
+    c = _client()
+    b = c.get("/finance?tab=dashboard").text
+    assert "Chưa có bút toán nào" in b and "bd-dong-tien" not in b
+
+
+def test_route_tab_ngach_render():
+    _seed_vai_but_toan()
+    b = _client().get("/finance?tab=ngach&ky_luong=2026-08").text
+    assert "Chi phí sản xuất theo ngách" in b

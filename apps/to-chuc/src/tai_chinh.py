@@ -782,3 +782,45 @@ def day_gia_han(id: str) -> dict:
             d["ngay_gia_han"] = date(nam, thang, ngay).isoformat()
         _ghi_dich_vu(ds)
     return d
+
+
+def chuoi_thang(den_thang: str, so_thang: int = 12) -> list[str]:
+    """['2025-09', …, '2026-08'] — trục thời gian cho dashboard."""
+    nam, thang = int(den_thang[:4]), int(den_thang[5:7])
+    ra = []
+    for _ in range(so_thang):
+        ra.append(f"{nam:04d}-{thang:02d}")
+        thang -= 1
+        if thang == 0:
+            nam, thang = nam - 1, 12
+    return list(reversed(ra))
+
+
+def du_lieu_bieu_do(den_thang: str) -> dict:
+    """Số cho 6 biểu đồ. Sổ rỗng → mảng rỗng để UI ghi 'chưa có dữ liệu' chứ
+    KHÔNG vẽ trục rỗng trông như đã đo."""
+    thang_ds = chuoi_thang(den_thang)
+    co_du_lieu = bool(doc_so())
+    thu, chi, so_du = [], [], []
+    luy = 0.0
+    for t in thang_ds:
+        m = tong_thang(t)
+        thu.append(round(m["thu"]))
+        chi.append(round(m["chi"]))
+        luy += m["thu"] - m["chi"]
+        so_du.append(round(luy))
+    dm = tong_hop_danh_muc(den_thang)
+    co_cau = sorted(((ma, round(v["thang"])) for ma, v in dm.items() if v["thang"] > 0),
+                    key=lambda x: -x[1])[:8]
+    pnl = pnl_theo_kenh(den_thang)
+    kenh = sorted(((ma or "chung hệ", round(v["thu"] - v["chi"]))
+                   for ma, v in pnl.items()), key=lambda x: -x[1])[:10]
+    tb: dict[str, float] = {}
+    for d in doc_dich_vu():
+        if d.get("trang_thai") in ("dang_dung", "sap_bo"):
+            tb[d["nhom"]] = tb.get(d["nhom"], 0.0) + _phi_thang_vnd(d)
+    return {"co_du_lieu": co_du_lieu, "thang": thang_ds, "thu": thu, "chi": chi,
+            "so_du": so_du,
+            "co_cau_nhan": [x[0] for x in co_cau], "co_cau_so": [x[1] for x in co_cau],
+            "kenh_nhan": [x[0] for x in kenh], "kenh_so": [x[1] for x in kenh],
+            "thue_bao_nhan": list(tb), "thue_bao_so": [round(v) for v in tb.values()]}

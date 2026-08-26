@@ -41,6 +41,7 @@ from fastapi import (Depends, FastAPI, File, Form, Header, HTTPException,
                      Request, UploadFile)
 from fastapi.responses import (FileResponse, HTMLResponse, RedirectResponse,
                                Response)
+from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 _APP_DIR = Path(__file__).resolve().parents[1]          # apps/to-chuc
@@ -62,7 +63,8 @@ os.environ.setdefault("KPI_DANH_GIA_DIR", str(ROOT / "data" / "to-chuc" / "db" /
 os.environ.setdefault("SO_THU_CHI_DIR", str(ROOT / "data" / "to-chuc" / "db" / "so-thu-chi"))
 os.environ.setdefault("MUC_TIEU_PATH", str(ROOT / "data" / "to-chuc" / "db" / "muc-tieu.json"))
 
-from src import chi_phi_ngach, kpi_danh_gia, luong, tai_chinh, vault           # noqa: E402
+from src import (chi_phi_ngach, kpi_danh_gia, lich_tai_chinh, luong,
+                 tai_chinh, vault)           # noqa: E402
 from src.cham_cong import doc_ngay as cc_doc_ngay        # noqa: E402
 from src.cham_cong import (bang_cong_thang, chot_ky, doc_chot, ghi_nhan,  # noqa: E402
                            gio_chu, tong_gio)
@@ -98,6 +100,11 @@ def _fmt_vnd(v) -> str:
     s = f"{abs(v):,.0f}".replace(",", ".")
     return ("−" if v < 0 else "") + s + " ₫"
 
+
+# Vendor chart (Frappe Charts) — LAN không ra Internet nên chép về, không CDN.
+# Xem src/static/vendor/NGUON.md.
+app.mount("/to-chuc-static", StaticFiles(directory=str(_APP_DIR / "src" / "static")),
+          name="to-chuc-static")
 
 templates.env.filters["tien"] = _fmt_tien
 templates.env.filters["vnd"] = _fmt_vnd
@@ -420,7 +427,7 @@ def finance_trang(request: Request, tab: str = "ledger", thang: str = "",
     """Finance Hub — 4 tab theo mockup finance-hub.html: Ledger (sổ chỉ-thêm +
     đảo) · Goals (mục tiêu) · Categories (rules CSV + tổng) · Channel P&L."""
     if tab not in ("ledger", "goals", "categories", "pnl", "wallets", "subs",
-                   "payroll"):
+                   "payroll", "dashboard", "ngach"):
         tab = "ledger"
     thang = _thang_hop_le(thang)
 
@@ -454,7 +461,11 @@ def finance_trang(request: Request, tab: str = "ledger", thang: str = "",
         "thue_bao_thang": tai_chinh.chi_phi_thue_bao_thang(),
         "tiet_kiem": tai_chinh.tiet_kiem_neu_bo(),
         "la_owner": user["level"] >= 5,
-        **_du_lieu_luong(tab, ky_luong)})
+        "moc_ky": lich_tai_chinh.moc_ky(_ky_truoc(thang)),
+        "ky_truoc": _ky_truoc(thang),
+        "bd": tai_chinh.du_lieu_bieu_do(thang) if tab == "dashboard" else None,
+        **_du_lieu_luong(tab, ky_luong),
+        **_du_lieu_ngach(tab, ky_luong)})
 
 
 @app.post("/finance/but-toan")
@@ -521,6 +532,19 @@ def finance_dich_vu_ghi(id: str = Form(...), muc_tieu: str = Form(...),
         raise HTTPException(422, str(e))
     nhat_ky.ghi("to-chuc", user["ten"], "thue_bao_ghi", f"{dv['ten']} {b['id']}")
     return RedirectResponse("/finance?tab=subs", status_code=303)
+
+
+def _ky_truoc(thang: str) -> str:
+    """Kỳ mà lịch tài chính đang nói tới: các mốc của kỳ N rơi vào tháng N+1."""
+    nam, th = int(thang[:4]), int(thang[5:7])
+    return f"{nam - 1:04d}-12" if th == 1 else f"{nam:04d}-{th - 1:02d}"
+
+
+def _du_lieu_ngach(tab: str, ky: str) -> dict:
+    if tab != "ngach":
+        return {"chi_ngach": None}
+    ds_nguoi, _ = _ds_nguoi_iam()
+    return {"chi_ngach": chi_phi_ngach.chi_phi_ngach(_thang_hop_le(ky), ds_nguoi or [])}
 
 
 def _du_lieu_luong(tab: str, ky: str) -> dict:
