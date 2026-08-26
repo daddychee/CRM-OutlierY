@@ -571,7 +571,7 @@ def test_nhat_ky_giu_nguyen_ban_goal_bi_xoa(tmp_path):
 
 def test_nut_xoa_goal_hien_tren_trang(_so_gia):
     m = _mt()
-    r = _client.get("/task?goal=%s" % m["id"], headers=H_MGR)
+    r = _client.get("/muc-tieu", headers=H_MGR)   # xóa Goal nằm trong popup
     assert 'data-xoa-goal="%s"' % m["id"] in r.text
 
 
@@ -634,8 +634,8 @@ def test_form_mau_ve_dung_goal_dang_xem(_so_gia):
 
 def test_nut_mau_la_the_button_trong_form(_so_gia):
     """Không còn phụ thuộc JS: nút màu phải là submit của form thật."""
-    m = _mt()
-    r = _client.get("/task?goal=%s" % m["id"], headers=H_MGR)
+    _mt()
+    r = _client.get("/muc-tieu", headers=H_MGR)
     assert 'action="/muc-tieu/mau"' in r.text and 'type="submit" name="mau"' in r.text
 
 

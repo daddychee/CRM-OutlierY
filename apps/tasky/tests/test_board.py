@@ -335,6 +335,6 @@ def test_trang_goal_dung_chung_bang_mau_trello(_so):
 
 def test_bang_chon_mau_goal_dung_mau_trello(ma, _so):
     g = mt.tao(MGR, "G", "kq")
-    r = _c.get("/task?goal=" + g["id"], headers=H_MGR)
+    r = _c.get("/muc-tieu", headers=H_MGR)      # chọn màu nằm trong popup Goal
     o = r.text.split('class="o-mau"')[1].split("</form>")[0]
     assert "var(--tr-green)" in o and "var(--tr-red)" in o and "--tk-ok" not in o

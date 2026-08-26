@@ -201,7 +201,7 @@ def trang_giao_cu():
 def trang_muc_tieu(request: Request, user: dict = Depends(yeu_cau_muc_tieu),
                    x_remote_actions: str = Header(""), tuan_xem: str = "",
                    da_don: str = "", loi: str = "", tim: str = "", loc: str = "",
-                   bo: str = "", sap: str = "gan_han", kieu: str = ""):
+                   bo: str = "", sap: str = "gan_han", kieu: str = "", mo: str = ""):
     """TRANG GOAL — chỉ theo dõi MỤC TIÊU (Owner chốt 26/08: Tasky có ba mục
     Goal / Task / Report; việc con chuyển hẳn sang mục Task).
 
@@ -254,6 +254,8 @@ def trang_muc_tieu(request: Request, user: dict = Depends(yeu_cau_muc_tieu),
         "duoc_dat": mt_lo.duoc_dat_muc_tieu(user),
         "la_owner": user["level"] >= mt_lo.OWNER_LEVEL,
         "da_don": da_don, "loi_form": loi, "ten_hien": ten_hien,
+        # ?mo=<id> → mở sẵn cửa sổ nổi của Goal đó (nút "Mở Goal" bên board Task)
+        "mo": mo,
         # phiếu "Thêm việc" trong cửa sổ nổi cần đúng dữ liệu như màn Task
         "cap_duoi": nhan_su.cap_duoi_cua(user)[0] or [],
         "loai_viec": tuan_lo.cac_loai_viec(),

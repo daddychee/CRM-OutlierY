@@ -412,6 +412,13 @@
   dialog.mt-modal .khoi-chot h4{margin:0 0 3px;font-size:14px}
   dialog.mt-modal .kq{font-size:14px}
   dialog.mt-modal .them-viec{margin:14px 0}
+  /* Dòng nhắc gọn ở board Task — đầu Goal đầy đủ nằm trong popup, không lặp lại */
+  .goal-gon{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px;
+    padding:11px 14px;border:1px solid var(--tr-the-vien);border-radius:11px;
+    background:var(--tr-the)}
+  .goal-gon .ten{font-size:14.5px;font-weight:600}
+  .goal-gon .kq{font-size:12.5px;color:var(--muted)}
+  .goal-gon .kq b{color:var(--accent)}
   /* Board TRONG cửa sổ nổi — đúng giao diện màn /task, cột hẹp hơn cho vừa khổ */
   .board.trong-modal{gap:9px;padding-bottom:4px}
   .board.trong-modal .cot{flex:0 0 210px;max-height:none}

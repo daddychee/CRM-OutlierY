@@ -253,7 +253,7 @@
      đừng nhảy sang màn khác). Dựng MỘT dialog cho mỗi Goal, thẻ và dòng cùng trỏ
      tới nó qua data-goal — không nhân đôi markup. ---- #}
 {% for g in gap + thuong %}
-<dialog class="mt-modal" data-goal-modal="{{ g.id }}">
+<dialog class="mt-modal" data-goal-modal="{{ g.id }}"{% if mo == g.id %} data-mo-san{% endif %}>
   <div class="phieu-dau">
     <div style="flex:1">
       {% if g.duoc_sua and g.trang_thai == 'dang_chay' %}
@@ -617,6 +617,8 @@
       if (e.key === "Enter" && !e.isComposing) { e.preventDefault(); moGoal(o.dataset.goal); }
     });
   });
+  var moSan = document.querySelector("dialog.mt-modal[data-mo-san]");
+  if (moSan) { moSan.showModal ? moSan.showModal() : (moSan.open = true); }
   document.querySelectorAll("dialog.mt-modal").forEach(function (d) {
     d.querySelectorAll(".phieu-dong").forEach(function (n) {
       n.addEventListener("click", function () { d.close ? d.close() : (d.open = false); });

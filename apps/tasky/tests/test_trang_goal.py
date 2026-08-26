@@ -232,3 +232,21 @@ def test_cua_so_du_rong_cho_BON_COT(_so):
     khe = int(re.search(r"\.board\.trong-modal\{gap:(\d+)px", css).group(1))
     dem = int(re.search(r"\.mt-modal-noi\{padding:\d+px (\d+)px", css).group(1))
     assert 4 * cot + 3 * khe + 2 * dem <= rong, (4 * cot + 3 * khe + 2 * dem, rong)
+
+
+def test_dau_goal_KHONG_lap_o_board_task(ma, _so):
+    """Owner 26/08: 'đã có khối hình 1, không cần duplicate thêm ở task'."""
+    g = mt.tao(MGR, "Goal A", "kq")
+    r = _c.get("/task?goal=" + g["id"], headers=H_MGR)
+    assert 'class="mt-dau' not in r.text            # đầu Goal đầy đủ chỉ ở popup
+    assert 'data-xoa-goal="' not in r.text and 'action="/muc-tieu/mau"' not in r.text
+    assert 'class="goal-gon"' in r.text             # còn dòng nhắc gọn
+    assert 'href="/muc-tieu?mo=%s"' % g["id"] in r.text
+
+
+def test_duong_mo_san_popup_tu_board(_so):
+    """Bấm 'Mở Goal' ở board → về trang Goal và popup mở sẵn."""
+    g = mt.tao(MGR, "Goal A", "kq")
+    r = _c.get("/muc-tieu?mo=" + g["id"], headers=H_MGR)
+    kh = r.text.split('data-goal-modal="%s"' % g["id"])[1].split(">")[0]
+    assert "data-mo-san" in kh

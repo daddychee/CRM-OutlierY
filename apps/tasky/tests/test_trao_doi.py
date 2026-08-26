@@ -150,7 +150,7 @@ def test_doi_ten_goal_bang_form(_so):
 def test_sua_goal_TAI_CHO_khong_co_box_rieng(_so):
     """Owner 25/08: box 'Sửa Goal này' thừa — sửa thẳng trên tiêu đề đang hiển thị."""
     m = mt.tao(MGR, "Goal A", "kq")
-    r = _c.get("/task?goal=" + m["id"], headers=H_MGR)          # sửa Goal nay ở thanh Goal của Task
+    r = _c.get("/muc-tieu", headers=H_MGR)      # sửa Goal nay ở popup trang Goal
     assert 'action="/muc-tieu/sua"' in r.text
     assert 'class="o-tai-cho ten-goal" name="tieu_de"' in r.text
     assert "Sửa Goal này" not in r.text
@@ -159,5 +159,5 @@ def test_sua_goal_TAI_CHO_khong_co_box_rieng(_so):
 def test_goal_da_chot_thi_khong_sua_tai_cho(_so):
     m = mt.tao(MGR, "Goal A", "kq")
     mt.chot_ket_qua(m["id"], MGR, mt.DAT)
-    r = _c.get("/task?goal=" + m["id"], headers=H_MGR)
+    r = _c.get("/muc-tieu", headers=H_MGR)
     assert 'name="tieu_de"' not in r.text      # đã chốt → chỉ đọc
