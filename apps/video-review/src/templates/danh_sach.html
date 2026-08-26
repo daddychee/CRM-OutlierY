@@ -132,6 +132,7 @@
         <span class="vr-bl">· {{ v.ma }}</span>
         {%- if not v.tt_file.co %}<span class="canh mat">file missing</span>
         {%- elif v.tt_file.doi %}<span class="canh doi">file changed</span>{% endif %}
+        {%- if v.hong %}<span class="canh mat" title="Playback breaks around {{ v.hong }} — the copy onto the NAS was most likely cut short">file damaged</span>{% endif %}
         {%- if v.canh_codec %}<span class="canh mat" title="Browser cannot decode {{ v.canh_codec }} — audio plays, picture stays black">{{ v.canh_codec }} · won't play</span>{% endif %}
         <div class="vr-duong">{% if v.nguon == 'nas' %}NAS · {{ v.duong }}{% else %}copy in app store · {{ v.ten_file }}{% endif %}</div></td>
       <td><span class="chip {{ v.hien_thi }}">{{ NHAN_HIEN_THI.get(v.hien_thi, v.hien_thi) }}</span></td>

@@ -84,6 +84,10 @@ $env:VR_FFPROBE = 'C:\OutlierY\tools\ffmpeg\bin\ffprobe.exe'
 # (trinh duyet khong mo duoc file:// tu trang http). Share 'Video' = F:\OutlierY Nas 2.
 $env:VR_NAS_UNC = '\\192.168.1.250\Video'
 
+# ffmpeg (canh ffprobe) de QUET THU file tren NAS co dut/hong khong — file chep
+# do van du dung luong va doc duoc header nen chi giai ma moi lo (su co LI088.2).
+$env:VR_FFMPEG = 'C:\OutlierY\tools\ffmpeg\bin\ffmpeg.exe'
+
 $dichVu = @(
     @{ Ten = 'qdrant-test'; Cong = 6343
        Exe = (Join-Path $root 'tools\qdrant\qdrant.exe')

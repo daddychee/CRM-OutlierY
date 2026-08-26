@@ -98,6 +98,11 @@
 <div class="bang-canh mat"><b>Source file not found</b>
   This cut is linked to a file on the NAS that is no longer there — it was moved, renamed or deleted.
   Notes below are still safe. Path on record: <code>{{ video.duong }}</code></div>
+{% elif video.hong %}
+<div class="bang-canh mat"><b>This file is damaged on the NAS — playback breaks around {{ video.hong }}</b>
+  The beginning plays, then it dies: the copy onto the NAS was most likely cut short. Copy the
+  export to the NAS again as a new file (LI0xx.n+1) and add that one — re-uploading over the same
+  name keeps the old notes pointing at a file nobody can watch.</div>
 {% elif canh_codec %}
 <div class="bang-canh mat"><b>This file is {{ canh_codec }} — the browser cannot show the picture</b>
   You will hear the audio but the frame stays black; this is not a broken upload. Ask the editor to
@@ -154,6 +159,10 @@
     <div class="moc-bar" id="moc-bar" title="Comment markers — click a dot to jump"></div>
     <p id="loi-phat" style="display:none;color:var(--th-d97c6c);font-size:13px">
       This browser can’t play the file (codec). Re-export as mp4 (H.264) onto the NAS and add that file.</p>
+    <div style="margin-top:8px;display:flex;align-items:center;gap:9px;flex-wrap:wrap">
+      <button class="nut nho phu" type="button" id="nut-quet">Check this file</button>
+      <span id="quet-kq" class="tm-hint"></span>
+    </div>
 
     {% if video.nguon == 'nas' %}
     <details class="tm-nas" id="tm-nas">
@@ -260,6 +269,26 @@
     vid.addEventListener(ten, function () {
       if (vid.videoWidth) document.getElementById("loi-phat").style.display = "none";
     });
+  });
+
+  // Quét thử file trên NAS: reviewer nào thấy video chết giữa chừng thì bấm cái
+  // này là biết ngay file đứt hay máy mình, khỏi đoán.
+  var nutQuet = document.getElementById("nut-quet");
+  var quetKq = document.getElementById("quet-kq");
+  if (nutQuet) nutQuet.addEventListener("click", function () {
+    nutQuet.disabled = true;
+    quetKq.textContent = "Checking a few spots in the file…";
+    fetch("/api-vr/quet-hong/" + VIDEO_MA, { method: "POST" })
+      .then(function (r) { if (!r.ok) throw 0; return r.json(); })
+      .then(function (du) {
+        if (du.hong) { location.reload(); return; }        // hỏng → dựng lại banner
+        nutQuet.disabled = false;
+        quetKq.textContent = "No damage found in the spots checked.";
+      })
+      .catch(function () {
+        nutQuet.disabled = false;
+        quetKq.textContent = "Could not check the file.";
+      });
   });
 
   var nutNhan = document.getElementById("nut-nhan-ban");

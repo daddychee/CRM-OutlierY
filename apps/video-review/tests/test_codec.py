@@ -79,3 +79,44 @@ def test_mat_file_thi_khong_do_codec(client, monkeypatch):
     kho_video.duong_video(v).unlink()
     monkeypatch.setattr(kho_video, "doc_codec", lambda p: pytest.fail("không được dò"))
     assert "file missing" in client.get("/danh-sach", headers=h()).text
+
+
+def test_file_dang_duoc_ghi_thi_chan_tai_cua(client, monkeypatch):
+    """Sự cố 26/08: liên kết lúc Windows còn chép → file trên NAS đứt giữa chừng,
+    reviewer xem tới phút thứ 2 mới chết. Chặn ngay lúc thêm."""
+    monkeypatch.setattr(kho_video, "dang_bi_ghi", lambda p: True)
+    rel = tao_file_nas()
+    r = client.post("/api-vr/nas-lien-ket", data={"duong": rel}, headers=h())
+    assert r.status_code == 409 and "chép chưa xong" in r.json()["detail"]
+    assert kho_video.danh_sach_video() == []          # không ghi sổ bản dựng dở
+
+
+def test_quet_hong_luc_them_va_hien_canh_bao(client, monkeypatch):
+    monkeypatch.setattr(kho_video, "quet_hong", lambda p, **k: "01:50")
+    rel = tao_file_nas()
+    r = client.post("/api-vr/nas-lien-ket", data={"duong": rel}, headers=h())
+    assert r.status_code == 200 and r.json()["hong"] == "01:50"
+    assert kho_video.lay_video("VR-0001")["hong"] == "01:50"
+    assert "file damaged" in client.get("/danh-sach", headers=h()).text
+    assert "is damaged on the NAS" in client.get("/xem/VR-0001", headers=h()).text
+
+
+def test_quet_lai_theo_yeu_cau_xoa_canh_bao_khi_sach(client, monkeypatch):
+    """Chép lại file lành rồi quét lại → cảnh báo phải tự rút, không bắt xóa bản ghi."""
+    monkeypatch.setattr(kho_video, "quet_hong", lambda p, **k: "02:00")
+    rel = tao_file_nas()
+    client.post("/api-vr/nas-lien-ket", data={"duong": rel}, headers=h())
+    monkeypatch.setattr(kho_video, "quet_hong", lambda p, **k: "")
+    r = client.post("/api-vr/quet-hong/VR-0001", headers=h(ten="ai-cung-duoc"))
+    assert r.status_code == 200 and r.json()["hong"] == ""
+    assert kho_video.lay_video("VR-0001")["hong"] == ""
+    assert "file damaged" not in client.get("/danh-sach", headers=h()).text
+
+
+def test_thieu_ffmpeg_thi_khong_ket_luan_bua(monkeypatch, tmp_path):
+    monkeypatch.setenv("VR_FFMPEG", "")
+    monkeypatch.setattr(kho_video.shutil, "which", lambda *a, **k: None)
+    monkeypatch.setattr(kho_video, "ffprobe", lambda: None)
+    f = tmp_path / "a.mp4"
+    f.write_bytes(b"v")
+    assert kho_video.quet_hong(f) == ""

@@ -173,6 +173,90 @@ def doc_codec(p: Path) -> str:
     return (ra.stdout or "").strip().splitlines()[0].strip() if ra.stdout.strip() else ""
 
 
+def ffmpeg_exe() -> str | None:
+    """ffmpeg đi kèm ffprobe (env VR_FFMPEG, rồi cạnh ffprobe, rồi PATH)."""
+    d = os.environ.get("VR_FFMPEG", "").strip()
+    if d and Path(d).is_file():
+        return d
+    pr = ffprobe()
+    if pr:
+        canh = Path(pr).with_name("ffmpeg.exe" if pr.lower().endswith(".exe") else "ffmpeg")
+        if canh.is_file():
+            return str(canh)
+    return shutil.which("ffmpeg")
+
+
+def quet_hong(p: Path, so_mau: int = 4, dai: int = 2, thoi_luong: float = 0.0) -> str:
+    """Giải mã THỬ vài lát rải đều file, trả '' nếu sạch, hoặc câu tóm tắt chỗ hỏng.
+
+    Vì sao phải làm: file chép dở/đứt giữa chừng lên NAS vẫn ĐỦ DUNG LƯỢNG và đọc
+    được header (ffprobe báo h264 ngon lành) — chỉ giải mã tới vùng hỏng mới lộ.
+    Quét cả file 1,4GB thì lâu, nên chỉ lấy mẫu: đủ để bắt lỗi diện rộng kiểu chép
+    đứt (LI088.2 hỏng liên tục từ giây 110 tới hết), KHÔNG hứa bắt được một vệt
+    xước nhỏ — đây là lưới cảnh báo, không phải giấy chứng nhận.
+    """
+    exe = ffmpeg_exe()
+    if exe is None or not p.is_file():
+        return ""
+    if thoi_luong <= 0:
+        thoi_luong = _thoi_luong(p)
+    if thoi_luong <= 0:
+        return ""
+    hong = []
+    for i in range(so_mau):
+        moc = thoi_luong * (i + 1) / (so_mau + 1)
+        try:
+            ra = subprocess.run(
+                [exe, "-v", "error", "-ss", f"{moc:.1f}", "-t", str(dai), "-i", str(p),
+                 "-f", "null", "-"],
+                capture_output=True, text=True, timeout=90)
+        except (OSError, subprocess.SubprocessError):
+            return ""
+        if any(dau in (ra.stderr or "") for dau in
+               ("Invalid NAL", "missing picture", "Error splitting", "corrupt", "Invalid data")):
+            hong.append(int(moc))
+    if not hong:
+        return ""
+    # Trả THUẦN các mốc giờ (giao diện app bằng tiếng Anh, câu chữ do template lo)
+    return ", ".join(f"{m // 60:02d}:{m % 60:02d}" for m in hong)
+
+
+def _thoi_luong(p: Path) -> float:
+    exe = ffprobe()
+    if exe is None:
+        return 0.0
+    try:
+        ra = subprocess.run(
+            [exe, "-v", "error", "-show_entries", "format=duration", "-of",
+             "default=noprint_wrappers=1:nokey=1", str(p)],
+            capture_output=True, text=True, timeout=30)
+        return float((ra.stdout or "0").strip() or 0)
+    except (OSError, ValueError, subprocess.SubprocessError):
+        return 0.0
+
+
+def ghi_hong(ma: str, hong: str) -> None:
+    conn = ket_noi()
+    try:
+        conn.execute("UPDATE video SET hong=? WHERE ma=?", (hong, ma))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def dang_bi_ghi(p: Path) -> bool:
+    """File còn bị tiến trình khác GIỮ để ghi (đang chép lên NAS) — mở đọc là dính
+    PermissionError. Đo thật 26/08: LI088.3 đang chép cho đúng lỗi này."""
+    try:
+        with open(p, "rb") as f:
+            f.read(1)
+        return False
+    except PermissionError:
+        return True
+    except OSError:
+        return False
+
+
 def ghi_codec(ma: str, codec: str) -> None:
     conn = ket_noi()
     try:
@@ -236,7 +320,7 @@ def khoi_tao() -> None:
 
 
 def them_video_nas(ten: str, duong_nas: str, nguoi_tao: str, bo_phan: str,
-                   kich_thuoc: int, mtime: float, codec: str = "",
+                   kich_thuoc: int, mtime: float, codec: str = "", hong: str = "",
                    luc: datetime | None = None) -> dict:
     """Ghi sổ 1 video LIÊN KẾT tới file có sẵn trên NAS — không chép byte nào.
     Mã VR-xxxx sinh từ rowid trong CÙNG transaction (không đua giữa 2 lượt thêm);
@@ -253,17 +337,17 @@ def them_video_nas(ten: str, duong_nas: str, nguoi_tao: str, bo_phan: str,
     try:
         cur = conn.execute(
             "INSERT INTO video (ma, ten, ten_file, duong, mime, kich_thuoc, nguoi_tao,"
-            " bo_phan, tao_luc, nguon, nas_mtime, codec)"
-            " VALUES ('', ?, ?, ?, ?, ?, ?, ?, ?, 'nas', ?, ?)",
+            " bo_phan, tao_luc, nguon, nas_mtime, codec, hong)"
+            " VALUES ('', ?, ?, ?, ?, ?, ?, ?, ?, 'nas', ?, ?, ?)",
             (ten or ten_file, ten_file, duong_nas, DUOI_CHO_PHEP[duoi], kich_thuoc,
-             nguoi_tao, bo_phan, luc.strftime("%Y-%m-%d %H:%M:%S"), mtime, codec))
+             nguoi_tao, bo_phan, luc.strftime("%Y-%m-%d %H:%M:%S"), mtime, codec, hong))
         ma = f"VR-{cur.lastrowid:04d}"
         conn.execute("UPDATE video SET ma=? WHERE id=?", (ma, cur.lastrowid))
         conn.commit()
     finally:
         conn.close()
     return {"ma": ma, "ten": ten or ten_file, "ten_file": ten_file,
-            "duong": duong_nas, "nguon": "nas", "codec": codec}
+            "duong": duong_nas, "nguon": "nas", "codec": codec, "hong": hong}
 
 
 def da_lien_ket(duong_nas: str) -> dict | None:

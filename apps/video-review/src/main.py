@@ -308,12 +308,31 @@ async def api_nas_lien_ket(duong: str = Form(...), ten: str = Form(""),
         ban_ghi = nap_nas.lien_ket(duong, ten, user["ten"], user["bo_phan"])
     except FileExistsError as e:
         raise HTTPException(409, f"File này đã có trong app ({e.args[0]}).")
+    except BlockingIOError:
+        raise HTTPException(409, "File đang được ghi lên NAS (chép chưa xong). Đợi chép "
+                                 "xong hẳn rồi thêm — thêm lúc này thì bản dựng sẽ đứt "
+                                 "giữa chừng khi xem.")
     except ValueError as e:
         raise HTTPException(422, str(e))
     except (FileNotFoundError, PermissionError):
         raise HTTPException(404, "Không thấy file trên NAS.")
-    return {"ma": ban_ghi["ma"],
+    return {"ma": ban_ghi["ma"], "hong": ban_ghi.get("hong", ""),
             "canh_codec": kho_video.canh_bao_codec(ban_ghi.get("codec", ""))}
+
+
+@app.post("/api-vr/quet-hong/{ma}")
+async def api_quet_hong(ma: str, user: dict = Depends(khu_cua_toi)):
+    """Quét lại file trên NAS xem có đứt/hỏng không (mất vài giây). Ai xem được
+    video thì quét được — đây là việc CHỈ ĐỌC, và người phát hiện video chết giữa
+    chừng thường chính là reviewer."""
+    video = _video_song(ma)
+    p = kho_video.duong_video(video)
+    if p is None or not p.is_file():
+        raise HTTPException(404, "File gốc không còn ở nơi đã liên kết (NAS).")
+    from starlette.concurrency import run_in_threadpool
+    hong = await run_in_threadpool(kho_video.quet_hong, p)   # ffmpeg: đẩy threadpool
+    kho_video.ghi_hong(ma, hong)
+    return {"ma": ma, "hong": hong}
 
 
 @app.post("/api-vr/nhan-ban-hien-tai/{ma}")

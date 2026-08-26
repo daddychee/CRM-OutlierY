@@ -62,9 +62,14 @@ def lien_ket(tuong_doi: str, ten: str, nguoi: str, bo_phan: str) -> dict:
     cu = kho_video.da_lien_ket(rel)
     if cu is not None:
         raise FileExistsError(cu["ma"])
+    # CHÉP CHƯA XONG thì chặn ngay tại cửa (sự cố 26/08: liên kết lúc Windows còn
+    # đang chép → file trên NAS đứt giữa chừng, reviewer xem tới phút thứ 2 mới chết).
+    if kho_video.dang_bi_ghi(f):
+        raise BlockingIOError(f.name)
     st = f.stat()
     # dò codec NGAY LÚC THÊM: H.265 phát ra tiếng mà hình đen và KHÔNG báo lỗi gì,
     # biết sớm thì người thêm được cảnh báo ngay thay vì người review ngồi đoán.
+    # + quét thử vài lát xem file có đứt/hỏng không (xem kho_video.quet_hong).
     return kho_video.them_video_nas((ten or "").strip() or f.stem, rel, nguoi,
                                     bo_phan, st.st_size, st.st_mtime,
-                                    kho_video.doc_codec(f))
+                                    kho_video.doc_codec(f), kho_video.quet_hong(f))

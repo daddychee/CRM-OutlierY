@@ -251,6 +251,27 @@
   có đường TỰ TẮT khi điều kiện hết, không thì một trục trặc thoáng qua thành lời
   buộc tội vĩnh viễn.
 
+- 26/08/2026 (tiếp) — **"ĐẦU XEM ĐƯỢC, SAU CHẾT" = FILE CHÉP ĐỨT, KHÔNG PHẢI LỖI
+  APP.** User báo LI088.2 (VR-0019) xem tới 2:02 thì đứng. Đo từng tầng: `/media`
+  trả 206 đúng 8MB ở MỌI offset (0 → 1,48GB) trong ~25ms ⇒ đường phục vụ sạch;
+  ffmpeg giải mã file thì ra hàng chục nghìn `Invalid NAL unit size` / `missing
+  picture` — **file hỏng từ giây ~110**, đúng chỗ trình duyệt chết. Cùng thư mục
+  có `LI088.3.mp4` bằng ĐÚNG BYTE và **đang bị khóa ghi** = anh em đang chép lại.
+  Kết luận: bản .2 là bản chép ĐỨT giữa chừng lên NAS (dung lượng đủ vì Explorer
+  đặt sẵn cỡ file, header đọc được nên ffprobe vẫn báo h264 ngon lành).
+  Vá gốc, 3 lớp: (a) **chặn tại cửa** — `dang_bi_ghi()` mở đọc thử, dính
+  PermissionError = file còn bị tiến trình khác giữ → 409 "chép chưa xong, đợi
+  rồi thêm"; (b) **quét thử lúc thêm** — `quet_hong()` giải mã 4 lát 2 giây rải
+  đều file, thấy NAL/picture lỗi thì ghi mốc vào cột `hong` (migration 005) →
+  chip "file damaged" ở danh sách + banner ở trang xem, kèm lời khuyên chép lại
+  thành file MỚI (LI0xx.n+1) chứ đừng đè tên cũ; (c) **nút "Check this file"**
+  dưới video cho reviewer tự quét lại, sạch thì cảnh báo tự rút.
+  Đo thật: file hỏng quét 8,3s ra "02:02, 04:05, 06:07, 08:10"; file lành 1,5s ra
+  rỗng. Thiếu ffmpeg → im lặng, không kết luận bừa. 80 test pass.
+  **BÀI HỌC:** ffprobe đọc HEADER nên file chép đứt vẫn "hợp lệ" — muốn biết file
+  còn nguyên phải GIẢI MÃ THỬ; và trước khi nghi app, đo đường phục vụ ở nhiều
+  offset — 25ms/khúc là bằng chứng đủ mạnh để quay sang nghi dữ liệu.
+
 ## Quyết định thiết kế (đừng phá)
 
 - **NAS CHỈ ĐỌC TUYỆT ĐỐI**: app không chép/ghi/xóa/đổi tên gì trong `VR_NAS_DIR`
