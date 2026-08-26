@@ -816,3 +816,10 @@ def test_muc_dot_khong_lay_thang_hien_tai_lam_chuan_khi_thieu_ky():
     m = tai_chinh.muc_dot("2026-08")
     assert m["chi_tb"] == 10_000_000        # 30tr ÷ 3 tháng — trung bình đúng nghĩa
     assert m["so_ky_co_phat_sinh"] == 1     # nhưng phải nói rõ chỉ 1 kỳ có số
+
+
+def test_trang_finance_go_tran_900px_cua_base():
+    """base.html khóa .noi-dung{max-width:900px} cho mọi trang con; Finance là
+    bảng nhiều cột nên phải gỡ trần — ghim để không ai vô tình bỏ."""
+    b = _client().get("/finance?tab=ledger").text
+    assert ".noi-dung{max-width:none" in b.replace(" ", "")

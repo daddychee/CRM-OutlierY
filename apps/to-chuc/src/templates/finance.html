@@ -4,7 +4,11 @@
 
 {% block style_them %}
   /* style_them nằm TRONG thẻ style chung của base — CSS TRẦN, không viết thẻ style */
-  .hub-wrap{margin:.9rem 0 2.5rem;padding:0 26px}
+  /* base.html khóa .noi-dung{max-width:900px} cho MỌI trang con — Finance là
+     bảng biểu nhiều cột nên gỡ trần RIÊNG ở đây (style_them nạp sau CSS gốc).
+     Không sửa base.html: /kpi, /nas, /vault vẫn giữ 900px cho dễ đọc. */
+  .noi-dung{max-width:none;margin:0}
+  .hub-wrap{margin:.4rem 0 2.5rem;padding:0}
   .stat-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;margin:0 0 1rem}
   .stat{border:1px solid var(--line);border-radius:12px;padding:10px 14px;background:var(--chip)}
   .stat .n{font-size:1.25rem;font-weight:700;font-variant-numeric:tabular-nums}
