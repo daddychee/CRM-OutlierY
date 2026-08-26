@@ -198,3 +198,30 @@ def test_popup_them_duoc_viec_ngay_tai_do(_so):
     assert 'class="them-viec"' in hop and 'data-che="%s"' % g["id"] in hop
     assert "data-che-ten" in hop and "data-chon-ai" in hop        # tên việc + giao ai
     assert "Thu Hà" in hop                                       # dropdown cấp dưới
+
+
+def test_popup_hien_tien_do_theo_BA_NHOM_DOC(ma, _so):
+    """Owner 26/08: 'mockup cũ cho nhìn tiến độ chia thành các khối dọc'.
+    Popup phải có Cần bạn xử lý / Đang chạy / Đã nghiệm thu, không phải một danh
+    sách phẳng."""
+    g = mt.tao(MGR, "Goal A", "kq")
+    a = tuan.them_viec_giao(ma, MGR, NV, "Chờ nhận", "x", muc_tieu_id=g["id"])
+    b = tuan.them_viec_giao(ma, MGR, NV, "Đang làm dở", "x", muc_tieu_id=g["id"])
+    tuan.nhan_viec(ma, b["id"], NV)
+    c = tuan.them_viec_giao(ma, MGR, NV, "Xong rồi", "x", muc_tieu_id=g["id"])
+    tuan.nhan_viec(ma, c["id"], NV); tuan.bao_xong(ma, c["id"], NV)
+    tuan.xac_nhan_viec(ma, c["id"], MGR)
+    hop = _c.get("/muc-tieu", headers=H_MGR).text \
+        .split('data-goal-modal="%s"' % g["id"])[1].split("</dialog>")[0]
+    for ten in ("Cần bạn xử lý", "Đang chạy", "Đã nghiệm thu"):
+        assert ten in hop, ten
+    assert hop.index("Chờ nhận") < hop.index("Đang làm dở") < hop.index("Xong rồi")
+
+
+def test_popup_co_o_THEM_VIEC_ngay_trong_nhom(_so):
+    """Owner: 'thậm chí còn chưa có nút thêm việc'."""
+    g = mt.tao(MGR, "Goal A", "kq")
+    hop = _c.get("/muc-tieu", headers=H_MGR).text \
+        .split('data-goal-modal="%s"' % g["id"])[1].split("</dialog>")[0]
+    assert 'class="them-nhanh"' in hop and 'data-che="%s"' % g["id"] in hop
+    assert "Thêm việc cho Goal này" in hop
