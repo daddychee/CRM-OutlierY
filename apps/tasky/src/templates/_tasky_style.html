@@ -393,7 +393,7 @@
   }
 
   /* ---- CỬA SỔ NỔI CỦA GOAL (Owner 26/08: bấm đúp mở popup, đừng nhảy màn) ---- */
-  dialog.mt-modal{width:min(860px, 94vw);max-height:90vh;padding:0;border-radius:14px;
+  dialog.mt-modal{width:min(1000px, 96vw);max-height:90vh;padding:0;border-radius:14px;
     border:1px solid var(--tr-the-vien);background:var(--tr-the);color:var(--ink);
     overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,.5)}
   dialog.mt-modal::backdrop{background:rgba(6,9,14,.62)}
@@ -411,6 +411,14 @@
     border-radius:12px;padding:14px 16px;margin-top:14px}
   dialog.mt-modal .khoi-chot h4{margin:0 0 3px;font-size:14px}
   dialog.mt-modal .kq{font-size:14px}
+  dialog.mt-modal .them-viec{margin:14px 0}
+  /* Board TRONG cửa sổ nổi — đúng giao diện màn /task, cột hẹp hơn cho vừa khổ */
+  .board.trong-modal{gap:9px;padding-bottom:4px}
+  .board.trong-modal .cot{flex:0 0 210px;max-height:none}
+  .board.trong-modal .cot>header{padding:11px 12px 8px;font-size:13px}
+  .board.trong-modal ul.vs{padding:0 8px 8px;gap:8px}
+  .board.trong-modal li.the-viec{padding:10px 11px}
+  .board.trong-modal .tieu-de{font-size:13px}
   .mt-modal-noi{padding:20px 24px 22px;overflow-y:auto;max-height:calc(90vh - 96px)}
   .mt-tien-do{display:flex;align-items:center;gap:12px;margin:16px 0 6px;font-size:13px;
     color:var(--muted)}

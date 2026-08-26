@@ -200,28 +200,35 @@ def test_popup_them_duoc_viec_ngay_tai_do(_so):
     assert "Thu Hà" in hop                                       # dropdown cấp dưới
 
 
-def test_popup_hien_tien_do_theo_BA_NHOM_DOC(ma, _so):
-    """Owner 26/08: 'mockup cũ cho nhìn tiến độ chia thành các khối dọc'.
-    Popup phải có Cần bạn xử lý / Đang chạy / Đã nghiệm thu, không phải một danh
-    sách phẳng."""
+def test_popup_hien_BOARD_4_COT_nhu_man_task(ma, _so):
+    """Owner 26/08 (chốt lại): bấm đúp Goal phải ra ĐÚNG giao diện màn /task —
+    đầu Goal + nút thêm việc + board 4 cột — chỉ khác là không rời trang."""
     g = mt.tao(MGR, "Goal A", "kq")
     a = tuan.them_viec_giao(ma, MGR, NV, "Chờ nhận", "x", muc_tieu_id=g["id"])
     b = tuan.them_viec_giao(ma, MGR, NV, "Đang làm dở", "x", muc_tieu_id=g["id"])
     tuan.nhan_viec(ma, b["id"], NV)
-    c = tuan.them_viec_giao(ma, MGR, NV, "Xong rồi", "x", muc_tieu_id=g["id"])
-    tuan.nhan_viec(ma, c["id"], NV); tuan.bao_xong(ma, c["id"], NV)
-    tuan.xac_nhan_viec(ma, c["id"], MGR)
-    hop = _c.get("/muc-tieu", headers=H_MGR).text \
-        .split('data-goal-modal="%s"' % g["id"])[1].split("</dialog>")[0]
-    for ten in ("Cần bạn xử lý", "Đang chạy", "Đã nghiệm thu"):
-        assert ten in hop, ten
-    assert hop.index("Chờ nhận") < hop.index("Đang làm dở") < hop.index("Xong rồi")
+    hop = _c.get("/muc-tieu", headers=H_MGR).text         .split('data-goal-modal="%s"' % g["id"])[1].split("</dialog>")[0]
+    assert 'class="board trong-modal"' in hop
+    for cot in ("chua_nhan", "dang_lam", "bao_xong", "xac_nhan"):
+        assert 'data-cot="%s"' % cot in hop, cot
+    assert hop.index("Chờ nhận") < hop.index("Đang làm dở")     # đúng cột, đúng thứ tự
 
 
-def test_popup_co_o_THEM_VIEC_ngay_trong_nhom(_so):
+def test_popup_co_nut_them_viec(_so):
     """Owner: 'thậm chí còn chưa có nút thêm việc'."""
     g = mt.tao(MGR, "Goal A", "kq")
-    hop = _c.get("/muc-tieu", headers=H_MGR).text \
-        .split('data-goal-modal="%s"' % g["id"])[1].split("</dialog>")[0]
-    assert 'class="them-nhanh"' in hop and 'data-che="%s"' % g["id"] in hop
-    assert "Thêm việc cho Goal này" in hop
+    hop = _c.get("/muc-tieu", headers=H_MGR).text         .split('data-goal-modal="%s"' % g["id"])[1].split("</dialog>")[0]
+    assert 'class="them-viec"' in hop and 'data-che="%s"' % g["id"] in hop
+    assert "Thêm việc để đạt Goal này" in hop
+    assert hop.index("them-viec") < hop.index('class="board')   # nút nằm TRÊN board
+
+
+def test_cua_so_du_rong_cho_BON_COT(_so):
+    """Cột thứ 4 không được rơi ra ngoài mép — đo bằng số, không bằng cảm giác."""
+    import re
+    css = _c.get("/muc-tieu", headers=H_MGR).text
+    rong = int(re.search(r"dialog\.mt-modal\{width:min\((\d+)px", css).group(1))
+    cot = int(re.search(r"\.board\.trong-modal \.cot\{flex:0 0 (\d+)px", css).group(1))
+    khe = int(re.search(r"\.board\.trong-modal\{gap:(\d+)px", css).group(1))
+    dem = int(re.search(r"\.mt-modal-noi\{padding:\d+px (\d+)px", css).group(1))
+    assert 4 * cot + 3 * khe + 2 * dem <= rong, (4 * cot + 3 * khe + 2 * dem, rong)

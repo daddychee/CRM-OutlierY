@@ -352,62 +352,50 @@
     </div>
     {% endif %}
 
-    {% macro nhom_viec_goal(ten, ds, mo, canh) %}
-    {% if ds %}
-    <details class="nhomv{% if canh %} canh{% endif %}"{% if mo %} open{% endif %}>
-      <summary>{{ ten }}<span class="dem">{{ ds|length }} việc</span></summary>
-      <ul class="mt-ds-viec">
-        {% for v in ds %}
-        {% set hn = v|han %}
-        <li>
-          <span class="cham-v {% if v.trang_thai == 'xac_nhan' %}xong{% elif hn.muc == 'cap' %}tre{% elif v.trang_thai == 'dang_lam' %}lam{% else %}cho{% endif %}">
-            {%- if v.trang_thai == 'xac_nhan' %}<svg viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></svg>{% endif %}</span>
-          <span class="ten">{{ v.tieu_de }}
-            <small>{% if hn.chu %}{{ hn.chu }}{% elif v.han %}Hạn {{ v.han[8:] }}/{{ v.han[5:7] }}{% else %}Không đặt hạn{% endif %}
-              {%- if v.checklist %} · {{ v.checklist|selectattr('xong')|list|length }}/{{ v.checklist|length }} bước{% endif %}
-              {%- if v.trang_thai == 'tu_choi' %} · <b>{{ ten_hien.get(v.nguoi, v.nguoi) }} từ chối:</b>
-                “{{ v.ly_do or 'không ghi lý do' }}”{% endif %}</small></span>
-          {% for c in v|chip %}<span class="the tt {{ c.muc }}">{{ c.chu }}</span>{% endfor %}
-          {% if v.trang_thai == 'chua_giao' and duoc_dat %}
-          <select data-gan-nguoi="{{ v.id }}">
-            <option value="">Giao cho…</option>
-            {% for n in cap_duoi %}<option value="{{ n.ten }}">{{ n.ho_ten or n.ten }}</option>{% endfor %}
-          </select>
-          {% else %}<span class="ai">{{ ten_hien.get(v.nguoi, v.nguoi) or 'chưa giao' }}</span>{% endif %}
-        </li>
-        {% endfor %}
-      </ul>
-    </details>
-    {% endif %}
+    {% macro the_viec_goal(v) %}
+    {% set hn = v|han %}
+    <li class="the-viec">
+      <div class="nhan-dai">
+        {% if v.gap %}<i class="nh cap" title="GẤP"></i>{% endif %}
+        {% for c in v|chip %}<i class="nh {{ c.muc or 'im' }}" title="{{ c.chu }}"></i>{% endfor %}
+      </div>
+      <div class="tieu-de">
+        {%- if v.trang_thai == 'xac_nhan' %}<svg class="tick" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><circle cx="12" cy="12" r="9"/>
+          <path d="M8 12.5l2.6 2.5L16 9.5"/></svg>{% endif %}{{ v.tieu_de }}</div>
+      {% if v.trang_thai == 'tu_choi' %}
+      <div class="ly-do"><b>{{ ten_hien.get(v.nguoi, v.nguoi) }} từ chối:</b>
+        “{{ v.ly_do or 'không ghi lý do' }}”</div>
+      {% endif %}
+      <div class="badge">
+        {% if v.gap %}<span class="bg cap">GẤP</span>{% endif %}
+        {% if v.han %}
+        <span class="bg {{ 'cap' if hn.muc == 'cap' else ('luu_y' if hn.muc == 'luu_y' else 'im') }}"
+          title="{{ hn.chu or 'Hạn ' ~ v.han }}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5V12l3 2"/></svg>
+          {{ v.han[8:] }}/{{ v.han[5:7] }}</span>
+        {% endif %}
+        {% for c in v|chip if c.chu not in ('Gần đến hạn', 'Quá deadline') %}
+        <span class="bg {{ c.muc or 'im' }}">{{ c.chu }}</span>{% endfor %}
+        {% if v.checklist %}<span class="bg im" title="Bước đã tick">
+          {{ v.checklist|selectattr('xong')|list|length }}/{{ v.checklist|length }}</span>{% endif %}
+        {% if v.trao_doi %}<span class="bg im" title="{{ v.trao_doi|length }} tin">
+          {{ v.trao_doi|length }} tin</span>{% endif %}
+        <span class="lap"></span>
+        {% if v.trang_thai == 'chua_giao' and duoc_dat %}
+        <select data-gan-nguoi="{{ v.id }}" title="Giao việc này cho ai">
+          <option value="">Giao cho…</option>
+          {% for n in cap_duoi %}<option value="{{ n.ten }}">{{ n.ho_ten or n.ten }}</option>{% endfor %}
+        </select>
+        {% elif v.nguoi %}
+        <span class="av{% if v.nguoi == user.ten %} toi{% endif %}"
+          title="{% if v.nguoi == user.ten %}Tôi làm{% else %}Giao cho {{ ten_hien.get(v.nguoi, v.nguoi) }}{% endif %}"
+          >{{ (ten_hien.get(v.nguoi, v.nguoi))|viet_tat }}</span>
+        {% endif %}
+      </div>
+    </li>
     {% endmacro %}
-
-    <div class="nhan-khoi" style="margin-top:16px">Tiến độ công việc</div>
-    {{ nhom_viec_goal('Cần bạn xử lý', g.nhom.can_xu_ly, true, true) }}
-    {% if g.trang_thai == 'dang_chay' and duoc_dat %}
-    {# Thêm nhanh MỘT DÒNG như mockup v5 — phiếu đầy đủ (mô tả, tài liệu, nhiều
-       người, phối hợp) vẫn nằm bên dưới cho ai cần. #}
-    <div class="them-nhanh">
-      <input data-che-ten placeholder="Thêm việc cho Goal này…">
-      <input data-che-loai list="ds-loai" placeholder="Loại việc" style="max-width:130px;flex:0 0 auto">
-      <select data-chon-ai style="max-width:150px">
-        <option value="">Giao cho…</option>
-        {% for n in cap_duoi %}<option value="{{ n.ten }}">{{ n.ho_ten or n.ten }}</option>{% endfor %}
-      </select>
-      <input data-che-han type="date" style="flex:0 0 auto">
-      <button type="button" class="nut-gap" data-che-gap aria-pressed="false" title="Đánh dấu GẤP">
-        <svg viewBox="0 0 24 24"><path d="M13 2L4.5 13H11l-1 9 8.5-11H12l1-9z"/></svg></button>
-      <button class="nut chinh" data-che="{{ g.id }}">+ Thêm</button>
-      <div class="da-chon" data-che-nguoi></div>
-      <textarea data-che-mo-ta hidden></textarea>
-      <input data-che-tai-lieu hidden>
-      <div class="loi" data-loi-che hidden></div>
-    </div>
-    {% endif %}
-    {{ nhom_viec_goal('Đang chạy', g.nhom.dang_chay, true, false) }}
-    {{ nhom_viec_goal('Đã nghiệm thu', g.nhom.xong, false, false) }}
-    {% if not g.viec %}
-    <div class="goi-y">Chưa chẻ việc nào — thêm việc ngay dưới đây.</div>
-    {% endif %}
 
     {# Phiếu THÊM VIỆC — đúng cái màn Goal cũ có; popup phải làm được mọi việc
        của màn đó, nếu không thì vẫn phải nhảy sang board mới thêm được việc. #}
@@ -487,6 +475,18 @@
     </div>
   </details>
     {% endif %}
+
+
+    {# BOARD 4 CỘT — đúng giao diện màn /task, chỉ khác là ngay trong cửa sổ nổi #}
+    <div class="board trong-modal">
+      {% for c in g.cot %}
+      <section class="cot" data-cot="{{ c.ma }}">
+        <header>{{ c.ten }}<span class="dem">{{ c.viec|length }}</span></header>
+        <ul class="vs">{% for v in c.viec %}{{ the_viec_goal(v) }}{% endfor %}</ul>
+        {% if not c.viec %}<div class="cot-trong">Chưa có việc</div>{% endif %}
+      </section>
+      {% endfor %}
+    </div>
 
     <div class="mt-modal-chan">
       <a class="nut chinh" href="/task?goal={{ g.id }}">Mở board Task</a>

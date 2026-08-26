@@ -216,7 +216,9 @@ def trang_muc_tieu(request: Request, user: dict = Depends(yeu_cau_muc_tieu),
             # việc của Goal để CỬA SỔ NỔI xem ngay tại trang, khỏi nhảy sang Task
             "viec": tuan_lo.sap_xep(gom.get(m["id"], [])),
             # ba nhóm dọc theo mức cần hành động — đúng cấu trúc mockup v5
-            "nhom": mt_lo.nhom_viec(tuan_lo.sap_xep(gom.get(m["id"], []))),
+            # BOARD 4 CỘT ngay trong cửa sổ nổi — đúng giao diện của màn /task,
+            # chỉ khác là không phải rời trang (Owner chốt 26/08)
+            "cot": tuan_lo.cot_theo_trang_thai(tuan_lo.sap_xep(gom.get(m["id"], []))),
             "duoc_sua": mt_lo.duoc_sua(m, user)} for m in ds]
     tong_quan = mt_lo.tong_quan(ds, gom)
 
