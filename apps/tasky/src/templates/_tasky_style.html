@@ -263,19 +263,63 @@
   .nut.nguy{border-color:var(--tk-cap);color:var(--tk-cap)}
   .nut.nguy:hover{background:var(--tk-cap-nen)}
 
-  /* ---- BOARD KANBAN (§17 bước 2) — cột theo trục, thẻ là việc ---- */
-  .board{display:flex;gap:11px;overflow-x:auto;padding-bottom:12px;align-items:flex-start}
-  .board .cot{flex:0 0 292px;background:var(--sidebar);border:1px solid var(--tk-vien);
-    border-radius:13px;display:flex;flex-direction:column;max-height:calc(100vh - 250px)}
-  .board .cot>header{padding:10px 13px;border-bottom:1px solid var(--line);display:flex;
-    align-items:center;gap:8px;font-size:12px;font-weight:700;letter-spacing:.04em;
-    text-transform:uppercase;color:var(--muted)}
-  .board .cot>header .dem{margin-left:auto;font-weight:600;letter-spacing:0}
+  /* ---- BOARD KANBAN kiểu Trello (§17, Owner chốt 26/08) ----
+     Cột hẹp và cố định, thẻ gọn: dải nhãn màu → tiêu đề → hàng badge. Mật độ là
+     điểm mạnh của Trello: liếc một cột thấy được 6-8 việc chứ không phải 3. */
+  .board{display:flex;gap:10px;overflow-x:auto;padding:2px 2px 14px;align-items:flex-start}
+  .board .cot{flex:0 0 274px;background:var(--th-141c2b);border:1px solid var(--tk-vien);
+    border-radius:12px;display:flex;flex-direction:column;max-height:calc(100vh - 232px)}
+  .board .cot>header{padding:11px 13px 8px;display:flex;align-items:center;gap:8px;
+    font-size:13px;font-weight:600;color:var(--ink);letter-spacing:-.01em}
+  .board .cot>header .dem{margin-left:auto;font-size:12px;font-weight:600;color:var(--muted);
+    font-variant-numeric:tabular-nums;background:var(--th-1d2840);border-radius:999px;
+    min-width:22px;height:20px;display:inline-flex;align-items:center;justify-content:center;padding:0 7px}
   .board .cot.dich{border-color:var(--accent);background:var(--th-16263f)}
-  .board ul.vs{padding:9px;gap:8px;overflow-y:auto}
-  .board .cot-trong{padding:14px 13px;color:var(--muted);font-size:12px;text-align:center}
+  .board ul.vs{list-style:none;margin:0;padding:0 9px 4px;display:flex;flex-direction:column;
+    gap:8px;overflow-y:auto}
+  .board .cot-trong{padding:12px 13px 16px;color:var(--muted);font-size:12px}
+  .board .them-cuoi{display:block;margin:4px 9px 9px;padding:8px 10px;border-radius:9px;
+    color:var(--muted);font-size:12.5px;text-decoration:none}
+  .board .them-cuoi:hover{background:var(--th-182233);color:var(--ink)}
+
+  .board li.the-viec{display:block;background:var(--sidebar);border:1px solid var(--tk-vien);
+    border-radius:9px;padding:8px 10px 9px;transition:border-color .12s, box-shadow .12s}
+  .board li.the-viec:hover{border-color:var(--accent);box-shadow:0 1px 6px rgba(0,0,0,.28)}
   .board li.the-viec[draggable="true"]{cursor:grab}
-  .board li.the-viec.dang-keo{opacity:.45}
+  .board li.the-viec.dang-keo{opacity:.42}
+
+  /* dải nhãn màu trên đỉnh thẻ — mỗi nhãn có tooltip chữ, màu không đứng một mình */
+  .nhan-dai{display:flex;gap:4px;margin-bottom:6px}
+  .nhan-dai:empty{display:none}
+  .nhan-dai .nh{width:28px;height:6px;border-radius:99px;display:inline-block}
+  .nhan-dai .nh.cap{background:var(--tk-cap)}
+  .nhan-dai .nh.luu_y{background:var(--tk-luu)}
+  .nhan-dai .nh.tin{background:var(--tk-tin)}
+  .nhan-dai .nh.ok{background:var(--tk-ok)}
+  .nhan-dai .nh.im{background:var(--th-31425e)}
+
+  .the-viec .tieu-de{font-size:13px;font-weight:500;line-height:1.38;color:var(--ink);
+    display:flex;gap:6px;align-items:flex-start;word-break:break-word}
+  .the-viec .tieu-de .tick{width:14px;height:14px;flex:none;margin-top:2px;color:var(--tk-ok)}
+  .the-viec .ly-do{font-size:11.5px;color:var(--tk-cap);margin-top:4px;line-height:1.35}
+
+  /* hàng badge dưới thẻ: hạn, số bước, mô tả, tin, tài liệu, avatar người làm */
+  .the-viec .badge{display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-top:7px}
+  .the-viec .badge .lap{flex:1}
+  .the-viec .bg{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;
+    border-radius:6px;padding:2px 6px;background:var(--th-1d2840);color:var(--th-c2cbd9);
+    white-space:nowrap}
+  .the-viec .bg svg{width:12px;height:12px}
+  .the-viec .bg.cap{background:var(--tk-cap-nen);color:var(--tk-cap)}
+  .the-viec .bg.luu_y{background:var(--tk-luu-nen);color:var(--tk-luu)}
+  .the-viec .bg.tin{background:var(--tk-tin-nen);color:var(--tk-tin)}
+  .the-viec .bg.ok{background:var(--tk-ok-nen);color:var(--tk-ok)}
+  .the-viec .av{width:24px;height:24px;border-radius:50%;flex:none;display:grid;
+    place-items:center;font-size:10px;font-weight:700;letter-spacing:.02em;
+    background:var(--th-31425e);color:var(--ink)}
+  .the-viec .av.toi{background:var(--accent);color:var(--th-090c12)}
+  .the-viec .badge select{font-size:11.5px;padding:4px 7px;max-width:150px}
+
   .nhom-theo{display:inline-flex;align-items:center;gap:5px;padding:3px 5px;
     border:1px solid var(--tk-vien);border-radius:10px}
   .nhom-theo button{border:0;background:none;color:var(--muted);border-radius:7px;
@@ -283,3 +327,11 @@
   .nhom-theo button:hover{color:var(--ink)}
   .nhom-theo button.on{background:var(--th-16263f);color:var(--accent);font-weight:600}
   .quay{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:13px}
+
+  /* phiếu chi tiết trong thẻ board: nằm gọn, không phá bề rộng cột */
+  /* Mũi tên mở phiếu: nép sát mép phải, không chiếm một dòng riêng như trước */
+  .board details.phieu-viec{margin-top:-16px}
+  .board details.phieu-viec>summary{justify-content:flex-end;padding:0;font-size:11px;
+    min-height:14px}
+  .board details.phieu-viec[open]{margin-top:4px}
+  .board .phieu-noi{padding:10px;margin-top:6px}

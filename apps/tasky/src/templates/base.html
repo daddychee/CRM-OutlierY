@@ -91,6 +91,9 @@
   /* ===== vùng nội dung trang con ===== */
   .noi-dung-wrap{flex:1;overflow-y:auto;scrollbar-gutter:stable;padding:26px 22px}
   .noi-dung{max-width:900px;margin:0 auto}
+  /* Trang board dùng TRỌN bề ngang — cột kanban cần chỗ, bó 900px là hỏng ý đồ.
+     Trang thường vẫn 900px cho dễ đọc (Owner 26/08). */
+  .noi-dung.rong{max-width:100%}
 
   /* nút/thẻ dùng chung cho trang con */
   .nut{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:10px;
@@ -299,7 +302,7 @@
     </div>
 
     <div class="noi-dung-wrap">
-      <div class="noi-dung">
+      <div class="noi-dung {% block lop_noi_dung %}{% endblock %}">
         {% block noi_dung %}{% endblock %}
       </div>
     </div>

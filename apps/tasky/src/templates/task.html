@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Task — Tasky{% endblock %}
 {% block topbar_ten %}Tasky · Task{% endblock %}
+{% block lop_noi_dung %}rong{% endblock %}
 
 {% block style_them %}
   {% include "_tasky_style.html" %}
@@ -293,32 +294,70 @@
 
 {% macro the_viec(v) %}
   {% set hn = v|han %}
+  {% set chip = v|chip %}
   <li class="the-viec" data-viec="{{ v.id }}"
     draggable="{{ 'true' if keo_duoc.get(v.id) else 'false' }}">
+      {# Kiểu Trello (Owner chốt 26/08): dải nhãn màu → tiêu đề → hàng badge gọn.
+         Nhãn LUÔN kèm chữ trong tooltip, không để màu đứng một mình (luật §12.2). #}
+      <div class="nhan-dai">
+        {% if v.gap %}<i class="nh cap" title="GẤP"></i>{% endif %}
+        {% for c in chip %}<i class="nh {{ c.muc or 'im' }}" title="{{ c.chu }}"></i>{% endfor %}
+      </div>
       <div class="dong-chinh">
-      <span class="cham-v {% if v.trang_thai == 'xac_nhan' %}xong{% elif hn.muc == 'cap' %}tre{% elif v.trang_thai == 'dang_lam' %}lam{% elif v.trang_thai in ('cho_nhan','cho_phoi_hop','bao_xong') %}cho{% endif %}">
-        {%- if v.trang_thai == 'xac_nhan' %}<svg viewBox="0 0 24 24"><path d="M4 12l6 6L20 6"/></svg>{% endif %}</span>
-      <span class="vt">{{ v.tieu_de }}
-        <small>{% if hn.chu %}{{ hn.chu }}{% elif v.han %}Hạn {{ v.han[8:] }}/{{ v.han[5:7] }}{% else %}Không đặt hạn{% endif %}
-          {%- if v.checklist %} · {{ v.checklist|selectattr('xong')|list|length }}/{{ v.checklist|length }} bước{% endif %}
-          {%- if v.trang_thai == 'tu_choi' %} · <b>{{ ten_hien.get(v.nguoi, v.nguoi) }} từ chối:</b>
-            “{{ v.ly_do or 'không ghi lý do' }}”{% endif %}</small>
-        {# Giao cho ai nằm NGAY DƯỚI cụm tên + hạn (Owner 25/08) — trước đó dạt
-           sang mép phải nên đọc một thẻ phải liếc hai đầu. #}
-        <span class="giao-cho">
-          {%- if v.trang_thai == 'chua_giao' %}
-          <select data-gan-nguoi="{{ v.id }}">
+        <div class="tieu-de">
+          {%- if v.trang_thai == 'xac_nhan' %}<svg class="tick" viewBox="0 0 24 24"
+            fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"
+            ><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.6 2.5L16 9.5"/></svg>{% endif %}
+          {{ v.tieu_de }}</div>
+        {% if v.trang_thai == 'tu_choi' %}
+        <div class="ly-do"><b>{{ ten_hien.get(v.nguoi, v.nguoi) }} từ chối:</b>
+          “{{ v.ly_do or 'không ghi lý do' }}”</div>
+        {% endif %}
+        <div class="badge">
+          {% if v.gap %}<span class="bg cap" title="Việc gấp">GẤP</span>{% endif %}
+          {# HẠN: badge riêng có đồng hồ như Trello, màu theo mức cấp thiết #}
+          {% if v.han %}
+          <span class="bg {{ 'cap' if hn.muc == 'cap' else ('luu_y' if hn.muc == 'luu_y' else 'im') }}"
+            title="{{ hn.chu or 'Hạn ' ~ v.han }}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5V12l3 2"/></svg>
+            {{ v.han[8:] }}/{{ v.han[5:7] }}</span>
+          {% endif %}
+          {% for c in chip if c.chu not in ('Gần đến hạn', 'Quá deadline') %}
+          <span class="bg {{ c.muc or 'im' }}">{{ c.chu }}</span>{% endfor %}
+          {% if v.checklist %}
+          <span class="bg im" title="Bước đã tick">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round"><path d="M4 6h4M4 12h4M4 18h4M11 6h9M11 12h9M11 18h9"/></svg>
+            {{ v.checklist|selectattr('xong')|list|length }}/{{ v.checklist|length }}</span>
+          {% endif %}
+          {% if v.mo_ta %}<span class="bg im" title="Có mô tả">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h10"/></svg></span>{% endif %}
+          {% if v.trao_doi %}<span class="bg im" title="{{ v.trao_doi|length }} tin nhắn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.4A8 8 0 1 1 21 12z"/></svg>
+            {{ v.trao_doi|length }}</span>{% endif %}
+          {% if v.tai_lieu %}<span class="bg im" title="{{ v.tai_lieu|length }} tài liệu">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round"><path d="M21 11l-8.5 8.5a5 5 0 0 1-7-7L14 4a3.5 3.5 0 1 1 5 5l-8.5 8.5a2 2 0 1 1-3-3L15 6"/></svg>
+            {{ v.tai_lieu|length }}</span>{% endif %}
+          {% if v.cung_viec %}<span class="bg im" title="Cùng một việc, nhiều người làm">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round"><circle cx="9" cy="8" r="3.2"/><path d="M3 19c0-3 2.7-5 6-5s6 2 6 5"/>
+              <path d="M16 5.5a3.2 3.2 0 0 1 0 5M18 19c0-2-.7-3.6-1.8-4.6"/></svg></span>{% endif %}
+          <span class="lap"></span>
+          {% if v.trang_thai == 'chua_giao' %}
+          <select data-gan-nguoi="{{ v.id }}" title="Giao việc này cho ai">
             <option value="">Giao cho…</option>
             {% for n in cap_duoi %}<option value="{{ n.ten }}">{{ n.ho_ten or n.ten }}</option>{% endfor %}
           </select>
-          {%- elif v.nguoi == user.ten %}<b>Tôi làm</b>
-          {%- else %}Giao cho <b>{{ ten_hien.get(v.nguoi, v.nguoi) }}</b>{% endif %}
-          {%- if v.cung_viec %} <span class="the">cùng làm</span>{% endif %}
-        </span></span>
-      <span class="chip-cot">
-        {% if v.gap %}<span class="the gap">GẤP</span>{% endif %}
-        {% for c in v|chip %}<span class="the tt {{ c.muc }}">{{ c.chu }}</span>{% endfor %}
-      </span>
+          {% elif v.nguoi %}
+          <span class="av{% if v.nguoi == user.ten %} toi{% endif %}"
+            title="{% if v.nguoi == user.ten %}Tôi làm{% else %}Giao cho {{ ten_hien.get(v.nguoi, v.nguoi) }}{% endif %}"
+            >{{ (ten_hien.get(v.nguoi, v.nguoi))|viet_tat }}</span>
+          {% endif %}
+        </div>
       </div>
       <details class="phieu-viec" {% if loi_viec == v.id %}open{% endif %}>
         <summary title="Bấm đúp vào việc để mở / thu">
@@ -428,6 +467,11 @@
     {% for v in c.viec %}{{ the_viec(v) }}{% endfor %}
   </ul>
   {% if c.viec|length == 0 %}<div class="cot-trong">Chưa có việc</div>{% endif %}
+  {# Thêm việc ở CUỐI CỘT như Trello — chỉ có nghĩa khi cột là một Goal (thêm việc
+     vào đúng Goal đó). Trục khác thì cột không phải cái để "thêm vào". #}
+  {% if truc == 'goal' and c.ma and la_quan_ly %}
+  <a class="them-cuoi" href="/task?goal={{ c.ma }}">+ Thêm việc</a>
+  {% endif %}
 </section>
 {% endmacro %}
 

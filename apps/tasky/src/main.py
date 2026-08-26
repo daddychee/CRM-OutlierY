@@ -59,7 +59,18 @@ def _khong_dau(chu: str) -> str:
 
 
 templates.env.filters["han"] = tuan_lo.tinh_han   # {{ v|han }} → {chu, muc, con}
-templates.env.filters["chip"] = tuan_lo.the_trang_thai   # {{ v|chip }} → [{chu, muc}]
+templates.env.filters["chip"] = tuan_lo.the_trang_thai
+
+
+def _viet_tat(ho_ten: str) -> str:
+    """Hai chữ cái cho avatar tròn kiểu Trello: 'Đặng Hương Giang' → 'HG'."""
+    phan = [p for p in (ho_ten or "").split() if p]
+    if not phan:
+        return "?"
+    return (phan[-2][0] + phan[-1][0]).upper() if len(phan) > 1 else phan[0][:2].upper()
+
+
+templates.env.filters["viet_tat"] = _viet_tat   # {{ v|chip }} → [{chu, muc}]
 
 
 # ---------- claims (app không tự giữ user) ----------

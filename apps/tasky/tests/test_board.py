@@ -239,3 +239,23 @@ def test_quan_ly_khong_thay_viec_ngoai_tam(ma, _so, monkeypatch):
     tuan.them_viec_giao(ma, MGR, NV, "Việc của tôi giao", "x")
     r = _c.get("/task?truc=goal", headers=H_MGR)
     assert "Việc của tôi giao" in r.text and "Việc bộ phận khác" not in r.text
+
+
+def test_board_dung_tron_be_ngang(ma, _so):
+    """Owner 26/08: 'app vẫn chỉ hiển thị ở giữa'. Cột kanban cần trọn bề ngang."""
+    r = _c.get("/task", headers=H_MGR)
+    assert '<div class="noi-dung rong">' in r.text
+    assert ".noi-dung.rong{max-width:100%}" in r.text
+    # trang thường KHÔNG bị nới theo
+    assert '<div class="noi-dung ">' in _c.get("/muc-tieu", headers=H_MGR).text
+
+
+def test_nut_them_viec_o_cuoi_cot_chi_khi_cot_la_GOAL(ma, _so):
+    """Kiểu Trello: thêm việc ở cuối cột. Chỉ có nghĩa khi cột = một Goal."""
+    g = mt.tao(MGR, "Goal A", "kq")
+    tuan.them_viec_giao(ma, MGR, NV, "V", "x", muc_tieu_id=g["id"])
+    r = _c.get("/task?truc=goal", headers=H_MGR)
+    assert 'href="/task?goal=%s">+ Thêm việc' % g["id"] in r.text
+    moc = 'class="them-cuoi"'
+    assert moc not in _c.get("/task?truc=trang_thai", headers=H_MGR).text
+    assert moc not in _c.get("/task?truc=goal", headers=H_NV).text   # NV không giao việc

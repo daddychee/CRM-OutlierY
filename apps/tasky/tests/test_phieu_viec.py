@@ -311,7 +311,7 @@ def test_doi_ten_viec_bang_form_thi_dong_ngoai_doi_theo(ma, _so):
             data={"id": v["id"], "tieu_de": "Tên mới hẳn", "mo_ta": "",
                   "tuan_xem": ma, "ve": "/task?goal=" + m["id"]})
     r = _c.get("/task?goal=" + m["id"], headers=H_MGR)
-    dong = r.text.split('class="vt"')[1].split("</span>")[0]
+    dong = r.text.split('class="tieu-de"')[1].split("</div>")[0]
     assert "Tên mới hẳn" in dong and "Tên cũ" not in r.text
 
 
@@ -371,6 +371,8 @@ def test_the_viec_hien_giao_cho_ai_va_chip_trang_thai(ma, _so):
                         muc_tieu_id=m["id"], han=_han_sau(-2))
     r = _c.get("/task?goal=" + m["id"], headers=H_MGR)
     the = r.text.split('<li class="the-viec"')[1].split("</li>")[0]
-    assert "Giao cho <b>Thu Hà</b>" in the        # tên người, không phải tài khoản
+    # Kiểu Trello (26/08): người làm là AVATAR tròn có tooltip tên, không phải
+    # một dòng chữ dài — nhưng vẫn phải là TÊN NGƯỜI, không phải tài khoản.
+    assert 'title="Giao cho Thu Hà"' in the and ">TH</span>" in the
     assert "Chưa ai nhận" in the and "Quá deadline" in the
-    assert the.index("Dựng 6 video") < the.index("Giao cho")   # nằm DƯỚI tên + hạn
+    assert the.index("Dựng 6 video") < the.index("Giao cho Thu Hà")
