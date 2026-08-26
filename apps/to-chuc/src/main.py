@@ -416,7 +416,7 @@ def finance_trang(request: Request, tab: str = "ledger", thang: str = "",
                   q: str = "", user: dict = Depends(yeu_cau_finance)):
     """Finance Hub — 4 tab theo mockup finance-hub.html: Ledger (sổ chỉ-thêm +
     đảo) · Goals (mục tiêu) · Categories (rules CSV + tổng) · Channel P&L."""
-    if tab not in ("ledger", "goals", "categories", "pnl", "wallets"):
+    if tab not in ("ledger", "goals", "categories", "pnl", "wallets", "subs"):
         tab = "ledger"
     thang = _thang_hop_le(thang)
 
@@ -445,7 +445,11 @@ def finance_trang(request: Request, tab: str = "ledger", thang: str = "",
         "so_du_vi": tai_chinh.so_du_vi(), "kha_dung": tai_chinh.tien_kha_dung(),
         "kha_dung_vnd": tai_chinh.tien_kha_dung_vnd(),
         "quy_vnd": tai_chinh.quy_vnd,
-        "ty_gia_usd": tai_chinh.ty_gia_ngay(date.today().isoformat(), "USD")})
+        "ty_gia_usd": tai_chinh.ty_gia_ngay(date.today().isoformat(), "USD"),
+        "dich_vu": tai_chinh.doc_dich_vu(), "den_han": tai_chinh.den_han(),
+        "thue_bao_thang": tai_chinh.chi_phi_thue_bao_thang(),
+        "tiet_kiem": tai_chinh.tiet_kiem_neu_bo(),
+        "la_owner": user["level"] >= 5})
 
 
 @app.post("/finance/but-toan")
@@ -470,6 +474,48 @@ def finance_but_toan(ngay: str = Form(...), danh_muc: str = Form(...),
     nhat_ky.ghi("to-chuc", user["ten"], "but_toan",
                 f"{b['id']} {b['loai']} {b['danh_muc']} {b['so_tien']}")
     return RedirectResponse(f"/finance?tab=ledger&thang={ngay[:7]}", status_code=303)
+
+
+@app.post("/finance/dich-vu")
+def finance_dich_vu(ten: str = Form(...), nhom: str = Form(...), phi: str = Form(...),
+                    tien_te: str = Form("VND"), chu_ky: str = Form("thang"),
+                    ngay_gia_han: str = Form(...), danh_muc: str = Form(...),
+                    vi: str = Form(...), id: str = Form(""),
+                    nha_cung_cap: str = Form(""), tu_dong_gia_han: str = Form(""),
+                    trang_thai: str = Form("dang_dung"), kenh_ma: str = Form(""),
+                    vault_id: str = Form(""), ghi_chu: str = Form(""),
+                    user: dict = Depends(yeu_cau_finance)):
+    try:
+        dv = tai_chinh.luu_dich_vu(
+            user["ten"], ten, nhom, phi, tien_te, chu_ky, ngay_gia_han, danh_muc,
+            vi, id, nha_cung_cap, bool(tu_dong_gia_han), trang_thai, kenh_ma,
+            vault_id, ghi_chu)
+    except ValueError as e:
+        raise HTTPException(422, str(e))
+    nhat_ky.ghi("to-chuc", user["ten"], "dich_vu", f"{dv['id']} {dv['ten']} {dv['trang_thai']}")
+    return RedirectResponse("/finance?tab=subs", status_code=303)
+
+
+@app.post("/finance/dich-vu/ghi")
+def finance_dich_vu_ghi(id: str = Form(...), muc_tieu: str = Form(...),
+                        so_tien: str = Form(""), ngay: str = Form(""),
+                        user: dict = Depends(yeu_cau_finance)):
+    """Ghi bút toán cho một kỳ thuê bao rồi đẩy hạn. Số tiền thật có thể khác
+    phí khai — cho sửa, KHÔNG để máy tự quyết."""
+    dv = next((d for d in tai_chinh.doc_dich_vu() if d.get("id") == id), None)
+    if dv is None:
+        raise HTTPException(404, "Không có dịch vụ này.")
+    try:
+        b = tai_chinh.them_but_toan(
+            user["ten"], ngay or date.today().isoformat(), dv["danh_muc"],
+            so_tien or dv["phi"], muc_tieu, dv.get("kenh_ma", ""),
+            chung_tu="", ghi_chu=f"{dv['ten']} — kỳ {dv['ngay_gia_han']}",
+            vi=dv["vi"], nguon="thue_bao")
+        tai_chinh.day_gia_han(id)
+    except ValueError as e:
+        raise HTTPException(422, str(e))
+    nhat_ky.ghi("to-chuc", user["ten"], "thue_bao_ghi", f"{dv['ten']} {b['id']}")
+    return RedirectResponse("/finance?tab=subs", status_code=303)
 
 
 @app.get("/finance/xuat.csv")

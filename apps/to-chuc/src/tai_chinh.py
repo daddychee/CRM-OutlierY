@@ -24,7 +24,7 @@ import re
 import secrets
 import threading
 import urllib.request
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
 from nen.common import danh_ba
@@ -39,6 +39,9 @@ DONG_VAN_HANH = "VND"          # A2 — mọi tổng hợp quy về đây
 DUOI_CHUNG_TU = (".jpg", ".jpeg", ".png", ".webp", ".pdf")   # A3
 TRAN_TEP = 10 * 1024 * 1024    # 10 MB mỗi tệp
 TRAN_SO_TEP = 5
+NHOM_DICH_VU = ("proxy", "api", "cong_cu", "email", "khac")      # D2
+CHU_KY = {"thang": 1, "quy": 3, "nam": 12, "mot_lan": 0}         # số tháng
+TRANG_THAI_DV = ("dang_dung", "sap_bo", "da_huy")
 TY_GIA_TIMEOUT = 8             # giây; KHÔNG retry ngầm (bài học SDK 19/07 + 06/08)
 VCB_URL = "https://www.vietcombank.com.vn/api/exchangerates?date=now"
 ER_API_URL = "https://open.er-api.com/v6/latest/"
@@ -197,7 +200,7 @@ def _kenh_hop_le(kenh_ma: str) -> bool:
 def them_but_toan(nguoi_ghi: str, ngay: str, danh_muc: str, so_tien,
                   muc_tieu: str, kenh_ma: str = KENH_CHUNG, chung_tu: str = "",
                   ghi_chu: str = "", vi: str = "", ty_gia=None,
-                  tep_dinh_kem: list | None = None) -> dict:
+                  tep_dinh_kem: list | None = None, nguon: str = "tay") -> dict:
     """Ghi MỘT bút toán mới. loai suy từ DANH MỤC (dropdown quyết thu/chi — không
     có cửa chọn lệch); mục tiêu BẮT BUỘC tồn tại (DE.md 13.6); kênh phải có trong
     danh bạ đế hoặc rỗng = chung hệ; VÍ bắt buộc (A1 — tiền phải biết nằm ở đâu)."""
@@ -244,7 +247,7 @@ def them_but_toan(nguoi_ghi: str, ngay: str, danh_muc: str, so_tien,
          "ngay": ngay, "loai": loai, "danh_muc": danh_muc.strip(),
          "so_tien": so_tien, "muc_tieu": muc_tieu, "kenh_ma": kenh_ma,
          "vi": vi, "tien_te": tien_te, "ty_gia": ty_gia, "nguon_ty_gia": nguon_tg,
-         "tep_dinh_kem": list(tep_dinh_kem or []),
+         "tep_dinh_kem": list(tep_dinh_kem or []), "nguon": nguon,
          "nguoi_ghi": nguoi_ghi, "chung_tu": (chung_tu or "").strip()[:200],
          "ghi_chu": (ghi_chu or "").strip()[:500],
          "tao_luc": datetime.now().isoformat(timespec="seconds")}
@@ -270,6 +273,7 @@ def dao_but_toan(nguoi_ghi: str, id_goc: str, ghi_chu: str = "") -> dict:
              "danh_muc": goc.get("danh_muc", ""), "so_tien": -float(goc.get("so_tien", 0)),
              "muc_tieu": goc.get("muc_tieu", ""), "kenh_ma": goc.get("kenh_ma", ""),
              "vi": goc.get("vi", ""), "tep_dinh_kem": list(goc.get("tep_dinh_kem") or []),
+             "nguon": "dao",
              "tien_te": goc.get("tien_te", DONG_VAN_HANH),
              "ty_gia": goc.get("ty_gia", 1.0), "nguon_ty_gia": goc.get("nguon_ty_gia", ""),
              "nguoi_ghi": nguoi_ghi, "chung_tu": "", "tham_chieu": id_goc,
@@ -634,3 +638,147 @@ def xuat_beancount(ds: list[dict]) -> str:
             dong.append(f"  {tk_x}      {gt:.2f} {tt}{gia}")
         dong.append("")
     return "\n".join(dong)
+
+
+# ---------- D2: dịch vụ trả phí (gộp C1 — mỗi dịch vụ có chu kỳ LÀ khoản định kỳ) ----------
+# KHÔNG có trường mật khẩu và sẽ không được thêm: Vault giữ bí mật, Finance giữ
+# lịch gia hạn. vault_id chỉ là id trỏ sang mục trong két.
+
+def _duong_dich_vu() -> Path:
+    return Path(os.getenv("DICH_VU_PATH", "nhan-su/dich-vu-tra-phi.json"))
+
+
+def doc_dich_vu() -> list[dict]:
+    p = _duong_dich_vu()
+    if not p.is_file():
+        return []
+    try:
+        du = json.loads(p.read_text(encoding="utf-8"))
+        return du if isinstance(du, list) else []
+    except ValueError:
+        return []
+
+
+def _ghi_dich_vu(ds: list[dict]) -> None:
+    p = _duong_dich_vu()
+    p.parent.mkdir(parents=True, exist_ok=True)
+    tam = p.with_name(p.name + ".tmp")
+    tam.write_text(json.dumps(ds, ensure_ascii=False, indent=1), encoding="utf-8")
+    os.replace(tam, p)
+
+
+def luu_dich_vu(nguoi: str, ten: str, nhom: str, phi, tien_te: str, chu_ky: str,
+                ngay_gia_han: str, danh_muc: str, vi: str, id: str = "",
+                nha_cung_cap: str = "", tu_dong_gia_han: bool = True,
+                trang_thai: str = "dang_dung", kenh_ma: str = KENH_CHUNG,
+                vault_id: str = "", ghi_chu: str = "") -> dict:
+    """Thêm mới (id rỗng) hoặc sửa. Validate ở trust boundary — mã khoản và ví
+    phải có thật để lúc ghi bút toán không vỡ."""
+    ten = (ten or "").strip()
+    if not ten:
+        raise ValueError("Thiếu tên dịch vụ.")
+    if nhom not in NHOM_DICH_VU:
+        raise ValueError(f"Nhóm '{nhom}' không hợp lệ.")
+    if chu_ky not in CHU_KY:
+        raise ValueError(f"Chu kỳ '{chu_ky}' không hợp lệ.")
+    if trang_thai not in TRANG_THAI_DV:
+        raise ValueError(f"Trạng thái '{trang_thai}' không hợp lệ.")
+    if danh_muc not in _loai_theo_ma():
+        raise ValueError(f"Danh mục '{danh_muc}' không có trong rules/danh_muc_thu_chi.csv.")
+    if vi not in _vi_theo_ma():
+        raise ValueError(f"Ví '{vi}' không có trong rules/danh_muc_vi.csv.")
+    date.fromisoformat(ngay_gia_han)
+    try:
+        phi = float(phi)
+    except (TypeError, ValueError):
+        raise ValueError("Phí phải là số.")
+    if phi < 0:
+        raise ValueError("Phí không âm.")
+    kenh_ma = (kenh_ma or "").strip()
+    if kenh_ma and not _kenh_hop_le(kenh_ma):
+        raise ValueError(f"Kênh '{kenh_ma}' không có trong danh bạ đế.")
+
+    with _khoa:
+        ds = doc_dich_vu()
+        ban = {"ten": ten, "nha_cung_cap": (nha_cung_cap or "").strip(),
+               "nhom": nhom, "phi": phi, "tien_te": (tien_te or "VND").upper(),
+               "chu_ky": chu_ky, "ngay_gia_han": ngay_gia_han,
+               "tu_dong_gia_han": bool(tu_dong_gia_han), "trang_thai": trang_thai,
+               "danh_muc": danh_muc, "vi": vi, "kenh_ma": kenh_ma,
+               "vault_id": (vault_id or "").strip(), "ghi_chu": (ghi_chu or "").strip(),
+               "sua_luc": datetime.now().isoformat(timespec="seconds"),
+               "nguoi_sua": nguoi}
+        if id:
+            cu = next((d for d in ds if d.get("id") == id), None)
+            if cu is None:
+                raise ValueError(f"Không có dịch vụ id '{id}'.")
+            cu.update(ban)
+            ban = cu
+        else:
+            ban["id"] = f"DV-{secrets.token_hex(3)}"
+            ban["tao_luc"] = ban["sua_luc"]
+            ds.append(ban)
+        _ghi_dich_vu(ds)
+    return ban
+
+
+def den_han(hom_nay: str = "", trong_ngay: int = 14) -> list[dict]:
+    """Dịch vụ tới hạn trong N ngày, KỂ CẢ đã quá hạn (cờ qua_han) — quá hạn mà
+    im lặng là mất tiền oan. Bỏ dịch vụ đã hủy và loại một-lần đã qua."""
+    hom_nay = hom_nay or date.today().isoformat()
+    moc = (date.fromisoformat(hom_nay) + timedelta(days=trong_ngay)).isoformat()
+    ra = []
+    for d in doc_dich_vu():
+        if d.get("trang_thai") == "da_huy":
+            continue
+        han = d.get("ngay_gia_han") or ""
+        if not han or han > moc:
+            continue
+        ra.append({**d, "qua_han": han < hom_nay})
+    return sorted(ra, key=lambda d: d.get("ngay_gia_han") or "")
+
+
+def _phi_thang_vnd(d: dict) -> float:
+    """Phí quy về MỘT tháng, quy VND theo tỷ giá sổ. Chu kỳ một-lần → 0 (không
+    phải chi phí lặp). Ngoại tệ chưa có tỷ giá → 0 kèm không đoán."""
+    so_thang = CHU_KY.get(d.get("chu_ky"), 0)
+    if not so_thang:
+        return 0.0
+    phi = float(d.get("phi") or 0) / so_thang
+    tt = (d.get("tien_te") or DONG_VAN_HANH).upper()
+    if tt == DONG_VAN_HANH:
+        return phi
+    tg = ty_gia_ngay(date.today().isoformat(), tt)
+    return phi * tg["gia"] if tg else 0.0
+
+
+def chi_phi_thue_bao_thang() -> float:
+    """Tổng chi thuê bao mỗi tháng (VND) — chỉ dịch vụ ĐANG DÙNG và SẮP BỎ."""
+    return sum(_phi_thang_vnd(d) for d in doc_dich_vu()
+               if d.get("trang_thai") in ("dang_dung", "sap_bo"))
+
+
+def tiet_kiem_neu_bo() -> float:
+    """Tiết kiệm mỗi tháng nếu bỏ hết dịch vụ đánh dấu 'sắp bỏ'."""
+    return sum(_phi_thang_vnd(d) for d in doc_dich_vu()
+               if d.get("trang_thai") == "sap_bo")
+
+
+def day_gia_han(id: str) -> dict:
+    """Sau khi đã ghi bút toán kỳ này thì đẩy hạn sang kỳ kế tiếp."""
+    with _khoa:
+        ds = doc_dich_vu()
+        d = next((x for x in ds if x.get("id") == id), None)
+        if d is None:
+            raise ValueError(f"Không có dịch vụ id '{id}'.")
+        so_thang = CHU_KY.get(d.get("chu_ky"), 0)
+        if so_thang:
+            cu = date.fromisoformat(d["ngay_gia_han"])
+            thang = cu.month - 1 + so_thang
+            nam = cu.year + thang // 12
+            thang = thang % 12 + 1
+            ngay = min(cu.day, [31, 29 if nam % 4 == 0 else 28, 31, 30, 31, 30,
+                                31, 31, 30, 31, 30, 31][thang - 1])
+            d["ngay_gia_han"] = date(nam, thang, ngay).isoformat()
+        _ghi_dich_vu(ds)
+    return d

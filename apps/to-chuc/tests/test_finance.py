@@ -479,3 +479,110 @@ def test_route_xuat_va_loc_qua_url():
     # lọc theo chữ trong ghi chú
     b2 = c.get("/finance?tab=ledger&thang=2026-08&q=proxy").text
     assert "proxy 911" in b2 and "kỳ 07 AdSense" not in b2
+
+
+# ---------- D2: dịch vụ trả phí (gộp C1 khoản định kỳ) ----------
+
+def _seed_dich_vu(**kw):
+    d = dict(ten="Proxy 911", nha_cung_cap="911proxy.com", nhom="proxy",
+             phi=86, tien_te="USD", chu_ky="thang", ngay_gia_han="2026-09-13",
+             tu_dong_gia_han=True, trang_thai="dang_dung", danh_muc="CHI-PROXY",
+             vi=VI_USD, kenh_ma="", vault_id="3f9a1c22", ghi_chu="")
+    d.update(kw)
+    return tai_chinh.luu_dich_vu("lanne", **d)
+
+
+def test_dich_vu_validate_va_ghi_nguyen_tu():
+    dv = _seed_dich_vu()
+    assert dv["id"].startswith("DV-") and dv["ten"] == "Proxy 911"
+    assert len(tai_chinh.doc_dich_vu()) == 1
+    with pytest.raises(ValueError):
+        _seed_dich_vu(nhom="nhom-la")
+    with pytest.raises(ValueError):
+        _seed_dich_vu(chu_ky="tuan")
+    with pytest.raises(ValueError):
+        _seed_dich_vu(trang_thai="lung-tung")
+    with pytest.raises(ValueError):
+        _seed_dich_vu(danh_muc="CHI-KHONG-CO")      # mã khoản phải có trong CSV
+    with pytest.raises(ValueError):
+        _seed_dich_vu(vi="vi-la")
+    with pytest.raises(ValueError):
+        _seed_dich_vu(ten="")
+    assert len(tai_chinh.doc_dich_vu()) == 1        # không bản ghi hỏng nào lọt vào
+
+
+def test_dich_vu_khong_bao_gio_co_truong_mat_khau():
+    """Vault giữ bí mật, Finance giữ lịch — hai kho, hai vai."""
+    dv = _seed_dich_vu()
+    assert "mat_khau" not in dv and "tai_khoan" not in dv
+    assert dv["vault_id"] == "3f9a1c22"             # chỉ id trỏ sang két
+
+
+def test_dich_vu_sua_giu_id():
+    dv = _seed_dich_vu()
+    sua = tai_chinh.luu_dich_vu("lanne", id=dv["id"], ten="Proxy 911",
+                                nha_cung_cap="911proxy.com", nhom="proxy", phi=99,
+                                tien_te="USD", chu_ky="thang",
+                                ngay_gia_han="2026-09-13", tu_dong_gia_han=True,
+                                trang_thai="sap_bo", danh_muc="CHI-PROXY", vi=VI_USD)
+    assert sua["id"] == dv["id"] and sua["phi"] == 99.0
+    assert sua["trang_thai"] == "sap_bo" and len(tai_chinh.doc_dich_vu()) == 1
+
+
+def test_den_han_va_qua_han():
+    _seed_dich_vu(ten="Sắp tới", ngay_gia_han="2026-09-01")
+    _seed_dich_vu(ten="Còn xa", ngay_gia_han="2026-12-01")
+    _seed_dich_vu(ten="Quá hạn", ngay_gia_han="2026-08-20")
+    _seed_dich_vu(ten="Đã hủy", ngay_gia_han="2026-09-01", trang_thai="da_huy")
+    ds = tai_chinh.den_han("2026-08-26", trong_ngay=14)
+    ten = [d["ten"] for d in ds]
+    assert "Sắp tới" in ten and "Quá hạn" in ten      # quá hạn vẫn phải hiện
+    assert "Còn xa" not in ten and "Đã hủy" not in ten
+    assert next(d for d in ds if d["ten"] == "Quá hạn")["qua_han"] is True
+
+
+def test_chi_phi_thue_bao_thang_quy_ve_thang():
+    _seed_ty_gia()
+    _seed_dich_vu(ten="Tháng USD", phi=100, tien_te="USD", chu_ky="thang")
+    _seed_dich_vu(ten="Năm VND", phi=12_000_000, tien_te="VND", chu_ky="nam", vi=VI)
+    _seed_dich_vu(ten="Quý VND", phi=3_000_000, tien_te="VND", chu_ky="quy", vi=VI)
+    _seed_dich_vu(ten="Một lần", phi=9_000_000, tien_te="VND", chu_ky="mot_lan", vi=VI)
+    _seed_dich_vu(ten="Đã hủy", phi=5_000_000, tien_te="VND", chu_ky="thang",
+                  vi=VI, trang_thai="da_huy")
+    # 100 USD × 25920 + 12tr/12 + 3tr/3 = 2.592.000 + 1.000.000 + 1.000.000
+    assert tai_chinh.chi_phi_thue_bao_thang() == 4_592_000.0
+    _seed_dich_vu(ten="Sắp bỏ", phi=1_000_000, tien_te="VND", chu_ky="thang",
+                  vi=VI, trang_thai="sap_bo")
+    assert tai_chinh.tiet_kiem_neu_bo() == 1_000_000.0
+
+
+def test_day_gia_han_sau_khi_ghi():
+    dv = _seed_dich_vu(ngay_gia_han="2026-09-13", chu_ky="thang")
+    moi = tai_chinh.day_gia_han(dv["id"])
+    assert moi["ngay_gia_han"] == "2026-10-13"
+    nam = _seed_dich_vu(ten="Gói năm", chu_ky="nam", ngay_gia_han="2027-02-02")
+    assert tai_chinh.day_gia_han(nam["id"])["ngay_gia_han"] == "2028-02-02"
+
+
+def test_route_thue_bao_them_va_ghi_but_toan():
+    _seed_muc_tieu()
+    _seed_ty_gia()
+    c = _client()
+    r = c.post("/finance/dich-vu", data={
+        "ten": "Z.ai quota", "nha_cung_cap": "api.z.ai", "nhom": "api",
+        "phi": "200", "tien_te": "USD", "chu_ky": "thang",
+        "ngay_gia_han": "2026-09-01", "tu_dong_gia_han": "1",
+        "trang_thai": "dang_dung", "danh_muc": "CHI-API", "vi": VI_USD},
+        follow_redirects=False)
+    assert r.status_code == 303
+    dv = tai_chinh.doc_dich_vu()[0]
+    b = c.get("/finance?tab=subs").text
+    assert "Z.ai quota" in b and "api.z.ai" in b
+    # ghi bút toán từ hàng chờ: sinh bút toán ĐÚNG dịch vụ + đẩy hạn sang kỳ sau
+    r2 = c.post("/finance/dich-vu/ghi", data={"id": dv["id"], "muc_tieu": "Vận hành chung"},
+                follow_redirects=False)
+    assert r2.status_code == 303
+    bt = tai_chinh.doc_so()[0]
+    assert bt["danh_muc"] == "CHI-API" and bt["so_tien"] == 200.0
+    assert bt["nguon"] == "thue_bao" and bt["vi"] == VI_USD
+    assert tai_chinh.doc_dich_vu()[0]["ngay_gia_han"] == "2026-10-01"

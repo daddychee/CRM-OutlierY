@@ -52,6 +52,7 @@
   <a href="/finance?tab=categories&thang={{ thang }}" class="{% if tab == 'categories' %}active{% endif %}">Categories</a>
   <a href="/finance?tab=pnl&thang={{ thang }}" class="{% if tab == 'pnl' %}active{% endif %}">Channel P&amp;L</a>
   <a href="/finance?tab=wallets&thang={{ thang }}" class="{% if tab == 'wallets' %}active{% endif %}">Wallets</a>
+  <a href="/finance?tab=subs" class="{% if tab == 'subs' %}active{% endif %}">Subscriptions</a>
 </div>
 
 {% if tab == 'ledger' %}
@@ -209,6 +210,107 @@
     ≈ <b>{{ kha_dung_vnd | vnd }}</b> — chưa gồm ví khoản phải thu.
   {% else %}Chưa có bút toán nào — số dư ví hiện khi sổ có dữ liệu.{% endif %}
 </div>
+
+{% elif tab == 'subs' %}
+<h3 class="hub-tieu">
+  <svg class="ic" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/><path d="M12 8v4l3 2"/></svg>
+  Tài khoản trả phí
+</h3>
+
+<div class="stat-row">
+  <div class="stat"><div class="n">{{ thue_bao_thang | vnd }}</div><div class="t">chi thuê bao / tháng</div></div>
+  <div class="stat"><div class="n" style="color:var(--th-d97c6c)">{{ den_han | length }}</div><div class="t">gia hạn trong 14 ngày tới</div></div>
+  <div class="stat"><div class="n duong">{{ tiet_kiem | vnd }}</div><div class="t">tiết kiệm / tháng nếu bỏ mục “sắp bỏ”</div></div>
+</div>
+
+{% if den_han %}
+<div class="canh">
+  <b>Đến hạn, chưa ghi</b> — máy không tự ghi vì số tiền thật có thể khác.
+  <table class="bang" style="margin-top:.4rem">
+    {% for d in den_han %}
+    <tr><td>{{ d.ten }} <span class="thieu">{{ d.phi | tien }} {{ d.tien_te }}</span></td>
+      <td>{{ d.ngay_gia_han }}
+        {% if d.qua_han %}<span class="badge do">quá hạn</span>{% endif %}
+        {% if d.trang_thai == 'sap_bo' %}<span class="badge">sắp bỏ</span>{% endif %}</td>
+      <td style="text-align:right">
+        <form method="post" action="/finance/dich-vu/ghi" style="display:inline-flex;gap:.3rem;align-items:center">
+          <input type="hidden" name="id" value="{{ d.id }}">
+          <input type="text" name="so_tien" value="{{ d.phi }}" class="o" style="width:90px">
+          <select name="muc_tieu" required class="o">
+            {% for m in muc_tieu %}<option value="{{ m.ten }}">{{ m.ten }}</option>{% endfor %}
+          </select>
+          <button type="submit" class="nut" style="padding:.25rem .7rem;font-size:.8rem">Ghi</button>
+        </form></td></tr>
+    {% endfor %}
+  </table>
+</div>
+{% endif %}
+
+<details class="form-moi">
+  <summary>+ Dịch vụ</summary>
+  <form method="post" action="/finance/dich-vu">
+    <div class="form-luoi">
+      <div><label>Tên dịch vụ</label><input type="text" name="ten" required class="o"></div>
+      <div><label>Nhà cung cấp</label><input type="text" name="nha_cung_cap" class="o"></div>
+      <div><label>Nhóm</label><select name="nhom" class="o">
+        {% for n in ['proxy', 'api', 'cong_cu', 'email', 'khac'] %}<option value="{{ n }}">{{ n }}</option>{% endfor %}
+      </select></div>
+      <div><label>Phí</label><input type="number" name="phi" step="0.01" min="0" required class="o"></div>
+      <div><label>Tiền tệ</label><select name="tien_te" class="o"><option>VND</option><option>USD</option></select></div>
+      <div><label>Chu kỳ</label><select name="chu_ky" class="o">
+        <option value="thang">hằng tháng</option><option value="quy">hằng quý</option>
+        <option value="nam">hằng năm</option><option value="mot_lan">một lần</option>
+      </select></div>
+      <div><label>Gia hạn kế</label><input type="date" name="ngay_gia_han" required class="o"></div>
+      <div><label>Ghi vào mã khoản</label><select name="danh_muc" required class="o">
+        {% for d in danh_muc %}{% if d.loai == 'chi' %}<option value="{{ d.ma }}">{{ d.ma }} — {{ d.ten }}</option>{% endif %}{% endfor %}
+      </select></div>
+      <div><label>Trả bằng ví</label><select name="vi" required class="o">
+        {% for v in danh_muc_vi %}<option value="{{ v.ma }}">{{ v.ten }} ({{ v.tien_te }})</option>{% endfor %}
+      </select></div>
+      <div><label>Kênh</label><select name="kenh_ma" class="o">
+        <option value="">chung hệ</option>
+        {% for k in ds_kenh %}<option value="{{ k.ma }}">{{ k.ma }}</option>{% endfor %}
+      </select></div>
+      <div><label>Trạng thái</label><select name="trang_thai" class="o">
+        <option value="dang_dung">đang dùng</option><option value="sap_bo">sắp bỏ</option>
+        <option value="da_huy">đã hủy</option>
+      </select></div>
+      <div><label>Tự động gia hạn</label><select name="tu_dong_gia_han" class="o">
+        <option value="1">có</option><option value="">không</option></select></div>
+      <div><label>Mã mục trong Vault</label><input type="text" name="vault_id" class="o"
+             placeholder="chỉ id — không nhập mật khẩu"></div>
+      <div><label>Ghi chú</label><input type="text" name="ghi_chu" class="o"></div>
+    </div>
+    <div style="margin-top:10px"><button type="submit" class="nut">Lưu dịch vụ</button></div>
+  </form>
+</details>
+
+<div class="bang-cuon">
+<table class="bang">
+  <tr><th>Dịch vụ</th><th>Nhóm</th><th class="so">Phí</th><th>Chu kỳ</th><th>Gia hạn kế</th>
+    <th>Tự động</th><th>Gắn</th><th>Đăng nhập</th><th>Trạng thái</th></tr>
+  {% for d in dich_vu %}
+  <tr {% if d.trang_thai == 'da_huy' %}style="opacity:.55"{% endif %}>
+    <td><b>{{ d.ten }}</b>{% if d.nha_cung_cap %}<div class="thieu">{{ d.nha_cung_cap }}</div>{% endif %}</td>
+    <td>{{ d.nhom }}</td>
+    <td class="so">{{ d.phi | tien }} <span class="thieu">{{ d.tien_te }}</span></td>
+    <td>{{ d.chu_ky }}</td>
+    <td>{{ d.ngay_gia_han }}</td>
+    <td>{% if d.tu_dong_gia_han %}<span class="badge ok">có</span>{% else %}<span class="badge">không</span>{% endif %}</td>
+    <td>{% if d.kenh_ma %}<span class="tk">{{ d.kenh_ma }}</span>{% else %}<span class="badge">chung hệ</span>{% endif %}</td>
+    <td>{% if d.vault_id and la_owner %}<a href="/vault" class="duong">🔑 Vault</a>
+        {% elif d.vault_id %}<span class="badge">có trong két</span>
+        {% else %}<span class="thieu">—</span>{% endif %}</td>
+    <td>{% if d.trang_thai == 'dang_dung' %}<span class="badge ok">đang dùng</span>
+        {% elif d.trang_thai == 'sap_bo' %}<span class="badge do">sắp bỏ</span>
+        {% else %}<span class="badge">đã hủy</span>{% endif %}</td></tr>
+  {% else %}
+  <tr><td colspan="9">Chưa khai dịch vụ nào.</td></tr>
+  {% endfor %}
+</table>
+</div>
+<div class="canh">Bảng này <b>không có cột mật khẩu và sẽ không bao giờ có</b> — Vault giữ bí mật, Finance giữ lịch gia hạn. Đánh dấu “sắp bỏ” là ghi nhận quyết định cắt chi; hủy dịch vụ vẫn là việc tay trên trang nhà cung cấp.</div>
 
 {% elif tab == 'goals' %}
 <h3 class="hub-tieu">
