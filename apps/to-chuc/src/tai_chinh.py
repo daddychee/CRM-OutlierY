@@ -201,7 +201,8 @@ def _kenh_hop_le(kenh_ma: str) -> bool:
 def them_but_toan(nguoi_ghi: str, ngay: str, danh_muc: str, so_tien,
                   muc_tieu: str, kenh_ma: str = KENH_CHUNG, chung_tu: str = "",
                   ghi_chu: str = "", vi: str = "", ty_gia=None,
-                  tep_dinh_kem: list | None = None, nguon: str = "tay") -> dict:
+                  tep_dinh_kem: list | None = None, nguon: str = "tay",
+                  trang_thai_thu: str = "") -> dict:
     """Ghi MỘT bút toán mới. loai suy từ DANH MỤC (dropdown quyết thu/chi — không
     có cửa chọn lệch); mục tiêu BẮT BUỘC tồn tại (DE.md 13.6); kênh phải có trong
     danh bạ đế hoặc rỗng = chung hệ; VÍ bắt buộc (A1 — tiền phải biết nằm ở đâu)."""
@@ -249,6 +250,7 @@ def them_but_toan(nguoi_ghi: str, ngay: str, danh_muc: str, so_tien,
          "so_tien": so_tien, "muc_tieu": muc_tieu, "kenh_ma": kenh_ma,
          "vi": vi, "tien_te": tien_te, "ty_gia": ty_gia, "nguon_ty_gia": nguon_tg,
          "tep_dinh_kem": list(tep_dinh_kem or []), "nguon": nguon,
+         "trang_thai_thu": trang_thai_thu,
          "dieu_chinh_ky_truoc": doc_chot_ky(ngay[:7]) is not None,
          "nguoi_ghi": nguoi_ghi, "chung_tu": (chung_tu or "").strip()[:200],
          "ghi_chu": (ghi_chu or "").strip()[:500],

@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}Đối soát AdSense — OUTLIERY{% endblock %}
+{% block topbar_ten %}<svg class="ic" viewBox="0 0 24 24"><path d="M12 2v20"/><path d="M17 5.5H9.5a3 3 0 0 0 0 6h5a3 3 0 0 1 0 6H6.5"/></svg> Finance{% endblock %}
+
+{% block style_them %}
+  .hub-wrap{margin:.9rem 0 2.5rem;padding:0 26px}
+  .khoi{border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin:0 0 14px;background:var(--chip)}
+  .khoi > h3{font-size:1rem;margin:.1rem 0 .7rem;font-weight:600;display:flex;gap:.5rem;align-items:center;flex-wrap:wrap}
+  .khoi > h3 .phu{font-weight:400;color:var(--muted);font-size:.8rem}
+  .buoc{display:flex;gap:4px;flex-wrap:wrap;align-items:center;font-size:.78rem;color:var(--muted);margin-bottom:12px}
+  .buoc .b{border:1px solid var(--line);border-radius:999px;padding:2px 10px}
+  .buoc .b.on{background:var(--th-182233);color:var(--ink);border-color:var(--th-31425e);font-weight:600}
+  .bang-cuon{overflow-x:auto}
+  table.bang{width:100%;border-collapse:collapse;font-size:.88rem}
+  .bang th,.bang td{text-align:left;padding:.45rem .55rem;border-bottom:1px solid var(--line);vertical-align:middle}
+  .bang th{color:var(--muted);font-size:.75rem;white-space:nowrap;font-weight:600}
+  .bang td.so,.bang th.so{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+  .badge{display:inline-block;font-size:.72rem;padding:1px 8px;border-radius:999px;border:1px solid var(--chip-line);color:var(--muted);white-space:nowrap}
+  .badge.ok{color:var(--accent);border-color:var(--th-31425e)}
+  .badge.do{color:var(--th-d97c6c);border-color:var(--th-d97c6c)}
+  .thieu{color:var(--muted)}
+  .o{font:inherit;background:transparent;color:var(--ink);border:1px solid var(--line);border-radius:7px;padding:3px 8px}
+  .canh{margin:.6rem 0 0;padding:.55rem .8rem;border-radius:9px;background:var(--th-1d2840);border:1px solid var(--chip-line);font-size:.84rem;color:var(--muted)}
+{% endblock %}
+
+{% block noi_dung %}
+<div class="hub-wrap">
+<div class="khoi">
+  <h3>Đối soát chi trả AdSense <span class="phu">kỳ {{ thang }} · {{ kq.dong | length }} dòng · tổng {{ '%.2f' | format(kq.tong_that) }} USD</span></h3>
+  <div class="buoc">
+    <span class="b">1. Nạp CSV chi trả</span><span>→</span>
+    <span class="b on">2. Máy khớp kênh</span><span>→</span>
+    <span class="b">3. Người duyệt</span><span>→</span>
+    <span class="b">4. Vào sổ</span>
+  </div>
+
+  <form method="post" action="/finance/doi-soat/duyet">
+    <input type="hidden" name="thang" value="{{ thang }}">
+    <div class="bang-cuon">
+    <table class="bang">
+      <tr><th>Kênh trong tệp</th><th>Khớp danh bạ</th><th class="so">Ước tính đã ghi</th>
+        <th class="so">Tiền thật</th><th class="so">Chênh</th></tr>
+      {% for d in kq.dong %}
+      <tr><td>{{ d.ten_trong_tep }}</td>
+        <td>
+          {% if d.chac_chan %}<span class="badge ok">{{ d.kenh_ma }}</span>{% endif %}
+          <select name="kenh_{{ loop.index0 }}" class="o">
+            <option value="">— chọn kênh —</option>
+            {% for k in ds_kenh %}
+            <option value="{{ k.ma }}" {% if d.kenh_ma == k.ma %}selected{% endif %}>{{ k.ma }} — {{ k.ten_chuan }}</option>
+            {% endfor %}
+          </select></td>
+        <td class="so">{% if d.uoc_tinh is not none %}${{ '%.2f' | format(d.uoc_tinh) }}{% else %}<span class="thieu">—</span>{% endif %}</td>
+        <td class="so"><input type="text" name="tien_{{ loop.index0 }}" class="o"
+             style="width:110px;text-align:right" value="{{ '%.2f' | format(d.tien_that) }}"></td>
+        <td class="so">{% if d.chenh is none %}<span class="thieu">—</span>
+          {% elif d.chenh == 0 %}<span class="badge ok">khớp</span>
+          {% else %}<span class="badge do">{{ '%.2f' | format(d.chenh) }}</span>{% endif %}</td></tr>
+      {% endfor %}
+    </table>
+    </div>
+
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-top:12px">
+      <div><label style="display:block;font-size:.74rem;color:var(--muted)">Mục tiêu</label>
+        <select name="muc_tieu" required class="o">
+          {% for m in muc_tieu %}<option value="{{ m.ten }}">{{ m.ten }}</option>{% endfor %}
+        </select></div>
+      <div><label style="display:block;font-size:.74rem;color:var(--muted)">Vào ví</label>
+        <select name="vi" required class="o">
+          {% for v in danh_muc_vi %}<option value="{{ v.ma }}">{{ v.ten }} ({{ v.tien_te }})</option>{% endfor %}
+        </select></div>
+      <button type="submit" class="nut">Duyệt &amp; ghi {{ kq.dong | length }} bút toán</button>
+      <a class="nut phu" style="text-decoration:none" href="/finance?tab=auto&thang={{ thang }}">Bỏ qua</a>
+    </div>
+  </form>
+  <div class="canh">Số tiền sửa được trước khi ghi. Dòng chưa chọn kênh sẽ vào sổ dưới dạng “chung hệ”.</div>
+</div>
+</div>
+{% endblock %}

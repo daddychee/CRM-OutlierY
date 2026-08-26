@@ -64,7 +64,7 @@ os.environ.setdefault("SO_THU_CHI_DIR", str(ROOT / "data" / "to-chuc" / "db" / "
 os.environ.setdefault("MUC_TIEU_PATH", str(ROOT / "data" / "to-chuc" / "db" / "muc-tieu.json"))
 
 from src import (chi_phi_ngach, don_vi_kinh_te, kpi_danh_gia, lich_tai_chinh,
-                 luong, tai_chinh, vault)           # noqa: E402
+                 luong, tai_chinh, tu_dong, vault)           # noqa: E402
 from src.cham_cong import doc_ngay as cc_doc_ngay        # noqa: E402
 from src.cham_cong import (bang_cong_thang, chot_ky, doc_chot, ghi_nhan,  # noqa: E402
                            gio_chu, tong_gio)
@@ -427,7 +427,7 @@ def finance_trang(request: Request, tab: str = "ledger", thang: str = "",
     """Finance Hub — 4 tab theo mockup finance-hub.html: Ledger (sổ chỉ-thêm +
     đảo) · Goals (mục tiêu) · Categories (rules CSV + tổng) · Channel P&L."""
     if tab not in ("ledger", "goals", "categories", "pnl", "wallets", "subs",
-                   "payroll", "dashboard", "ngach"):
+                   "payroll", "dashboard", "ngach", "auto"):
         tab = "ledger"
     thang = _thang_hop_le(thang)
 
@@ -458,6 +458,9 @@ def finance_trang(request: Request, tab: str = "ledger", thang: str = "",
         "ngan_sach": tai_chinh.ngan_sach_ky(thang) if tab == "goals" else None,
         "doi_chieu": (tai_chinh.doi_chieu_vi(thang, {}) if tab == "wallets" else None),
         "da_chot_ky": tai_chinh.doc_chot_ky(thang),
+        "tien_api": tu_dong.tien_api_thang(thang) if tab == "auto" else None,
+        "luat_goi_y": tu_dong.doc_luat_goi_y() if tab == "auto" else None,
+        "don_gia_api": tu_dong.doc_don_gia() if tab == "auto" else None,
         "danh_muc_vi": tai_chinh.doc_danh_muc_vi(),
         "so_du_vi": tai_chinh.so_du_vi(), "kha_dung": tai_chinh.tien_kha_dung(),
         "kha_dung_vnd": tai_chinh.tien_kha_dung_vnd(),
@@ -804,6 +807,73 @@ async def finance_chot_ky(request: Request, user: dict = Depends(yeu_cau_finance
         raise HTTPException(422, str(e))
     nhat_ky.ghi("to-chuc", user["ten"], "chot_ky", f"{ky} {len(ban['doi_chieu'])} ví")
     return RedirectResponse(f"/finance?tab=wallets&thang={ky}", status_code=303)
+
+
+@app.post("/finance/doi-soat")
+async def finance_doi_soat(request: Request, user: dict = Depends(yeu_cau_finance)):
+    """B5 — nạp CSV chi trả AdSense, trả BẢNG NHÁP để người soát. Không ghi sổ."""
+    form = await request.form()
+    tep = form.get("tep")
+    thang = _thang_hop_le(str(form.get("thang") or ""))
+    if tep is None or not getattr(tep, "filename", ""):
+        raise HTTPException(422, "Chưa chọn tệp CSV chi trả.")
+    try:
+        noi_dung = (await tep.read()).decode("utf-8-sig", "replace")
+        kq = tu_dong.doi_soat_adsense(noi_dung, thang)
+    except ValueError as e:
+        raise HTTPException(422, str(e))
+    ds_kenh = danh_ba.liet_ke("kenh")
+    return templates.TemplateResponse(request, "doi_soat.html", {
+        "user": user, "kq": kq, "thang": thang, "ds_kenh": ds_kenh,
+        "muc_tieu": tai_chinh.doc_muc_tieu(),
+        "danh_muc_vi": tai_chinh.doc_danh_muc_vi()})
+
+
+@app.post("/finance/doi-soat/duyet")
+async def finance_doi_soat_duyet(request: Request,
+                                 user: dict = Depends(yeu_cau_finance)):
+    """Người chốt xong mới vào sổ — mỗi dòng một bút toán THU-ADS 'đã về ví'."""
+    form = await request.form()
+    thang = _thang_hop_le(str(form.get("thang") or ""))
+    muc_tieu, vi = str(form.get("muc_tieu") or ""), str(form.get("vi") or "")
+    dong = []
+    for khoa, gt in form.multi_items():
+        if not khoa.startswith("tien_"):
+            continue
+        i = khoa[5:]
+        try:
+            tien = float(str(gt).replace(",", "").strip())
+        except ValueError:
+            continue
+        dong.append({"kenh_ma": str(form.get(f"kenh_{i}") or ""), "tien_that": tien})
+    try:
+        b = tu_dong.duyet_doi_soat(user["ten"], dong, thang, muc_tieu, vi)
+    except ValueError as e:
+        raise HTTPException(422, str(e))
+    nhat_ky.ghi("to-chuc", user["ten"], "doi_soat", f"{thang} {len(b)} bút toán")
+    return RedirectResponse(f"/finance?tab=ledger&thang={thang}", status_code=303)
+
+
+@app.post("/finance/tien-api")
+def finance_tien_api(thang: str = Form(...), muc_tieu: str = Form(...),
+                     vi: str = Form(...), user: dict = Depends(yeu_cau_finance)):
+    """C3 — một bút toán tổng hợp tiền API cho cả kỳ."""
+    try:
+        b = tu_dong.ghi_tien_api(user["ten"], _thang_hop_le(thang), muc_tieu, vi)
+    except ValueError as e:
+        raise HTTPException(422, str(e))
+    nhat_ky.ghi("to-chuc", user["ten"], "tien_api", f"{thang} {b['so_tien']}")
+    return RedirectResponse(f"/finance?tab=auto&thang={thang}", status_code=303)
+
+
+@app.post("/finance/don-gia-api")
+def finance_don_gia_api(api: str = Form(...), gia: str = Form(...),
+                        thang: str = Form(""), user: dict = Depends(yeu_cau_finance)):
+    try:
+        tu_dong.dat_don_gia(api, gia)
+    except ValueError as e:
+        raise HTTPException(422, str(e))
+    return RedirectResponse(f"/finance?tab=auto&thang={thang}", status_code=303)
 
 
 @app.post("/finance/han-muc")

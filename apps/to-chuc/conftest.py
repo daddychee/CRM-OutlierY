@@ -34,6 +34,7 @@ def _cach_ly_du_lieu(tmp_path, monkeypatch):
     monkeypatch.setenv("LUONG_DIR", str(tmp_path / "luong"))
     monkeypatch.setenv("HAN_MUC_PATH", str(tmp_path / "han-muc.json"))
     monkeypatch.setenv("CHOT_KY_PATH", str(tmp_path / "chot-ky-tien.json"))
+    monkeypatch.setenv("DON_GIA_API_PATH", str(tmp_path / "don-gia-api.json"))
     monkeypatch.setenv("LOGS_DIR", str(tmp_path / "logs"))
     monkeypatch.setenv("DANH_BA_DB", str(tmp_path / "danh_ba.db"))
     # 4 nguồn KPI: mặc định KHÔNG TỒN TẠI (thử van chống bịa "nguồn chết → —");
