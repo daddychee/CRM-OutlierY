@@ -279,3 +279,45 @@ def test_loi_form_mo_san_dung_phieu(ma, _so):
     r = _c.get("/task?goal=%s&loi=Sai&loi_viec=%s" % (g["id"], v["id"]), headers=H_MGR)
     kh = r.text.split('data-phieu="%s"' % v["id"])[1].split(">")[0]
     assert "open" in kh
+
+
+# ---------- bảng màu Trello (Owner chốt 26/08) ----------
+
+def _khoi_mau(css):
+    """Lấy ĐÚNG hai khối :root khai token Trello. Trang có nhiều khối :root
+    (base.html khai token khung) nên split(":root{")[1] là lấy nhầm."""
+    import re
+    mau = [m.group(2) for m in re.finditer(r":root(\[[^\]]*\])?\{([^}]*)\}", css)
+           if "--tr-ok-nen" in m.group(2)]
+    assert len(mau) == 2, f"phải có đúng 2 khối màu Trello, đang có {len(mau)}"
+    return mau
+
+
+def test_bang_mau_trello_khai_du_cap_toi_sang(_so):
+    """Màu nhãn Trello vốn cho nền SÁNG — mỗi theme phải có cặp riêng, không dùng
+    chung một mã (đo: yellow #F2D600 làm nền chữ trắng chỉ 1.99:1)."""
+    css = _c.get("/task", headers=H_MGR).text
+    toi, sang = _khoi_mau(css)
+    for khoa in ("--tr-ok-nen", "--tr-luu-nen", "--tr-cap-nen", "--tr-tin-nen", "--tr-im-nen"):
+        assert khoa in toi and khoa in sang, f"{khoa} thiếu cặp theme"
+    assert "--tr-green:#61BD4F" in toi and "--tr-red:#EB5A46" in toi   # nhãn màu gốc
+
+
+def test_chip_trang_thai_du_tuong_phan_ca_hai_theme(_so):
+    """Ghim SỐ ĐO, không ghim cảm giác: mọi cặp nền–chữ của chip ≥ 4.5:1."""
+    def lum(h):
+        h = h.lstrip("#")
+        r, g, b = (int(h[i:i + 2], 16) / 255 for i in (0, 2, 4))
+        f = lambda c: c / 12.92 if c <= .03928 else ((c + .055) / 1.055) ** 2.4
+        return .2126 * f(r) + .7152 * f(g) + .0722 * f(b)
+
+    def tp(a, b):
+        x, y = sorted((lum(a), lum(b)), reverse=True)
+        return (x + .05) / (y + .05)
+
+    css = _c.get("/task", headers=H_MGR).text
+    for khoi, ten in zip(_khoi_mau(css), ("tối", "sáng")):
+        cap = dict(x.strip().split(":") for x in khoi.split(";") if ":" in x and "--tr-" in x)
+        for muc in ("ok", "luu", "cap", "tin", "im"):
+            nen, chu = cap["--tr-%s-nen" % muc], cap["--tr-%s-chu" % muc]
+            assert tp(chu, nen) >= 4.5, f"{ten}/{muc}: {nen} vs {chu} = {tp(chu, nen):.2f}"

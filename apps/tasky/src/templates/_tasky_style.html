@@ -263,16 +263,44 @@
   .nut.nguy{border-color:var(--tk-cap);color:var(--tk-cap)}
   .nut.nguy:hover{background:var(--tk-cap-nen)}
 
+
+  /* ---- BẢNG MÀU TRELLO cho board (Owner chốt 26/08) ------------------------
+     Màu nhãn gốc của Trello (green #61BD4F, yellow #F2D600, orange #FF9F1A,
+     red #EB5A46, purple #C377E0, blue #0079BF, sky #00C2E0) vốn thiết kế để làm
+     NỀN chip trên giao diện SÁNG. ĐO THẬT trước khi dùng:
+       · làm CHỮ trên nền tối: phần lớn đạt, nhưng blue chỉ 3.22 và red 4.37;
+       · làm NỀN chữ trắng: chỉ blue/red-shade đạt, còn yellow 1.99 thì không.
+     Nên mỗi theme một cặp: tối = nền pha + chữ màu (5.5-9.9:1), sáng = nền pastel
+     + chữ đậm (4.9-8.4:1). Dải nhãn trên đỉnh thẻ dùng MÀU GỐC vì không có chữ. */
+  :root{
+    --tr-green:#61BD4F; --tr-yellow:#F2D600; --tr-orange:#FF9F1A; --tr-red:#EB5A46;
+    --tr-purple:#C377E0; --tr-blue:#0079BF; --tr-sky:#00C2E0; --tr-xam:#8C9BAB;
+    --tr-ok-nen:#1C3329;   --tr-ok-chu:#7BC86C;
+    --tr-luu-nen:#332E14;  --tr-luu-chu:#F5DD29;
+    --tr-cap-nen:#33191A;  --tr-cap-chu:#EF7564;
+    --tr-tin-nen:#12283D;  --tr-tin-chu:#5BA4CF;
+    --tr-im-nen:#2B3238;   --tr-im-chu:#9FADBC;
+    --tr-cot:#161A1D; --tr-the:#22272B; --tr-the-vien:#3C444C;
+  }
+  :root[data-theme="light"]{
+    --tr-ok-nen:#D6F5CF;   --tr-ok-chu:#216E4E;
+    --tr-luu-nen:#FAF3C0;  --tr-luu-chu:#7F5F01;
+    --tr-cap-nen:#FFD5D2;  --tr-cap-chu:#AE2E24;
+    --tr-tin-nen:#CCE0FF;  --tr-tin-chu:#0055CC;
+    --tr-im-nen:#EBECF0;   --tr-im-chu:#44546F;
+    --tr-cot:#F1F2F4; --tr-the:#FFFFFF; --tr-the-vien:#DCDFE4;
+  }
+
   /* ---- BOARD KANBAN kiểu Trello (§17, Owner chốt 26/08) ----
      Cột hẹp và cố định, thẻ gọn: dải nhãn màu → tiêu đề → hàng badge. Mật độ là
      điểm mạnh của Trello: liếc một cột thấy được 6-8 việc chứ không phải 3. */
   .board{display:flex;gap:10px;overflow-x:auto;padding:2px 2px 14px;align-items:flex-start}
-  .board .cot{flex:0 0 274px;background:var(--th-141c2b);border:1px solid var(--tk-vien);
+  .board .cot{flex:0 0 274px;background:var(--tr-cot);border:1px solid var(--tr-the-vien);
     border-radius:12px;display:flex;flex-direction:column;max-height:calc(100vh - 232px)}
   .board .cot>header{padding:11px 13px 8px;display:flex;align-items:center;gap:8px;
     font-size:13px;font-weight:600;color:var(--ink);letter-spacing:-.01em}
-  .board .cot>header .dem{margin-left:auto;font-size:12px;font-weight:600;color:var(--muted);
-    font-variant-numeric:tabular-nums;background:var(--th-1d2840);border-radius:999px;
+  .board .cot>header .dem{margin-left:auto;font-size:12px;font-weight:600;color:var(--tr-im-chu);
+    font-variant-numeric:tabular-nums;background:var(--tr-im-nen);border-radius:999px;
     min-width:22px;height:20px;display:inline-flex;align-items:center;justify-content:center;padding:0 7px}
   .board .cot.dich{border-color:var(--accent);background:var(--th-16263f)}
   .board ul.vs{list-style:none;margin:0;padding:0 9px 4px;display:flex;flex-direction:column;
@@ -280,9 +308,9 @@
   .board .cot-trong{padding:12px 13px 16px;color:var(--muted);font-size:12px}
   .board .them-cuoi{display:block;margin:4px 9px 9px;padding:8px 10px;border-radius:9px;
     color:var(--muted);font-size:12.5px;text-decoration:none}
-  .board .them-cuoi:hover{background:var(--th-182233);color:var(--ink)}
+  .board .them-cuoi:hover{background:var(--tr-im-nen);color:var(--tr-im-chu)}
 
-  .board li.the-viec{display:block;background:var(--sidebar);border:1px solid var(--tk-vien);
+  .board li.the-viec{display:block;background:var(--tr-the);border:1px solid var(--tr-the-vien);
     border-radius:9px;padding:8px 10px 9px;transition:border-color .12s, box-shadow .12s}
   .board li.the-viec:hover{border-color:var(--accent);box-shadow:0 1px 6px rgba(0,0,0,.28)}
   .board li.the-viec[draggable="true"]{cursor:grab}
@@ -292,31 +320,31 @@
   .nhan-dai{display:flex;gap:4px;margin-bottom:6px}
   .nhan-dai:empty{display:none}
   .nhan-dai .nh{width:28px;height:6px;border-radius:99px;display:inline-block}
-  .nhan-dai .nh.cap{background:var(--tk-cap)}
-  .nhan-dai .nh.luu_y{background:var(--tk-luu)}
-  .nhan-dai .nh.tin{background:var(--tk-tin)}
-  .nhan-dai .nh.ok{background:var(--tk-ok)}
-  .nhan-dai .nh.im{background:var(--th-31425e)}
+  .nhan-dai .nh.cap{background:var(--tr-red)}
+  .nhan-dai .nh.luu_y{background:var(--tr-yellow)}
+  .nhan-dai .nh.tin{background:var(--tr-blue)}
+  .nhan-dai .nh.ok{background:var(--tr-green)}
+  .nhan-dai .nh.im{background:var(--tr-xam)}
 
   .the-viec .tieu-de{font-size:13px;font-weight:500;line-height:1.38;color:var(--ink);
     display:flex;gap:6px;align-items:flex-start;word-break:break-word}
-  .the-viec .tieu-de .tick{width:14px;height:14px;flex:none;margin-top:2px;color:var(--tk-ok)}
-  .the-viec .ly-do{font-size:11.5px;color:var(--tk-cap);margin-top:4px;line-height:1.35}
+  .the-viec .tieu-de .tick{width:14px;height:14px;flex:none;margin-top:2px;color:var(--tr-green)}
+  .the-viec .ly-do{font-size:11.5px;color:var(--tr-cap-chu);margin-top:4px;line-height:1.35}
 
   /* hàng badge dưới thẻ: hạn, số bước, mô tả, tin, tài liệu, avatar người làm */
   .the-viec .badge{display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-top:7px}
   .the-viec .badge .lap{flex:1}
   .the-viec .bg{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;
-    border-radius:6px;padding:2px 6px;background:var(--th-1d2840);color:var(--th-c2cbd9);
+    border-radius:6px;padding:2px 6px;background:var(--tr-im-nen);color:var(--tr-im-chu);
     white-space:nowrap}
   .the-viec .bg svg{width:12px;height:12px}
-  .the-viec .bg.cap{background:var(--tk-cap-nen);color:var(--tk-cap)}
-  .the-viec .bg.luu_y{background:var(--tk-luu-nen);color:var(--tk-luu)}
-  .the-viec .bg.tin{background:var(--tk-tin-nen);color:var(--tk-tin)}
-  .the-viec .bg.ok{background:var(--tk-ok-nen);color:var(--tk-ok)}
+  .the-viec .bg.cap{background:var(--tr-cap-nen);color:var(--tr-cap-chu)}
+  .the-viec .bg.luu_y{background:var(--tr-luu-nen);color:var(--tr-luu-chu)}
+  .the-viec .bg.tin{background:var(--tr-tin-nen);color:var(--tr-tin-chu)}
+  .the-viec .bg.ok{background:var(--tr-ok-nen);color:var(--tr-ok-chu)}
   .the-viec .av{width:24px;height:24px;border-radius:50%;flex:none;display:grid;
     place-items:center;font-size:10px;font-weight:700;letter-spacing:.02em;
-    background:var(--th-31425e);color:var(--ink)}
+    background:var(--tr-im-nen);color:var(--tr-im-chu)}
   .the-viec .av.toi{background:var(--accent);color:var(--th-090c12)}
   .the-viec .badge select{font-size:11.5px;padding:4px 7px;max-width:150px}
 
