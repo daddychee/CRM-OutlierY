@@ -607,7 +607,9 @@ def test_proxy_phat_x_remote_name(client, app_mau_server, iam_db):
 
 def test_proxy_phat_co_hr_finance(client, app_mau_server, iam_db):
     """Gateway phát cờ khu chức năng 'hr'/'finance' vào X-Remote-Apps — app to-chuc
-    CHỈ TIN cờ này. Mặc định: Owner + HR L3+ → hr; Owner + Kế toán L2+ → finance.
+    CHỈ TIN cờ này. Mặc định: Owner + HR L3+ → hr; Owner + Kế toán L2+ → finance;
+    HR cũng được finance (Owner chốt 26/08 — HR làm lương + xuất phiếu, bộ phận
+    Kế toán mới 2 người).
     Ô TICK nhan_su/ke_toan trên trang Permissions THẮNG luật mặc định (cả hai
     chiều cho lẫn chặn) — helper _gio_chuc_nang, KHÔNG sửa iam.co_quyen."""
     conn = iam.ket_noi()
@@ -621,9 +623,9 @@ def test_proxy_phat_co_hr_finance(client, app_mau_server, iam_db):
     t = client.get("/app/app-mau/").text
     assert ",hr" in t and "finance" in t
 
-    _login(client, "hr2", "mk-hr2-6")                    # HR L3: hr có, finance không
+    _login(client, "hr2", "mk-hr2-6")                    # HR L3: có CẢ HAI (Owner chốt 26/08)
     t = client.get("/app/app-mau/").text
-    assert ",hr" in t and "finance" not in t
+    assert ",hr" in t and "finance" in t
 
     _login(client, "ketoan", "mk-kt-6")                  # Kế toán L2: finance, không hr
     t = client.get("/app/app-mau/").text

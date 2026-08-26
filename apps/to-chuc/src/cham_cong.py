@@ -84,6 +84,11 @@ def ghi_nhan(ten_user: str, tin_hieu: str = "", luc: datetime | None = None) -> 
         _da_ghi[(ngay, ten)] = luc
 
 
+def doc_thang(thang: str) -> dict:
+    """{ngày: {user: {vao, ra, nguon_ra}}} cả tháng — cho bảng đi muộn (D6)."""
+    return _doc(thang)
+
+
 def doc_ngay(ngay: str) -> dict:
     """{user: {vao, ra, nguon_ra}} của một ngày (YYYY-MM-DD) — cho trang Nhân sự."""
     return _doc(ngay[:7]).get(ngay, {})

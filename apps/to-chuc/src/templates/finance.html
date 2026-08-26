@@ -53,6 +53,7 @@
   <a href="/finance?tab=pnl&thang={{ thang }}" class="{% if tab == 'pnl' %}active{% endif %}">Channel P&amp;L</a>
   <a href="/finance?tab=wallets&thang={{ thang }}" class="{% if tab == 'wallets' %}active{% endif %}">Wallets</a>
   <a href="/finance?tab=subs" class="{% if tab == 'subs' %}active{% endif %}">Subscriptions</a>
+  <a href="/finance?tab=payroll" class="{% if tab == 'payroll' %}active{% endif %}">Payroll</a>
 </div>
 
 {% if tab == 'ledger' %}
@@ -210,6 +211,126 @@
     ≈ <b>{{ kha_dung_vnd | vnd }}</b> — chưa gồm ví khoản phải thu.
   {% else %}Chưa có bút toán nào — số dư ví hiện khi sổ có dữ liệu.{% endif %}
 </div>
+
+{% elif tab == 'payroll' %}
+{% set bl = bang_luong %}
+<h3 class="hub-tieu">
+  <svg class="ic" viewBox="0 0 24 24"><path d="M4 6h16v12H4z"/><circle cx="12" cy="12" r="2.5"/><path d="M7 12h.01M17 12h.01"/></svg>
+  Bảng lương kỳ {{ bl.ky }}
+  <form method="get" action="/finance" style="display:inline-flex;gap:.4rem;align-items:center">
+    <input type="hidden" name="tab" value="payroll">
+    <input type="month" name="ky_luong" value="{{ bl.ky }}" class="o">
+    <button type="submit" class="nut phu" style="padding:.3rem .8rem;font-size:.82rem">Xem</button>
+  </form>
+  <span style="font-size:.8rem;color:var(--muted)">ngày làm việc của tháng: {{ bl.ngay_lam_viec }}</span>
+</h3>
+
+{% if iam_loi %}<div class="canh">Không đọc được sổ nhân sự: {{ iam_loi }}</div>{% endif %}
+{% if not bl.da_chot_cong %}
+<div class="canh">Kỳ này <b>chưa chốt công</b> — chốt công ở HR Hub trước, duyệt chi lương đang khóa.</div>
+{% endif %}
+{% if bl.da_duyet %}<div class="canh">Bảng lương kỳ này <b>đã duyệt</b> — bút toán CHI-LUONG đã vào sổ.</div>{% endif %}
+
+<div class="bang-cuon">
+<table class="bang">
+  <tr><th>Nhân sự</th><th>Vị trí</th><th class="so">Ngày công</th><th class="so">Đi muộn</th>
+    <th>Xếp loại</th><th class="so">Lương cơ bản</th><th class="so">Hệ số</th>
+    <th class="so">Điều chỉnh HR</th><th class="so">Thực nhận</th></tr>
+  {% for d in bl.dong %}
+  <tr><td><b class="tk">{{ d.ma or '—' }}</b> {{ d.ho_ten or d.ten }}</td>
+    <td>{{ d.vi_tri or '—' }}</td>
+    <td class="so">{{ d.cong_chot }} / {{ bl.ngay_lam_viec }}</td>
+    <td class="so">{% if d.di_muon.so_buoi %}
+        <span class="{% if d.di_muon.qua_nguong %}am{% endif %}">{{ d.di_muon.so_buoi }} buổi</span>
+        <span class="thieu">{{ d.di_muon.tong_phut }}′</span>
+      {% else %}<span class="thieu">—</span>{% endif %}</td>
+    <td>{% if d.xep_loai %}<span class="badge ok">{{ d.xep_loai }}</span>
+        {% else %}<span class="badge do">chưa đánh giá</span>{% endif %}</td>
+    <td class="so">{% if d.luong_co_ban %}{{ d.luong_co_ban | vnd }}{% else %}<span class="thieu">—</span>{% endif %}</td>
+    <td class="so">{% if d.he_so %}{{ '%.2f' | format(d.he_so) }}{% else %}<span class="thieu">—</span>{% endif %}</td>
+    <td class="so">{% if d.dieu_chinh %}<span class="{% if d.dieu_chinh < 0 %}am{% endif %}">{{ d.dieu_chinh | vnd }}</span>
+        <div class="thieu">{{ d.ly_do_dieu_chinh }}</div>{% else %}0{% endif %}</td>
+    <td class="so">{% if d.thuc_nhan %}<b>{{ d.thuc_nhan | vnd }}</b>
+        {% else %}<span class="badge do">— {{ d.thieu }}</span>{% endif %}</td></tr>
+  {% else %}
+  <tr><td colspan="9">Chưa có nhân sự nào trong sổ.</td></tr>
+  {% endfor %}
+  <tfoot><tr><td colspan="8"><b>Tổng đề nghị chi kỳ {{ bl.ky }}</b></td>
+    <td class="so"><b>{{ bl.tong | vnd }}</b></td></tr></tfoot>
+</table>
+</div>
+
+<div class="canh"><b>Máy không tự trừ tiền của ai.</b> Lương = cơ bản × hệ số xếp loại + điều chỉnh của HR.
+  Ngày công và đi muộn hiện ra để HR nhìn mà quyết — muốn trừ thì nhập ô Điều chỉnh kèm lý do,
+  và lý do đó nằm lại trong bảng lương đã duyệt.</div>
+
+<details class="form-moi">
+  <summary>Đặt lương cơ bản</summary>
+  <form method="post" action="/finance/luong/co-ban">
+    <input type="hidden" name="ky" value="{{ bl.ky }}">
+    <div class="form-luoi">
+      <div><label>Nhân sự</label><select name="ten" required class="o">
+        {% for d in bl.dong %}<option value="{{ d.ten }}">{{ d.ho_ten or d.ten }} ({{ d.ma }})</option>{% endfor %}
+      </select></div>
+      <div><label>Lương cơ bản (VND)</label><input type="number" name="so_tien" min="0" step="1000" required class="o"></div>
+    </div>
+    <div style="margin-top:10px"><button type="submit" class="nut">Lưu</button></div>
+  </form>
+</details>
+
+<details class="form-moi">
+  <summary>Điều chỉnh lương kỳ {{ bl.ky }}</summary>
+  <form method="post" action="/finance/luong/dieu-chinh">
+    <input type="hidden" name="ky" value="{{ bl.ky }}">
+    <div class="form-luoi">
+      <div><label>Nhân sự</label><select name="ten" required class="o">
+        {% for d in bl.dong %}<option value="{{ d.ten }}">{{ d.ho_ten or d.ten }}</option>{% endfor %}
+      </select></div>
+      <div><label>Số tiền (âm là trừ)</label><input type="number" name="so_tien" step="1000" required class="o"></div>
+      <div><label>Lý do (bắt buộc)</label><input type="text" name="ly_do" required class="o"></div>
+    </div>
+    <div style="margin-top:10px"><button type="submit" class="nut">Ghi điều chỉnh</button></div>
+  </form>
+</details>
+
+{% if la_owner and bl.da_chot_cong and not bl.da_duyet %}
+<form method="post" action="/finance/luong/duyet" class="form-moi">
+  <input type="hidden" name="ky" value="{{ bl.ky }}">
+  <div class="form-luoi">
+    <div><label>Mục tiêu</label><select name="muc_tieu" required class="o">
+      {% for m in muc_tieu %}<option value="{{ m.ten }}">{{ m.ten }}</option>{% endfor %}
+    </select></div>
+    <div><label>Trả từ ví</label><select name="vi" required class="o">
+      {% for v in danh_muc_vi %}<option value="{{ v.ma }}">{{ v.ten }} ({{ v.tien_te }})</option>{% endfor %}
+    </select></div>
+  </div>
+  <div style="margin-top:10px"><button type="submit" class="nut">Owner duyệt &amp; sinh bút toán CHI-LUONG</button></div>
+</form>
+{% endif %}
+
+<h3 class="hub-tieu" style="margin-top:1.4rem">
+  <svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+  Cảnh báo đi muộn — không dính tới lương
+  <span style="font-size:.8rem;color:var(--muted)">giờ vào chuẩn {{ gio_lam_viec.gio_vao }} · dung sai {{ gio_lam_viec.dung_sai }}′ · nhắc khi quá {{ gio_lam_viec.nguong }} buổi</span>
+</h3>
+<div class="bang-cuon">
+<table class="bang">
+  <tr><th>Nhân sự</th><th class="so">Số buổi</th><th class="so">Tổng phút</th><th class="so">Muộn nhất</th><th>Các ngày</th><th></th></tr>
+  {% for d in bl.dong if d.di_muon.so_buoi %}
+  <tr><td><b class="tk">{{ d.ma or '—' }}</b> {{ d.ho_ten or d.ten }}</td>
+    <td class="so {% if d.di_muon.qua_nguong %}am{% endif %}">{{ d.di_muon.so_buoi }}</td>
+    <td class="so">{{ d.di_muon.tong_phut }}′</td>
+    <td class="so">{{ d.di_muon.muon_nhat }}</td>
+    <td>{% for c in d.di_muon.chi_tiet %}<span class="chip-ngay badge">{{ c.ngay[8:] }}/{{ c.ngay[5:7] }}</span> {% endfor %}</td>
+    <td>{% if d.di_muon.qua_nguong %}<span class="badge do">quá ngưỡng</span>
+        {% else %}<span class="badge">trong ngưỡng</span>{% endif %}</td></tr>
+  {% else %}
+  <tr><td colspan="6">Kỳ này không ai đi muộn.</td></tr>
+  {% endfor %}
+</table>
+</div>
+<div class="canh">Đo bằng <b>lần mở CRM đầu ngày</b> — làm việc ngoài hệ không được ghi nhận, nên đây là tín hiệu để HR hỏi,
+  không phải bằng chứng để phạt. Ngày không mở CRM tính là <b>vắng</b>, không tính là muộn.</div>
 
 {% elif tab == 'subs' %}
 <h3 class="hub-tieu">

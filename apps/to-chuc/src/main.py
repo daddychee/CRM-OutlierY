@@ -60,7 +60,7 @@ os.environ.setdefault("KPI_DANH_GIA_DIR", str(ROOT / "data" / "to-chuc" / "db" /
 os.environ.setdefault("SO_THU_CHI_DIR", str(ROOT / "data" / "to-chuc" / "db" / "so-thu-chi"))
 os.environ.setdefault("MUC_TIEU_PATH", str(ROOT / "data" / "to-chuc" / "db" / "muc-tieu.json"))
 
-from src import kpi_danh_gia, tai_chinh, vault           # noqa: E402
+from src import kpi_danh_gia, luong, tai_chinh, vault           # noqa: E402
 from src.cham_cong import doc_ngay as cc_doc_ngay        # noqa: E402
 from src.cham_cong import (bang_cong_thang, chot_ky, doc_chot, ghi_nhan,  # noqa: E402
                            gio_chu, tong_gio)
@@ -413,10 +413,12 @@ def hr_kpi_danh_gia(nguoi: str = Form(...), ky: str = Form(...),
 def finance_trang(request: Request, tab: str = "ledger", thang: str = "",
                   tu: str = "", den: str = "", loai: str = "", vi: str = "",
                   kenh: str = "", muc_tieu: str = "", danh_muc: str = "",
-                  q: str = "", user: dict = Depends(yeu_cau_finance)):
+                  q: str = "", ky_luong: str = "",
+                  user: dict = Depends(yeu_cau_finance)):
     """Finance Hub — 4 tab theo mockup finance-hub.html: Ledger (sổ chỉ-thêm +
     đảo) · Goals (mục tiêu) · Categories (rules CSV + tổng) · Channel P&L."""
-    if tab not in ("ledger", "goals", "categories", "pnl", "wallets", "subs"):
+    if tab not in ("ledger", "goals", "categories", "pnl", "wallets", "subs",
+                   "payroll"):
         tab = "ledger"
     thang = _thang_hop_le(thang)
 
@@ -449,7 +451,8 @@ def finance_trang(request: Request, tab: str = "ledger", thang: str = "",
         "dich_vu": tai_chinh.doc_dich_vu(), "den_han": tai_chinh.den_han(),
         "thue_bao_thang": tai_chinh.chi_phi_thue_bao_thang(),
         "tiet_kiem": tai_chinh.tiet_kiem_neu_bo(),
-        "la_owner": user["level"] >= 5})
+        "la_owner": user["level"] >= 5,
+        **_du_lieu_luong(tab, ky_luong)})
 
 
 @app.post("/finance/but-toan")
@@ -516,6 +519,56 @@ def finance_dich_vu_ghi(id: str = Form(...), muc_tieu: str = Form(...),
         raise HTTPException(422, str(e))
     nhat_ky.ghi("to-chuc", user["ten"], "thue_bao_ghi", f"{dv['ten']} {b['id']}")
     return RedirectResponse("/finance?tab=subs", status_code=303)
+
+
+def _du_lieu_luong(tab: str, ky: str) -> dict:
+    """Chỉ tính khi ĐANG XEM tab Payroll — đọc IAM + chấm công + KPI không rẻ."""
+    if tab != "payroll":
+        return {"bang_luong": None, "ky_luong": ky}
+    ky = _thang_hop_le(ky)
+    ds_nguoi, iam_loi = _ds_nguoi_iam()
+    return {"ky_luong": ky, "iam_loi": iam_loi,
+            "bang_luong": luong.bang_luong(ky, ds_nguoi or []),
+            "gio_lam_viec": luong.doc_gio_lam_viec()}
+
+
+@app.post("/finance/luong/co-ban")
+def finance_luong_co_ban(ten: str = Form(...), so_tien: str = Form(...),
+                         ky: str = Form(""), user: dict = Depends(yeu_cau_finance)):
+    try:
+        luong.dat_luong_co_ban(user["ten"], ten, so_tien)
+    except ValueError as e:
+        raise HTTPException(422, str(e))
+    nhat_ky.ghi("to-chuc", user["ten"], "luong_co_ban", f"{ten} {so_tien}")
+    return RedirectResponse(f"/finance?tab=payroll&ky_luong={ky}", status_code=303)
+
+
+@app.post("/finance/luong/dieu-chinh")
+def finance_luong_dieu_chinh(ten: str = Form(...), ky: str = Form(...),
+                             so_tien: str = Form(...), ly_do: str = Form(...),
+                             user: dict = Depends(yeu_cau_finance)):
+    """Đường DUY NHẤT để công vắng / đi muộn ảnh hưởng lương — lý do bắt buộc."""
+    try:
+        luong.them_dieu_chinh(user["ten"], ky, ten, so_tien, ly_do)
+    except ValueError as e:
+        raise HTTPException(422, str(e))
+    nhat_ky.ghi("to-chuc", user["ten"], "luong_dieu_chinh", f"{ky} {ten} {so_tien}")
+    return RedirectResponse(f"/finance?tab=payroll&ky_luong={ky}", status_code=303)
+
+
+@app.post("/finance/luong/duyet")
+def finance_luong_duyet(ky: str = Form(...), muc_tieu: str = Form(...),
+                        vi: str = Form(...), user: dict = Depends(yeu_cau_finance)):
+    """Duyệt CHI tiền → chỉ Owner (HR lập và gửi phiếu, Owner quyết chi)."""
+    if user["level"] < 5:
+        raise HTTPException(403, "Chỉ Owner được duyệt chi lương.")
+    ds_nguoi, _ = _ds_nguoi_iam()
+    try:
+        ban = luong.duyet_bang_luong(user["ten"], ky, ds_nguoi or [], muc_tieu, vi)
+    except ValueError as e:
+        raise HTTPException(422, str(e))
+    nhat_ky.ghi("to-chuc", user["ten"], "luong_duyet", f"{ky} tong {ban['tong']}")
+    return RedirectResponse(f"/finance?tab=payroll&ky_luong={ky}", status_code=303)
 
 
 @app.get("/finance/xuat.csv")

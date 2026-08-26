@@ -382,7 +382,10 @@ def _gio_chuc_nang(u: dict, conn) -> list[str]:
     t = _tick("ke_toan")
     if t if t is not None else (
             u["level"] >= iam.OWNER_LEVEL
-            or (u.get("bo_phan") == KE_TOAN_BO_PHAN and u["level"] >= 2)):
+            or (u.get("bo_phan") == KE_TOAN_BO_PHAN and u["level"] >= 2)
+            # Owner chốt 26/08: HR cũng làm lương + xuất phiếu (bộ phận Kế toán
+            # mới 2 người). Tick 'ke_toan' = False vẫn THẮNG, chặn được từng người.
+            or (t is None and "hr" in co)):
         co.append("finance")
     return co
 
