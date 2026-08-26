@@ -611,3 +611,34 @@ def test_route_tab_ngach_render():
     _seed_vai_but_toan()
     b = _client().get("/finance?tab=ngach&ky_luong=2026-08").text
     assert "Chi phí sản xuất theo ngách" in b
+
+
+# ---------- B3: mức đốt & thời gian còn sống ----------
+
+def test_muc_dot_chua_co_du_lieu_thi_khong_bia():
+    m = tai_chinh.muc_dot(THANG_NAY)
+    assert m["chi_tb"] == 0 and m["thu_tb"] == 0
+    assert m["dot_rong"] is None and m["so_thang_con"] is None
+
+
+def test_muc_dot_tinh_tu_3_thang_gan_nhat():
+    _seed_muc_tieu()
+    for t, thu, chi in [("2026-06", 30_000_000, 60_000_000),
+                        ("2026-07", 30_000_000, 60_000_000),
+                        ("2026-08", 30_000_000, 60_000_000)]:
+        tai_chinh.them_but_toan("kt", f"{t}-10", "THU-ADS", thu, "Vận hành chung", vi=VI)
+        tai_chinh.them_but_toan("kt", f"{t}-11", "CHI-API", chi, "Vận hành chung", vi=VI)
+    m = tai_chinh.muc_dot("2026-08")
+    assert m["chi_tb"] == 60_000_000 and m["thu_tb"] == 30_000_000
+    assert m["dot_rong"] == 30_000_000
+    # số dư ví: 3 tháng thu 90tr, chi 180tr → âm; runway âm thì báo None
+    assert m["so_thang_con"] is None and m["het_tien"] is True
+
+
+def test_thu_lon_hon_chi_thi_khong_co_runway():
+    _seed_muc_tieu()
+    tai_chinh.them_but_toan("kt", "2026-08-10", "THU-ADS", 90_000_000, "Vận hành chung", vi=VI)
+    tai_chinh.them_but_toan("kt", "2026-08-11", "CHI-API", 10_000_000, "Vận hành chung", vi=VI)
+    m = tai_chinh.muc_dot("2026-08")
+    assert m["dot_rong"] is None and m["so_thang_con"] is None
+    assert m["duong"] is True          # đang lãi — không có khái niệm "còn sống mấy tháng"

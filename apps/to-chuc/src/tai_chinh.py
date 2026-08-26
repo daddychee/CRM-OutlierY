@@ -824,3 +824,35 @@ def du_lieu_bieu_do(den_thang: str) -> dict:
             "co_cau_nhan": [x[0] for x in co_cau], "co_cau_so": [x[1] for x in co_cau],
             "kenh_nhan": [x[0] for x in kenh], "kenh_so": [x[1] for x in kenh],
             "thue_bao_nhan": list(tb), "thue_bao_so": [round(v) for v in tb.values()]}
+
+
+def muc_dot(den_thang: str, so_thang: int = 3) -> dict:
+    """B3 — mức đốt và thời gian còn sống.
+
+    dot_rong = chi trung bình − thu trung bình của N tháng gần nhất;
+    so_thang_con = tiền khả dụng ÷ dot_rong.
+
+    Van chống bịa: thu ≥ chi thì KHÔNG có khái niệm "còn sống mấy tháng"
+    (duong=True); tiền khả dụng ≤ 0 thì het_tien=True. Cả hai ca đều trả
+    so_thang_con=None chứ không nặn ra một con số.
+    """
+    ds = chuoi_thang(den_thang, so_thang)
+    thu = sum(tong_thang(t)["thu"] for t in ds) / so_thang
+    chi = sum(tong_thang(t)["chi"] for t in ds) / so_thang
+    kha_dung = tien_kha_dung_vnd()
+    dot = chi - thu
+    ra = {"tu": ds[0], "den": ds[-1], "thu_tb": round(thu), "chi_tb": round(chi),
+          "kha_dung": round(kha_dung), "dot_rong": None, "so_thang_con": None,
+          "duong": False, "het_tien": False,
+          "thue_bao_thang": round(chi_phi_thue_bao_thang())}
+    if chi <= 0 and thu <= 0:
+        return ra                                  # sổ chưa có gì để nói
+    if dot <= 0:
+        ra["duong"] = True
+        return ra
+    ra["dot_rong"] = round(dot)
+    if kha_dung <= 0:
+        ra["het_tien"] = True
+        return ra
+    ra["so_thang_con"] = round(kha_dung / dot, 1)
+    return ra

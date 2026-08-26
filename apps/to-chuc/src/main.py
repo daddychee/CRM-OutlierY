@@ -464,6 +464,7 @@ def finance_trang(request: Request, tab: str = "ledger", thang: str = "",
         "moc_ky": lich_tai_chinh.moc_ky(_ky_truoc(thang)),
         "ky_truoc": _ky_truoc(thang),
         "bd": tai_chinh.du_lieu_bieu_do(thang) if tab == "dashboard" else None,
+        **(_du_lieu_tong_quan(thang) if tab == "dashboard" else {}),
         **_du_lieu_luong(tab, ky_luong),
         **_du_lieu_ngach(tab, ky_luong)})
 
@@ -538,6 +539,39 @@ def _ky_truoc(thang: str) -> str:
     """Kỳ mà lịch tài chính đang nói tới: các mốc của kỳ N rơi vào tháng N+1."""
     nam, th = int(thang[:4]), int(thang[5:7])
     return f"{nam - 1:04d}-12" if th == 1 else f"{nam:04d}-{th - 1:02d}"
+
+
+def _du_lieu_tong_quan(thang: str) -> dict:
+    """Khối A1 · B3 · D2 · TQ của tab Tổng quan. Mỗi việc trong "cần làm" phải
+    ĐẾM ĐƯỢC từ dữ liệu thật — không liệt kê việc của module chưa có."""
+    can_lam = []
+    thieu_ct = [b for b in tai_chinh.doc_so()
+                if b.get("loai") != "dao" and not b.get("tep_dinh_kem")
+                and not b.get("chung_tu")]
+    if thieu_ct:
+        can_lam.append({"muc": "gap", "chu": f"{len(thieu_ct)} bút toán thiếu chứng từ",
+                        "di": "/finance?tab=ledger", "nhan": "Mở sổ"})
+    qua_han = [d for d in tai_chinh.den_han() if d.get("qua_han")]
+    if qua_han:
+        can_lam.append({"muc": "gap",
+                        "chu": f"{len(qua_han)} thuê bao quá hạn chưa ghi",
+                        "di": "/finance?tab=subs", "nhan": "Xem"})
+    ky_luong_truoc = _ky_truoc(thang)
+    ds_nguoi, _ = _ds_nguoi_iam()
+    bl = luong.bang_luong(ky_luong_truoc, ds_nguoi or [])
+    thieu_xl = [d for d in bl["dong"] if d["thieu"]]
+    if thieu_xl:
+        can_lam.append({"muc": "canh",
+                        "chu": f"{len(thieu_xl)} người chưa đủ dữ liệu lương kỳ {ky_luong_truoc}",
+                        "di": f"/finance?tab=payroll&ky_luong={ky_luong_truoc}",
+                        "nhan": "Xem lương"})
+    if bl["da_duyet"]:
+        can_lam.append({"muc": "xong", "chu": f"Đã duyệt lương kỳ {ky_luong_truoc}",
+                        "di": "", "nhan": ""})
+    if not tai_chinh.ty_gia_ngay(date.today().isoformat(), "USD"):
+        can_lam.append({"muc": "canh", "chu": "Chưa có tỷ giá USD hôm nay",
+                        "di": "/finance?tab=wallets", "nhan": "Lấy tỷ giá"})
+    return {"muc_dot": tai_chinh.muc_dot(thang), "can_lam": can_lam}
 
 
 def _du_lieu_ngach(tab: str, ky: str) -> dict:
