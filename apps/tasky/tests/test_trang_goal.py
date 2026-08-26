@@ -162,3 +162,39 @@ def test_popup_goal_khong_hep_hon_popup_viec(_so):
     css = _c.get("/muc-tieu", headers=H_MGR).text
     rong = dict(re.findall(r"dialog\.(mt-modal|phieu-viec)\{width:min\((\d+)px", css))
     assert int(rong["mt-modal"]) >= int(rong["phieu-viec"]), rong
+
+
+def test_popup_co_du_thu_man_cu_co(ma, _so):
+    """Owner 26/08: popup phải bằng cái màn cũ, không được rơi mất phần nào —
+    vòng tiến độ, khối chốt kết quả, chọn màu, danh sách việc, đường sang board."""
+    g = mt.tao(MGR, "Goal A", "kq")
+    v = tuan.them_viec_giao(ma, MGR, NV, "Việc 1", "x", muc_tieu_id=g["id"])
+    tuan.nhan_viec(ma, v["id"], NV)
+    tuan.bao_xong(ma, v["id"], NV)
+    tuan.xac_nhan_viec(ma, v["id"], MGR)          # xong hết việc → hiện khối chốt
+    r = _c.get("/muc-tieu", headers=H_MGR)
+    hop = r.text.split('data-goal-modal="%s"' % g["id"])[1].split("</dialog>")[0]
+    assert 'class="vong"' in hop and "stroke-dashoffset" in hop
+    assert 'data-chot="%s"' % g["id"] in hop and 'data-kq="dat"' in hop
+    assert 'action="/muc-tieu/mau"' in hop
+    assert "Việc 1" in hop and 'href="/task?goal=%s"' % g["id"] in hop
+
+
+def test_goal_da_chot_co_nut_mo_lai_trong_popup(_so):
+    g = mt.tao(MGR, "Goal A", "kq")
+    mt.chot_ket_qua(g["id"], MGR, mt.MOT_PHAN, "làm được nửa")
+    r = _c.get("/muc-tieu", headers=H_MGR)
+    hop = r.text.split('data-goal-modal="%s"' % g["id"])[1].split("</dialog>")[0]
+    assert "Đã chốt: Một phần" in hop and "làm được nửa" in hop
+    assert 'data-mo-lai="%s"' % g["id"] in hop
+
+
+def test_popup_them_duoc_viec_ngay_tai_do(_so):
+    """Popup phải làm được MỌI việc của màn cũ — kể cả thêm việc, nếu không thì
+    vẫn phải nhảy sang board."""
+    g = mt.tao(MGR, "Goal A", "kq")
+    r = _c.get("/muc-tieu", headers=H_MGR)
+    hop = r.text.split('data-goal-modal="%s"' % g["id"])[1].split("</dialog>")[0]
+    assert 'class="them-viec"' in hop and 'data-che="%s"' % g["id"] in hop
+    assert "data-che-ten" in hop and "data-chon-ai" in hop        # tên việc + giao ai
+    assert "Thu Hà" in hop                                       # dropdown cấp dưới

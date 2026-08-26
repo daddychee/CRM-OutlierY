@@ -250,6 +250,10 @@ def trang_muc_tieu(request: Request, user: dict = Depends(yeu_cau_muc_tieu),
         "duoc_dat": mt_lo.duoc_dat_muc_tieu(user),
         "la_owner": user["level"] >= mt_lo.OWNER_LEVEL,
         "da_don": da_don, "loi_form": loi, "ten_hien": ten_hien,
+        # phiếu "Thêm việc" trong cửa sổ nổi cần đúng dữ liệu như màn Task
+        "cap_duoi": nhan_su.cap_duoi_cua(user)[0] or [],
+        "loai_viec": tuan_lo.cac_loai_viec(),
+        "ngang_cap": nhan_su.ngang_cap_bo_phan_khac(user)[0] or [],
         "con_viec_cu": sum(1 for ma_t in tuan_lo.cac_tuan_gan()
                            for v in tuan_lo.doc_tuan(ma_t)["viec"]
                            if not v.get("muc_tieu_id")),
