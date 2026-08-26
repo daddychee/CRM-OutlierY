@@ -10,7 +10,9 @@ Luật theo loại (hiến pháp mục 2.2 — DB sống KHÔNG copy trần):
 - file-khoa   → copy file lẻ (vd ket.key — chính nó là chìa để mở bi_mat)
 
 Chạy tay / theo lịch:  python -m nen.common.sao_luu  (đích: env BACKUP_DIR,
-mặc định D:/OUTLIERY-v2-backup — KHÔNG đụng D:/OUTLIERY-backup của hệ cũ).
+mặc định E:/OUTLIERY-V3-backup — Ổ KHÁC với ổ D chứa bản gốc: backup nằm cùng ổ
+với dữ liệu sống thì một ổ chết là mất cả hai (đổi 26/08/2026, trước đó là
+D:/OUTLIERY-v2-backup). KHÔNG đụng D:/OUTLIERY-backup của hệ cũ V2.
 Mỗi lần chạy ghi ket-qua.jsonl tại đích — backup không có sổ là backup trên niềm tin.
 """
 from __future__ import annotations
@@ -126,7 +128,7 @@ def sao_luu_store(store: dict, dich_goc: Path) -> dict:
 
 def chay_backup(dich_goc: Path | str | None = None,
                 manifest: Path | None = None) -> list[dict]:
-    dich_goc = Path(dich_goc or os.environ.get("BACKUP_DIR", "D:/OUTLIERY-v2-backup"))
+    dich_goc = Path(dich_goc or os.environ.get("BACKUP_DIR", "E:/OUTLIERY-V3-backup"))
     dich_goc.mkdir(parents=True, exist_ok=True)
     bao_cao = [sao_luu_store(s, dich_goc) for s in _doc_manifest(manifest)]
     with open(dich_goc / "ket-qua.jsonl", "a", encoding="utf-8") as f:

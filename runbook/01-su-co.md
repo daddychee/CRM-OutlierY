@@ -30,7 +30,7 @@ Bảng xanh = sống, đỏ = app đó không phản hồi.
   (xem 02-so-tay-admin.md mục Nạp tài liệu).
 
 ## 4. Khôi phục dữ liệu từ backup
-- Backup nằm ở thư mục `D:\OUTLIERY-v2-backup` (chạy `tools\scripts\backup.ps1`
+- Backup nằm ở thư mục `E:\OUTLIERY-V3-backup` (ổ KHÁC với ổ D chứa bản gốc — đổi 26/08/2026) (chạy `tools\scripts\backup.ps1`
   để tạo bản mới bất cứ lúc nào; sổ kết quả: `ket-qua.jsonl` trong đó).
 - Khôi phục một database SQLite: chép file `<tên>.snapshot.db` trong backup đè
   lên file gốc trong `D:\AI AGENT OUTLIERY\data\...` (TẮT hệ trước bằng

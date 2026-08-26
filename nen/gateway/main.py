@@ -455,7 +455,7 @@ def _thong_ke_de() -> dict:
         so_thuc_the = len(danh_ba.liet_ke())
     except Exception:
         so_thuc_the = None
-    bk_dir = Path(os.getenv("BACKUP_DIR", "D:/OUTLIERY-v2-backup"))
+    bk_dir = Path(os.getenv("BACKUP_DIR", "E:/OUTLIERY-V3-backup"))
     backup_moi = None
     if bk_dir.exists():
         cac = sorted((d for d in bk_dir.iterdir() if d.is_dir()),
