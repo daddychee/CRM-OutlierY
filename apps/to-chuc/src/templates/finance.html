@@ -394,7 +394,9 @@ window.addEventListener('storage', function (e) { if (e.key === 'outliery_theme'
         <div><label>Số chứng từ</label><input type="text" name="chung_tu" class="o" placeholder="INV-{{ hom_nay }}"></div>
       </div>
       <label style="display:block;font-size:.74rem;color:var(--muted);margin:10px 0 2px">Ghi chú</label>
-      <input type="text" name="ghi_chu" class="o" style="width:100%;box-sizing:border-box">
+      <input type="text" name="ghi_chu" id="bt-ghi-chu" class="o"
+             style="width:100%;box-sizing:border-box" oninput="apGoiY()">
+      <div id="bt-goi-y" class="badge ok" style="margin-top:6px;display:none"></div>
       <label style="display:block;font-size:.74rem;color:var(--muted);margin:10px 0 2px">Chứng từ đính kèm</label>
       <div class="keo">Kéo ảnh hóa đơn vào đây — hoặc
         <input type="file" name="tep" multiple accept=".jpg,.jpeg,.png,.webp,.pdf"></div>
@@ -408,6 +410,31 @@ window.addEventListener('storage', function (e) { if (e.key === 'outliery_theme'
 <script>
 function moModal(m) { document.getElementById('mb-bt').classList.toggle('show', !!m); }
 document.addEventListener('keydown', function (e) { if (e.key === 'Escape') moModal(0); });
+var LUAT = {{ (luat_goi_y or []) | tojson }};
+function khongDau(t) {
+  return (t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+}
+function apGoiY() {
+  /* C2 — luật chỉ ĐIỀN SẴN, người ghi sửa được; không khớp thì im lặng. */
+  var van = khongDau(document.getElementById('bt-ghi-chu').value);
+  var o = document.getElementById('bt-goi-y');
+  for (var i = 0; i < LUAT.length; i++) {
+    var l = LUAT[i];
+    for (var j = 0; j < l.khop.length; j++) {
+      if (van.indexOf(khongDau(l.khop[j])) >= 0) {
+        var f = document.querySelector('#mb-bt form');
+        if (l.danh_muc) f.danh_muc.value = l.danh_muc;
+        if (l.vi) { f.vi.value = l.vi; tinhQuyVnd(); }
+        if (l.kenh_ma) f.kenh_ma.value = l.kenh_ma;
+        o.textContent = 'Gợi ý từ luật: ' + [l.danh_muc, l.vi].filter(Boolean).join(' · ')
+                        + ' — đã điền sẵn, sửa được';
+        o.style.display = '';
+        return;
+      }
+    }
+  }
+  o.style.display = 'none';
+}
 function tinhQuyVnd() {
   var so = parseFloat(document.getElementById('bt-so-tien').value) || 0;
   var viSel = document.getElementById('bt-vi');

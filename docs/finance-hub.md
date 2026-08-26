@@ -21,8 +21,13 @@
 **Đã chạy trên CRM** (app `to-chuc` cổng 9103 restart 26/08): 9 tab, 116 test app +
 232 test root xanh. Sổ tiền vẫn rỗng — chờ Owner nhập dữ liệu vận hành (mục 10).
 
-**Còn lại:** đợt B (B1 phân bổ · B2 đơn vị kinh tế · B3 runway · B4 ngân sách kỳ ·
-B5 đối soát AdSense) và C2 luật gợi ý · C3 tiền API từ quota · C5 chốt kỳ.
+| 26/08/2026 | **CODE XONG TOÀN BỘ 18 tính năng** (A · B · C · D) | 12 commit, 147 test app |
+
+**Đã chạy trên CRM** — 10 tab: Tổng quan · Sổ thu chi · Ví & chốt kỳ · Ngân sách ·
+Kênh · Ngách · Lương · Thuê bao · Tự động · Danh mục.
+
+**Không còn tính năng nào của mockup v4 thiếu module.** Sổ tiền vẫn rỗng — chờ
+Owner nhập dữ liệu vận hành (mục 10).
 
 **Sổ tiền đang RỖNG** (0 bút toán, `data/to-chuc/db/so-thu-chi/` chưa có tệp).
 Đây là lý do mọi thay đổi cấu trúc bản ghi phải làm **trước** khi mở cho kế toán ghi:

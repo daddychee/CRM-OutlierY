@@ -85,6 +85,23 @@ CHỈ Owner). Chi tiết env + việc treo: README.md.
   DICH_VU_PATH, LUONG_DIR). Thêm store mới thì PHẢI thêm env vào conftest.
   Chi tiết + spec: `docs/finance-hub.md` + `docs/finance-hub-spec.md`.
 
+- 26/08/2026 (tiếp) — **FINANCE HUB XONG TOÀN BỘ 18 TÍNH NĂNG**, 147 test app.
+  Module mới đợt này: `src/don_vi_kinh_te.py` (B2) · `src/tu_dong.py` (B5 đối soát
+  AdSense + C3 tiền API từ quota log + C2 luật gợi ý) · `templates/doi_soat.html`;
+  thêm vào `tai_chinh.py`: `pnl_phan_bo` (B1) · `muc_dot` (B3) · `ngan_sach_ky` +
+  `dat_han_muc` (B4) · `chot_ky_tien` + `doi_chieu_vi` (C5).
+  **BÀI HỌC UI ĐẮT NHẤT MẠCH NÀY** (Owner bắt lỗi 3 lần liên tiếp): tôi dựng trang
+  từ trí nhớ + khuôn app thay vì mở tệp mockup đặt cạnh chép từng khối, rồi báo
+  "xong" dựa trên test xanh. Ba lần sai: (1) chỉ đổi nhãn tab, thân trang vẫn bản
+  cũ tiếng Anh; (2) tab Tổng quan thiếu 4/6 khối; (3) tự đặt `max-width:1180px`
+  làm trang co lại giữa màn trong khi mockup tràn khung, thanh lọc và form sai kiểu.
+  **Từ nay: mỗi thay đổi UI phải chụp lại trang thật bằng Chrome headless
+  (`--headless=new --screenshot`, ép `data-theme="dark"` để so đúng cặp) và đối
+  chiếu mockup TRƯỚC khi báo.** Test xanh không chứng minh giao diện đúng.
+  Bài học thứ hai: phần chưa code thì giữ nguyên vị trí khối kèm nhãn "chưa có
+  module" (như mốc đối soát trong Lịch tài chính), ĐỪNG cắt bỏ tab — cắt đi thì
+  trang trông như một sản phẩm khác hẳn bản đã duyệt.
+
 ## Bài học / bẫy riêng app
 
 - **Điểm hứng chấm công đổi tầng**: hệ cũ hứng MỌI app ở cổng 8000; v2 app chỉ hứng

@@ -182,3 +182,10 @@ def test_route_csv_hong_tra_422():
     r = _client().post("/finance/doi-soat", data={"thang": THANG},
                        files=[("tep", ("x.csv", b"a,b\n1,2", "text/csv"))])
     assert r.status_code == 422
+
+
+def test_modal_but_toan_co_goi_y_c2():
+    _seed()
+    b = _client().get(f"/finance?tab=ledger&thang={THANG}").text
+    assert "apGoiY()" in b and "var LUAT =" in b
+    assert "CHI-PROXY" in b            # luật đã nhúng để JS gợi ý ngay khi gõ
