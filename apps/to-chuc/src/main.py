@@ -25,12 +25,14 @@ Chạy (từ ROOT): python -m uvicorn src.main:app --app-dir "apps/to-chuc" --po
 from __future__ import annotations
 
 import csv
+import io
 import os
 import re
 import shutil
 import subprocess
 import threading
 import time
+import zipfile
 from datetime import date, datetime
 from pathlib import Path
 from urllib.parse import quote, unquote
@@ -60,7 +62,7 @@ os.environ.setdefault("KPI_DANH_GIA_DIR", str(ROOT / "data" / "to-chuc" / "db" /
 os.environ.setdefault("SO_THU_CHI_DIR", str(ROOT / "data" / "to-chuc" / "db" / "so-thu-chi"))
 os.environ.setdefault("MUC_TIEU_PATH", str(ROOT / "data" / "to-chuc" / "db" / "muc-tieu.json"))
 
-from src import kpi_danh_gia, luong, tai_chinh, vault           # noqa: E402
+from src import chi_phi_ngach, kpi_danh_gia, luong, tai_chinh, vault           # noqa: E402
 from src.cham_cong import doc_ngay as cc_doc_ngay        # noqa: E402
 from src.cham_cong import (bang_cong_thang, chot_ky, doc_chot, ghi_nhan,  # noqa: E402
                            gio_chu, tong_gio)
@@ -569,6 +571,54 @@ def finance_luong_duyet(ky: str = Form(...), muc_tieu: str = Form(...),
         raise HTTPException(422, str(e))
     nhat_ky.ghi("to-chuc", user["ten"], "luong_duyet", f"{ky} tong {ban['tong']}")
     return RedirectResponse(f"/finance?tab=payroll&ky_luong={ky}", status_code=303)
+
+
+def _phieu_context(ky: str, ten: str) -> dict | None:
+    """Gom dữ liệu phiếu: lương đã duyệt + ngách đã tham gia (D3)."""
+    ds_nguoi, _ = _ds_nguoi_iam()
+    ng = []
+    try:
+        cp = chi_phi_ngach.chi_phi_ngach(ky, ds_nguoi or [])
+        ng = [{"ten": d["ten"], "ngach_ma": d["ngach_ma"],
+               "ngay_cong": round(d["ngay_cong"], 1)}
+              for d in cp["dong"] if ten in d["nguoi"]]
+    except Exception:          # nguồn ngoài chết thì phiếu vẫn ra, chỉ thiếu khối
+        ng = []
+    return luong.du_lieu_phieu(ky, ten, ngach=ng)
+
+
+@app.get("/finance/luong/phieu/{ky}/{ten}", response_class=HTMLResponse)
+def finance_phieu_luong(request: Request, ky: str, ten: str,
+                        user: dict = Depends(yeu_cau_finance)):
+    """Phiếu lương — trang HTML IN ĐƯỢC (Ctrl+P ra PDF). KHÔNG dùng WeasyPrint:
+    máy Windows này thiếu GTK, 3 test test_remake_dep fail đúng vì lý do đó."""
+    ctx = _phieu_context(ky, ten)
+    if ctx is None:
+        raise HTTPException(404, "Chưa có phiếu cho kỳ này.")
+    return templates.TemplateResponse(request, "phieu_luong.html",
+                                      {"user": user, **ctx})
+
+
+@app.get("/finance/luong/phieu.zip")
+def finance_phieu_zip(request: Request, ky: str,
+                      user: dict = Depends(yeu_cau_finance)):
+    """Gói cả kỳ cho HR tải một lần rồi tự gửi (Workspace). Gửi thẳng bằng SMTP
+    là việc sau — chưa có tài khoản gửi thì đừng vẽ nút."""
+    ban = luong.doc_bang_luong(ky)
+    if not ban:
+        raise HTTPException(404, "Kỳ này chưa duyệt lương.")
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
+        for d in ban.get("dong", []):
+            ctx = _phieu_context(ky, d["ten"])
+            if ctx is None:
+                continue
+            html = templates.get_template("phieu_luong.html").render(
+                request=request, user=user, **ctx)
+            z.writestr(f"phieu-luong-{ky}-{d.get('ma') or d['ten']}.html", html)
+    return Response(buf.getvalue(), media_type="application/zip",
+                    headers={"Content-Disposition":
+                             f'attachment; filename="phieu-luong-{ky}.zip"'})
 
 
 @app.get("/finance/xuat.csv")

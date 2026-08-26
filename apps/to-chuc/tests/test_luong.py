@@ -178,3 +178,41 @@ def test_route_payroll_render_va_duyet_chi_owner():
     # duyệt chi: kế toán L2 KHÔNG được, dù có cờ finance
     assert c.post("/finance/luong/duyet",
                   data={"ky": KY, "muc_tieu": "x", "vi": "vietcombank"}).status_code == 403
+
+
+# ---------- D5: phiếu lương ----------
+
+def test_phieu_luong_chi_co_khi_ky_da_duyet():
+    from fastapi.testclient import TestClient
+    from src.main import app
+    c = TestClient(app, headers={"X-Remote-User": "hr1", "X-Remote-Level": "3",
+                                 "X-Remote-Role": "viewer",
+                                 "X-Remote-Dept": "HR", "X-Remote-Apps": "to-chuc,hr,finance"})
+    _seed_de_duyet()
+    # kỳ chưa duyệt → không có phiếu nháp nào trôi ra ngoài
+    assert c.get(f"/finance/luong/phieu/{KY}/ngocth").status_code == 404
+    cham_cong.chot_ky(KY, "hr")
+    luong.duyet_bang_luong("Bot", KY, NGUOI, "Vận hành chung", "vietcombank")
+    r = c.get(f"/finance/luong/phieu/{KY}/ngocth")
+    assert r.status_code == 200
+    b = r.text
+    assert "Trần Hồng Ngọc" in b and "NS-005" in b
+    assert "13.200.000" in b                       # thực nhận
+    assert "3 / 26" in b                           # công / ngày làm việc
+    assert "không trừ lương" in b                  # nhãn đi muộn nói rõ
+    assert "@media print" in b                     # trang IN được, không cần WeasyPrint
+    # người không có trong bảng → 404 lặng lẽ
+    assert c.get(f"/finance/luong/phieu/{KY}/khong-co-ai").status_code == 404
+
+
+def test_tai_ca_ky_dang_zip():
+    from fastapi.testclient import TestClient
+    from src.main import app
+    c = TestClient(app, headers={"X-Remote-User": "hr1", "X-Remote-Level": "3",
+                                 "X-Remote-Role": "viewer",
+                                 "X-Remote-Dept": "HR", "X-Remote-Apps": "to-chuc,hr,finance"})
+    _seed_de_duyet()
+    cham_cong.chot_ky(KY, "hr")
+    luong.duyet_bang_luong("Bot", KY, NGUOI, "Vận hành chung", "vietcombank")
+    r = c.get(f"/finance/luong/phieu.zip?ky={KY}")
+    assert r.status_code == 200 and r.content[:2] == b"PK"

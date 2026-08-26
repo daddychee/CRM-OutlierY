@@ -309,3 +309,20 @@ def don_gia_ngay(ky: str) -> dict[str, float]:
     return {d["ten"]: round(d["thuc_nhan"] / d["cong_chot"], 2)
             for d in ban.get("dong", [])
             if d.get("thuc_nhan") and d.get("cong_chot")}
+
+
+# ---------- D5: phiếu lương kèm báo cáo hiệu suất ----------
+
+def du_lieu_phieu(ky: str, ten: str, kpi_nguon: dict | None = None,
+                  ngach: list | None = None) -> dict | None:
+    """Dữ liệu một phiếu — CHỈ lấy từ bảng lương ĐÃ DUYỆT (kỳ chưa duyệt thì
+    không có phiếu nháp nào trôi ra ngoài). Không có người → None."""
+    ban = doc_bang_luong(ky)
+    if not ban:
+        return None
+    d = next((x for x in ban.get("dong", []) if x.get("ten") == ten), None)
+    if d is None:
+        return None
+    return {"ky": ky, "dong": d, "ngay_lam_viec": ban.get("ngay_lam_viec"),
+            "nguoi_duyet": ban.get("nguoi_duyet"), "duyet_luc": ban.get("luc"),
+            "kpi": kpi_nguon or {}, "ngach": ngach or []}
