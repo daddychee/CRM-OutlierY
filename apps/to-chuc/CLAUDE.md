@@ -69,6 +69,22 @@ CHỈ Owner). Chi tiết env + việc treo: README.md.
   mật khẩu không rời két. LƯU Ý: sổ tiền đang RỖNG (0 bút toán) nên đổi cấu trúc
   bản ghi bây giờ là miễn phí — đợt A phải xong trước khi mở cho kế toán ghi thật.
 
+- 26/08/2026 — **FINANCE HUB CODE XONG ĐỢT A + D** (8 commit, mỗi bước pytest xanh
+  trước khi commit; 116 test app / 232 test root). Trang `/finance` giờ 9 tab:
+  Tổng quan (dashboard + lịch tài chính) · Sổ thu chi · Ví · Mục tiêu · Kênh ·
+  Ngách · Lương · Thuê bao · Danh mục. **Đã restart app trên CRM 26/08.**
+  MODULE MỚI: `src/luong.py` (D1 bảng lương + D6 đi muộn) · `src/chi_phi_ngach.py`
+  (D3) · `src/lich_tai_chinh.py` (D4) · `src/templates/phieu_luong.html` (D5).
+  RULES MỚI (luật ngoài code): `danh_muc_vi.csv` · `he_so_xep_loai.csv` ·
+  `gio_lam_viec.csv` · `ngay_nghi_le.csv` (**Owner cần điền lễ 2026-2027**).
+  BA CHỖ SUÝT VI PHẠM SỔ CHỈ-THÊM, đã sửa trước khi chạy: gắn tên tệp chứng từ
+  SAU khi ghi bút toán · gắn nhãn `nguon` sau khi ghi · validate tệp bằng cách
+  ghi thử vào kho. Cả ba đều thành "chốt dữ liệu TRƯỚC, ghi sổ SAU".
+  BẪY MỚI: test từng ghi ra `apps/to-chuc/nhan-su/ty-gia` THẬT vì conftest chưa
+  cách ly `TY_GIA_DIR` — đã dọn + cách ly thêm 4 env (TY_GIA_DIR, CHUNG_TU_DIR,
+  DICH_VU_PATH, LUONG_DIR). Thêm store mới thì PHẢI thêm env vào conftest.
+  Chi tiết + spec: `docs/finance-hub.md` + `docs/finance-hub-spec.md`.
+
 ## Bài học / bẫy riêng app
 
 - **Điểm hứng chấm công đổi tầng**: hệ cũ hứng MỌI app ở cổng 8000; v2 app chỉ hứng

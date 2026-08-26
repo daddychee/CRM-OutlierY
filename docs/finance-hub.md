@@ -15,9 +15,14 @@
 | 26/08/2026 | Mockup vòng 2 (`docs/mockup-de/finance-hub-v2.html`) | Owner **chốt giao diện** |
 | 26/08/2026 | Owner bổ sung 4 yêu cầu (D1–D4, mục 5) | mockup vòng 3 `finance-hub-v3.html` |
 | 26/08/2026 | Owner chốt 5 câu vòng 2 (mục 8) + mở 3 chủ đề mới (mục 9) | **spec thi công** `docs/finance-hub-spec.md` |
+| 26/08/2026 | Owner chốt 3 chủ đề vòng 3 + mockup v4 | chấm công chỉ đo giờ có mặt · quyền mở cho HR · dashboard |
+| 26/08/2026 | **CODE XONG đợt A + D** (8 commit, mỗi bước test xanh) | A1 ví · A2 hai đồng tiền · A3 chứng từ · A4 lọc+xuất · D2 thuê bao · D1+D6 lương+đi muộn · D3 chi phí ngách · D5 phiếu lương · D4 lịch · UI-final dashboard |
 
-**Đang chờ:** Owner duyệt mockup vòng 3 + chốt 3 chủ đề mục 9 → code theo thứ tự
-mục 9 của spec (A1 → A2 → A3 → A4 → D2 → D1 → D3 → D4).
+**Đã chạy trên CRM** (app `to-chuc` cổng 9103 restart 26/08): 9 tab, 116 test app +
+232 test root xanh. Sổ tiền vẫn rỗng — chờ Owner nhập dữ liệu vận hành (mục 10).
+
+**Còn lại:** đợt B (B1 phân bổ · B2 đơn vị kinh tế · B3 runway · B4 ngân sách kỳ ·
+B5 đối soát AdSense) và C2 luật gợi ý · C3 tiền API từ quota · C5 chốt kỳ.
 
 **Sổ tiền đang RỖNG** (0 bút toán, `data/to-chuc/db/so-thu-chi/` chưa có tệp).
 Đây là lý do mọi thay đổi cấu trúc bản ghi phải làm **trước** khi mở cho kế toán ghi:
