@@ -407,3 +407,75 @@ def test_route_tep_sai_duoi_thi_422_va_so_khong_nhan_dong_rac():
                files=[("tep", ("virus.exe", b"MZ", "application/octet-stream"))])
     assert r.status_code == 422
     assert tai_chinh.doc_so() == []                    # validate TRƯỚC khi ghi sổ
+
+
+# ---------- A4: lọc + xuất ----------
+
+def _seed_vai_but_toan():
+    k1, k2 = _seed_kenh()
+    _seed_muc_tieu()
+    _seed_ty_gia(ngay="2026-08-01")      # tỷ giá phải có TRƯỚC ngày bút toán
+    tai_chinh.them_muc_tieu("Nuôi kênh SPACE", 500)
+    tai_chinh.them_but_toan("lanne", "2026-08-05", "THU-ADS", 100, "Vận hành chung",
+                            kenh_ma=k1, vi=VI_USD, ghi_chu="kỳ 07 AdSense")
+    tai_chinh.them_but_toan("lanne", "2026-08-13", "CHI-PROXY", 2_261_800, "Nuôi kênh SPACE",
+                            kenh_ma=k2, vi=VI, ghi_chu="proxy 911 gói tháng")
+    tai_chinh.them_but_toan("kt2", "2026-09-02", "CHI-API", 500_000, "Vận hành chung", vi=VI)
+    return k1, k2
+
+
+def test_loc_so_theo_tung_tieu_chi():
+    k1, k2 = _seed_vai_but_toan()
+    assert len(tai_chinh.loc_so()) == 3
+    assert len(tai_chinh.loc_so(thang="2026-08")) == 2
+    assert len(tai_chinh.loc_so(tu="2026-08-10", den="2026-09-01")) == 1
+    assert len(tai_chinh.loc_so(loai="thu")) == 1
+    assert len(tai_chinh.loc_so(vi=VI)) == 2
+    assert len(tai_chinh.loc_so(kenh=k1)) == 1
+    assert len(tai_chinh.loc_so(muc_tieu="Nuôi kênh SPACE")) == 1
+    assert len(tai_chinh.loc_so(danh_muc="CHI-API")) == 1
+    assert len(tai_chinh.loc_so(nguoi="lanne")) == 2
+    assert len(tai_chinh.loc_so(q="proxy 911")) == 1        # tìm trong ghi chú
+    assert len(tai_chinh.loc_so(q="PROXY")) == 1            # không phân biệt hoa thường
+    # kết hợp nhiều điều kiện
+    assert len(tai_chinh.loc_so(thang="2026-08", loai="chi", vi=VI)) == 1
+
+
+def test_xuat_csv_du_cot_va_quy_vnd():
+    _seed_vai_but_toan()
+    csv_txt = tai_chinh.xuat_csv(tai_chinh.loc_so(thang="2026-08"))
+    dong = csv_txt.strip().splitlines()
+    assert dong[0].startswith("id,ngay,loai,danh_muc,so_tien,tien_te,ty_gia,quy_vnd")
+    assert len(dong) == 3                                    # 1 header + 2 bút toán
+    assert "2592000" in csv_txt                              # 100 USD × 25920
+
+
+def test_xuat_beancount_dung_khuon():
+    _seed_vai_but_toan()
+    txt = tai_chinh.xuat_beancount(tai_chinh.loc_so(thang="2026-08"))
+    assert 'option "operating_currency" "VND"' in txt
+    assert "1900-01-01 open Assets:PAYONEER" in txt
+    assert "1900-01-01 open Income:THU-ADS" in txt
+    # dòng thu: tài sản DƯƠNG, income ÂM (đúng quy ước bút toán kép)
+    assert '2026-08-05 * "kỳ 07 AdSense"' in txt
+    assert "Assets:PAYONEER      100.00 USD @ 25920.00 VND" in txt
+    assert "Income:THU-ADS      -100.00 USD @ 25920.00 VND" in txt
+    # dòng chi VND: không có tỷ giá bám đuôi
+    assert "Expenses:CHI-PROXY      2261800.00 VND" in txt
+    assert "kenh:" in txt and "muc-tieu:" in txt
+
+
+def test_route_xuat_va_loc_qua_url():
+    k1, _ = _seed_vai_but_toan()
+    c = _client()
+    r = c.get("/finance/xuat.csv?thang=2026-08")
+    assert r.status_code == 200 and "text/csv" in r.headers["content-type"]
+    assert r.text.startswith("\ufeff") or r.content.startswith(b"\xef\xbb\xbf")  # BOM cho Excel
+    r2 = c.get("/finance/xuat.beancount?thang=2026-08")
+    assert r2.status_code == 200 and "Assets:PAYONEER" in r2.text
+    # lọc trên trang: chỉ còn bút toán của kênh k1
+    b = c.get(f"/finance?tab=ledger&thang=2026-08&kenh={k1}").text
+    assert "kỳ 07 AdSense" in b and "proxy 911" not in b
+    # lọc theo chữ trong ghi chú
+    b2 = c.get("/finance?tab=ledger&thang=2026-08&q=proxy").text
+    assert "proxy 911" in b2 and "kỳ 07 AdSense" not in b2

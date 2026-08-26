@@ -58,11 +58,44 @@
 <h3 class="hub-tieu">
   <svg class="ic" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
   Ledger — {{ thang }}
-  <form method="get" action="/finance" style="display:inline-flex;gap:.4rem;align-items:center">
-    <input type="hidden" name="tab" value="ledger">
-    <input type="month" name="thang" value="{{ thang }}" class="o">
-    <button type="submit" class="nut phu" style="padding:.3rem .8rem;font-size:.82rem">View</button>
-  </form></h3>
+</h3>
+
+<form method="get" action="/finance" class="form-moi" style="padding:10px 14px">
+  <input type="hidden" name="tab" value="ledger">
+  <div class="form-luoi">
+    <div><label>Kỳ</label><input type="month" name="thang" value="{{ loc.thang }}" class="o"></div>
+    <div><label>Loại</label><select name="loai" class="o">
+      <option value="">tất cả</option>
+      {% for ma, nhan in [('thu','Income'), ('chi','Expense'), ('dao','Reversal')] %}
+      <option value="{{ ma }}" {% if loc.loai == ma %}selected{% endif %}>{{ nhan }}</option>{% endfor %}
+    </select></div>
+    <div><label>Ví</label><select name="vi" class="o">
+      <option value="">tất cả</option>
+      {% for v in danh_muc_vi %}<option value="{{ v.ma }}" {% if loc.vi == v.ma %}selected{% endif %}>{{ v.ten }}</option>{% endfor %}
+    </select></div>
+    <div><label>Kênh</label><select name="kenh" class="o">
+      <option value="">tất cả</option>
+      {% for k in ds_kenh %}<option value="{{ k.ma }}" {% if loc.kenh == k.ma %}selected{% endif %}>{{ k.ma }}</option>{% endfor %}
+    </select></div>
+    <div><label>Mục tiêu</label><select name="muc_tieu" class="o">
+      <option value="">tất cả</option>
+      {% for m in muc_tieu %}<option value="{{ m.ten }}" {% if loc.muc_tieu == m.ten %}selected{% endif %}>{{ m.ten }}</option>{% endfor %}
+    </select></div>
+    <div><label>Danh mục</label><select name="danh_muc" class="o">
+      <option value="">tất cả</option>
+      {% for d in danh_muc %}<option value="{{ d.ma }}" {% if loc.danh_muc == d.ma %}selected{% endif %}>{{ d.ma }}</option>{% endfor %}
+    </select></div>
+    <div><label>Tìm trong ghi chú</label><input type="text" name="q" value="{{ loc.q }}" class="o"></div>
+  </div>
+  <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+    <button type="submit" class="nut">Lọc</button>
+    <a class="nut phu" style="text-decoration:none"
+       href="/finance/xuat.csv?thang={{ loc.thang }}&loai={{ loc.loai }}&vi={{ loc.vi }}&kenh={{ loc.kenh }}&muc_tieu={{ loc.muc_tieu }}&danh_muc={{ loc.danh_muc }}&q={{ loc.q }}">⇩ CSV</a>
+    <a class="nut phu" style="text-decoration:none"
+       href="/finance/xuat.beancount?thang={{ loc.thang }}&loai={{ loc.loai }}&vi={{ loc.vi }}&kenh={{ loc.kenh }}&muc_tieu={{ loc.muc_tieu }}&danh_muc={{ loc.danh_muc }}&q={{ loc.q }}">⇩ .beancount</a>
+    <span class="thieu">{{ so_thang | length }} bút toán</span>
+  </div>
+</form>
 
 {% if not muc_tieu %}<div class="canh">No goals yet — every entry needs a goal. Add one in the Goals tab first.</div>{% endif %}
 <details class="form-moi">

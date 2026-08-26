@@ -411,7 +411,9 @@ def hr_kpi_danh_gia(nguoi: str = Form(...), ky: str = Form(...),
 
 @app.get("/finance", response_class=HTMLResponse)
 def finance_trang(request: Request, tab: str = "ledger", thang: str = "",
-                  user: dict = Depends(yeu_cau_finance)):
+                  tu: str = "", den: str = "", loai: str = "", vi: str = "",
+                  kenh: str = "", muc_tieu: str = "", danh_muc: str = "",
+                  q: str = "", user: dict = Depends(yeu_cau_finance)):
     """Finance Hub — 4 tab theo mockup finance-hub.html: Ledger (sổ chỉ-thêm +
     đảo) · Goals (mục tiêu) · Categories (rules CSV + tổng) · Channel P&L."""
     if tab not in ("ledger", "goals", "categories", "pnl", "wallets"):
@@ -419,9 +421,9 @@ def finance_trang(request: Request, tab: str = "ledger", thang: str = "",
     thang = _thang_hop_le(thang)
 
     so = tai_chinh.doc_so()
-    so_thang = sorted((b for b in so if (b.get("ngay") or "")[:7] == thang),
-                      key=lambda b: (b.get("ngay", ""), b.get("tao_luc", "")),
-                      reverse=True)
+    loc = {"thang": thang, "tu": tu, "den": den, "loai": loai, "vi": vi,
+           "kenh": kenh, "muc_tieu": muc_tieu, "danh_muc": danh_muc, "q": q}
+    so_thang = tai_chinh.loc_so(**loc)
     da_dao = {b.get("tham_chieu") for b in so if b.get("loai") == "dao"}
 
     ds_kenh = danh_ba.liet_ke("kenh")
@@ -431,7 +433,8 @@ def finance_trang(request: Request, tab: str = "ledger", thang: str = "",
     muc_tieu = tai_chinh.doc_muc_tieu()
     mt_tong = tai_chinh.tong_hop_muc_tieu()
     return templates.TemplateResponse(request, "finance.html", {
-        "user": user, "tab": tab, "thang": thang, "hom_nay": date.today().isoformat(),
+        "user": user, "tab": tab, "thang": thang, "loc": loc,
+        "hom_nay": date.today().isoformat(),
         "tong": tai_chinh.tong_thang(thang), "so_thang": so_thang, "da_dao": da_dao,
         "danh_muc": tai_chinh.doc_danh_muc(),
         "dm_tong": tai_chinh.tong_hop_danh_muc(thang),
@@ -467,6 +470,33 @@ def finance_but_toan(ngay: str = Form(...), danh_muc: str = Form(...),
     nhat_ky.ghi("to-chuc", user["ten"], "but_toan",
                 f"{b['id']} {b['loai']} {b['danh_muc']} {b['so_tien']}")
     return RedirectResponse(f"/finance?tab=ledger&thang={ngay[:7]}", status_code=303)
+
+
+@app.get("/finance/xuat.csv")
+def finance_xuat_csv(thang: str = "", tu: str = "", den: str = "", loai: str = "",
+                     vi: str = "", kenh: str = "", muc_tieu: str = "",
+                     danh_muc: str = "", q: str = "",
+                     user: dict = Depends(yeu_cau_finance)):
+    noi_dung = tai_chinh.xuat_csv(tai_chinh.loc_so(
+        thang=thang, tu=tu, den=den, loai=loai, vi=vi, kenh=kenh,
+        muc_tieu=muc_tieu, danh_muc=danh_muc, q=q))
+    return Response("\ufeff" + noi_dung, media_type="text/csv; charset=utf-8",
+                    headers={"Content-Disposition":
+                             f'attachment; filename="so-thu-chi-{thang or "tat-ca"}.csv"'})
+
+
+@app.get("/finance/xuat.beancount")
+def finance_xuat_beancount(thang: str = "", tu: str = "", den: str = "",
+                           loai: str = "", vi: str = "", kenh: str = "",
+                           muc_tieu: str = "", danh_muc: str = "", q: str = "",
+                           user: dict = Depends(yeu_cau_finance)):
+    """Xuất để mở bằng Fava — mượn nguyên phòng báo cáo của beancount."""
+    noi_dung = tai_chinh.xuat_beancount(tai_chinh.loc_so(
+        thang=thang, tu=tu, den=den, loai=loai, vi=vi, kenh=kenh,
+        muc_tieu=muc_tieu, danh_muc=danh_muc, q=q))
+    return Response(noi_dung, media_type="text/plain; charset=utf-8",
+                    headers={"Content-Disposition":
+                             f'attachment; filename="so-{thang or "tat-ca"}.beancount"'})
 
 
 @app.get("/finance/chung-tu/{id_bt}/{ten}")

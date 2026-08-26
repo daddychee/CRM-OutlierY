@@ -17,6 +17,7 @@ reader bỏ qua dòng hỏng (dở dang do mất điện) — khuôn phan_hoi.cs
 from __future__ import annotations
 
 import csv
+import io
 import json
 import os
 import re
@@ -537,3 +538,99 @@ def tien_kha_dung_vnd() -> float:
     vi_map = _vi_theo_ma()
     return sum(m["quy_vnd"] for ma, m in so_du_vi().items()
                if vi_map.get(ma, {}).get("loai") != "phai_thu")
+
+
+# ---------- A4: lọc + xuất ----------
+
+def loc_so(thang: str = "", tu: str = "", den: str = "", loai: str = "",
+           vi: str = "", kenh: str = "", muc_tieu: str = "", danh_muc: str = "",
+           nguoi: str = "", q: str = "") -> list[dict]:
+    """Lọc sổ Ở SERVER, mới nhất trước. Điều kiện rỗng = không lọc theo cột đó.
+    q tìm trong ghi chú + số chứng từ, không phân biệt hoa thường."""
+    q = (q or "").strip().lower()
+    ra = []
+    for b in doc_so():
+        ngay = b.get("ngay") or ""
+        if thang and ngay[:7] != thang:
+            continue
+        if tu and ngay < tu:
+            continue
+        if den and ngay > den:
+            continue
+        if loai and b.get("loai") != loai:
+            continue
+        if vi and b.get("vi") != vi:
+            continue
+        if kenh and (b.get("kenh_ma") or "") != kenh:
+            continue
+        if muc_tieu and b.get("muc_tieu") != muc_tieu:
+            continue
+        if danh_muc and b.get("danh_muc") != danh_muc:
+            continue
+        if nguoi and b.get("nguoi_ghi") != nguoi:
+            continue
+        if q and q not in f"{b.get('ghi_chu', '')} {b.get('chung_tu', '')}".lower():
+            continue
+        ra.append(b)
+    return sorted(ra, key=lambda b: (b.get("ngay", ""), b.get("tao_luc", "")),
+                  reverse=True)
+
+
+COT_CSV = ("id", "ngay", "loai", "danh_muc", "so_tien", "tien_te", "ty_gia",
+           "quy_vnd", "vi", "muc_tieu", "kenh_ma", "nguoi_ghi", "chung_tu",
+           "tep_dinh_kem", "ghi_chu", "tham_chieu", "tao_luc")
+
+
+def xuat_csv(ds: list[dict]) -> str:
+    """CSV cho Excel — route tự thêm BOM utf-8-sig."""
+    buf = io.StringIO()
+    w = csv.writer(buf, lineterminator="\n")
+    w.writerow(COT_CSV)
+    for b in ds:
+        w.writerow([("; ".join(b.get("tep_dinh_kem") or [])) if c == "tep_dinh_kem"
+                    else (f"{quy_vnd(b):.0f}" if c == "quy_vnd" else b.get(c, ""))
+                    for c in COT_CSV])
+    return buf.getvalue()
+
+
+def _tk_beancount(b: dict, loai_map: dict) -> tuple[str, str]:
+    """(tài khoản khoản mục, tài khoản ví) theo 5 gốc chuẩn để Fava mở được."""
+    phia = _phia(b, loai_map)
+    goc = "Income" if phia == "thu" else "Expenses"
+    ma = re.sub(r"[^0-9A-Za-z-]", "", (b.get("danh_muc") or "KHAC")).upper() or "KHAC"
+    vi = re.sub(r"[^0-9A-Za-z-]", "", (b.get("vi") or "KHAC")).upper() or "KHAC"
+    return f"{goc}:{ma}", f"Assets:{vi}"
+
+
+def xuat_beancount(ds: list[dict]) -> str:
+    """Sổ → tệp .beancount mở được bằng Fava (bảng cân đối, báo cáo kết quả,
+    treemap chi phí — khỏi phải tự viết báo cáo).
+
+    ponytail: KHÔNG dựng cây tài khoản đầy đủ, chỉ 5 gốc chuẩn + mã khoản/ví;
+    mục tiêu là mở được, không phải đạt chuẩn kế toán kép.
+    """
+    loai_map = _loai_theo_ma()
+    dong = [f'option "operating_currency" "{DONG_VAN_HANH}"', ""]
+    tk = sorted({t for b in ds for t in _tk_beancount(b, loai_map)})
+    dong += [f"1900-01-01 open {t}" for t in tk] + [""]
+    for b in sorted(ds, key=lambda b: (b.get("ngay", ""), b.get("tao_luc", ""))):
+        tien = float(b.get("so_tien") or 0)
+        tt = b.get("tien_te") or DONG_VAN_HANH
+        tg = float(b.get("ty_gia") or 1)
+        gia = "" if tt == DONG_VAN_HANH else f" @ {tg:.2f} {DONG_VAN_HANH}"
+        tk_muc, tk_vi = _tk_beancount(b, loai_map)
+        phia = _phia(b, loai_map)
+        # thu: ví DƯƠNG / Income ÂM · chi: Expenses DƯƠNG / ví ÂM
+        cap = ([(tk_vi, tien), (tk_muc, -tien)] if phia == "thu"
+               else [(tk_muc, tien), (tk_vi, -tien)])
+        ghi_chu = (b.get("ghi_chu") or b.get("danh_muc") or "").replace('"', "'")
+        dong.append(f'{b.get("ngay", "")} * "{ghi_chu}"')
+        for khoa, gt in (("chung-tu", b.get("chung_tu")), ("kenh", b.get("kenh_ma")),
+                         ("muc-tieu", b.get("muc_tieu")),
+                         ("tham-chieu", b.get("tham_chieu"))):
+            if gt:
+                dong.append(f'  {khoa}: "{str(gt)}"')
+        for tk_x, gt in cap:
+            dong.append(f"  {tk_x}      {gt:.2f} {tt}{gia}")
+        dong.append("")
+    return "\n".join(dong)
