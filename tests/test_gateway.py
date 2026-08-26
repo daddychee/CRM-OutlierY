@@ -930,6 +930,23 @@ def test_alias_hr_finance_tro_to_chuc(client, iam_db):
     assert "/hr" in tc["tien_to"] and "/finance" in tc["tien_to"]
 
 
+def test_moi_tien_to_cua_tasky_deu_co_alias_va_route():
+    """Owner báo 26/08: mục Task lỗi 404 QUA CỔNG dù app :9117 trả 200 — thêm route
+    mới mà quên khai với gateway (tien_to hợp đồng + _ALIAS + route đăng ký).
+
+    Ghim CẢ BA dây nối cho từng đường của Tasky, để lần sau thêm mục mới mà quên
+    một dây thì test đỏ chứ không phải người dùng phát hiện."""
+    from nen.common.hop_dong import tim_app
+    from nen.gateway.main import _ALIAS, _ALIAS_BO_QUA
+    from nen.gateway.main import app as gw
+    tk = tim_app("tasky")
+    duong = {r.path: getattr(r, "methods", set()) for r in gw.routes}
+    for d in ("/tasky", "/task", "/muc-tieu", "/bao-cao-tuan"):
+        assert d in tk["tien_to"], f"{d} thiếu trong tien_to hợp đồng"
+        assert _ALIAS.get(d, (None,))[0] == "tasky", f"{d} thiếu alias gateway"
+        assert d in _ALIAS_BO_QUA and "GET" in duong[d], f"{d} chưa đăng ký route"
+
+
 def test_khung_ghi_lai_duong_dan_iframe_de_F5_giu_cho():
     """Owner 24/08: "author extract an F5 lai chuyen ve trang chu, cac tab con lai
     cung vay". App khung nam trong iframe nen di ben TRONG app khong doi URL khung;
