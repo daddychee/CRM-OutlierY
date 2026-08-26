@@ -161,7 +161,7 @@
       <button type="submit" name="mau" value="{{ c }}"
         aria-pressed="{{ 'true' if g.mau == c else 'false' }}"
         title="{{ {'':'Bỏ màu','lam':'Xanh lam','tim':'Tím','luc':'Xanh lá','cam':'Cam','hong':'Hồng','xam':'Xám'}[c] }}"
-        style="background:{{ {'':'transparent','lam':'var(--tk-tin)','tim':'var(--tk-tim)','luc':'var(--tk-ok)','cam':'var(--tk-luu)','hong':'var(--tk-hong)','xam':'var(--muted)'}[c] }}"></button>
+        style="background:{{ {'':'transparent','lam':'var(--tr-blue)','tim':'var(--tr-purple)','luc':'var(--tr-green)','cam':'var(--tr-orange)','hong':'var(--tr-red)','xam':'var(--tr-xam)'}[c] }}"></button>
       {% endfor %}
     </form>
     <button class="nut sm" data-xoa-goal="{{ g.id }}"

@@ -32,7 +32,7 @@ def test_the_goal_hien_du_ten_khong_cat_bang_ellipsis(_so):
     """Thẻ Goal (trang Goal) phải hiện đủ tên, không cắt bằng '…'."""
     mt.tao(MGR, TEN_DAI, "kq")
     r = _c.get("/muc-tieu", headers=H_MGR)
-    the = r.text.split('<a class="g-the')[1].split("</a>")[0]
+    the = r.text.split('<article class="g-the')[1].split("</article>")[0]
     assert TEN_DAI in the
     css = r.text.split(".g-the .ten{")[1].split("}")[0]
     assert "text-overflow:ellipsis" not in css

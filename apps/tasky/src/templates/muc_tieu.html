@@ -8,7 +8,7 @@
      Hai kiểu hiển thị — THẺ khi ít Goal, DÒNG khi nhiều (mỗi Goal 38px, quét mắt
      theo cột thay vì đọc từng khối). */
   .o4{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(178px,1fr));margin-bottom:16px}
-  .o{background:var(--sidebar);border:1px solid var(--tk-vien);border-radius:12px;padding:12px 14px}
+  .o{background:var(--tr-the);border:1px solid var(--tr-the-vien);border-radius:12px;padding:12px 14px}
   .o .lab{font-size:11px;font-weight:700;letter-spacing:.045em;text-transform:uppercase;color:var(--muted)}
   .o .to{font-size:26px;font-weight:600;margin-top:3px;font-variant-numeric:tabular-nums;line-height:1.15}
   .o .to small{font-size:13px;font-weight:500;color:var(--muted)}
@@ -16,33 +16,38 @@
 
   .cong-cu{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:15px}
   .gat{display:flex;gap:6px;margin-left:auto}
-  .gat a{border:1px solid var(--tk-vien);background:var(--sidebar);color:var(--muted);
+  .gat a{border:1px solid var(--tr-the-vien);background:var(--tr-the);color:var(--tr-im-chu);
     border-radius:9px;padding:6px 11px;font-size:12.5px;text-decoration:none;
     display:inline-flex;gap:6px;align-items:center}
-  .gat a.on{border-color:var(--accent);color:var(--accent);background:var(--th-16263f)}
+  .gat a.on{border-color:var(--tr-tin-chu);color:var(--tr-tin-chu);background:var(--tr-tin-nen)}
 
   .khu{margin-bottom:24px}
   .nhan-khu{display:flex;align-items:center;gap:10px;margin:0 0 10px;font-size:11.5px;
-    font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--accent)}
-  .nhan-khu hr{flex:1;border:0;border-top:1px solid var(--line)}
+    font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--tr-cap-chu)}
+  .nhan-khu hr{flex:1;border:0;border-top:1px solid var(--tr-the-vien)}
   .nhan-khu.im{color:var(--muted)}
   .giai{color:var(--muted);font-size:12px;margin:-4px 0 11px}
 
   .luoi{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(252px,1fr))}
-  .g-the{border:1px solid var(--tk-vien);border-left-width:5px;border-radius:12px;
-    background:var(--sidebar);padding:11px 13px;display:flex;flex-direction:column;gap:7px;
-    color:inherit;text-decoration:none}
-  .g-the:hover{border-color:var(--accent)}
+  .g-the{border:1px solid var(--tr-the-vien);border-left-width:5px;border-radius:12px;
+    background:var(--tr-the);padding:11px 13px;display:flex;flex-direction:column;gap:7px;
+    color:inherit;text-decoration:none;cursor:pointer;
+    transition:border-color .12s, box-shadow .12s}
+  .g-the:hover{border-color:var(--accent);box-shadow:0 1px 6px rgba(0,0,0,.28)}
   .g-the .ten{font-size:13.5px;font-weight:600;line-height:1.32}
+  /* Dải nhãn màu do người dùng chọn — cùng ngôn ngữ với thẻ việc bên Task */
+  .g-the .mau-dai{display:flex;gap:4px}
+  .g-the .mau-dai i{width:28px;height:6px;border-radius:99px}
   .g-the .kq{font-size:11.5px;color:var(--muted);line-height:1.35}
   .g-the .day{display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--muted)}
   .g-the .day b{color:var(--ink);font-variant-numeric:tabular-nums}
 
-  .bang-g{border:1px solid var(--tk-vien);border-radius:12px;overflow:hidden;background:var(--sidebar)}
-  .g-dong{display:flex;align-items:center;gap:12px;padding:9px 13px;border-top:1px solid var(--line);
+  .bang-g{border:1px solid var(--tr-the-vien);border-radius:12px;overflow:hidden;background:var(--tr-the)}
+  .g-dong{display:flex;align-items:center;gap:12px;padding:9px 13px;cursor:pointer;
+    border-top:1px solid var(--tr-the-vien);
     border-left:4px solid transparent;color:inherit;text-decoration:none}
   .g-dong:first-child{border-top:0}
-  .g-dong:hover{background:var(--th-141c2b)}
+  .g-dong:hover{background:var(--tr-im-nen)}
   .g-dong .ten{flex:1;min-width:0;font-size:13px;font-weight:600;white-space:nowrap;
     overflow:hidden;text-overflow:ellipsis}
   .g-dong .nguoi{width:148px;flex:none;font-size:12px;color:var(--muted);white-space:nowrap;
@@ -172,8 +177,12 @@
 </form>
 
 {% macro the_goal(g) %}
-<a class="g-the{% if g.mau %} mau-nen-{{ g.mau }}{% endif %}" href="/task?goal={{ g.id }}"
-   style="border-left-color:{{ {'':'var(--tk-vien)','lam':'var(--tk-tin)','tim':'var(--tk-tim)','luc':'var(--tk-ok)','cam':'var(--tk-luu)','hong':'var(--tk-hong)','xam':'var(--muted)'}[g.mau or ''] }}">
+<article class="g-the" data-goal="{{ g.id }}" tabindex="0"
+   title="Bấm đúp để mở Goal"
+   style="border-left-color:{{ {'':'var(--tr-xam)','lam':'var(--tr-blue)','tim':'var(--tr-purple)','luc':'var(--tr-green)','cam':'var(--tr-orange)','hong':'var(--tr-red)','xam':'var(--tr-xam)'}[g.mau or ''] }}">
+  {# Dải nhãn màu trên đỉnh như thẻ Trello — cùng ngôn ngữ với thẻ việc bên Task #}
+  {% if g.mau %}<div class="mau-dai"><i style="background:{{ {'':'var(--tr-xam)','lam':'var(--tr-blue)','tim':'var(--tr-purple)','luc':'var(--tr-green)','cam':'var(--tr-orange)','hong':'var(--tr-red)','xam':'var(--tr-xam)'}[g.mau or ''] }}"
+    title="Nhãn màu bạn đánh dấu"></i></div>{% endif %}
   <div class="ten">{{ g.tieu_de }}</div>
   <div class="kq">Kết quả cần đạt: {{ g.ket_qua_can_dat }}</div>
   <div class="thanh"><i style="width:{{ g.tien_do.phan_tram or 0 }}%"></i></div>
@@ -188,13 +197,17 @@
     {% elif g.tien_do.xong_het %}<span class="the tt ok">Chờ chốt</span>
     {% else %}<span class="the tt tin">Đang chạy</span>{% endif %}
   </div>
-  <div class="ghi" style="font-size:11.5px">{{ ten_hien.get(g.nguoi_tao, g.nguoi_tao) }} đặt</div>
-</a>
+  <div class="chan-the">
+    <span class="ghi" style="font-size:11.5px">{{ ten_hien.get(g.nguoi_tao, g.nguoi_tao) }} đặt</span>
+    <a class="sang-task" href="/task?goal={{ g.id }}" title="Mở board Task của Goal này">Task →</a>
+  </div>
+</article>
 {% endmacro %}
 
 {% macro dong_goal(g) %}
-<a class="g-dong" href="/task?goal={{ g.id }}"
-   style="border-left-color:{{ {'':'var(--tk-vien)','lam':'var(--tk-tin)','tim':'var(--tk-tim)','luc':'var(--tk-ok)','cam':'var(--tk-luu)','hong':'var(--tk-hong)','xam':'var(--muted)'}[g.mau or ''] }}">
+<div class="g-dong" data-goal="{{ g.id }}" tabindex="0"
+   title="Bấm đúp để mở Goal"
+   style="border-left-color:{{ {'':'var(--tr-xam)','lam':'var(--tr-blue)','tim':'var(--tr-purple)','luc':'var(--tr-green)','cam':'var(--tr-orange)','hong':'var(--tr-red)','xam':'var(--tr-xam)'}[g.mau or ''] }}">
   <div class="ten">{{ g.tieu_de }}</div>
   <div class="nguoi">{{ ten_hien.get(g.nguoi_tao, g.nguoi_tao) }}</div>
   <div class="tt"><i style="width:{{ g.tien_do.phan_tram or 0 }}%"></i></div>
@@ -208,8 +221,9 @@
     {% elif not g.tien_do.tong %}<span class="the tt luu_y">Chưa có việc</span>
     {% elif g.tien_do.xong_het %}<span class="the tt ok">Chờ chốt</span>
     {% else %}<span class="the tt tin">Đang chạy</span>{% endif %}
+    <a class="sang-task" href="/task?goal={{ g.id }}" title="Mở board Task">→</a>
   </div>
-</a>
+</div>
 {% endmacro %}
 
 {% if gap %}
@@ -234,12 +248,158 @@
     {% else %}Chưa có Goal nào{% if duoc_dat %} — bấm “+ Goal mới” để bắt đầu{% endif %}.{% endif %}</div>
   {% endif %}
 </section>
+
+{# ---- CỬA SỔ NỔI cho từng Goal (Owner 26/08: bấm đúp mở popup ngay tại trang,
+     đừng nhảy sang màn khác). Dựng MỘT dialog cho mỗi Goal, thẻ và dòng cùng trỏ
+     tới nó qua data-goal — không nhân đôi markup. ---- #}
+{% for g in gap + thuong %}
+<dialog class="mt-modal" data-goal-modal="{{ g.id }}">
+  <div class="phieu-dau">
+    <div style="flex:1">
+      {% if g.duoc_sua and g.trang_thai == 'dang_chay' %}
+      <form class="sua-tai-cho" method="post" action="/muc-tieu/sua">
+        <input type="hidden" name="id" value="{{ g.id }}">
+        <input class="o-tai-cho ten-goal" name="tieu_de" value="{{ g.tieu_de }}"
+          title="Sửa tên rồi nhấn Enter để lưu">
+        <div class="kq" style="display:flex;align-items:center;gap:6px;margin-top:4px">
+          <span style="flex:0 0 auto">Kết quả cần đạt:</span>
+          <input class="o-tai-cho kq" name="ket_qua" value="{{ g.ket_qua_can_dat }}">
+          <input class="o-tai-cho han" type="date" name="han" value="{{ g.han }}">
+          <button type="submit" style="display:none">Lưu</button>
+          <span class="goi-sua">Enter để lưu</span>
+        </div>
+      </form>
+      {% else %}
+      <div class="phieu-ten">{{ g.tieu_de }}</div>
+      <div class="kq" style="margin-top:4px">Kết quả cần đạt: <b>{{ g.ket_qua_can_dat }}</b></div>
+      {% endif %}
+    </div>
+    <button class="phieu-dong" type="button" aria-label="Đóng">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+  </div>
+
+  <div class="mt-modal-noi">
+    <div class="hang-the" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+      {% if g.han %}<span class="the">Hạn {{ g.han[8:] }}/{{ g.han[5:7] }}
+        {%- if g.con_han is not none %} · {% if g.con_han < 0 %}trễ {{ -g.con_han }} ngày
+        {%- elif g.con_han == 0 %}hôm nay{% else %}còn {{ g.con_han }} ngày{% endif %}{% endif %}</span>{% endif %}
+      <span class="the">{{ ten_hien.get(g.nguoi_tao, g.nguoi_tao) }} đặt</span>
+      <span class="the">{{ g.tien_do.tong }} việc</span>
+      {% for c in g.canh_bao %}
+      <span class="the tt {{ 'cap' if c.muc_do == 'cap' else 'luu_y' }}">{{ c.chu }}</span>
+      {% endfor %}
+      {% if g.trang_thai != 'dang_chay' %}
+      <span class="the tt ok">{{ {'dat':'Đạt','mot_phan':'Một phần','khong_dat':'Không đạt'}[g.trang_thai] }}
+        · {{ ten_hien.get(g.nguoi_chot, g.nguoi_chot) }}</span>
+      {% endif %}
+    </div>
+
+    <div class="mt-tien-do">
+      <div class="thanh"><i style="width:{{ g.tien_do.phan_tram or 0 }}%"></i></div>
+      <span>{% if g.tien_do.tong %}{{ g.tien_do.xong }}/{{ g.tien_do.tong }} việc đã nghiệm thu
+        {%- else %}chưa có việc nào{% endif %}</span>
+    </div>
+
+    {% if g.duoc_sua and g.trang_thai == 'dang_chay' %}
+    <form class="o-mau" method="post" action="/muc-tieu/mau"
+      title="Đánh dấu màu để dễ nhớ — màu này chỉ là nhãn của bạn">
+      <input type="hidden" name="id" value="{{ g.id }}">
+      <span class="nhan-mau">Màu:</span>
+      {% for c in ['', 'lam', 'tim', 'luc', 'cam', 'hong', 'xam'] %}
+      <button type="submit" name="mau" value="{{ c }}"
+        aria-pressed="{{ 'true' if g.mau == c else 'false' }}"
+        title="{{ {'':'Bỏ màu','lam':'Xanh lam','tim':'Tím','luc':'Xanh lá','cam':'Cam','hong':'Đỏ','xam':'Xám'}[c] }}"
+        style="background:{{ {'':'transparent','lam':'var(--tr-blue)','tim':'var(--tr-purple)','luc':'var(--tr-green)','cam':'var(--tr-orange)','hong':'var(--tr-red)','xam':'var(--tr-xam)'}[c] }}"></button>
+      {% endfor %}
+    </form>
+    {% endif %}
+
+    <div class="nhan-khoi" style="margin-top:14px">Việc của Goal này</div>
+    {% if g.viec %}
+    <ul class="mt-ds-viec">
+      {% for v in g.viec[:8] %}
+      {% set hn = v|han %}
+      <li>
+        <span class="ten">{{ v.tieu_de }}</span>
+        {% for c in v|chip %}<span class="the tt {{ c.muc }}">{{ c.chu }}</span>{% endfor %}
+        <span class="ai">{% if v.nguoi %}{{ ten_hien.get(v.nguoi, v.nguoi) }}{% else %}chưa giao{% endif %}</span>
+      </li>
+      {% endfor %}
+    </ul>
+    {% if g.viec|length > 8 %}
+    <div class="goi-y">…còn {{ g.viec|length - 8 }} việc nữa — xem đủ ở board Task.</div>
+    {% endif %}
+    {% else %}
+    <div class="goi-y">Chưa chẻ việc nào. Mở board Task để thêm việc cho Goal này.</div>
+    {% endif %}
+
+    <div class="mt-modal-chan">
+      <a class="nut chinh" href="/task?goal={{ g.id }}">Mở board Task</a>
+      <span style="flex:1"></span>
+      {% if g.duoc_sua %}
+      <button class="nut nguy" type="button" data-xoa-goal="{{ g.id }}"
+        title="Xóa cả việc con — dùng để dọn Goal test / tạo nhầm / trùng">Xóa Goal</button>
+      {% endif %}
+    </div>
+    <div class="loi" data-loi-goal="{{ g.id }}" hidden></div>
+  </div>
+</dialog>
+{% endfor %}
 {% endblock %}
 
 {% block script %}
 <script>
 (function () {
   function baoLoi(o, e) { if (!o) { return; } o.hidden = false; o.textContent = e.message || e; }
+
+  // ---- Bấm ĐÚP vào Goal = mở CỬA SỔ NỔI ngay tại trang (Owner 26/08).
+  // Link "Task →" trên thẻ vẫn là đường sang board — bấm đúp không cướp chỗ nó.
+  function moGoal(id) {
+    var d = document.querySelector('dialog[data-goal-modal="' + id + '"]');
+    if (!d) { return; }
+    if (d.showModal) { d.showModal(); } else { d.open = true; }
+  }
+  document.querySelectorAll("[data-goal]").forEach(function (o) {
+    o.addEventListener("dblclick", function (e) {
+      if (e.target.closest("a, button, input, select")) { return; }
+      moGoal(o.dataset.goal);
+    });
+    o.addEventListener("keydown", function (e) {     // bàn phím: Enter cũng mở
+      if (e.key === "Enter" && !e.isComposing) { e.preventDefault(); moGoal(o.dataset.goal); }
+    });
+  });
+  document.querySelectorAll("dialog.mt-modal").forEach(function (d) {
+    d.querySelectorAll(".phieu-dong").forEach(function (n) {
+      n.addEventListener("click", function () { d.close ? d.close() : (d.open = false); });
+    });
+    d.addEventListener("click", function (e) {       // bấm ra nền mờ = đóng
+      if (e.target === d) { d.close ? d.close() : (d.open = false); }
+    });
+    // ô sửa tại chỗ: rời ô mà đã đổi thì tự lưu (Enter vẫn là đường chính)
+    d.querySelectorAll("form.sua-tai-cho .o-tai-cho").forEach(function (o) {
+      var cu = o.value;
+      o.addEventListener("blur", function () {
+        if (o.value !== cu && o.value.trim()) { o.form.submit(); }
+      });
+    });
+  });
+  // xóa Goal (nút nằm trong cửa sổ nổi)
+  document.querySelectorAll("[data-xoa-goal]").forEach(function (b) {
+    var id = b.dataset.xoaGoal, oLoi = document.querySelector('[data-loi-goal="' + id + '"]');
+    b.addEventListener("click", function () {
+      if (!b.dataset.chac) {
+        b.dataset.chac = "1"; b.textContent = "Chắc chưa? Bấm lại để xóa"; return;
+      }
+      var fd = new FormData(); fd.append("id", id);
+      fetch("/api-tasky/muc-tieu/xoa", { method: "POST", body: fd }).then(function (r) {
+        return r.json().catch(function () { return {}; }).then(function (d) {
+          if (!r.ok) { throw new Error(d.detail || "Không xóa được."); }
+          location.href = "/muc-tieu";
+        });
+      }).catch(function (e) { baoLoi(oLoi, e); });
+    });
+  });
 
   var mo = document.getElementById("mo-tao"), form = document.getElementById("form-tao");
   if (mo && form) {

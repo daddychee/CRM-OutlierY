@@ -137,12 +137,14 @@
   .the.muc-tieu:hover{filter:brightness(1.12)}
 
   /* Màu nhãn Goal — phải NHÌN THẤY: nền nhạt + viền trái dày, không chỉ một sợi chỉ */
-  .mau-nen-lam{background:var(--tk-tin-nen)!important;border-left-color:var(--tk-tin)!important}
-  .mau-nen-tim{background:var(--th-1d2840)!important;border-left-color:var(--tk-tim)!important}
-  .mau-nen-luc{background:var(--tk-ok-nen)!important;border-left-color:var(--tk-ok)!important}
-  .mau-nen-cam{background:var(--tk-luu-nen)!important;border-left-color:var(--tk-luu)!important}
-  .mau-nen-hong{background:var(--th-1d2840)!important;border-left-color:var(--tk-hong)!important}
-  .mau-nen-xam{background:var(--th-182233)!important;border-left-color:var(--muted)!important}
+  /* Nhãn màu người dùng tự chọn — bảng Trello, chỉ đổi VIỀN TRÁI + nền pha rất
+     nhạt. Nền đậm theo màu nhãn làm chữ khó đọc và át màu trạng thái thật. */
+  .mau-nen-lam{border-left-color:var(--tr-blue)!important}
+  .mau-nen-tim{border-left-color:var(--tr-purple)!important}
+  .mau-nen-luc{border-left-color:var(--tr-green)!important}
+  .mau-nen-cam{border-left-color:var(--tr-orange)!important}
+  .mau-nen-hong{border-left-color:var(--tr-red)!important}
+  .mau-nen-xam{border-left-color:var(--tr-xam)!important}
 
   /* Khối THÊM VIỆC — nổi hẳn, ba bước rõ ràng thay vì một hàng ô lộn xộn */
   .them-viec{background:var(--sidebar);border:1px solid var(--accent);border-radius:12px;
@@ -389,3 +391,27 @@
     dialog.phieu-viec .phieu-noi>.loi,
     dialog.phieu-viec .phieu-noi>.cuoi-phieu{grid-column:1 / -1}
   }
+
+  /* ---- CỬA SỔ NỔI CỦA GOAL (Owner 26/08: bấm đúp mở popup, đừng nhảy màn) ---- */
+  dialog.mt-modal{width:min(680px, 94vw);max-height:88vh;padding:0;border-radius:14px;
+    border:1px solid var(--tr-the-vien);background:var(--tr-the);color:var(--ink);
+    overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,.5)}
+  dialog.mt-modal::backdrop{background:rgba(6,9,14,.62)}
+  html[data-theme="light"] dialog.mt-modal::backdrop{background:rgba(20,24,30,.38)}
+  dialog.mt-modal .phieu-dau{background:var(--tr-the);border-bottom:1px solid var(--tr-the-vien)}
+  .mt-modal-noi{padding:15px 18px 18px;overflow-y:auto;max-height:calc(88vh - 84px)}
+  .mt-tien-do{display:flex;align-items:center;gap:10px;margin:12px 0 4px;font-size:12px;
+    color:var(--muted)}
+  .mt-tien-do .thanh{flex:1;margin:0}
+  ul.mt-ds-viec{list-style:none;margin:6px 0 0;padding:0;display:flex;flex-direction:column;gap:6px}
+  ul.mt-ds-viec li{display:flex;align-items:center;gap:7px;flex-wrap:wrap;font-size:12.5px;
+    background:var(--tr-im-nen);border-radius:8px;padding:7px 10px}
+  ul.mt-ds-viec li .ten{flex:1;min-width:140px;font-weight:500}
+  ul.mt-ds-viec li .ai{font-size:11.5px;color:var(--tr-im-chu)}
+  .mt-modal-chan{display:flex;align-items:center;gap:9px;margin-top:16px;padding-top:13px;
+    border-top:1px solid var(--tr-the-vien)}
+  /* thẻ Goal giờ mở popup, không phải link — chân thẻ có đường sang board */
+  .g-the .chan-the{display:flex;align-items:center;gap:8px}
+  .g-the .sang-task,.g-dong .sang-task{margin-left:auto;font-size:11.5px;color:var(--tr-tin-chu);
+    text-decoration:none;padding:2px 7px;border-radius:7px;background:var(--tr-tin-nen)}
+  .g-the .sang-task:hover,.g-dong .sang-task:hover{filter:brightness(1.15)}

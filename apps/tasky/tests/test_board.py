@@ -321,3 +321,20 @@ def test_chip_trang_thai_du_tuong_phan_ca_hai_theme(_so):
         for muc in ("ok", "luu", "cap", "tin", "im"):
             nen, chu = cap["--tr-%s-nen" % muc], cap["--tr-%s-chu" % muc]
             assert tp(chu, nen) >= 4.5, f"{ten}/{muc}: {nen} vs {chu} = {tp(chu, nen):.2f}"
+
+
+def test_trang_goal_dung_chung_bang_mau_trello(_so):
+    """Owner 26/08 'làm thêm cho Goal': hai trang phải cùng một ngôn ngữ màu,
+    không để Task theo Trello còn Goal theo brand cũ."""
+    css = _c.get("/muc-tieu", headers=H_MGR).text
+    for luat in (".g-the{", ".bang-g{", ".o{"):
+        khoi = css.split(luat)[1].split("}")[0]
+        assert "--tr-" in khoi, f"{luat} chưa dùng token Trello"
+    assert "--tk-vien" not in css.split(".g-the{")[1].split("}")[0]
+
+
+def test_bang_chon_mau_goal_dung_mau_trello(ma, _so):
+    g = mt.tao(MGR, "G", "kq")
+    r = _c.get("/task?goal=" + g["id"], headers=H_MGR)
+    o = r.text.split('class="o-mau"')[1].split("</form>")[0]
+    assert "var(--tr-green)" in o and "var(--tr-red)" in o and "--tk-ok" not in o

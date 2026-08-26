@@ -97,3 +97,60 @@ def test_goal_da_chot_khong_vao_can_de_y():
     cay[0]["trang_thai"] = mt.KHONG_DAT
     gap, thuong = mt.can_de_y(cay)
     assert gap == [] and len(thuong) == 1
+
+
+# ---------- §17c: bấm đúp Goal → cửa sổ nổi ngay tại trang ----------
+
+from fastapi.testclient import TestClient          # noqa: E402
+from src import main                               # noqa: E402
+
+_c = TestClient(main.app)
+H_MGR = {"X-Remote-User": "huytq", "X-Remote-Level": "4",
+         "X-Remote-Dept": "V%E1%BA%ADn%20h%C3%A0nh",
+         "X-Remote-Actions": "vao,giao_viec,xac_nhan_ket_qua,bao_cao_bo_phan",
+         "X-Remote-Apps": "tasky"}
+
+
+@pytest.fixture()
+def _so(monkeypatch):
+    monkeypatch.setattr(main.nhan_su, "ds_nguoi", lambda: ([
+        {"ten": "huytq", "level": 4, "bo_phan": "Vận hành", "ho_ten": "Quốc Huy"},
+        {"ten": "hant", "level": 2, "bo_phan": "Vận hành", "ho_ten": "Thu Hà"}], ""))
+
+
+def test_moi_goal_co_mot_cua_so_noi(ma, _so):
+    """Owner 26/08: bấm đúp Goal phải mở popup NGAY TẠI TRANG, không nhảy màn khác."""
+    g = mt.tao(MGR, "Goal A", "kq")
+    tuan.them_viec_giao(ma, MGR, NV, "Việc trong Goal", "x", muc_tieu_id=g["id"])
+    r = _c.get("/muc-tieu", headers=H_MGR)
+    assert 'dialog class="mt-modal" data-goal-modal="%s"' % g["id"] in r.text
+    assert 'data-goal="%s"' % g["id"] in r.text          # thẻ trỏ tới đúng dialog
+    assert "showModal" in r.text
+    assert "Việc trong Goal" in r.text                   # xem việc ngay trong popup
+
+
+def test_the_goal_khong_con_la_link_dieu_huong(ma, _so):
+    """Thẻ mở popup; sang board Task là một đường RIÊNG, rõ ràng."""
+    g = mt.tao(MGR, "Goal A", "kq")
+    r = _c.get("/muc-tieu", headers=H_MGR)
+    the = r.text.split('<article class="g-the')[1].split("</article>")[0]
+    assert '<a class="sang-task" href="/task?goal=%s"' % g["id"] in the
+    assert the.count("<a ") == 1                        # chỉ đúng một đường sang Task
+
+
+def test_goal_da_chot_thi_popup_chi_doc(ma, _so):
+    g = mt.tao(MGR, "Goal A", "kq")
+    mt.chot_ket_qua(g["id"], MGR, mt.DAT)
+    r = _c.get("/muc-tieu", headers=H_MGR)
+    hop = r.text.split('data-goal-modal="%s"' % g["id"])[1].split("</dialog>")[0]
+    assert 'name="tieu_de"' not in hop and 'action="/muc-tieu/mau"' not in hop
+
+
+def test_nguoi_khong_duoc_sua_thi_popup_khong_co_o_sua(ma, _so):
+    """Người khác bộ phận xem được Goal thì cũng không sửa được từ popup."""
+    g = mt.tao(MGR, "Goal A", "kq")
+    h_kd = {**H_MGR, "X-Remote-User": "kd4", "X-Remote-Dept": "Kinh%20doanh"}
+    r = _c.get("/muc-tieu", headers=h_kd)
+    if 'data-goal-modal="%s"' % g["id"] in r.text:
+        hop = r.text.split('data-goal-modal="%s"' % g["id"])[1].split("</dialog>")[0]
+        assert 'name="tieu_de"' not in hop and "data-xoa-goal" not in hop

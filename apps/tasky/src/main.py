@@ -212,7 +212,10 @@ def trang_muc_tieu(request: Request, user: dict = Depends(yeu_cau_muc_tieu),
     gom = mt_lo.viec_theo_muc_tieu()          # MỘT lượt quét cho cả trang
     cay = [{**m, "tien_do": mt_lo.tien_do(m["id"], gom.get(m["id"], [])),
             "canh_bao": mt_lo.canh_bao(m, gom.get(m["id"], [])),
-            "con_han": mt_lo.con_han(m)} for m in ds]
+            "con_han": mt_lo.con_han(m),
+            # việc của Goal để CỬA SỔ NỔI xem ngay tại trang, khỏi nhảy sang Task
+            "viec": tuan_lo.sap_xep(gom.get(m["id"], [])),
+            "duoc_sua": mt_lo.duoc_sua(m, user)} for m in ds]
     tong_quan = mt_lo.tong_quan(ds, gom)
 
     # lọc: chữ tìm (không dấu) / trạng thái / bộ phận người đặt
