@@ -17,7 +17,9 @@ from src.main import app
 
 THANG_NAY = date.today().strftime("%Y-%m")
 HOM_NAY = date.today().isoformat()
-VI = "payoneer"          # A1 — mã trong rules/danh_muc_vi.csv
+VI = "vietcombank"       # A1 — ví VND, khỏi cần tỷ giá cho test cũ
+VI_USD = "payoneer"
+TY_GIA = 25920.0         # A2 — VCB giá mua chuyển khoản
 
 
 def _client(apps="to-chuc,hr,finance", ten="ketoan01", level=2):
@@ -39,6 +41,10 @@ def _seed_kenh():
         return k1, k2
     finally:
         conn.close()
+
+
+def _seed_ty_gia(gia=TY_GIA, ngay=None):
+    tai_chinh.ghi_ty_gia(ngay or HOM_NAY, "USD", gia, "test")
 
 
 def _seed_muc_tieu():
@@ -220,6 +226,7 @@ def test_but_toan_bat_buoc_vi_hop_le():
 
 def test_so_du_vi_cong_tru_dung_va_dao_ke_thua_vi():
     mt = _seed_muc_tieu()
+    _seed_ty_gia()
     tai_chinh.them_but_toan("kt", HOM_NAY, "THU-ADS", 2140, mt, vi="payoneer")
     chi = tai_chinh.them_but_toan("kt", HOM_NAY, "CHI-PROXY", 140, mt, vi="payoneer")
     tai_chinh.them_but_toan("kt", HOM_NAY, "THU-ADS", 500, mt, vi="adsense-cho")
@@ -238,6 +245,7 @@ def test_so_du_vi_cong_tru_dung_va_dao_ke_thua_vi():
 
 def test_tien_kha_dung_bo_qua_vi_phai_thu():
     mt = _seed_muc_tieu()
+    _seed_ty_gia()
     tai_chinh.them_but_toan("kt", HOM_NAY, "THU-ADS", 2140, mt, vi="payoneer")
     tai_chinh.them_but_toan("kt", HOM_NAY, "THU-ADS", 2980, mt, vi="adsense-cho")
     tai_chinh.them_but_toan("kt", HOM_NAY, "THU-KHAC", 58400000, mt, vi="vietcombank")
@@ -247,9 +255,99 @@ def test_tien_kha_dung_bo_qua_vi_phai_thu():
 
 def test_route_wallets_render_va_form_co_o_vi():
     _seed_muc_tieu()
-    tai_chinh.them_but_toan("kt", HOM_NAY, "THU-ADS", 2140, "Vận hành chung", vi=VI)
+    _seed_ty_gia()
+    tai_chinh.them_but_toan("kt", HOM_NAY, "THU-ADS", 2140, "Vận hành chung", vi=VI_USD)
     c = _client()
     b = c.get("/finance?tab=wallets").text
     assert "Payoneer" in b and "$2,140" in b
     assert "không tính vào tiền khả dụng" in b      # ví phải thu gắn nhãn rõ
     assert 'name="vi"' in c.get("/finance?tab=ledger").text   # form bắt chọn ví
+
+
+# ---------- A2: hai đồng tiền + sổ tỷ giá ----------
+
+def test_so_ty_gia_chi_them_va_lay_dong_gan_nhat():
+    tai_chinh.ghi_ty_gia("2026-08-20", "USD", 25800, "vcb_transfer")
+    tai_chinh.ghi_ty_gia("2026-08-26", "USD", 25920, "vcb_transfer")
+    dung = tai_chinh.ty_gia_ngay("2026-08-26")
+    assert dung["gia"] == 25920.0 and dung["cu"] is False
+    # ngày chưa có tỷ giá → lấy dòng GẦN NHẤT TRƯỚC đó, gắn cờ cu (không bịa số mới)
+    cu = tai_chinh.ty_gia_ngay("2026-08-28")
+    assert cu["gia"] == 25920.0 and cu["cu"] is True and cu["ngay"] == "2026-08-26"
+    # trước mọi dòng trong sổ → None, tuyệt đối không suy ngược
+    assert tai_chinh.ty_gia_ngay("2026-08-01") is None
+
+
+def test_but_toan_ngoai_te_can_ty_gia_va_chot_cung():
+    mt = _seed_muc_tieu()
+    with pytest.raises(ValueError):        # ví USD mà sổ chưa có tỷ giá
+        tai_chinh.them_but_toan("kt", HOM_NAY, "CHI-PROXY", 86, mt, vi=VI_USD)
+    assert tai_chinh.doc_so() == []
+    _seed_ty_gia()
+    b = tai_chinh.them_but_toan("kt", HOM_NAY, "CHI-PROXY", 86, mt, vi=VI_USD)
+    assert b["tien_te"] == "USD" and b["ty_gia"] == TY_GIA      # tiền tệ suy từ VÍ
+    assert b["nguon_ty_gia"] == "test"
+    # tỷ giá đổi về sau KHÔNG đụng bút toán đã chốt
+    tai_chinh.ghi_ty_gia(HOM_NAY, "USD", 30000, "test")
+    assert tai_chinh.doc_so()[0]["ty_gia"] == TY_GIA
+
+
+def test_but_toan_vnd_khong_can_ty_gia():
+    mt = _seed_muc_tieu()
+    b = tai_chinh.them_but_toan("kt", HOM_NAY, "CHI-NGOAI", 4500000, mt, vi=VI)
+    assert b["tien_te"] == "VND" and b["ty_gia"] == 1.0
+
+
+def test_tong_hop_quy_ve_vnd():
+    mt = _seed_muc_tieu()
+    _seed_ty_gia()
+    tai_chinh.them_but_toan("kt", HOM_NAY, "THU-ADS", 100, mt, vi=VI_USD)      # 2.592.000 ₫
+    tai_chinh.them_but_toan("kt", HOM_NAY, "CHI-NGOAI", 592_000, mt, vi=VI)    # 592.000 ₫
+    assert tai_chinh.tong_thang(THANG_NAY) == {"thu": 2_592_000.0, "chi": 592_000.0}
+    assert tai_chinh.tong_hop_danh_muc(THANG_NAY)["THU-ADS"]["thang"] == 2_592_000.0
+    assert tai_chinh.tong_hop_muc_tieu()[mt]["da_thu"] == 2_592_000.0
+
+
+def test_so_du_vi_co_quy_vnd():
+    mt = _seed_muc_tieu()
+    _seed_ty_gia()
+    tai_chinh.them_but_toan("kt", HOM_NAY, "THU-ADS", 100, mt, vi=VI_USD)
+    tai_chinh.them_but_toan("kt", HOM_NAY, "THU-KHAC", 500_000, mt, vi=VI)
+    sd = tai_chinh.so_du_vi()
+    assert sd[VI_USD]["nguyen_te"] == 100.0 and sd[VI_USD]["quy_vnd"] == 2_592_000.0
+    assert sd[VI]["quy_vnd"] == 500_000.0
+    assert tai_chinh.tien_kha_dung() == {"USD": 100.0, "VND": 500_000.0}
+    assert tai_chinh.tien_kha_dung_vnd() == 3_092_000.0
+
+
+def test_lay_ty_gia_online_hong_thi_tra_none(monkeypatch):
+    """Mọi nguồn chết → None để form bắt nhập tay. KHÔNG bịa một con số nào."""
+    def _no(*a, **k):
+        raise OSError("mạng chết")
+    monkeypatch.setattr(tai_chinh, "_doc_url", _no)
+    assert tai_chinh.lay_ty_gia_online("USD") is None
+
+
+def test_lay_ty_gia_online_doc_dung_vcb(monkeypatch):
+    mau = ('{"Count":1,"Data":[{"currencyCode":"USD","cash":"25890.00",'
+           '"transfer":"25920.00","sell":"26300.00"}]}')
+    monkeypatch.setattr(tai_chinh, "_doc_url", lambda url, **k: mau)
+    kq = tai_chinh.lay_ty_gia_online("USD")
+    assert kq == {"gia": 25920.0, "nguon": "vcb_transfer"}   # giá MUA chuyển khoản
+
+
+def test_route_lay_ty_gia_ghi_so_va_hong_thi_422(monkeypatch):
+    c = _client()
+    monkeypatch.setattr(tai_chinh, "_doc_url",
+                        lambda url, **k: '{"Data":[{"currencyCode":"USD","transfer":"25920.00"}]}')
+    r = c.post("/finance/ty-gia/lay", data={"tien_te": "USD"}, follow_redirects=False)
+    assert r.status_code == 303
+    assert tai_chinh.ty_gia_ngay(HOM_NAY)["gia"] == 25920.0
+    b = c.get("/finance?tab=wallets").text
+    assert "25920" in b and "vcb_transfer" in b
+    # mọi nguồn chết → 422, KHÔNG ghi số bịa
+    def _no(*a, **k):
+        raise OSError("mạng chết")
+    monkeypatch.setattr(tai_chinh, "_doc_url", _no)
+    assert c.post("/finance/ty-gia/lay", data={"tien_te": "EUR"}).status_code == 422
+    assert tai_chinh.ty_gia_ngay(HOM_NAY, "EUR") is None

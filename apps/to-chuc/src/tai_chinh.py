@@ -21,6 +21,7 @@ import json
 import os
 import secrets
 import threading
+import urllib.request
 from datetime import date, datetime
 from pathlib import Path
 
@@ -32,6 +33,10 @@ _khoa = threading.Lock()
 KENH_CHUNG = ""          # kenh_ma rỗng = bút toán 'chung hệ'
 LOAI = ("thu", "chi", "dao")
 LOAI_VI = ("vi_dien_tu", "ngan_hang", "quy", "phai_thu")   # phai_thu KHÔNG là tiền khả dụng
+DONG_VAN_HANH = "VND"          # A2 — mọi tổng hợp quy về đây
+TY_GIA_TIMEOUT = 8             # giây; KHÔNG retry ngầm (bài học SDK 19/07 + 06/08)
+VCB_URL = "https://www.vietcombank.com.vn/api/exchangerates?date=now"
+ER_API_URL = "https://open.er-api.com/v6/latest/"
 TRANG_THAI_MT = ("dang_chay", "tam_dung", "xong")
 
 
@@ -186,7 +191,7 @@ def _kenh_hop_le(kenh_ma: str) -> bool:
 
 def them_but_toan(nguoi_ghi: str, ngay: str, danh_muc: str, so_tien,
                   muc_tieu: str, kenh_ma: str = KENH_CHUNG, chung_tu: str = "",
-                  ghi_chu: str = "", vi: str = "") -> dict:
+                  ghi_chu: str = "", vi: str = "", ty_gia=None) -> dict:
     """Ghi MỘT bút toán mới. loai suy từ DANH MỤC (dropdown quyết thu/chi — không
     có cửa chọn lệch); mục tiêu BẮT BUỘC tồn tại (DE.md 13.6); kênh phải có trong
     danh bạ đế hoặc rỗng = chung hệ; VÍ bắt buộc (A1 — tiền phải biết nằm ở đâu)."""
@@ -210,12 +215,29 @@ def them_but_toan(nguoi_ghi: str, ngay: str, danh_muc: str, so_tien,
     if kenh_ma and not _kenh_hop_le(kenh_ma):
         raise ValueError(f"Kênh '{kenh_ma}' không có trong danh bạ đế.")
     vi = (vi or "").strip()
-    if vi not in _vi_theo_ma():
+    vi_map = _vi_theo_ma()
+    if vi not in vi_map:
         raise ValueError(f"Ví '{vi}' không có trong rules/danh_muc_vi.csv.")
+    # A2 — tiền tệ suy từ VÍ (một nguồn sự thật, không có cửa khai lệch)
+    tien_te = vi_map[vi]["tien_te"]
+    nguon_tg = ""
+    if tien_te == DONG_VAN_HANH:
+        ty_gia = 1.0
+    elif ty_gia:
+        ty_gia = float(ty_gia)
+        nguon_tg = "tay"
+    else:
+        tg = ty_gia_ngay(ngay, tien_te)
+        if tg is None:
+            raise ValueError(
+                f"Chưa có tỷ giá {tien_te} cho ngày {ngay} — lấy tỷ giá hoặc nhập tay.")
+        ty_gia, nguon_tg = tg["gia"], tg["nguon"]
+    if ty_gia <= 0:
+        raise ValueError("Tỷ giá phải lớn hơn 0.")
     b = {"id": f"BT-{datetime.now():%y%m%d%H%M%S}-{secrets.token_hex(2)}",
          "ngay": ngay, "loai": loai, "danh_muc": danh_muc.strip(),
          "so_tien": so_tien, "muc_tieu": muc_tieu, "kenh_ma": kenh_ma,
-         "vi": vi,
+         "vi": vi, "tien_te": tien_te, "ty_gia": ty_gia, "nguon_ty_gia": nguon_tg,
          "nguoi_ghi": nguoi_ghi, "chung_tu": (chung_tu or "").strip()[:200],
          "ghi_chu": (ghi_chu or "").strip()[:500],
          "tao_luc": datetime.now().isoformat(timespec="seconds")}
@@ -240,7 +262,8 @@ def dao_but_toan(nguoi_ghi: str, id_goc: str, ghi_chu: str = "") -> dict:
              "ngay": date.today().isoformat(), "loai": "dao",
              "danh_muc": goc.get("danh_muc", ""), "so_tien": -float(goc.get("so_tien", 0)),
              "muc_tieu": goc.get("muc_tieu", ""), "kenh_ma": goc.get("kenh_ma", ""),
-             "vi": goc.get("vi", ""),
+             "vi": goc.get("vi", ""), "tien_te": goc.get("tien_te", DONG_VAN_HANH),
+             "ty_gia": goc.get("ty_gia", 1.0), "nguon_ty_gia": goc.get("nguon_ty_gia", ""),
              "nguoi_ghi": nguoi_ghi, "chung_tu": "", "tham_chieu": id_goc,
              "ghi_chu": (ghi_chu or "").strip() or f"Đảo bút toán {id_goc}",
              "tao_luc": datetime.now().isoformat(timespec="seconds")}
@@ -248,7 +271,94 @@ def dao_but_toan(nguoi_ghi: str, id_goc: str, ghi_chu: str = "") -> dict:
     return b
 
 
+# ---------- sổ tỷ giá (A2 — JSONL chỉ-thêm, một dòng mỗi lần lấy) ----------
+
+def _thu_muc_ty_gia() -> Path:
+    return Path(os.getenv("TY_GIA_DIR", "nhan-su/ty-gia"))
+
+
+def ghi_ty_gia(ngay: str, tien_te: str, gia, nguon: str) -> dict:
+    """Chỉ-THÊM một dòng tỷ giá. Lấy lại cùng ngày = thêm dòng mới, dòng cũ giữ
+    nguyên (sổ kể được chuyện gì đã xảy ra)."""
+    date.fromisoformat(ngay)
+    gia = float(gia)
+    if gia <= 0:
+        raise ValueError("Tỷ giá phải lớn hơn 0.")
+    d = {"ngay": ngay, "tien_te": tien_te.upper(), "gia": gia, "nguon": nguon,
+         "lay_luc": datetime.now().isoformat(timespec="seconds")}
+    pth = _thu_muc_ty_gia() / f"{ngay[:4]}.jsonl"
+    pth.parent.mkdir(parents=True, exist_ok=True)
+    with _khoa, open(pth, "a", encoding="utf-8") as f:
+        f.write(json.dumps(d, ensure_ascii=False) + "\n")
+        f.flush()
+        os.fsync(f.fileno())
+    return d
+
+
+def _doc_so_ty_gia(tien_te: str) -> list[dict]:
+    thu_muc = _thu_muc_ty_gia()
+    if not thu_muc.is_dir():
+        return []
+    ra = []
+    for pth in sorted(thu_muc.glob("*.jsonl")):
+        for dong in pth.read_text(encoding="utf-8", errors="replace").splitlines():
+            if not dong.strip():
+                continue
+            try:
+                d = json.loads(dong)
+            except ValueError:
+                continue
+            if isinstance(d, dict) and d.get("tien_te") == tien_te.upper() and d.get("gia"):
+                ra.append(d)
+    return sorted(ra, key=lambda d: (d.get("ngay", ""), d.get("lay_luc", "")))
+
+
+def ty_gia_ngay(ngay: str, tien_te: str = "USD") -> dict | None:
+    """Tỷ giá dùng cho MỘT ngày, đọc SỔ (không chạm mạng): đúng ngày → cu=False;
+    chưa có → dòng gần nhất TRƯỚC đó kèm cu=True; không có dòng nào trước đó →
+    None (form bắt nhập tay, tuyệt đối không suy ngược một con số)."""
+    ds = [d for d in _doc_so_ty_gia(tien_te) if d.get("ngay", "") <= ngay]
+    if not ds:
+        return None
+    d = ds[-1]
+    return {"gia": float(d["gia"]), "nguon": d.get("nguon", ""),
+            "ngay": d["ngay"], "cu": d["ngay"] != ngay}
+
+
+def _doc_url(url: str, timeout: int = TY_GIA_TIMEOUT) -> str:
+    """Tách riêng để test monkeypatch — lõi không bao giờ gọi thật."""
+    with urllib.request.urlopen(url, timeout=timeout) as r:
+        return r.read().decode("utf-8", "replace")
+
+
+def lay_ty_gia_online(tien_te: str = "USD") -> dict | None:
+    """VCB trước (giá MUA CHUYỂN KHOẢN = số VND thực nhận khi bán ngoại tệ),
+    ExchangeRate-API mở dự phòng. Mọi đường chết → None, KHÔNG bịa."""
+    tien_te = tien_te.upper()
+    try:
+        du = json.loads(_doc_url(VCB_URL))
+        for m in du.get("Data", []):
+            if (m.get("currencyCode") or "").upper() == tien_te and m.get("transfer"):
+                return {"gia": float(str(m["transfer"]).replace(",", "")),
+                        "nguon": "vcb_transfer"}
+    except (OSError, ValueError, KeyError, TypeError):
+        pass
+    try:
+        du = json.loads(_doc_url(ER_API_URL + tien_te))
+        gia = (du.get("rates") or {}).get(DONG_VAN_HANH)
+        if gia:
+            return {"gia": float(gia), "nguon": "er_api"}
+    except (OSError, ValueError, KeyError, TypeError):
+        pass
+    return None
+
+
 # ---------- tổng hợp (đọc-tính, không ghi) ----------
+
+def quy_vnd(b: dict) -> float:
+    """Số tiền của bút toán quy về đồng vận hành. KHÔNG lưu vào sổ — luôn tính
+    lại để không có hai con số cãi nhau."""
+    return float(b.get("so_tien") or 0) * float(b.get("ty_gia") or 1)
 
 def _phia(b: dict, loai_map: dict[str, str]) -> str | None:
     """Bút toán rơi vào bên THU hay CHI: theo LOẠI của danh mục (bút toán đảo
@@ -269,7 +379,7 @@ def tong_thang(thang: str) -> dict:
             continue
         phia = _phia(b, loai_map)
         if phia:
-            ra[phia] += float(b.get("so_tien") or 0)
+            ra[phia] += quy_vnd(b)
     return ra
 
 
@@ -281,7 +391,7 @@ def tong_hop_danh_muc(thang: str) -> dict[str, dict]:
         if not dm:
             continue
         m = ra.setdefault(dm, {"thang": 0.0, "luy_ke": 0.0})
-        tien = float(b.get("so_tien") or 0)
+        tien = quy_vnd(b)
         m["luy_ke"] += tien
         if (b.get("ngay") or "")[:7] == thang:
             m["thang"] += tien
@@ -299,9 +409,9 @@ def tong_hop_muc_tieu() -> dict[str, dict]:
         m = ra.setdefault(mt, {"da_chi": 0.0, "da_thu": 0.0})
         phia = _phia(b, loai_map)
         if phia == "thu":
-            m["da_thu"] += float(b.get("so_tien") or 0)
+            m["da_thu"] += quy_vnd(b)
         elif phia == "chi":
-            m["da_chi"] += float(b.get("so_tien") or 0)
+            m["da_chi"] += quy_vnd(b)
     return ra
 
 
@@ -316,7 +426,7 @@ def pnl_theo_kenh(thang: str) -> dict[str, dict]:
         if not phia:
             continue
         m = ra.setdefault(b.get("kenh_ma", "") or KENH_CHUNG, {"thu": 0.0, "chi": 0.0})
-        m[phia] += float(b.get("so_tien") or 0)
+        m[phia] += quy_vnd(b)
     return ra
 
 
@@ -325,7 +435,7 @@ def so_du_vi() -> dict[str, dict]:
     mang danh mục gốc + số tiền âm nên tự bù đúng bên. Ví chưa phát sinh bút toán
     nào thì KHÔNG hiện (không vẽ dòng 0 giả).
 
-    ponytail: chỉ nguyên tệ — quy VND cần tỷ giá, để A2 thêm khóa 'quy_vnd'.
+    A2: kèm 'quy_vnd' cộng theo tỷ giá đã chốt trên từng bút toán.
     """
     loai_map = _loai_theo_ma()
     vi_map = _vi_theo_ma()
@@ -335,11 +445,12 @@ def so_du_vi() -> dict[str, dict]:
         phia = _phia(b, loai_map)
         if not ma or not phia:
             continue
-        m = ra.setdefault(ma, {"nguyen_te": 0.0,
+        m = ra.setdefault(ma, {"nguyen_te": 0.0, "quy_vnd": 0.0,
                                "tien_te": vi_map.get(ma, {}).get("tien_te", "VND"),
                                "but_toan_cuoi": ""})
-        tien = float(b.get("so_tien") or 0)
-        m["nguyen_te"] += tien if phia == "thu" else -tien
+        dau = 1 if phia == "thu" else -1
+        m["nguyen_te"] += dau * float(b.get("so_tien") or 0)
+        m["quy_vnd"] += dau * quy_vnd(b)
         m["but_toan_cuoi"] = max(m["but_toan_cuoi"], b.get("ngay") or "")
     return ra
 
@@ -355,3 +466,10 @@ def tien_kha_dung() -> dict[str, float]:
         if m["nguyen_te"]:
             ra[m["tien_te"]] = ra.get(m["tien_te"], 0.0) + m["nguyen_te"]
     return ra
+
+
+def tien_kha_dung_vnd() -> float:
+    """Tổng tiền khả dụng quy về đồng vận hành — số dùng cho runway (B3)."""
+    vi_map = _vi_theo_ma()
+    return sum(m["quy_vnd"] for ma, m in so_du_vi().items()
+               if vi_map.get(ma, {}).get("loai") != "phai_thu")

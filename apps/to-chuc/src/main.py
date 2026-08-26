@@ -85,7 +85,18 @@ def _fmt_tien(v) -> str:
     return ("−$" if v < 0 else "$") + s
 
 
+def _fmt_vnd(v) -> str:
+    """2592000 → '2.592.000 ₫' (kiểu VN); không phải số → '—'."""
+    try:
+        v = float(v)
+    except (TypeError, ValueError):
+        return "—"
+    s = f"{abs(v):,.0f}".replace(",", ".")
+    return ("−" if v < 0 else "") + s + " ₫"
+
+
 templates.env.filters["tien"] = _fmt_tien
+templates.env.filters["vnd"] = _fmt_vnd
 templates.env.filters["gio_chu"] = gio_chu
 
 
@@ -426,7 +437,10 @@ def finance_trang(request: Request, tab: str = "ledger", thang: str = "",
         "ds_kenh": ds_kenh, "kenh_cua": kenh_cua, "ten_ngach": ten_ngach,
         "pnl": tai_chinh.pnl_theo_kenh(thang),
         "danh_muc_vi": tai_chinh.doc_danh_muc_vi(),
-        "so_du_vi": tai_chinh.so_du_vi(), "kha_dung": tai_chinh.tien_kha_dung()})
+        "so_du_vi": tai_chinh.so_du_vi(), "kha_dung": tai_chinh.tien_kha_dung(),
+        "kha_dung_vnd": tai_chinh.tien_kha_dung_vnd(),
+        "quy_vnd": tai_chinh.quy_vnd,
+        "ty_gia_usd": tai_chinh.ty_gia_ngay(date.today().isoformat(), "USD")})
 
 
 @app.post("/finance/but-toan")
@@ -443,6 +457,27 @@ def finance_but_toan(ngay: str = Form(...), danh_muc: str = Form(...),
     nhat_ky.ghi("to-chuc", user["ten"], "but_toan",
                 f"{b['id']} {b['loai']} {b['danh_muc']} {b['so_tien']}")
     return RedirectResponse(f"/finance?tab=ledger&thang={ngay[:7]}", status_code=303)
+
+
+@app.post("/finance/ty-gia/lay")
+def finance_lay_ty_gia(tien_te: str = Form("USD"), gia: str = Form(""),
+                       user: dict = Depends(yeu_cau_finance)):
+    """Lấy tỷ giá VCB (dự phòng ExchangeRate-API) và ghi SỔ chỉ-thêm. Mọi nguồn
+    chết → 422 để người nhập tay; không bao giờ ghi một con số bịa."""
+    hom_nay = date.today().isoformat()
+    try:
+        if gia.strip():
+            kq = {"gia": float(gia.replace(",", "").strip()), "nguon": "tay"}
+        else:
+            kq = tai_chinh.lay_ty_gia_online(tien_te)
+            if kq is None:
+                raise HTTPException(
+                    422, "Không lấy được tỷ giá từ VCB lẫn ExchangeRate-API — nhập tay.")
+        tai_chinh.ghi_ty_gia(hom_nay, tien_te, kq["gia"], kq["nguon"])
+    except ValueError as e:
+        raise HTTPException(422, str(e))
+    nhat_ky.ghi("to-chuc", user["ten"], "ty_gia", f"{tien_te} {kq['gia']} {kq['nguon']}")
+    return RedirectResponse("/finance?tab=wallets", status_code=303)
 
 
 @app.post("/finance/dao")
