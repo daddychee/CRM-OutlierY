@@ -86,3 +86,14 @@ Sửa xong lưu lại là hệ đọc ngay ở lần tải trang kế tiếp, kh
 
 Lịch này hiện ngay đầu tab Tổng quan kèm trạng thái từng mốc. Trễ hạn thì hệ
 nhắc, **không tự chạy**.
+
+---
+
+## Bản PDF
+
+`HDSD-Finance-Hub.pdf` — gộp cả 11 tài liệu và 12 ảnh thành một tệp 25 trang,
+ảnh nhúng sẵn nên gửi đi đâu cũng xem được, không cần kèm thư mục.
+
+Tạo lại sau khi sửa tài liệu: chạy `scratchpad/gop_pdf.py` để gộp Markdown thành
+HTML, rồi Chrome in ra PDF (`--headless --print-to-pdf`). Máy này không có
+pandoc, và WeasyPrint thiếu GTK nên không dùng được.
