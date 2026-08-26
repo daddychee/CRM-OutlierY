@@ -19,6 +19,7 @@ from __future__ import annotations
 import csv
 import json
 import os
+import re
 import secrets
 import threading
 import urllib.request
@@ -34,6 +35,9 @@ KENH_CHUNG = ""          # kenh_ma rỗng = bút toán 'chung hệ'
 LOAI = ("thu", "chi", "dao")
 LOAI_VI = ("vi_dien_tu", "ngan_hang", "quy", "phai_thu")   # phai_thu KHÔNG là tiền khả dụng
 DONG_VAN_HANH = "VND"          # A2 — mọi tổng hợp quy về đây
+DUOI_CHUNG_TU = (".jpg", ".jpeg", ".png", ".webp", ".pdf")   # A3
+TRAN_TEP = 10 * 1024 * 1024    # 10 MB mỗi tệp
+TRAN_SO_TEP = 5
 TY_GIA_TIMEOUT = 8             # giây; KHÔNG retry ngầm (bài học SDK 19/07 + 06/08)
 VCB_URL = "https://www.vietcombank.com.vn/api/exchangerates?date=now"
 ER_API_URL = "https://open.er-api.com/v6/latest/"
@@ -191,7 +195,8 @@ def _kenh_hop_le(kenh_ma: str) -> bool:
 
 def them_but_toan(nguoi_ghi: str, ngay: str, danh_muc: str, so_tien,
                   muc_tieu: str, kenh_ma: str = KENH_CHUNG, chung_tu: str = "",
-                  ghi_chu: str = "", vi: str = "", ty_gia=None) -> dict:
+                  ghi_chu: str = "", vi: str = "", ty_gia=None,
+                  tep_dinh_kem: list | None = None) -> dict:
     """Ghi MỘT bút toán mới. loai suy từ DANH MỤC (dropdown quyết thu/chi — không
     có cửa chọn lệch); mục tiêu BẮT BUỘC tồn tại (DE.md 13.6); kênh phải có trong
     danh bạ đế hoặc rỗng = chung hệ; VÍ bắt buộc (A1 — tiền phải biết nằm ở đâu)."""
@@ -238,6 +243,7 @@ def them_but_toan(nguoi_ghi: str, ngay: str, danh_muc: str, so_tien,
          "ngay": ngay, "loai": loai, "danh_muc": danh_muc.strip(),
          "so_tien": so_tien, "muc_tieu": muc_tieu, "kenh_ma": kenh_ma,
          "vi": vi, "tien_te": tien_te, "ty_gia": ty_gia, "nguon_ty_gia": nguon_tg,
+         "tep_dinh_kem": list(tep_dinh_kem or []),
          "nguoi_ghi": nguoi_ghi, "chung_tu": (chung_tu or "").strip()[:200],
          "ghi_chu": (ghi_chu or "").strip()[:500],
          "tao_luc": datetime.now().isoformat(timespec="seconds")}
@@ -262,13 +268,71 @@ def dao_but_toan(nguoi_ghi: str, id_goc: str, ghi_chu: str = "") -> dict:
              "ngay": date.today().isoformat(), "loai": "dao",
              "danh_muc": goc.get("danh_muc", ""), "so_tien": -float(goc.get("so_tien", 0)),
              "muc_tieu": goc.get("muc_tieu", ""), "kenh_ma": goc.get("kenh_ma", ""),
-             "vi": goc.get("vi", ""), "tien_te": goc.get("tien_te", DONG_VAN_HANH),
+             "vi": goc.get("vi", ""), "tep_dinh_kem": list(goc.get("tep_dinh_kem") or []),
+             "tien_te": goc.get("tien_te", DONG_VAN_HANH),
              "ty_gia": goc.get("ty_gia", 1.0), "nguon_ty_gia": goc.get("nguon_ty_gia", ""),
              "nguoi_ghi": nguoi_ghi, "chung_tu": "", "tham_chieu": id_goc,
              "ghi_chu": (ghi_chu or "").strip() or f"Đảo bút toán {id_goc}",
              "tao_luc": datetime.now().isoformat(timespec="seconds")}
         _ghi_dong(b)
     return b
+
+
+# ---------- kho chứng từ (A3 — tệp cạnh sổ, khuôn kho tài liệu hồ sơ) ----------
+
+def thu_muc_chung_tu(id_bt: str) -> Path:
+    """<CHUNG_TU_DIR>/<năm>/<id>. id đã do máy sinh (BT-yymmddHHMMSS-xxxx) nên
+    an toàn, vẫn lọc ký tự lạ phòng gọi từ chỗ khác."""
+    id_sach = re.sub(r"[^0-9A-Za-z-]", "", id_bt)[:40] or "khong-ro"
+    nam = id_sach[3:5] if id_sach.startswith("BT-") else ""
+    goc = Path(os.getenv("CHUNG_TU_DIR", "nhan-su/chung-tu"))
+    return goc / (f"20{nam}" if nam.isdigit() else "khac") / id_sach
+
+
+def _ten_tep_sach(ten: str) -> str:
+    """Bỏ đường dẫn + ký tự cấm của Windows; GIỮ dấu tiếng Việt (bài học đặt tên
+    tệp của module nhập liệu)."""
+    ten = str(ten).replace("\\", "/").split("/")[-1]
+    ten = re.sub(r'[<>:"|?*\x00-\x1f]', "", ten).strip(" .")
+    return ten[:120] or "tep"
+
+
+def kiem_tep(tep: list) -> list:
+    """[(tên, bytes)] → [(tên đã dọn, bytes)]; KHÔNG ghi gì. Validate ở trust
+    boundary: đuôi cho phép, trần 10 MB mỗi tệp, tối đa 5 tệp. Route gọi hàm này
+    TRƯỚC khi ghi sổ để tệp sai không kịp đẻ dòng rác."""
+    if len(tep) > TRAN_SO_TEP:
+        raise ValueError(f"Tối đa {TRAN_SO_TEP} tệp mỗi bút toán.")
+    sach = []
+    for ten, du_lieu in tep:
+        ten = _ten_tep_sach(ten)
+        if not ten.lower().endswith(DUOI_CHUNG_TU):
+            raise ValueError(f"Tệp '{ten}': chỉ nhận {', '.join(DUOI_CHUNG_TU)}.")
+        if len(du_lieu) > TRAN_TEP:
+            raise ValueError(f"Tệp '{ten}' quá {TRAN_TEP // 1024 // 1024} MB.")
+        sach.append((ten, du_lieu))
+    return sach
+
+
+def luu_chung_tu(id_bt: str, tep: list) -> list[str]:
+    """Ghi tệp vào kho của MỘT bút toán, trả danh sách tên đã dọn."""
+    sach = kiem_tep(tep)
+    thu_muc = thu_muc_chung_tu(id_bt)
+    thu_muc.mkdir(parents=True, exist_ok=True)
+    for ten, du_lieu in sach:
+        (thu_muc / ten).write_bytes(du_lieu)
+    return [t for t, _ in sach]
+
+
+def duong_chung_tu(id_bt: str, ten: str) -> Path | None:
+    """Đường tệp nếu có THẬT trong kho của đúng bút toán đó — chặn leo thư mục."""
+    ten = _ten_tep_sach(ten)
+    p = thu_muc_chung_tu(id_bt) / ten
+    try:
+        p.resolve().relative_to(thu_muc_chung_tu(id_bt).resolve())
+    except (ValueError, OSError):
+        return None
+    return p if p.is_file() else None
 
 
 # ---------- sổ tỷ giá (A2 — JSONL chỉ-thêm, một dòng mỗi lần lấy) ----------

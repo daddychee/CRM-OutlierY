@@ -351,3 +351,59 @@ def test_route_lay_ty_gia_ghi_so_va_hong_thi_422(monkeypatch):
     monkeypatch.setattr(tai_chinh, "_doc_url", _no)
     assert c.post("/finance/ty-gia/lay", data={"tien_te": "EUR"}).status_code == 422
     assert tai_chinh.ty_gia_ngay(HOM_NAY, "EUR") is None
+
+
+# ---------- A3: chứng từ đính kèm ----------
+
+def test_luu_chung_tu_kiem_duoi_kich_thuoc_va_ten():
+    with pytest.raises(ValueError):                    # đuôi không cho phép
+        tai_chinh.luu_chung_tu("BT-x", [("virus.exe", b"x")])
+    with pytest.raises(ValueError):                    # quá 10 MB
+        tai_chinh.luu_chung_tu("BT-x", [("to.pdf", b"0" * (10 * 1024 * 1024 + 1))])
+    with pytest.raises(ValueError):                    # quá 5 tệp
+        tai_chinh.luu_chung_tu("BT-x", [(f"a{i}.png", b"x") for i in range(6)])
+    # tên tệp bị dọn: không cho leo thư mục, giữ dấu tiếng Việt
+    ten = tai_chinh.luu_chung_tu("BT-y", [("../../hóa đơn .png", b"x")])
+    assert ten == ["hóa đơn .png"] or ten == ["hóa đơn.png"]
+    assert (tai_chinh.thu_muc_chung_tu("BT-y") / ten[0]).is_file()
+
+
+def test_dao_ke_thua_chung_tu():
+    mt = _seed_muc_tieu()
+    goc = tai_chinh.them_but_toan("kt", HOM_NAY, "CHI-PROXY", 86, mt, vi=VI,
+                                  tep_dinh_kem=["hoa-don.png"])
+    dao = tai_chinh.dao_but_toan("sep", goc["id"])
+    assert dao["tep_dinh_kem"] == ["hoa-don.png"]      # dấu vết không đứt
+
+
+def test_route_upload_chung_tu_va_tai_ve():
+    _seed_muc_tieu()
+    c = _client()
+    r = c.post("/finance/but-toan",
+               data={"ngay": HOM_NAY, "danh_muc": "CHI-PROXY", "so_tien": "86",
+                     "muc_tieu": "Vận hành chung", "vi": VI},
+               files=[("tep", ("hoa-don.png", b"PNG-gia-lap", "image/png"))],
+               follow_redirects=False)
+    assert r.status_code == 303
+    bt = tai_chinh.doc_so()[0]
+    assert bt["tep_dinh_kem"] == ["hoa-don.png"]
+    # tải về được, nội dung đúng
+    r2 = c.get(f"/finance/chung-tu/{bt['id']}/hoa-don.png")
+    assert r2.status_code == 200 and r2.content == b"PNG-gia-lap"
+    # id lạ / tệp lạ → 404 lặng lẽ
+    assert c.get("/finance/chung-tu/BT-khong-co/x.png").status_code == 404
+    assert c.get(f"/finance/chung-tu/{bt['id']}/../../secret").status_code == 404
+    # người không có cờ finance → không lấy được
+    assert _client(apps="to-chuc").get(
+        f"/finance/chung-tu/{bt['id']}/hoa-don.png").status_code == 403
+
+
+def test_route_tep_sai_duoi_thi_422_va_so_khong_nhan_dong_rac():
+    _seed_muc_tieu()
+    c = _client()
+    r = c.post("/finance/but-toan",
+               data={"ngay": HOM_NAY, "danh_muc": "CHI-PROXY", "so_tien": "86",
+                     "muc_tieu": "Vận hành chung", "vi": VI},
+               files=[("tep", ("virus.exe", b"MZ", "application/octet-stream"))])
+    assert r.status_code == 422
+    assert tai_chinh.doc_so() == []                    # validate TRƯỚC khi ghi sổ

@@ -35,8 +35,10 @@ from datetime import date, datetime
 from pathlib import Path
 from urllib.parse import quote, unquote
 
-from fastapi import Depends, FastAPI, Form, Header, HTTPException, Request
-from fastapi.responses import HTMLResponse, RedirectResponse, Response
+from fastapi import (Depends, FastAPI, File, Form, Header, HTTPException,
+                     Request, UploadFile)
+from fastapi.responses import (FileResponse, HTMLResponse, RedirectResponse,
+                               Response)
 from fastapi.templating import Jinja2Templates
 
 _APP_DIR = Path(__file__).resolve().parents[1]          # apps/to-chuc
@@ -448,15 +450,33 @@ def finance_but_toan(ngay: str = Form(...), danh_muc: str = Form(...),
                      so_tien: str = Form(...), muc_tieu: str = Form(...),
                      kenh_ma: str = Form(""), chung_tu: str = Form(""),
                      ghi_chu: str = Form(""), vi: str = Form(""),
+                     ty_gia: str = Form(""), tep: list[UploadFile] = File(default=[]),
                      user: dict = Depends(yeu_cau_finance)):
+    # A3 — đọc + VALIDATE tệp TRƯỚC khi ghi sổ: tệp sai thì sổ không nhận dòng rác
+    nap = [(t.filename, t.file.read()) for t in tep if t and t.filename]
     try:
+        sach = tai_chinh.kiem_tep(nap)          # sai tệp → 422, sổ chưa ghi gì
         b = tai_chinh.them_but_toan(user["ten"], ngay, danh_muc, so_tien,
-                                    muc_tieu, kenh_ma, chung_tu, ghi_chu, vi)
+                                    muc_tieu, kenh_ma, chung_tu, ghi_chu, vi,
+                                    ty_gia or None,
+                                    tep_dinh_kem=[t for t, _ in sach])
+        if sach:
+            tai_chinh.luu_chung_tu(b["id"], sach)   # id có rồi mới biết ghi vào đâu
     except ValueError as e:
         raise HTTPException(422, str(e))
     nhat_ky.ghi("to-chuc", user["ten"], "but_toan",
                 f"{b['id']} {b['loai']} {b['danh_muc']} {b['so_tien']}")
     return RedirectResponse(f"/finance?tab=ledger&thang={ngay[:7]}", status_code=303)
+
+
+@app.get("/finance/chung-tu/{id_bt}/{ten}")
+def finance_tai_chung_tu(id_bt: str, ten: str,
+                         user: dict = Depends(yeu_cau_finance)):
+    """Tải chứng từ của một bút toán. Không có → 404 LẶNG LẼ (không nói vì sao)."""
+    p = tai_chinh.duong_chung_tu(id_bt, ten)
+    if p is None:
+        raise HTTPException(404, "Không có tệp này.")
+    return FileResponse(p)
 
 
 @app.post("/finance/ty-gia/lay")

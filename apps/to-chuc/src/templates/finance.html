@@ -67,7 +67,7 @@
 {% if not muc_tieu %}<div class="canh">No goals yet — every entry needs a goal. Add one in the Goals tab first.</div>{% endif %}
 <details class="form-moi">
   <summary>+ New entry</summary>
-  <form method="post" action="/finance/but-toan">
+  <form method="post" action="/finance/but-toan" enctype="multipart/form-data">
     <div class="form-luoi">
       <div><label>Date</label><input type="date" name="ngay" value="{{ hom_nay }}" required class="o"></div>
       <div><label>Category</label><select name="danh_muc" required class="o">
@@ -93,6 +93,9 @@
         {% for k in ds_kenh %}<option value="{{ k.ma }}">{{ k.ma }} — {{ k.ten_chuan }}</option>{% endfor %}
       </select></div>
       <div><label>Voucher</label><input type="text" name="chung_tu" class="o"></div>
+      <div><label>Chứng từ (ảnh/PDF)</label>
+        <input type="file" name="tep" class="o" multiple
+               accept=".jpg,.jpeg,.png,.webp,.pdf"></div>
       <div><label>Note</label><input type="text" name="ghi_chu" class="o"></div>
     </div>
     <div style="margin-top:10px"><button type="submit" class="nut">Save entry</button></div>
@@ -113,7 +116,11 @@
     <td>{{ b.muc_tieu or '—' }}</td>
     <td>{% if b.kenh_ma %}<span class="tk">{{ b.kenh_ma }}</span>{% else %}<span class="badge">shared</span>{% endif %}</td>
     <td class="tk">{{ b.nguoi_ghi }}</td>
-    <td>{% if b.chung_tu %}{{ b.chung_tu }}{% else %}<span class="badge do">missing</span>{% endif %}</td>
+    <td>{% if b.tep_dinh_kem %}
+        {% for t in b.tep_dinh_kem %}<a href="/finance/chung-tu/{{ b.id }}/{{ t }}" class="duong">📎 {{ t }}</a>{% if not loop.last %}<br>{% endif %}{% endfor %}
+        {% if b.chung_tu %}<div class="thieu">{{ b.chung_tu }}</div>{% endif %}
+      {% elif b.chung_tu %}{{ b.chung_tu }}
+      {% else %}<span class="badge do">missing</span>{% endif %}</td>
     <td>{{ b.ghi_chu }}{% if b.tham_chieu %} <span class="tk">→ {{ b.tham_chieu }}</span>{% endif %}</td>
     <td>{{ (b.tao_luc or '')[:16] }}</td>
     <td>{% if b.loai != 'dao' and b.id not in da_dao %}
