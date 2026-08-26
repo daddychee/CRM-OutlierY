@@ -106,8 +106,15 @@ def _fmt_vnd(v) -> str:
 app.mount("/to-chuc-static", StaticFiles(directory=str(_APP_DIR / "src" / "static")),
           name="to-chuc-static")
 
+def _fmt_theo_te(v, tien_te="VND") -> str:
+    """Hiển thị số tiền ĐÚNG ký hiệu của tiền tệ đó: USD → $12,116 ·
+    VND → 23.500.000 ₫. Trước đây mọi số dư đều mang dấu $ kể cả ví tiền đồng."""
+    return _fmt_tien(v) if (tien_te or "VND").upper() != "VND" else _fmt_vnd(v)
+
+
 templates.env.filters["tien"] = _fmt_tien
 templates.env.filters["vnd"] = _fmt_vnd
+templates.env.filters["theo_te"] = _fmt_theo_te
 templates.env.filters["gio_chu"] = gio_chu
 
 
@@ -189,6 +196,9 @@ def _ds_nguoi_iam() -> tuple[list[dict] | None, str]:
                                  #  bản ghi chấm công cũ của họ KHÔNG bị xóa)
                 ds.append({"ten": tk["ten"], "bo_phan": tk.get("bo_phan") or "",
                            "ho_ten": ho_so.get("ho_ten", ""),
+                           # mã NS + vị trí: bảng lương/phiếu lương cần hiển thị,
+                           # và 'ma' rỗng = tài khoản hệ thống (không trả lương)
+                           "ma": ma_ns, "vi_tri": ho_so.get("vi_tri", ""),
                            "planner_id": ("ns_" + ma_ns.replace("-", "").lower())
                                          if ma_ns else ""})
             return ds, ""

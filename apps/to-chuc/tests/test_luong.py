@@ -216,3 +216,16 @@ def test_tai_ca_ky_dang_zip():
     luong.duyet_bang_luong("Bot", KY, NGUOI, "Vận hành chung", "vietcombank")
     r = c.get(f"/finance/luong/phieu.zip?ky={KY}")
     assert r.status_code == 200 and r.content[:2] == b"PK"
+
+
+def test_bang_luong_bo_tai_khoan_khong_co_ho_so():
+    """Tài khoản hệ thống (bot/admin) không gắn hồ sơ nhân sự thì KHÔNG phải là
+    người được trả lương — không được chiếm một dòng trong bảng lương."""
+    bang = luong.bang_luong(KY, NGUOI + [{"ten": "bot", "ho_ten": "", "ma": ""}])
+    assert all(d["ten"] != "bot" for d in bang["dong"])
+
+
+def test_hien_vi_tri_that_chu_khong_phai_gach_ngang():
+    bang = luong.bang_luong(KY, NGUOI)
+    d = {x["ten"]: x for x in bang["dong"]}
+    assert d["ngocth"]["vi_tri"] == "content"

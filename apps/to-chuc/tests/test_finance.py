@@ -823,3 +823,11 @@ def test_trang_finance_go_tran_900px_cua_base():
     bảng nhiều cột nên phải gỡ trần — ghim để không ai vô tình bỏ."""
     b = _client().get("/finance?tab=ledger").text
     assert ".noi-dung{max-width:none" in b.replace(" ", "")
+
+
+def test_vi_vnd_khong_hien_ky_hieu_do():
+    """Ví tiền đồng phải hiện '₫', không phải '$' — bộ lọc theo_te."""
+    _seed_muc_tieu()
+    tai_chinh.them_but_toan("kt", HOM_NAY, "THU-KHAC", 23_500_000, "Vận hành chung", vi=VI)
+    b = _client().get("/finance?tab=wallets").text
+    assert "23.500.000 ₫" in b and "$23,500,000" not in b

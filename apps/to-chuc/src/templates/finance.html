@@ -467,7 +467,7 @@ function tinhQuyVnd() {
     <tr><td><b>{{ v.ten }}</b> <span class="tk">{{ v.ma }}</span></td>
       <td>{{ v.loai }}</td><td>{{ v.tien_te }}</td>
       <td class="so {% if sd and sd.nguyen_te < 0 %}am{% endif %}">
-        {% if sd %}{{ sd.nguyen_te | tien }}{% else %}<span class="thieu">—</span>{% endif %}</td>
+        {% if sd %}{{ sd.nguyen_te | theo_te(v.tien_te) }}{% else %}<span class="thieu">—</span>{% endif %}</td>
       <td class="so">{% if sd %}{{ sd.quy_vnd | vnd }}{% else %}<span class="thieu">—</span>{% endif %}</td>
       <td>{% if sd and sd.but_toan_cuoi %}{{ sd.but_toan_cuoi }}{% else %}<span class="thieu">—</span>{% endif %}
         {% if v.loai == 'phai_thu' %}<span class="badge">không tính vào tiền khả dụng</span>{% endif %}</td></tr>
@@ -512,7 +512,7 @@ function tinhQuyVnd() {
       {% for v in danh_muc_vi %}
       {% set sd = so_du_vi.get(v.ma) %}
       <tr><td><b>{{ v.ten }}</b> <span class="thieu">{{ v.tien_te }}</span></td>
-        <td class="so">{{ (sd.nguyen_te if sd else 0) | tien }}</td>
+        <td class="so">{{ (sd.nguyen_te if sd else 0) | theo_te(v.tien_te) }}</td>
         <td class="so"><input type="text" name="khai_{{ v.ma }}" class="o" style="width:130px;text-align:right"
              value="{{ '%.2f' | format(sd.nguyen_te if sd else 0) }}"></td>
         <td><span class="thieu">so khi bấm chốt</span></td></tr>

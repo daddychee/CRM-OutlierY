@@ -232,6 +232,10 @@ def bang_luong(ky: str, ds_nguoi: list[dict]) -> dict:
 
     dong, tong = [], 0.0
     for n in ds_nguoi:
+        # Tài khoản hệ thống (không gắn hồ sơ nhân sự) KHÔNG phải người được trả
+        # lương — bỏ khỏi bảng thay vì để một dòng "chưa có lương cơ bản" vô nghĩa.
+        if not n.get("ma"):
+            continue
         ten = n.get("ten")
         xl = (xep.get(ten) or {}).get("xep_loai")
         hs = he_so.get(xl) if xl else None
