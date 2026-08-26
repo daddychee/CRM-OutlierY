@@ -642,3 +642,24 @@ def test_thu_lon_hon_chi_thi_khong_co_runway():
     m = tai_chinh.muc_dot("2026-08")
     assert m["dot_rong"] is None and m["so_thang_con"] is None
     assert m["duong"] is True          # đang lãi — không có khái niệm "còn sống mấy tháng"
+
+
+def test_route_doi_trang_thai_dich_vu():
+    dv = _seed_dich_vu()
+    c = _client()
+    r = c.post("/finance/dich-vu/trang-thai",
+               data={"id": dv["id"], "trang_thai": "sap_bo"}, follow_redirects=False)
+    assert r.status_code == 303
+    assert tai_chinh.doc_dich_vu()[0]["trang_thai"] == "sap_bo"
+    assert len(tai_chinh.doc_dich_vu()) == 1          # sửa tại chỗ, không đẻ bản mới
+    assert c.post("/finance/dich-vu/trang-thai",
+                  data={"id": "DV-khong-co", "trang_thai": "sap_bo"}).status_code == 404
+
+
+def test_ledger_co_modal_va_thanh_loc_mot_hang():
+    _seed_muc_tieu()
+    b = _client().get("/finance?tab=ledger").text
+    assert 'id="mb-bt"' in b and "moModal(1)" in b     # bút toán mới là MODAL
+    assert 'id="bt-quy-vnd"' in b                      # ô Quy VND tự tính
+    assert "Kéo ảnh hóa đơn vào đây" in b
+    assert "Loại: tất cả" in b and "Ví: tất cả" in b    # nhãn nằm trong dropdown

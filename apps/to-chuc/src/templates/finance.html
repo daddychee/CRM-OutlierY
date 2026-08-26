@@ -4,7 +4,7 @@
 
 {% block style_them %}
   /* style_them nằm TRONG thẻ style chung của base — CSS TRẦN, không viết thẻ style */
-  .hub-wrap{max-width:1180px;margin:1.2rem auto;padding:0 1rem}
+  .hub-wrap{margin:.9rem 0 2.5rem;padding:0 26px}
   .stat-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;margin:0 0 1rem}
   .stat{border:1px solid var(--line);border-radius:12px;padding:10px 14px;background:var(--chip)}
   .stat .n{font-size:1.25rem;font-weight:700;font-variant-numeric:tabular-nums}
@@ -65,6 +65,20 @@
   .cho{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--line);font-size:.88rem}
   .cho:last-child{border-bottom:0}
   .cho .ten{flex:1}
+  .buoc{display:flex;gap:4px;flex-wrap:wrap;align-items:center;font-size:.78rem;color:var(--muted);margin-bottom:12px}
+  .buoc .b{border:1px solid var(--line);border-radius:999px;padding:2px 10px}
+  .buoc .b.on{background:var(--th-182233);color:var(--ink);border-color:var(--th-31425e);font-weight:600}
+  .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+  .toolbar .o{padding:6px 9px;font-size:.85rem}
+  .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:60;
+    align-items:center;justify-content:center}
+  .modal-bg.show{display:flex}
+  .modal{background:var(--chip);border:1px solid var(--line);border-radius:14px;
+    padding:18px 20px;max-width:920px;width:94%;max-height:90vh;overflow:auto}
+  .modal h3{margin:0 0 12px;font-size:1rem;font-weight:600}
+  .keo{border:1px dashed var(--line);border-radius:11px;padding:14px;text-align:center;
+    color:var(--muted);font-size:.85rem;background:var(--th-1d2840)}
+  .keo input[type=file]{width:100%;border:0;background:transparent;color:var(--muted)}
 {% endblock %}
 
 {% block noi_dung %}
@@ -203,6 +217,7 @@
   <div class="bd-o"><h4>Số dư tích lũy</h4><div id="bd-so-du"></div></div>
   <div class="bd-o"><h4>Cơ cấu chi {{ thang }}</h4><div id="bd-co-cau"></div></div>
   <div class="bd-o"><h4>Lãi / lỗ theo kênh</h4><div id="bd-kenh"></div></div>
+  <div class="bd-o"><h4>Chi phí theo ngách</h4><div id="bd-ngach"></div></div>
   <div class="bd-o"><h4>Thuê bao theo nhóm</h4><div id="bd-thue-bao"></div></div>
 </div>
 <script src="/to-chuc-static/vendor/frappe-charts.min.umd.js"></script>
@@ -244,6 +259,13 @@ function veBieuDo() {
         type: 'bar', height: 210, colors: [m.accent],
         barOptions: { spaceRatio: 0.5 }, tooltipOptions: { formatTooltipY: trieu } });
   }
+  if (BD.ngach_nhan.length) {
+    ve('bd-ngach', { data: { labels: BD.ngach_nhan, datasets: [
+          { name: 'Nhân công', values: BD.ngach_nhan_cong },
+          { name: 'Tiền mặt', values: BD.ngach_tien_mat } ] },
+        type: 'bar', height: 210, colors: [m.accent, m.warn],
+        barOptions: { stacked: 1, spaceRatio: 0.5 }, tooltipOptions: { formatTooltipY: trieu } });
+  }
   if (BD.thue_bao_nhan.length) {
     ve('bd-thue-bao', { data: { labels: BD.thue_bao_nhan, datasets: [{ values: BD.thue_bao_so }] },
         type: 'bar', height: 210, colors: [m.warn],
@@ -263,77 +285,41 @@ window.addEventListener('storage', function (e) { if (e.key === 'outliery_theme'
   <h3><svg class="ic" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
     Sổ thu chi <span class="phu">{{ thang }}</span></h3>
 
-  <form method="get" action="/finance" class="mo" style="padding:10px 13px">
+  <form method="get" action="/finance" class="toolbar" id="loc-form">
     <input type="hidden" name="tab" value="ledger">
-    <div class="form-luoi" style="margin-top:0">
-      <div><label>Kỳ</label><input type="month" name="thang" value="{{ loc.thang }}" class="o"></div>
-      <div><label>Loại</label><select name="loai" class="o">
-        <option value="">tất cả</option>
-        {% for ma, nhan in [('thu','Thu'), ('chi','Chi'), ('dao','Đảo')] %}
-        <option value="{{ ma }}" {% if loc.loai == ma %}selected{% endif %}>{{ nhan }}</option>{% endfor %}
-      </select></div>
-      <div><label>Ví</label><select name="vi" class="o">
-        <option value="">tất cả</option>
-        {% for v in danh_muc_vi %}<option value="{{ v.ma }}" {% if loc.vi == v.ma %}selected{% endif %}>{{ v.ten }}</option>{% endfor %}
-      </select></div>
-      <div><label>Kênh</label><select name="kenh" class="o">
-        <option value="">tất cả</option>
-        {% for k in ds_kenh %}<option value="{{ k.ma }}" {% if loc.kenh == k.ma %}selected{% endif %}>{{ k.ma }}</option>{% endfor %}
-      </select></div>
-      <div><label>Mục tiêu</label><select name="muc_tieu" class="o">
-        <option value="">tất cả</option>
-        {% for m in muc_tieu %}<option value="{{ m.ten }}" {% if loc.muc_tieu == m.ten %}selected{% endif %}>{{ m.ten }}</option>{% endfor %}
-      </select></div>
-      <div><label>Danh mục</label><select name="danh_muc" class="o">
-        <option value="">tất cả</option>
-        {% for d in danh_muc %}<option value="{{ d.ma }}" {% if loc.danh_muc == d.ma %}selected{% endif %}>{{ d.ma }}</option>{% endfor %}
-      </select></div>
-      <div><label>Tìm trong ghi chú</label><input type="text" name="q" value="{{ loc.q }}" class="o"></div>
-    </div>
-    <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-      <button type="submit" class="nut">Lọc</button>
-      <a class="nut phu" style="text-decoration:none"
-         href="/finance/xuat.csv?thang={{ loc.thang }}&loai={{ loc.loai }}&vi={{ loc.vi }}&kenh={{ loc.kenh }}&muc_tieu={{ loc.muc_tieu }}&danh_muc={{ loc.danh_muc }}&q={{ loc.q }}">Xuất CSV</a>
-      <a class="nut phu" style="text-decoration:none"
-         href="/finance/xuat.beancount?thang={{ loc.thang }}&loai={{ loc.loai }}&vi={{ loc.vi }}&kenh={{ loc.kenh }}&muc_tieu={{ loc.muc_tieu }}&danh_muc={{ loc.danh_muc }}&q={{ loc.q }}">Xuất .beancount</a>
-      <span class="thieu">{{ so_thang | length }} bút toán</span>
-    </div>
+    <input type="month" name="thang" value="{{ loc.thang }}" class="o" onchange="this.form.submit()">
+    <select name="loai" class="o" onchange="this.form.submit()">
+      <option value="">Loại: tất cả</option>
+      {% for ma, nhan in [('thu','Thu'), ('chi','Chi'), ('dao','Đảo')] %}
+      <option value="{{ ma }}" {% if loc.loai == ma %}selected{% endif %}>Loại: {{ nhan }}</option>{% endfor %}
+    </select>
+    <select name="vi" class="o" onchange="this.form.submit()">
+      <option value="">Ví: tất cả</option>
+      {% for v in danh_muc_vi %}<option value="{{ v.ma }}" {% if loc.vi == v.ma %}selected{% endif %}>Ví: {{ v.ten }}</option>{% endfor %}
+    </select>
+    <select name="kenh" class="o" onchange="this.form.submit()">
+      <option value="">Kênh: tất cả</option>
+      {% for k in ds_kenh %}<option value="{{ k.ma }}" {% if loc.kenh == k.ma %}selected{% endif %}>{{ k.ma }}</option>{% endfor %}
+    </select>
+    <select name="muc_tieu" class="o" onchange="this.form.submit()">
+      <option value="">Mục tiêu: tất cả</option>
+      {% for m in muc_tieu %}<option value="{{ m.ten }}" {% if loc.muc_tieu == m.ten %}selected{% endif %}>{{ m.ten }}</option>{% endfor %}
+    </select>
+    <select name="danh_muc" class="o" onchange="this.form.submit()">
+      <option value="">Danh mục: tất cả</option>
+      {% for d in danh_muc %}<option value="{{ d.ma }}" {% if loc.danh_muc == d.ma %}selected{% endif %}>{{ d.ma }}</option>{% endfor %}
+    </select>
+    <input type="text" name="q" value="{{ loc.q }}" placeholder="tìm trong ghi chú…" class="o" style="min-width:150px">
+    <span class="thieu">{{ so_thang | length }} bút toán</span>
+    <span style="flex:1"></span>
+    <button type="button" class="nut" onclick="moModal(1)">+ Bút toán mới</button>
+    <a class="nut phu" style="text-decoration:none"
+       href="/finance/xuat.csv?thang={{ loc.thang }}&loai={{ loc.loai }}&vi={{ loc.vi }}&kenh={{ loc.kenh }}&muc_tieu={{ loc.muc_tieu }}&danh_muc={{ loc.danh_muc }}&q={{ loc.q }}">⇩ CSV</a>
+    <a class="nut phu" style="text-decoration:none"
+       href="/finance/xuat.beancount?thang={{ loc.thang }}&loai={{ loc.loai }}&vi={{ loc.vi }}&kenh={{ loc.kenh }}&muc_tieu={{ loc.muc_tieu }}&danh_muc={{ loc.danh_muc }}&q={{ loc.q }}">⇩ .beancount</a>
   </form>
 
-  {% if not muc_tieu %}<div class="canh do">Chưa có mục tiêu nào — mọi bút toán đều phải gắn mục tiêu.</div>{% endif %}
-  <details class="mo">
-    <summary>+ Bút toán mới</summary>
-    <form method="post" action="/finance/but-toan" enctype="multipart/form-data">
-      <div class="form-luoi">
-        <div><label>Ngày</label><input type="date" name="ngay" value="{{ hom_nay }}" required class="o"></div>
-        <div><label>Danh mục</label><select name="danh_muc" required class="o">
-          {% for d in danh_muc %}
-          <option value="{{ d.ma }}">{{ d.ten }} ({{ 'Thu' if d.loai == 'thu' else 'Chi' }})</option>
-          {% endfor %}
-        </select></div>
-        <div><label>Số tiền</label><input type="number" name="so_tien" min="0.01" step="0.01" required class="o"></div>
-        <div><label>Ví</label><select name="vi" required class="o">
-          <option value="">— chọn ví —</option>
-          {% for v in danh_muc_vi %}<option value="{{ v.ma }}">{{ v.ten }} ({{ v.tien_te }})</option>{% endfor %}
-        </select></div>
-        <div><label>Tỷ giá</label><input type="text" name="ty_gia" class="o"
-             placeholder="{% if ty_gia_usd %}{{ '%.0f' | format(ty_gia_usd.gia) }}{% else %}chưa có{% endif %}"></div>
-        <div><label>Mục tiêu</label><select name="muc_tieu" required class="o">
-          {% for m in muc_tieu %}<option value="{{ m.ten }}">{{ m.ten }}</option>{% endfor %}
-        </select></div>
-        <div><label>Kênh</label><select name="kenh_ma" class="o">
-          <option value="">chung hệ</option>
-          {% for k in ds_kenh %}<option value="{{ k.ma }}">{{ k.ma }} — {{ k.ten_chuan }}</option>{% endfor %}
-        </select></div>
-        <div><label>Số chứng từ</label><input type="text" name="chung_tu" class="o"></div>
-        <div><label>Chứng từ (ảnh/PDF)</label><input type="file" name="tep" class="o" multiple
-             accept=".jpg,.jpeg,.png,.webp,.pdf"></div>
-        <div><label>Ghi chú</label><input type="text" name="ghi_chu" class="o"></div>
-      </div>
-      <div style="margin-top:10px"><button type="submit" class="nut">Lưu bút toán</button></div>
-    </form>
-  </details>
-
+  {% if not muc_tieu %}<div class="canh do">Chưa có mục tiêu nào — mọi bút toán đều phải gắn mục tiêu. Thêm ở tab Mục tiêu trước.</div>{% endif %}
   <div class="bang-cuon">
   <table class="bang">
     <tr><th>Ngày</th><th>Loại</th><th>Danh mục</th><th class="so">Số tiền</th><th class="so">Quy VND</th>
@@ -352,7 +338,15 @@ window.addEventListener('storage', function (e) { if (e.key === 'outliery_theme'
         {% elif b.chung_tu %}{{ b.chung_tu }}
         {% else %}<span class="badge do">thiếu</span>{% endif %}</td>
       <td class="tk">{{ b.nguoi_ghi }}</td>
-      <td>{{ b.ghi_chu }}{% if b.tham_chieu %} <span class="tk">→ {{ b.tham_chieu }}</span>{% endif %}</td>
+      <td>{{ b.ghi_chu }}
+        {% if b.nguon == 'thue_bao' %}<span class="badge ok">thuê bao</span>
+        {% elif b.nguon == 'quota' %}<span class="badge ok">từ quota log</span>
+        {% elif b.nguon == 'luong' %}<span class="badge ok">từ chấm công</span>
+        {% elif b.nguon == 'adsense' %}<span class="badge ok">đối soát AdSense</span>{% endif %}
+        {% if b.trang_thai_thu == 'da_ve_vi' %}<span class="badge ok">đã về ví</span>
+        {% elif b.trang_thai_thu == 'uoc_tinh' %}<span class="badge">ước tính</span>
+        {% elif b.trang_thai_thu == 'da_chot' %}<span class="badge">đã chốt</span>{% endif %}
+        {% if b.tham_chieu %} <span class="tk">→ {{ b.tham_chieu }}</span>{% endif %}</td>
       <td>{% if b.loai != 'dao' and b.id not in da_dao %}
         <form method="post" action="/finance/dao" style="display:inline">
           <input type="hidden" name="id" value="{{ b.id }}">
@@ -366,6 +360,64 @@ window.addEventListener('storage', function (e) { if (e.key === 'outliery_theme'
   </table>
   </div>
 </div>
+
+<div class="modal-bg" id="mb-bt" onclick="if(event.target===this)moModal(0)">
+  <div class="modal">
+    <h3>Bút toán mới</h3>
+    <form method="post" action="/finance/but-toan" enctype="multipart/form-data">
+      <div class="form-luoi" style="margin-top:0">
+        <div><label>Ngày</label><input type="date" name="ngay" value="{{ hom_nay }}" required class="o"></div>
+        <div><label>Danh mục</label><select name="danh_muc" required class="o">
+          {% for d in danh_muc %}
+          <option value="{{ d.ma }}">{{ d.ma }} — {{ d.ten }}</option>
+          {% endfor %}
+        </select></div>
+        <div><label>Số tiền</label><input type="number" name="so_tien" id="bt-so-tien"
+             min="0.01" step="0.01" required class="o" oninput="tinhQuyVnd()"></div>
+        <div><label>Ví</label><select name="vi" id="bt-vi" required class="o" onchange="tinhQuyVnd()">
+          <option value="" data-tt="VND">— chọn ví —</option>
+          {% for v in danh_muc_vi %}<option value="{{ v.ma }}" data-tt="{{ v.tien_te }}">{{ v.ten }} ({{ v.tien_te }})</option>{% endfor %}
+        </select></div>
+        <div><label>Tỷ giá ngày {{ hom_nay[8:] }}/{{ hom_nay[5:7] }}</label>
+          <input type="text" name="ty_gia" id="bt-ty-gia" class="o" oninput="tinhQuyVnd()"
+             value="{% if ty_gia_usd %}{{ '%.0f' | format(ty_gia_usd.gia) }}{% endif %}"
+             placeholder="{% if not ty_gia_usd %}chưa có — nhập tay{% endif %}"></div>
+        <div><label>Quy VND</label><input type="text" id="bt-quy-vnd" disabled class="o" style="opacity:.65"></div>
+        <div><label>Mục tiêu</label><select name="muc_tieu" required class="o">
+          {% for m in muc_tieu %}<option value="{{ m.ten }}">{{ m.ten }}</option>{% endfor %}
+        </select></div>
+        <div><label>Kênh</label><select name="kenh_ma" class="o">
+          <option value="">— chung hệ —</option>
+          {% for k in ds_kenh %}<option value="{{ k.ma }}">{{ k.ma }} — {{ k.ten_chuan }}</option>{% endfor %}
+        </select></div>
+        <div><label>Số chứng từ</label><input type="text" name="chung_tu" class="o" placeholder="INV-{{ hom_nay }}"></div>
+      </div>
+      <label style="display:block;font-size:.74rem;color:var(--muted);margin:10px 0 2px">Ghi chú</label>
+      <input type="text" name="ghi_chu" class="o" style="width:100%;box-sizing:border-box">
+      <label style="display:block;font-size:.74rem;color:var(--muted);margin:10px 0 2px">Chứng từ đính kèm</label>
+      <div class="keo">Kéo ảnh hóa đơn vào đây — hoặc
+        <input type="file" name="tep" multiple accept=".jpg,.jpeg,.png,.webp,.pdf"></div>
+      <div style="margin-top:14px;display:flex;gap:8px">
+        <button type="submit" class="nut">Lưu bút toán</button>
+        <button type="button" class="nut phu" onclick="moModal(0)">Hủy</button>
+      </div>
+    </form>
+  </div>
+</div>
+<script>
+function moModal(m) { document.getElementById('mb-bt').classList.toggle('show', !!m); }
+document.addEventListener('keydown', function (e) { if (e.key === 'Escape') moModal(0); });
+function tinhQuyVnd() {
+  var so = parseFloat(document.getElementById('bt-so-tien').value) || 0;
+  var viSel = document.getElementById('bt-vi');
+  var tt = (viSel.options[viSel.selectedIndex] || {}).getAttribute
+           ? viSel.options[viSel.selectedIndex].getAttribute('data-tt') : 'VND';
+  var tg = tt === 'VND' ? 1 : (parseFloat(
+      (document.getElementById('bt-ty-gia').value || '').replace(/[ ,.]/g, '')) || 0);
+  var o = document.getElementById('bt-quy-vnd');
+  o.value = (so && tg) ? Math.round(so * tg).toLocaleString('vi-VN') + ' ₫' : '';
+}
+</script>
 
 {# ══════════════ VÍ ══════════════ #}
 {% elif tab == 'wallets' %}
@@ -541,6 +593,13 @@ window.addEventListener('storage', function (e) { if (e.key === 'outliery_theme'
       <button type="submit" class="nut phu" style="padding:.3rem .8rem;font-size:.82rem">Xem</button>
     </form></h3>
 
+  <div class="buoc">
+    <span class="b {% if not bl.da_chot_cong %}on{% endif %}">1. Chấm công: mở CRM</span><span>→</span>
+    <span class="b {% if bl.da_chot_cong and not bl.da_duyet %}on{% endif %}">2. HR chốt công</span><span>→</span>
+    <span class="b">3. Xếp loại KPI</span><span>→</span>
+    <span class="b">4. HR điều chỉnh</span><span>→</span>
+    <span class="b {% if bl.da_duyet %}on{% endif %}">5. Owner duyệt chi</span>
+  </div>
   {% if iam_loi %}<div class="canh do">Không đọc được sổ nhân sự: {{ iam_loi }}</div>{% endif %}
   {% if not bl.da_chot_cong %}<div class="canh">Kỳ này chưa chốt công — duyệt chi lương đang khóa.</div>{% endif %}
   {% if bl.da_duyet %}<div class="canh">Đã duyệt — bút toán CHI-LUONG đã vào sổ.</div>{% endif %}
@@ -617,6 +676,44 @@ window.addEventListener('storage', function (e) { if (e.key === 'outliery_theme'
     </div>
     <div style="margin-top:10px"><button type="submit" class="nut">Duyệt &amp; sinh bút toán CHI-LUONG</button></div>
   </form>
+  {% endif %}
+</div>
+
+<div class="khoi">
+  <h3><svg class="ic" viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h10"/></svg>
+    Ngày công đã dùng cho ngách nào <span class="phu">phân công lấy từ PlannerY</span></h3>
+  {% if cong_ngach is none %}
+  <div class="canh">Không đọc được phân công từ PlannerY.</div>
+  {% else %}
+  <div class="bang-cuon">
+  <table class="bang">
+    <tr><th>Nhân sự</th><th class="so">Ngày công</th><th>Ngách được phân công</th>
+      <th class="so">Ngày công / ngách</th><th class="so">Đơn giá ngày</th></tr>
+    {% for r in cong_ngach %}
+    <tr><td><b class="tk">{{ r.ma or '—' }}</b> {{ r.ho_ten or r.ten }}</td>
+      <td class="so">{{ r.cong }}</td>
+      <td>{% for n in r.ngach %}<span class="badge">{{ n }}</span> {% endfor %}
+        {% if not r.ngach %}<span class="badge do">chưa phân công</span>{% endif %}</td>
+      <td class="so">{% if r.ngach %}{{ '%.1f' | format(r.moi_ngach) }}{% else %}—{% endif %}</td>
+      <td class="so">{% if r.don_gia %}{{ r.don_gia | vnd }}{% else %}<span class="badge do">lương chưa duyệt</span>{% endif %}</td></tr>
+    {% else %}
+    <tr><td colspan="5" class="thieu">Kỳ này chưa có ngày công nào.</td></tr>
+    {% endfor %}
+  </table>
+  </div>
+  {% endif %}
+</div>
+
+<div class="khoi">
+  <h3><svg class="ic" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+    Phiếu lương kèm báo cáo hiệu suất <span class="phu">HR xuất và gửi</span></h3>
+  {% if bl.da_duyet %}
+  <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+    <a class="nut" style="text-decoration:none" href="/finance/luong/phieu.zip?ky={{ bl.ky }}">⇩ Tải cả kỳ (.zip)</a>
+    <span class="thieu">{{ bl.dong | selectattr('thuc_nhan') | list | length }} phiếu — mỗi phiếu là trang in được, Ctrl+P ra PDF</span>
+  </div>
+  {% else %}
+  <div class="thieu">Kỳ {{ bl.ky }} chưa duyệt — chưa có phiếu.</div>
   {% endif %}
 </div>
 
@@ -716,7 +813,7 @@ window.addEventListener('storage', function (e) { if (e.key === 'outliery_theme'
   <div class="bang-cuon">
   <table class="bang">
     <tr><th>Dịch vụ</th><th>Nhóm</th><th class="so">Phí</th><th>Chu kỳ</th><th>Gia hạn kế</th>
-      <th>Tự động</th><th>Gắn</th><th>Đăng nhập</th><th>Trạng thái</th></tr>
+      <th>Tự động</th><th>Gắn</th><th>Đăng nhập</th><th>Trạng thái</th><th></th></tr>
     {% for d in dich_vu %}
     <tr {% if d.trang_thai == 'da_huy' %}style="opacity:.55"{% endif %}>
       <td><b>{{ d.ten }}</b>{% if d.nha_cung_cap %}<div class="thieu">{{ d.nha_cung_cap }}</div>{% endif %}</td>
@@ -731,9 +828,18 @@ window.addEventListener('storage', function (e) { if (e.key === 'outliery_theme'
           {% else %}<span class="thieu">—</span>{% endif %}</td>
       <td>{% if d.trang_thai == 'dang_dung' %}<span class="badge ok">đang dùng</span>
           {% elif d.trang_thai == 'sap_bo' %}<span class="badge do">sắp bỏ</span>
-          {% else %}<span class="badge">đã hủy</span>{% endif %}</td></tr>
+          {% else %}<span class="badge">đã hủy</span>{% endif %}</td>
+      <td style="white-space:nowrap">
+        {% if d.trang_thai != 'da_huy' %}
+        <form method="post" action="/finance/dich-vu/trang-thai" style="display:inline">
+          <input type="hidden" name="id" value="{{ d.id }}">
+          <input type="hidden" name="trang_thai" value="{% if d.trang_thai == 'sap_bo' %}dang_dung{% else %}sap_bo{% endif %}">
+          <button type="submit" class="nut phu" style="padding:2px 9px;font-size:.76rem">
+            {% if d.trang_thai == 'sap_bo' %}Dùng lại{% else %}Bỏ gia hạn{% endif %}</button>
+        </form>
+        {% endif %}</td></tr>
     {% else %}
-    <tr><td colspan="9" class="thieu">Chưa khai dịch vụ nào.</td></tr>
+    <tr><td colspan="10" class="thieu">Chưa khai dịch vụ nào.</td></tr>
     {% endfor %}
   </table>
   </div>

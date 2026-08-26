@@ -463,7 +463,7 @@ def finance_trang(request: Request, tab: str = "ledger", thang: str = "",
         "la_owner": user["level"] >= 5,
         "moc_ky": lich_tai_chinh.moc_ky(_ky_truoc(thang)),
         "ky_truoc": _ky_truoc(thang),
-        "bd": tai_chinh.du_lieu_bieu_do(thang) if tab == "dashboard" else None,
+        "bd": _bieu_do_kem_ngach(thang) if tab == "dashboard" else None,
         **(_du_lieu_tong_quan(thang) if tab == "dashboard" else {}),
         **_du_lieu_luong(tab, ky_luong),
         **_du_lieu_ngach(tab, ky_luong)})
@@ -513,6 +513,28 @@ def finance_dich_vu(ten: str = Form(...), nhom: str = Form(...), phi: str = Form
     return RedirectResponse("/finance?tab=subs", status_code=303)
 
 
+@app.post("/finance/dich-vu/trang-thai")
+def finance_dich_vu_trang_thai(id: str = Form(...), trang_thai: str = Form(...),
+                               user: dict = Depends(yeu_cau_finance)):
+    """Đánh dấu 'sắp bỏ' (quyết định cắt chi) hoặc dùng lại. App KHÔNG tự hủy dịch
+    vụ — hủy là việc tay trên trang nhà cung cấp, ở đây chỉ ghi nhận quyết định."""
+    dv = next((d for d in tai_chinh.doc_dich_vu() if d.get("id") == id), None)
+    if dv is None:
+        raise HTTPException(404, "Không có dịch vụ này.")
+    try:
+        tai_chinh.luu_dich_vu(
+            user["ten"], dv["ten"], dv["nhom"], dv["phi"], dv["tien_te"],
+            dv["chu_ky"], dv["ngay_gia_han"], dv["danh_muc"], dv["vi"], id=id,
+            nha_cung_cap=dv.get("nha_cung_cap", ""),
+            tu_dong_gia_han=dv.get("tu_dong_gia_han", True), trang_thai=trang_thai,
+            kenh_ma=dv.get("kenh_ma", ""), vault_id=dv.get("vault_id", ""),
+            ghi_chu=dv.get("ghi_chu", ""))
+    except ValueError as e:
+        raise HTTPException(422, str(e))
+    nhat_ky.ghi("to-chuc", user["ten"], "dich_vu_trang_thai", f"{dv['ten']} {trang_thai}")
+    return RedirectResponse("/finance?tab=subs", status_code=303)
+
+
 @app.post("/finance/dich-vu/ghi")
 def finance_dich_vu_ghi(id: str = Form(...), muc_tieu: str = Form(...),
                         so_tien: str = Form(""), ngay: str = Form(""),
@@ -539,6 +561,24 @@ def _ky_truoc(thang: str) -> str:
     """Kỳ mà lịch tài chính đang nói tới: các mốc của kỳ N rơi vào tháng N+1."""
     nam, th = int(thang[:4]), int(thang[5:7])
     return f"{nam - 1:04d}-12" if th == 1 else f"{nam:04d}-{th - 1:02d}"
+
+
+def _bieu_do_kem_ngach(thang: str) -> dict:
+    """Biểu đồ dashboard + cột chồng chi phí ngách (mockup BD5). Ngách đọc từ
+    PlannerY nên có thể chết — hỏng thì bỏ đúng biểu đồ đó, không vỡ trang."""
+    bd = tai_chinh.du_lieu_bieu_do(thang)
+    bd["ngach_nhan"], bd["ngach_nhan_cong"], bd["ngach_tien_mat"] = [], [], []
+    try:
+        ds_nguoi, _ = _ds_nguoi_iam()
+        cp = chi_phi_ngach.chi_phi_ngach(_ky_truoc(thang), ds_nguoi or [])
+        if not cp["thieu_nguon"]:
+            for d in cp["dong"]:
+                bd["ngach_nhan"].append(d["ngach_ma"])
+                bd["ngach_nhan_cong"].append(round(d["nhan_cong"]))
+                bd["ngach_tien_mat"].append(round(d["tien_mat"]))
+    except Exception:
+        pass
+    return bd
 
 
 def _du_lieu_tong_quan(thang: str) -> dict:
@@ -587,9 +627,30 @@ def _du_lieu_luong(tab: str, ky: str) -> dict:
         return {"bang_luong": None, "ky_luong": ky}
     ky = _thang_hop_le(ky)
     ds_nguoi, iam_loi = _ds_nguoi_iam()
-    return {"ky_luong": ky, "iam_loi": iam_loi,
-            "bang_luong": luong.bang_luong(ky, ds_nguoi or []),
-            "gio_lam_viec": luong.doc_gio_lam_viec()}
+    bl = luong.bang_luong(ky, ds_nguoi or [])
+    return {"ky_luong": ky, "iam_loi": iam_loi, "bang_luong": bl,
+            "gio_lam_viec": luong.doc_gio_lam_viec(),
+            "cong_ngach": _cong_theo_ngach(ky, ds_nguoi or [], bl)}
+
+
+def _cong_theo_ngach(ky: str, ds_nguoi: list, bl: dict) -> list | None:
+    """Khối D1b — ngày công mỗi người rải cho ngách nào (kiểm chứng số của D3).
+    PlannerY chết → None để UI nói thẳng, không dựng bảng rỗng giả."""
+    pc = chi_phi_ngach.phan_cong_ngach()
+    if pc is None:
+        return None
+    don_gia = luong.don_gia_ngay(ky)
+    ra = []
+    for d in bl["dong"]:
+        if not d["cong_chot"]:
+            continue
+        n = next((x for x in ds_nguoi if x.get("ten") == d["ten"]), {})
+        ng = pc.get(n.get("planner_id") or "", [])
+        ra.append({"ten": d["ten"], "ma": d["ma"], "ho_ten": d["ho_ten"],
+                   "cong": d["cong_chot"], "ngach": ng,
+                   "moi_ngach": d["cong_chot"] / len(ng) if ng else 0,
+                   "don_gia": don_gia.get(d["ten"])})
+    return ra
 
 
 @app.post("/finance/luong/co-ban")
