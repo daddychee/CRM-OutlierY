@@ -789,3 +789,30 @@ def test_but_toan_vao_ky_da_chot_bi_danh_dau_dieu_chinh():
     b2 = tai_chinh.them_but_toan("kt", "2026-09-02", "CHI-API", 500_000,
                                  "Vận hành chung", vi=VI)
     assert b2["dieu_chinh_ky_truoc"] is False
+
+
+def test_co_cau_chi_chi_lay_ben_CHI():
+    _seed_muc_tieu()
+    tai_chinh.them_but_toan("kt", HOM_NAY, "THU-ADS", 60_000_000, "Vận hành chung", vi=VI)
+    tai_chinh.them_but_toan("kt", HOM_NAY, "CHI-API", 20_000_000, "Vận hành chung", vi=VI)
+    bd = tai_chinh.du_lieu_bieu_do(THANG_NAY)
+    assert "THU-ADS" not in bd["co_cau_nhan"]     # biểu đồ CƠ CẤU CHI, không phải mọi khoản
+    assert bd["co_cau_nhan"] == ["CHI-API"]
+
+
+def test_so_du_vi_khong_am_khi_chi_tu_vi_khac():
+    """Chi từ ví VND không được làm ví đó âm nếu tiền vào cũng ở ví đó — nhưng
+    nếu CHỈ có chi thì âm là ĐÚNG (sổ phản ánh thật). Ghim để không ai 'sửa' cho đẹp."""
+    _seed_muc_tieu()
+    tai_chinh.them_but_toan("kt", HOM_NAY, "CHI-LUONG", 27_700_000, "Vận hành chung", vi=VI)
+    assert tai_chinh.so_du_vi()[VI]["nguyen_te"] == -27_700_000.0
+
+
+def test_muc_dot_khong_lay_thang_hien_tai_lam_chuan_khi_thieu_ky():
+    """3 tháng gần nhất phải là 3 kỳ CÓ THẬT; kỳ chưa phát sinh không kéo trung
+    bình xuống thành số vô nghĩa."""
+    _seed_muc_tieu()
+    tai_chinh.them_but_toan("kt", "2026-08-10", "CHI-API", 30_000_000, "Vận hành chung", vi=VI)
+    m = tai_chinh.muc_dot("2026-08")
+    assert m["chi_tb"] == 10_000_000        # 30tr ÷ 3 tháng — trung bình đúng nghĩa
+    assert m["so_ky_co_phat_sinh"] == 1     # nhưng phải nói rõ chỉ 1 kỳ có số

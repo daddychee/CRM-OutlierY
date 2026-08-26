@@ -160,7 +160,10 @@
     <h3><svg class="ic" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 14l3-3 3 2 4-5"/></svg>
       Mức đốt &amp; thời gian còn sống</h3>
     <table class="bang">
-      <tr><td>Chi trung bình 3 tháng</td><td class="so">{{ muc_dot.chi_tb | vnd }}</td></tr>
+      <tr><td>Chi trung bình 3 tháng
+        {% if muc_dot.so_ky_co_phat_sinh and muc_dot.so_ky_co_phat_sinh < 3 %}
+        <span class="badge do">chỉ {{ muc_dot.so_ky_co_phat_sinh }} kỳ có số</span>{% endif %}</td>
+        <td class="so">{{ muc_dot.chi_tb | vnd }}</td></tr>
       <tr><td class="thieu" style="padding-left:1rem">trong đó thuê bao định kỳ</td>
         <td class="so thieu">{{ muc_dot.thue_bao_thang | vnd }}</td></tr>
       <tr><td>Doanh thu trung bình 3 tháng</td><td class="so">{{ muc_dot.thu_tb | vnd }}</td></tr>

@@ -814,8 +814,10 @@ def du_lieu_bieu_do(den_thang: str) -> dict:
         luy += m["thu"] - m["chi"]
         so_du.append(round(luy))
     dm = tong_hop_danh_muc(den_thang)
-    co_cau = sorted(((ma, round(v["thang"])) for ma, v in dm.items() if v["thang"] > 0),
-                    key=lambda x: -x[1])[:8]
+    loai_map = _loai_theo_ma()
+    co_cau = sorted(((ma, round(v["thang"])) for ma, v in dm.items()
+                     if v["thang"] > 0 and loai_map.get(ma) == "chi"),
+                    key=lambda x: -x[1])[:8]     # CƠ CẤU CHI — không trộn khoản thu
     pnl = pnl_theo_kenh(den_thang)
     kenh = sorted(((ma or "chung hệ", round(v["thu"] - v["chi"]))
                    for ma, v in pnl.items()), key=lambda x: -x[1])[:10]
@@ -845,9 +847,10 @@ def muc_dot(den_thang: str, so_thang: int = 3) -> dict:
     chi = sum(tong_thang(t)["chi"] for t in ds) / so_thang
     kha_dung = tien_kha_dung_vnd()
     dot = chi - thu
+    co_phat_sinh = sum(1 for t in ds if tong_thang(t)["thu"] or tong_thang(t)["chi"])
     ra = {"tu": ds[0], "den": ds[-1], "thu_tb": round(thu), "chi_tb": round(chi),
           "kha_dung": round(kha_dung), "dot_rong": None, "so_thang_con": None,
-          "duong": False, "het_tien": False,
+          "duong": False, "het_tien": False, "so_ky_co_phat_sinh": co_phat_sinh,
           "thue_bao_thang": round(chi_phi_thue_bao_thang())}
     if chi <= 0 and thu <= 0:
         return ra                                  # sổ chưa có gì để nói
