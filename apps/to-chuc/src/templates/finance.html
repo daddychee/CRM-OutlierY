@@ -101,8 +101,8 @@
 <div class="tab-nav">
   <a href="/finance?tab=dashboard&thang={{ thang }}" class="{% if tab == 'dashboard' %}active{% endif %}">Tổng quan</a>
   <a href="/finance?tab=ledger&thang={{ thang }}" class="{% if tab == 'ledger' %}active{% endif %}">Sổ thu chi</a>
-  <a href="/finance?tab=wallets&thang={{ thang }}" class="{% if tab == 'wallets' %}active{% endif %}">Ví</a>
-  <a href="/finance?tab=goals&thang={{ thang }}" class="{% if tab == 'goals' %}active{% endif %}">Mục tiêu</a>
+  <a href="/finance?tab=wallets&thang={{ thang }}" class="{% if tab == 'wallets' %}active{% endif %}">Ví &amp; chốt kỳ</a>
+  <a href="/finance?tab=goals&thang={{ thang }}" class="{% if tab == 'goals' %}active{% endif %}">Ngân sách</a>
   <a href="/finance?tab=pnl&thang={{ thang }}" class="{% if tab == 'pnl' %}active{% endif %}">Kênh</a>
   <a href="/finance?tab=ngach&ky_luong={{ ky_luong or thang }}" class="{% if tab == 'ngach' %}active{% endif %}">Ngách</a>
   <a href="/finance?tab=payroll" class="{% if tab == 'payroll' %}active{% endif %}">Lương</a>
@@ -463,7 +463,37 @@ function tinhQuyVnd() {
   </div>
 </div>
 
-{# ══════════════ MỤC TIÊU ══════════════ #}
+<div class="khoi">
+  <h3><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M9 13l2 2 4-4"/></svg>
+    Chốt kỳ &amp; đối chiếu số dư <span class="phu">kỳ {{ thang }}</span></h3>
+  {% if da_chot_ky %}
+  <div class="canh">Kỳ {{ thang }} đã chốt — {{ da_chot_ky.nguoi_chot }} · {{ da_chot_ky.luc[:16] }}</div>
+  {% else %}
+  <form method="post" action="/finance/chot-ky">
+    <input type="hidden" name="ky" value="{{ thang }}">
+    <div class="bang-cuon">
+    <table class="bang">
+      <tr><th>Ví</th><th class="so">Sổ tính ra</th><th class="so">Khai số dư thật</th><th>Kết luận</th></tr>
+      {% for v in danh_muc_vi %}
+      {% set sd = so_du_vi.get(v.ma) %}
+      <tr><td><b>{{ v.ten }}</b> <span class="thieu">{{ v.tien_te }}</span></td>
+        <td class="so">{{ (sd.nguyen_te if sd else 0) | tien }}</td>
+        <td class="so"><input type="text" name="khai_{{ v.ma }}" class="o" style="width:130px;text-align:right"
+             value="{{ '%.2f' | format(sd.nguyen_te if sd else 0) }}"></td>
+        <td><span class="thieu">so khi bấm chốt</span></td></tr>
+      {% endfor %}
+    </table>
+    </div>
+    <div style="margin-top:12px">
+      {% if la_owner %}<button type="submit" class="nut">Chốt kỳ {{ thang }}</button>
+      {% else %}<span class="thieu">Chỉ Owner được chốt kỳ.</span>{% endif %}
+    </div>
+  </form>
+  <div class="canh">Còn ví lệch thì không chốt được — ghi bút toán giải trình rồi chốt lại. Sau khi chốt, bút toán ngày cũ vẫn ghi được nhưng bị đánh dấu điều chỉnh kỳ trước.</div>
+  {% endif %}
+</div>
+
+{# ══════════════ NGÂN SÁCH ══════════════ #}
 {% elif tab == 'goals' %}
 <div class="khoi">
   <h3><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.2"/></svg>
@@ -483,24 +513,47 @@ function tinhQuyVnd() {
       <div style="margin-top:10px"><button type="submit" class="nut">Lưu mục tiêu</button></div>
     </form>
   </details>
+  <details class="mo">
+    <summary>Đặt hạn mức kỳ</summary>
+    <form method="post" action="/finance/han-muc">
+      <input type="hidden" name="thang" value="{{ thang }}">
+      <div class="form-luoi">
+        <div><label>Mục tiêu</label><select name="muc_tieu" required class="o">
+          {% for m in muc_tieu %}<option value="{{ m.ten }}">{{ m.ten }}</option>{% endfor %}
+        </select></div>
+        <div><label>Hạn mức mỗi tháng</label><input type="number" name="so_tien" min="0" step="1000" required class="o"></div>
+        <div><label>Chuyển tiếp phần chưa tiêu</label><select name="chuyen_tiep" class="o">
+          <option value="">không</option><option value="1">có</option></select></div>
+      </div>
+      <div style="margin-top:10px"><button type="submit" class="nut">Lưu hạn mức</button></div>
+    </form>
+  </details>
+
   <div class="bang-cuon">
   <table class="bang">
-    <tr><th>Mục tiêu</th><th class="so">Ngân sách</th><th class="so">Đã chi</th><th class="so">Đã thu</th>
-      <th style="min-width:110px">Tiến độ chi</th><th>Trạng thái</th><th>Ngày tạo</th></tr>
-    {% for m in muc_tieu %}
-    {% set t = mt_tong.get(m.ten, {'da_chi': 0, 'da_thu': 0}) %}
-    <tr><td><b>{{ m.ten }}</b></td>
-      <td class="so">{{ m.ngan_sach | vnd }}</td>
-      <td class="so">{{ t.da_chi | vnd }}</td>
-      <td class="so">{{ t.da_thu | vnd }}</td>
-      <td>{% if m.ngan_sach %}<div class="usage"><i style="width:{{ [100, (100 * t.da_chi / m.ngan_sach) | round | int] | min }}%"></i></div>{% else %}<span class="thieu">—</span>{% endif %}</td>
-      <td>{% if m.trang_thai == 'dang_chay' %}<span class="badge ok">đang chạy</span>{% elif m.trang_thai == 'tam_dung' %}<span class="badge">tạm dừng</span>{% else %}<span class="badge">xong</span>{% endif %}</td>
-      <td>{{ (m.tao_luc or '')[:10] }}</td></tr>
+    <tr><th>Mục tiêu</th><th class="so">Hạn mức tháng</th><th class="so">Chuyển tiếp</th>
+      <th class="so">Đã chi</th><th style="min-width:110px">Tiến độ</th>
+      <th class="so">Còn lại</th><th>Trạng thái</th></tr>
+    {% for d in ngan_sach.dong %}
+    <tr><td><b>{{ d.muc_tieu }}</b></td>
+      <td class="so">{% if d.han_muc is not none %}{{ d.han_muc | vnd }}{% else %}<span class="badge do">chưa đặt</span>{% endif %}</td>
+      <td class="so">{% if d.chuyen_tiep %}{{ d.chuyen_tiep | vnd }}{% else %}<span class="thieu">—</span>{% endif %}</td>
+      <td class="so">{{ d.da_chi | vnd }}</td>
+      <td>{% if d.ti_le is not none %}
+          <div class="usage"><i style="width:{{ [100, d.ti_le] | min }}%;{% if d.vuot %}background:var(--th-d97c6c){% elif d.ti_le >= 80 %}background:var(--warn,#d9b36c){% endif %}"></i></div>
+        {% else %}<span class="thieu">—</span>{% endif %}</td>
+      <td class="so {% if d.con_lai is not none and d.con_lai < 0 %}am{% endif %}">
+        {% if d.con_lai is not none %}{{ d.con_lai | vnd }}{% else %}<span class="thieu">—</span>{% endif %}</td>
+      <td>{% if d.ti_le is none %}<span class="badge">chưa đặt hạn mức</span>
+        {% elif d.vuot %}<span class="badge do">{{ d.ti_le }}%</span>
+        {% elif d.ti_le >= 80 %}<span class="badge do">{{ d.ti_le }}%</span>
+        {% else %}<span class="badge ok">{{ d.ti_le }}%</span>{% endif %}</td></tr>
     {% else %}
     <tr><td colspan="7" class="thieu">Chưa có mục tiêu nào.</td></tr>
     {% endfor %}
   </table>
   </div>
+  <div class="canh">Vượt hạn mức không chặn ghi bút toán — tiền đã tiêu thì sổ phải ghi được.</div>
 </div>
 
 {# ══════════════ KÊNH ══════════════ #}
@@ -513,30 +566,64 @@ function tinhQuyVnd() {
       <input type="month" name="thang" value="{{ thang }}" class="o">
       <button type="submit" class="nut phu" style="padding:.3rem .8rem;font-size:.82rem">Xem</button>
     </form></h3>
+  <form method="get" action="/finance" class="toolbar">
+    <input type="hidden" name="tab" value="pnl">
+    <input type="hidden" name="thang" value="{{ thang }}">
+    <select name="phan_bo" class="o" onchange="this.form.submit()">
+      {% for ma, nhan in [('doanh_thu','Phân bổ: theo doanh thu'), ('chia_deu','Phân bổ: chia đều'),
+                          ('khong','Phân bổ: không phân bổ')] %}
+      <option value="{{ ma }}" {% if phan_bo == ma %}selected{% endif %}>{{ nhan }}</option>{% endfor %}
+    </select>
+    <span class="thieu">chi phí chung {{ pnl_pb.chung_he | vnd }}{% if pnl_pb.chung_he_con_lai %} · còn lại {{ pnl_pb.chung_he_con_lai | vnd }}{% endif %}</span>
+  </form>
   <div class="bang-cuon">
   <table class="bang">
-    <tr><th>Kênh</th><th>Ngách</th><th>Vòng đời</th><th class="so">Thu</th><th class="so">Chi</th><th class="so">Lãi / lỗ</th></tr>
-    {% for ma, t in pnl.items() | sort if ma %}
-    {% set k = kenh_cua.get(ma) %}
-    <tr><td><b class="tk">{{ ma }}</b>{% if k %} {{ k.ten_chuan }}{% endif %}</td>
+    <tr><th>Kênh</th><th>Ngách</th><th>Vòng đời</th><th class="so">Thu</th><th class="so">Chi trực tiếp</th>
+      <th class="so">Phân bổ chung</th><th class="so">Lãi / lỗ sau phân bổ</th></tr>
+    {% for d in pnl_pb.dong %}
+    {% set k = kenh_cua.get(d.kenh_ma) %}
+    <tr><td><b class="tk">{{ d.kenh_ma }}</b>{% if k %} {{ k.ten_chuan }}{% endif %}</td>
       <td>{{ ten_ngach.get(k.ngach_ma, '—') if k else '—' }}</td>
       <td>{% if k %}<span class="badge">{{ k.trang_thai }}</span>{% else %}<span class="thieu">—</span>{% endif %}</td>
-      <td class="so">{{ t.thu | vnd }}</td>
-      <td class="so">{{ t.chi | vnd }}</td>
-      <td class="so {% if t.thu - t.chi >= 0 %}duong{% else %}am{% endif %}"><b>{{ (t.thu - t.chi) | vnd }}</b></td></tr>
+      <td class="so">{{ d.thu | vnd }}</td>
+      <td class="so">{{ d.chi | vnd }}</td>
+      <td class="so">{% if d.phan_bo %}{{ d.phan_bo | vnd }}{% else %}<span class="thieu">—</span>{% endif %}</td>
+      <td class="so {% if d.lai_lo_sau >= 0 %}duong{% else %}am{% endif %}"><b>{{ d.lai_lo_sau | vnd }}</b></td></tr>
+    {% else %}
+    <tr><td colspan="7" class="thieu">Kỳ này chưa có bút toán nào.</td></tr>
     {% endfor %}
-    {% if '' in pnl %}
-    {% set t = pnl[''] %}
-    <tr><td colspan="3"><b>Chung hệ</b> <span class="thieu">không thuộc kênh nào</span></td>
-      <td class="so">{{ t.thu | vnd }}</td>
-      <td class="so">{{ t.chi | vnd }}</td>
-      <td class="so {% if t.thu - t.chi >= 0 %}duong{% else %}am{% endif %}"><b>{{ (t.thu - t.chi) | vnd }}</b></td></tr>
-    {% endif %}
-    {% if not pnl %}
-    <tr><td colspan="6" class="thieu">Kỳ này chưa có bút toán nào.</td></tr>
+    {% if pnl_pb.chung_he_con_lai %}
+    <tfoot><tr><td colspan="5">Chung hệ chưa phân bổ</td>
+      <td class="so">{{ pnl_pb.chung_he_con_lai | vnd }}</td><td></td></tr></tfoot>
     {% endif %}
   </table>
   </div>
+</div>
+
+<div class="khoi">
+  <h3><svg class="ic" viewBox="0 0 24 24"><path d="M3 3v18h18"/><rect x="7" y="10" width="3" height="8"/><rect x="13" y="6" width="3" height="12"/></svg>
+    Đơn vị kinh tế <span class="phu">chi phí mỗi video · biên lãi</span></h3>
+  {% if dvkt.thieu_nguon %}
+  <div class="canh">Không đọc được số video từ PlannerY.</div>
+  {% else %}
+  <div class="bang-cuon">
+  <table class="bang">
+    <tr><th>Kênh</th><th class="so">Video trong kỳ</th><th class="so">Chi phí / video</th>
+      <th class="so">Lượt xem</th><th class="so">Chi phí / 1K view</th><th class="so">Biên lãi</th></tr>
+    {% for d in dvkt.dong %}
+    <tr><td><b class="tk">{{ d.kenh_ma }}</b> {{ d.ten }}</td>
+      <td class="so">{{ d.so_video }}</td>
+      <td class="so">{% if d.chi_moi_video %}{{ d.chi_moi_video | vnd }}{% else %}<span class="badge">chưa đủ dữ liệu</span>{% endif %}</td>
+      <td class="so">{% if d.luot_xem %}{{ d.luot_xem }}{% else %}<span class="thieu">—</span>{% endif %}</td>
+      <td class="so">{% if d.chi_moi_1k_view %}{{ d.chi_moi_1k_view | vnd }}{% else %}<span class="badge">chưa nối lượt xem</span>{% endif %}</td>
+      <td class="so {% if d.bien_lai and d.bien_lai > 0 %}duong{% endif %}">
+        {% if d.bien_lai is not none %}{{ d.bien_lai }}%{% else %}<span class="thieu">—</span>{% endif %}</td></tr>
+    {% else %}
+    <tr><td colspan="6" class="thieu">Kỳ này chưa có kênh nào phát sinh.</td></tr>
+    {% endfor %}
+  </table>
+  </div>
+  {% endif %}
 </div>
 
 {# ══════════════ NGÁCH ══════════════ #}

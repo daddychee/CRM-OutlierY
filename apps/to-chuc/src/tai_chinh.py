@@ -42,6 +42,7 @@ TRAN_SO_TEP = 5
 NHOM_DICH_VU = ("proxy", "api", "cong_cu", "email", "khac")      # D2
 CHU_KY = {"thang": 1, "quy": 3, "nam": 12, "mot_lan": 0}         # số tháng
 TRANG_THAI_DV = ("dang_dung", "sap_bo", "da_huy")
+QUY_TAC_PHAN_BO = ("doanh_thu", "chia_deu", "ngay_cong", "khong")   # B1
 TY_GIA_TIMEOUT = 8             # giây; KHÔNG retry ngầm (bài học SDK 19/07 + 06/08)
 VCB_URL = "https://www.vietcombank.com.vn/api/exchangerates?date=now"
 ER_API_URL = "https://open.er-api.com/v6/latest/"
@@ -248,6 +249,7 @@ def them_but_toan(nguoi_ghi: str, ngay: str, danh_muc: str, so_tien,
          "so_tien": so_tien, "muc_tieu": muc_tieu, "kenh_ma": kenh_ma,
          "vi": vi, "tien_te": tien_te, "ty_gia": ty_gia, "nguon_ty_gia": nguon_tg,
          "tep_dinh_kem": list(tep_dinh_kem or []), "nguon": nguon,
+         "dieu_chinh_ky_truoc": doc_chot_ky(ngay[:7]) is not None,
          "nguoi_ghi": nguoi_ghi, "chung_tu": (chung_tu or "").strip()[:200],
          "ghi_chu": (ghi_chu or "").strip()[:500],
          "tao_luc": datetime.now().isoformat(timespec="seconds")}
@@ -856,3 +858,192 @@ def muc_dot(den_thang: str, so_thang: int = 3) -> dict:
         return ra
     ra["so_thang_con"] = round(kha_dung / dot, 1)
     return ra
+
+
+# ---------- B1: phân bổ chi phí chung xuống kênh ----------
+
+def pnl_phan_bo(thang: str, quy_tac: str = "doanh_thu",
+                trong_so_ngoai: dict | None = None) -> dict:
+    """Lãi/lỗ theo kênh CÓ phân bổ chi phí "chung hệ".
+
+    Bản v1 để toàn bộ chi phí chung ở một hàng riêng nên mọi kênh đều trông có
+    lãi còn cục lỗ đứng một mình — bảng nói dối một cách lịch sự. Đây là chỗ vá.
+
+    Quy tắc: doanh_thu (theo tỷ lệ thu) · chia_deu · ngay_cong (trọng số truyền
+    từ D3) · khong (giữ nguyên hàng chung hệ).
+
+    TÍNH LÚC ĐỌC, KHÔNG sinh bút toán — sổ gốc giữ nguyên bản (bất biến số 5).
+    """
+    if quy_tac not in QUY_TAC_PHAN_BO:
+        raise ValueError(f"Quy tắc phân bổ '{quy_tac}' không hợp lệ.")
+    pnl = pnl_theo_kenh(thang)
+    chung = pnl.get(KENH_CHUNG, {"thu": 0.0, "chi": 0.0})
+    kenh = {ma: m for ma, m in pnl.items() if ma}
+
+    trong_so: dict[str, float] = {}
+    if kenh and quy_tac != "khong":
+        if quy_tac == "doanh_thu":
+            trong_so = {ma: m["thu"] for ma, m in kenh.items()}
+        elif quy_tac == "chia_deu":
+            trong_so = {ma: 1.0 for ma in kenh}
+        elif quy_tac == "ngay_cong":
+            trong_so = {ma: float((trong_so_ngoai or {}).get(ma, 0)) for ma in kenh}
+        if sum(trong_so.values()) <= 0:       # trọng số rỗng → lùi về chia đều,
+            trong_so = {ma: 1.0 for ma in kenh}   # KHÔNG im lặng bỏ chi phí chung
+
+    tong_ts = sum(trong_so.values())
+    can_chia = chung["chi"] - chung["thu"]
+    dong, da_chia = [], 0.0
+    for ma, m in sorted(kenh.items()):
+        pb = round(can_chia * trong_so[ma] / tong_ts, 2) if tong_ts else 0.0
+        da_chia += pb
+        dong.append({"kenh_ma": ma, "thu": m["thu"], "chi": m["chi"],
+                     "lai_lo_truoc": m["thu"] - m["chi"], "phan_bo": pb,
+                     "lai_lo_sau": round(m["thu"] - m["chi"] - pb, 2)})
+    return {"thang": thang, "quy_tac": quy_tac, "dong": dong,
+            "chung_he": can_chia, "chung_he_con_lai": round(can_chia - da_chia, 2)}
+
+
+# ---------- B4: ngân sách theo kỳ + chuyển tiếp ----------
+
+def _duong_han_muc() -> Path:
+    return Path(os.getenv("HAN_MUC_PATH", "nhan-su/han-muc.json"))
+
+
+def dat_han_muc(nguoi: str, muc_tieu: str, so_tien, chuyen_tiep: bool = False) -> dict:
+    """Hạn mức MỖI KỲ của một mục tiêu (chỉ-thêm, bản sau đè bản trước khi đọc)."""
+    if not any(m.get("ten") == muc_tieu for m in doc_muc_tieu()):
+        raise ValueError(f"Mục tiêu '{muc_tieu}' chưa có trong sổ.")
+    try:
+        so_tien = float(so_tien)
+    except (TypeError, ValueError):
+        raise ValueError("Hạn mức phải là số.")
+    if so_tien < 0:
+        raise ValueError("Hạn mức không âm.")
+    ban = {"muc_tieu": muc_tieu, "so_tien": so_tien, "chuyen_tiep": bool(chuyen_tiep),
+           "nguoi": nguoi, "luc": datetime.now().isoformat(timespec="seconds")}
+    with _khoa:
+        p = _duong_han_muc()
+        ds = json.loads(p.read_text(encoding="utf-8")) if p.is_file() else []
+        ds.append(ban)
+        p.parent.mkdir(parents=True, exist_ok=True)
+        tam = p.with_name(p.name + ".tmp")
+        tam.write_text(json.dumps(ds, ensure_ascii=False, indent=1), encoding="utf-8")
+        os.replace(tam, p)
+    return ban
+
+
+def han_muc_hien_tai() -> dict[str, dict]:
+    p = _duong_han_muc()
+    if not p.is_file():
+        return {}
+    try:
+        ds = json.loads(p.read_text(encoding="utf-8"))
+    except ValueError:
+        return {}
+    return {b["muc_tieu"]: b for b in ds if isinstance(b, dict) and b.get("muc_tieu")}
+
+
+def _chi_theo_muc_tieu(thang: str) -> dict[str, float]:
+    loai_map = _loai_theo_ma()
+    ra: dict[str, float] = {}
+    for b in doc_so():
+        if (b.get("ngay") or "")[:7] != thang or _phia(b, loai_map) != "chi":
+            continue
+        mt = b.get("muc_tieu", "")
+        ra[mt] = ra.get(mt, 0.0) + quy_vnd(b)
+    return ra
+
+
+def ngan_sach_ky(thang: str) -> dict:
+    """Hạn mức kỳ · đã chi · chuyển tiếp từ kỳ trước · tiến độ.
+
+    Vượt hạn mức KHÔNG chặn ghi bút toán — tiền đã tiêu thì sổ phải ghi được;
+    chỉ cảnh báo (Owner chốt). Mục tiêu chưa đặt hạn mức → None, không đoán.
+    """
+    hm = han_muc_hien_tai()
+    chi_nay = _chi_theo_muc_tieu(thang)
+    thang_truoc = chuoi_thang(thang, 2)[0]
+    chi_truoc = _chi_theo_muc_tieu(thang_truoc)
+    dong = []
+    for m in doc_muc_tieu():
+        ten = m["ten"]
+        h = hm.get(ten)
+        muc = h["so_tien"] if h else None
+        da_chi = chi_nay.get(ten, 0.0)
+        ct = 0.0
+        if h and h.get("chuyen_tiep"):
+            ct = round(h["so_tien"] - chi_truoc.get(ten, 0.0), 2)
+        tran = (muc + ct) if muc is not None else None
+        dong.append({
+            "muc_tieu": ten, "han_muc": muc, "chuyen_tiep": ct, "da_chi": da_chi,
+            "con_lai": round(tran - da_chi, 2) if tran is not None else None,
+            "ti_le": round(100 * da_chi / muc) if muc else None,
+            "vuot": bool(muc and da_chi > muc), "trang_thai": m.get("trang_thai")})
+    return {"thang": thang, "dong": dong}
+
+
+# ---------- C5: chốt kỳ + đối chiếu số dư ví ----------
+
+def _duong_chot_ky() -> Path:
+    return Path(os.getenv("CHOT_KY_PATH", "nhan-su/chot-ky-tien.json"))
+
+
+def _doc_chot_ky_all() -> list[dict]:
+    p = _duong_chot_ky()
+    if not p.is_file():
+        return []
+    try:
+        ds = json.loads(p.read_text(encoding="utf-8"))
+        return ds if isinstance(ds, list) else []
+    except ValueError:
+        return []
+
+
+def doc_chot_ky(ky: str) -> dict | None:
+    return next((b for b in _doc_chot_ky_all() if b.get("ky") == ky), None)
+
+
+def doi_chieu_vi(ky: str, khai: dict) -> list[dict]:
+    """So số dư SỔ TÍNH RA với số dư THẬT người khai (balance assertion của
+    beancount). Chỉ ra lệch, không tự sửa gì."""
+    sd = so_du_vi()
+    vi_map = _vi_theo_ma()
+    ra = []
+    for ma, v in vi_map.items():
+        so_so = round(sd.get(ma, {}).get("nguyen_te", 0.0), 2)
+        if ma not in khai and not so_so:
+            continue
+        k = round(float(khai.get(ma, 0)), 2)
+        ra.append({"vi": ma, "ten": v["ten"], "tien_te": v["tien_te"],
+                   "so_so": so_so, "khai": k, "lech": round(k - so_so, 2),
+                   "khop": abs(k - so_so) < 0.01})
+    return ra
+
+
+def chot_ky_tien(nguoi: str, ky: str, khai: dict) -> dict:
+    """Chốt kỳ kế toán. KHÓA khi còn ví lệch — không cho chốt đè lên chênh lệch;
+    chốt hai lần cũng bị chặn (bản chốt chỉ-thêm, không ghi đè lịch sử)."""
+    if not re.fullmatch(r"\d{4}-\d{2}", ky or ""):
+        raise ValueError("Kỳ phải dạng YYYY-MM.")
+    if doc_chot_ky(ky) is not None:
+        raise ValueError(f"Kỳ {ky} đã chốt rồi.")
+    dc = doi_chieu_vi(ky, khai)
+    lech = [d for d in dc if not d["khop"]]
+    if lech:
+        ten = ", ".join(d["ten"] for d in lech)
+        raise ValueError(f"Còn ví lệch chưa giải trình: {ten}. "
+                         "Ghi bút toán giải trình rồi chốt lại.")
+    ban = {"ky": ky, "nguoi_chot": nguoi, "doi_chieu": dc,
+           "luc": datetime.now().isoformat(timespec="seconds")}
+    with _khoa:
+        if doc_chot_ky(ky) is not None:
+            raise ValueError(f"Kỳ {ky} đã chốt rồi.")
+        ds = _doc_chot_ky_all()
+        ds.append(ban)
+        p = _duong_chot_ky()
+        p.parent.mkdir(parents=True, exist_ok=True)
+        tam = p.with_name(p.name + ".tmp")
+        tam.write_text(json.dumps(ds, ensure_ascii=False, indent=1), encoding="utf-8")
+        os.replace(tam, p)
+    return ban

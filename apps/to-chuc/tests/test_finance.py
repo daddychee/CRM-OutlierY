@@ -203,7 +203,8 @@ def test_route_categories_va_pnl_render():
     b2 = c.get(f"/finance?tab=pnl&thang={THANG_NAY}").text
     assert k1 in b2 and "Outland Test" in b2
     b3 = c.get("/finance?tab=goals").text
-    assert "Vận hành chung" in b3 and "1.000 ₫" in b3
+    # B4: tab Ngân sách — mục tiêu chưa đặt hạn mức thì nói thẳng, không đoán
+    assert "Vận hành chung" in b3 and "chưa đặt" in b3
 
 
 # ---------- A1: ví tiền (rules/danh_muc_vi.csv) ----------
@@ -663,3 +664,128 @@ def test_ledger_co_modal_va_thanh_loc_mot_hang():
     assert 'id="bt-quy-vnd"' in b                      # ô Quy VND tự tính
     assert "Kéo ảnh hóa đơn vào đây" in b
     assert "Loại: tất cả" in b and "Ví: tất cả" in b    # nhãn nằm trong dropdown
+
+
+# ---------- B1: phân bổ chi phí chung xuống kênh ----------
+
+def _seed_pnl_co_chung_he():
+    k1, k2 = _seed_kenh()
+    _seed_muc_tieu()
+    tai_chinh.them_but_toan("kt", HOM_NAY, "THU-ADS", 60_000_000, "Vận hành chung",
+                            kenh_ma=k1, vi=VI)
+    tai_chinh.them_but_toan("kt", HOM_NAY, "THU-ADS", 20_000_000, "Vận hành chung",
+                            kenh_ma=k2, vi=VI)
+    tai_chinh.them_but_toan("kt", HOM_NAY, "CHI-PROXY", 5_000_000, "Vận hành chung",
+                            kenh_ma=k1, vi=VI)
+    # chi CHUNG HỆ — thứ mà bản v1 để nguyên một dòng, làm mọi kênh trông có lãi
+    tai_chinh.them_but_toan("kt", HOM_NAY, "CHI-API", 8_000_000, "Vận hành chung", vi=VI)
+    return k1, k2
+
+
+def test_phan_bo_theo_doanh_thu():
+    k1, k2 = _seed_pnl_co_chung_he()
+    kq = tai_chinh.pnl_phan_bo(THANG_NAY, "doanh_thu")
+    d = {x["kenh_ma"]: x for x in kq["dong"]}
+    # 8tr chia theo tỷ lệ thu 60:20 → 6tr : 2tr
+    assert d[k1]["phan_bo"] == 6_000_000.0 and d[k2]["phan_bo"] == 2_000_000.0
+    assert d[k1]["lai_lo_sau"] == 60_000_000 - 5_000_000 - 6_000_000
+    assert kq["chung_he_con_lai"] == 0.0          # đã rải hết, không còn dòng lận
+
+
+def test_phan_bo_chia_deu_va_khong_phan_bo():
+    k1, k2 = _seed_pnl_co_chung_he()
+    d = {x["kenh_ma"]: x for x in tai_chinh.pnl_phan_bo(THANG_NAY, "chia_deu")["dong"]}
+    assert d[k1]["phan_bo"] == d[k2]["phan_bo"] == 4_000_000.0
+    kq = tai_chinh.pnl_phan_bo(THANG_NAY, "khong")
+    assert all(x["phan_bo"] == 0 for x in kq["dong"])
+    assert kq["chung_he_con_lai"] == 8_000_000.0   # giữ nguyên hàng chung hệ
+
+
+def test_phan_bo_khong_sinh_but_toan():
+    """Phân bổ tính LÚC ĐỌC — sổ gốc không được đụng một dòng."""
+    _seed_pnl_co_chung_he()
+    truoc = len(tai_chinh.doc_so())
+    tai_chinh.pnl_phan_bo(THANG_NAY, "doanh_thu")
+    tai_chinh.pnl_phan_bo(THANG_NAY, "chia_deu")
+    assert len(tai_chinh.doc_so()) == truoc
+
+
+def test_khong_co_kenh_nao_thi_khong_chia():
+    _seed_muc_tieu()
+    tai_chinh.them_but_toan("kt", HOM_NAY, "CHI-API", 8_000_000, "Vận hành chung", vi=VI)
+    kq = tai_chinh.pnl_phan_bo(THANG_NAY, "doanh_thu")
+    assert kq["dong"] == [] and kq["chung_he_con_lai"] == 8_000_000.0
+
+
+# ---------- B4: ngân sách theo kỳ + chuyển tiếp ----------
+
+def test_ngan_sach_ky_va_chuyen_tiep():
+    tai_chinh.them_muc_tieu("Nuôi kênh SPACE", 0)
+    tai_chinh.dat_han_muc("Bot", "Nuôi kênh SPACE", 30_000_000, chuyen_tiep=True)
+    tai_chinh.them_but_toan("kt", "2026-07-05", "CHI-API", 22_000_000,
+                            "Nuôi kênh SPACE", vi=VI)
+    b7 = {x["muc_tieu"]: x for x in tai_chinh.ngan_sach_ky("2026-07")["dong"]}
+    assert b7["Nuôi kênh SPACE"]["han_muc"] == 30_000_000
+    assert b7["Nuôi kênh SPACE"]["da_chi"] == 22_000_000
+    assert b7["Nuôi kênh SPACE"]["ti_le"] == 73
+    # tháng sau: phần chưa tiêu 8tr chuyển tiếp
+    b8 = {x["muc_tieu"]: x for x in tai_chinh.ngan_sach_ky("2026-08")["dong"]}
+    assert b8["Nuôi kênh SPACE"]["chuyen_tiep"] == 8_000_000
+
+
+def test_vuot_han_muc_chi_canh_bao_khong_chan():
+    tai_chinh.them_muc_tieu("Hồi sinh OLD", 0)
+    tai_chinh.dat_han_muc("Bot", "Hồi sinh OLD", 12_000_000)
+    b = tai_chinh.them_but_toan("kt", "2026-08-05", "CHI-NGOAI", 13_200_000,
+                                "Hồi sinh OLD", vi=VI)
+    assert b["id"]                                   # KHÔNG chặn — tiền đã tiêu thì sổ phải ghi
+    d = {x["muc_tieu"]: x for x in tai_chinh.ngan_sach_ky("2026-08")["dong"]}
+    assert d["Hồi sinh OLD"]["ti_le"] == 110 and d["Hồi sinh OLD"]["vuot"] is True
+    assert d["Hồi sinh OLD"]["con_lai"] == -1_200_000
+
+
+def test_muc_tieu_chua_dat_han_muc_thi_khong_doan():
+    tai_chinh.them_muc_tieu("Chưa đặt", 0)
+    d = {x["muc_tieu"]: x for x in tai_chinh.ngan_sach_ky(THANG_NAY)["dong"]}
+    assert d["Chưa đặt"]["han_muc"] is None and d["Chưa đặt"]["ti_le"] is None
+
+
+# ---------- C5: chốt kỳ + đối chiếu số dư ví ----------
+
+def test_chot_ky_khoa_khi_vi_lech():
+    _seed_muc_tieu()
+    tai_chinh.them_but_toan("kt", "2026-08-05", "THU-KHAC", 10_000_000,
+                            "Vận hành chung", vi=VI)
+    # khai số dư thật LỆCH so với sổ → không cho chốt
+    with pytest.raises(ValueError):
+        tai_chinh.chot_ky_tien("Bot", "2026-08", {VI: 9_800_000})
+    assert tai_chinh.doc_chot_ky("2026-08") is None
+    # khớp thì chốt được, và chốt hai lần bị chặn
+    ban = tai_chinh.chot_ky_tien("Bot", "2026-08", {VI: 10_000_000})
+    assert ban["ky"] == "2026-08" and ban["nguoi_chot"] == "Bot"
+    with pytest.raises(ValueError):
+        tai_chinh.chot_ky_tien("Bot", "2026-08", {VI: 10_000_000})
+
+
+def test_doi_chieu_vi_chi_ra_lech():
+    _seed_muc_tieu()
+    tai_chinh.them_but_toan("kt", "2026-08-05", "THU-KHAC", 5_000_000,
+                            "Vận hành chung", vi=VI)
+    dc = tai_chinh.doi_chieu_vi("2026-08", {VI: 4_800_000})
+    d = {x["vi"]: x for x in dc}
+    assert d[VI]["so_so"] == 5_000_000 and d[VI]["khai"] == 4_800_000
+    assert d[VI]["lech"] == -200_000 and d[VI]["khop"] is False
+
+
+def test_but_toan_vao_ky_da_chot_bi_danh_dau_dieu_chinh():
+    _seed_muc_tieu()
+    tai_chinh.them_but_toan("kt", "2026-08-05", "THU-KHAC", 1_000_000,
+                            "Vận hành chung", vi=VI)
+    tai_chinh.chot_ky_tien("Bot", "2026-08", {VI: 1_000_000})
+    # vẫn GHI ĐƯỢC (không sửa lịch sử, không giấu chênh lệch) nhưng có dấu
+    b = tai_chinh.them_but_toan("kt", "2026-08-20", "CHI-API", 500_000,
+                                "Vận hành chung", vi=VI)
+    assert b["dieu_chinh_ky_truoc"] is True
+    b2 = tai_chinh.them_but_toan("kt", "2026-09-02", "CHI-API", 500_000,
+                                 "Vận hành chung", vi=VI)
+    assert b2["dieu_chinh_ky_truoc"] is False

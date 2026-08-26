@@ -63,8 +63,8 @@ os.environ.setdefault("KPI_DANH_GIA_DIR", str(ROOT / "data" / "to-chuc" / "db" /
 os.environ.setdefault("SO_THU_CHI_DIR", str(ROOT / "data" / "to-chuc" / "db" / "so-thu-chi"))
 os.environ.setdefault("MUC_TIEU_PATH", str(ROOT / "data" / "to-chuc" / "db" / "muc-tieu.json"))
 
-from src import (chi_phi_ngach, kpi_danh_gia, lich_tai_chinh, luong,
-                 tai_chinh, vault)           # noqa: E402
+from src import (chi_phi_ngach, don_vi_kinh_te, kpi_danh_gia, lich_tai_chinh,
+                 luong, tai_chinh, vault)           # noqa: E402
 from src.cham_cong import doc_ngay as cc_doc_ngay        # noqa: E402
 from src.cham_cong import (bang_cong_thang, chot_ky, doc_chot, ghi_nhan,  # noqa: E402
                            gio_chu, tong_gio)
@@ -422,7 +422,7 @@ def hr_kpi_danh_gia(nguoi: str = Form(...), ky: str = Form(...),
 def finance_trang(request: Request, tab: str = "ledger", thang: str = "",
                   tu: str = "", den: str = "", loai: str = "", vi: str = "",
                   kenh: str = "", muc_tieu: str = "", danh_muc: str = "",
-                  q: str = "", ky_luong: str = "",
+                  q: str = "", ky_luong: str = "", phan_bo: str = "doanh_thu",
                   user: dict = Depends(yeu_cau_finance)):
     """Finance Hub — 4 tab theo mockup finance-hub.html: Ledger (sổ chỉ-thêm +
     đảo) · Goals (mục tiêu) · Categories (rules CSV + tổng) · Channel P&L."""
@@ -452,6 +452,12 @@ def finance_trang(request: Request, tab: str = "ledger", thang: str = "",
         "muc_tieu": muc_tieu, "mt_tong": mt_tong,
         "ds_kenh": ds_kenh, "kenh_cua": kenh_cua, "ten_ngach": ten_ngach,
         "pnl": tai_chinh.pnl_theo_kenh(thang),
+        "phan_bo": phan_bo,
+        "pnl_pb": tai_chinh.pnl_phan_bo(thang, phan_bo) if tab == "pnl" else None,
+        "dvkt": don_vi_kinh_te.don_vi_kinh_te(thang) if tab == "pnl" else None,
+        "ngan_sach": tai_chinh.ngan_sach_ky(thang) if tab == "goals" else None,
+        "doi_chieu": (tai_chinh.doi_chieu_vi(thang, {}) if tab == "wallets" else None),
+        "da_chot_ky": tai_chinh.doc_chot_ky(thang),
         "danh_muc_vi": tai_chinh.doc_danh_muc_vi(),
         "so_du_vi": tai_chinh.so_du_vi(), "kha_dung": tai_chinh.tien_kha_dung(),
         "kha_dung_vnd": tai_chinh.tien_kha_dung_vnd(),
@@ -775,6 +781,42 @@ def finance_tai_chung_tu(id_bt: str, ten: str,
     if p is None:
         raise HTTPException(404, "Không có tệp này.")
     return FileResponse(p)
+
+
+@app.post("/finance/chot-ky")
+async def finance_chot_ky(request: Request, user: dict = Depends(yeu_cau_finance)):
+    """C5 — chốt kỳ sau khi đối chiếu số dư ví. Chỉ Owner; lõi tự khóa khi còn
+    ví lệch (không cho chốt đè lên chênh lệch)."""
+    if user["level"] < 5:
+        raise HTTPException(403, "Chỉ Owner được chốt kỳ.")
+    form = await request.form()
+    ky = _thang_hop_le(str(form.get("ky") or ""))
+    khai = {}
+    for khoa, gt in form.items():
+        if khoa.startswith("khai_") and str(gt).strip():
+            try:
+                khai[khoa[5:]] = float(str(gt).replace(",", "").replace(" ", ""))
+            except ValueError:
+                raise HTTPException(422, f"Số dư khai của ví {khoa[5:]} không phải số.")
+    try:
+        ban = tai_chinh.chot_ky_tien(user["ten"], ky, khai)
+    except ValueError as e:
+        raise HTTPException(422, str(e))
+    nhat_ky.ghi("to-chuc", user["ten"], "chot_ky", f"{ky} {len(ban['doi_chieu'])} ví")
+    return RedirectResponse(f"/finance?tab=wallets&thang={ky}", status_code=303)
+
+
+@app.post("/finance/han-muc")
+def finance_han_muc(muc_tieu: str = Form(...), so_tien: str = Form(...),
+                    chuyen_tiep: str = Form(""), thang: str = Form(""),
+                    user: dict = Depends(yeu_cau_finance)):
+    """B4 — đặt hạn mức mỗi kỳ cho một mục tiêu."""
+    try:
+        tai_chinh.dat_han_muc(user["ten"], muc_tieu, so_tien, bool(chuyen_tiep))
+    except ValueError as e:
+        raise HTTPException(422, str(e))
+    nhat_ky.ghi("to-chuc", user["ten"], "han_muc", f"{muc_tieu} {so_tien}")
+    return RedirectResponse(f"/finance?tab=goals&thang={thang}", status_code=303)
 
 
 @app.post("/finance/ty-gia/lay")
