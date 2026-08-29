@@ -338,3 +338,51 @@ def test_bang_chon_mau_goal_dung_mau_trello(ma, _so):
     r = _c.get("/muc-tieu", headers=H_MGR)      # chọn màu nằm trong popup Goal
     o = r.text.split('class="o-mau"')[1].split("</form>")[0]
     assert "var(--tr-green)" in o and "var(--tr-red)" in o and "--tk-ok" not in o
+
+
+# ---------- §17d: nút hành động trong phiếu việc (Owner 29/08) ----------
+
+def test_nguoi_lam_co_nut_DA_XONG_trong_phieu(ma, _so):
+    """Owner 29/08: 'cần có nút để nhân sự xác nhận đã xong việc'."""
+    g = mt.tao(MGR, "G", "kq")
+    v = tuan.them_viec_giao(ma, MGR, NV, "Việc A", "x", muc_tieu_id=g["id"])
+    tuan.nhan_viec(ma, v["id"], NV)
+    hop = _c.get("/task?goal=" + g["id"], headers=H_NV).text \
+        .split('data-phieu="%s"' % v["id"])[1].split("</dialog>")[0]
+    assert "data-p-bao-xong" in hop and "Đã xong việc này" in hop
+
+
+def test_viec_cho_nhan_co_nut_NHAN_va_TU_CHOI(ma, _so):
+    g = mt.tao(MGR, "G", "kq")
+    v = tuan.them_viec_giao(ma, MGR, NV, "Việc A", "x", muc_tieu_id=g["id"])
+    hop = _c.get("/task?goal=" + g["id"], headers=H_NV).text \
+        .split('data-phieu="%s"' % v["id"])[1].split("</dialog>")[0]
+    assert "data-p-nhan" in hop and "data-p-tu-choi" in hop
+    assert "data-p-bao-xong" not in hop           # chưa nhận thì chưa báo xong được
+
+
+def test_leader_thay_nut_NGHIEM_THU_nguoi_lam_thi_khong(ma, _so):
+    """Không nới quyền: người làm không tự ký cho mình."""
+    g = mt.tao(MGR, "G", "kq")
+    v = tuan.them_viec_giao(ma, MGR, NV, "Việc A", "x", muc_tieu_id=g["id"])
+    tuan.nhan_viec(ma, v["id"], NV)
+    tuan.bao_xong(ma, v["id"], NV)
+    duong = "/task?goal=" + g["id"]
+    hop_mgr = _c.get(duong, headers=H_MGR).text \
+        .split('data-phieu="%s"' % v["id"])[1].split("</dialog>")[0]
+    hop_nv = _c.get(duong, headers=H_NV).text \
+        .split('data-phieu="%s"' % v["id"])[1].split("</dialog>")[0]
+    assert "data-p-xac-nhan" in hop_mgr and "data-p-tra-lai" in hop_mgr
+    assert "data-p-xac-nhan" not in hop_nv
+
+
+def test_bao_xong_qua_API_van_chan_nguoi_ngoai(ma, _so):
+    """Nút chỉ là UI — chốt thật vẫn ở server."""
+    g = mt.tao(MGR, "G", "kq")
+    v = tuan.them_viec_giao(ma, MGR, NV, "Việc A", "x", muc_tieu_id=g["id"])
+    tuan.nhan_viec(ma, v["id"], NV)
+    h_khac = {**H_NV, "X-Remote-User": "ducm"}
+    r = _c.post("/api-tasky/bao-xong", headers=h_khac,
+                data={"id": v["id"], "tuan_xem": ma})
+    assert r.status_code in (400, 403)
+    assert tuan._tim(tuan.doc_tuan(ma), v["id"])["trang_thai"] == tuan.DANG_LAM

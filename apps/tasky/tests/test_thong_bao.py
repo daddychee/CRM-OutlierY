@@ -42,7 +42,25 @@ def _lui_gio(ma, id_viec, gio):
 
 # ---------- sự kiện 1: giao việc mới ----------
 
-def test_viec_moi_giao_la_muc_tin(ma):
+@pytest.fixture()
+def giua_tuan(monkeypatch):
+    """Ghim hôm nay = THỨ TƯ của tuần đang xem.
+
+    Không có fixture này thì hai test dưới đỏ vào thứ Sáu → Chủ nhật, khi mục
+    "Sắp hết tuần" bật thêm — đỏ vì LỊCH MÁY chứ không vì code sai (dính thật
+    29/08/2026, thứ Bảy)."""
+    that = tb.date
+
+    class _Ngay(that):
+        @classmethod
+        def today(cls):
+            tu, _ = tuan.khoang_tuan(tuan.ma_tuan())
+            return that.fromisoformat(tu) + timedelta(days=2)
+
+    monkeypatch.setattr(tb, "date", _Ngay)
+
+
+def test_viec_moi_giao_la_muc_tin(ma, giua_tuan):
     tuan.them_viec_giao(ma, LEADER, NHANVIEN, "Dựng 6 video", "Dựng video")
     ds = tb.cua_toi(ma, NHANVIEN)
     assert [m["muc_do"] for m in ds] == [tb.TIN]
@@ -56,7 +74,7 @@ def test_giao_qua_mot_ngay_chua_nhan_thanh_muc_cap(ma):
     assert ds[0]["muc_do"] == tb.CAP and "quá 1 ngày" in ds[0]["chu"]
 
 
-def test_nhan_viec_roi_thi_het_bao(ma):
+def test_nhan_viec_roi_thi_het_bao(ma, giua_tuan):
     v = tuan.them_viec_giao(ma, LEADER, NHANVIEN, "Dựng 6 video", "Dựng video")
     tuan.nhan_viec(ma, v["id"], NHANVIEN)
     assert tb.cua_toi(ma, NHANVIEN) == []

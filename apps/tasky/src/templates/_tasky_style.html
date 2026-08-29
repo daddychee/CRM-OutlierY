@@ -377,6 +377,12 @@
   /* trong cửa sổ nổi: khối trao đổi cuộn riêng, không đẩy dài cả phiếu */
   dialog.phieu-viec .td{max-height:min(52vh, 420px);display:flex;flex-direction:column}
   dialog.phieu-viec ul.td-ds{overflow-y:auto;flex:1;min-height:0}
+  /* Hàng nút hành động ở ĐẦU phiếu việc — việc cần làm gì tiếp thì thấy ngay */
+  .hang-lam{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px;
+    padding-bottom:13px;border-bottom:1px solid var(--line)}
+  .hang-lam .trang-thai-hien{display:flex;gap:5px;flex-wrap:wrap}
+  .hang-lam .nut svg{margin-right:2px}
+  .hang-lam input{flex-basis:100%;margin-top:6px}
   dialog.phieu-viec .phieu-noi{padding:16px 18px 20px;margin:0;border:0;background:none;
     overflow-y:auto;max-height:calc(88vh - 62px)}
   /* Hai cột như Trello: nội dung bên trái, trao đổi bên phải */

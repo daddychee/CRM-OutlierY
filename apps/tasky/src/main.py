@@ -256,6 +256,14 @@ def trang_muc_tieu(request: Request, user: dict = Depends(yeu_cau_muc_tieu),
         "da_don": da_don, "loi_form": loi, "ten_hien": ten_hien,
         # ?mo=<id> → mở sẵn cửa sổ nổi của Goal đó (nút "Mở Goal" bên board Task)
         "mo": mo,
+        # nút hành động trên thẻ việc trong popup — cùng luật với phiếu bên Task
+        "lam_duoc": {v["id"]: {
+            "nhan": v["nguoi"] == user["ten"]
+                    and v["trang_thai"] in (tuan_lo.CHO_NHAN, tuan_lo.CHO_PHOI_HOP),
+            "bao_xong": v["nguoi"] == user["ten"] and v["trang_thai"] == tuan_lo.DANG_LAM,
+            "xac_nhan": v["trang_thai"] == tuan_lo.BAO_XONG
+                        and tuan_lo.duoc_xac_nhan(v, user),
+        } for ds_v in gom.values() for v in ds_v},
         # phiếu "Thêm việc" trong cửa sổ nổi cần đúng dữ liệu như màn Task
         "cap_duoi": nhan_su.cap_duoi_cua(user)[0] or [],
         "loai_viec": tuan_lo.cac_loai_viec(),
@@ -335,6 +343,16 @@ def trang_task(request: Request, user: dict = Depends(lay_user),
         "ngang_cap": nhan_su.ngang_cap_bo_phan_khac(user)[0] or [],
         "ten_hien": ten_hien,
         "xoa_duoc": {v["id"]: tuan_lo.duoc_xoa(v, user)[0] for v in viec},
+        # nút hành động trong phiếu việc — hỏi LÕI, UI không tự suy
+        "lam_duoc": {v["id"]: {
+            "nhan": v["nguoi"] == user["ten"]
+                    and v["trang_thai"] in (tuan_lo.CHO_NHAN, tuan_lo.CHO_PHOI_HOP),
+            "bao_xong": v["nguoi"] == user["ten"] and v["trang_thai"] == tuan_lo.DANG_LAM,
+            "xac_nhan": v["trang_thai"] == tuan_lo.BAO_XONG
+                        and tuan_lo.duoc_xac_nhan(v, user),
+            "tra_lai": v["trang_thai"] in (tuan_lo.BAO_XONG, tuan_lo.DANG_LAM)
+                       and tuan_lo.duoc_xac_nhan(v, user),
+        } for v in viec},
         "keo_duoc": {v["id"]: [c["ma"] for c in cot
                                if tuan_lo.keo_duoc(v, truc, c["ma"], user)[0]]
                      for v in viec},

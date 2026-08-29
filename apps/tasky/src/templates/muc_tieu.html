@@ -378,6 +378,14 @@
           {{ v.checklist|selectattr('xong')|list|length }}/{{ v.checklist|length }}</span>{% endif %}
         {% if v.trao_doi %}<span class="bg im" title="{{ v.trao_doi|length }} tin">
           {{ v.trao_doi|length }} tin</span>{% endif %}
+        {# Nút hành động ngay trên thẻ (Owner 29/08) — cùng luật với phiếu bên Task #}
+        {% set q = lam_duoc.get(v.id) or {} %}
+        {% if q.nhan %}<button class="nut sm chinh" data-lam="nhan" data-viec="{{ v.id }}"
+          >Nhận việc</button>{% endif %}
+        {% if q.bao_xong %}<button class="nut sm chinh" data-lam="bao-xong" data-viec="{{ v.id }}"
+          >Đã xong</button>{% endif %}
+        {% if q.xac_nhan %}<button class="nut sm chinh" data-lam="xac-nhan" data-viec="{{ v.id }}"
+          >Nghiệm thu</button>{% endif %}
         <span class="lap"></span>
         {% if v.trang_thai == 'chua_giao' and duoc_dat %}
         <select data-gan-nguoi="{{ v.id }}" title="Giao việc này cho ai">
@@ -592,7 +600,11 @@
       sel.disabled = true;
       goi("muc-tieu/gan-nguoi", { id: sel.dataset.ganNguoi, nguoi: sel.value })
         .then(function () { location.reload(); })
-        .catch(function (e) { sel.disabled = false; alert(e.message); });
+        .catch(function (e) {            // báo tại popup, không dùng hộp thoại chặn
+          sel.disabled = false;
+          var d = sel.closest("dialog.mt-modal");
+          baoLoi(d && d.querySelector("[data-loi-goal]"), e);
+        });
     });
   });
 
@@ -630,6 +642,19 @@
       });
     });
   });
+  // Nút hành động trên thẻ việc trong popup — gọi ĐÚNG API nghiệp vụ, server kiểm lại
+  document.querySelectorAll("[data-lam]").forEach(function (b) {
+    b.addEventListener("click", function (e) {
+      e.stopPropagation();
+      goi(b.dataset.lam, { id: b.dataset.viec })
+        .then(function () { location.reload(); })
+        .catch(function (err) {          // KHÔNG dùng alert (lệ của hệ) — báo tại popup
+          var d = b.closest("dialog.mt-modal");
+          baoLoi(d && d.querySelector("[data-loi-goal]"), err);
+        });
+    });
+  });
+
   // chốt kết quả / mở lại Goal — cùng API với màn cũ, chỉ đổi chỗ đặt nút
   document.querySelectorAll("[data-chot]").forEach(function (khoi) {
     var id = khoi.dataset.chot, oLoi = khoi.querySelector("[data-loi-chot]");

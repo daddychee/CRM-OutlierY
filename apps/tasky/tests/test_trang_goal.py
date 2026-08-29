@@ -250,3 +250,31 @@ def test_duong_mo_san_popup_tu_board(_so):
     r = _c.get("/muc-tieu?mo=" + g["id"], headers=H_MGR)
     kh = r.text.split('data-goal-modal="%s"' % g["id"])[1].split(">")[0]
     assert "data-mo-san" in kh
+
+
+def test_popup_goal_co_nut_xac_nhan_xong_viec(ma, _so):
+    """Owner 29/08: người làm phải xác nhận xong việc — kể cả trong popup Goal.
+
+    Trang Goal chỉ mở cho Manager+ (nhân sự làm việc ở mục Task), nên ở đây kiểm
+    ca Manager TỰ LÀM việc của mình."""
+    g = mt.tao(MGR, "Goal A", "kq")
+    v = tuan.them_viec_giao(ma, MGR, MGR, "Việc tôi tự làm", "x", muc_tieu_id=g["id"])
+    tuan.nhan_viec(ma, v["id"], MGR)
+    hop = _c.get("/muc-tieu", headers=H_MGR).text         .split('data-goal-modal="%s"' % g["id"])[1].split("</dialog>")[0]
+    assert 'data-lam="bao-xong" data-viec="%s"' % v["id"] in hop
+    assert 'data-lam="xac-nhan"' not in hop      # chưa báo xong thì chưa nghiệm thu
+
+
+def test_popup_goal_khong_cho_bao_xong_HO_nguoi_khac(ma, _so):
+    """Không nới quyền: leader không bấm 'Đã xong' thay nhân sự."""
+    g = mt.tao(MGR, "Goal A", "kq")
+    v = tuan.them_viec_giao(ma, MGR, NV, "Việc của Hà", "x", muc_tieu_id=g["id"])
+    tuan.nhan_viec(ma, v["id"], NV)
+    hop = _c.get("/muc-tieu", headers=H_MGR).text         .split('data-goal-modal="%s"' % g["id"])[1].split("</dialog>")[0]
+    assert 'data-lam="bao-xong"' not in hop
+
+
+def test_khong_dung_alert_trinh_duyet(_so):
+    """Lệ của hệ: báo lỗi tại chỗ, không dùng hộp thoại chặn của trình duyệt."""
+    js = _c.get("/muc-tieu", headers=H_MGR).text.rsplit("<script>", 2)[1]
+    assert "alert(" not in js and "confirm(" not in js

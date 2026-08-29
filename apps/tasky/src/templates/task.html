@@ -287,8 +287,35 @@
               stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
         </div>
         <div class="phieu-noi">
-          {% set ve = '/muc-tieu?chon=' ~ g.id %}
+          {% set ve = '/task?goal=' ~ (g.id if g else '') %}
           {% if loi_viec == v.id and loi_form %}<div class="loi">{{ loi_form }}</div>{% endif %}
+
+          {# HÀNG NÚT HÀNH ĐỘNG — Owner 29/08: người làm phải xác nhận xong việc ngay
+             trong phiếu. Nút nào hiện là do LÕI quyết (lam_duoc), server vẫn kiểm lại. #}
+          {% set q = lam_duoc.get(v.id) or {} %}
+          {% if q.nhan or q.bao_xong or q.xac_nhan or q.tra_lai %}
+          <div class="hang-lam" data-viec-lam="{{ v.id }}">
+            <span class="trang-thai-hien">
+              {%- for c in v|chip %}<span class="the tt {{ c.muc }}">{{ c.chu }}</span>{% endfor %}</span>
+            <span style="flex:1"></span>
+            {% if q.nhan %}
+            <button class="nut" data-p-tu-choi>Từ chối</button>
+            <button class="nut chinh" data-p-nhan>
+              {%- if v.nguon == 'phoi_hop' %}Đồng ý phối hợp{% else %}Nhận việc{% endif %}</button>
+            {% endif %}
+            {% if q.bao_xong %}
+            <button class="nut chinh" data-p-bao-xong>
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
+                stroke-width="2.4" stroke-linecap="round"><path d="M4 12.5l5 5L20 6.5"/></svg>
+              Đã xong việc này</button>
+            {% endif %}
+            {% if q.tra_lai %}<button class="nut" data-p-tra-lai>Trả lại</button>{% endif %}
+            {% if q.xac_nhan %}
+            <button class="nut chinh" data-p-xac-nhan>Nghiệm thu</button>
+            {% endif %}
+          </div>
+          <div class="loi" data-loi-lam="{{ v.id }}" hidden></div>
+          {% endif %}
 
           {% if v.nguoi_giao == user.ten or user.level >= 5 or v.nguon == 'tu_them' %}
           <form method="post" action="/tasky/viec/sua" class="o-sua-viec">
@@ -474,6 +501,53 @@
     document.getElementById("t-luu").addEventListener("click", luu);
     enter(document.getElementById("t-ten"), luu);
   }
+
+  // Nút hành động trong phiếu việc (Owner 29/08: nhân sự phải xác nhận xong việc).
+  // Gọi ĐÚNG API nghiệp vụ đã có — server kiểm quyền lần nữa, UI chỉ ẩn/hiện nút.
+  document.querySelectorAll("[data-viec-lam]").forEach(function (hang) {
+    var id = hang.dataset.viecLam;
+    var oLoi = document.querySelector('[data-loi-lam="' + id + '"]');
+    function lam(duong, them) {
+      var d = { id: id };
+      Object.keys(them || {}).forEach(function (k) { d[k] = them[k]; });
+      goi(duong, d).then(function () { location.reload(); })
+        .catch(function (e) { baoLoi(oLoi, e); });
+    }
+    var n = hang.querySelector("[data-p-nhan]");
+    if (n) { n.addEventListener("click", function () { lam("nhan"); }); }
+    var bx = hang.querySelector("[data-p-bao-xong]");
+    if (bx) { bx.addEventListener("click", function () { lam("bao-xong"); }); }
+    var xn = hang.querySelector("[data-p-xac-nhan]");
+    if (xn) { xn.addEventListener("click", function () { lam("xac-nhan"); }); }
+    var tc = hang.querySelector("[data-p-tu-choi]");
+    if (tc) {
+      tc.addEventListener("click", function () {
+        // từ chối PHẢI có lý do (luật §9.2) — hỏi ngay tại chỗ, không dùng prompt()
+        var o = hang.querySelector("[data-ly-do]");
+        if (!o) {
+          o = document.createElement("input");
+          o.setAttribute("data-ly-do", ""); o.placeholder = "Vì sao từ chối?";
+          o.style.flexBasis = "100%"; hang.appendChild(o); o.focus();
+          tc.textContent = "Gửi từ chối"; return;
+        }
+        if (!o.value.trim()) { o.focus(); return; }
+        lam("tu-choi", { ly_do: o.value.trim() });
+      });
+    }
+    var tl = hang.querySelector("[data-p-tra-lai]");
+    if (tl) {
+      tl.addEventListener("click", function () {
+        var o = hang.querySelector("[data-ly-do-tl]");
+        if (!o) {
+          o = document.createElement("input");
+          o.setAttribute("data-ly-do-tl", ""); o.placeholder = "Trả lại vì?  (không bắt buộc)";
+          o.style.flexBasis = "100%"; hang.appendChild(o); o.focus();
+          tl.textContent = "Gửi trả lại"; return;
+        }
+        lam("tra-lai", { ly_do: o.value.trim() });
+      });
+    }
+  });
 
   // KÉO–THẢ thẻ giữa các cột. Chỉ là TIỆN ÍCH: mọi nước đi đều làm được bằng nút
   // trong phiếu, và server kiểm lại quyền lúc thả (keo_duoc ở lõi) — nên JS hỏng
