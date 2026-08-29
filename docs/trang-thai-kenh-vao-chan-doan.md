@@ -246,3 +246,65 @@ việc**: nó đỏ khi Mức 2 đổi cách đọc. Thay bằng 3 test cho lu�
 - Ba nấc còn lại của bảng Mức 2 (`shadow_ban` ưu tiên trục độ phủ; `monetized` thiếu cột
   RPM = cảnh báo thật) **CHƯA làm** — chờ Owner chốt.
 - Câu hỏi "cảnh báo khi số liệu mâu thuẫn trạng thái khai báo" vẫn treo.
+
+---
+
+## MỨC 2 (tiếp) — ba nấc còn lại: monetized · shadow_ban (29/08/2026)
+
+### `monetized` + report thiếu cột tiền = MÂU THUẪN, nói thẳng
+
+Trước: im lặng coi như "chưa bật kiếm tiền" — kết luận SAI về một kênh đang kiếm tiền.
+Nay: `canh_bao_mau_thuan` — *"Kênh khai ĐÃ bật kiếm tiền nhưng report không có cột doanh
+thu/RPM nào — xuất lại report kèm cột doanh thu, hoặc sửa lại vòng đời kênh ở General."*
+**Cảnh báo, KHÔNG tự sửa** (lệ `doi_chieu_ngay_chay`). Kênh sandbox/không khai + thiếu cột
+tiền là chuyện BÌNH THƯỜNG (10/20 report thật) → không réo.
+
+### `shadow_ban` — đọc số qua lăng kính ĐỘ PHỦ
+
+View thấp ở kênh bị bóp là **hệ quả phân phối**, không phải video dở. `cham_truc_danh_muc`
+nhận `trang_thai_kenh`, soi `impressions`:
+
+| Ca | Nhãn | Hành vi |
+|---|---|---|
+| Độ phủ TỤT (< 0.7× kênh) | `do_phu_tut` | Trục danh mục `?`; **chặn phán quyết `sua_noi_dung`** → `chua_du_du_lieu` |
+| Độ phủ bình thường | `do_phu_binh_thuong` | **Vẫn bắt bệnh thật** — shadow_ban KHÔNG là lá chắn miễn trừ |
+| Report thiếu cột impressions (10/22 report thật) | `shadow_ban_thieu_do_phu` | Giữ phán quyết cũ + ghi chú, **không đoán** |
+
+Kiểm chứng: cùng một video retention hỏng — kênh thường → `sua_noi_dung`; shadow_ban + độ
+phủ tụt → `chua_du_du_lieu`; shadow_ban + độ phủ bình thường → vẫn `sua_noi_dung`.
+
+**LƯU Ý TRUNG THỰC: chưa có kênh `shadow_ban` nào trong danh bạ** (28 kênh: 20 sandbox,
+3 hoat_dong, 2 monetized, 2 uom_mam, 1 khai_tu). Phần này làm theo nguyên tắc + test dựng
+tay, **chưa nghiệm thu được trên dữ liệu thật** — cần kiểm lại khi có kênh thật bị bóp.
+
+### Bất biến
+
+Report đủ cột tiền + không phải shadow_ban → khai vòng đời nào cũng ra kết quả **y hệt**.
+Đo trên Outland.xlsx thật: `None` / `monetized` / `hoat_dong` cho cùng một phân bố phán
+quyết. Có test ghim.
+
+### BÀI HỌC: viết nhầm CODE CHẾT, và test giả suýt che mất
+
+Bản đầu tôi đặt nhánh `mau_thuan_tien` trong `cham_truc_tien`. Điều kiện của nó
+(`not any(k in toan for k in TIEN_VARS)`) **trùng chính xác** cửa vào chế độ chỉ-số — đã
+rẽ nhánh sớm hơn trong `chan_doan_toan_bo`, nên nhánh ấy **không bao giờ chạy tới**.
+
+Hai test đầu tôi viết cho nó **xanh**, vì chúng gọi thẳng `cham_truc_tien(...)` — đúng
+loại test giả đã dính buổi sáng: xanh mà không chứng minh đường thật hoạt động. Phát hiện
+khi thử dựng dữ liệu cho UI thì gặp `KeyError: 'phan_quyet'`.
+
+Đã: gỡ code chết (kèm banner + nhánh ô Tiền + CSS ăn theo), chuyển cảnh báo sang chế độ
+chỉ-số, viết lại test **qua đường thật** (`chan_doan_toan_bo`), và **xác minh test đỏ khi
+gỡ tính năng** rồi mới tin.
+
+**Kỷ luật ghi lại: test đi qua đường thật mà người dùng đi, không gọi tắt hàm con.**
+
+**Test: 127 → 133 pass · root 235 pass.** UI kiểm Chrome headless: 0 lỗi JS, banner mâu
+thuẫn hiện đúng. Đã restart service, 4 trang 200.
+
+### Còn lại
+
+- Owner kiểm mắt.
+- `shadow_ban` chờ kênh thật để nghiệm thu.
+- Câu hỏi "cảnh báo mâu thuẫn" giờ đã làm cho ca `monetized`; các ca khác (khai `uom_mam`
+  mà report 200 video) **chưa** — chờ Owner có muốn không.

@@ -10,6 +10,9 @@
     border-radius:9px;padding:10px 14px;font-size:.84rem;color:var(--muted);line-height:1.6;
     margin-bottom:14px;background:var(--th-182233)}
   .cs-banner b{color:var(--ink)}
+  .cs-mau-thuan{border:1px solid var(--th-2b2517);border-left:3px solid var(--th-e0c070);
+    background:var(--th-3a3220);color:var(--th-e0c070);border-radius:9px;padding:10px 14px;
+    font-size:.84rem;line-height:1.6;margin-bottom:14px}
   .cs-tieu{font-size:.74rem;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);
     margin:20px 0 8px;font-weight:600}
   .cs-o{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
@@ -244,6 +247,11 @@ function veCheDoChiSo(data) {
   bn.append('; không chấm điểm hay khuyến nghị vì kênh nhỏ các chỉ số chưa đủ chính xác.');
   el.append(bn);
   if (data.canh_bao_baseline) el.append(_el('div', 'canh-bao', '⚠️ ' + data.canh_bao_baseline));
+  // MÂU THUẪN vòng đời ↔ dữ liệu: khai monetized mà report không có cột tiền (29/08).
+  // Cảnh báo để người dùng đi sửa, KHÔNG tự sửa (lệ doi_chieu_ngay_chay).
+  if (data.canh_bao_mau_thuan) {
+    el.append(_el('div', 'cs-mau-thuan', '⚠ ' + data.canh_bao_mau_thuan));
+  }
 
   el.append(_el('h3', 'cs-tieu', 'Chỉ số kênh (trung vị ' + (data.so_video || 0) + ' video)'));
   const oCS = _el('div', 'cs-o');

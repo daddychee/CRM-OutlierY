@@ -409,3 +409,88 @@ def test_che_do_chi_so_khong_ro_phan_quyet_ra_ngoai(tmp_path):
     for v in kq["videos"]:
         assert "phan_quyet" not in v and "the_diem" not in v and "truc" not in v
     assert "tong_quan_danh_muc" not in kq and "bao_cao_kenh" not in kq
+
+
+# ═══ Ba nấc còn lại: monetized mâu thuẫn · shadow_ban độ phủ (Owner chốt 29/08) ═══
+
+def _df_day_du(imp_v0=10000, ret_v0=12.0):
+    """Report ĐỦ cột (impressions + RPM) — v0 điều chỉnh được để dựng từng ca."""
+    import pandas as pd
+    return pd.DataFrame({
+        "Content": ["Total"] + [f"v{i}" for i in range(6)],
+        "Video title": [None] + [f"Video {i}" for i in range(6)],
+        "Impressions": [60000, imp_v0, 10000, 10500, 9800, 10200, 10100],
+        "Impressions click-through rate (%)": [4.0, 9.0, 4.0, 4.0, 4.0, 4.0, 4.0],
+        "Average percentage viewed (%)": [40.0, ret_v0, 45.0, 46.0, 44.0, 47.0, 43.0],
+        "Views": [10000, 500, 900, 950, 800, 850, 870],
+        "RPM (USD)": [2.0] * 7,
+    })
+
+
+def test_monetized_thieu_cot_tien_bao_MAU_THUAN(tmp_path):
+    """Kênh khai ĐÃ monetize mà report không có cột tiền nào = MÂU THUẪN, phải nói
+    thẳng (xuất lại report / sửa vòng đời) thay vì im lặng.
+
+    Báo qua `canh_bao_mau_thuan` của CHẾ ĐỘ CHỈ-SỐ, không phải qua trục Tiền: report
+    thiếu cột tiền đã rẽ vào chế độ chỉ-số từ trước khi chấm trục (luật Owner chốt).
+    Bản đầu tôi đặt nhánh này trong cham_truc_tien — điều kiện trùng đúng cửa vào chế
+    độ chỉ-số nên KHÔNG BAO GIỜ chạy tới; đã gỡ code chết đó."""
+    from src.diagnosis_engine import chan_doan_toan_bo
+    df = _df_day_du().drop(columns=["RPM (USD)"])
+    kq = chan_doan_toan_bo(df, trang_thai_kenh="monetized")
+    assert kq["che_do"] == "chi_so"
+    assert kq["canh_bao_mau_thuan"] and "khai ĐÃ bật kiếm tiền" in kq["canh_bao_mau_thuan"]
+
+
+def test_khong_khai_monetized_thi_khong_bao_mau_thuan(tmp_path):
+    """Mặt còn lại: kênh sandbox/không khai + report thiếu cột tiền là chuyện BÌNH
+    THƯỜNG (10/20 report thật như vậy) — không được réo cảnh báo."""
+    from src.diagnosis_engine import chan_doan_toan_bo
+    df = _df_day_du().drop(columns=["RPM (USD)"])
+    for tt in (None, "sandbox", "uom_mam"):
+        kq = chan_doan_toan_bo(df, trang_thai_kenh=tt)
+        assert kq["che_do"] == "chi_so"
+        assert kq["canh_bao_mau_thuan"] is None
+
+
+def test_shadow_ban_do_phu_tut_khong_ket_toi_noi_dung():
+    """Kênh bị bóp + độ phủ video cũng tụt → retention đo trên nhúm người xem còn
+    sót, không đại diện. Không được phán 'sửa nội dung' (chữa nhầm bệnh)."""
+    from src.diagnosis_engine import chan_doan_toan_bo
+    df = _df_day_du(imp_v0=1000)                 # độ phủ v0 TỤT
+    v0_thuong = chan_doan_toan_bo(df)["videos"][0]
+    v0_sb = chan_doan_toan_bo(df, trang_thai_kenh="shadow_ban")["videos"][0]
+    assert v0_thuong["phan_quyet"] == "sua_noi_dung"          # kênh thường: bắt bệnh
+    assert v0_sb["phan_quyet"] == "chua_du_du_lieu"           # shadow_ban: không quy kết
+    assert v0_sb["truc"]["danh_muc"]["so_lieu"]["nhan"] == "do_phu_tut"
+
+
+def test_shadow_ban_KHONG_thanh_la_chan_mien_tru():
+    """Van quan trọng: độ phủ BÌNH THƯỜNG mà retention vẫn hỏng → vẫn phải bắt bệnh.
+    shadow_ban chỉ tha khi có BẰNG CHỨNG độ phủ tụt, không tha vô điều kiện."""
+    from src.diagnosis_engine import chan_doan_toan_bo
+    df = _df_day_du(imp_v0=10000)                # độ phủ v0 BÌNH THƯỜNG
+    v0 = chan_doan_toan_bo(df, trang_thai_kenh="shadow_ban")["videos"][0]
+    assert v0["phan_quyet"] == "sua_noi_dung"
+    assert v0["truc"]["danh_muc"]["so_lieu"]["nhan"] == "do_phu_binh_thuong"
+
+
+def test_shadow_ban_thieu_cot_impressions_thi_khong_doan():
+    """10/22 report thật không có cột impressions (đo 29/08) → phải chịu được: giữ
+    phán quyết cũ + ghi chú, KHÔNG đoán bừa theo hướng nào."""
+    from src.diagnosis_engine import chan_doan_toan_bo
+    df = _df_day_du().drop(columns=["Impressions"])
+    v0 = chan_doan_toan_bo(df, trang_thai_kenh="shadow_ban")["videos"][0]
+    assert v0["phan_quyet"] == "sua_noi_dung"
+    assert v0["truc"]["danh_muc"]["so_lieu"]["nhan"] == "shadow_ban_thieu_do_phu"
+
+
+def test_vong_doi_khong_doi_ket_qua_khi_report_du_cot():
+    """BẤT BIẾN: report đủ cột tiền + kênh không phải shadow_ban → khai vòng đời nào
+    cũng ra kết quả Y HỆT. Ghim để các nấc mới không rò sang kênh bình thường."""
+    from src.diagnosis_engine import chan_doan_toan_bo
+    df = _df_day_du()
+    goc = [(v["chi_muc"], v["phan_quyet"]) for v in chan_doan_toan_bo(df)["videos"]]
+    for tt in ("hoat_dong", "monetized"):
+        kq = chan_doan_toan_bo(df, trang_thai_kenh=tt)
+        assert [(v["chi_muc"], v["phan_quyet"]) for v in kq["videos"]] == goc

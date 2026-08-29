@@ -304,6 +304,7 @@ def _chan_doan_che_do_chi_so(user: dict, ten_goc: str, noi_dung: bytes, toan_bo:
             "canh_bao_sut_sau": toan_bo.get("canh_bao_sut_sau"),
             "canh_bao_baseline": toan_bo.get("canh_bao_baseline"),
             "canh_bao_anh_xa": toan_bo.get("canh_bao_anh_xa"),
+            "canh_bao_mau_thuan": toan_bo.get("canh_bao_mau_thuan"),
             "trang_thai_kenh": toan_bo.get("trang_thai_kenh"),
             "ly_do_che_do": toan_bo.get("ly_do_che_do"),
             "canh_bao_ngay": canh_bao_ngay, "bao_cao_id": bao_cao_id}

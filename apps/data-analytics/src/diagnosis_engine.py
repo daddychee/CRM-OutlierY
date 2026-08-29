@@ -611,6 +611,9 @@ def cham_truc_tien(video: dict, bl3: dict, profile: dict | None = None) -> dict:
     # tiền nhưng video này trống). Giữ ký hiệu '?' để không vỡ tầng tổng hợp, NHƯNG gắn nhãn
     # máy-đọc 'chua_monetize' + lý do rõ để UI/tổng hợp không hiểu nhầm là cần đi tìm thêm số liệu.
     if not any(k in toan for k in TIEN_VARS):
+        # (Kênh khai 'monetized' mà report KHÔNG có cột tiền nào KHÔNG tới được đây: điều
+        # kiện đó trùng chính xác với cửa vào CHẾ ĐỘ CHỈ-SỐ, đã rẽ nhánh sớm hơn trong
+        # chan_doan_toan_bo — mâu thuẫn ấy báo bằng 'canh_bao_mau_thuan' ở chế độ đó.)
         return _trang("?", "Kênh chưa bật kiếm tiền — chưa đánh giá được trục doanh thu, "
                       "tập trung vào lượt xem và giữ chân trước.", {"nhan": "chua_monetize"})
     rpm, rpm_bl = video.get("rpm"), toan.get("rpm")
@@ -650,9 +653,15 @@ def cham_truc_tien(video: dict, bl3: dict, profile: dict | None = None) -> dict:
     return _trang(trang_thai, ly_do, so_lieu)
 
 
-def cham_truc_danh_muc(video: dict, bl3: dict) -> dict:
+def cham_truc_danh_muc(video: dict, bl3: dict, trang_thai_kenh: str | None = None) -> dict:
     """Trục DANH MỤC: video là trụ cột (gánh view) hay vãng lai? Vị trí theo view so
-    median kênh + returning_ratio so baseline (kéo khán giả quay lại hay toàn người lạ)."""
+    median kênh + returning_ratio so baseline (kéo khán giả quay lại hay toàn người lạ).
+
+    KÊNH SHADOW_BAN (Owner chốt 29/08): view thấp là hệ quả của việc BỊ BÓP PHÂN PHỐI,
+    không phải video dở. Nếu report có cột impressions thì soi ĐỘ PHỦ (impressions) để
+    tách hai ca: độ phủ tụt = bệnh phân phối (không phải lỗi nội dung/danh mục) vs độ phủ
+    bình thường mà view vẫn thấp = bệnh thật của video. Không có cột impressions → không
+    đoán, chỉ ghi chú rằng kênh đang bị bóp (van chống bịa)."""
     toan = bl3.get("toan_kenh") or {}
     views, med = video.get("views"), toan.get("views")
     rr, rr_bl = video.get("returning_ratio"), toan.get("returning_ratio")
@@ -674,6 +683,27 @@ def cham_truc_danh_muc(video: dict, bl3: dict) -> dict:
             ly_do += " — chủ yếu người xem mới (view vãng lai, ít tích lũy)"
             if trang_thai == "✓" and views < med * TY_LE_TRU_COT:
                 trang_thai = "⚠"
+
+    # SHADOW_BAN: đọc lại kết luận qua lăng kính ĐỘ PHỦ trước khi trả về.
+    if (trang_thai_kenh or "").strip() == "shadow_ban":
+        imp, imp_bl = video.get("impressions"), toan.get("impressions")
+        so_lieu["shadow_ban"] = True
+        if imp is None or imp_bl in (None, 0):
+            so_lieu["nhan"] = "shadow_ban_thieu_do_phu"
+            ly_do += (" — LƯU Ý: kênh đang bị bóp phân phối; report không có cột "
+                      "impressions nên chưa tách được 'ít view do bị bóp' và 'video dở'")
+        else:
+            so_lieu["impressions"] = imp
+            if imp < imp_bl * TY_LE_TRUC_THAP:
+                # Độ phủ tụt → view thấp là HỆ QUẢ, không kết tội danh mục/nội dung.
+                so_lieu["nhan"] = "do_phu_tut"
+                trang_thai = "?"
+                ly_do = ("Độ phủ (impressions) tụt dưới mặt bằng kênh trong khi kênh đang "
+                         "bị bóp phân phối — view thấp là HỆ QUẢ của phân phối, chưa kết "
+                         "luận được về nội dung hay danh mục video này.")
+            else:
+                so_lieu["nhan"] = "do_phu_binh_thuong"
+                ly_do += " — độ phủ vẫn bình thường dù kênh bị bóp (số của video này đọc được)"
     return _trang(trang_thai, ly_do, so_lieu)
 
 
@@ -924,7 +954,14 @@ def tong_hop_phan_quyet(noi_dung: dict, tien: dict, danh_muc: dict, cong_thuc: d
         return ra("sua_bao_bi",
                   "giữ chân ổn nhưng CTR yếu — sửa thumbnail/tiêu đề, nội dung không cần đụng.")
     # 5) Retention hỏng (giật tít hoặc lê thê) → SỬA NỘI DUNG (gốc bệnh nằm ở nội dung).
+    #    NGOẠI LỆ SHADOW_BAN (Owner chốt 29/08): kênh bị bóp phân phối + độ phủ video này
+    #    cũng tụt → KHÔNG kết tội nội dung. Video ít người thấy thì retention đo trên một
+    #    nhúm người xem còn sót, không đại diện; sửa nội dung lúc này là chữa nhầm bệnh.
     if benh in ("giat_tit", "le_the"):
+        if danh_muc.get("so_lieu", {}).get("nhan") == "do_phu_tut":
+            return ra("chua_du_du_lieu",
+                      "kênh đang bị bóp phân phối và độ phủ video này cũng tụt — chưa quy "
+                      "kết được cho nội dung, xử lý vấn đề phân phối của kênh trước.")
         return ra("sua_noi_dung",
                   "giữ chân hỏng (giật tít / lê thê) — bệnh ở nội dung, sửa cấu trúc/lời hứa.")
     # 6) Nội dung chỉ tàm tạm (⚠, KHÔNG phải 'khoe') VÀ phần lớn trục còn lại cũng hỏng → BỎ.
@@ -1802,6 +1839,15 @@ def chan_doan_toan_bo(df: pd.DataFrame, ngay_chay=None, df_chart=None, loai_kenh
             "ly_do_che_do": ("vòng đời kênh chưa bật kiếm tiền"
                              if (trang_thai_kenh or "").strip() in TRANG_THAI_CHUA_TIEN
                              else "report không có cột doanh thu/RPM"),
+            # MÂU THUẪN vòng đời ↔ dữ liệu: kênh khai ĐÃ monetize nhưng report không có
+            # cột tiền nào. Luật của Owner (thiếu cột tiền → chế độ chỉ-số) vẫn được tôn
+            # trọng; ở đây chỉ NÓI THÊM rằng có gì đó cần sửa — hoặc report xuất thiếu
+            # cột, hoặc vòng đời khai đã lạc hậu. Cảnh báo, KHÔNG tự sửa (lệ doi_chieu_ngay_chay).
+            "canh_bao_mau_thuan": (
+                "Kênh khai ĐÃ bật kiếm tiền nhưng report không có cột doanh thu/RPM nào — "
+                "xuất lại report kèm cột doanh thu để chấm được trục Tiền, hoặc sửa lại "
+                "vòng đời kênh ở General nếu kênh chưa monetize."
+                if (trang_thai_kenh or "").strip() == "monetized" else None),
         }
 
     videos = []
@@ -1809,7 +1855,7 @@ def chan_doan_toan_bo(df: pd.DataFrame, ngay_chay=None, df_chart=None, loai_kenh
         v = _sach(so.iloc[i].to_dict())
         nd = cham_truc_noi_dung(v, bl3, ndd.iloc[i], ntu.iloc[i], profile)
         ti = cham_truc_tien(v, bl3, profile)
-        dm = cham_truc_danh_muc(v, bl3)
+        dm = cham_truc_danh_muc(v, bl3, trang_thai_kenh)
         ct = cham_truc_cong_thuc(v, bl3, ndd.iloc[i], ntu.iloc[i])
         pq = tong_hop_phan_quyet(nd, ti, dm, ct)
         tieu_de = _tieu_de(i)
