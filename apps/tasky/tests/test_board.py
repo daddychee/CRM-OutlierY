@@ -386,3 +386,25 @@ def test_bao_xong_qua_API_van_chan_nguoi_ngoai(ma, _so):
                 data={"id": v["id"], "tuan_xem": ma})
     assert r.status_code in (400, 403)
     assert tuan._tim(tuan.doc_tuan(ma), v["id"])["trang_thai"] == tuan.DANG_LAM
+
+
+def test_khong_co_nut_thi_NOI_RO_dang_cho_ai(ma, _so):
+    """Owner 29/08 mở việc người khác đang làm, thấy phiếu trống nút nên tưởng
+    thiếu chức năng. Quy trình hai bước giữ nguyên — nhưng phải nói rõ chờ ai."""
+    g = mt.tao(MGR, "G", "kq")
+    v = tuan.them_viec_giao(ma, MGR, NV, "Việc A", "x", muc_tieu_id=g["id"])
+    tuan.nhan_viec(ma, v["id"], NV)
+    h_owner = {**H_MGR, "X-Remote-User": "bot", "X-Remote-Level": "5"}
+    hop = _c.get("/task?goal=" + g["id"], headers=h_owner).text \
+        .split('data-phieu="%s"' % v["id"])[1].split("</dialog>")[0]
+    assert "Đang chờ" in hop and "Đã xong việc này" in hop   # nói rõ chờ ai, chờ gì
+    assert "data-p-bao-xong" not in hop                      # nhưng KHÔNG bấm hộ được
+
+
+def test_bao_xong_roi_thi_nguoi_giao_thay_nut_nghiem_thu(ma, _so):
+    g = mt.tao(MGR, "G", "kq")
+    v = tuan.them_viec_giao(ma, MGR, NV, "Việc A", "x", muc_tieu_id=g["id"])
+    tuan.nhan_viec(ma, v["id"], NV); tuan.bao_xong(ma, v["id"], NV)
+    hop = _c.get("/task?goal=" + g["id"], headers=H_MGR).text \
+        .split('data-phieu="%s"' % v["id"])[1].split("</dialog>")[0]
+    assert "data-p-xac-nhan" in hop

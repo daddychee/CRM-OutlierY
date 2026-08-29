@@ -293,6 +293,21 @@
           {# HÀNG NÚT HÀNH ĐỘNG — Owner 29/08: người làm phải xác nhận xong việc ngay
              trong phiếu. Nút nào hiện là do LÕI quyết (lam_duoc), server vẫn kiểm lại. #}
           {% set q = lam_duoc.get(v.id) or {} %}
+          {# Không có nút nào thì phải NÓI RÕ đang chờ ai — để trống khiến người xem
+             tưởng giao diện thiếu nút (Owner 29/08). Quy trình hai bước giữ nguyên:
+             người làm bấm "Đã xong" trước, người giao mới nghiệm thu. #}
+          <div class="cho-ai">
+            {%- if v.trang_thai == 'dang_lam' %}Đang chờ <b>{{ ten_hien.get(v.nguoi, v.nguoi) }}</b>
+              bấm “Đã xong việc này”. Bạn nghiệm thu được ngay sau đó.
+            {%- elif v.trang_thai in ('cho_nhan', 'cho_phoi_hop') %}Đang chờ
+              <b>{{ ten_hien.get(v.nguoi, v.nguoi) }}</b> bấm nhận việc.
+            {%- elif v.trang_thai == 'bao_xong' %}Đã báo xong — chờ
+              <b>{{ ten_hien.get(v.nguoi_giao, v.nguoi_giao) }}</b> nghiệm thu.
+            {%- elif v.trang_thai == 'xac_nhan' %}Việc đã nghiệm thu xong.
+            {%- elif v.trang_thai == 'chua_giao' %}Chưa giao cho ai — chọn người ở thẻ việc.
+            {%- elif v.trang_thai == 'tu_choi' %}Bị từ chối — giao lại cho người khác.
+            {%- else %}Việc đã đóng.{% endif %}
+          </div>
           {% if q.nhan or q.bao_xong or q.xac_nhan or q.tra_lai %}
           <div class="hang-lam" data-viec-lam="{{ v.id }}">
             <span class="trang-thai-hien">
