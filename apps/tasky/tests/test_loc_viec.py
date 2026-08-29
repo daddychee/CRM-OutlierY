@@ -82,8 +82,9 @@ def test_bam_thong_bao_mo_dung_danh_sach_viec(ma, _so):
     tuan.them_viec_giao(ma, MGR, NV, "Còn hạn", "x", han=_han(6))
     r = _c.get("/task?can=qua_han", headers=H_MGR)
     assert "Trễ hạn rồi" in r.text and "Còn hạn" not in r.text
-    assert 'class="dai-loc"' in r.text and "quá hạn" in r.text     # nói rõ đang lọc gì
-    assert "Bỏ lọc" in r.text
+    thanh = r.text.split('<form class="quay"')[1].split("</form>")[0]
+    assert 'value="qua_han" selected' in thanh          # dropdown nói rõ đang lọc gì
+    assert "1 việc quá hạn" in thanh
 
 
 def test_thong_bao_tro_vao_board_chu_khong_phai_trang_bao_cao(ma, _so):
@@ -104,7 +105,9 @@ def test_bo_loc_thi_ve_board_day_du(ma, _so):
     tuan.them_viec_giao(ma, MGR, NV, "Còn hạn", "x", han=_han(6))
     r = _c.get("/task", headers=H_MGR)
     assert "Trễ hạn rồi" in r.text and "Còn hạn" in r.text
-    assert 'class="dai-loc"' not in r.text
+    # không lọc → dropdown về "Mọi trạng thái", không mục nào được chọn sẵn
+    khoi = r.text.split('name="can"')[1].split("</select>")[0]
+    assert "selected" not in khoi
 
 
 # ---------- ô tổng hợp cho quản lý ----------
@@ -143,3 +146,30 @@ def test_nhan_vien_khong_thay_o_tong_hop_quan(ma, _so):
             "X-Remote-Actions": "vao"}
     r = _c.get("/tasky", headers=H_NV)
     assert 'class="tk-so quan"' not in r.text
+
+
+def test_board_co_dropdown_loc_trang_thai(ma, _so):
+    """Owner 29/08: 6 bộ lọc phải chọn được ngay trên thanh công cụ, không chỉ
+    vào được từ thông báo."""
+    r = _c.get("/task", headers=H_MGR)
+    thanh = r.text.split('<form class="quay"')[1].split("</form>")[0]
+    assert 'name="can"' in thanh
+    for k in ("qua_han", "cho_xac_nhan", "chua_nhan", "gap", "bi_tu_choi", "viec_ket"):
+        assert 'value="%s"' % k in thanh, k
+
+
+def test_dropdown_giu_lua_chon_dang_loc(ma, _so):
+    tuan.them_viec_giao(ma, MGR, NV, "Trễ", "x", han=_han(-2))
+    thanh = _c.get("/task?can=qua_han", headers=H_MGR).text \
+        .split('<form class="quay"')[1].split("</form>")[0]
+    assert 'value="qua_han" selected' in thanh
+
+
+def test_doi_truc_van_giu_bo_loc(ma, _so):
+    """Bấm 'Nhóm theo' là submit cùng form — bộ lọc đang chọn không được rơi mất."""
+    tuan.them_viec_giao(ma, MGR, NV, "Trễ", "x", han=_han(-2))
+    tuan.them_viec_giao(ma, MGR, NV, "Còn hạn", "x", han=_han(5))
+    r = _c.get("/task?can=qua_han&truc=nguoi", headers=H_MGR)
+    assert "Trễ" in r.text and "Còn hạn" not in r.text
+    thanh = r.text.split('<form class="quay"')[1].split("</form>")[0]
+    assert 'value="qua_han" selected' in thanh

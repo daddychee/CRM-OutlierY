@@ -96,6 +96,16 @@
     {% endfor %}
   </select>
   {% endif %}
+  {# Bộ lọc TRẠNG THÁI (Owner 29/08) — 6 bộ lọc trước đó chỉ vào được từ thông báo,
+     giờ chọn thẳng ở đây. Giữ nguyên form thuần: chọn là submit, không cần JS. #}
+  <select name="can" onchange="this.form.submit()" title="Lọc theo tình huống cần xử lý">
+    <option value="">Mọi trạng thái</option>
+    {% for k, nhan in [('qua_han', 'Quá hạn'), ('cho_xac_nhan', 'Chờ nghiệm thu'),
+                       ('chua_nhan', 'Chưa ai nhận'), ('gap', 'Đánh dấu GẤP'),
+                       ('bi_tu_choi', 'Bị từ chối'), ('viec_ket', 'Việc kẹt')] %}
+    <option value="{{ k }}"{% if can == k %} selected{% endif %}>{{ nhan }}</option>
+    {% endfor %}
+  </select>
   <span class="nhom-theo">
     <span class="ghi">Nhóm theo</span>
     {% for t, nhan in [('trang_thai', 'Trạng thái'), ('goal', 'Goal'), ('nguoi', 'Người')] %}
@@ -104,7 +114,7 @@
     {% endfor %}
   </span>
   <span style="flex:1"></span>
-  <span class="ghi">{{ so_viec }} việc</span>
+  <span class="ghi">{{ so_viec }} việc{% if can %} {{ can_nhan }}{% endif %}</span>
 </form>
 
 
@@ -120,18 +130,6 @@
   {% for c in g.canh_bao %}<span class="the tt {{ 'cap' if c.muc_do == 'cap' else 'luu_y' }}">{{ c.chu }}</span>{% endfor %}
   <span style="flex:1"></span>
   <a class="nut" href="/muc-tieu?mo={{ g.id }}">Mở Goal</a>
-</div>
-{% endif %}
-
-{% if can %}
-{# Đang xem một BỘ LỌC (bấm từ thông báo) — nói rõ đang lọc gì và cho bỏ lọc,
-   đừng để người dùng tưởng board trống (Owner 29/08). #}
-<div class="dai-loc">
-  <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor"
-    stroke-width="1.9" stroke-linecap="round"><path d="M4 5h16l-6 7v5l-4 2v-7z"/></svg>
-  Đang lọc: <b>{{ so_viec }} việc {{ can_nhan }}</b>
-  <span style="flex:1"></span>
-  <a class="nut" href="/task{% if g %}?goal={{ g.id }}{% endif %}">Bỏ lọc</a>
 </div>
 {% endif %}
 
