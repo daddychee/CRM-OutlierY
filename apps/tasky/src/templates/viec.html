@@ -28,6 +28,42 @@
 </div>
 {% endif %}
 
+{% if th_quan %}
+{# Ô TỔNG HỢP QUÂN MÌNH (Owner 29/08): quản lý không tự làm việc nên bốn ô cá nhân
+   bên dưới luôn 0. Mỗi số ở đây BẤM ĐƯỢC — mở board đã lọc đúng danh sách đó. #}
+<div class="nhan-khoi" style="margin-bottom:8px">Bộ phận tôi quản · {{ th_quan.so_nguoi }} người</div>
+<div class="tk-so quan">
+  <div class="tk-o">
+    <div class="nhan">Việc tuần này</div>
+    <div class="to">{{ th_quan.so_viec }}<small> việc</small></div>
+    <div class="phu">của {{ th_quan.so_nguoi }} người trong tuần</div>
+  </div>
+  <div class="tk-o">
+    <div class="nhan">Đã nghiệm thu</div>
+    {% if th_quan.ti_le is none %}
+      <div class="to" style="color:var(--muted)">—</div>
+      <div class="phu">Chưa ai có việc trong tuần</div>
+    {% else %}
+      <div class="to">{{ th_quan.xong }}<small>/{{ th_quan.so_viec }}</small></div>
+      <div class="thanh"><i style="width:{{ th_quan.ti_le }}%"></i></div>
+      <div class="phu">{{ th_quan.ti_le }}% đã xác nhận</div>
+    {% endif %}
+  </div>
+  <a class="tk-o{% if th_quan.qua_han %} nong{% endif %}" href="/task?can=qua_han">
+    <div class="nhan">Quá hạn</div>
+    <div class="to">{{ th_quan.qua_han }}</div>
+    <div class="phu">{{ th_quan.gap }} việc đánh dấu GẤP · bấm để xem</div>
+  </a>
+  <a class="tk-o{% if th_quan.cho_xac_nhan %} nong{% endif %}" href="/task?can=cho_xac_nhan">
+    <div class="nhan">Chờ bạn xác nhận</div>
+    <div class="to">{{ th_quan.cho_xac_nhan }}</div>
+    <div class="phu">{{ th_quan.chua_nhan }} việc chưa ai nhận · bấm để xem</div>
+  </a>
+</div>
+
+<div class="nhan-khoi" style="margin:18px 0 8px">Việc của riêng tôi</div>
+{% endif %}
+
 <div class="tk-so">
   <div class="tk-o">
     <div class="nhan">Việc tuần này</div>

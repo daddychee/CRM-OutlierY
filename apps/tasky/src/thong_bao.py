@@ -56,19 +56,19 @@ def cua_toi(ma: str, user: dict) -> list[dict]:
     ket = [v for v in ds if v["so_lan_doi"] >= t.DOI_LA_KET
            and v["trang_thai"] in (t.CHO_NHAN, t.DANG_LAM, t.BAO_XONG)]
     if ket:
-        ra.append(_muc(CAP, f"{len(ket)} việc kẹt — đã dời từ 2 tuần trước", len(ket), "/tasky"))
+        ra.append(_muc(CAP, f"{len(ket)} việc kẹt — đã dời từ 2 tuần trước", len(ket), "/task?can=viec_ket"))
 
     song = [v for v in ds if v["trang_thai"] in (t.CHO_NHAN, t.CHO_PHOI_HOP,
                                                  t.DANG_LAM, t.BAO_XONG)]
     qua = [v for v in song if t.tinh_han(v)["chu"].startswith("Quá hạn")]
     if qua:
-        ra.append(_muc(CAP, f"{len(qua)} việc đã quá hạn", len(qua), "/tasky"))
+        ra.append(_muc(CAP, f"{len(qua)} việc đã quá hạn", len(qua), "/task?can=qua_han"))
     hom_nay = [v for v in song if t.tinh_han(v)["chu"] == "Hạn hôm nay"]
     if hom_nay:
         ra.append(_muc(CAP, f"{len(hom_nay)} việc đến hạn hôm nay", len(hom_nay), "/tasky"))
     gap = [v for v in song if v.get("gap") and v not in qua and v not in hom_nay]
     if gap:
-        ra.append(_muc(CAP, f"{len(gap)} việc được đánh dấu GẤP", len(gap), "/tasky"))
+        ra.append(_muc(CAP, f"{len(gap)} việc được đánh dấu GẤP", len(gap), "/task?can=gap"))
 
     ph = [v for v in ds if v["trang_thai"] == t.CHO_PHOI_HOP]
     if ph:
@@ -102,34 +102,34 @@ def cua_leader(ma: str, user: dict, ds_nguoi: list[dict]) -> list[dict]:
 
     cho_xn = [v for v in viec if v["trang_thai"] == t.BAO_XONG and t.duoc_xac_nhan(v, user)]
     if cho_xn:
-        ra.append(_muc(LUU_Y, f"{len(cho_xn)} việc chờ bạn xác nhận", len(cho_xn), "/bao-cao-tuan"))
+        ra.append(_muc(LUU_Y, f"{len(cho_xn)} việc chờ bạn xác nhận", len(cho_xn), "/task?can=cho_xac_nhan"))
 
     tu_choi = [v for v in viec if v["trang_thai"] == t.TU_CHOI and v.get("nguoi_giao") == user["ten"]]
     if tu_choi:
         ra.append(_muc(LUU_Y, f"{len(tu_choi)} việc bị từ chối — cần giao lại",
-                       len(tu_choi), "/bao-cao-tuan"))
+                       len(tu_choi), "/task?can=bi_tu_choi"))
 
     gui = t.yeu_cau_da_gui(ma, user)
     xong_ph = [v for v in gui if v["trang_thai"] == t.BAO_XONG]
     if xong_ph:
         ra.append(_muc(LUU_Y, f"{len(xong_ph)} việc phối hợp chờ bạn nghiệm thu",
-                       len(xong_ph), "/bao-cao-tuan"))
+                       len(xong_ph), "/task?can=cho_xac_nhan"))
     tu_choi_ph = [v for v in gui if v["trang_thai"] == t.TU_CHOI]
     if tu_choi_ph:
         ra.append(_muc(LUU_Y, f"{len(tu_choi_ph)} yêu cầu phối hợp bị bộ phận kia từ chối",
-                       len(tu_choi_ph), "/bao-cao-tuan"))
+                       len(tu_choi_ph), "/task?can=bi_tu_choi"))
 
     song_bp = [v for v in viec if v["trang_thai"] in (t.CHO_NHAN, t.CHO_PHOI_HOP,
                                                      t.DANG_LAM, t.BAO_XONG)]
     qua_bp = [v for v in song_bp if t.tinh_han(v)["chu"].startswith("Quá hạn")]
     if qua_bp:
         ra.append(_muc(CAP, f"{len(qua_bp)} việc của bộ phận đã quá hạn",
-                       len(qua_bp), "/bao-cao-tuan"))
+                       len(qua_bp), "/task?can=qua_han"))
 
     ket = [v for v in viec if v["so_lan_doi"] >= t.DOI_LA_KET
            and v["trang_thai"] in (t.CHO_NHAN, t.DANG_LAM, t.BAO_XONG)]
     if ket:
-        ra.append(_muc(CAP, f"{len(ket)} việc của bộ phận đang kẹt", len(ket), "/bao-cao-tuan"))
+        ra.append(_muc(CAP, f"{len(ket)} việc của bộ phận đang kẹt", len(ket), "/task?can=viec_ket"))
 
     if _cuoi_tuan(ma):
         so = t.doc_tuan(ma)["dong"]

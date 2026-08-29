@@ -1046,6 +1046,32 @@ def dung_cot(ds_viec: list[dict], truc: str, ds_mt: list[dict] | None = None,
     return cot_theo_trang_thai(ds_viec)
 
 
+# Bộ lọc "việc cần xử lý" — thông báo bấm vào là mở ĐÚNG danh sách này, thay vì
+# ném người dùng sang trang báo cáo rồi để họ tự mò (Owner 29/08).
+LOC_VIEC = ("qua_han", "cho_xac_nhan", "chua_nhan", "gap", "bi_tu_choi", "viec_ket")
+
+
+def loc_viec(ds_viec: list[dict], loc: str, user: dict | None = None,
+             hom_nay: date | None = None) -> list[dict]:
+    """Lọc theo tình huống cần hành động. Luật ở đây, UI chỉ truyền tên bộ lọc."""
+    song = [v for v in ds_viec
+            if v["trang_thai"] in (CHO_NHAN, CHO_PHOI_HOP, DANG_LAM, BAO_XONG)]
+    if loc == "qua_han":
+        return [v for v in song if tinh_han(v, hom_nay)["chu"].startswith("Quá hạn")]
+    if loc == "cho_xac_nhan":
+        return [v for v in ds_viec if v["trang_thai"] == BAO_XONG
+                and (user is None or duoc_xac_nhan(v, user))]
+    if loc == "chua_nhan":
+        return [v for v in ds_viec if v["trang_thai"] in (CHUA_GIAO, CHO_NHAN, CHO_PHOI_HOP)]
+    if loc == "gap":
+        return [v for v in song if v.get("gap")]
+    if loc == "bi_tu_choi":
+        return [v for v in ds_viec if v["trang_thai"] == TU_CHOI]
+    if loc == "viec_ket":
+        return [v for v in song if v["so_lan_doi"] >= DOI_LA_KET]
+    return ds_viec
+
+
 def keo_duoc(viec: dict, truc: str, cot_dich: str, user: dict) -> tuple[bool, str]:
     """Kéo thẻ sang cột `cot_dich` có hợp lệ không — HỎI TRƯỚC KHI KÉO để UI khóa
     sẵn, nhưng server VẪN kiểm lại lúc thả (chốt thật ở server).
@@ -1157,6 +1183,30 @@ def tong_hop(bang: list[dict]) -> dict:
             "tong_ket": sum(d["ket"] for d in bang),
             "da_dong": sum(1 for d in bang if d["da_dong"]),
             "ti_le": round(100 * tong_xong / tong_viec) if tong_viec else None}
+
+
+def tong_hop_quan(ma: str, ds_nguoi: list[dict], user: dict) -> dict:
+    """Số của QUÂN mình trong tuần — cho hàng ô tổng hợp ở màn Việc của tôi.
+
+    Quản lý mở màn đó thấy 4 ô toàn 0 vì họ không có việc cá nhân (Owner báo
+    29/08). Bốn số này nói về người mình quản, và mỗi số đều mở được ra danh
+    sách việc tương ứng (?can=) — không phải con số cụt.
+    """
+    trong = {n["ten"] for n in ds_nguoi}
+    ds = [v for v in doc_tuan(ma)["viec"] if v["nguoi"] in trong]
+    mau_so = [v for v in ds if v["trang_thai"] in TRONG_MAU_SO]
+    xong = [v for v in mau_so if v["trang_thai"] == XAC_NHAN]
+    return {
+        "so_nguoi": len(ds_nguoi),
+        "so_viec": len(mau_so),
+        "xong": len(xong),
+        # van chống bịa: không có việc nào thì KHÔNG có tỉ lệ, UI hiện "—"
+        "ti_le": round(100 * len(xong) / len(mau_so)) if mau_so else None,
+        "qua_han": len(loc_viec(ds, "qua_han")),
+        "cho_xac_nhan": len(loc_viec(ds, "cho_xac_nhan", user)),
+        "chua_nhan": len(loc_viec(ds, "chua_nhan")),
+        "gap": len(loc_viec(ds, "gap")),
+    }
 
 
 def bang_bao_cao(ma: str, ds_nguoi: list[dict]) -> list[dict]:

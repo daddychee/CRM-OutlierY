@@ -170,6 +170,11 @@ def trang_viec(request: Request, user: dict = Depends(lay_user), tuan_xem: str =
         "viec_con": {v["id"]: tuan_lo.viec_con(ma, v["id"])
                      for v in ds if v["nguon"] == "phoi_hop"},
         "tk": tuan_lo.thong_ke_nguoi(ma, user["ten"]),
+        # Hàng ô TỔNG HỢP QUÂN MÌNH — quản lý mở màn này thấy 4 ô cá nhân toàn 0
+        # (họ không tự làm việc), nên cần số về người mình quản (Owner 29/08).
+        "th_quan": (tuan_lo.tong_hop_quan(
+            ma, (nhan_su.cap_duoi_cua(user)[0] or []), user)
+            if "giao_viec" in cac_hanh_dong(x_remote_actions) else None),
         "loi_form": loi, "loi_viec": loi_viec,
         "xoa_duoc": {v["id"]: tuan_lo.duoc_xoa(v, user)[0] for v in ds},
         "trao_doi": {v["id"]: (v.get("trao_doi") or []) for v in ds},
@@ -278,7 +283,8 @@ def trang_muc_tieu(request: Request, user: dict = Depends(yeu_cau_muc_tieu),
 @app.get("/task", response_class=HTMLResponse)
 def trang_task(request: Request, user: dict = Depends(lay_user),
                x_remote_actions: str = Header(""), goal: str = "", truc: str = "",
-               ai: str = "", tuan_xem: str = "", loi: str = "", loi_viec: str = ""):
+               ai: str = "", tuan_xem: str = "", loi: str = "", loi_viec: str = "",
+               can: str = ""):
     """MỤC TASK — board kanban (Owner chốt 26/08).
 
     Cột đổi được theo TRỤC: trạng thái (khâu nào đang ùn) · goal (kiểu Trello) ·
@@ -318,6 +324,9 @@ def trang_task(request: Request, user: dict = Depends(lay_user),
     if ai:
         viec = [v for v in viec if v["nguoi"] == ai]
     viec = [v for v in viec if v["trang_thai"] != tuan_lo.DOI]   # bản mới ở tuần sau
+    # ?can=<bộ lọc> — thông báo bấm vào mở ĐÚNG danh sách việc đó (§18)
+    if can in tuan_lo.LOC_VIEC:
+        viec = tuan_lo.loc_viec(viec, can, user)
 
     # Mặc định theo VAI: nhân viên nhìn theo khâu (việc của tôi đang ở đâu);
     # quản lý xem toàn cảnh thì nhìn theo Goal (kiểu Trello).
@@ -336,6 +345,10 @@ def trang_task(request: Request, user: dict = Depends(lay_user),
         "user": user, "g": g, "ds_goal": ds_mt, "cot": cot, "truc": truc,
         "ai": "" if ai == user["ten"] and not la_quan_ly else ai,
         "la_quan_ly": la_quan_ly, "so_viec": len(viec),
+        "can": can if can in tuan_lo.LOC_VIEC else "",
+        "can_nhan": {"qua_han": "quá hạn", "cho_xac_nhan": "chờ bạn xác nhận",
+                     "chua_nhan": "chưa ai nhận", "gap": "đánh dấu GẤP",
+                     "bi_tu_choi": "bị từ chối", "viec_ket": "việc kẹt"}.get(can, ""),
         "nguoi_loc": sorted((cap_duoi or []) + [n for n in (moi_nguoi or [])
                                                 if n["ten"] == user["ten"]],
                             key=lambda n: (n.get("ho_ten") or n["ten"]).lower()),

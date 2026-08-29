@@ -123,6 +123,18 @@
 </div>
 {% endif %}
 
+{% if can %}
+{# Đang xem một BỘ LỌC (bấm từ thông báo) — nói rõ đang lọc gì và cho bỏ lọc,
+   đừng để người dùng tưởng board trống (Owner 29/08). #}
+<div class="dai-loc">
+  <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor"
+    stroke-width="1.9" stroke-linecap="round"><path d="M4 5h16l-6 7v5l-4 2v-7z"/></svg>
+  Đang lọc: <b>{{ so_viec }} việc {{ can_nhan }}</b>
+  <span style="flex:1"></span>
+  <a class="nut" href="/task{% if g %}?goal={{ g.id }}{% endif %}">Bỏ lọc</a>
+</div>
+{% endif %}
+
 {% if loi_form and not loi_viec %}<div class="loi" style="margin-bottom:12px">{{ loi_form }}</div>{% endif %}
 
 {% if g and g.trang_thai == 'dang_chay' %}

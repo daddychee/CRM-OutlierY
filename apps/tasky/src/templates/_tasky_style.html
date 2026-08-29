@@ -378,6 +378,10 @@
   dialog.phieu-viec .td{max-height:min(52vh, 420px);display:flex;flex-direction:column}
   dialog.phieu-viec ul.td-ds{overflow-y:auto;flex:1;min-height:0}
   .cho-ai{font-size:12.5px;color:var(--muted);margin-bottom:10px;line-height:1.5}
+  .dai-loc{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:12px;
+    padding:10px 14px;border-radius:11px;background:var(--tr-luu-nen);
+    color:var(--tr-luu-chu);font-size:13px}
+  .dai-loc b{color:var(--tr-luu-chu)}
   .cho-ai b{color:var(--ink)}
   /* Hàng nút hành động ở ĐẦU phiếu việc — việc cần làm gì tiếp thì thấy ngay */
   .hang-lam{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px;
@@ -446,3 +450,9 @@
   .mt-modal-chan{display:flex;align-items:center;gap:10px;margin-top:20px;padding-top:16px;
     border-top:1px solid var(--tr-the-vien)}
   /* thẻ Goal giờ mở popup, không phải link — chân thẻ có đường sang board */
+
+  /* Hàng ô tổng hợp quân mình ở màn Việc của tôi — số nào cũng bấm được để mở
+     board đã lọc, đừng để con số cụt (Owner 29/08). */
+  .tk-so.quan a.tk-o{text-decoration:none;color:inherit;transition:border-color .12s}
+  .tk-so.quan a.tk-o:hover{border-color:var(--accent)}
+  .tk-so.quan a.tk-o.nong .to{color:var(--tr-cap-chu)}
