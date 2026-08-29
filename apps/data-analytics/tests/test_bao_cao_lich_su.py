@@ -103,6 +103,11 @@ def _report_yt() -> bytes:
         "Impressions click-through rate (%)": [4.0, 9.0, 4.0, 4.0, 4.0, 4.0, 4.0],
         "Average percentage viewed (%)": [22.0, 12.0, 45.0, 46.0, 44.0, 47.0, 43.0],
         "Views": [10000, 500, 900, 950, 800, 850, 870],
+        # 29/08: thêm cột RPM = report của kênh ĐÃ monetize. Không có cột tiền thì
+        # engine vào CHẾ ĐỘ CHỈ-SỐ (Owner chốt: kênh chưa kiếm tiền → không phán
+        # quyết), mà cụm test này kiểm đúng nhánh 4 trục/phán quyết. Số cũ giữ
+        # nguyên từng giá trị nên mọi assert khác không đổi ý nghĩa.
+        "RPM (USD)": [2.0, 2.1, 1.9, 2.0, 2.2, 1.8, 2.0],
     })
     import io
     buf = io.StringIO(); df.to_csv(buf, index=False)
@@ -527,7 +532,7 @@ def test_9muc_llm_chi_goi_cho_muc_co_ket_qua(tmp_path, monkeypatch):
     b = _chan_doan_kq(c)
     bc = {m["ma"]: m for m in b["bao_cao_kenh"]}
     co = {ma for ma, m in bc.items() if m["trang_thai"] == "co_ket_qua"}
-    assert co == {"A1", "B3"}                       # report tối giản → chỉ Pareto + ma trận có KQ
+    assert co == {"A1", "B3", "C2"}   # report tối giản + có RPM → Pareto, ma trận, phễu tiền
     assert dem["n"] == len(co)                       # LLM gọi ĐÚNG số mục có kết quả
     for ma, m in bc.items():
         if m["trang_thai"] == "co_ket_qua":
@@ -590,7 +595,7 @@ def test_9muc_cache_va_xem_lai_khong_goi_llm(tmp_path, monkeypatch):
     c = _login("nv")
     bid = _chan_doan_bid(c)
     rec = bl.doc_mot_bao_cao("nv", bid)
-    assert set(rec["dien_giai_9muc"].keys()) == {"A1", "B3"}   # cache đúng mục có KQ
+    assert set(rec["dien_giai_9muc"].keys()) == {"A1", "B3", "C2"}   # cache đúng mục có KQ
     dem = _spy_muc(monkeypatch)
     r = c.get(f"/bao-cao-lich-su/{bid}")
     assert r.status_code == 200 and dem["n"] == 0             # xem lại đọc CACHE, không gọi LLM
@@ -602,8 +607,8 @@ def test_9muc_lam_moi_goi_llm_ghi_de_cache(tmp_path, monkeypatch):
     bid = _chan_doan_bid(c)
     dem = _spy_muc(monkeypatch)
     r = c.post("/chan-doan/muc-lam-moi", data={"bao_cao_id": bid})
-    assert r.status_code == 200 and set(r.json()["dien_giai_9muc"].keys()) == {"A1", "B3"}
-    assert dem["n"] == 2                             # Làm mới → gọi LLM MỚI cho 2 mục có KQ
+    assert r.status_code == 200 and set(r.json()["dien_giai_9muc"].keys()) == {"A1", "B3", "C2"}
+    assert dem["n"] == 3                             # Làm mới → gọi LLM MỚI cho 3 mục có KQ
 
 
 # ═══ Vòng đời kênh vào chẩn đoán — Mức 1 (29/08/2026) ═══
@@ -626,17 +631,54 @@ def test_trang_thai_kenh_khong_truyen_van_chay_binh_thuong(tmp_path, monkeypatch
     assert bl.doc_mot_bao_cao("nv", bid)["trang_thai_kenh"] == ""
 
 
-def test_trang_thai_kenh_KHONG_doi_ket_qua_chan_doan(tmp_path, monkeypatch):
-    """BẤT BIẾN Mức 1 — vòng đời CHƯA được engine đọc: cùng report, đổi trạng thái
-    thì phán quyết từng video PHẢI y hệt. Test này là lưới chặn: khi làm Mức 2 nó
-    sẽ đỏ, buộc người sửa đọc sổ và cập nhật có ý thức thay vì đổi lặng lẽ."""
+def test_vong_doi_chua_kiem_tien_vao_che_do_chi_so(tmp_path, monkeypatch):
+    """Owner chốt 29/08: kênh chưa bật kiếm tiền → CHỈ trình bày số, KHÔNG phán quyết.
+
+    (Thay test hồi quy 'vòng đời không đổi kết quả' của Mức 1 — Mức 1 chỉ mang trạng
+    thái sang, Mức 2 cho nó đổi CÁCH ĐỌC. Đổi có ý thức, đúng như lưới chặn cũ dự liệu.)"""
     _users(tmp_path, monkeypatch)
     c = _login("nv")
-    def _pq(tt):
-        kq = _chan_doan_kq(c, {"trang_thai_kenh": tt} if tt else {})
-        return [(v["chi_muc"], v["phan_quyet"]) for v in kq["videos"]]
-    goc = _pq("")
-    assert goc == _pq("uom_mam") == _pq("monetized") == _pq("shadow_ban")
+    for tt in ("uom_mam", "sandbox"):
+        kq = _chan_doan_kq(c, {"trang_thai_kenh": tt})
+        assert kq["che_do"] == "chi_so"
+        assert "chi_so_kenh" in kq and kq["chi_so_kenh"]
+        # KHÔNG phán quyết, KHÔNG thẻ điểm 4 trục — đây là điều Owner cắt
+        assert all("phan_quyet" not in v and "the_diem" not in v for v in kq["videos"])
+
+
+def test_vong_doi_da_kiem_tien_giu_phan_quyet(tmp_path, monkeypatch):
+    """Mặt còn lại: kênh hoat_dong/monetized + report CÓ cột tiền → nhánh 4 trục như cũ.
+    Ghim rằng chế độ chỉ-số không lan sang kênh lớn."""
+    _users(tmp_path, monkeypatch)
+    c = _login("nv")
+    for tt in ("hoat_dong", "monetized"):
+        kq = _chan_doan_kq(c, {"trang_thai_kenh": tt})
+        assert kq.get("che_do") != "chi_so"
+        assert all(v.get("phan_quyet") for v in kq["videos"])
+
+
+def test_khong_khai_vong_doi_nhung_report_thieu_cot_tien_van_vao_che_do_chi_so(
+        tmp_path, monkeypatch):
+    """Vế thứ hai của luật (Owner giữ sau khi biết 10/20 report thật thiếu cột tiền):
+    không khai vòng đời mà report không có cột doanh thu nào → vẫn chế độ chỉ-số."""
+    import io
+
+    import pandas as pd
+    _users(tmp_path, monkeypatch)
+    c = _login("nv")
+    df = pd.DataFrame({
+        "Content": ["Total"] + [f"v{i}" for i in range(6)],
+        "Video title": [None] + [f"Video {i}" for i in range(6)],
+        "Impressions click-through rate (%)": [4.0, 9.0, 4.0, 4.0, 4.0, 4.0, 4.0],
+        "Average percentage viewed (%)": [22.0, 12.0, 45.0, 46.0, 44.0, 47.0, 43.0],
+        "Views": [10000, 500, 900, 950, 800, 850, 870],
+    })                                        # KHÔNG cột tiền
+    buf = io.StringIO(); df.to_csv(buf, index=False)
+    tid = c.post("/chan-doan", files={"file": ("r.csv", buf.getvalue().encode())},
+                 data={}).json()["task_id"]
+    kq = c.get(f"/chan-doan/trang-thai/{tid}").json()["ket_qua"]
+    assert kq["che_do"] == "chi_so"
+    assert kq["ly_do_che_do"] == "report không có cột doanh thu/RPM"
 
 
 def test_trang_thai_kenh_di_kem_ket_qua_de_ui_hien(tmp_path, monkeypatch):
@@ -644,3 +686,46 @@ def test_trang_thai_kenh_di_kem_ket_qua_de_ui_hien(tmp_path, monkeypatch):
     c = _login("nv")
     assert _chan_doan_kq(c, {"trang_thai_kenh": "sandbox"})["trang_thai_kenh"] == "sandbox"
     assert _chan_doan_kq(c)["trang_thai_kenh"] is None       # rỗng → None, không bịa nấc
+
+
+def _report_khong_tien() -> bytes:
+    """Report KHÔNG cột tiền → chế độ chỉ-số."""
+    import io
+    df = pd.DataFrame({
+        "Content": ["Total"] + [f"v{i}" for i in range(6)],
+        "Video title": [None] + [f"Video {i}" for i in range(6)],
+        "Impressions click-through rate (%)": [4.0, 9.0, 4.0, 4.0, 4.0, 4.0, 4.0],
+        "Average percentage viewed (%)": [22.0, 12.0, 45.0, 46.0, 44.0, 47.0, 43.0],
+        "Views": [10000, 500, 900, 950, 800, 850, 870],
+    })
+    buf = io.StringIO(); df.to_csv(buf, index=False)
+    return buf.getvalue().encode()
+
+
+def test_che_do_chi_so_xem_lai_dung_khoi_chi_so(tmp_path, monkeypatch):
+    """Xem lại báo cáo kênh chưa kiếm tiền: trang phải DỰNG LẠI khối chỉ-số, không vỡ.
+
+    Bẫy đã lường: template gọi toan_bo.bao_cao_kenh|tojson mà chế độ chỉ-số không có
+    khóa đó → Undefined không serialize được. Test này ghim nhánh rẽ."""
+    _users(tmp_path, monkeypatch)
+    c = _login("nv")
+    tid = c.post("/chan-doan", files={"file": ("r.csv", _report_khong_tien())},
+                 data={"trang_thai_kenh": "sandbox"}).json()["task_id"]
+    kq = c.get(f"/chan-doan/trang-thai/{tid}").json()["ket_qua"]
+    assert kq["che_do"] == "chi_so" and kq["bao_cao_id"]
+    r = c.get(f"/bao-cao-lich-su/{kq['bao_cao_id']}")
+    assert r.status_code == 200
+    assert "veCheDoChiSo(" in r.text                 # dựng khối chỉ-số
+    assert "veBangVideo(" not in r.text              # KHÔNG dựng bảng phán quyết
+
+
+def test_che_do_chi_so_khong_goi_llm(tmp_path, monkeypatch):
+    """Chế độ chỉ-số KHÔNG gọi model: diễn giải chính là "gợi ý" mà Owner đã cắt —
+    và đó cũng là tiền token. Ghim để không ai nối lại đường LLM vào nhánh này."""
+    _users(tmp_path, monkeypatch)
+    dem = _spy_llm(monkeypatch)
+    c = _login("nv")
+    tid = c.post("/chan-doan", files={"file": ("r.csv", _report_khong_tien())},
+                 data={"trang_thai_kenh": "uom_mam"}).json()["task_id"]
+    assert c.get(f"/chan-doan/trang-thai/{tid}").json()["ket_qua"]["che_do"] == "chi_so"
+    assert dem["n"] == 0

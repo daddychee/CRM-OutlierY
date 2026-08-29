@@ -55,6 +55,8 @@
 
   {% if kenh %}
     <!-- Dựng lại đầy đủ từ file gốc: khối kênh (diễn giải LLM đọc cache) + tổng quan + bảng phán quyết -->
+    {# Kênh chưa bật kiếm tiền → khối CHỈ-SỐ thay bảng phán quyết (29/08) #}
+    <div id="kq-chi-so" style="display:none"></div>
     <div id="kq-kenh"></div>
     {% include "_bang_phan_quyet.html" %}
   {% else %}
@@ -115,7 +117,14 @@
 {% endblock %}
 
 {% block script %}
-{% if mot and kenh %}
+{% if mot and toan_bo and toan_bo.che_do == 'chi_so' %}
+<script>
+  // Xem lại báo cáo của kênh CHƯA BẬT KIẾM TIỀN — dựng lại khối chỉ-số từ file gốc
+  // (rẻ, không LLM, luôn theo luật MỚI NHẤT — đúng ý đồ lưu file gốc). Hàm dùng chung
+  // nằm trong _bang_phan_quyet.html nên trang chẩn đoán và trang này không drift.
+  veCheDoChiSo({{ toan_bo|tojson }});
+</script>
+{% elif mot and kenh %}
 <script>
   // Bối cảnh bấm video từ trang lịch sử: KHÔNG có file trong trình duyệt → gửi bao_cao_id,
   // route tự đọc file gốc theo RBAC + trả cache diễn giải (không gọi lại LLM).

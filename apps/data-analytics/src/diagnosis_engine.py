@@ -85,6 +85,38 @@ _TIN_HIEU_TIEN = re.compile(
     re.IGNORECASE)
 NGUONG_KHAN_GIA_THAP = 0.15  # tỷ lệ người xem quay lại < 15% = kênh đang ĐỐT (hút người lạ rồi mất)
 
+# ═══ CHẾ ĐỘ CHỈ-SỐ cho kênh CHƯA BẬT KIẾM TIỀN (Owner chốt 29/08/2026) ═══
+# "Kênh chưa monetize: CHỈ quan tâm mức tăng trưởng view / AVD / CTR. Không đưa ra so
+# sánh gợi ý nào cả — kênh nhỏ các chỉ số đang chưa chính xác."
+# Nghĩa là ở chế độ này engine KHÔNG phán quyết, KHÔNG chấm 4 trục, KHÔNG khuyến nghị:
+# chỉ TRÌNH BÀY số + xu hướng, cộng một van duy nhất là cảnh báo video sụt SÂU BẤT THƯỜNG
+# so với chính kênh (Owner giữ lại để không bỏ lọt ca hỏng nặng thật).
+# Vào chế độ khi: vòng đời uom_mam/sandbox HOẶC report thiếu hẳn cột tiền.
+TRANG_THAI_CHUA_TIEN = ("uom_mam", "sandbox")
+# Sụt sâu = dưới ngần này lần trung vị KÊNH. Đặt THẤP hơn hẳn TY_LE_TRUC_RAT_THAP (0.5) vì
+# đây không phải chấm điểm — chỉ bắt ca dị thường rõ rệt trên kênh mà số vốn đã nhiễu.
+TY_LE_SUT_SAU = 0.35
+CHI_SO_CHUA_TIEN = ("views", "avd", "ctr")   # đúng 3 chỉ số Owner nêu
+
+# CẢNH BÁO sụt sâu KHÔNG xét views — ĐO THẬT 29/08 trên 2 report thật: kênh Wheel có
+# 41/108 video dưới 0.35× trung vị view, Space 8/46. View của kênh YouTube vốn phân phối
+# lệch cực mạnh (vài video trúng gánh phần lớn view, đuôi dài ít view) nên "view thấp hơn
+# trung vị nhiều lần" là HÌNH DẠNG BÌNH THƯỜNG, không phải bệnh — báo động theo view chỉ
+# tạo nhiễu. AVD/CTR là chỉ số CHẤT LƯỢNG mỗi lượt xem, không bị hiệu ứng đó (đo cùng lúc:
+# AVD 13/46 và 19/107, CTR 1/46 và 2/90 — mức cảnh báo hợp lý).
+CHI_SO_CANH_BAO = ("avd", "ctr")
+
+
+def che_do_chi_so(so: pd.DataFrame, trang_thai_kenh: str | None) -> bool:
+    """Kênh này có chạy CHẾ ĐỘ CHỈ-SỐ (không phán quyết) không?
+
+    True khi vòng đời là uom_mam/sandbox HOẶC report không có cột tiền nào. Hai vế
+    ĐỘC LẬP có chủ đích: trạng thái khai tay có thể lạc hậu, còn report thiếu cột tiền
+    là bằng chứng trực tiếp — thoả một trong hai là đủ (Owner chốt 29/08)."""
+    if (trang_thai_kenh or "").strip() in TRANG_THAI_CHUA_TIEN:
+        return True
+    return not _da_monetize(so)
+
 # ═══ Giai đoạn 4 — TẬP PHÁN QUYẾT HỮU HẠN (methodology mục 5: 4 trục vào, 1 trong 7 ra) ═══
 # ĐÂY là cơ chế chống "cỗ máy đẻ luật": engine KHÔNG được sinh phán quyết ngoài tập này.
 # Số phán quyết ít + mỗi cái neo vào MỘT hành động cụ thể.
@@ -971,7 +1003,9 @@ def tinh_tuong_quan(so: pd.DataFrame) -> list[dict]:
 
 NGUONG_MAU_THANG = 3     # ít nhất N video/tháng thì trung vị tháng đó mới đáng tin
 SO_THANG_TOI_THIEU = 3   # cần >= N điểm-tháng đủ mẫu mới dám nói "xu hướng"
-BIEN_XU_HUONG = ("retention", "duration_min", "rpm")
+# 29/08: thêm views/avd/ctr — chế độ chỉ-số cần ĐÚNG 3 biến này để nói "mức tăng
+# trưởng"; retention/duration/rpm giữ nguyên cho báo cáo 9 mục đang dùng.
+BIEN_XU_HUONG = ("views", "avd", "ctr", "retention", "duration_min", "rpm")
 
 
 def xu_huong_theo_thang(df_map: pd.DataFrame) -> dict | None:
@@ -1670,12 +1704,62 @@ def _kiem_anh_xa_thieu(df_raw: pd.DataFrame, df_map: pd.DataFrame) -> list[dict]
     return ket
 
 
-def chan_doan_toan_bo(df: pd.DataFrame, ngay_chay=None, df_chart=None, loai_kenh=None) -> dict:
+def _bang_chi_so(so: pd.DataFrame, df_map: pd.DataFrame, tieu_de_theo_i) -> dict:
+    """CHẾ ĐỘ CHỈ-SỐ — trình bày số, KHÔNG phán quyết (Owner chốt 29/08).
+
+    Trả: trung vị kênh 3 chỉ số + xu hướng theo tháng đăng + danh sách video kèm số
+    (xếp view giảm dần) + cảnh báo video sụt SÂU so với chính kênh.
+    Van chống bịa giữ nguyên: chỉ số nào report không có → None, KHÔNG suy ra 0."""
+    ket_chi_so = {}
+    for bien in CHI_SO_CHUA_TIEN:
+        if bien in so.columns:
+            gt = pd.to_numeric(so[bien], errors="coerce").dropna()
+            ket_chi_so[bien] = {"trung_vi": round(float(gt.median()), 4),
+                                "so_video": int(len(gt))} if len(gt) else None
+        else:
+            ket_chi_so[bien] = None
+
+    # Cảnh báo SỤT SÂU — van duy nhất còn lại. So với trung vị KÊNH, chỉ báo ca dị
+    # thường rõ rệt; KHÔNG xếp hạng, KHÔNG khuyến nghị hành động.
+    # Chỉ xét AVD/CTR (xem CHI_SO_CANH_BAO): view lệch phân phối nên không dùng được.
+    canh_bao = []
+    for bien in CHI_SO_CANH_BAO:
+        goc = ket_chi_so.get(bien)
+        if not goc or bien not in so.columns:
+            continue
+        nguong = goc["trung_vi"] * TY_LE_SUT_SAU
+        if nguong <= 0:
+            continue
+        cot = pd.to_numeric(so[bien], errors="coerce")
+        for i in range(len(so)):
+            v = cot.iloc[i]
+            if pd.notna(v) and v < nguong:
+                canh_bao.append({"chi_muc": i, "video_title": tieu_de_theo_i(i),
+                                 "chi_so": bien, "gia_tri": round(float(v), 4),
+                                 "trung_vi_kenh": goc["trung_vi"]})
+
+    ds = []
+    for i in range(len(so)):
+        v = _sach(so.iloc[i].to_dict())
+        ds.append({"chi_muc": i, "video_title": tieu_de_theo_i(i),
+                   **{b: v.get(b) for b in CHI_SO_CHUA_TIEN}})
+    ds.sort(key=lambda r: (r.get("views") is None, -(r.get("views") or 0)))
+    return {"chi_so_kenh": ket_chi_so, "videos": ds, "canh_bao_sut_sau": canh_bao,
+            "xu_huong": {b: v for b, v in (xu_huong_theo_thang(df_map) or {}).items()
+                         if b in CHI_SO_CHUA_TIEN} or None}
+
+
+def chan_doan_toan_bo(df: pd.DataFrame, ngay_chay=None, df_chart=None, loai_kenh=None,
+                      trang_thai_kenh=None) -> dict:
     """Hàm TRANG UI GỌI: chấm 4 trục + phán quyết cho TỪNG video + bức tranh danh mục
     cấp kênh. KHÔNG gọi LLM (LLM chỉ diễn giải khi user bấm 1 video qua route riêng).
     df_chart: Chart data theo ngày (nếu có) → mục A2 đường cong tuổi thọ.
     loai_kenh: khóa loại kênh tự khai (vd 'tre_em'). Rỗng/không có profile → chạy y như
-    không có tính năng (mặc định an toàn: KHÔNG giả định loại kênh). Baseline vẫn TỰ KÊNH."""
+    không có tính năng (mặc định an toàn: KHÔNG giả định loại kênh). Baseline vẫn TỰ KÊNH.
+    trang_thai_kenh: vòng đời khai ở General. uom_mam/sandbox — hoặc report thiếu hẳn cột
+    tiền — → CHẾ ĐỘ CHỈ-SỐ: trả che_do='chi_so' (số + xu hướng + cảnh báo sụt sâu), KHÔNG
+    phán quyết, KHÔNG chấm 4 trục (Owner chốt 29/08: kênh nhỏ số chưa chính xác nên đừng
+    khuyến nghị). Kênh đã monetize + vòng đời khác → nhánh cũ, không đổi một byte."""
     _, df_video = tach_total_va_video(df)
     df_map = them_cot_phai_sinh(ap_anh_xa_cot(df_video), ngay_chay=ngay_chay)
     # AVD ≈ Retention × Duration (không có cột report ánh xạ) — tạo cột để CẢ video lẫn
@@ -1691,6 +1775,35 @@ def chan_doan_toan_bo(df: pd.DataFrame, ngay_chay=None, df_chart=None, loai_kenh
     bl3 = tinh_baseline_3_lop(so, ndd, ntu)   # tính MỘT LẦN, dùng chung mọi video
     profile = doc_content_profile(loai_kenh)  # None nếu rỗng/không có → không điều chỉnh gì
 
+    def _tieu_de(i):
+        for ten in ("video_title", "content"):
+            if ten in df_map.columns and pd.notna(df_map.iloc[i][ten]):
+                return str(df_map.iloc[i][ten])
+        return None
+
+    # ── CHẾ ĐỘ CHỈ-SỐ: kênh chưa bật kiếm tiền → TRÌNH BÀY SỐ, không phán quyết ──
+    # Owner chốt 29/08: "kênh nhỏ các chỉ số đang chưa chính xác" nên mọi so sánh /
+    # gợi ý đều bị cắt; giữ đúng một van là cảnh báo sụt sâu. Rẽ nhánh SỚM, trước khi
+    # chấm trục — để không có đường nào rò phán quyết ra ngoài.
+    if che_do_chi_so(so, trang_thai_kenh):
+        kq = _bang_chi_so(so, df_map, _tieu_de)
+        canh_bao = (f"Kênh mới có {len(so)} video — số liệu chưa đủ ổn định."
+                    if len(so) < MIN_DONG_BASELINE else None)
+        return {
+            "che_do": "chi_so",            # UI đọc cờ này để dựng bảng số thay bảng phán quyết
+            "so_video": len(so),
+            "chi_so_kenh": kq["chi_so_kenh"],
+            "videos": kq["videos"],
+            "xu_huong": kq["xu_huong"],
+            "canh_bao_sut_sau": kq["canh_bao_sut_sau"],
+            "canh_bao_baseline": canh_bao,
+            "canh_bao_anh_xa": [f"{k['ten']} (cột '{k['cot']}')" for k in canh_bao_anh_xa] or None,
+            "trang_thai_kenh": (trang_thai_kenh or "").strip() or None,
+            "ly_do_che_do": ("vòng đời kênh chưa bật kiếm tiền"
+                             if (trang_thai_kenh or "").strip() in TRANG_THAI_CHUA_TIEN
+                             else "report không có cột doanh thu/RPM"),
+        }
+
     videos = []
     for i in range(len(so)):
         v = _sach(so.iloc[i].to_dict())
@@ -1699,11 +1812,7 @@ def chan_doan_toan_bo(df: pd.DataFrame, ngay_chay=None, df_chart=None, loai_kenh
         dm = cham_truc_danh_muc(v, bl3)
         ct = cham_truc_cong_thuc(v, bl3, ndd.iloc[i], ntu.iloc[i])
         pq = tong_hop_phan_quyet(nd, ti, dm, ct)
-        tieu_de = None
-        for ten in ("video_title", "content"):
-            if ten in df_map.columns and pd.notna(df_map.iloc[i][ten]):
-                tieu_de = str(df_map.iloc[i][ten])
-                break
+        tieu_de = _tieu_de(i)
         videos.append({
             "chi_muc": i, "video_title": tieu_de, "views": v.get("views"),
             "nhom_do_dai": ndd.iloc[i], "nhom_tuoi": ntu.iloc[i],

@@ -160,3 +160,89 @@ render → không có gì để vỡ. Đã sửa: helper `_danh_ba_co_kenh()` d�
 CÓ kênh (nhớ `danh_ba._cache.clear()` vì `_nap` cache theo mtime).
 **Kỷ luật rút ra: test chống-hồi-quy phải được chứng minh là ĐỎ khi gỡ bản vá.**
 Đã làm đúng vậy — gỡ `| default({}, true)` → test đỏ; khôi phục → xanh.
+
+---
+
+## MỨC 2 — CHẾ ĐỘ CHỈ-SỐ cho kênh chưa bật kiếm tiền (29/08/2026)
+
+**Owner chốt (thay bảng đề xuất Mức 2 ở trên):**
+
+> "Đối với kênh chưa bật kiếm tiền: CHỈ cần quan tâm tới mức tăng trưởng view - AVD -
+> CTR. Không cần đưa ra so sánh gợi ý nào cả. Bởi kênh nhỏ các chỉ số đang chưa được
+> chính xác."
+
+Hai câu hỏi làm rõ, Owner chọn:
+1. **Đầu ra** = chỉ số trần + cảnh báo sụt sâu (giữ van bắt bệnh nặng thật).
+2. **Phạm vi** = `uom_mam`/`sandbox` **HOẶC** report thiếu cột tiền. Owner **giữ nguyên
+   vế thứ hai sau khi biết** 10/20 report thật không có cột tiền (đo trước khi hỏi lại).
+
+### Luật đã code
+
+`che_do_chi_so(so, trang_thai_kenh)` → True khi vòng đời `uom_mam`/`sandbox` HOẶC
+`not _da_monetize(so)`. Rẽ nhánh **SỚM** trong `chan_doan_toan_bo`, trước khi chấm trục
+— để không đường nào rò phán quyết ra ngoài. Trả `che_do='chi_so'` với `chi_so_kenh`
+(trung vị views/avd/ctr) + `videos` (số trần, xếp view giảm dần) + `xu_huong` (theo
+tháng đăng = "mức tăng trưởng") + `canh_bao_sut_sau`.
+
+**KHÔNG có ở chế độ này:** phán quyết · thẻ điểm 4 trục · khung 9 mục · tổng quan danh
+mục · **và không gọi LLM** (diễn giải chính là "gợi ý" Owner đã cắt — đỡ luôn tiền token).
+
+### Phát hiện khi đo thật: BỎ VIEW khỏi cảnh báo sụt sâu
+
+Bản đầu cảnh báo cả 3 chỉ số → **22/46 video Space bị cảnh báo**, quá nhiều. Đo trên 2
+report thật:
+
+| | views < 0.35× trung vị | avd | ctr |
+|---|---|---|---|
+| Space (46 video) | 8 | 13 | 1 |
+| Wheel (108 video) | **41** | 19 | 2 |
+
+View của kênh YouTube phân phối **lệch cực mạnh** (vài video trúng gánh phần lớn view,
+đuôi dài rất ít view) nên "view thấp hơn trung vị nhiều lần" là **hình dạng bình thường**,
+không phải bệnh. → `CHI_SO_CANH_BAO = ("avd", "ctr")`; views vẫn nằm trong bảng số vì đó
+là chỉ số Owner yêu cầu theo dõi, chỉ không dùng để báo động. Sau sửa: 14/46 và 21/109.
+Có test ghim để không ai thêm lại `views` mà chưa đọc số đo.
+
+### Nghiệm thu report THẬT
+
+| Report | Trạng thái | Kết quả |
+|---|---|---|
+| Space.xlsx (46 video) | sandbox | `chi_so` · views 511,5 · avd 6,11 · ctr 2,82% · 14 cảnh báo |
+| Wheel.xlsx (109 video) | uom_mam | `chi_so` · 21 cảnh báo |
+| Outland.xlsx | monetized | `toan_bo` — 4 trục + phán quyết **như cũ** |
+
+UI kiểm bằng **Chrome headless** trên dữ liệu thật: 3 thẻ chỉ số, 62 hàng bảng, khối
+"chưa đủ dữ liệu để nói xu hướng" hiện đúng khi chưa đủ 3 tháng, **không lỗi JS**.
+
+### Bất biến giữ + bẫy đã tránh
+
+- Kênh `hoat_dong`/`monetized` + report có cột tiền → nhánh cũ **không đổi một byte**
+  (test `test_vong_doi_da_kiem_tien_giu_phan_quyet` ghim).
+- JS dựng bằng **DOM API** (`createElement`/`textContent`), KHÔNG nối chuỗi vào
+  innerHTML — tiêu đề video là dữ liệu người dùng; đúng quy ước chống XSS ghi ở
+  `_bang_phan_quyet.html:193`. (Bản nháp đầu dùng `esc()` — hàm KHÔNG TỒN TẠI trong
+  dự án, sẽ lỗi runtime; bắt được nhờ grep trước khi chạy.)
+- Hàm `veCheDoChiSo` + CSS đặt trong `_bang_phan_quyet.html` = template CON DÙNG CHUNG
+  của cả trang chẩn đoán lẫn trang lịch sử → **không drift** (đúng lệ đã lập 20/07).
+- Template lịch sử: nhánh `che_do == 'chi_so'` đặt TRƯỚC nhánh cũ, vì `toan_bo.bao_cao_kenh`
+  không tồn tại ở chế độ này và `|tojson` trên Undefined là TypeError (đã kiểm chứng).
+- 4 chỗ gọi `chan_doan_toan_bo` đều truyền `trang_thai_kenh` → xem lại đúng chế độ lúc chạy.
+
+### Test cũ phải cập nhật (đổi hành vi có chủ đích)
+
+Report mẫu trong test không có cột tiền → rơi vào chế độ chỉ-số, làm 33 test đỏ. Sửa
+bằng cách **thêm cột RPM** vào report mẫu (mô phỏng kênh đã monetize) — giữ nguyên từng
+giá trị cũ nên assert khác không đổi nghĩa. Kéo theo: mục C2 "phễu tiền" giờ có kết quả
+→ 9 mục kỳ vọng `{A1,B3}` thành `{A1,B3,C2}`, số lời gọi LLM 2→3.
+
+Test `test_trang_thai_kenh_KHONG_doi_ket_qua_chan_doan` (lưới chặn Mức 1) đã **làm đúng
+việc**: nó đỏ khi Mức 2 đổi cách đọc. Thay bằng 3 test cho luật mới.
+
+**Test: data-analytics 120 → 127 pass · root 235 pass.**
+
+### Còn lại
+
+- Owner **kiểm mắt** trang chẩn đoán với report của kênh sandbox/uom_mam.
+- Ba nấc còn lại của bảng Mức 2 (`shadow_ban` ưu tiên trục độ phủ; `monetized` thiếu cột
+  RPM = cảnh báo thật) **CHƯA làm** — chờ Owner chốt.
+- Câu hỏi "cảnh báo khi số liệu mâu thuẫn trạng thái khai báo" vẫn treo.

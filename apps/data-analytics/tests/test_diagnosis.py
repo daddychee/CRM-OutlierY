@@ -263,6 +263,9 @@ def _report_yt_csv() -> bytes:
         "Impressions click-through rate (%)": [4.0, 9.0, 4.0, 4.0, 4.0, 4.0, 4.0],
         "Average percentage viewed (%)": [30.0, 12.0, 35.0, 33.0, 34.0, 32.0, 31.0],
         "Views": [10000, 500, 900, 950, 800, 850, 870],
+        # 29/08: cột RPM = kênh ĐÃ monetize → đi nhánh 4 trục (không có cột tiền thì
+        # engine vào chế độ chỉ-số, không còn phán quyết để test kiểm).
+        "RPM (USD)": [2.0, 2.1, 1.9, 2.0, 2.2, 1.8, 2.0],
     })
     return _csv_bytes(df)
 
@@ -360,3 +363,49 @@ def test_nap_cau_hinh_llm_xin_theo_app_va_map_env(monkeypatch):
     assert os.environ["WRITER_MODEL"] == "m-dien_giai"
     assert os.environ["CRITIC_API_KEY"] == "sk-phan_bien"
     assert os.environ["WRITER_MOCK_MODE"] == "false"
+
+
+# ═══ Chế độ chỉ-số cho kênh chưa bật kiếm tiền (Owner chốt 29/08/2026) ═══
+
+def _df_khong_tien(n=8):
+    import pandas as pd
+    return pd.DataFrame({
+        "Content": ["Total"] + [f"v{i}" for i in range(n)],
+        "Video title": [None] + [f"Video {i}" for i in range(n)],
+        "Impressions click-through rate (%)": [4.0] + [4.0] * n,
+        "Average percentage viewed (%)": [30.0] + [30.0] * n,
+        # view LỆCH MẠNH như kênh thật: 1 video trúng, đuôi dài ít view
+        "Views": [10000] + [9000, 800, 700, 650, 600, 90, 60, 40][:n],
+    })
+
+
+def test_che_do_chi_so_khong_canh_bao_theo_VIEW(tmp_path):
+    """ĐO THẬT 29/08: view của kênh YouTube lệch cực mạnh (Wheel 41/108 video dưới
+    0.35× trung vị) nên "view thấp hơn trung vị" là hình dạng BÌNH THƯỜNG, không phải
+    bệnh — cảnh báo theo view chỉ tạo nhiễu. Chỉ AVD/CTR mới được cảnh báo.
+
+    Ghim để không ai thêm 'views' vào CHI_SO_CANH_BAO mà không đọc lại số đo."""
+    from src.diagnosis_engine import chan_doan_toan_bo
+    kq = chan_doan_toan_bo(_df_khong_tien(), trang_thai_kenh="sandbox")
+    assert kq["che_do"] == "chi_so"
+    assert all(c["chi_so"] != "views" for c in kq["canh_bao_sut_sau"])
+
+
+def test_che_do_chi_so_van_trinh_bay_du_3_chi_so(tmp_path):
+    """Cảnh báo bỏ view, nhưng BẢNG SỐ vẫn phải có đủ views/AVD/CTR — đó chính là
+    3 chỉ số Owner yêu cầu theo dõi tăng trưởng."""
+    from src.diagnosis_engine import chan_doan_toan_bo
+    kq = chan_doan_toan_bo(_df_khong_tien(), trang_thai_kenh="uom_mam")
+    assert set(kq["chi_so_kenh"]) == {"views", "avd", "ctr"}
+    assert kq["chi_so_kenh"]["views"]["trung_vi"] > 0
+    assert all("views" in v for v in kq["videos"])
+
+
+def test_che_do_chi_so_khong_ro_phan_quyet_ra_ngoai(tmp_path):
+    """Van chính: không đường nào rò phán quyết/thẻ điểm ra kết quả."""
+    from src.diagnosis_engine import chan_doan_toan_bo
+    kq = chan_doan_toan_bo(_df_khong_tien(), trang_thai_kenh="sandbox")
+    assert "videos" in kq and kq["videos"]
+    for v in kq["videos"]:
+        assert "phan_quyet" not in v and "the_diem" not in v and "truc" not in v
+    assert "tong_quan_danh_muc" not in kq and "bao_cao_kenh" not in kq

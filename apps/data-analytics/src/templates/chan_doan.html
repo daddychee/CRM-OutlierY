@@ -40,8 +40,8 @@
   .dpt-ghi{font-size:.8rem;color:var(--muted);margin-top:.5rem}
 
   /* Token 2 theme của trang (đổ chung vào <style> base) */
-  :root{--th-182233:#182233;--th-3a4c6b:#3a4c6b}
-  :root[data-theme="light"]{--th-182233:#f5f5f5;--th-3a4c6b:#cfcfcf}
+  :root{--th-182233:#182233;--th-3a4c6b:#3a4c6b;--th-4c8fe0:#4c8fe0}
+  :root[data-theme="light"]{--th-182233:#f5f5f5;--th-3a4c6b:#cfcfcf;--th-4c8fe0:#2c6fc4}
 {% endblock %}
 
 {% block noi_dung %}
@@ -100,6 +100,8 @@ standalone "Table data" .csv without Chart data needs both fields filled to comp
     background and saves to <a href="/bao-cao-lich-su">report history</a>.</div>
 </div>
 <div id="canh-bao-ngay"></div>
+{# Kênh CHƯA BẬT KIẾM TIỀN → khối CHỈ-SỐ thay bảng phán quyết (Owner chốt 29/08) #}
+<div id="kq-chi-so" style="display:none"></div>
 <div id="kq-kenh"></div>
 
 {% include "_bang_phan_quyet.html" %}
@@ -132,6 +134,17 @@ fetch('/chan-doan/kenh-goi-y').then(r => r.ok ? r.json() : []).then(ds => {
 
 // Render kết quả report YouTube (dùng cho cả nhánh nền lẫn nhánh trả thẳng).
 function veKetQuaYouTube(data, fileHienTai) {
+  // Kênh chưa bật kiếm tiền → khối chỉ-số, KHÔNG dựng bảng phán quyết.
+  if (data.che_do === 'chi_so') {
+    if (data.canh_bao_ngay) {
+      const cb = document.createElement('div');
+      cb.className = 'canh-bao'; cb.textContent = '⚠️ ' + data.canh_bao_ngay;
+      canhBaoNgay.appendChild(cb);
+    }
+    veCanhBaoAnhXa(data.canh_bao_anh_xa);
+    veCheDoChiSo(data);
+    return;
+  }
   // Bối cảnh cho bấm video: gửi file trực tiếp + bao_cao_id để lần sau đọc cache.
   window.VIDEO_CTX = { file: fileHienTai, bao_cao_id: data.bao_cao_id, nguoi: '' };
   if (data.canh_bao_ngay) {   // ngày nhập lệch với Chart/Totals → cảnh báo vàng

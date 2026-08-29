@@ -449,7 +449,10 @@ def _chi_tiet_tu_goc(rec: dict, moc_song=None) -> dict:
         from src.diagnosis_engine import chan_doan_toan_bo, doc_bao_cao, doc_chart_data
         df = doc_bao_cao(duong)
         df_chart = doc_chart_data(duong)
-        toan_bo = chan_doan_toan_bo(df, df_chart=df_chart, loai_kenh=rec.get("loai_kenh") or None)
+        toan_bo = chan_doan_toan_bo(df, df_chart=df_chart, loai_kenh=rec.get("loai_kenh") or None,
+                                    trang_thai_kenh=rec.get("trang_thai_kenh"))
+        # Chế độ chỉ-số (kênh chưa kiếm tiền) vẫn có 'videos' kèm views → Best&Worst
+        # theo view dựng được như thường; chỉ không có phán quyết, và pane không dùng.
         vids = [v for v in toan_bo.get("videos", []) if v.get("views") is not None]
         vids.sort(key=lambda v: v["views"], reverse=True)
         so_song = sum(1 for v in vids if moc_song and v["views"] >= moc_song) if moc_song else None

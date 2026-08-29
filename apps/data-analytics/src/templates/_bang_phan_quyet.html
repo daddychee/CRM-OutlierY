@@ -4,6 +4,33 @@
    JS thuần (không tự chạy) — mỗi trang tự nạp dữ liệu rồi gọi veTongQuan/veBangVideo/
    renderKetQua và set window.VIDEO_CTX. ── #}
 <style>
+  /* CHẾ ĐỘ CHỈ-SỐ — kênh chưa bật kiếm tiền (29/08). Trình bày số, KHÔNG màu phán
+     quyết: cố ý trung tính để không gợi ý "tốt/xấu" (Owner cắt mọi khuyến nghị). */
+  .cs-banner{border:1px solid var(--line);border-left:3px solid var(--th-4c8fe0);
+    border-radius:9px;padding:10px 14px;font-size:.84rem;color:var(--muted);line-height:1.6;
+    margin-bottom:14px;background:var(--th-182233)}
+  .cs-banner b{color:var(--ink)}
+  .cs-tieu{font-size:.74rem;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);
+    margin:20px 0 8px;font-weight:600}
+  .cs-o{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+  .cs-the{border:1px solid var(--line);border-radius:11px;padding:12px 14px;background:var(--th-182233)}
+  .cs-nhan{font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+  .cs-gt{font-size:1.5rem;font-weight:700;margin:4px 0 2px;font-variant-numeric:tabular-nums}
+  .cs-phu{font-size:.72rem;color:var(--muted)}
+  .cs-xh{display:flex;align-items:center;gap:7px;flex-wrap:wrap;padding:7px 0;font-size:.84rem}
+  .cs-xh-ten{min-width:96px;color:var(--muted);font-size:.78rem}
+  .cs-moc{font-variant-numeric:tabular-nums}
+  .cs-mui{color:var(--muted)}
+  .cs-trong{font-size:.84rem;color:var(--muted);padding:8px 0}
+  .cs-cuon{overflow-x:auto}
+  .cs-bang{width:100%;border-collapse:collapse;font-size:.84rem}
+  .cs-bang th{font-size:.68rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);
+    text-align:left;padding:6px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+  .cs-bang td{padding:7px 10px;border-bottom:1px solid var(--line)}
+  .cs-num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .cs-mo{color:var(--muted)}
+  .cs-luu{margin-top:14px;font-size:.85rem;color:var(--muted)}
+
   .cd-sec{font-size:1.05rem;margin:1.6rem 0 .4rem}
   .cd-sec .phu{font-size:.85rem;color:var(--muted);font-weight:400}
   .canh-bao{margin-top:1rem;padding:.8rem;border-radius:10px;background:var(--th-2b2517);color:var(--th-e0c070);border:1px solid var(--th-3a3220)}
@@ -124,8 +151,8 @@
   .modal-chan{display:flex;gap:.5rem;justify-content:flex-end;margin-top:1rem;border-top:1px solid var(--line);padding-top:.7rem}
 
   /* Token 2 theme (spec OUTLIERY 30/07) — TỐI là mặc định, SÁNG đè qua data-theme */
-  :root{--th-111e33:#111e33;--th-141c2b:#141c2b;--th-16263f:#16263f;--th-182233:#182233;--th-1c2a20:#1c2a20;--th-1d2733:#1d2733;--th-202b38:#202b38;--th-20301f:#20301f;--th-282235:#282235;--th-2b2517:#2b2517;--th-31425e:#31425e;--th-33201b:#33201b;--th-33503a:#33503a;--th-3a3220:#3a3220;--th-3a5a40:#3a5a40;--th-5c3a30:#5c3a30;--th-6ba4e8:#6ba4e8;--th-6d5f96:#6d5f96;--th-7b8698:#7b8698;--th-8fbe9a:#8fbe9a;--th-93b0cc:#93b0cc;--th-a9d4b0:#a9d4b0;--th-b3a3d9:#b3a3d9;--th-d97c6c:#d97c6c;--th-d9a34a:#d9a34a;--th-d9b95c:#d9b95c;--th-e0c070:#e0c070}
-  :root[data-theme="light"]{--th-111e33:#eef4fc;--th-141c2b:#f5f5f5;--th-16263f:#e8f0fb;--th-182233:#f5f5f5;--th-1c2a20:#e7f2e9;--th-1d2733:#f2f2f2;--th-202b38:#f0f0f0;--th-20301f:#e2efe4;--th-282235:#f0ebfa;--th-2b2517:#faf1dc;--th-31425e:#d9d9d9;--th-33201b:#fbeae6;--th-33503a:#b6d4bd;--th-3a3220:#e8d9a9;--th-3a5a40:#a9cdb0;--th-5c3a30:#e5b6aa;--th-6ba4e8:#2c6fc4;--th-6d5f96:#c4b8e2;--th-7b8698:#767b83;--th-8fbe9a:#2e6b44;--th-93b0cc:#3f5e80;--th-a9d4b0:#24663a;--th-b3a3d9:#5c4a99;--th-d97c6c:#b14a3c;--th-d9a34a:#96701d;--th-d9b95c:#8a6d1c;--th-e0c070:#8a6d1c}
+  :root{--th-4c8fe0:#4c8fe0;--th-111e33:#111e33;--th-141c2b:#141c2b;--th-16263f:#16263f;--th-182233:#182233;--th-1c2a20:#1c2a20;--th-1d2733:#1d2733;--th-202b38:#202b38;--th-20301f:#20301f;--th-282235:#282235;--th-2b2517:#2b2517;--th-31425e:#31425e;--th-33201b:#33201b;--th-33503a:#33503a;--th-3a3220:#3a3220;--th-3a5a40:#3a5a40;--th-5c3a30:#5c3a30;--th-6ba4e8:#6ba4e8;--th-6d5f96:#6d5f96;--th-7b8698:#7b8698;--th-8fbe9a:#8fbe9a;--th-93b0cc:#93b0cc;--th-a9d4b0:#a9d4b0;--th-b3a3d9:#b3a3d9;--th-d97c6c:#d97c6c;--th-d9a34a:#d9a34a;--th-d9b95c:#d9b95c;--th-e0c070:#e0c070}
+  :root[data-theme="light"]{--th-4c8fe0:#2c6fc4;--th-111e33:#eef4fc;--th-141c2b:#f5f5f5;--th-16263f:#e8f0fb;--th-182233:#f5f5f5;--th-1c2a20:#e7f2e9;--th-1d2733:#f2f2f2;--th-202b38:#f0f0f0;--th-20301f:#e2efe4;--th-282235:#f0ebfa;--th-2b2517:#faf1dc;--th-31425e:#d9d9d9;--th-33201b:#fbeae6;--th-33503a:#b6d4bd;--th-3a3220:#e8d9a9;--th-3a5a40:#a9cdb0;--th-5c3a30:#e5b6aa;--th-6ba4e8:#2c6fc4;--th-6d5f96:#c4b8e2;--th-7b8698:#767b83;--th-8fbe9a:#2e6b44;--th-93b0cc:#3f5e80;--th-a9d4b0:#24663a;--th-b3a3d9:#5c4a99;--th-d97c6c:#b14a3c;--th-d9a34a:#96701d;--th-d9b95c:#8a6d1c;--th-e0c070:#8a6d1c}
 </style>
 
 <div id="loai-kenh-banner" class="loai-kenh-banner" style="display:none"></div>
@@ -186,6 +213,117 @@
 
 <script src="/static/markdown.js"></script>
 <script>
+// ═══ CHẾ ĐỘ CHỈ-SỐ — kênh chưa bật kiếm tiền (Owner chốt 29/08) ═══
+// TRÌNH BÀY SỐ, không phán quyết, không so sánh gợi ý: "kênh nhỏ các chỉ số chưa
+// chính xác". Chỉ giữ cảnh báo sụt sâu (AVD/CTR — view lệch phân phối nên không xét).
+// DỰNG BẰNG DOM API: tiêu đề video là dữ liệu NGƯỜI DÙNG → theo quy ước chống XSS của
+// _bang_phan_quyet.html, text động không bao giờ nối vào innerHTML.
+const _NHAN_CS = { views: 'View', avd: 'AVD (phút)', ctr: 'CTR' };
+function _soCS(bien, v) {
+  if (v === null || v === undefined) return '—';
+  if (bien === 'ctr') return (v * 100).toFixed(2).replace('.', ',') + '%';
+  if (bien === 'avd') return v.toFixed(2).replace('.', ',');
+  return Math.round(v).toLocaleString('vi-VN');
+}
+function _el(tag, cls, text) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text !== undefined && text !== null) e.textContent = text;
+  return e;
+}
+function _o(bang, giaTri, cls) {           // ô <td>/<th> text thuần
+  const c = _el(bang, cls); c.textContent = giaTri; return c;
+}
+function veCheDoChiSo(data) {
+  const el = document.getElementById('kq-chi-so');
+  el.style.display = ''; el.textContent = '';
+
+  const bn = _el('div', 'cs-banner');
+  bn.append('Kênh chưa bật kiếm tiền — ' + (data.ly_do_che_do || '') + '. Trang này chỉ trình bày ');
+  bn.append(_el('b', null, 'số liệu và mức tăng trưởng'));
+  bn.append('; không chấm điểm hay khuyến nghị vì kênh nhỏ các chỉ số chưa đủ chính xác.');
+  el.append(bn);
+  if (data.canh_bao_baseline) el.append(_el('div', 'canh-bao', '⚠️ ' + data.canh_bao_baseline));
+
+  el.append(_el('h3', 'cs-tieu', 'Chỉ số kênh (trung vị ' + (data.so_video || 0) + ' video)'));
+  const oCS = _el('div', 'cs-o');
+  for (const b of ['views', 'avd', 'ctr']) {
+    const c = (data.chi_so_kenh || {})[b];
+    const the = _el('div', 'cs-the');
+    the.append(_el('div', 'cs-nhan', _NHAN_CS[b]));
+    the.append(_el('div', 'cs-gt', c ? _soCS(b, c.trung_vi) : '—'));
+    the.append(_el('div', 'cs-phu', c ? c.so_video + ' video' : 'report không có cột này'));
+    oCS.append(the);
+  }
+  el.append(oCS);
+
+  // XU HƯỚNG theo tháng đăng = "mức tăng trưởng". Chưa đủ mẫu → nói thẳng, không vẽ bừa.
+  el.append(_el('h3', 'cs-tieu', 'Mức tăng trưởng theo tháng đăng'));
+  const xh = data.xu_huong;
+  if (!xh || !Object.keys(xh).length) {
+    el.append(_el('div', 'cs-trong',
+      'Chưa đủ dữ liệu để nói xu hướng (cần ít nhất 3 tháng, mỗi tháng đủ số video).'));
+  } else {
+    for (const b of Object.keys(xh)) {
+      const d = _el('div', 'cs-xh');
+      d.append(_el('span', 'cs-xh-ten', _NHAN_CS[b] || b));
+      xh[b].forEach(function (m, k) {
+        if (k) d.append(_el('span', 'cs-mui', '→'));
+        const sp = _el('span', 'cs-moc');
+        sp.title = m.so_video + ' video';
+        sp.append(m.thang + ': ');
+        sp.append(_el('b', null, _soCS(b, m.trung_vi)));
+        d.append(sp);
+      });
+      el.append(d);
+    }
+  }
+
+  const cb = data.canh_bao_sut_sau || [];
+  if (cb.length) {
+    el.append(_el('h3', 'cs-tieu', 'Video sụt sâu so với chính kênh (' + cb.length + ')'));
+    const cuon = _el('div', 'cs-cuon'), bang = _el('table', 'cs-bang'), dau = _el('tr');
+    ['Video', 'Chỉ số', 'Giá trị', 'Trung vị kênh'].forEach(function (t, k) {
+      const th = _o('th', t); if (k >= 2) th.style.textAlign = 'right'; dau.append(th);
+    });
+    bang.append(dau);
+    for (const c of cb) {
+      const tr = _el('tr');
+      tr.append(_o('td', c.video_title || ('#' + c.chi_muc)));
+      tr.append(_o('td', _NHAN_CS[c.chi_so] || c.chi_so));
+      tr.append(_o('td', _soCS(c.chi_so, c.gia_tri), 'cs-num'));
+      tr.append(_o('td', _soCS(c.chi_so, c.trung_vi_kenh), 'cs-num cs-mo'));
+      bang.append(tr);
+    }
+    cuon.append(bang); el.append(cuon);
+  }
+
+  el.append(_el('h3', 'cs-tieu', 'Toàn bộ video (xếp theo view)'));
+  const cuon2 = _el('div', 'cs-cuon'), bang2 = _el('table', 'cs-bang'), dau2 = _el('tr');
+  ['Video', 'View', 'AVD (phút)', 'CTR'].forEach(function (t, k) {
+    const th = _o('th', t); if (k) th.style.textAlign = 'right'; dau2.append(th);
+  });
+  bang2.append(dau2);
+  for (const v of (data.videos || [])) {
+    const tr = _el('tr');
+    tr.append(_o('td', v.video_title || ('#' + v.chi_muc)));
+    tr.append(_o('td', _soCS('views', v.views), 'cs-num'));
+    tr.append(_o('td', _soCS('avd', v.avd), 'cs-num'));
+    tr.append(_o('td', _soCS('ctr', v.ctr), 'cs-num'));
+    bang2.append(tr);
+  }
+  cuon2.append(bang2); el.append(cuon2);
+
+  if (data.bao_cao_id) {
+    const luu = _el('div', 'cs-luu');
+    luu.append('✅ Saved to ');
+    const a = _el('a', null, 'report history');
+    a.href = '/bao-cao-lich-su/' + encodeURIComponent(data.bao_cao_id);
+    luu.append(a); luu.append('.');
+    el.append(luu);
+  }
+}
+
 // Bối cảnh gọi /chan-doan/video: trang chẩn đoán set {file}, trang lịch sử set {bao_cao_id,nguoi}.
 window.VIDEO_CTX = window.VIDEO_CTX || { file: null, bao_cao_id: null, nguoi: '' };
 

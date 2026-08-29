@@ -270,12 +270,59 @@ def _phan_giai_ky_bao_cao(df_chart, ky_bat_dau: str, ky_ket_thuc: str) -> tuple[
     return "", "", ""
 
 
+def _chan_doan_che_do_chi_so(user: dict, ten_goc: str, noi_dung: bytes, toan_bo: dict,
+                             ngay, ten_bao_cao: str, loai_kenh: str, ten_kenh: str,
+                             df_chart, ky_bat_dau: str, ky_ket_thuc: str,
+                             trang_thai_kenh: str) -> dict:
+    """Kênh CHƯA BẬT KIẾM TIỀN — trả BẢNG SỐ, không phán quyết, KHÔNG gọi LLM.
+
+    Owner chốt 29/08: "chỉ quan tâm mức tăng trưởng view/AVD/CTR, không đưa ra so sánh
+    gợi ý nào cả — kênh nhỏ các chỉ số chưa chính xác". Diễn giải LLM chính là gợi ý,
+    nên tắt hẳn ở nhánh này (đỡ luôn tiền token). Vẫn lưu lịch sử như thường để xem lại
+    và so kỳ sau."""
+    canh_bao_ngay = None
+    if ngay:
+        _, canh_bao_ngay = doi_chieu_ngay_chay(ngay, None)
+    ky_dau, ky_cuoi, nguon_ky = _phan_giai_ky_bao_cao(df_chart, ky_bat_dau, ky_ket_thuc)
+    bao_cao_id = None
+    try:
+        # kenh={} — chế độ này không có chẩn đoán cấp kênh kiểu 4 trục để tóm tắt
+        bao_cao_id = _luu_lich_su_bao_cao(user, ten_goc, noi_dung, {},
+                                          ten_bao_cao=ten_bao_cao.strip(),
+                                          loai_kenh=(loai_kenh or "").strip(),
+                                          ten_kenh=ten_kenh.strip(),
+                                          ky_bat_dau=ky_dau, ky_ket_thuc=ky_cuoi,
+                                          nguon_ky=nguon_ky,
+                                          trang_thai_kenh=(trang_thai_kenh or "").strip())
+    except Exception as loi:
+        logging.warning("Không lưu lịch sử báo cáo (chế độ chỉ-số): %s", loi)
+    return {"loai": "youtube", "che_do": "chi_so",
+            "so_video": toan_bo.get("so_video"),
+            "chi_so_kenh": toan_bo.get("chi_so_kenh"),
+            "videos": toan_bo.get("videos"),
+            "xu_huong": toan_bo.get("xu_huong"),
+            "canh_bao_sut_sau": toan_bo.get("canh_bao_sut_sau"),
+            "canh_bao_baseline": toan_bo.get("canh_bao_baseline"),
+            "canh_bao_anh_xa": toan_bo.get("canh_bao_anh_xa"),
+            "trang_thai_kenh": toan_bo.get("trang_thai_kenh"),
+            "ly_do_che_do": toan_bo.get("ly_do_che_do"),
+            "canh_bao_ngay": canh_bao_ngay, "bao_cao_id": bao_cao_id}
+
+
 def _chay_chan_doan_youtube(user: dict, ten_goc: str, noi_dung: bytes, df, df_chart,
                             ngay_chay: str, ten_bao_cao: str, loai_kenh: str = "",
                             ten_kenh: str = "", ky_bat_dau: str = "",
                             ky_ket_thuc: str = "", trang_thai_kenh: str = "") -> dict:
     ngay = ngay_chay.strip() or None
-    toan_bo = chan_doan_toan_bo(df, ngay, df_chart=df_chart, loai_kenh=loai_kenh)
+    toan_bo = chan_doan_toan_bo(df, ngay, df_chart=df_chart, loai_kenh=loai_kenh,
+                                trang_thai_kenh=trang_thai_kenh)
+    # CHẾ ĐỘ CHỈ-SỐ (kênh chưa bật kiếm tiền, Owner chốt 29/08): engine KHÔNG phán quyết
+    # nên đường LLM diễn giải + khung 9 mục cũng nghỉ — không có kết luận nào để diễn giải,
+    # và gọi model lúc này chính là "đưa gợi ý" mà Owner đã cắt. Trả thẳng bảng số.
+    if toan_bo.get("che_do") == "chi_so":
+        return _chan_doan_che_do_chi_so(user, ten_goc, noi_dung, toan_bo, ngay,
+                                        ten_bao_cao, loai_kenh, ten_kenh,
+                                        df_chart, ky_bat_dau, ky_ket_thuc, trang_thai_kenh)
     profile = toan_bo.get("profile_loai_kenh")
     lk_ctx = _boi_canh_loai_kenh(profile)
     kenh = _gan_dien_giai(chan_doan_kenh(df), user, loai_kenh_ctx=lk_ctx)
@@ -439,9 +486,15 @@ async def chan_doan_muc_lam_moi(bao_cao_id: str = Form(...), nguoi: str = Form("
     try:
         df = doc_bao_cao(duong)
         toan_bo = chan_doan_toan_bo(df, df_chart=doc_chart_data(duong),
-                                    loai_kenh=rec.get("loai_kenh"))
+                                    loai_kenh=rec.get("loai_kenh"),
+                                    trang_thai_kenh=rec.get("trang_thai_kenh"))
     except Exception as e:
         raise HTTPException(422, f"Không dựng lại được báo cáo: {e}")
+    # Kênh chưa bật kiếm tiền: không có khung 9 mục để diễn giải (chế độ chỉ-số cắt
+    # mọi khuyến nghị) → nói thẳng thay vì KeyError.
+    if toan_bo.get("che_do") == "chi_so":
+        raise HTTPException(422, "Báo cáo của kênh chưa bật kiếm tiền — chế độ chỉ-số "
+                                 "không có khung 9 mục để diễn giải.")
     lk_ctx = _boi_canh_loai_kenh(toan_bo.get("profile_loai_kenh"))
     dien_giai_9muc = _dien_giai_9_muc(toan_bo["bao_cao_kenh"], user, loai_kenh_ctx=lk_ctx,
                                       tong_quan=toan_bo.get("tong_quan_danh_muc"))
@@ -504,9 +557,15 @@ def bao_cao_xem_mot(bao_cao_id: str, request: Request,
             kenh["message"] = _message_chan_doan(kenh)
             kenh["dien_giai"] = rec.get("dien_giai_kenh")
             toan_bo = chan_doan_toan_bo(df, df_chart=doc_chart_data(duong),
-                                        loai_kenh=rec.get("loai_kenh"))
-            _gan_da_co_bao_cao(toan_bo["videos"], target, bao_cao_id)
-            _gan_dien_giai_9muc_cache(toan_bo["bao_cao_kenh"], rec.get("dien_giai_9muc"))
+                                        loai_kenh=rec.get("loai_kenh"),
+                                        trang_thai_kenh=rec.get("trang_thai_kenh"))
+            if toan_bo.get("che_do") == "chi_so":
+                # Chế độ chỉ-số: không phán quyết, không khung 9 mục — trang xem lại
+                # dựng khối chỉ-số thay bảng 4 trục (template đọc cờ che_do).
+                kenh = None
+            else:
+                _gan_da_co_bao_cao(toan_bo["videos"], target, bao_cao_id)
+                _gan_dien_giai_9muc_cache(toan_bo["bao_cao_kenh"], rec.get("dien_giai_9muc"))
         except Exception as e:
             kenh = toan_bo = None
             loi_dung_lai = f"Không dựng lại được chi tiết từ file gốc: {e}"
