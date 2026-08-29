@@ -34,6 +34,14 @@ TRANG_THAI_KENH_AN = ("khai_tu",)
 TRANG_THAI_KENH_HOP_LE = TRANG_THAI_KENH + TRANG_THAI_KENH_AN
 TRANG_THAI_NGACH = ("khai_thac", "mo_rong", "duy_tri", "nghi")
 
+# Nhãn hiển thị vòng đời — MỘT nguồn dùng chung (29/08/2026). Trước đó khai cứng
+# trong nen_channels.html; Data Analytics cần đúng bộ nhãn này để badge không drift
+# giữa hai app. Template gateway đọc qua biến, không tự khai lại.
+NHAN_TRANG_THAI_KENH = {
+    "uom_mam": "Incubating", "sandbox": "Testing", "hoat_dong": "Traction",
+    "monetized": "Monetized", "shadow_ban": "Shadowbanned", "khai_tu": "Retired",
+}
+
 # Tương thích cột khóa thời CSV → app_slug (caller cũ truyền cột cũ vẫn chạy).
 _COT_CU_SANG_SLUG = {
     "seo_profile": "seo-optimize",

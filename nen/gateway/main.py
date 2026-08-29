@@ -1742,6 +1742,7 @@ def _render_channels(request, user, bao="", loi=""):
         # stepper chỉ 5 nấc; bộ lọc thêm nấc ẩn để còn tìm lại kênh đã Retire
         "tt_kenh_loc": danh_ba.TRANG_THAI_KENH_HOP_LE,
         "tt_an": danh_ba.TRANG_THAI_KENH_AN,
+        "nhan_tt_kenh": danh_ba.NHAN_TRANG_THAI_KENH,
         "ten_ngach": {n["ma"]: n["ten_chuan"] for n in ngach},
         "ten_tt": {m["ma"]: m["ten_chuan"] for m in tt},
         "loc_ngach": loc_ngach, "loc_tt": loc_tt, "bao": bao, "loi": loi})

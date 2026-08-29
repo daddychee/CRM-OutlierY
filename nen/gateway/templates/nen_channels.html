@@ -9,9 +9,9 @@
 {# Vòng đời Owner chốt 24/08/2026 — 5 nấc trên stepper (tt_kenh); 'khai_tu'
    (Retired) là nấc ẨN: chỉ đặt qua nút Retire, vẫn hiện ở badge + bộ lọc để
    tìm lại kênh đã gỡ. #}
-{% set nhan_vd = {'uom_mam': 'Incubating', 'sandbox': 'Testing', 'hoat_dong': 'Traction',
-                  'monetized': 'Monetized', 'shadow_ban': 'Shadowbanned',
-                  'khai_tu': 'Retired'} %}
+{# Nhãn vòng đời đọc từ danh_ba.NHAN_TRANG_THAI_KENH (29/08) — MỘT nguồn dùng
+   chung với Data Analytics, hết drift nhãn giữa hai app. #}
+{% set nhan_vd = nhan_tt_kenh %}
 {% set badge_vd = {'hoat_dong': 'ok', 'monetized': 'ok', 'sandbox': 'warn',
                    'shadow_ban': 'bad', 'khai_tu': 'bad'} %}
 {# ve_vi_tri: MỌI form POST mang vị trí đang đứng (chi tiết kênh đang mở + bộ

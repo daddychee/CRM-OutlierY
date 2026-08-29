@@ -48,6 +48,14 @@ app = FastAPI(title="Data Analytics v2")
 from nen.common.sidebar import ctx_sidebar  # noqa: E402 — cờ sidebar UI_FLOW.md mục 2
 templates = Jinja2Templates(directory=str(_APP_DIR / "src" / "templates"),
                             context_processors=[ctx_sidebar])
+# Nhãn vòng đời kênh — đọc từ danh bạ nền (29/08), MỘT nguồn dùng chung với
+# General. Hằng số tĩnh nên đặt globals thay context processor: phủ mọi template,
+# không phải sửa từng route. Danh bạ lỗi → dict rỗng, badge tự lùi về mã thô.
+try:
+    from nen.common.danh_ba import NHAN_TRANG_THAI_KENH as _NHAN_TT_KENH
+except Exception:                                        # nền lỗi không giết app
+    _NHAN_TT_KENH = {}
+templates.env.globals["nhan_tt_kenh"] = _NHAN_TT_KENH
 
 
 @app.on_event("startup")
@@ -215,7 +223,8 @@ def _gan_dien_giai_9muc_cache(bao_cao_kenh: list[dict], dg_map: dict) -> None:
 def _luu_lich_su_bao_cao(user: dict, ten_goc: str, noi_dung: bytes, kenh: dict,
                          dien_giai_9muc: dict | None = None, ten_bao_cao: str = "",
                          loai_kenh: str = "", ten_kenh: str = "",
-                         ky_bat_dau: str = "", ky_ket_thuc: str = "", nguon_ky: str = "") -> str:
+                         ky_bat_dau: str = "", ky_ket_thuc: str = "", nguon_ky: str = "",
+                         trang_thai_kenh: str = "") -> str:
     bao_cao_id = uuid.uuid4().hex[:8]
     m = kenh.get("metrics", {})
     duong_goc = luu_file_goc(bao_cao_id, ten_goc, noi_dung)
@@ -225,6 +234,10 @@ def _luu_lich_su_bao_cao(user: dict, ten_goc: str, noi_dung: bytes, kenh: dict,
         "ten_bao_cao": ten_bao_cao,
         "ten_kenh": ten_kenh,
         "loai_kenh": loai_kenh,
+        # Vòng đời LÚC CHẠY — đóng băng theo bản ghi: kênh lên nấc mới sau này
+        # KHÔNG viết lại lịch sử (cùng lệ loai_kenh). Bản ghi cũ thiếu khóa này
+        # → đọc ra None, trang lịch sử tự ẩn chip (không vỡ).
+        "trang_thai_kenh": trang_thai_kenh,
         "ky_bat_dau": ky_bat_dau, "ky_ket_thuc": ky_ket_thuc, "nguon_ky": nguon_ky,
         "duong_dan_goc": duong_goc,
         "kenh": {
@@ -260,7 +273,7 @@ def _phan_giai_ky_bao_cao(df_chart, ky_bat_dau: str, ky_ket_thuc: str) -> tuple[
 def _chay_chan_doan_youtube(user: dict, ten_goc: str, noi_dung: bytes, df, df_chart,
                             ngay_chay: str, ten_bao_cao: str, loai_kenh: str = "",
                             ten_kenh: str = "", ky_bat_dau: str = "",
-                            ky_ket_thuc: str = "") -> dict:
+                            ky_ket_thuc: str = "", trang_thai_kenh: str = "") -> dict:
     ngay = ngay_chay.strip() or None
     toan_bo = chan_doan_toan_bo(df, ngay, df_chart=df_chart, loai_kenh=loai_kenh)
     profile = toan_bo.get("profile_loai_kenh")
@@ -288,7 +301,8 @@ def _chay_chan_doan_youtube(user: dict, ten_goc: str, noi_dung: bytes, df, df_ch
                                           loai_kenh=(loai_kenh or "").strip(),
                                           ten_kenh=ten_kenh.strip(),
                                           ky_bat_dau=ky_dau, ky_ket_thuc=ky_cuoi,
-                                          nguon_ky=nguon_ky)
+                                          nguon_ky=nguon_ky,
+                                          trang_thai_kenh=(trang_thai_kenh or "").strip())
     except Exception as loi:
         logging.warning("Không lưu lịch sử báo cáo: %s", loi)
     _gan_da_co_bao_cao(videos, user["ten"], bao_cao_id)
@@ -298,16 +312,21 @@ def _chay_chan_doan_youtube(user: dict, ten_goc: str, noi_dung: bytes, df, df_ch
             "canh_bao_anh_xa": toan_bo.get("canh_bao_anh_xa"),
             "loai_kenh": toan_bo.get("loai_kenh"),
             "profile_loai_kenh": profile,
+            # Mức 1 (29/08): vòng đời mới chỉ ĐI KÈM kết quả để UI hiện — engine
+            # CHƯA đọc (đổi cách đọc số là Mức 2, cần user chốt hệ số).
+            "trang_thai_kenh": (trang_thai_kenh or "").strip() or None,
             "videos": videos,
             "canh_bao_ngay": canh_bao_ngay, "bao_cao_id": bao_cao_id}
 
 
 def _chan_doan_nen(tac_vu_id: str, user: dict, ten_goc: str, noi_dung: bytes, df, df_chart,
                    ngay_chay: str, ten_bao_cao: str, loai_kenh: str = "",
-                   ten_kenh: str = "", ky_bat_dau: str = "", ky_ket_thuc: str = "") -> None:
+                   ten_kenh: str = "", ky_bat_dau: str = "", ky_ket_thuc: str = "",
+                   trang_thai_kenh: str = "") -> None:
     try:
         kq = _chay_chan_doan_youtube(user, ten_goc, noi_dung, df, df_chart, ngay_chay,
-                                     ten_bao_cao, loai_kenh, ten_kenh, ky_bat_dau, ky_ket_thuc)
+                                     ten_bao_cao, loai_kenh, ten_kenh, ky_bat_dau,
+                                     ky_ket_thuc, trang_thai_kenh)
         _TAC_VU[tac_vu_id].update(trang_thai="xong", bao_cao_id=kq.get("bao_cao_id"), ket_qua=kq)
     except Exception as loi:
         logging.warning("Chẩn đoán nền lỗi (%s): %s", tac_vu_id, loi)
@@ -335,7 +354,7 @@ async def chan_doan_route(background_tasks: BackgroundTasks,
                           file: UploadFile = File(...), ngay_chay: str = Form(""),
                           ten_bao_cao: str = Form(""), loai_kenh: str = Form(""),
                           ten_kenh: str = Form(""), ky_bat_dau: str = Form(""),
-                          ky_ket_thuc: str = Form(""),
+                          ky_ket_thuc: str = Form(""), trang_thai_kenh: str = Form(""),
                           user: dict = Depends(yeu_cau_data_analytics)):
     ten_goc, noi_dung, df, df_chart = await _doc_report_upload(file)
     try:
@@ -349,7 +368,7 @@ async def chan_doan_route(background_tasks: BackgroundTasks,
                               "bao_cao_id": None, "loi": None, "ket_qua": None}
         background_tasks.add_task(_chan_doan_nen, tac_vu_id, user, ten_goc, noi_dung, df,
                                   df_chart, ngay_chay, ten_bao_cao, loai_kenh, ten_kenh,
-                                  ky_bat_dau, ky_ket_thuc)
+                                  ky_bat_dau, ky_ket_thuc, trang_thai_kenh)
         return {"loai": "nen", "task_id": tac_vu_id}
 
     try:

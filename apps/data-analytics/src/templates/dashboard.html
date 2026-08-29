@@ -40,6 +40,18 @@
     .nd-grid{grid-template-columns:repeat(2,1fr)}
     .nd-grid .nd-map{grid-column:1/-1;grid-row:auto}
     .nd-duoi{grid-template-columns:1fr}}
+  /* chip VÒNG ĐỜI kênh (29/08) — trạng thái khai ở General hiện trên tile + pane.
+     Màu là SEMANTIC (giai đoạn), không rebrand: traction/monetized = accent,
+     testing = warn, shadowban = danger, incubating = trung tính.
+     Token khai đủ CẶP 2 theme theo lệ 30/07 — không viết hex trần. */
+  :root{--th-d9a34a:#d9a34a;--th-3a3220:#3a3220}
+  :root[data-theme="light"]{--th-d9a34a:#96701d;--th-3a3220:#e8d9a9}
+  .tt-chip{display:inline-block;font-size:.63rem;font-weight:700;letter-spacing:.05em;
+    border:1px solid var(--th-31425e);color:var(--muted);border-radius:7px;padding:1px 8px;
+    text-transform:uppercase;white-space:nowrap}
+  .tt-chip.tt-hoat_dong,.tt-chip.tt-monetized{border-color:var(--th-4c8fe0);color:var(--th-4c8fe0)}
+  .tt-chip.tt-sandbox{border-color:var(--th-d9a34a);color:var(--th-d9a34a)}
+  .tt-chip.tt-shadow_ban{border-color:var(--th-d97c6c);color:var(--th-d97c6c)}
   /* dải TỔNG QUAN SỐ CỦA PIPELINE cuối khối */
   .nd-strip{padding:0 12px 14px}
   .nd-strip .tieu{font-size:.66rem;letter-spacing:.12em;color:var(--muted);text-transform:uppercase;
@@ -214,9 +226,13 @@
       <div id="nr-kenh">
         {% if ds_kenh %}
         <div style="display:flex;gap:8px;margin-bottom:10px">
-          <select id="nrk-kenh" style="flex:1.2;background:var(--th-182233);color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:7px 9px;font:inherit"
+          {# data-loai/data-tt: vòng đời + loại kênh ĐÃ KHAI Ở GENERAL đi kèm mỗi
+             option — JS tự điền ô Channel type, hết bắt gõ lại (29/08). #}
+          <select id="nrk-kenh" onchange="nrkDongBoKenh()" style="flex:1.2;background:var(--th-182233);color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:7px 9px;font:inherit"
                   title="Kênh sinh ở tab General — chọn từ danh bạ, không gõ tay">
-            {% for k in ds_kenh %}<option value="{{ k.ten_chuan }}" data-ma="{{ k.ma }}">{{ k.ten_chuan }}</option>{% endfor %}
+            {% for k in ds_kenh %}<option value="{{ k.ten_chuan }}" data-ma="{{ k.ma }}"
+              data-loai="{{ k.loai_kenh or '' }}" data-tt="{{ k.trang_thai or '' }}"
+              data-tt-ten="{{ nhan_tt_kenh.get(k.trang_thai, k.trang_thai or '') }}">{{ k.ten_chuan }}</option>{% endfor %}
           </select>
           <select id="nrk-loai" style="flex:1;background:var(--th-182233);color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:7px 9px;font:inherit">
             <option value="">Channel type —</option>
@@ -224,6 +240,13 @@
             <option value="narrator">Narrator</option><option value="compilation">Compilation</option>
             <option value="tutorial">Tutorial</option><option value="giai_tri">General entertainment</option>
           </select>
+        </div>
+        {# Vòng đời hiện ngay dưới ô chọn: người chạy biết đang chẩn kênh ở giai
+           đoạn nào TRƯỚC khi bấm. Mức 1 mới chỉ HIỆN — chưa đổi luật đọc số
+           (Mức 2, sổ docs/trang-thai-kenh-vao-chan-doan.md). #}
+        <div id="nrk-tt-dong" style="margin:0 0 8px;font-size:.75rem;color:var(--muted);display:none">
+          Lifecycle: <span id="nrk-tt-chip"></span>
+          <span style="color:var(--muted)">— khai ở General, chưa ảnh hưởng cách đọc số</span>
         </div>
         <input type="file" id="nrk-file" accept=".csv,.xlsx"
                style="width:100%;background:var(--th-182233);color:var(--ink);border:1px dashed var(--line);border-radius:9px;padding:10px;font:inherit;font-size:.85rem">
@@ -239,6 +262,10 @@
           <span id="nrk-status" style="font-size:.8rem;color:var(--muted)"></span>
         </div>
         <p style="font-size:.72rem;color:var(--muted);margin:.7rem 0 0">File YouTube Studio (.csv/.xlsx) xuất per-video. Kỳ chỉ cần điền khi file không có sheet Chart data. Chạy nền — xong tự mở trang kênh.</p>
+        {# Điền lần đầu theo kênh đang chọn sẵn — hàm định nghĩa ở block script
+           (chạy sau), nên hoãn tới khi DOM sẵn sàng thay vì gọi thẳng. #}
+        <script>document.addEventListener('DOMContentLoaded', function(){
+          if (typeof nrkDongBoKenh === 'function') nrkDongBoKenh(); });</script>
         {% else %}
         <p style="font-size:.85rem;color:var(--muted)">Niche này chưa có kênh trong danh bạ — tạo kênh ở <a href="/general/niches" style="color:var(--accent)">tab General</a> trước.</p>
         {% endif %}
@@ -256,6 +283,15 @@
       <a class="nd-tile" href="/niche/kenh/{{ k.ma }}" style="text-decoration:none;color:inherit">
         <div class="t">{{ k.ten_chuan }}</div>
         <div class="k">{{ k.tt_ten or k.thi_truong_ma or '' }}</div>
+        {# Vòng đời + loại kênh KHAI Ở GENERAL (29/08) — trước đây hai trường này
+           nằm im trong danh bạ, người chạy chẩn đoán không thấy. Nhãn từ
+           nhan_tt_kenh (nguồn chung); thiếu nhãn → hiện mã thô, không bịa. #}
+        {% if k.trang_thai or k.loai_kenh %}
+        <div class="s" style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+          {% if k.trang_thai %}<span class="tt-chip tt-{{ k.trang_thai }}">{{ nhan_tt_kenh.get(k.trang_thai, k.trang_thai) }}</span>{% endif %}
+          {% if k.loai_kenh %}<span style="color:var(--muted);font-size:.72rem">{{ k.loai_kenh }}</span>{% endif %}
+        </div>
+        {% endif %}
         <div class="s" style="margin-top:6px;color:var(--accent)">Mở chẩn đoán →</div>
       </a>
       {% endfor %}
@@ -272,6 +308,14 @@
     <div class="nd-band">
       <h1>{{ kp.kenh.ten_chuan }}</h1>
       <span style="color:var(--muted);font-size:.85rem">{{ kp.ten_tt }}</span>
+      {# Vòng đời SỐNG của kênh (danh bạ), khác trang lịch sử báo cáo là vòng đời
+         ĐÓNG BĂNG lúc chạy. Ở đây đọc danh bạ vì pane mô tả kênh, không mô tả
+         một lần chạy. #}
+      {% if kp.kenh.trang_thai %}
+      <span class="tt-chip tt-{{ kp.kenh.trang_thai }}"
+            title="Vòng đời khai ở General — sửa tại General › Channels">{{ nhan_tt_kenh.get(kp.kenh.trang_thai, kp.kenh.trang_thai) }}</span>
+      {% endif %}
+      {% if kp.kenh.loai_kenh %}<span style="color:var(--muted);font-size:.75rem">{{ kp.kenh.loai_kenh }}</span>{% endif %}
       {% if kp.ds_bao_cao %}
       <select onchange="location='/niche/kenh/{{ kp.kenh.ma }}?id='+this.value" aria-label="Report">
         {% for r in kp.ds_bao_cao %}
@@ -803,6 +847,22 @@ function theoDoiNiche(project){
   }, 3000);
 }
 
+// Vòng đời + loại kênh chảy TỪ DANH BẠ vào form (29/08) — hết bắt gõ lại thứ
+// General đã khai. User vẫn override Channel type được: danh bạ chưa khai loại
+// thì KHÔNG ghi đè lựa chọn tay đang có.
+function nrkDongBoKenh(){
+  var sel = document.getElementById('nrk-kenh');
+  var o = sel && sel.options[sel.selectedIndex];
+  if (!o) return;
+  var loai = o.getAttribute('data-loai') || '';
+  var lk = document.getElementById('nrk-loai');
+  if (loai) lk.value = loai;
+  var tt = o.getAttribute('data-tt') || '', ten = o.getAttribute('data-tt-ten') || tt;
+  var dong = document.getElementById('nrk-tt-dong'), chip = document.getElementById('nrk-tt-chip');
+  if (tt){ chip.textContent = ten; chip.className = 'tt-chip tt-' + tt; dong.style.display = ''; }
+  else { dong.style.display = 'none'; }
+}
+
 // ===== New report — nhánh Kênh (POST /chan-doan sẵn có, chạy nền + poll) =====
 function nrKenhChay(){
   var nut = document.getElementById('nrk-run'), st = document.getElementById('nrk-status');
@@ -815,6 +875,10 @@ function nrKenhChay(){
   fd.append('ten_kenh', sel.value);
   fd.append('ten_bao_cao', document.getElementById('nrk-ten').value);
   fd.append('loai_kenh', document.getElementById('nrk-loai').value);
+  // Vòng đời đi kèm bản ghi để lịch sử biết kênh ở giai đoạn nào LÚC CHẠY —
+  // trạng thái đổi về sau không viết lại quá khứ (khuôn loai_kenh sẵn có).
+  var oK = sel.options[sel.selectedIndex];
+  fd.append('trang_thai_kenh', (oK && oK.getAttribute('data-tt')) || '');
   fd.append('ngay_chay', document.getElementById('nrk-ngay').value);
   fd.append('ky_bat_dau', document.getElementById('nrk-tu').value);
   fd.append('ky_ket_thuc', document.getElementById('nrk-den').value);

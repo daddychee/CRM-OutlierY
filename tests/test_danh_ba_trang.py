@@ -241,3 +241,21 @@ def test_niche_thi_truong_user_chon_khong_mac_dinh(he):
         "ma": "N-LIFE-IN", "ten_chuan": "Life In", "trang_thai": "duy_tri",
         "thi_truong": ["TT-LA"]})
     assert r.status_code == 200 and "không tồn tại" in r.text
+
+
+def test_nhan_vong_doi_hien_tu_nguon_chung(he):
+    """29/08: nhãn vòng đời chuyển từ khai CỨNG trong template sang
+    danh_ba.NHAN_TRANG_THAI_KENH (dùng chung với Data Analytics). Ghim rằng biến
+    THẬT SỰ tới template — thiếu thì nhãn ra rỗng mà trang vẫn 200, test status
+    không bắt được."""
+    from nen.common import danh_ba
+    c = _login("quanly", "mk-ql-6")
+    c.post("/general/niches/create", data={"ten_chuan": "Space"})
+    c.post("/general/channels/create",
+           data={"ten_chuan": "Astro", "ngach_ma": "N-SPACE", "trang_thai": "sandbox"})
+    r = c.get("/general/channels")
+    assert r.status_code == 200
+    assert danh_ba.NHAN_TRANG_THAI_KENH["sandbox"] in r.text      # 'Testing' hiện thật
+    # bộ lọc liệt kê đủ mọi nấc (kể cả nấc ẩn Retired) bằng nhãn, không phải mã thô
+    for ma in danh_ba.TRANG_THAI_KENH_HOP_LE:
+        assert danh_ba.NHAN_TRANG_THAI_KENH[ma] in r.text

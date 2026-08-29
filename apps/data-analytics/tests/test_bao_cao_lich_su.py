@@ -604,3 +604,43 @@ def test_9muc_lam_moi_goi_llm_ghi_de_cache(tmp_path, monkeypatch):
     r = c.post("/chan-doan/muc-lam-moi", data={"bao_cao_id": bid})
     assert r.status_code == 200 and set(r.json()["dien_giai_9muc"].keys()) == {"A1", "B3"}
     assert dem["n"] == 2                             # Làm mới → gọi LLM MỚI cho 2 mục có KQ
+
+
+# ═══ Vòng đời kênh vào chẩn đoán — Mức 1 (29/08/2026) ═══
+# Sổ: docs/trang-thai-kenh-vao-chan-doan.md. Mức 1 chỉ MANG trạng thái sang +
+# hiện ra; đổi CÁCH ĐỌC SỐ là Mức 2. Test dưới ghim đúng ranh giới đó.
+
+def test_trang_thai_kenh_luu_vao_ban_ghi_khi_co(tmp_path, monkeypatch):
+    _users(tmp_path, monkeypatch)
+    c = _login("nv")
+    bid = _chan_doan_bid(c, {"ten_kenh": "Outland", "trang_thai_kenh": "monetized"})
+    assert bl.doc_mot_bao_cao("nv", bid)["trang_thai_kenh"] == "monetized"
+
+
+def test_trang_thai_kenh_khong_truyen_van_chay_binh_thuong(tmp_path, monkeypatch):
+    """API KHÔNG chặn cứng (khuôn loai_kenh/ngay_chay): thiếu vòng đời vẫn chẩn
+    đoán được, chỉ là bản ghi để rỗng."""
+    _users(tmp_path, monkeypatch)
+    c = _login("nv")
+    bid = _chan_doan_bid(c)
+    assert bl.doc_mot_bao_cao("nv", bid)["trang_thai_kenh"] == ""
+
+
+def test_trang_thai_kenh_KHONG_doi_ket_qua_chan_doan(tmp_path, monkeypatch):
+    """BẤT BIẾN Mức 1 — vòng đời CHƯA được engine đọc: cùng report, đổi trạng thái
+    thì phán quyết từng video PHẢI y hệt. Test này là lưới chặn: khi làm Mức 2 nó
+    sẽ đỏ, buộc người sửa đọc sổ và cập nhật có ý thức thay vì đổi lặng lẽ."""
+    _users(tmp_path, monkeypatch)
+    c = _login("nv")
+    def _pq(tt):
+        kq = _chan_doan_kq(c, {"trang_thai_kenh": tt} if tt else {})
+        return [(v["chi_muc"], v["phan_quyet"]) for v in kq["videos"]]
+    goc = _pq("")
+    assert goc == _pq("uom_mam") == _pq("monetized") == _pq("shadow_ban")
+
+
+def test_trang_thai_kenh_di_kem_ket_qua_de_ui_hien(tmp_path, monkeypatch):
+    _users(tmp_path, monkeypatch)
+    c = _login("nv")
+    assert _chan_doan_kq(c, {"trang_thai_kenh": "sandbox"})["trang_thai_kenh"] == "sandbox"
+    assert _chan_doan_kq(c)["trang_thai_kenh"] is None       # rỗng → None, không bịa nấc
