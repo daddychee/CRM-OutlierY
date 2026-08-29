@@ -957,3 +957,19 @@ def test_khung_ghi_lai_duong_dan_iframe_de_F5_giu_cho():
     assert "iframe.khung-app" in html and "history.replaceState" in html
     assert "contentWindow.location" in html
     assert "history.pushState" not in html,         "di trong app khong duoc de them muc lich su o khung (comment nhac pushState thi duoc)"
+
+
+def test_nut_general_khong_tro_route_nghi_huu():
+    """Nút 'General' trên sidebar của MỌI app phải trỏ /general — để gateway tự
+    đưa người dùng tới trang khu General họ có quyền.
+
+    Bug 28/08: nút của HR L3+ trỏ /general/people, mà route đó đã nghỉ hưu thành
+    redirect sang /hr từ 16/08 → Manager Nhân sự bấm General là nhảy vào HR Hub.
+    Sidebar được CHÉP sang từng app nên lỗi lan ra 7 tệp cùng lúc.
+    """
+    from pathlib import Path
+    goc = Path(__file__).resolve().parents[1]
+    sot = [str(p.relative_to(goc)) for p in goc.rglob("*.html")
+           if "node_modules" not in str(p) and '"/general/people"' in
+           p.read_text(encoding="utf-8", errors="replace")]
+    assert sot == [], "còn trỏ route đã nghỉ hưu: " + ", ".join(sot)
