@@ -123,3 +123,40 @@ ghi/xóa trên hệ thật"): `/niche/kenh` 200, chip hiện đủ 4 nấc đang
 
 **CHƯA làm (Mức 2)** — vẫn chờ user chốt 2 câu hỏi nghiệp vụ ở mục trên. Engine
 chưa đọc `trang_thai` một dòng nào; báo cáo 8 phase chưa đổi.
+
+### 29/08/2026 (tiếp) — SỰ CỐ 500 TRÊN MÁY THẬT + bản vá
+
+**Triệu chứng:** ngay sau Mức 1, `192.168.1.250:9000/app/data-analytics/niche/kenh`
+trả `Internal Server Error` — trong khi suite 118 pass và render thử trên DB thật
+đều 200.
+
+**Nguyên nhân (đo, không đoán):** tiến trình uvicorn data-analytics đang chạy khởi
+động **26/08** (`Get-Process StartTime`), còn code sửa **29/08**. Jinja
+`auto_reload=True` nạp template mới TỪ ĐĨA ngay lập tức, nhưng biến globals
+`nhan_tt_kenh` chỉ tồn tại trong code Python MỚI → template mới gọi
+`nhan_tt_kenh.get(...)` trên biến undefined → `UndefinedError` → 500 cả trang.
+Đây chính là bẫy đã ghi memory *"sửa template trên hệ đang chạy"*, lần này ở dạng
+biến-globals thay vì đổi tên trường.
+
+**Vì sao mọi phép kiểm trước đó không bắt được:** chúng đều chạy trong tiến trình
+Python MỚI (pytest / script kiểm), nơi code và template luôn cùng đời. Khoảng lệch
+code-cũ × template-mới chỉ tồn tại trên tiến trình đang chạy.
+
+**Bản vá (không chỉ chữa triệu chứng):**
+- `dashboard.html`: gom 3 chỗ gọi nhãn về macro `nhan_vong_doi(ma)` dùng
+  `nhan_tt_kenh | default({}, true)` → thiếu biến thì **lùi về mã thô, trang vẫn
+  sống**. `nen_channels.html` vá cùng kiểu.
+- Đây là hành vi BẮT BUỘC chứ không phải phòng xa: mọi lần deploy đều có khoảnh
+  khắc template mới gặp code cũ.
+- Restart service data-analytics (dừng theo **PID** từ `logs/pids`, tuyệt đối không
+  Stop-Process theo tên — sự cố 21/08). Nghiệm thu sau restart: `/niche/kenh`,
+  pane `K-ZZZ-HISTORY-CLUB`, pane `K-OUTLAND` đều 200, chip hiện đúng
+  Incubating/Traction/Monetized.
+
+**BÀI HỌC TEST (quan trọng hơn bản vá):** test ghim đầu tiên tôi viết là **TEST GIẢ
+— nó xanh cả khi đã gỡ fallback**. Lý do: `apps/data-analytics/conftest.py:30` trỏ
+`DANH_BA_DB` vào file KHÔNG TỒN TẠI → `ds_kenh` rỗng → nhánh chip không bao giờ
+render → không có gì để vỡ. Đã sửa: helper `_danh_ba_co_kenh()` dựng danh bạ tạm
+CÓ kênh (nhớ `danh_ba._cache.clear()` vì `_nap` cache theo mtime).
+**Kỷ luật rút ra: test chống-hồi-quy phải được chứng minh là ĐỎ khi gỡ bản vá.**
+Đã làm đúng vậy — gỡ `| default({}, true)` → test đỏ; khôi phục → xanh.

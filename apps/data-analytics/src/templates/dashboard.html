@@ -2,6 +2,13 @@
 {% block title %}Data Analytics — Niche{% endblock %}
 {% block topbar_ten %}Data Analytics{% endblock %}
 
+{# nhan_vong_doi: nhan hien thi cua mot nac vong doi. CO FALLBACK CO CHU DICH —
+   template moi co the gap code Python CU (Jinja auto-reload nap template tu dia
+   ngay, tien trinh uvicorn thi giu code cu toi luc restart). Thieu bien globals
+   thi hien MA THO thay vi 500 ca trang; bai hoc 29/08. #}
+{% macro nhan_vong_doi(ma) -%}
+{{ (nhan_tt_kenh | default({}, true)).get(ma, ma) if ma else '' }}
+{%- endmacro %}
 {% block style_them %}
   .nd-wrap{display:flex;flex-direction:column;height:100%;min-height:0}
   /* thanh điều hướng TRÊN ĐẦU như tab General (user chốt 18/08 — bỏ rail trong):
@@ -232,7 +239,7 @@
                   title="Kênh sinh ở tab General — chọn từ danh bạ, không gõ tay">
             {% for k in ds_kenh %}<option value="{{ k.ten_chuan }}" data-ma="{{ k.ma }}"
               data-loai="{{ k.loai_kenh or '' }}" data-tt="{{ k.trang_thai or '' }}"
-              data-tt-ten="{{ nhan_tt_kenh.get(k.trang_thai, k.trang_thai or '') }}">{{ k.ten_chuan }}</option>{% endfor %}
+              data-tt-ten="{{ nhan_vong_doi(k.trang_thai) }}">{{ k.ten_chuan }}</option>{% endfor %}
           </select>
           <select id="nrk-loai" style="flex:1;background:var(--th-182233);color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:7px 9px;font:inherit">
             <option value="">Channel type —</option>
@@ -288,7 +295,7 @@
            nhan_tt_kenh (nguồn chung); thiếu nhãn → hiện mã thô, không bịa. #}
         {% if k.trang_thai or k.loai_kenh %}
         <div class="s" style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;align-items:center">
-          {% if k.trang_thai %}<span class="tt-chip tt-{{ k.trang_thai }}">{{ nhan_tt_kenh.get(k.trang_thai, k.trang_thai) }}</span>{% endif %}
+          {% if k.trang_thai %}<span class="tt-chip tt-{{ k.trang_thai }}">{{ nhan_vong_doi(k.trang_thai) }}</span>{% endif %}
           {% if k.loai_kenh %}<span style="color:var(--muted);font-size:.72rem">{{ k.loai_kenh }}</span>{% endif %}
         </div>
         {% endif %}
@@ -313,7 +320,7 @@
          một lần chạy. #}
       {% if kp.kenh.trang_thai %}
       <span class="tt-chip tt-{{ kp.kenh.trang_thai }}"
-            title="Vòng đời khai ở General — sửa tại General › Channels">{{ nhan_tt_kenh.get(kp.kenh.trang_thai, kp.kenh.trang_thai) }}</span>
+            title="Vòng đời khai ở General — sửa tại General › Channels">{{ nhan_vong_doi(kp.kenh.trang_thai) }}</span>
       {% endif %}
       {% if kp.kenh.loai_kenh %}<span style="color:var(--muted);font-size:.75rem">{{ kp.kenh.loai_kenh }}</span>{% endif %}
       {% if kp.ds_bao_cao %}

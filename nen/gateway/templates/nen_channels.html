@@ -11,7 +11,9 @@
    tìm lại kênh đã gỡ. #}
 {# Nhãn vòng đời đọc từ danh_ba.NHAN_TRANG_THAI_KENH (29/08) — MỘT nguồn dùng
    chung với Data Analytics, hết drift nhãn giữa hai app. #}
-{% set nhan_vd = nhan_tt_kenh %}
+{# default({}, true): template moi co the gap code Python CU (Jinja auto-reload)
+   — thieu bien thi nhan lui ve MA THO, khong 500 ca trang. Bai hoc 29/08. #}
+{% set nhan_vd = nhan_tt_kenh | default({}, true) %}
 {% set badge_vd = {'hoat_dong': 'ok', 'monetized': 'ok', 'sandbox': 'warn',
                    'shadow_ban': 'bad', 'khai_tu': 'bad'} %}
 {# ve_vi_tri: MỌI form POST mang vị trí đang đứng (chi tiết kênh đang mở + bộ

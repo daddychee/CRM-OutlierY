@@ -260,3 +260,62 @@ def test_ngach_chua_chon_thi_truong_hien_huong_dan(client, monkeypatch):
     assert r.status_code == 200
     assert _u.normalize("NFC", "chưa chọn thị trường nào") in body
     assert _u.normalize("NFC", "Chưa gán dự án nghiên cứu") not in body
+
+
+def _danh_ba_co_kenh(tmp_path, monkeypatch):
+    """Danh bạ tạm CÓ kênh — conftest mặc định trỏ file không tồn tại (ds_kenh
+    rỗng), mà nhánh chip vòng đời chỉ render khi có kênh. Không dựng cái này thì
+    test "chip" nào cũng xanh giả."""
+    from nen.common import danh_ba
+    duong = tmp_path / "danh-ba-co-kenh.db"
+    monkeypatch.setenv("DANH_BA_DB", str(duong))
+    conn = danh_ba.ket_noi(duong)
+    try:
+        ng = danh_ba.them_ngach(conn, "Space")
+        danh_ba.them_kenh(conn, "Astro", ng, trang_thai="uom_mam")
+        conn.commit()
+    finally:
+        conn.close()
+    danh_ba._cache.clear()          # _nap cache theo mtime — ép đọc lại DB mới
+    return ng
+
+
+def test_trang_kenh_song_khi_thieu_bien_nhan_vong_doi(tmp_path, monkeypatch):
+    """SỰ CỐ 29/08: template mới + code Python CŨ → 500 cả trang.
+
+    Jinja auto-reload nạp template từ đĩa NGAY, còn tiến trình uvicorn giữ code cũ
+    tới lúc restart. Template gọi thẳng `nhan_tt_kenh.get(...)` trong khi biến
+    globals chỉ có ở code mới → undefined → Internal Server Error trên máy thật
+    (localhost dev không lộ vì ở đó code luôn mới).
+
+    Ghim: thiếu biến thì nhãn LÙI VỀ MÃ THÔ, trang vẫn 200. Mọi lần deploy đều có
+    khoảnh khắc này nên đây là hành vi bắt buộc, không phải phòng xa.
+
+    ĐÃ KIỂM test này BẮT ĐƯỢC LỖI THẬT: gỡ `| default({}, true)` trong macro
+    `nhan_vong_doi` thì test đỏ (500)."""
+    from fastapi.testclient import TestClient
+
+    from src.main import app, templates
+    _danh_ba_co_kenh(tmp_path, monkeypatch)
+    monkeypatch.setitem(templates.env.globals, "nhan_tt_kenh", None)   # mô phỏng code cũ
+    c = TestClient(app, headers={"X-Remote-User": "bot", "X-Remote-Level": "5",
+                                 "X-Remote-Role": "owner"},
+                   raise_server_exceptions=False)
+    r = c.get("/niche/kenh")
+    assert r.status_code == 200
+    assert "uom_mam" in r.text            # lùi về mã thô, KHÔNG vỡ trang
+
+
+def test_chip_vong_doi_hien_nhan_dep_khi_du_bien(tmp_path, monkeypatch):
+    """Mặt còn lại: đủ biến thì hiện NHÃN người đọc được, không phải mã thô."""
+    from fastapi.testclient import TestClient
+
+    from nen.common.danh_ba import NHAN_TRANG_THAI_KENH
+    from src.main import app
+    _danh_ba_co_kenh(tmp_path, monkeypatch)
+    c = TestClient(app, headers={"X-Remote-User": "bot", "X-Remote-Level": "5",
+                                 "X-Remote-Role": "owner"})
+    r = c.get("/niche/kenh")
+    assert r.status_code == 200
+    assert NHAN_TRANG_THAI_KENH["uom_mam"] in r.text      # 'Incubating'
+    assert 'class="tt-chip tt-uom_mam"' in r.text
