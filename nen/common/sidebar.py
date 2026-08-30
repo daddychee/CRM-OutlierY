@@ -16,6 +16,13 @@ TEN_LEVEL = {1: "Intern", 2: "Staff", 3: "Leader", 4: "Manager", 5: "Owner"}
 # trang gộp là /niche của data-analytics; engine vẫn proxy được qua URL trực tiếp.
 KHONG_LAP_TOOLS = {"ai-agent", "data-analytics", "to-chuc", "app-mau", "niche-research"}
 
+# THỨ TỰ HIỂN THỊ nhóm Tools — theo FLOW LÀM VIỆC (Owner chốt 30/08/2026):
+# nghiên cứu → giao việc → lên lịch → viết → dựng → duyệt → SEO → đo số liệu.
+# apps.json là HỢP ĐỒNG (thứ tự trong đó không mang nghĩa trình bày) nên thứ tự
+# nằm ở đây. App chưa khai tên trong bảng này rơi xuống CUỐI, giữ thứ tự hợp đồng.
+THU_TU_TOOLS = ["radary", "tasky", "plannery", "content-ultimate",
+                "rendery", "video-review", "seo-optimize"]
+
 
 def sb_apps_tu_claims(apps_vao) -> list[dict]:
     """App ĐÃ DI TRÚ hiện ở nhóm Tools (APPS.md bước 2: thêm app vào apps.json là
@@ -28,9 +35,12 @@ def sb_apps_tu_claims(apps_vao) -> list[dict]:
     gateway, sidebar tự khớp."""
     try:
         from nen.common.hop_dong import doc_hop_dong
-        return [{"slug": a["slug"], "ten": a["ten"], "href": f"/{a['slug']}"}
-                for a in doc_hop_dong()
-                if a["slug"] in apps_vao and a["slug"] not in KHONG_LAP_TOOLS]
+        ds = [{"slug": a["slug"], "ten": a["ten"], "href": f"/{a['slug']}"}
+              for a in doc_hop_dong()
+              if a["slug"] in apps_vao and a["slug"] not in KHONG_LAP_TOOLS]
+        cuoi = len(THU_TU_TOOLS)
+        return sorted(ds, key=lambda a: THU_TU_TOOLS.index(a["slug"])
+                      if a["slug"] in THU_TU_TOOLS else cuoi)
     except Exception:
         return []
 

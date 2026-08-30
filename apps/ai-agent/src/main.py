@@ -252,6 +252,19 @@ def _ctx_outliery(request: Request) -> dict:
 templates = Jinja2Templates(directory=str(Path(__file__).parent / "templates"),
                             context_processors=[_ctx_outliery])
 templates.env.globals["BAC_LEVEL"] = BAC_LEVEL  # ánh xạ level→chữ cho template
+# Nhãn MỘT DÒNG "app này để làm gì" cho lưới app màn hình chào (Owner 30/08/2026).
+# Nhãn trình bày, không phải quyền — mô tả dài đã có trong apps.json; đây chỉ là câu
+# ngắn đọc lướt. Slug lạ → chuỗi rỗng, thẻ vẫn hiện tên app.
+templates.env.globals["viec_app"] = {
+    "radary": "Theo dõi đối thủ",
+    "tasky": "Giao việc trong tuần",
+    "plannery": "Lịch sản xuất video",
+    "content-ultimate": "Viết outline & kịch bản",
+    "rendery": "Dựng video tự động",
+    "video-review": "Duyệt bản dựng",
+    "seo-optimize": "Sinh metadata SEO",
+    "niche-research": "Nghiên cứu ngách",
+}
 client = QdrantClientWrapper()  # MOCK_MODE=true thì chưa cần Qdrant thật
 qa = QAPipeline()  # writer + critics đọc từ env qua factory (mock mặc định)
 
