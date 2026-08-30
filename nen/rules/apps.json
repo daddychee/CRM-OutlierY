@@ -266,6 +266,7 @@
         "/api",
         "/oe",
         "/author",
+        "/kientruc",
         "/outline",
         "/write",
         "/manage",
@@ -748,6 +749,52 @@
           "backup": "copy",
           "giu": "vinh-vien",
           "ghi_chu": "Vết CHỈ-THÊM: ai giao việc cho ai, ai nhận, ai từ chối kèm lý do, ai xác nhận, lúc nào"
+        }
+      ]
+    },
+    {
+      "slug": "rendery",
+      "ten": "RenderY",
+      "mo_ta": "Dựng video: nhân sự đặt kịch bản + voice theo chương lên NAS, máy chủ chạy nền (2 việc song song), xong giao draft CapCut + footage phân theo chương ở 'Compose Timeline'.",
+      "cong": 9118,
+      "tien_to": ["/api"],
+      "health": "/api/me",
+      "phien_ban": "0.1.0",
+      "giao_dien": "khung",
+      "chay": {
+        "kieu": "uvicorn",
+        "app_dir": "F:/RenderY/autoedit",
+        "module": "autoedit.web.server:app"
+      },
+      "du_lieu": [
+        {
+          "ten": "rendery-jobs",
+          "loai": "sqlite",
+          "duong": "F:/RenderY/autoedit/jobs.db",
+          "muc_quy": "bac",
+          "backup": "sqlite-snapshot",
+          "giu": "90-ngay",
+          "ghi_chu": "Hàng đợi việc dựng: ai nộp việc nào, chạy tới đâu, xong lúc nào. Mất thì chỉ mất lịch sử — draft và footage đã giao nằm ở NAS 'Compose Timeline', dựng lại được."
+        }
+      ],
+      "viec_api": [
+        {
+          "ma": "chia_beat",
+          "ten": "Đạo diễn chia beat (LLM)",
+          "loai": "llm",
+          "ghi_chu": "Đọc cả kịch bản chương, chia thành beat + concept hình cho từng beat. Khâu cần thông minh nhất — nên dùng Claude."
+        },
+        {
+          "ma": "cham_footage",
+          "ten": "Chấm footage ứng viên (LLM)",
+          "loai": "llm",
+          "ghi_chu": "So khớp ngữ nghĩa clip tìm được với concept từng beat, chấm điểm theo lô ~10 beat. Cơ học hơn — GLM đủ dùng, rẻ hơn nhiều."
+        },
+        {
+          "ma": "tim_footage",
+          "ten": "Tìm B-roll kho ảnh/video",
+          "loai": "stock",
+          "ghi_chu": "Pexels + Pixabay (khoá free, dùng thương mại được). Nhiều khoá = nhân hạn mức (~200 query/giờ/khoá). Envato/Vecteezy đăng nhập bằng trình duyệt, KHÔNG dùng khoá API."
         }
       ]
     },
