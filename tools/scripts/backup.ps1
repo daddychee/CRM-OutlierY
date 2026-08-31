@@ -5,3 +5,7 @@
 $root = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 Set-Location $root   # -m nen.common.sao_luu can CWD = root (goi tu ngoai la ModuleNotFoundError)
 & (Join-Path $root '.venv\Scripts\python.exe') -m nen.common.sao_luu
+
+# Heartbeat B4 giam sat (31/08): bao 'toi vua chay xong' cho gateway —
+# gateway chet thi khong duoc lam hong job (try/catch nuot loi).
+try { Invoke-RestMethod -Method Post -Uri 'http://127.0.0.1:9000/api/nhip-viec/backup-dem' -TimeoutSec 5 | Out-Null } catch {}

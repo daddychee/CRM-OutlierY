@@ -196,3 +196,7 @@ foreach ($dv in $dichVu) {
     $p.Id | Out-File -FilePath (Join-Path $pidDir ($dv.Ten + '.pid')) -Encoding ascii
     Write-Host ("[+] {0} da bat (PID {1}, cong {2})" -f $dv.Ten, $p.Id, $dv.Cong)
 }
+
+# Heartbeat B4 giam sat (31/08): bao 'toi vua chay xong' cho gateway —
+# gateway chet thi khong duoc lam hong job (try/catch nuot loi).
+try { Invoke-RestMethod -Method Post -Uri 'http://127.0.0.1:9000/api/nhip-viec/start-all' -TimeoutSec 5 | Out-Null } catch {}

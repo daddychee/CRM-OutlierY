@@ -50,6 +50,26 @@
   </tr>
   {% endfor %}
 </table>
+{# Heartbeat việc nền (B4): job ping /api/nhip-viec/<ma> khi xong; quá chu kỳ
+   không nhịp → trễ. Guard `is defined` — bài học Jinja auto-reload 19/08. #}
+{% if nhip is defined and nhip %}
+<h2 style="margin-top:24px">Scheduled jobs <span class="phu" style="font-weight:400">— dead-man's switch: no ping within the window = the job died silently (rules: nen/rules/nhip_viec.json)</span></h2>
+<table>
+  <tr><th>Job</th><th>Window</th><th>Last ping</th><th>Status</th></tr>
+  {% for v in nhip %}
+  <tr>
+    <td><b>{{ v.ten }}</b> <span class="phu">({{ v.ma }})</span></td>
+    <td>{{ v.chu_ky_phut }} phút</td>
+    <td class="phu">{{ v.nhip_cuoi or "—" }}</td>
+    <td>
+      {% if v.tre is none %}<span class="phu">chưa có nhịp nào</span>
+      {% elif v.tre %}<span class="cham chet"></span><span style="color:#C0392B;font-weight:600">TRỄ</span>
+      {% else %}<span class="cham song"></span>đúng nhịp{% endif %}
+    </td>
+  </tr>
+  {% endfor %}
+</table>
+{% endif %}
 <p class="phu" style="margin-top:10px">Adding an app = one entry in apps.json
   (template: apps/app-mau) + an access rule in phan_quyen.json — the gateway picks it up, no platform code changes.
   Deep health = optional <code>suc_khoe</code> field (see apps/app-mau <code>/api/suc-khoe</code>).</p>

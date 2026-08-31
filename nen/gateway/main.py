@@ -1521,7 +1521,7 @@ async def nen_ung_dung(request: Request):
     user = await run_in_threadpool(_gate_nen, request, "general_ung_dung")
     if isinstance(user, Response):
         return user
-    from nen.common import dem_loi
+    from nen.common import dem_loi, nhip_viec
     ds = await _do_dich_vu()
     dich_vu = {d["ten"]: d["song"] for d in ds}
     nav = await run_in_threadpool(_nav_gen, user)
@@ -1529,7 +1529,24 @@ async def nen_ung_dung(request: Request):
         request, "nen_ung_dung.html",
         {"user": user, "trang": "ung-dung", "apps": doc_hop_dong(),
          "dich_vu": dich_vu, "chi_tiet": {d["ten"]: d for d in ds},
-         "dem": dem_loi.tom_tat(), **nav})
+         "dem": dem_loi.tom_tat(),
+         "nhip": await run_in_threadpool(nhip_viec.tom_tat), **nav})
+
+
+@app.post("/api/nhip-viec/{ma}")
+async def api_nhip_viec(ma: str, request: Request):
+    """Heartbeat việc nền (B4 giám sát 31/08): job local (backup, start-all…)
+    ping khi chạy xong — dead-man's switch cho job chết im lặng. CHỈ loopback
+    (script SYSTEM không có session) + mã phải khai nen/rules/nhip_viec.json;
+    sai → 404 lặng lẽ."""
+    from starlette.concurrency import run_in_threadpool
+
+    from nen.common import nhip_viec
+    if request.client and request.client.host not in ("127.0.0.1", "::1"):
+        return Response("Không tìm thấy", status_code=404)
+    if not await run_in_threadpool(nhip_viec.ghi_nhip, ma):
+        return Response("Không tìm thấy", status_code=404)
+    return JSONResponse({"ok": True})
 
 
 # ---------- DANH BẠ THỰC THỂ — Niches + Channels (Đ1 khối đế, DE.md) ----------

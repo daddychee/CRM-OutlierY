@@ -1,0 +1,17 @@
+{
+  "_ghi_chu": "HEARTBEAT việc nền (B4 giám sát) — job chạy xong tự ping POST /api/nhip-viec/<ma> (loopback). Quá chu_ky_phut không thấy nhịp → tab Applications báo trễ + vòng giám sát cảnh báo. Thêm việc = thêm dòng ở đây + 1 lệnh ping cuối job; sổ chi tiết docs/giam-sat-suc-khoe.md.",
+  "viec": [
+    {
+      "ma": "start-all",
+      "ten": "Tác vụ OUTLIERY-V3 (startup + lặp 30 phút)",
+      "chu_ky_phut": 90,
+      "ghi_chu": "start-all.ps1 ping cuối script — trễ nghĩa là Task Scheduler không còn chạy lặp."
+    },
+    {
+      "ma": "backup-dem",
+      "ten": "Backup 19:00 (OUTLIERY-V3-Backup)",
+      "chu_ky_phut": 1560,
+      "ghi_chu": "backup.ps1 ping khi xong — 26h không nhịp là đêm qua không backup. Máy hibernate 20:00-9:00 nên chu kỳ nới hơn 24h."
+    }
+  ]
+}
