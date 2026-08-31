@@ -946,3 +946,158 @@ kèm tên trường nói rõ đơn vị.
 - **Thử lại C3 với glm-5.3** (một biến, cùng bộ đo, đủ lượt như lần này).
 - **Dùng Delta cho kiểm chứng mù**: hai bản của cùng một chương, hỏi thước xem bản nào gần
   tác giả hơn — thay cho thang % đã bỏ.
+
+## 15. KIẾN TRÚC OUTLINE — 30-31/08/2026 (thay board tick bằng 4 khối; suite 288→778)
+
+Mạch lớn nhất từ mục 9: **bỏ cách lắp outline bằng tay** (tick/kéo cluster) — thay bằng
+tầng KIẾN TRÚC: máy đề xuất trọn khung, người điều chỉnh từng thẻ. Logic từng nhiệm vụ:
+
+### 15.1 Engine 4 lượt (`src/oe/kien_truc.py`)
+- **A KHUNG — pillar BỊT MẮT**: brief + research → spine + hợp đồng beat (tên/emo/budget).
+  Lý do bịt mắt: để pillar trong context thì "cụ thể thắng trừu tượng" — corpus tự chiếm
+  ghế của brief. 1301 contentFilter → retry 1 lần → lỗi nói rõ cách gỡ (sửa câu chủ quyền).
+- **B GẮN BẰNG CHỨNG — 0 LLM**: mỗi beat ≤2 pillar theo cosine (fastembed, ngưỡng 0.30 đo
+  thật 13 cặp). Beat không bằng chứng → nhãn CAU_KHONG_CUNG, KHÔNG xóa im lặng.
+- **C KHÁM PHÁ**: ≤2 beat đề xuất từ kho, gate `kho_de_xuat` chờ Owner duyệt.
+- **D VIẾT BRIEF — context cách ly**: mỗi beat chỉ thấy spine + hợp đồng + pillar CỦA NÓ
+  (chống Frankenstein 8-nguồn/chương). Budget = metadata nhịp, KHÔNG phải lệnh ép ký tự;
+  chương EXPENDABLE xếp về đuôi để cắt tròn chương.
+- **7 van tất định** sau mỗi thao tác (phủ brief, pillar mồ côi, nhịp, budget, số lá,
+  trung tâm cảm xúc, trần pillar) — CẢNH BÁO không chặn (luật A3).
+- Mọi output LLM là TIẾNG ANH kể cả briefing gõ tiếng Việt (Owner chốt giữa mạch,
+  pin trong cả 4 prompt + test).
+
+### 15.2 Verify BẮT BUỘC (Owner chốt: "căn cứ vào đây để sinh khung")
+- `phieu_xac_minh` bóc claim từ briefing thành phiếu FACT-PACK (`FACT: ... | NGUON: <url>`).
+- **Auto Verify** = LLM + web_search z.ai (route `/api/kientruc/xacminh`) + 2 van đo thật
+  31/08: link google/bing/ddg `/search` KHÔNG tính là nguồn; model phán "tương lai/chưa
+  xảy ra" → nhắc phiếu tay (search model có thể chưa quét tới tin nóng).
+- **Manual Verify** = copy phiếu dán sang AI có web, dán kết quả về ô Research notes.
+- `_kt_sinh` CHẶN khi research trống — khung phải đứng trên fact đã kiểm.
+
+### 15.3 UI 4 khối đi lại tự do (`src/oe/kientruc.html`, route `/kientruc`)
+Stepper EN (Owner duyệt mockup + chốt tên): **Brief / Verify / Outline Board / Finalize**;
+checkpoint 4 giai đoạn (1 Frame · 2 Evidence · 3 Discovery · 4 Briefs) xanh dần; khóa hết
+thẻ → tự sang Finalize. Kho ý tưởng 4 tab (Pillar/Gaps/Ý video sau/Misconception — hàng
+gọn 1 dòng, click xổ); double-click pillar mở popup đầy đủ; F5 giữ khối (localStorage
+`kt_khoi`); render Google-Translate-safe (`datHTML` trả changed-bool, chỉ rebind khi đổi).
+Vòng điều chỉnh từng thẻ: Khóa / Sửa tay / Góp ý + sinh lại (giữ `ban_cu` quay lui) / Bỏ /
+Lên / Xuống. Chốt = `dung_outline` ghi `outline.txt` + `material.json` + `picks.total_chars`.
+
+### 15.4 Phiên per-user + xem phiên đồng đội (31/08)
+- Mỗi user MỘT bản nháp `kien_truc_<slug>.json` trên cùng run (Owner chốt "phiên không đè
+  nhau"); task registry key `run|user`; outline.txt lúc CHỐT vẫn là bản chung của run.
+- **Xem phiên đồng đội**: leader+ (SSO Actions) chọn phiên ở select cạnh run — CHỈ ĐỌC
+  (banner + khóa control 4 pane); an toàn tự nhiên: mọi POST ghi file của CHÍNH người gọi.
+  Creator không thấy danh sách, không đọc được (kiểm ở server `_kt_giam_sat`).
+
+### 15.5 Ống vật liệu sang Writer (Mảnh A đợt "Viết đúng thể loại")
+`goi_vat_lieu()` = pillar nguyên văn + research lines argmax-embed theo beat (key khớp
+`parse_outline`: Hook/Chapter n/End) → `material.json` → `/api/write` → CLI tự đọc
+`.material.json` cạnh outline → khối FACTUAL MATERIAL + luật fact tầng viết ("Never
+invent specifics"). Đo thật: hết bịa số khi material không có số (GIGO xác nhận);
+hook 300 → 2.149 ký tự nhờ budget từ brief (`_budget_tu_brief`).
+
+### 15.6 Thể loại + giọng KÊNH (Mảnh B/C)
+- Hồ sơ thể loại `rules/the_loai/*.json` (luật ngoài code): khuôn khung narrative|catalog,
+  register per-block đo từ 2 kênh mẫu. Owner sửa nguyên tắc: thể loại chỉ quy định HÌNH
+  THỨC — góc hook thuộc về BRIEFING (không áp "hook thảm họa" cho travel-doc).
+- Giọng KÊNH (`voiceprofile/kenh.py`): dán link video kênh → transcript (youtube-transcript-api)
+  → dọn ASR (van 85-115% từ gốc, <45 từ/câu) → corpus → extract như tác giả; guard chống
+  trùng tên đè hồ sơ tác giả có sẵn. Nằm ở tab Author Extract (Owner chốt).
+
+### 15.7 Trang Video Outlier riêng (`videooutlier.html`, route `/outline`)
+"+ Video Outlier" và "Outline Board" là 2 tab KHÁC nhau (Owner nhắc): trang mới = tạo run
+(tên/AVD/model/links) + checklist 8 bước pipeline thật (nhãn từ s5_server) + box cookies
+tự mở khi tín hiệu YouTube chặn IP + danh sách run 2 cột cao bằng nhau; log pipeline ẩn,
+double-click mới hiện. Board tick cũ hạ về `/outline-cu` (di sản, không nav) — dọn hẳn
+sau khi team chạy trơn luồng mới.
+
+### 15.8 Writing: popup sửa văn + công thức quốc tế
+- Bỏ ô "Yêu cầu đặc biệt" TRƯỚC khi viết (vòng góp ý đã sống ở Outline Board) — thay bằng
+  popup double-click vào bài: trái đọc văn, phải ô yêu cầu áp lên VĂN ĐÃ VIẾT → Viết lại
+  (tái dùng W_YEUCAU/vietLaiPhan, bản cũ giữ quay lui). Fix văn cách dòng đôi (pre-wrap +
+  `\n→<br>` render đúp).
+- Công thức viết: CHỈ framework quốc tế có thật (Owner: "phải research, không bịa") —
+  V2·M (nhà, mặc định) · AIDA · PAS · BAB · SCQA (Minto) · HSO (Brunson) · 3-Act
+  (Aristotle/Syd Field) · SDT; bỏ 3 kỹ thuật tự chế. Ví dụ trong popup trích TÁC PHẨM
+  KINH ĐIỂN format thống nhất: nguyên bản EN → dịch Việt → phân tích biện pháp → nguồn
+  footer mờ (Caples 1926 · An Inconvenient Truth · thư WSJ 1974 · 1984 Orwell · Jobs
+  Stanford 2005 · Star Wars 1977 · Chekhov-attributed có caveat); van tự áp cho chính
+  mình: chỉ trích nguyên văn câu chắc từng chữ, còn lại mức cấu trúc + nguồn tra được.
+- Model chọn RIÊNG cho Verify vs Sinh (nhớ localStorage) + tooltip gợi ý từng model
+  (chỉ ghi điều đã đo nội bộ; nhắc Auto Verify chỉ chạy web search qua z.ai/GLM).
+
+### 15.9 Bug đã vá trong mạch (31/08)
+1. **UnboundLocalError `b`** giết kết nối 4 nhánh POST kientruc → parse body per-branch +
+   test tầng route thật (ThreadingHTTPServer) — "test xanh ≠ chạy đúng".
+2. **Brief rỗng lặng lẽ** (đo thật nepal-2: 8/11 beat rỗng): gói chung lượt D "thành công"
+   nhưng model đổi tiêu đề/thiếu block → parse trượt, không exception → fallback cũ không
+   chạy. Lưới mới: MỌI beat còn brief rỗng sau gói chung được viết CÁCH LY từng beat.
+3. **Khóa-mà-rỗng kẹt vĩnh viễn**: user khóa các thẻ rỗng → mọi lượt sinh tôn trọng khóa.
+   Luật mới: khóa bảo vệ nội dung ĐÃ CÓ — thẻ khóa brief rỗng vẫn được viết bù, trạng
+   thái khóa giữ nguyên.
+4. **Đồng hồ tiến độ** `[Ns]` mỗi dòng — sinh 30' không có số đo thì không chẩn đoán được.
+   Nghi phạm tốc độ đã khoanh: 3 lời gọi lớn tuần tự + Z.ai chậm giờ tải + bẫy
+   finish_reason=length nhân đôi max_tokens chạy lại từ đầu (llm.py).
+5. Parser khung `_RE_BLOCK` khoan dung (`## CHAPTER 1 —`, `###`, `:`) — GLM viết lệch
+   header là chuyện thường (bài học parser 24/07 tái xác nhận).
+
+### 15.10 Việc treo
+- Chờ Owner gửi 3-5 link video kênh neo (travel-doc + Life-in) → hồ sơ giọng K đầu tiên →
+  "trận chung kết" tibet-2 mới vs bản Claude (bảng thước mục 0 proposal).
+- C3 neo giọng dày từ corpus cho thước kiem-chung (không gấp).
+- A/B Claude-làm-writer (cần key Anthropic, sau khi có neo giọng).
+- Dọn `/outline-cu` sau khi team chạy trơn 1-2 video.
+
+### 15.11 AUDIT TOÀN TOOL 31/08 (2 agent quét + vá cùng ngày; suite 780 pass)
+
+Owner yêu cầu audit toàn bộ. 40 phát hiện, chia ba nhóm:
+
+**ĐÃ VÁ (cùng ngày, có test ghim):**
+- Engine outline: brief gán SAI beat khi tên lồng nhau ("The River"/"The River of
+  Bones" nhận cùng brief — parse 2 pass, mỗi khối dùng 1 lần); chapter khóa nuốt
+  HOOK khi "giữ" (khớp tên không kiểm loại); beat khóa chèn đảo LIFO; `da_bo` bị
+  xóa mỗi lượt sinh (biểu thức chết `(giu and []) or []` — giờ server truyền lại);
+  parse_khung 0 beat → state RỖNG đè bản cũ (giờ retry rồi raise, không ghi đè);
+  pillar beat khóa bị gán trùng cho beat mới; budget model bỏ sót → chia đều;
+  van_so_la nối thiếu dấu cách tạo số ma; lượt C hết nuốt lỗi lặng lẽ.
+- Server: thao tác beat TRONG lúc sinh nền bị lượt sinh đè phẳng → chặn từ cửa;
+  "giữ thẻ khóa" mà không đọc được bản nháp → trước im lặng mất hết khóa, giờ lỗi
+  rõ; clusters.json hỏng hết giết route (500 board trắng); quay lui hết mất bản
+  hiện tại (xoay vòng); chốt đè outline chung → backup `outline.truoc.txt` + ghi
+  `chot_boi/chot_luc` vào picks; briefing xacminh cắt 8000 ký tự; buoc[] hết phình.
+- UI Outline Board: HỒI QUY đồng hồ [Ns] làm 4 chip checkpoint đứng im (startsWith
+  → includes); đổi run/phiên không dừng poll cũ (2 vòng đá nhau + phiên chỉ-đọc bị
+  mở khóa lại); copy phiếu thất bại vẫn báo "Đã copy".
+- Tầng viết: brief mở "Chapter one…"/"Ending…" thành MỐC MA (phần thừa không
+  material + checkpoint đè nhau) — luật heading mới: separator / đứng một mình /
+  keyword TOÀN HOA; vòng cắt hook ép về 250-500 bất kể Budget kiến trúc (mất 86%
+  hook — giờ cắt theo budget), End cũng vậy; "viết lại MỘT phần" khi checkpoint
+  mất/lệch hash → script.md bị ghi đè còn 1 chương (giờ phần khác nạp nguyên văn từ
+  script.md); 409 /api/write bị UI nuốt (poll job cũ như job mới); mat_path
+  `.replace()` làm material rơi im lặng; guard trùng file so chuỗi thô; registry
+  giọng ghi tràn (giờ tmp+os.replace); kenh.py chỉ NoTranscriptFound mới rơi về
+  ASR; pill "done" nhầm dòng "vượt trần"; download hỏng path Windows.
+
+**GHI NHẬN — CHƯA VÁ (cần Owner quyết hoặc không gấp):**
+1. **Quyền chốt outline**: bất kỳ ai (kể cả creator) chốt được và đè bản chung của
+   run — đã có backup + dấu vết, nhưng LUẬT ai-được-chốt chờ Owner (đề xuất:
+   leader+ hoặc "người sinh khung gần nhất").
+2. `_rd_for` cho mọi user nhảy vào run bất kỳ (by design team chung run — đi kèm
+   điểm 1 khi quyết).
+3. Slug tên user đụng độ (`al_ice`/`al-ice` chung file state) — tên thật của team
+   hiện không đụng; đổi format file = migration, làm khi cần.
+4. Job writer không sống qua restart server (registry RAM; subprocess mồ côi vẫn
+   ghi file) — máy hibernate 20:00 sẽ giết job đang chạy; có checkpoint + nút Tiếp
+   tục nên chấp nhận, việc treo nếu muốn bền: persist job registry.
+5. `van_phu_brief` so brief tiếng Việt với văn EN → MISSING oan (so cross-language
+   không làm được 0-LLM — hạn chế trung thực, đã ghi).
+6. `van_so_la` gom số từ TOÀN nguồn nên số bịa đúng-giá-trị-khác-ngữ-cảnh lọt —
+   nâng cấp sau (per-beat scope).
+7. `register.py` (văn register theo thể loại) là code chết — Mảnh B tầng viết chưa
+   nối; nằm trong việc treo C3/A-B.
+8. `moKhoi` gán lại function declaration — chạy được vì file không strict mode;
+   thêm 'use strict' là vỡ (bom ghi nhận, đừng thêm strict vào kientruc.html).
+9. KT_TASKS không dọn entry cũ (đã cắt buoc 200 dòng; dọn theo TTL làm sau).
+10. `_budget_tu_brief` đọc "~1.5k" thành 15 — khuyên ghi số trần trong brief.
