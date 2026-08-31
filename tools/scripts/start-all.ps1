@@ -162,6 +162,9 @@ $dichVu = @(
     @{ Ten = 'tasky'; Cong = 9117; Exe = $py
        Args = '-m uvicorn src.main:app --app-dir "apps/tasky" --host 127.0.0.1 --port 9117'
        Wd = $root }
+    @{ Ten = 'thumby'; Cong = 9119; Exe = $py
+       Args = '-m uvicorn src.main:app --app-dir "apps/thumby" --host 127.0.0.1 --port 9119'
+       Wd = $root }
     # RenderY: venv RIENG (F:\RenderY\autoedit\.venv) vi ma nam ngoai repo — dung
     # $renderyPy chu khong phai $py cua nen.
     @{ Ten = 'rendery'; Cong = 9118; Exe = $renderyPy

@@ -808,6 +808,24 @@
       ]
     },
     {
+      "slug": "thumby",
+      "ten": "ThumbY",
+      "mo_ta": "Mô phỏng vị trí hiển thị thumbnail YouTube: thả ảnh A/B + title → xem đúng cỡ thật trên Suggested 168px / Home / Search / Trang kênh / điện thoại, dark+light, squint test. Ảnh chỉ nằm trong trình duyệt — app KHÔNG có endpoint nhận file, không lưu gì (spec docs/thumby.md).",
+      "cong": 9119,
+      "tien_to": [
+        "/thumby",
+        "/thumby-static"
+      ],
+      "health": "/health",
+      "phien_ban": "0.1.0",
+      "chay": {
+        "kieu": "uvicorn",
+        "app_dir": "apps/thumby",
+        "module": "src.main:app"
+      },
+      "du_lieu": []
+    },
+    {
       "slug": "app-mau",
       "ten": "Sample App",
       "mo_ta": "App 50 dòng chứng minh hợp đồng app: nhận claims, /health, proxy.",

@@ -1,0 +1,416 @@
+<title>ThumbY V1 · vòng 2</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@600&family=Roboto:wght@400;500&display=swap">
+<style>
+/* ===== Token OUTLIERY / RadarY — light mặc định, dark theo 3 trạng thái theme ===== */
+:root {
+  color-scheme: light;
+  --bg:#f5f5f5; --panel:#fff; --line:#e6e6e6; --text:#16181c; --muted:#6c6c72;
+  --accent:#2c6fc4; --accent-soft:#e8f0fb; --bad:#dc2626;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg:#090c12; --panel:#121826; --line:#243149; --text:#e8edf4; --muted:#8b96a8;
+    --accent:#4c8fe0; --accent-soft:rgba(76,143,224,.14);
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg:#090c12; --panel:#121826; --line:#243149; --text:#e8edf4; --muted:#8b96a8;
+  --accent:#4c8fe0; --accent-soft:rgba(76,143,224,.14);
+}
+* { box-sizing:border-box; margin:0 }
+body { background:var(--bg); color:var(--text); font:14px/1.5 'Inter',-apple-system,'Segoe UI',Roboto,sans-serif }
+.wrap { max-width:1180px; margin:0 auto; padding:16px }
+
+header.top { display:flex; align-items:center; gap:14px; flex-wrap:wrap; padding:6px 0 14px }
+header.top h1 { font-size:20px; font-family:'Space Grotesk',sans-serif; letter-spacing:-.035em }
+header.top h1 span { color:var(--accent) }
+header.top .mkchip { font-size:11px; font-weight:600; letter-spacing:.08em; text-transform:uppercase;
+  color:var(--muted); border:1px dashed var(--line); border-radius:99px; padding:3px 11px }
+header.top .right { margin-left:auto; display:flex; gap:8px; align-items:center }
+
+.panel { background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:16px; margin-bottom:14px }
+.panel h2 { font-size:15px; margin-bottom:2px }
+.panel h2 small { color:var(--muted); font-weight:400 }
+.sub { color:var(--muted); font-size:12.5px; margin-bottom:12px }
+.note { color:var(--muted); font-size:12.5px; margin-top:10px }
+.note b { color:var(--text); font-weight:600 }
+
+.btn { background:var(--accent); color:#fff; border:0; border-radius:8px; padding:8px 14px; font-weight:600; cursor:pointer; font-size:13.5px; font-family:inherit }
+.ktab { border:1px solid var(--line); background:var(--panel); color:var(--muted); border-radius:9px; padding:7px 14px; font-weight:600; font-size:13px; cursor:pointer; font-family:inherit }
+.ktab.on { background:var(--accent); border-color:var(--accent); color:#fff }
+.ktab:disabled { opacity:.5; cursor:default }
+.ktab small { display:block; font-weight:400; font-size:10px; color:inherit; opacity:.75; margin-top:0 }
+.seg { display:inline-flex; gap:4px }
+.lab { font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); margin-bottom:5px; display:block }
+button:focus-visible, input:focus-visible { outline:2px solid var(--accent); outline-offset:1px }
+
+/* ---- khối điều khiển ---- */
+.ctrl { display:grid; grid-template-columns:210px 210px 1fr; gap:14px }
+@media (max-width:900px){ .ctrl { grid-template-columns:1fr 1fr } }
+.drop { border:1.5px dashed var(--line); border-radius:10px; padding:14px; text-align:center;
+  color:var(--muted); font-size:12.5px; cursor:pointer; min-height:96px;
+  display:flex; flex-direction:column; justify-content:center; gap:4px }
+.drop b { color:var(--text); font-size:13px }
+.drop.filled { border-style:solid; border-color:var(--accent) }
+.drop .mini { width:104px; aspect-ratio:16/9; border-radius:6px; margin:0 auto 4px }
+.fields { display:grid; grid-template-columns:1fr 1fr; gap:10px; align-content:start }
+.fields .full { grid-column:1 / -1 }
+.fields label { display:block; color:var(--muted); font-size:11.5px; margin-bottom:3px }
+.fields input { width:100%; background:var(--bg); color:var(--text); border:1px solid var(--line); border-radius:8px; padding:8px 10px; font:inherit; font-size:13px }
+.cc { font-size:11.5px; color:var(--muted); margin-top:3px; font-variant-numeric:tabular-nums }
+.cc b { color:var(--accent); font-weight:600 }
+.togglerow { display:flex; gap:18px; flex-wrap:wrap; align-items:flex-end; margin-top:14px; padding-top:12px; border-top:1px solid var(--line) }
+.togglerow .grp { display:flex; flex-direction:column }
+
+/* ---- THANH VỊ TRÍ (vòng 2 — Owner: hết cuộn dài, chọn khối để chuyển) ---- */
+.posbar { position:sticky; top:0; z-index:20; background:var(--bg); padding:8px 0 10px; margin-bottom:4px;
+  display:flex; gap:6px; flex-wrap:wrap; align-items:center }
+.posbar .ptab { border:1px solid var(--line); background:var(--panel); color:var(--muted); border-radius:99px;
+  padding:6px 15px; font-weight:600; font-size:13px; cursor:pointer; font-family:inherit }
+.posbar .ptab.on { background:var(--accent); border-color:var(--accent); color:#fff }
+.posbar .plab { font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); margin-right:4px }
+section.pos { display:none }
+section.pos.on { display:block }
+
+/* ===== Thế giới YouTube — token riêng, độc lập theme app ===== */
+.yt { --yt-bg:#0f0f0f; --yt-text:#f1f1f1; --yt-muted:#aaa; --yt-line:#272727;
+  background:var(--yt-bg); color:var(--yt-text); border:1px solid var(--line);
+  font-family:Roboto,'Inter',Arial,sans-serif; border-radius:10px; padding:18px; transition:filter .25s }
+body.ytlight .yt { --yt-bg:#fff; --yt-text:#0f0f0f; --yt-muted:#606060; --yt-line:#e5e5e5 }
+body.squint .yt { filter:blur(5px) saturate(.92) }
+
+.thumb { aspect-ratio:16/9; border-radius:12px; position:relative; overflow:hidden; background:#000 }
+.thumb .ph { position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+  font-weight:700; letter-spacing:.02em; text-align:center; padding:8%; line-height:1.15; color:#fff }
+.dur { position:absolute; right:4px; bottom:4px; background:rgba(0,0,0,.8); color:#fff;
+  font-size:12px; font-weight:500; border-radius:4px; padding:1px 5px; font-variant-numeric:tabular-nums }
+.vbar { position:absolute; left:0; right:0; bottom:0; height:4px; background:rgba(255,255,255,.25); display:none }
+.vbar i { display:block; height:100%; background:#f03; width:var(--w,55%) }
+body.davem .vbar.on { display:block }
+.mark { position:absolute; top:6px; left:6px; background:var(--accent); color:#fff; font-family:'Inter',sans-serif;
+  font-size:10.5px; font-weight:700; border-radius:5px; padding:1px 7px; letter-spacing:.05em }
+
+/* placeholder thumbnail — A/B nổi bật, card mẫu trầm */
+.pA { background:linear-gradient(118deg,#b93b1d,#e2762a 55%,#f0b24a) }
+.pA .ph { font-size:clamp(14px,2.1vw,26px); text-shadow:0 2px 10px rgba(0,0,0,.45) }
+.pB { background:linear-gradient(118deg,#0e5b63,#1d8a8f 55%,#48b9a0) }
+.pB .ph { font-size:clamp(14px,2.1vw,26px); text-shadow:0 2px 10px rgba(0,0,0,.45) }
+.s1{background:linear-gradient(120deg,#3a4353,#59647a)} .s2{background:linear-gradient(120deg,#4a4139,#6e6152)}
+.s3{background:linear-gradient(120deg,#33424a,#4f6670)} .s4{background:linear-gradient(120deg,#42394f,#5f5473)}
+.s5{background:linear-gradient(120deg,#374a3c,#54705c)} .s6{background:linear-gradient(120deg,#4a3a44,#705a67)}
+.s7{background:linear-gradient(120deg,#3e4657,#5a6a85)}
+.s8{background:linear-gradient(120deg,#514438,#7a6650)}
+.sph { position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+  color:rgba(255,255,255,.35); font-size:12px; font-weight:500; letter-spacing:.14em; text-transform:uppercase }
+
+.t2 { display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden }
+.avt { width:36px; height:36px; border-radius:50%; background:linear-gradient(135deg,var(--accent),#7aa8dd); flex:0 0 auto }
+.meta { color:var(--yt-muted); font-size:12px; line-height:1.4 }
+
+/* --- Trang xem + Suggested (PC) --- */
+.watch { display:grid; grid-template-columns:1fr 402px; gap:24px }
+@media (max-width:980px){ .watch { grid-template-columns:1fr } }
+.player { aspect-ratio:16/9; background:#000; border-radius:12px; position:relative }
+.player .play { position:absolute; inset:0; margin:auto; width:64px; height:44px; background:rgba(255,255,255,.14);
+  border-radius:10px; display:flex; align-items:center; justify-content:center }
+.player .play::after { content:""; border-left:16px solid #fff; border-top:9px solid transparent; border-bottom:9px solid transparent; margin-left:3px }
+.wtitle { font-size:18px; font-weight:500; margin-top:12px; line-height:1.3 }
+.wmeta { display:flex; gap:10px; align-items:center; margin-top:10px }
+.sg { display:grid; grid-template-columns:168px 1fr; gap:8px; margin-bottom:8px }
+.sg .thumb { border-radius:8px }
+.sg h4 { font-size:14px; font-weight:500; line-height:1.3 }
+.sg .meta { margin-top:2px }
+
+/* --- Home PC --- */
+.home { display:grid; grid-template-columns:repeat(var(--cols,3),1fr); gap:16px }
+.card h3 { font-size:15px; font-weight:500; line-height:1.35; margin-top:2px }
+.card .row { display:flex; gap:10px; margin-top:10px }
+.card .row .avt { width:34px; height:34px }
+
+/* --- Search --- */
+.srch { display:grid; grid-template-columns:360px 1fr; gap:16px; margin-bottom:16px }
+@media (max-width:760px){ .srch { grid-template-columns:1fr } }
+.srch h3 { font-size:17px; font-weight:400; line-height:1.35 }
+.srch .desc { color:var(--yt-muted); font-size:12px; margin-top:8px }
+.srch .chan { display:flex; align-items:center; gap:8px; margin-top:10px }
+.srch .chan .avt { width:24px; height:24px }
+
+/* --- Trang kênh --- */
+.chead { display:flex; gap:16px; align-items:center; margin-bottom:16px }
+.chead .avt { width:56px; height:56px }
+.chead b { font-size:17px } .chead .meta { margin-top:2px }
+.chgrid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px }
+@media (max-width:860px){ .chgrid { grid-template-columns:repeat(2,1fr) } }
+.chgrid h4 { font-size:13px; font-weight:500; line-height:1.35; margin-top:6px }
+
+/* --- Soi cỡ thật --- */
+.zoom { display:flex; gap:28px; flex-wrap:wrap; align-items:flex-start }
+.zoom .col { display:flex; flex-direction:column; gap:6px }
+.zoom .thumb { border-radius:8px }
+.zlab { font-family:'Inter',sans-serif; font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--yt-muted) }
+
+/* --- Mobile --- */
+.phone { width:392px; max-width:100%; margin:0 auto; border:1px solid var(--line); border-radius:26px; padding:10px 8px; background:var(--panel) }
+.phone .yt { border:0; border-radius:18px; padding:12px 0 }
+.mrow { display:grid; grid-template-columns:150px 1fr auto; gap:10px; padding:6px 12px; align-items:start }
+.mrow .thumb { border-radius:8px }
+.mrow h4 { font-size:13.5px; font-weight:500; line-height:1.35 }
+.mrow .meta { margin-top:2px }
+.mdots { color:var(--yt-muted); font-weight:700; letter-spacing:.05em }
+.mfeed .thumb { border-radius:0 }
+.mfeed .mline { display:flex; gap:10px; padding:10px 12px 16px }
+.mfeed .mline .avt { width:34px; height:34px }
+.mfeed h4 { font-size:14px; font-weight:500; line-height:1.35 }
+.mfeed .meta { margin-top:2px }
+
+/* callout chú thích mockup */
+.callout { border:1px solid var(--accent); background:var(--accent-soft); color:var(--text);
+  border-radius:9px; padding:9px 12px; font-size:12.5px; margin-top:10px }
+.callout b { color:var(--accent) }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <h1>THUMB<span>Y</span></h1>
+    <span class="mkchip">Mockup vòng 2 — chưa phải app</span>
+    <div class="right">
+      <button class="ktab" id="btnAppTheme">Giao diện: Dark</button>
+    </div>
+  </header>
+
+  <!-- ============ KHỐI ĐIỀU KHIỂN ============ -->
+  <div class="panel">
+    <h2>Mô phỏng thumbnail <small>— ảnh chỉ nằm trong trình duyệt, không lưu server</small></h2>
+    <p class="sub">Thả ảnh, gõ title → xem đúng cách nó hiện trên từng vị trí. Không chấm điểm — chỉ mô phỏng.</p>
+    <div class="ctrl">
+      <div class="drop filled">
+        <div class="mini pA"></div>
+        <b>thumbnail-a.png</b>
+        <span>Bấm để thay ảnh A</span>
+      </div>
+      <div class="drop filled">
+        <div class="mini pB"></div>
+        <b>thumbnail-b.png</b>
+        <span>Ảnh B (tùy chọn) — đang bật A/B · Gỡ</span>
+      </div>
+      <div class="fields">
+        <div class="full">
+          <label>Title</label>
+          <input id="inTitle" value="I Lived Alone in a Forest Cabin for 100 Days — Here's What Nobody Tells You">
+          <div class="cc"><b id="ccNum">74</b> ký tự — mốc tham chiếu: ~70 bắt đầu bị cắt ở nhiều vị trí</div>
+        </div>
+        <div><label>Tên kênh</label><input id="inChan" value="Wild Roots"></div>
+        <div><label>Thời lượng</label><input value="18:42"></div>
+        <div><label>Lượt xem</label><input value="1.2M views"></div>
+        <div><label>Đăng lúc</label><input value="3 hours ago"></div>
+      </div>
+    </div>
+    <div class="togglerow">
+      <div class="grp"><span class="lab">Thiết bị</span>
+        <span class="seg"><button class="ktab on" id="devPc">PC</button><button class="ktab" id="devMb">Điện thoại</button></span></div>
+      <div class="grp"><span class="lab">Nền YouTube</span>
+        <span class="seg"><button class="ktab on" id="ytDark">Dark</button><button class="ktab" id="ytLight">Light</button></span></div>
+      <div class="grp"><span class="lab">Lưới Home</span>
+        <span class="seg" id="colSeg"><button class="ktab on" data-c="3">3 cột</button><button class="ktab" data-c="4">4 cột</button><button class="ktab" data-c="5">5 cột</button></span></div>
+      <div class="grp"><span class="lab">Công cụ soi</span>
+        <span class="seg"><button class="ktab" id="btnSquint">Squint test</button><button class="ktab" id="btnVbar">Thanh đã-xem</button></span></div>
+      <div class="grp"><span class="lab">Card xung quanh</span>
+        <span class="seg"><button class="ktab on">Mẫu tĩnh</button><button class="ktab" disabled title="Giai đoạn 2 — đọc pool RadarY, thumbnail đối thủ thật đứng cạnh A/B">Pool RadarY<small>giai đoạn 2</small></button></span></div>
+      <div class="grp" style="margin-left:auto"><span class="lab">&nbsp;</span>
+        <button class="btn" id="btnShuffle">Shuffle vị trí</button></div>
+    </div>
+  </div>
+
+  <!-- ============ THANH VỊ TRÍ (chuyển khối, hết cuộn dài) ============ -->
+  <div class="posbar" id="posbar">
+    <span class="plab">Vị trí</span>
+    <button class="ptab on" data-pos="sug" data-dev="pc">Suggested 168px</button>
+    <button class="ptab" data-pos="home" data-dev="pc">Home</button>
+    <button class="ptab" data-pos="srch" data-dev="pc">Search</button>
+    <button class="ptab" data-pos="chan" data-dev="pc">Trang kênh</button>
+    <button class="ptab" data-pos="zoom" data-dev="pc">Soi cỡ thật</button>
+    <button class="ptab" data-pos="mnext" data-dev="mb" hidden>Xem tiếp</button>
+    <button class="ptab" data-pos="mhome" data-dev="mb" hidden>Home feed</button>
+  </div>
+
+  <!-- ============ PC · SUGGESTED ============ -->
+  <section class="pos on" id="pos-sug">
+  <div class="panel">
+    <h2>Trang xem — cột Suggested <small>(168px — khung khắc nghiệt nhất, mở mặc định)</small></h2>
+    <p class="sub">Người xem đang xem video khác; thumbnail của bạn phải thắng ở cỡ 168px.</p>
+    <div class="yt">
+      <div class="watch">
+        <div>
+          <div class="player"><div class="play"></div></div>
+          <div class="wtitle">Inside the World's Quietest Room — I Lasted 45 Minutes</div>
+          <div class="wmeta"><span class="avt"></span><div><b style="font-size:14px">Echo Lab</b><div class="meta">2.1M subscribers</div></div></div>
+        </div>
+        <div>
+          <div class="sg"><div class="thumb s1"><span class="sph">video mẫu</span><span class="dur">12:08</span><span class="vbar on"><i style="--w:62%"></i></span></div>
+            <div><h4 class="t2">The Lost Highway That Connected Two Countries</h4><div class="meta">Atlas Files<br>842K views · 1 day ago</div></div></div>
+          <div class="sg"><div class="thumb pA"><span class="mark">A</span><span class="ph">100 DAYS<br>ALONE</span><span class="dur">18:42</span></div>
+            <div><h4 class="t2 jsTitle">I Lived Alone in a Forest Cabin for 100 Days — Here's What Nobody Tells You</h4><div class="meta"><span class="jsChan">Wild Roots</span><br>1.2M views · 3 hours ago</div></div></div>
+          <div class="sg"><div class="thumb s2"><span class="sph">video mẫu</span><span class="dur">24:51</span></div>
+            <div><h4 class="t2">Why Nobody Builds Wooden Ships Anymore</h4><div class="meta">Drydock<br>1.4M views · 2 weeks ago</div></div></div>
+          <div class="sg"><div class="thumb pB"><span class="mark">B</span><span class="ph">NOBODY<br>TOLD ME</span><span class="dur">18:42</span></div>
+            <div><h4 class="t2 jsTitle">I Lived Alone in a Forest Cabin for 100 Days — Here's What Nobody Tells You</h4><div class="meta"><span class="jsChan">Wild Roots</span><br>1.2M views · 3 hours ago</div></div></div>
+          <div class="sg"><div class="thumb s3"><span class="sph">video mẫu</span><span class="dur">9:37</span><span class="vbar on"><i style="--w:24%"></i></span></div>
+            <div><h4 class="t2">We Tested 1930s Survival Advice for a Week</h4><div class="meta">Field Manual<br>623K views · 5 days ago</div></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="callout"><b>Trong app:</b> hover vào title đã cắt sẽ có tooltip hiện phần bị mất — ở khung này title cắt sớm hơn Home. Mockup chỉ vẽ tĩnh.</div>
+  </div>
+  </section>
+
+  <!-- ============ PC · HOME ============ -->
+  <section class="pos" id="pos-home">
+  <div class="panel">
+    <h2>Home PC <small>(A/B cùng lưới — Shuffle đảo vị trí, đổi 3/4/5 cột ở thanh điều khiển)</small></h2>
+    <div class="yt">
+      <div class="home" id="homeGrid">
+        <div class="card"><div class="thumb s4"><span class="sph">video mẫu</span><span class="dur">14:03</span><span class="vbar on"><i style="--w:80%"></i></span></div>
+          <div class="row"><span class="avt"></span><div><h3 class="t2">The Man Who Mapped Every Cave in Kentucky</h3><div class="meta">Atlas Files · 1.1M views · 4 days ago</div></div></div></div>
+        <div class="card"><div class="thumb pA"><span class="mark">A</span><span class="ph">100 DAYS ALONE</span><span class="dur">18:42</span></div>
+          <div class="row"><span class="avt"></span><div><h3 class="t2 jsTitle">I Lived Alone in a Forest Cabin for 100 Days — Here's What Nobody Tells You</h3><div class="meta"><span class="jsChan">Wild Roots</span> · 1.2M views · 3 hours ago</div></div></div></div>
+        <div class="card"><div class="thumb s5"><span class="sph">video mẫu</span><span class="dur">21:17</span></div>
+          <div class="row"><span class="avt"></span><div><h3 class="t2">Living on a Fire Lookout Tower — Full Season</h3><div class="meta">High Country · 3.4M views · 3 weeks ago</div></div></div></div>
+        <div class="card"><div class="thumb s6"><span class="sph">video mẫu</span><span class="dur">8:54</span></div>
+          <div class="row"><span class="avt"></span><div><h3 class="t2">Why Old Farmhouses Never Get Cold</h3><div class="meta">Timber &amp; Stone · 967K views · 1 week ago</div></div></div></div>
+        <div class="card"><div class="thumb pB"><span class="mark">B</span><span class="ph">NOBODY TOLD ME</span><span class="dur">18:42</span></div>
+          <div class="row"><span class="avt"></span><div><h3 class="t2 jsTitle">I Lived Alone in a Forest Cabin for 100 Days — Here's What Nobody Tells You</h3><div class="meta"><span class="jsChan">Wild Roots</span> · 1.2M views · 3 hours ago</div></div></div></div>
+        <div class="card"><div class="thumb s7"><span class="sph">video mẫu</span><span class="dur">16:29</span><span class="vbar on"><i style="--w:35%"></i></span></div>
+          <div class="row"><span class="avt"></span><div><h3 class="t2">I Spent 24 Hours in an Abandoned Ghost Town</h3><div class="meta">Field Manual · 2.2M views · 6 days ago</div></div></div></div>
+      </div>
+    </div>
+  </div>
+  </section>
+
+  <!-- ============ PC · SEARCH ============ -->
+  <section class="pos" id="pos-srch">
+  <div class="panel">
+    <h2>Kết quả tìm kiếm PC</h2>
+    <div class="yt">
+      <div class="srch"><div class="thumb s8"><span class="sph">video mẫu</span><span class="dur">11:26</span></div>
+        <div><h3 class="t2">Cabin Life: What a Year Off-Grid Actually Costs</h3>
+          <div class="meta">418K views · 2 months ago</div>
+          <div class="chan"><span class="avt"></span><span class="meta">Timber &amp; Stone</span></div>
+          <div class="desc t2">A full breakdown of every dollar spent living away from the grid — tools, food, mistakes, and what I'd never buy again.</div></div></div>
+      <div class="srch"><div class="thumb pA"><span class="mark">A</span><span class="ph">100 DAYS ALONE</span><span class="dur">18:42</span></div>
+        <div><h3 class="t2 jsTitle">I Lived Alone in a Forest Cabin for 100 Days — Here's What Nobody Tells You</h3>
+          <div class="meta">1.2M views · 3 hours ago</div>
+          <div class="chan"><span class="avt"></span><span class="meta jsChan">Wild Roots</span></div>
+          <div class="desc t2">One hundred days, one cabin, zero preparation. The parts everyone cuts out of their videos — this is what actually happens.</div></div></div>
+    </div>
+  </div>
+  </section>
+
+  <!-- ============ PC · TRANG KÊNH ============ -->
+  <section class="pos" id="pos-chan">
+  <div class="panel">
+    <h2>Trang kênh — tab Videos</h2>
+    <div class="yt">
+      <div class="chead"><span class="avt"></span><div><b class="jsChan">Wild Roots</b><div class="meta">128K subscribers · 214 videos</div></div></div>
+      <div class="chgrid">
+        <div><div class="thumb pA"><span class="mark">A</span><span class="ph">100 DAYS ALONE</span><span class="dur">18:42</span></div>
+          <h4 class="t2 jsTitle">I Lived Alone in a Forest Cabin for 100 Days — Here's What Nobody Tells You</h4><div class="meta">1.2M views · 3 hours ago</div></div>
+        <div><div class="thumb s5"><span class="sph">video mẫu</span><span class="dur">15:11</span></div>
+          <h4 class="t2">Building a Root Cellar with Hand Tools Only</h4><div class="meta">301K views · 2 weeks ago</div></div>
+        <div><div class="thumb s2"><span class="sph">video mẫu</span><span class="dur">19:48</span></div>
+          <h4 class="t2">First Winter Alone — Everything That Broke</h4><div class="meta">522K views · 1 month ago</div></div>
+        <div><div class="thumb s3"><span class="sph">video mẫu</span><span class="dur">12:35</span></div>
+          <h4 class="t2">Foraging Mistakes That Almost Cost Me</h4><div class="meta">189K views · 2 months ago</div></div>
+      </div>
+    </div>
+  </div>
+  </section>
+
+  <!-- ============ PC · SOI CỠ THẬT ============ -->
+  <section class="pos" id="pos-zoom">
+  <div class="panel">
+    <h2>Soi cỡ thật <small>— 168px đúng cỡ Suggested, cạnh bản phóng 2×</small></h2>
+    <p class="sub">Chữ trên ảnh phải còn đọc được ở cột trái. Không đọc được ở 168px = đa số người xem không đọc được.</p>
+    <div class="yt">
+      <div class="zoom">
+        <div class="col"><span class="zlab">A — 168px (cỡ thật)</span><div class="thumb pA" style="width:168px"><span class="ph">100 DAYS ALONE</span><span class="dur">18:42</span></div></div>
+        <div class="col"><span class="zlab">A — phóng 2×</span><div class="thumb pA" style="width:336px"><span class="ph">100 DAYS ALONE</span><span class="dur">18:42</span></div></div>
+        <div class="col"><span class="zlab">B — 168px (cỡ thật)</span><div class="thumb pB" style="width:168px"><span class="ph">NOBODY TOLD ME</span><span class="dur">18:42</span></div></div>
+        <div class="col"><span class="zlab">B — phóng 2×</span><div class="thumb pB" style="width:336px"><span class="ph">NOBODY TOLD ME</span><span class="dur">18:42</span></div></div>
+      </div>
+    </div>
+  </div>
+  </section>
+
+  <!-- ============ MOBILE · XEM TIẾP ============ -->
+  <section class="pos" id="pos-mnext">
+  <div class="panel">
+    <h2>Điện thoại — danh sách xem tiếp <small>(dưới video đang xem)</small></h2>
+    <div class="phone"><div class="yt">
+      <div class="mrow"><div class="thumb s1"><span class="sph">mẫu</span><span class="dur">12:08</span></div>
+        <div><h4 class="t2">The Lost Highway That Connected Two Countries</h4><div class="meta">Atlas Files · 842K · 1 day ago</div></div><span class="mdots">⋮</span></div>
+      <div class="mrow"><div class="thumb pA"><span class="mark">A</span><span class="ph" style="font-size:13px">100 DAYS ALONE</span><span class="dur">18:42</span></div>
+        <div><h4 class="t2 jsTitle">I Lived Alone in a Forest Cabin for 100 Days — Here's What Nobody Tells You</h4><div class="meta"><span class="jsChan">Wild Roots</span> · 1.2M · 3h ago</div></div><span class="mdots">⋮</span></div>
+      <div class="mrow"><div class="thumb s3"><span class="sph">mẫu</span><span class="dur">9:37</span></div>
+        <div><h4 class="t2">We Tested 1930s Survival Advice for a Week</h4><div class="meta">Field Manual · 623K · 5 days ago</div></div><span class="mdots">⋮</span></div>
+      <div class="mrow"><div class="thumb pB"><span class="mark">B</span><span class="ph" style="font-size:13px">NOBODY TOLD ME</span><span class="dur">18:42</span></div>
+        <div><h4 class="t2 jsTitle">I Lived Alone in a Forest Cabin for 100 Days — Here's What Nobody Tells You</h4><div class="meta"><span class="jsChan">Wild Roots</span> · 1.2M · 3h ago</div></div><span class="mdots">⋮</span></div>
+    </div></div>
+  </div>
+  </section>
+
+  <!-- ============ MOBILE · HOME FEED ============ -->
+  <section class="pos" id="pos-mhome">
+  <div class="panel">
+    <h2>Điện thoại — Home feed <small>(thumbnail tràn bề ngang)</small></h2>
+    <div class="phone"><div class="yt mfeed">
+      <div><div class="thumb s4"><span class="sph">video mẫu</span><span class="dur">14:03</span></div>
+        <div class="mline"><span class="avt"></span><div><h4 class="t2">The Man Who Mapped Every Cave in Kentucky</h4><div class="meta">Atlas Files · 1.1M views · 4 days ago</div></div></div></div>
+      <div><div class="thumb pA"><span class="mark">A</span><span class="ph">100 DAYS ALONE</span><span class="dur">18:42</span></div>
+        <div class="mline"><span class="avt"></span><div><h4 class="t2 jsTitle">I Lived Alone in a Forest Cabin for 100 Days — Here's What Nobody Tells You</h4><div class="meta"><span class="jsChan">Wild Roots</span> · 1.2M views · 3 hours ago</div></div></div></div>
+      <div><div class="thumb pB"><span class="mark">B</span><span class="ph">NOBODY TOLD ME</span><span class="dur">18:42</span></div>
+        <div class="mline"><span class="avt"></span><div><h4 class="t2 jsTitle">I Lived Alone in a Forest Cabin for 100 Days — Here's What Nobody Tells You</h4><div class="meta"><span class="jsChan">Wild Roots</span> · 1.2M views · 3 hours ago</div></div></div></div>
+    </div></div>
+  </div>
+  </section>
+
+  <div class="panel">
+    <h2>Ghi chú mockup — vòng 2</h2>
+    <p class="note">Đổi so với vòng 1 (theo góp ý Owner): <b>hết cuộn dài</b> — thanh Vị trí dính trên đầu, bấm để chuyển Suggested/Home/Search/Kênh/Soi cỡ thật (điện thoại: Xem tiếp/Home feed); đổi Thiết bị là bộ tab đổi theo. Thêm chỗ đứng tính năng giai đoạn 2: nút <b>"Card xung quanh: Pool RadarY"</b> (đang khóa) — khi làm GĐ2, chọn pool là thumbnail đối thủ thật trong ngách đứng cạnh A/B thay card mẫu. Các nút sống + vẽ tĩnh khác giữ nguyên vòng 1.</p>
+  </div>
+</div>
+
+<script>
+(function(){
+  var $=function(s){return document.querySelector(s)}, $$=function(s){return Array.prototype.slice.call(document.querySelectorAll(s))};
+  function seg(btns,cb){btns.forEach(function(b){b.addEventListener('click',function(){btns.forEach(function(x){x.classList.remove('on')});b.classList.add('on');cb(b)})})}
+  /* theme app: toggle thắng cả 3 trạng thái */
+  var root=document.documentElement, bt=$('#btnAppTheme');
+  function curDark(){var t=root.getAttribute('data-theme');if(t)return t==='dark';return matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches}
+  function labTheme(){bt.textContent='Giao diện: '+(curDark()?'Dark':'Light')}
+  bt.addEventListener('click',function(){root.setAttribute('data-theme',curDark()?'light':'dark');labTheme()});labTheme();
+  /* thanh vị trí + thiết bị */
+  var ptabs=$$('#posbar .ptab');
+  function openPos(pos){
+    ptabs.forEach(function(t){t.classList.toggle('on',t.dataset.pos===pos)});
+    $$('section.pos').forEach(function(s){s.classList.toggle('on',s.id==='pos-'+pos)});
+  }
+  ptabs.forEach(function(t){t.addEventListener('click',function(){openPos(t.dataset.pos)})});
+  seg([$('#devPc'),$('#devMb')],function(b){
+    var mb=b.id==='devMb';
+    ptabs.forEach(function(t){t.hidden=(t.dataset.dev==='mb')!==mb});
+    openPos(mb?'mnext':'sug');
+  });
+  seg([$('#ytDark'),$('#ytLight')],function(b){document.body.classList.toggle('ytlight',b.id==='ytLight')});
+  seg($$('#colSeg .ktab'),function(b){$('#homeGrid').style.setProperty('--cols',b.dataset.c)});
+  $('#btnSquint').addEventListener('click',function(){document.body.classList.toggle('squint');this.classList.toggle('on')});
+  $('#btnVbar').addEventListener('click',function(){document.body.classList.toggle('davem');this.classList.toggle('on')});
+  $('#btnShuffle').addEventListener('click',function(){var g=$('#homeGrid'),c=$$('#homeGrid > .card');
+    for(var i=c.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));g.insertBefore(c[j],c[i].nextSibling);var t=c[i];c[i]=c[j];c[j]=t}});
+  var inT=$('#inTitle'),inC=$('#inChan');
+  function syncT(){$$('.jsTitle').forEach(function(e){e.textContent=inT.value});$('#ccNum').textContent=inT.value.length}
+  function syncC(){$$('.jsChan').forEach(function(e){e.textContent=inC.value})}
+  inT.addEventListener('input',syncT);inC.addEventListener('input',syncC);syncT();
+})();
+</script>

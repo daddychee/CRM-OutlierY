@@ -1,0 +1,468 @@
+{% extends "base.html" %}
+{% block title %}ThumbY — AI AGENT OUTLIERY{% endblock %}
+{% block topbar_ten %}THUMBY{% endblock %}
+
+{% block style_them %}
+  /* ===== ThumbY — khung app theo token --th-* của base (đổi theme tự ăn) ===== */
+  .tb-wrap{max-width:1180px;margin:0 auto;padding:16px;
+    --panel:var(--th-121826);--line:var(--th-243149);--mut:var(--th-8b96a8);
+    --acc:var(--th-4c8fe0);--acc-soft:var(--th-16263f)}
+  .tb-wrap .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:14px}
+  .tb-wrap .panel h2{font-size:15px;margin:0 0 2px}
+  .tb-wrap .panel h2 small{color:var(--mut);font-weight:400}
+  .tb-sub{color:var(--mut);font-size:12.5px;margin:0 0 12px}
+  .tb-note{color:var(--mut);font-size:12.5px;margin-top:10px}
+  .tb-btn{background:var(--acc);color:#fff;border:0;border-radius:8px;padding:8px 14px;font-weight:600;cursor:pointer;font-size:13.5px;font-family:inherit}
+  .ktab{border:1px solid var(--line);background:var(--panel);color:var(--mut);border-radius:9px;padding:7px 14px;font-weight:600;font-size:13px;cursor:pointer;font-family:inherit}
+  .ktab.on{background:var(--acc);border-color:var(--acc);color:#fff}
+  .ktab:disabled{opacity:.5;cursor:default}
+  .ktab small{display:block;font-weight:400;font-size:10px;opacity:.75}
+  .tb-seg{display:inline-flex;gap:4px}
+  .tb-lab{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--mut);margin-bottom:5px;display:block}
+
+  /* ---- khối điều khiển ---- */
+  .tb-ctrl{display:grid;grid-template-columns:210px 210px 1fr;gap:14px}
+  @media(max-width:900px){.tb-ctrl{grid-template-columns:1fr 1fr}}
+  .drop{border:1.5px dashed var(--line);border-radius:10px;padding:12px;text-align:center;
+    color:var(--mut);font-size:12.5px;cursor:pointer;min-height:110px;
+    display:flex;flex-direction:column;justify-content:center;gap:4px;position:relative}
+  .drop b{color:var(--th-e8edf4);font-size:13px}
+  .drop.keo{border-color:var(--acc);background:var(--acc-soft)}
+  .drop .mini{width:112px;aspect-ratio:16/9;border-radius:6px;margin:0 auto 4px;
+    background:linear-gradient(118deg,var(--th-243149),var(--th-31425e));position:relative;overflow:hidden}
+  .drop .mini i{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    font-style:normal;font-weight:700;font-size:13px;color:var(--mut);letter-spacing:.1em}
+  .co-anh-a .drop .mini.ma{background:var(--anhA) center/cover}
+  .co-anh-b .drop .mini.mb{background:var(--anhB) center/cover}
+  .co-anh-a .drop .mini.ma i,.co-anh-b .drop .mini.mb i{display:none}
+  .drop input[type=file]{display:none}
+  .tb-canh{font-size:11.5px;color:var(--th-d97c6c);margin-top:2px;display:none}
+  .tb-canh.hien{display:block}
+  .tb-go{background:none;border:0;color:var(--acc);cursor:pointer;font:inherit;font-size:12px;text-decoration:underline;padding:0}
+  .tb-fields{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-content:start}
+  .tb-fields .full{grid-column:1/-1}
+  .tb-fields label{display:block;color:var(--mut);font-size:11.5px;margin-bottom:3px}
+  .tb-fields input{width:100%;background:var(--th-090c12);color:var(--th-e8edf4);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font:inherit;font-size:13px;box-sizing:border-box}
+  .tb-cc{font-size:11.5px;color:var(--mut);margin-top:3px;font-variant-numeric:tabular-nums}
+  .tb-cc b{color:var(--acc);font-weight:600}
+  .tb-toggles{display:flex;gap:18px;flex-wrap:wrap;align-items:flex-end;margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
+  .tb-toggles .grp{display:flex;flex-direction:column}
+
+  /* ---- thanh vị trí (dính trong vùng cuộn nội dung) ---- */
+  .posbar{position:sticky;top:0;z-index:20;background:var(--th-090c12);padding:8px 0 10px;
+    display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+  .posbar .ptab{border:1px solid var(--line);background:var(--panel);color:var(--mut);border-radius:99px;
+    padding:6px 15px;font-weight:600;font-size:13px;cursor:pointer;font-family:inherit}
+  .posbar .ptab.on{background:var(--acc);border-color:var(--acc);color:#fff}
+  .posbar .plab{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--mut);margin-right:4px}
+  section.pos{display:none}
+  section.pos.on{display:block}
+
+  /* ===== Thế giới YouTube — token CỨNG, độc lập theme app ===== */
+  .yt{--yt-bg:#0f0f0f;--yt-text:#f1f1f1;--yt-muted:#aaa;
+    background:var(--yt-bg);color:var(--yt-text);border:1px solid var(--line);
+    font-family:Roboto,'Inter',Arial,sans-serif;border-radius:10px;padding:18px;transition:filter .25s}
+  body.ytlight .yt{--yt-bg:#fff;--yt-text:#0f0f0f;--yt-muted:#606060}
+  body.squint .yt{filter:blur(5px) saturate(.92)}
+
+  .thumb{aspect-ratio:16/9;border-radius:12px;position:relative;overflow:hidden;background:#000}
+  .thumb .ph{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    font-weight:700;letter-spacing:.06em;text-align:center;padding:8%;line-height:1.2;color:rgba(255,255,255,.55);font-size:13px}
+  .thumb.va{background:linear-gradient(118deg,#2c3648,#3d4a63)}
+  .thumb.vb{background:linear-gradient(118deg,#2c4842,#3d635b)}
+  body.co-anh-a .thumb.va{background:var(--anhA) center/cover}
+  body.co-anh-b .thumb.vb{background:var(--anhB) center/cover}
+  body.co-anh-a .thumb.va .ph,body.co-anh-b .thumb.vb .ph{display:none}
+  body:not(.co-anh-b) .chi-b{display:none !important}
+  .dur{position:absolute;right:4px;bottom:4px;background:rgba(0,0,0,.8);color:#fff;
+    font-size:12px;font-weight:500;border-radius:4px;padding:1px 5px;font-variant-numeric:tabular-nums}
+  .vbar{position:absolute;left:0;right:0;bottom:0;height:4px;background:rgba(255,255,255,.25);display:none}
+  .vbar i{display:block;height:100%;background:#f03;width:var(--w,55%)}
+  body.davem .vbar{display:block}
+  .mark{position:absolute;top:6px;left:6px;background:var(--acc);color:#fff;font-family:'Inter',sans-serif;
+    font-size:10.5px;font-weight:700;border-radius:5px;padding:1px 7px;letter-spacing:.05em}
+  body.an-mark .mark{display:none}
+  .s1{background:linear-gradient(120deg,#3a4353,#59647a)}.s2{background:linear-gradient(120deg,#4a4139,#6e6152)}
+  .s3{background:linear-gradient(120deg,#33424a,#4f6670)}.s4{background:linear-gradient(120deg,#42394f,#5f5473)}
+  .s5{background:linear-gradient(120deg,#374a3c,#54705c)}.s6{background:linear-gradient(120deg,#4a3a44,#705a67)}
+  .s7{background:linear-gradient(120deg,#3e4657,#5a6a85)}.s8{background:linear-gradient(120deg,#514438,#7a6650)}
+  .sph{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    color:rgba(255,255,255,.35);font-size:12px;font-weight:500;letter-spacing:.14em;text-transform:uppercase}
+  .t2{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .yt .avt{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--acc),#7aa8dd);flex:0 0 auto}
+  .yt .meta{color:var(--yt-muted);font-size:12px;line-height:1.4}
+  .yt h3,.yt h4{margin:0}
+
+  .watch{display:grid;grid-template-columns:1fr 402px;gap:24px}
+  @media(max-width:980px){.watch{grid-template-columns:1fr}}
+  .player{aspect-ratio:16/9;background:#000;border-radius:12px;position:relative}
+  .player .play{position:absolute;inset:0;margin:auto;width:64px;height:44px;background:rgba(255,255,255,.14);
+    border-radius:10px;display:flex;align-items:center;justify-content:center}
+  .player .play::after{content:"";border-left:16px solid #fff;border-top:9px solid transparent;border-bottom:9px solid transparent;margin-left:3px}
+  .wtitle{font-size:18px;font-weight:500;margin-top:12px;line-height:1.3}
+  .wmeta{display:flex;gap:10px;align-items:center;margin-top:10px}
+  .sg{display:grid;grid-template-columns:168px 1fr;gap:8px;margin-bottom:8px}
+  .sg .thumb{border-radius:8px}
+  .sg h4{font-size:14px;font-weight:500;line-height:1.3}
+  .sg .meta{margin-top:2px}
+
+  .home{display:grid;grid-template-columns:repeat(var(--cols,3),1fr);gap:16px}
+  .card h3{font-size:15px;font-weight:500;line-height:1.35;margin-top:2px}
+  .card .row{display:flex;gap:10px;margin-top:10px}
+  .card .row .avt{width:34px;height:34px}
+
+  .srch{display:grid;grid-template-columns:360px 1fr;gap:16px;margin-bottom:16px}
+  @media(max-width:760px){.srch{grid-template-columns:1fr}}
+  .srch h3{font-size:17px;font-weight:400;line-height:1.35}
+  .srch .desc{color:var(--yt-muted);font-size:12px;margin-top:8px}
+  .srch .chan{display:flex;align-items:center;gap:8px;margin-top:10px}
+  .srch .chan .avt{width:24px;height:24px}
+
+  .chead{display:flex;gap:16px;align-items:center;margin-bottom:16px}
+  .chead .avt{width:56px;height:56px}
+  .chead b{font-size:17px}.chead .meta{margin-top:2px}
+  .chgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+  @media(max-width:860px){.chgrid{grid-template-columns:repeat(2,1fr)}}
+  .chgrid h4{font-size:13px;font-weight:500;line-height:1.35;margin-top:6px}
+
+  .zoom{display:flex;gap:28px;flex-wrap:wrap;align-items:flex-start}
+  .zoom .col{display:flex;flex-direction:column;gap:6px}
+  .zoom .thumb{border-radius:8px}
+  .zlab{font-family:'Inter',sans-serif;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--yt-muted)}
+
+  .phone{width:392px;max-width:100%;margin:0 auto;border:1px solid var(--line);border-radius:26px;padding:10px 8px;background:var(--panel)}
+  .phone .yt{border:0;border-radius:18px;padding:12px 0}
+  .mrow{display:grid;grid-template-columns:150px 1fr auto;gap:10px;padding:6px 12px;align-items:start}
+  .mrow .thumb{border-radius:8px}
+  .mrow h4{font-size:13.5px;font-weight:500;line-height:1.35}
+  .mrow .meta{margin-top:2px}
+  .mdots{color:var(--yt-muted);font-weight:700;letter-spacing:.05em}
+  .mfeed .thumb{border-radius:0}
+  .mfeed .mline{display:flex;gap:10px;padding:10px 12px 16px}
+  .mfeed .mline .avt{width:34px;height:34px}
+  .mfeed h4{font-size:14px;font-weight:500;line-height:1.35}
+  .mfeed .meta{margin-top:2px}
+{% endblock %}
+
+{% block noi_dung %}
+<link rel="stylesheet" href="/thumby-static/roboto-local.css">
+<div class="tb-wrap">
+
+  <!-- ============ KHỐI ĐIỀU KHIỂN ============ -->
+  <div class="panel">
+    <h2>Mô phỏng thumbnail <small>— ảnh chỉ nằm trong trình duyệt, không lưu lên máy chủ</small></h2>
+    <p class="tb-sub">Thả ảnh, gõ title → xem đúng cách nó hiện trên từng vị trí. Không chấm điểm — chỉ mô phỏng.</p>
+    <div class="tb-ctrl">
+      <div class="drop" id="dropA">
+        <div class="mini ma"><i>ẢNH A</i></div>
+        <b id="tenA">Thả ảnh A vào đây</b>
+        <span>hoặc bấm để chọn (jpg / png / webp)</span>
+        <span class="tb-canh" id="canhA"></span>
+        <input type="file" id="fileA" accept="image/jpeg,image/png,image/webp">
+      </div>
+      <div class="drop" id="dropB">
+        <div class="mini mb"><i>ẢNH B</i></div>
+        <b id="tenB">Ảnh B (tùy chọn) — so A/B</b>
+        <span id="huongDanB">thả vào để bật chế độ A/B</span>
+        <button type="button" class="tb-go chi-b" id="goB">Gỡ ảnh B</button>
+        <span class="tb-canh" id="canhB"></span>
+        <input type="file" id="fileB" accept="image/jpeg,image/png,image/webp">
+      </div>
+      <div class="tb-fields">
+        <div class="full">
+          <label for="inTitle">Title</label>
+          <input id="inTitle" value="I Lived Alone in a Forest Cabin for 100 Days — Here's What Nobody Tells You">
+          <div class="tb-cc"><b id="ccNum">0</b> ký tự — mốc tham chiếu: ~70 bắt đầu bị cắt ở nhiều vị trí. Rê chuột vào title đã cắt để xem phần mất.</div>
+        </div>
+        <div><label for="inChan">Tên kênh</label><input id="inChan" value="Wild Roots"></div>
+        <div><label for="inDur">Thời lượng</label><input id="inDur" value="18:42"></div>
+        <div><label for="inViews">Lượt xem</label><input id="inViews" value="1.2M views"></div>
+        <div><label for="inTime">Đăng lúc</label><input id="inTime" value="3 hours ago"></div>
+      </div>
+    </div>
+    <div class="tb-toggles">
+      <div class="grp"><span class="tb-lab">Thiết bị</span>
+        <span class="tb-seg"><button type="button" class="ktab on" id="devPc">PC</button><button type="button" class="ktab" id="devMb">Điện thoại</button></span></div>
+      <div class="grp"><span class="tb-lab">Nền YouTube</span>
+        <span class="tb-seg"><button type="button" class="ktab on" id="ytDark">Dark</button><button type="button" class="ktab" id="ytLight">Light</button></span></div>
+      <div class="grp"><span class="tb-lab">Lưới Home</span>
+        <span class="tb-seg" id="colSeg"><button type="button" class="ktab on" data-c="3">3 cột</button><button type="button" class="ktab" data-c="4">4 cột</button><button type="button" class="ktab" data-c="5">5 cột</button></span></div>
+      <div class="grp"><span class="tb-lab">Công cụ soi</span>
+        <span class="tb-seg"><button type="button" class="ktab" id="btnSquint">Squint test</button><button type="button" class="ktab" id="btnVbar">Thanh đã-xem</button><button type="button" class="ktab" id="btnMark">Ẩn chip A/B</button></span></div>
+      <div class="grp"><span class="tb-lab">Card xung quanh</span>
+        <span class="tb-seg"><button type="button" class="ktab on">Mẫu tĩnh</button><button type="button" class="ktab" disabled title="Giai đoạn 2 — đọc pool RadarY, thumbnail đối thủ thật đứng cạnh A/B">Pool RadarY<small>giai đoạn 2</small></button></span></div>
+      <div class="grp" style="margin-left:auto"><span class="tb-lab">&nbsp;</span>
+        <button type="button" class="tb-btn" id="btnShuffle">Shuffle vị trí</button></div>
+    </div>
+  </div>
+
+  <!-- ============ THANH VỊ TRÍ ============ -->
+  <div class="posbar" id="posbar">
+    <span class="plab">Vị trí</span>
+    <button type="button" class="ptab on" data-pos="sug" data-dev="pc">Suggested 168px</button>
+    <button type="button" class="ptab" data-pos="home" data-dev="pc">Home</button>
+    <button type="button" class="ptab" data-pos="srch" data-dev="pc">Search</button>
+    <button type="button" class="ptab" data-pos="chan" data-dev="pc">Trang kênh</button>
+    <button type="button" class="ptab" data-pos="zoom" data-dev="pc">Soi cỡ thật</button>
+    <button type="button" class="ptab" data-pos="mnext" data-dev="mb" hidden>Xem tiếp</button>
+    <button type="button" class="ptab" data-pos="mhome" data-dev="mb" hidden>Home feed</button>
+  </div>
+
+  <!-- ============ PC · SUGGESTED ============ -->
+  <section class="pos on" id="pos-sug">
+  <div class="panel">
+    <h2>Trang xem — cột Suggested <small>(168px — khung khắc nghiệt nhất)</small></h2>
+    <p class="tb-sub">Người xem đang xem video khác; thumbnail của bạn phải thắng ở cỡ 168px.</p>
+    <div class="yt">
+      <div class="watch">
+        <div>
+          <div class="player"><div class="play"></div></div>
+          <div class="wtitle">Inside the World's Quietest Room — I Lasted 45 Minutes</div>
+          <div class="wmeta"><span class="avt"></span><div><b style="font-size:14px">Echo Lab</b><div class="meta">2.1M subscribers</div></div></div>
+        </div>
+        <div>
+          <div class="sg"><div class="thumb s1"><span class="sph">video mẫu</span><span class="dur">12:08</span><span class="vbar"><i style="--w:62%"></i></span></div>
+            <div><h4 class="t2">The Lost Highway That Connected Two Countries</h4><div class="meta">Atlas Files<br>842K views · 1 day ago</div></div></div>
+          <div class="sg"><div class="thumb va"><span class="mark">A</span><span class="ph">ẢNH A</span><span class="dur jsDur">18:42</span></div>
+            <div><h4 class="t2 jsTitle"></h4><div class="meta"><span class="jsChan"></span><br><span class="jsViews"></span> · <span class="jsTime"></span></div></div></div>
+          <div class="sg"><div class="thumb s2"><span class="sph">video mẫu</span><span class="dur">24:51</span></div>
+            <div><h4 class="t2">Why Nobody Builds Wooden Ships Anymore</h4><div class="meta">Drydock<br>1.4M views · 2 weeks ago</div></div></div>
+          <div class="sg chi-b"><div class="thumb vb"><span class="mark">B</span><span class="ph">ẢNH B</span><span class="dur jsDur">18:42</span></div>
+            <div><h4 class="t2 jsTitle"></h4><div class="meta"><span class="jsChan"></span><br><span class="jsViews"></span> · <span class="jsTime"></span></div></div></div>
+          <div class="sg"><div class="thumb s3"><span class="sph">video mẫu</span><span class="dur">9:37</span><span class="vbar"><i style="--w:24%"></i></span></div>
+            <div><h4 class="t2">We Tested 1930s Survival Advice for a Week</h4><div class="meta">Field Manual<br>623K views · 5 days ago</div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  </section>
+
+  <!-- ============ PC · HOME ============ -->
+  <section class="pos" id="pos-home">
+  <div class="panel">
+    <h2>Home PC <small>(A/B cùng lưới — Shuffle đảo vị trí, đổi 3/4/5 cột ở thanh điều khiển)</small></h2>
+    <div class="yt">
+      <div class="home" id="homeGrid">
+        <div class="card"><div class="thumb s4"><span class="sph">video mẫu</span><span class="dur">14:03</span><span class="vbar"><i style="--w:80%"></i></span></div>
+          <div class="row"><span class="avt"></span><div><h3 class="t2">The Man Who Mapped Every Cave in Kentucky</h3><div class="meta">Atlas Files · 1.1M views · 4 days ago</div></div></div></div>
+        <div class="card"><div class="thumb va"><span class="mark">A</span><span class="ph">ẢNH A</span><span class="dur jsDur">18:42</span></div>
+          <div class="row"><span class="avt"></span><div><h3 class="t2 jsTitle"></h3><div class="meta"><span class="jsChan"></span> · <span class="jsViews"></span> · <span class="jsTime"></span></div></div></div></div>
+        <div class="card"><div class="thumb s5"><span class="sph">video mẫu</span><span class="dur">21:17</span></div>
+          <div class="row"><span class="avt"></span><div><h3 class="t2">Living on a Fire Lookout Tower — Full Season</h3><div class="meta">High Country · 3.4M views · 3 weeks ago</div></div></div></div>
+        <div class="card"><div class="thumb s6"><span class="sph">video mẫu</span><span class="dur">8:54</span></div>
+          <div class="row"><span class="avt"></span><div><h3 class="t2">Why Old Farmhouses Never Get Cold</h3><div class="meta">Timber &amp; Stone · 967K views · 1 week ago</div></div></div></div>
+        <div class="card chi-b"><div class="thumb vb"><span class="mark">B</span><span class="ph">ẢNH B</span><span class="dur jsDur">18:42</span></div>
+          <div class="row"><span class="avt"></span><div><h3 class="t2 jsTitle"></h3><div class="meta"><span class="jsChan"></span> · <span class="jsViews"></span> · <span class="jsTime"></span></div></div></div></div>
+        <div class="card"><div class="thumb s7"><span class="sph">video mẫu</span><span class="dur">16:29</span><span class="vbar"><i style="--w:35%"></i></span></div>
+          <div class="row"><span class="avt"></span><div><h3 class="t2">I Spent 24 Hours in an Abandoned Ghost Town</h3><div class="meta">Field Manual · 2.2M views · 6 days ago</div></div></div></div>
+      </div>
+    </div>
+  </div>
+  </section>
+
+  <!-- ============ PC · SEARCH ============ -->
+  <section class="pos" id="pos-srch">
+  <div class="panel">
+    <h2>Kết quả tìm kiếm PC</h2>
+    <div class="yt">
+      <div class="srch"><div class="thumb s8"><span class="sph">video mẫu</span><span class="dur">11:26</span></div>
+        <div><h3 class="t2">Cabin Life: What a Year Off-Grid Actually Costs</h3>
+          <div class="meta">418K views · 2 months ago</div>
+          <div class="chan"><span class="avt"></span><span class="meta">Timber &amp; Stone</span></div>
+          <div class="desc t2">A full breakdown of every dollar spent living away from the grid — tools, food, mistakes, and what I'd never buy again.</div></div></div>
+      <div class="srch"><div class="thumb va"><span class="mark">A</span><span class="ph">ẢNH A</span><span class="dur jsDur">18:42</span></div>
+        <div><h3 class="t2 jsTitle"></h3>
+          <div class="meta"><span class="jsViews"></span> · <span class="jsTime"></span></div>
+          <div class="chan"><span class="avt"></span><span class="meta jsChan"></span></div>
+          <div class="desc t2">One hundred days, one cabin, zero preparation. The parts everyone cuts out of their videos — this is what actually happens.</div></div></div>
+      <div class="srch chi-b"><div class="thumb vb"><span class="mark">B</span><span class="ph">ẢNH B</span><span class="dur jsDur">18:42</span></div>
+        <div><h3 class="t2 jsTitle"></h3>
+          <div class="meta"><span class="jsViews"></span> · <span class="jsTime"></span></div>
+          <div class="chan"><span class="avt"></span><span class="meta jsChan"></span></div>
+          <div class="desc t2">One hundred days, one cabin, zero preparation. The parts everyone cuts out of their videos — this is what actually happens.</div></div></div>
+    </div>
+  </div>
+  </section>
+
+  <!-- ============ PC · TRANG KÊNH ============ -->
+  <section class="pos" id="pos-chan">
+  <div class="panel">
+    <h2>Trang kênh — tab Videos</h2>
+    <div class="yt">
+      <div class="chead"><span class="avt"></span><div><b class="jsChan"></b><div class="meta">128K subscribers · 214 videos</div></div></div>
+      <div class="chgrid">
+        <div><div class="thumb va"><span class="mark">A</span><span class="ph">ẢNH A</span><span class="dur jsDur">18:42</span></div>
+          <h4 class="t2 jsTitle"></h4><div class="meta"><span class="jsViews"></span> · <span class="jsTime"></span></div></div>
+        <div class="chi-b"><div class="thumb vb"><span class="mark">B</span><span class="ph">ẢNH B</span><span class="dur jsDur">18:42</span></div>
+          <h4 class="t2 jsTitle"></h4><div class="meta"><span class="jsViews"></span> · <span class="jsTime"></span></div></div>
+        <div><div class="thumb s5"><span class="sph">video mẫu</span><span class="dur">15:11</span></div>
+          <h4 class="t2">Building a Root Cellar with Hand Tools Only</h4><div class="meta">301K views · 2 weeks ago</div></div>
+        <div><div class="thumb s2"><span class="sph">video mẫu</span><span class="dur">19:48</span></div>
+          <h4 class="t2">First Winter Alone — Everything That Broke</h4><div class="meta">522K views · 1 month ago</div></div>
+      </div>
+    </div>
+  </div>
+  </section>
+
+  <!-- ============ PC · SOI CỠ THẬT ============ -->
+  <section class="pos" id="pos-zoom">
+  <div class="panel">
+    <h2>Soi cỡ thật <small>— 168px đúng cỡ Suggested, cạnh bản phóng 2×</small></h2>
+    <p class="tb-sub">Chữ trên ảnh phải còn đọc được ở cột trái. Không đọc được ở 168px = đa số người xem không đọc được.</p>
+    <div class="yt">
+      <div class="zoom">
+        <div class="col"><span class="zlab">A — 168px (cỡ thật)</span><div class="thumb va" style="width:168px"><span class="ph">ẢNH A</span><span class="dur jsDur">18:42</span></div></div>
+        <div class="col"><span class="zlab">A — phóng 2×</span><div class="thumb va" style="width:336px"><span class="ph">ẢNH A</span><span class="dur jsDur">18:42</span></div></div>
+        <div class="col chi-b"><span class="zlab">B — 168px (cỡ thật)</span><div class="thumb vb" style="width:168px"><span class="ph">ẢNH B</span><span class="dur jsDur">18:42</span></div></div>
+        <div class="col chi-b"><span class="zlab">B — phóng 2×</span><div class="thumb vb" style="width:336px"><span class="ph">ẢNH B</span><span class="dur jsDur">18:42</span></div></div>
+      </div>
+    </div>
+  </div>
+  </section>
+
+  <!-- ============ MOBILE · XEM TIẾP ============ -->
+  <section class="pos" id="pos-mnext">
+  <div class="panel">
+    <h2>Điện thoại — danh sách xem tiếp <small>(dưới video đang xem)</small></h2>
+    <div class="phone"><div class="yt">
+      <div class="mrow"><div class="thumb s1"><span class="sph">mẫu</span><span class="dur">12:08</span></div>
+        <div><h4 class="t2">The Lost Highway That Connected Two Countries</h4><div class="meta">Atlas Files · 842K · 1 day ago</div></div><span class="mdots">⋮</span></div>
+      <div class="mrow"><div class="thumb va"><span class="mark">A</span><span class="ph">ẢNH A</span><span class="dur jsDur">18:42</span></div>
+        <div><h4 class="t2 jsTitle"></h4><div class="meta"><span class="jsChan"></span> · <span class="jsViews"></span> · <span class="jsTime"></span></div></div><span class="mdots">⋮</span></div>
+      <div class="mrow"><div class="thumb s3"><span class="sph">mẫu</span><span class="dur">9:37</span></div>
+        <div><h4 class="t2">We Tested 1930s Survival Advice for a Week</h4><div class="meta">Field Manual · 623K · 5 days ago</div></div><span class="mdots">⋮</span></div>
+      <div class="mrow chi-b"><div class="thumb vb"><span class="mark">B</span><span class="ph">ẢNH B</span><span class="dur jsDur">18:42</span></div>
+        <div><h4 class="t2 jsTitle"></h4><div class="meta"><span class="jsChan"></span> · <span class="jsViews"></span> · <span class="jsTime"></span></div></div><span class="mdots">⋮</span></div>
+    </div></div>
+  </div>
+  </section>
+
+  <!-- ============ MOBILE · HOME FEED ============ -->
+  <section class="pos" id="pos-mhome">
+  <div class="panel">
+    <h2>Điện thoại — Home feed <small>(thumbnail tràn bề ngang)</small></h2>
+    <div class="phone"><div class="yt mfeed">
+      <div><div class="thumb s4"><span class="sph">video mẫu</span><span class="dur">14:03</span></div>
+        <div class="mline"><span class="avt"></span><div><h4 class="t2">The Man Who Mapped Every Cave in Kentucky</h4><div class="meta">Atlas Files · 1.1M views · 4 days ago</div></div></div></div>
+      <div><div class="thumb va"><span class="mark">A</span><span class="ph">ẢNH A</span><span class="dur jsDur">18:42</span></div>
+        <div class="mline"><span class="avt"></span><div><h4 class="t2 jsTitle"></h4><div class="meta"><span class="jsChan"></span> · <span class="jsViews"></span> · <span class="jsTime"></span></div></div></div></div>
+      <div class="chi-b"><div class="thumb vb"><span class="mark">B</span><span class="ph">ẢNH B</span><span class="dur jsDur">18:42</span></div>
+        <div class="mline"><span class="avt"></span><div><h4 class="t2 jsTitle"></h4><div class="meta"><span class="jsChan"></span> · <span class="jsViews"></span> · <span class="jsTime"></span></div></div></div></div>
+    </div></div>
+  </div>
+  </section>
+
+</div>
+{% endblock %}
+
+{% block script %}
+<script>
+(function(){
+  "use strict";
+  /* LAN HTTP KHÔNG PHẢI SECURE CONTEXT (bài học 01/08/2026): tuyệt đối không dùng
+     API secure-context-only ở đây (randomUUID, clipboard, service worker...) —
+     test_js_khong_api_secure_context ghim bằng quét chuỗi. */
+  var $=function(s){return document.querySelector(s)}, $$=function(s){return Array.prototype.slice.call(document.querySelectorAll(s))};
+  var body=document.body;
+  function seg(btns,cb){btns.forEach(function(b){b.addEventListener('click',function(){btns.forEach(function(x){x.classList.remove('on')});b.classList.add('on');cb(b)})})}
+
+  /* ---- thanh vị trí + thiết bị ---- */
+  var ptabs=$$('#posbar .ptab');
+  function openPos(pos){
+    ptabs.forEach(function(t){t.classList.toggle('on',t.dataset.pos===pos)});
+    $$('section.pos').forEach(function(s){s.classList.toggle('on',s.id==='pos-'+pos)});
+    doTooltip(); // khối mới hiện mới đo được điểm cắt
+  }
+  ptabs.forEach(function(t){t.addEventListener('click',function(){openPos(t.dataset.pos)})});
+  seg([$('#devPc'),$('#devMb')],function(b){
+    var mb=(b.id==='devMb');
+    ptabs.forEach(function(t){t.hidden=((t.dataset.dev==='mb')!==mb)});
+    openPos(mb?'mnext':'sug');
+  });
+
+  /* ---- toggle hiển thị ---- */
+  seg([$('#ytDark'),$('#ytLight')],function(b){body.classList.toggle('ytlight',b.id==='ytLight')});
+  seg($$('#colSeg .ktab'),function(b){$('#homeGrid').style.setProperty('--cols',b.dataset.c)});
+  $('#btnSquint').addEventListener('click',function(){body.classList.toggle('squint');this.classList.toggle('on')});
+  $('#btnVbar').addEventListener('click',function(){body.classList.toggle('davem');this.classList.toggle('on')});
+  $('#btnMark').addEventListener('click',function(){body.classList.toggle('an-mark');this.classList.toggle('on')});
+  $('#btnShuffle').addEventListener('click',function(){
+    var g=$('#homeGrid'),c=$$('#homeGrid > .card');
+    for(var i=c.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));g.insertBefore(c[j],c[i].nextSibling);var t=c[i];c[i]=c[j];c[j]=t}
+  });
+
+  /* ---- upload A/B: FileReader, ảnh KHÔNG rời trình duyệt ---- */
+  function napAnh(khoa, file, tenEl, canhEl, lopBody){
+    if(!file||file.type.indexOf('image/')!==0) return;
+    var rd=new FileReader();
+    rd.onload=function(){
+      var url=String(rd.result);
+      document.documentElement.style.setProperty(khoa,'url("'+url+'")');
+      body.classList.add(lopBody);
+      tenEl.textContent=file.name;
+      var im=new Image();
+      im.onload=function(){
+        var lech=Math.abs(im.width/im.height-16/9)/(16/9);
+        if(lech>0.01){canhEl.textContent='Ảnh '+im.width+'×'+im.height+' — không phải 16:9, YouTube sẽ cắt/đệm viền.';canhEl.classList.add('hien')}
+        else{canhEl.textContent='';canhEl.classList.remove('hien')}
+      };
+      im.src=url;
+    };
+    rd.readAsDataURL(file);
+  }
+  function noiDrop(dropEl, inputEl, lam){
+    dropEl.addEventListener('click',function(e){if(e.target.tagName!=='BUTTON')inputEl.click()});
+    inputEl.addEventListener('change',function(){lam(inputEl.files[0]);inputEl.value=''});
+    dropEl.addEventListener('dragover',function(e){e.preventDefault();dropEl.classList.add('keo')});
+    dropEl.addEventListener('dragleave',function(){dropEl.classList.remove('keo')});
+    dropEl.addEventListener('drop',function(e){e.preventDefault();dropEl.classList.remove('keo');
+      if(e.dataTransfer.files.length)lam(e.dataTransfer.files[0])});
+  }
+  noiDrop($('#dropA'),$('#fileA'),function(f){napAnh('--anhA',f,$('#tenA'),$('#canhA'),'co-anh-a')});
+  noiDrop($('#dropB'),$('#fileB'),function(f){napAnh('--anhB',f,$('#tenB'),$('#canhB'),'co-anh-b');$('#huongDanB').hidden=true});
+  $('#goB').addEventListener('click',function(e){e.stopPropagation();
+    body.classList.remove('co-anh-b');$('#tenB').textContent='Ảnh B (tùy chọn) — so A/B';
+    $('#huongDanB').hidden=false;$('#canhB').classList.remove('hien')});
+  // thả trượt ra ngoài ô không được làm trình duyệt mở file thay trang
+  document.addEventListener('dragover',function(e){e.preventDefault()});
+  document.addEventListener('drop',function(e){e.preventDefault()});
+
+  /* ---- đồng bộ chữ + đếm ký tự + tooltip phần bị cắt ---- */
+  var inT=$('#inTitle'),inC=$('#inChan'),inD=$('#inDur'),inV=$('#inViews'),inG=$('#inTime');
+  function doTooltip(){
+    // đo ĐIỂM CẮT THẬT: thu ngắn dần bằng tìm nhị phân tới khi hết tràn 2 dòng,
+    // phần đuôi còn lại = phần người xem không thấy; đo xong trả lại nguyên văn
+    // (line-clamp tự cắt hiển thị). Chỉ đo phần tử đang hiện (ẩn thì cao = 0).
+    var full=inT.value;
+    $$('.jsTitle').forEach(function(el){
+      if(!el.offsetParent){el.title='';return}
+      el.textContent=full;
+      if(el.scrollHeight<=el.clientHeight+1){el.title='';return}
+      var lo=0,hi=full.length;
+      while(lo<hi){var mid=(lo+hi+1)>>1;el.textContent=full.slice(0,mid)+'…';
+        if(el.scrollHeight<=el.clientHeight+1)lo=mid;else hi=mid-1}
+      el.textContent=full;
+      el.title='Title bị cắt — phần người xem KHÔNG thấy: “…'+full.slice(lo)+'”';
+    });
+  }
+  function dong(sel,v){$$(sel).forEach(function(e){e.textContent=v})}
+  function syncAll(){
+    dong('.jsChan',inC.value);dong('.jsDur',inD.value);
+    dong('.jsViews',inV.value);dong('.jsTime',inG.value);
+    $('#ccNum').textContent=inT.value.length;
+    doTooltip();
+  }
+
+  /* ---- nhớ ô nhập (localStorage CÓ THỂ bị chặn trên LAN HTTP — bọc kín) ---- */
+  var KHOA='thumby_nhap';
+  function luu(){try{localStorage.setItem(KHOA,JSON.stringify(
+    {t:inT.value,c:inC.value,d:inD.value,v:inV.value,g:inG.value}))}catch(e){}}
+  (function(){try{var x=JSON.parse(localStorage.getItem(KHOA)||'');
+    if(x&&x.t){inT.value=x.t;inC.value=x.c;inD.value=x.d;inV.value=x.v;inG.value=x.g}}catch(e){}})();
+
+  [inT,inC,inD,inV,inG].forEach(function(i){i.addEventListener('input',function(){syncAll();luu()})});
+  window.addEventListener('resize',doTooltip);
+  syncAll();
+})();
+</script>
+{% endblock %}

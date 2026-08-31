@@ -16,6 +16,8 @@
 | 9115 | apps/seo-optimize | SEO Optimize (đưa vào 19/08 — APPS.md app 4/6) |
 | 9116 | apps/plannery | PlannerY — điều phối sản xuất (đưa vào 19/08 — APPS.md app 5/6) |
 | 9117 | apps/tasky | Tasky — kế hoạch tuần (app V3 mới 24/08) |
+| 9118 | RenderY | Dựng video: kịch bản + voice → draft CapCut (nhúng 30/08). Mã ở `F:\RenderY\autoedit` — tool có sẵn, KHÔNG nằm trong `apps/` |
+| 9119 | apps/thumby | ThumbY — mockup vị trí hiển thị thumbnail YouTube (app V3 mới, spec 31/08 — sổ `docs/thumby.md`) |
 | 9190 | apps/app-mau | App mẫu chứng minh hợp đồng app |
 | 6343 | Qdrant test (HTTP) | storage: data\qdrant — TÁCH HẲN kho thật |
 | 6344 | Qdrant test (gRPC) | phải khai tường minh kẻo rơi về 6334 đụng hệ thật |
