@@ -415,19 +415,38 @@ def _gate_nen(request: Request, quyen: str | None = None,
 
 
 async def _do_dich_vu() -> list[dict]:
-    """Sức khỏe từng dịch vụ: mọi app trong hợp đồng + Qdrant kho vector."""
+    """Sức khỏe từng dịch vụ: mọi app trong hợp đồng + Qdrant kho vector.
+
+    B1 (31/08): app có khai `suc_khoe` trong apps.json thì đọc thêm tầng SÂU
+    (khuôn nen/common/suc_khoe.py) → `muc` (ok/canh_bao/loi) + `mo_dun`;
+    khai mà không trả lời được → muc='loi' (khai là phải giữ lời, không im
+    lặng). App không khai → muc=None, hành vi cũ y nguyên.
+    """
     import asyncio
 
-    async def _mot(client, ten, url):
+    async def _mot(client, ten, url, muc_sk=None):
+        ket = {"ten": ten, "song": False, "muc": None, "mo_dun": []}
         try:
             r = await client.get(url)
-            return {"ten": ten, "song": r.status_code == 200}
+            ket["song"] = r.status_code == 200
         except httpx.HTTPError:
-            return {"ten": ten, "song": False}
+            pass
+        if muc_sk:
+            try:
+                r2 = await client.get(
+                    f"http://127.0.0.1:{muc_sk['cong']}{muc_sk['suc_khoe']}")
+                b = r2.json() if r2.status_code == 200 else {}
+                ket["muc"] = b.get("trang_thai") or "loi"
+                ket["mo_dun"] = b.get("mo_dun") or []
+            except (httpx.HTTPError, ValueError):
+                ket["muc"] = "loi"
+        return ket
 
     qdrant = os.getenv("QDRANT_URL", "http://127.0.0.1:6343").rstrip("/")
     async with httpx.AsyncClient(timeout=3.0) as client:
-        viec = [_mot(client, m["ten"], f"http://127.0.0.1:{m['cong']}{m['health']}")
+        viec = [_mot(client, m["ten"],
+                     f"http://127.0.0.1:{m['cong']}{m['health']}",
+                     muc_sk=m if m.get("suc_khoe") else None)
                 for m in doc_hop_dong()]
         viec.append(_mot(client, "Qdrant (kho vector)", qdrant + "/readyz"))
         return list(await asyncio.gather(*viec))
@@ -1502,12 +1521,13 @@ async def nen_ung_dung(request: Request):
     user = await run_in_threadpool(_gate_nen, request, "general_ung_dung")
     if isinstance(user, Response):
         return user
-    dich_vu = {d["ten"]: d["song"] for d in await _do_dich_vu()}
+    ds = await _do_dich_vu()
+    dich_vu = {d["ten"]: d["song"] for d in ds}
     nav = await run_in_threadpool(_nav_gen, user)
     return templates.TemplateResponse(
         request, "nen_ung_dung.html",
         {"user": user, "trang": "ung-dung", "apps": doc_hop_dong(),
-         "dich_vu": dich_vu, **nav})
+         "dich_vu": dich_vu, "chi_tiet": {d["ten"]: d for d in ds}, **nav})
 
 
 # ---------- DANH BẠ THỰC THỂ — Niches + Channels (Đ1 khối đế, DE.md) ----------

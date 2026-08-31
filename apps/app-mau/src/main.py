@@ -10,6 +10,8 @@ Chạy: python -m uvicorn main:app --app-dir "apps/app-mau/src" --port 9190
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
 
+from nen.common import suc_khoe
+
 PHIEN_BAN = "0.1.0"
 app = FastAPI(title="App mẫu")
 
@@ -17,6 +19,16 @@ app = FastAPI(title="App mẫu")
 @app.get("/health")
 async def health():
     return {"trang_thai": "ok", "app": "app-mau", "phien_ban": PHIEN_BAN}
+
+
+@app.get("/api/suc-khoe")
+async def api_suc_khoe():
+    """Sức khỏe SÂU theo khuôn nen/common/suc_khoe.py — app thật thay các kiểm
+    mẫu bằng kiểm nghiệp vụ của mình (DB nối được? kho vector khớp catalog?
+    job nền chạy đúng hạn?). Check nổ → module 'loi', endpoint vẫn 200."""
+    return suc_khoe.bao_cao("app-mau", PHIEN_BAN, [
+        ("tien-trinh", lambda: ("ok", "app đang phục vụ")),
+    ])
 
 
 @app.get("/", response_class=HTMLResponse)

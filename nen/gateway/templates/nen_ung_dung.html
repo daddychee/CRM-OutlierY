@@ -3,17 +3,43 @@
 {% block noi_dung %}
 <h2>App contracts <span class="phu" style="font-weight:400">— source: nen/rules/apps.json; an undeclared app does not exist to the platform</span></h2>
 <table>
-  <tr><th>App</th><th>Slug</th><th>Port</th><th>Status</th><th>Declared prefixes</th></tr>
+  <tr><th>App</th><th>Slug</th><th>Port</th><th>Status</th><th>Modules</th><th>Declared prefixes</th></tr>
   {% for a in apps %}
   <tr>
     <td><b>{{ a.ten }}</b></td>
     <td class="phu">{{ a.slug }}</td>
     <td>{{ a.cong }}</td>
     <td><span class="cham {{ 'song' if dich_vu.get(a.ten) else 'chet' }}"></span>{{ "running" if dich_vu.get(a.ten) else "NOT responding" }}</td>
+    <td style="max-width:300px">
+      {# Sức khỏe SÂU (B1): app khai `suc_khoe` trong apps.json mới có; guard
+         `is defined` để template render được cả khi code gateway cũ chưa restart
+         (bài học Jinja auto-reload 19/08). #}
+      {% if chi_tiet is defined and chi_tiet.get(a.ten) and chi_tiet.get(a.ten).muc %}
+        {% set ct = chi_tiet.get(a.ten) %}
+        <details>
+          <summary style="cursor:pointer">
+            {% if ct.muc == 'ok' %}<span class="cham song"></span>{{ ct.mo_dun | length }} module ổn
+            {% elif ct.muc == 'canh_bao' %}<span style="color:#C98500;font-weight:600">⚠ cảnh báo</span>
+            {% else %}<span class="cham chet"></span><span style="font-weight:600">lỗi module</span>{% endif %}
+          </summary>
+          {% if ct.mo_dun %}
+          <ul style="margin:6px 0 0;padding-left:18px">
+            {% for m in ct.mo_dun %}
+            <li>{{ m.ten }} —
+              {% if m.trang_thai == 'ok' %}ok{% elif m.trang_thai == 'canh_bao' %}<span style="color:#C98500">cảnh báo</span>{% else %}<span style="color:#C0392B">lỗi</span>{% endif %}
+              {% if m.chi_tiet %} · <span class="phu">{{ m.chi_tiet }}</span>{% endif %}</li>
+            {% endfor %}
+          </ul>
+          {% else %}<div class="phu" style="margin-top:6px">khai suc_khoe nhưng không đọc được — app chết hoặc endpoint sai</div>{% endif %}
+        </details>
+      {% elif a.suc_khoe %}<span class="phu">—</span>
+      {% else %}<span class="phu" title="app chưa khai suc_khoe trong apps.json">chưa khai</span>{% endif %}
+    </td>
     <td class="phu" style="max-width:340px">{{ a.tien_to | join(" ") or "—" }}</td>
   </tr>
   {% endfor %}
 </table>
 <p class="phu" style="margin-top:10px">Adding an app = one entry in apps.json
-  (template: apps/app-mau) + an access rule in phan_quyen.json — the gateway picks it up, no platform code changes.</p>
+  (template: apps/app-mau) + an access rule in phan_quyen.json — the gateway picks it up, no platform code changes.
+  Deep health = optional <code>suc_khoe</code> field (see apps/app-mau <code>/api/suc-khoe</code>).</p>
 {% endblock %}

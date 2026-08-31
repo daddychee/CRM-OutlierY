@@ -237,7 +237,7 @@
       "tien_to": [
         "/api"
       ],
-      "health": "/api/me",
+      "health": "/health",
       "phien_ban": "3.0-v3",
       "chay": {
         "kieu": "python-script",
@@ -834,6 +834,7 @@
       "cong": 9190,
       "tien_to": [],
       "health": "/health",
+      "suc_khoe": "/api/suc-khoe",
       "phien_ban": "0.1.0",
       "chay": {
         "kieu": "uvicorn",
