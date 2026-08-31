@@ -277,6 +277,7 @@
         "/logout"
       ],
       "health": "/api/health",
+      "suc_khoe": "/api/suc-khoe",
       "phien_ban": "0.2-v3",
       "chay": {
         "kieu": "python-module",
@@ -438,6 +439,7 @@
         "/api"
       ],
       "health": "/api/health",
+      "suc_khoe": "/api/suc-khoe",
       "phien_ban": "1.0-v3",
       "chay": {
         "kieu": "python-module",
@@ -544,6 +546,7 @@
         "/api/agent"
       ],
       "health": "/health",
+      "suc_khoe": "/api/suc-khoe",
       "phien_ban": "2.0.0",
       "chay": {
         "kieu": "uvicorn",
@@ -592,6 +595,7 @@
         "/web"
       ],
       "health": "/api/health",
+      "suc_khoe": "/api/suc-khoe",
       "phien_ban": "1.0-v3",
       "chay": {
         "kieu": "uvicorn",
