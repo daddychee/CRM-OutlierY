@@ -128,6 +128,22 @@
   lồng — làm khi có mạch mở các repo đó) + data-analytics (chờ điền két rồi
   thêm module llm giống ai-agent).
 
+- **01/09/2026 (0h) — PHỦ TRỌN 13/13 APP** (DA repo cha; content 8386074 ·
+  niche 2f78eff · seo fc98d76 ở repo lồng). data-analytics: llm-dien-giai (hỏi
+  két 3s — trống → canh_bao chỉ đường, cùng họ bệnh ai-agent) + bao-cao;
+  seo-optimize: khoa (load_keys từ két, nổ → canh_bao không loi — app vẫn phục
+  vụ dữ liệu đã có) + du-lieu, route vào _OPEN như /api/health; niche-research:
+  khoa (đếm khóa mọi việc trong két) + du-lieu (đếm dự án); content-ultimate:
+  ho-so-giong tái dùng _soi_kho_ho_so (corpus hỏng = gốc bệnh 'viết không tốt'
+  21/08), logic ở _suc_khoe_json hàm thuần. Nghiệm thu sống 4/4: DA canh_bao
+  két-thiếu-writer đúng bệnh chờ Owner; content "12 hồ sơ, 12 neo mỏng" (C3
+  treo hiện thẳng trên tab); niche 5 khóa/7 dự án; seo 2 khóa. Suite: DA 137 ·
+  seo 25 · niche 14 · content 786/1 fail test_cli_write baseline (stash kiểm
+  chứng). GHI NHẬN SAI KỶ LUẬT một lần: commit niche khi còn 1 fail (test
+  thiếu NICHE_TRUST_PROXY) — vá bằng commit sau, không amend. Baseline fail
+  các mạch khác đêm nay: root test_content_ultimate (outline) + to-chuc
+  test_finance + content test_cli_write — đều có trước, đã ghi chú từng nơi.
+
 ## Việc còn (cập nhật khuya 31/08)
 
 - [ ] **TAY OWNER — điền két vai writer** cho ai-agent (+ DA nếu muốn Analyze
