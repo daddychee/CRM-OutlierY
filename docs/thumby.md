@@ -245,3 +245,31 @@ Ghi để định hướng, CHƯA cam kết:
 - 31/08/2026 (tiếp 6) — **Owner DUYỆT mockup vòng 2 → Bước ③ XONG.**
   `thumby-v2.html` = bản UI chốt (mốc giữ nguyên trạng, đối chiếu khi code xong
   theo lệ đối-chiếu-mockup). Sang Bước ④ Code — kế hoạch trao đổi trước.
+- 31/08/2026 (tiếp 7) — **Bước ④ CODE XONG** (2 commit V3: 3d17778 app + 37505bd
+  quyền/root-test; suite app 6 + root 238 pass — 1 fail test ghim tien_to
+  content-ultimate là baseline phiên song song /kientruc d2968c5, không liên quan).
+  App đúng khuôn tasky: server chỉ render, nghiệp vụ client-side, KHÔNG route ghi
+  (test ghim mọi route ⊆ GET/HEAD); tooltip đo ĐIỂM CẮT title thật bằng tìm nhị
+  phân trên phần tử line-clamp; Roboto bundle local 2 file woff2 (Google trả
+  variable font — 400/500 cùng file, khai 2 @font-face trỏ chung); localStorage
+  bọc try/catch; nút Ẩn chip A/B (thêm lúc code — mockup ghi chú sẵn). PHÁT HIỆN
+  VẬN HÀNH: apps.json + phan_quyen.json đều đọc SỐNG theo mtime — thêm app không
+  cần restart gateway, CHỈ dòng _ALIAS "/thumby" (URL đẹp sidebar) là code cần
+  restart; dòng này đang ở working tree CHƯA COMMIT (gateway main.py dính mạch
+  RenderY chưa commit của phiên song song — chờ phiên đó commit, alias sẽ được
+  quét kèm hợp lệ). App :9119 ĐÃ BẬT tay (Start-Process, stateless không cần
+  env), smoke đạt: /health OK · không claims 401 · có claims 200 · static font
+  OK. CÒN: restart gateway (classifier chặn tự kill — chờ Owner) → nghiệm thu
+  Bước ⑤ theo mục 9.
+- 31/08/2026 (tiếp 8) — **RESTART GATEWAY (Owner duyệt) + NGHIỆM THU MÁY XONG.**
+  Diễn biến: kill gateway theo cổng 9000 → start-all bật lại nhưng gateway CHẾT
+  NGAY không dấu vết (cửa sổ ẩn nuốt lỗi; start-all vẫn bật được content-ultimate
+  9112 đang tắt) → bật lại tay có -RedirectStandardError ra log: lần này lên
+  sạch, log không lỗi (nghi vấn transient sau kill; KINH NGHIỆM: bật dịch vụ tay
+  nên kèm redirect stderr ra file — cửa sổ ẩn chết là mất bằng chứng). Nghiệm
+  thu máy: /login 200 · /thumby chưa đăng nhập 401 ĐỒNG NHẤT /tasky //nas ·
+  LAN 192.168.1.250:9000 200 · Caddy 9443 200 · :9119 health OK · radary gọi
+  két key qua gateway 200. CÒN LẠI CẦN MẮT OWNER (không có credential thật,
+  không tạo tài khoản trên iam.db sống theo lệ): đăng nhập KD L2 thấy nút
+  ThumbY + trang mở được; thả thumbnail thật soi 5 vị trí × 2 nền; đặt cạnh
+  mockup thumby-v2.html đối chiếu (lệ đối-chiếu-mockup).
