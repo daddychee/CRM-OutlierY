@@ -331,3 +331,14 @@ Quy ước từ 16/08/2026 (user chốt): mỗi mạch việc lớn có MỘT s�
   khai block `lop_noi_dung=rong`; alias `/thumby` gateway nằm working tree
   chờ phiên RenderY commit. KẾ TIẾP: GĐ2 nối RadarY (đọc DB chỉ-đọc) —
   thumb video ĐANG NỔ CÙNG CHỦ ĐỀ với title nhập đứng cạnh A/B.
+- 31/08/2026 — **GIÁM SÁT SỨC KHỎE HỆ — tab Applications thành trạm điều hành,
+  B1+B2+B3 xong test-first** (4 commit 73a690a→c835fd1 + plannery lồng 4aeab76;
+  sổ chi tiết: `docs/giam-sat-suc-khoe.md` — kiến trúc, nhật ký, việc còn).
+  Hợp đồng sức khỏe 2 tầng: `health` liveness + `suc_khoe` TÙY CHỌN khai module
+  ok/canh_bao/loi (khuôn `nen/common/suc_khoe.py`, app-mau làm mẫu, ai-agent
+  exemplar — module kho-vector bắt ca kho-rỗng-lặng-lẽ 31/07); trạm đo lỗi tại
+  proxy (`nen/common/dem_loi.py`): 5xx/502/504 theo app cửa sổ 5', cột Errors 5′
+  + Modules trên tab. Root 253 pass; ai-agent 312 pass. Plannery /health thật
+  (hết mượn /api/me); RENDERY còn nợ /health (repo F:, chờ lúc không job dựng).
+  KẾ TIẾP: B4 heartbeat việc nền → B5 cảnh báo ntfy → B6 canary; lan suc_khoe
+  sang radary/to-chuc/thumby.
