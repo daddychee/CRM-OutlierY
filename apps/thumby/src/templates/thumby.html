@@ -1,10 +1,14 @@
 {% extends "base.html" %}
 {% block title %}ThumbY — AI AGENT OUTLIERY{% endblock %}
 {% block topbar_ten %}THUMBY{% endblock %}
+{% block lop_noi_dung %}rong{% endblock %}
 
 {% block style_them %}
   /* ===== ThumbY — khung app theo token --th-* của base (đổi theme tự ăn) ===== */
-  .tb-wrap{max-width:1180px;margin:0 auto;padding:16px;
+  /* bề rộng THEO CHUẨN app khác: block lop_noi_dung=rong (như board Tasky) —
+     base .noi-dung mặc định bó 900px làm trang hẹp hơn các app còn lại (Owner
+     bắt 31/08); .noi-dung-wrap đã có padding nên đây không thêm. */
+  .tb-wrap{
     --panel:var(--th-121826);--line:var(--th-243149);--mut:var(--th-8b96a8);
     --acc:var(--th-4c8fe0);--acc-soft:var(--th-16263f)}
   .tb-wrap .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:14px}
@@ -26,7 +30,11 @@
   .drop{border:1.5px dashed var(--line);border-radius:10px;padding:12px;text-align:center;
     color:var(--mut);font-size:12.5px;cursor:pointer;min-height:110px;
     display:flex;flex-direction:column;justify-content:center;gap:4px;position:relative}
-  .drop b{color:var(--th-e8edf4);font-size:13px}
+  /* tên file người thật rất dài (784076103_18000..._n.jpg) — 1 dòng cắt "…",
+     không được tràn sang cột bên (vỡ UI Owner báo 31/08) */
+  .drop{min-width:0}
+  .drop b{color:var(--th-e8edf4);font-size:13px;display:block;max-width:100%;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .drop.keo{border-color:var(--acc);background:var(--acc-soft)}
   .drop .mini{width:112px;aspect-ratio:16/9;border-radius:6px;margin:0 auto 4px;
     background:linear-gradient(118deg,var(--th-243149),var(--th-31425e));position:relative;overflow:hidden}
@@ -93,7 +101,9 @@
   .yt .meta{color:var(--yt-muted);font-size:12px;line-height:1.4}
   .yt h3,.yt h4{margin:0}
 
-  .watch{display:grid;grid-template-columns:1fr 402px;gap:24px}
+  /* YouTube thật bó player ~854px — trang rộng (rong) mà không bó thì player
+     phình chiếm cả màn, mất tỉ lệ so với cột Suggested (đối chiếu mockup 31/08) */
+  .watch{display:grid;grid-template-columns:minmax(0,854px) 402px;gap:24px;justify-content:start}
   @media(max-width:980px){.watch{grid-template-columns:1fr}}
   .player{aspect-ratio:16/9;background:#000;border-radius:12px;position:relative}
   .player .play{position:absolute;inset:0;margin:auto;width:64px;height:44px;background:rgba(255,255,255,.14);
@@ -156,7 +166,7 @@
       <div class="drop" id="dropA">
         <div class="mini ma"><i>ẢNH A</i></div>
         <b id="tenA">Thả ảnh A vào đây</b>
-        <span>hoặc bấm để chọn (jpg / png / webp)</span>
+        <span id="hintA">hoặc bấm để chọn (jpg / png / webp)</span>
         <span class="tb-canh" id="canhA"></span>
         <input type="file" id="fileA" accept="image/jpeg,image/png,image/webp">
       </div>
@@ -392,7 +402,7 @@
   });
 
   /* ---- upload A/B: FileReader, ảnh KHÔNG rời trình duyệt ---- */
-  function napAnh(khoa, file, tenEl, canhEl, lopBody){
+  function napAnh(khoa, file, tenEl, canhEl, lopBody, hintEl, hintChu){
     if(!file||file.type.indexOf('image/')!==0) return;
     var rd=new FileReader();
     rd.onload=function(){
@@ -400,6 +410,8 @@
       document.documentElement.style.setProperty(khoa,'url("'+url+'")');
       body.classList.add(lopBody);
       tenEl.textContent=file.name;
+      tenEl.title=file.name;                 // tên dài bị cắt "…" — hover thấy đủ
+      if(hintEl){hintEl.textContent=hintChu} // khớp mockup: "Bấm để thay ảnh A"
       var im=new Image();
       im.onload=function(){
         var lech=Math.abs(im.width/im.height-16/9)/(16/9);
@@ -418,7 +430,7 @@
     dropEl.addEventListener('drop',function(e){e.preventDefault();dropEl.classList.remove('keo');
       if(e.dataTransfer.files.length)lam(e.dataTransfer.files[0])});
   }
-  noiDrop($('#dropA'),$('#fileA'),function(f){napAnh('--anhA',f,$('#tenA'),$('#canhA'),'co-anh-a')});
+  noiDrop($('#dropA'),$('#fileA'),function(f){napAnh('--anhA',f,$('#tenA'),$('#canhA'),'co-anh-a',$('#hintA'),'Bấm để thay ảnh A')});
   noiDrop($('#dropB'),$('#fileB'),function(f){napAnh('--anhB',f,$('#tenB'),$('#canhB'),'co-anh-b');$('#huongDanB').hidden=true});
   $('#goB').addEventListener('click',function(e){e.stopPropagation();
     body.classList.remove('co-anh-b');$('#tenB').textContent='Ảnh B (tùy chọn) — so A/B';
