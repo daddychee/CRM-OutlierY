@@ -60,6 +60,24 @@ async def health():
     return {"trang_thai": "ok", "app": "thumby", "phien_ban": PHIEN_BAN}
 
 
+@app.get("/api/suc-khoe")
+async def api_suc_khoe():
+    """Sức khỏe SÂU (B3 giám sát 31/08): radary-db — GĐ2 đọc RadarY chỉ-đọc.
+    DB chết → tính năng phụ tắt nhưng mô phỏng thumbnail VẪN chạy → canh_bao,
+    không loi (đúng độ nặng thật)."""
+    from nen.common import suc_khoe
+
+    def _radary_db():
+        try:
+            so = len(radary_reader.danh_sach_pool())
+            return "ok", f"đọc RadarY chỉ-đọc được — {so} pool"
+        except Exception as e:  # noqa: BLE001 — bệnh nhẹ, tự hạ mức
+            return "canh_bao", (f"không đọc được RadarY ({e}) — tab video-đang-nổ "
+                                "tắt, mô phỏng thumbnail vẫn chạy")
+
+    return suc_khoe.bao_cao("thumby", PHIEN_BAN, [("radary-db", _radary_db)])
+
+
 # ---------- trang duy nhất ----------
 
 @app.get("/thumby", response_class=HTMLResponse)
