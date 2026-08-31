@@ -285,6 +285,11 @@ async def health():
     return {"trang_thai": "ok", "app": "ai-agent", "phien_ban": PHIEN_BAN}
 
 
+# Cache canary search B6 (ts + số kết quả) — vòng giám sát nền hỏi suc-khoe
+# mỗi 60s, search chỉ chạy lại khi cache quá 10 phút.
+_CANARY = {"ts": 0.0, "kq": None}
+
+
 @app.get("/api/suc-khoe")
 async def api_suc_khoe():
     """Sức khỏe SÂU (B3 giám sát 31/08) — khuôn nen/common/suc_khoe.py, tab
@@ -322,8 +327,25 @@ async def api_suc_khoe():
         return "ok", (f"writer thật ({getattr(qa.writer, 'model', '?')}), "
                       f"{so_critic} critic thật")
 
+    def _canary():
+        # B6 canary (31/08): kho có point, health khác xanh mà search câu phổ
+        # quát ra 0 kết quả = tầng TRUY XUẤT lệch (model/hybrid/alias) — chỉ
+        # gọi-thật mới bắt được. Search local rẻ nhưng cache 10' vì vòng giám
+        # sát nền hỏi mỗi 60s. Không gọi LLM.
+        if client.mock:
+            return "canh_bao", "MOCK — không chạy canary search"
+        import time as _t
+        if _t.time() - _CANARY["ts"] > 600:
+            _CANARY["kq"] = len(client.search(os.getenv("CANARY_CAU", "quy trình")))
+            _CANARY["ts"] = _t.time()
+        if not _CANARY["kq"]:
+            return "loi", ("canary search 0 kết quả — tầng truy xuất lệch "
+                           "(model/hybrid/alias) dù các health khác có thể xanh")
+        return "ok", f"canary search trả {_CANARY['kq']} kết quả (cache 10 phút)"
+
     return suc_khoe.bao_cao("ai-agent", PHIEN_BAN, [
-        ("kho-vector", _kho), ("catalog", _catalog), ("llm-writer", _writer)])
+        ("kho-vector", _kho), ("catalog", _catalog), ("llm-writer", _writer),
+        ("search-canary", _canary)])
 
 
 # ================= các hàm phụ nhập liệu (chuyển thể nguyên từ app.py cũ) =================

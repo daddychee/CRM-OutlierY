@@ -71,6 +71,37 @@ def test_writer_mock_la_canh_bao_chi_duong_ket(monkeypatch):
     assert "két" in md["llm-writer"]["chi_tiet"]
 
 
+def test_canary_search_0_ket_qua_la_loi_va_co_cache(monkeypatch):
+    """B6 canary: kho có dữ liệu, health khác đều xanh mà search câu phổ quát ra
+    0 kết quả = tầng truy xuất lệch (model/hybrid/alias) — chỉ canary bắt được.
+    Search local rẻ nhưng không miễn phí → cache 10 phút (vòng giám sát gọi 60s/lần)."""
+    dem = []
+    monkeypatch.setattr(main.client, "mock", False)
+    monkeypatch.setattr(main.client, "dem_point_kho", lambda: 5)
+    monkeypatch.setattr(main, "doc_catalog", lambda: [{"Mã tài liệu": "KD-1"}])
+    monkeypatch.setattr(main.client, "search", lambda q: dem.append(q) or [])
+    monkeypatch.setattr(main, "_CANARY", {"ts": 0.0, "kq": None})
+    b, md = _mo_dun()
+    assert md["search-canary"]["trang_thai"] == "loi"
+    _mo_dun()
+    assert len(dem) == 1  # lần 2 ăn cache, không search lại
+
+
+def test_canary_search_co_ket_qua_la_ok(monkeypatch):
+    monkeypatch.setattr(main.client, "mock", False)
+    monkeypatch.setattr(main.client, "dem_point_kho", lambda: 5)
+    monkeypatch.setattr(main, "doc_catalog", lambda: [{"Mã tài liệu": "KD-1"}])
+    monkeypatch.setattr(main.client, "search", lambda q: [{"document_id": "KD-1"}])
+    monkeypatch.setattr(main, "_CANARY", {"ts": 0.0, "kq": None})
+    b, md = _mo_dun()
+    assert md["search-canary"]["trang_thai"] == "ok"
+
+
+def test_canary_mock_la_canh_bao(monkeypatch):
+    b, md = _mo_dun()  # conftest ép MOCK
+    assert md["search-canary"]["trang_thai"] == "canh_bao"
+
+
 def test_writer_that_la_ok_kem_ten_model(monkeypatch):
     from types import SimpleNamespace
     monkeypatch.setattr(main.qa, "writer",
