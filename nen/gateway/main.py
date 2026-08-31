@@ -452,6 +452,17 @@ async def _do_dich_vu() -> list[dict]:
         return list(await asyncio.gather(*viec))
 
 
+@app.on_event("startup")
+async def _bat_vong_giam_sat():
+    """B5 (31/08): vòng giám sát nền — đo dịch vụ + heartbeat mỗi chu kỳ, cảnh
+    báo lúc CHUYỂN trạng thái (sổ sự cố nhat_ky + ntfy nếu có topic). Vòng ngủ
+    trước đo sau nên không đụng test/khởi động; luật ở nen/common/giam_sat.py."""
+    import asyncio
+
+    from nen.common import giam_sat
+    asyncio.create_task(giam_sat.vong(_do_dich_vu))
+
+
 def _thong_ke_de() -> dict:
     """Đế đã nạp gì — số liệu THẬT đọc tại chỗ, nguồn chết thì None (không bịa 0)."""
     import datetime

@@ -67,6 +67,12 @@ $env:PYTHONIOENCODING = 'utf-8'
 # ~2GB moi lan (cung ho bay HF_HOME cua SpeakY 31/07).
 $env:FASTEMBED_CACHE_PATH = (Join-Path $root 'data\fastembed_cache')
 
+# Canh bao day B5 (31/08): vong giam sat nen cua gateway phat ntfy khi app chet/
+# module loi/viec nen tre nhip. Owner: bo comment dong duoi + thay topic KHO DOAN
+# (ntfy.sh cong khai theo topic!) roi subscribe topic do tren app ntfy dien thoai.
+# Chua dat topic → canh bao chi nam o so su co (data/logs/giam-sat) + tab Applications.
+# $env:GIAM_SAT_NTFY_TOPIC = 'outliery-doi-chuoi-nay-kho-doan'
+
 # NAS (to-chuc doc nen/common/nas_sync.py; gateway goi dong_bo_nen luc dang nhap/
 # doi mat khau): app con KHONG tu goi load_dotenv() - chi nen/gateway/main.py doc
 # thang .env goc, moi app khac phai duoc bom bien qua day (cung khuon
