@@ -1101,3 +1101,22 @@ Owner yêu cầu audit toàn bộ. 40 phát hiện, chia ba nhóm:
    thêm 'use strict' là vỡ (bom ghi nhận, đừng thêm strict vào kientruc.html).
 9. KT_TASKS không dọn entry cũ (đã cắt buoc 200 dòng; dọn theo TTL làm sau).
 10. `_budget_tu_brief` đọc "~1.5k" thành 15 — khuyên ghi số trần trong brief.
+
+### 15.12 OWNER QUYẾT 4 ĐIỀU (31/08 tối) — đã thi công ngay
+
+1. **Quyền outline**: người TẠO outline được finalize + chỉnh sửa; người cùng cấp
+   CHỈ XEM; Leader/Manager được sửa/chốt đè. Thi công: chốt đầu tiên trên run →
+   thành chủ outline (picks.chot_boi); người khác cùng cấp bị chặn chốt lại với
+   lỗi rõ; Leader+ luôn chốt được (backup outline.truoc.txt giữ nguyên). Xem phiên
+   đồng đội MỞ CHO MỌI CẤP (trước chỉ leader+) — vẫn chỉ-đọc tuyệt đối.
+2. **Tắt máy an toàn**: warning nhân sự trước khi tắt, CHỈ tắt khi không job.
+   Thi công: tat-may.ps1 ghi cờ sap_tat.json (UI kientruc + board hiện banner đỏ,
+   poll 60s) → hỏi /api/tinh-trang-ban (job writer/extractor + sinh khung) mỗi 5'
+   tối đa 60' → hết job mới shutdown; còn job sau 60' → KHÔNG tắt, ghi log.
+   (Tác vụ OUTLIERY-TatMay hiện Disabled — script là lưới khi bật lại/chạy tay.)
+3. **Brief phải TIẾNG ANH**: cảnh báo sống dưới ô briefing khi >5% ký tự có dấu
+   tiếng Việt (không chặn — luật A3); lý do: van Phủ-brief so chữ không xuyên
+   ngôn ngữ được.
+4. **Trung tâm thông báo** Outline Board: mọi toast được LƯU vào panel — nút
+   "Thông báo" ở header + badge chưa đọc, xem lại lịch sử cảnh báo của phiên
+   (50 mục, per-browser). Banner sắp-tắt dùng chung khung.
