@@ -151,6 +151,28 @@ async def health():
     return {"trang_thai": "ok", "app": "tasky", "phien_ban": PHIEN_BAN}
 
 
+@app.get("/api/suc-khoe")
+async def api_suc_khoe():
+    """Sức khỏe SÂU (B3 giám sát 31/08): nas-goc — Owner chốt 'tài liệu gộp hết
+    vào 1 folder trên NAS' (NAS_TASKY_GOC); gốc rời là đính kèm chết lặng lẽ."""
+    import os
+    from pathlib import Path
+
+    from nen.common import suc_khoe
+
+    def _nas_goc():
+        goc = [x.strip() for x in os.getenv("NAS_TASKY_GOC", "").split(";")
+               if x.strip()]
+        if not goc:
+            return "canh_bao", "NAS_TASKY_GOC chưa khai — đính kèm file không lưu được"
+        mat = [d for d in goc if not Path(d).is_dir()]
+        if mat:
+            return "loi", "gốc NAS mất: " + "; ".join(mat)
+        return "ok", f"{len(goc)} gốc NAS đọc được"
+
+    return suc_khoe.bao_cao("tasky", PHIEN_BAN, [("nas-goc", _nas_goc)])
+
+
 # ---------- trang ----------
 
 @app.get("/tasky", response_class=HTMLResponse)
