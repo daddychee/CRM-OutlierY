@@ -285,6 +285,37 @@ async def health():
     return {"trang_thai": "ok", "app": "ai-agent", "phien_ban": PHIEN_BAN}
 
 
+@app.get("/api/suc-khoe")
+async def api_suc_khoe():
+    """Sức khỏe SÂU (B3 giám sát 31/08) — khuôn nen/common/suc_khoe.py, tab
+    Applications của nền đọc qua trường `suc_khoe` trong apps.json.
+
+    `kho-vector` là lưới sự cố 31/07 (kho rỗng 3 ngày, hỏi–đáp chết lặng lẽ)
+    trồi lên hợp đồng: trước chỉ hiện khi Manager+ mở trang Kho tài liệu, giờ
+    nền tự thấy. KHÔNG gọi LLM ở đây — health phải rẻ, chạy mỗi lần mở tab.
+    """
+    from nen.common import suc_khoe
+
+    def _kho():
+        rows = doc_catalog()
+        if client.mock:
+            return "canh_bao", (f"MOCK_MODE — không có kho thật để kiểm "
+                                f"(catalog {len(rows)} tài liệu)")
+        so_point = client.dem_point_kho()
+        if so_point is None:
+            return "loi", "không kết nối được kho tìm kiếm Qdrant"
+        if rows and so_point == 0:
+            return "loi", (f"kho RỖNG trong khi catalog có {len(rows)} tài liệu "
+                           "— hỏi–đáp không trích được gì; chạy scripts/nap_lai_kho.py")
+        return "ok", f"{so_point} point / {len(rows)} tài liệu catalog"
+
+    def _catalog():
+        return "ok", f"đọc được {len(doc_catalog())} dòng catalog"
+
+    return suc_khoe.bao_cao("ai-agent", PHIEN_BAN, [
+        ("kho-vector", _kho), ("catalog", _catalog)])
+
+
 # ================= các hàm phụ nhập liệu (chuyển thể nguyên từ app.py cũ) =================
 
 def bo_dau(s: str) -> str:
