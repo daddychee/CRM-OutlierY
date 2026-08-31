@@ -773,7 +773,8 @@
       "mo_ta": "Dựng video: nhân sự đặt kịch bản + voice theo chương lên NAS, máy chủ chạy nền (2 việc song song), xong giao draft CapCut + footage phân theo chương ở 'Compose Timeline'.",
       "cong": 9118,
       "tien_to": ["/api"],
-      "health": "/api/me",
+      "health": "/health",
+      "suc_khoe": "/api/suc-khoe",
       "phien_ban": "0.1.0",
       "giao_dien": "khung",
       "chay": {
