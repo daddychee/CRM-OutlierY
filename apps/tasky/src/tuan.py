@@ -696,6 +696,68 @@ def _dia_chi_hop_le(dia_chi: str) -> str:
     raise ValueError("Chỉ nhận link http(s) hoặc đường NAS trong công ty.")
 
 
+# ---- TẢI FILE LÊN → gom vào MỘT thư mục trên NAS (Owner chốt 31/08) ----------
+# Người dùng kéo file vào phiếu; app chép vào NAS rồi lưu ĐƯỜNG DẪN như mọi tài
+# liệu khác. Một bản duy nhất, backup NAS lo sẵn, mở được bằng Explorer.
+TEP_TRAN_MB = 25
+DUOI_CAM = {".exe", ".bat", ".cmd", ".ps1", ".vbs", ".js", ".jar", ".msi", ".scr",
+            ".com", ".pif", ".reg", ".hta", ".wsf", ".lnk", ".dll", ".sh"}
+
+
+def _thu_muc_tep() -> Path:
+    """Thư mục gom tài liệu Tasky trên NAS. TASKY_TEP_DIR đè được (test + máy dev
+    không có NAS)."""
+    d = os.getenv("TASKY_TEP_DIR")
+    if not d:
+        nas = [x.strip() for x in os.getenv("NAS_TASKY_GOC", "").split(";") if x.strip()]
+        d = nas[0] if nas else str(_goc() / "tep")
+    return Path(d)
+
+
+def _ten_tep_an_toan(ten: str) -> str:
+    """Chỉ giữ phần TÊN, bỏ mọi thành phần đường dẫn — tên do trình duyệt gửi lên
+    là dữ liệu người dùng, có thể chứa '../' hoặc 'C:\'."""
+    ten = os.path.basename((ten or "").replace("\\", "/").split("/")[-1]).strip()
+    ten = "".join(("_" if c in '<>:"|?*' or ord(c) < 32 else c) for c in ten)
+    return (ten or "tep")[:120]
+
+
+def kiem_tep(ten: str, so_byte: int) -> str:
+    """Trả tên file đã làm sạch, hoặc ném lỗi. Chặn ĐUÔI CHẠY ĐƯỢC: Tasky không
+    được thành đường phát tán file thực thi trong mạng nội bộ."""
+    ten = _ten_tep_an_toan(ten)
+    duoi = os.path.splitext(ten)[1].lower()
+    if duoi in DUOI_CAM:
+        raise ValueError(f"Không nhận file {duoi} — đuôi chạy được.")
+    if not duoi:
+        raise ValueError("File phải có đuôi (.pdf, .docx, .png…).")
+    if so_byte > TEP_TRAN_MB * 1024 * 1024:
+        raise ValueError(f"File quá {TEP_TRAN_MB}MB — file nặng thì dán link NAS.")
+    if so_byte <= 0:
+        raise ValueError("File rỗng.")
+    return ten
+
+
+def luu_tep(ma: str, id_viec: str, ten: str, du_lieu: bytes) -> tuple[str, str]:
+    """Chép file vào NAS, trả (đường dẫn đầy đủ, tên hiển thị).
+
+    Trùng tên thì thêm hậu tố -2, -3 — KHÔNG ghi đè: file người khác đính trước đó
+    không được biến mất chỉ vì trùng tên (cùng lệ chống ghi đè của kho tài liệu).
+    """
+    ten = kiem_tep(ten, len(du_lieu))
+    thu_muc = _thu_muc_tep() / ma / id_viec
+    thu_muc.mkdir(parents=True, exist_ok=True)
+    goc, duoi = os.path.splitext(ten)
+    dich, i = thu_muc / ten, 2
+    while dich.exists():
+        dich = thu_muc / f"{goc}-{i}{duoi}"
+        i += 1
+    tam = dich.with_suffix(dich.suffix + ".tam")
+    tam.write_bytes(du_lieu)          # ghi nguyên tử: tạm rồi đổi tên
+    os.replace(tam, dich)
+    return str(dich), dich.name
+
+
 def them_tai_lieu(ma: str, id_viec: str, user: dict, dia_chi: str,
                   ten: str = "") -> dict:
     """Đính tài liệu vào việc — LƯU ĐƯỜNG DẪN, không chép file.

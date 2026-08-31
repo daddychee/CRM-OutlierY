@@ -733,6 +733,15 @@
       },
       "du_lieu": [
         {
+          "ten": "tep-dinh-kem",
+          "loai": "file",
+          "duong": "G:/OutlierY Nas 1/Tasky",
+          "muc_quy": "vang",
+          "backup": "nas",
+          "giu": "vinh-vien",
+          "ghi_chu": "File nhân sự tải lên trong phiếu việc (31/08). App KHÔNG giữ bản thứ hai — chỉ chép vào đây rồi lưu đường dẫn. Backup theo NAS, không nằm trong backup của repo. Trần 25MB/file, chặn đuôi chạy được."
+        },
+        {
           "ten": "tuan",
           "loai": "json",
           "duong": "data/tasky/db/tuan",

@@ -80,6 +80,13 @@ $env:VR_NAS_DIR = 'F:\OutlierY Nas 2'
 # app CHI bo qua buoc do - khong bao bua, va luoi chot ben trinh duyet van chay.
 $env:VR_FFPROBE = 'C:\OutlierY\tools\ffmpeg\bin\ffprobe.exe'
 
+# Tasky (31/08 - Owner chot "nguoi dung tai len app, tai lieu gom het vao 1 folder
+# tren NAS"): file dinh kem chep vao day roi luu DUONG DAN nhu moi tai lieu khac -
+# app KHONG giu ban thu hai. Share 'NAS1' nam ngay tren may nay (o G:) nen doc
+# thang o dia, KHONG di duong UNC (cung bay VR_NAS_DIR o tren).
+$env:NAS_TASKY_GOC = 'G:\OutlierY Nas 1\Tasky'
+
+
 # Duong UNC cua goc NAS: trang xem dua duong nay de nguoi dung dan vao Explorer
 # (trinh duyet khong mo duoc file:// tu trang http). Share 'Video' = F:\OutlierY Nas 2.
 $env:VR_NAS_UNC = '\\192.168.1.250\Video'
@@ -87,6 +94,30 @@ $env:VR_NAS_UNC = '\\192.168.1.250\Video'
 # ffmpeg (canh ffprobe) de QUET THU file tren NAS co dut/hong khong — file chep
 # do van du dung luong va doc duoc header nen chi giai ma moi lo (su co LI088.2).
 $env:VR_FFMPEG = 'C:\OutlierY\tools\ffmpeg\bin\ffmpeg.exe'
+
+# RenderY (30/08): tool dung video, ma nam NGOAI repo (F:\RenderY) vi la tool co san
+# duoc nhung vao, khong di tru. Cung khuon bien nhu VR_*: app con KHONG doc .env.
+#   TRUST_PROXY=1 -> tin header X-Remote-* (an toan vi app bind 127.0.0.1).
+#   NAS: share 'Video' nam ngay tren may nay o F: -> doc thang o dia, KHONG di UNC
+#   (tac vu SYSTEM khong co credential mang — cung bay VR_NAS_DIR o tren).
+$env:RENDERY_TRUST_PROXY = '1'
+# GOC NAS, khong phai mot thu muc co dinh: moi tap co ma rieng (LI001, SH042, IN002...)
+# va nam rai theo series. Nhan su DAN duong dan thu muc tap; rao duy nhat la phai
+# nam trong goc nay. Trong thu muc tap co thu muc con 'RenderY' chua cac chuong
+# H (hook) / C1..Cn (chapter) / E (end).
+$env:RENDERY_NAS = 'F:\OutlierY Nas 2'
+# Envato/Vecteezy KHONG co API key — dang nhap bang TRINH DUYET, phien luu o
+# F:\RenderY\autoedit\.browser_profiles\. Chi can EMAIL de BAT nguon; het phien
+# thi chay `rendery.bat sub-status` roi dang nhap lai bang Chrome tren may chu.
+# Vi khong phai khoa API nen KHONG dat trong ket (General > API Keys) — ket chi
+# giu bi mat dang khoa; day la thong tin tai khoan + phien trinh duyet.
+$env:ENVATO_EMAIL = 'taikhoan.sequoia@gmail.com'
+$env:VECTEEZY_EMAIL = 'taikhoan.sequoia@gmail.com'
+# Whisper (chuong THIEU .srt thi nhan dang de lay timestamp): model 'small' ~464MB
+# tai ve HF cache. Tac vu SYSTEM co %USERPROFILE% KHAC nen khong tro tuong minh
+# thi no tai lai lan nua vao cho khac — cung bay da ghi cho SpeakY (he cu).
+$env:HF_HOME = 'C:\Users\Administrator\.cache\huggingface'
+$renderyPy = 'F:\RenderY\autoedit\.venv\Scripts\python.exe'
 
 $dichVu = @(
     @{ Ten = 'qdrant-test'; Cong = 6343
@@ -131,6 +162,11 @@ $dichVu = @(
     @{ Ten = 'tasky'; Cong = 9117; Exe = $py
        Args = '-m uvicorn src.main:app --app-dir "apps/tasky" --host 127.0.0.1 --port 9117'
        Wd = $root }
+    # RenderY: venv RIENG (F:\RenderY\autoedit\.venv) vi ma nam ngoai repo — dung
+    # $renderyPy chu khong phai $py cua nen.
+    @{ Ten = 'rendery'; Cong = 9118; Exe = $renderyPy
+       Args = '-m uvicorn autoedit.web.server:app --host 127.0.0.1 --port 9118'
+       Wd = 'F:\RenderY\autoedit' }
     @{ Ten = 'caddy-tls'; Cong = 9443
        Exe = (Join-Path $root 'tools\caddy\caddy.exe')
        Args = 'run --config "' + (Join-Path $root 'tools\caddy\Caddyfile') + '"'

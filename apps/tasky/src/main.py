@@ -24,13 +24,15 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
+
+from starlette.concurrency import run_in_threadpool
 from urllib.parse import unquote
 
 import unicodedata
 from urllib.parse import urlencode
 
-from fastapi import Depends, FastAPI, Form, Header, HTTPException, Request
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi import File, UploadFile, Depends, FastAPI, Form, Header, HTTPException, Request
+from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
@@ -692,6 +694,49 @@ def form_them_tai_lieu(id: str = Form(...), dia_chi: str = Form(""), ten: str = 
     except (ValueError, PermissionError) as e:
         loi = str(e)
     return RedirectResponse(_ve_kem_loi(ve, loi, id), status_code=303)
+
+
+@app.post("/tasky/viec/tai-lieu/tep")
+async def form_tai_tep(id: str = Form(...), tuan_xem: str = Form(""),
+                       ve: str = Form("/task"), tep: UploadFile = File(...),
+                       user: dict = Depends(lay_user)):
+    """TẢI FILE LÊN → app chép vào MỘT thư mục trên NAS rồi đính đường dẫn đó
+    (Owner chốt 31/08). Không giữ bản thứ hai trong app: một tài liệu một chỗ.
+
+    Đọc file vào bộ nhớ vì trần 25MB — không cần luồng, và kiểm được kích thước
+    thật trước khi ghi (Content-Length do client gửi, không tin được).
+    """
+    ma = _ma_tuan_hop_le(tuan_xem)
+    loi = ""
+    try:
+        v = tuan_lo._tim(tuan_lo.doc_tuan(ma), id)
+        if not tuan_lo.duoc_doc_trao_doi(v, user):
+            raise PermissionError("Bạn không có phần trong việc này.")
+        du_lieu = await tep.read()
+        tuan_lo.kiem_tep(tep.filename or "", len(du_lieu))
+        duong, ten = await run_in_threadpool(
+            tuan_lo.luu_tep, ma, id, tep.filename or "", du_lieu)
+        tuan_lo.them_tai_lieu(ma, id, user, duong, ten)
+    except (ValueError, PermissionError) as e:
+        loi = str(e)
+    return RedirectResponse(_ve_kem_loi(ve, loi, id), status_code=303)
+
+
+@app.get("/tasky/tep")
+def tai_tep(duong: str, tuan_xem: str = "", id: str = "",
+            user: dict = Depends(lay_user)):
+    """Tải file đã đính. Quyền kiểm THEO VIỆC (ai có phần trong việc mới tải được),
+    và đường dẫn phải là file ĐANG ĐÍNH trong chính việc đó — không nhận đường dẫn
+    tùy ý từ URL, kẻo thành cửa đọc mọi file trên máy chủ."""
+    v = tuan_lo._tim(tuan_lo.doc_tuan(_ma_tuan_hop_le(tuan_xem)), id)
+    if not tuan_lo.duoc_doc_trao_doi(v, user):
+        raise HTTPException(404, "Không thấy tài liệu.")
+    if not any(t["dia_chi"] == duong for t in (v.get("tai_lieu") or [])):
+        raise HTTPException(404, "Không thấy tài liệu.")
+    p = Path(duong)
+    if not p.is_file():
+        raise HTTPException(404, "File không còn trên NAS.")
+    return FileResponse(p, filename=p.name)
 
 
 @app.post("/tasky/viec/tai-lieu/xoa")

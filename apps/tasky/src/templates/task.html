@@ -368,7 +368,12 @@
               <li>
                 {% if tl.dia_chi.startswith('http') %}
                 <a href="{{ tl.dia_chi }}" target="_blank" rel="noopener">{{ tl.ten }}</a>
-                {% else %}<span title="Đường NAS — copy dán vào Explorer">{{ tl.ten }}</span>{% endif %}
+                {% else %}
+                {# File trên NAS: tải qua app (route kiểm quyền theo việc). Trình duyệt
+                   không mở được đường \máy	hư-mục nên link trần là vô dụng. #}
+                <a href="/tasky/tep?duong={{ tl.dia_chi|urlencode }}&tuan_xem={{ ma_tuan }}&id={{ v.id }}"
+                   title="Tải về — hoặc mở thẳng trên NAS bằng Explorer">{{ tl.ten }}</a>
+                {% endif %}
                 <small>{{ tl.ai }}</small>
                 <form method="post" action="/tasky/viec/tai-lieu/xoa">
                   <input type="hidden" name="id" value="{{ v.id }}">
@@ -389,8 +394,22 @@
               <input type="text" name="ten" placeholder="Đặt tên (tùy)" style="max-width:150px;flex:0 0 auto">
               <button class="nut" type="submit">Đính</button>
             </form>
-            <div class="goi-y" style="margin-top:5px">Lưu ĐƯỜNG DẪN, không chép file —
-              bản mới nhất luôn nằm ở NAS / kho tài liệu.</div>
+            <form method="post" action="/tasky/viec/tai-lieu/tep" class="hang tai-tep"
+                  enctype="multipart/form-data" style="margin:7px 0 0">
+              <input type="hidden" name="id" value="{{ v.id }}">
+              <input type="hidden" name="tuan_xem" value="{{ ma_tuan }}">
+              <input type="hidden" name="ve" value="{{ ve }}">
+              <label class="nut-tep">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
+                  stroke-width="2" stroke-linecap="round"><path d="M12 16V4M7 9l5-5 5 5M4 20h16"/></svg>
+                Chọn file…
+                <input type="file" name="tep" onchange="this.form.submit()" hidden>
+              </label>
+              <span class="ghi">tối đa 25MB · file chép vào thư mục Tasky trên NAS</span>
+            </form>
+            <div class="goi-y" style="margin-top:5px">Dán đường dẫn nếu tài liệu đã có
+              sẵn trên NAS; tải lên nếu file còn ở máy bạn — cả hai đều thành MỘT bản
+              trên NAS, không giữ bản thứ hai trong app.</div>
           </div>
 
           <div class="td" style="margin-top:10px">
