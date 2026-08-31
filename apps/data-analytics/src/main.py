@@ -88,6 +88,49 @@ async def health():
     return {"trang_thai": "ok", "app": "data-analytics", "phien_ban": PHIEN_BAN}
 
 
+def _hoi_ket_writer() -> dict:
+    """Hỏi két cấu hình vai writer của app (tách hàm để test monkeypatch)."""
+    import os
+
+    import httpx
+    goc = os.getenv("GATEWAY_URL", "http://127.0.0.1:9000")
+    with httpx.Client(timeout=3) as c:
+        return c.get(f"{goc}/api/cau-hinh/llm/writer",
+                     params={"app": "data-analytics"}).json()
+
+
+@app.get("/api/suc-khoe")
+async def api_suc_khoe():
+    """Sức khỏe SÂU (B3 giám sát 31/08, khuôn nen/common/suc_khoe.py).
+
+    llm-dien-giai: két trống vai writer → Analyze trả diễn giải MẪU lặng lẽ
+    (cùng họ bệnh ai-agent 31/08) — health nói thẳng + chỉ đường. Không gọi LLM.
+    """
+    import os
+    from pathlib import Path
+
+    from nen.common import suc_khoe
+
+    def _llm():
+        try:
+            ch = _hoi_ket_writer()
+        except Exception:  # noqa: BLE001 — gateway chết không được 500
+            return "canh_bao", "không hỏi được két (gateway 9000?) — diễn giải sẽ dùng env/mock"
+        if not ch.get("provider"):
+            return "canh_bao", ("két chưa có vai writer cho data-analytics — "
+                                "Analyze trả diễn giải MẪU; điền ở General → API keys")
+        return "ok", f"writer từ két: {ch.get('model') or ch['provider']}"
+
+    def _bao_cao():
+        d = Path(os.getenv("BAO_CAO_DIR", "bao-cao-lich-su"))
+        if not d.is_dir():
+            return "canh_bao", f"BAO_CAO_DIR {d} chưa tồn tại — chưa có báo cáo nào"
+        return "ok", f"{sum(1 for _ in d.glob('*.json'))} báo cáo trong kho"
+
+    return suc_khoe.bao_cao("data-analytics", PHIEN_BAN, [
+        ("llm-dien-giai", _llm), ("bao-cao", _bao_cao)])
+
+
 @app.get("/", response_class=HTMLResponse)
 async def goc():
     # Mặt tiền = trang chọn module 2 khối (user chốt 18/08).
