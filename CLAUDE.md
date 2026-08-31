@@ -320,3 +320,14 @@ Quy ước từ 16/08/2026 (user chốt): mỗi mạch việc lớn có MỘT s�
   migration giữa chừng; **test `test_backfill_002` bắt được ca này**, DB thật không
   có bản ghi nào rơi vào đó nên nếu chỉ nghiệm thu trên máy này sẽ không bao giờ lộ.
   **Còn lại**: Owner chọn lại loại cho K-OUTLAND (form không tự đổi để khỏi bịa).
+
+- 31/08/2026 — **THUMBY V1 (:9119) — app mô phỏng vị trí hiển thị thumbnail
+  YouTube, XONG + đã sống trên hệ** (4 commit 3d17778→0ad3d68; sổ chi tiết:
+  `docs/thumby.md` — spec, 5 bước Owner duyệt từng bước, nhật ký, việc treo).
+  Thả ảnh A/B + title → xem đúng cỡ thật ở Suggested 168px / Home / Search /
+  Trang kênh / điện thoại, dark+light, squint, tooltip đo điểm cắt title.
+  Ảnh KHÔNG rời trình duyệt (app không route ghi — test ghim). Quyền vào KD
+  L2. Bài học mới cho app sau: base `.noi-dung` bó 900px — trang rộng phải
+  khai block `lop_noi_dung=rong`; alias `/thumby` gateway nằm working tree
+  chờ phiên RenderY commit. KẾ TIẾP: GĐ2 nối RadarY (đọc DB chỉ-đọc) —
+  thumb video ĐANG NỔ CÙNG CHỦ ĐỀ với title nhập đứng cạnh A/B.

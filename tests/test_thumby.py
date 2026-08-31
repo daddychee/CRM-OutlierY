@@ -28,9 +28,10 @@ def _owner(conn):
 def test_hop_dong_thumby():
     a = tim_app("thumby")
     assert a and a["cong"] == 9119 and a["health"] == "/health"
-    assert a["tien_to"] == ["/thumby", "/thumby-static"]
+    assert a["tien_to"] == ["/thumby", "/thumby-static", "/thumby-api", "/thumby-thumb"]
     assert a["chay"]["app_dir"] == "apps/thumby"
-    # VAN SPEC: V1 không lưu gì server-side — ai khai kho dữ liệu là đổi spec
+    # VAN SPEC: không lưu gì server-side — GĐ2 chỉ ĐỌC RadarY (mode=ro),
+    # vẫn không có kho dữ liệu riêng; ai khai du_lieu là đổi spec
     assert a["du_lieu"] == []
     # app native (tự vẽ sidebar OUTLIERY) — không đi đường khung /open
     assert "giao_dien" not in a

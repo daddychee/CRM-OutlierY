@@ -157,12 +157,47 @@ Trang kênh → khối soi-cỡ-thật (#3). Điện thoại: danh sách xem-ti�
 
 ## 6. Phase 2 — feed đối thủ thật từ RadarY (làm SAU khi phase 1 chạy)
 
-- **Giá trị:** thay 12 card giả bằng video THẬT của pool/ngách đang đánh —
-  trả lời đúng câu "thumbnail mình đứng cạnh 8 video đang nổ trong pool US
-  của Life In thì có chìm không".
-- Chọn pool/ngách từ dropdown (đọc danh sách pool RadarY theo quyền người
-  dùng); lấy title + view + ngày đăng + thumbnail; nút Shuffle rút ngẫu nhiên
-  từ pool; **A/B**: 2 thumbnail của mình đặt cùng lưới so cạnh nhau.
+- **MỤC TIÊU CHỐT LẠI (Owner 31/08, sau khi V1 xong):** nhập title + thumbnail
+  → cạnh thumb A/B xuất hiện thumb của các video **ĐANG NỔ CÙNG CHỦ ĐỀ** —
+  không phải chọn pool xem chung chung, mà MATCH THEO TITLE đang nhập.
+- **Nền dữ liệu đã soi (31/08, mode=ro):** bảng `videos` 33.170 dòng có sẵn
+  `title` + `pub_ts` + **`last_vph` (views/giờ RadarY tính sẵn — khỏi đụng
+  bảng ticks 1,2tr dòng)** + `thumb_ck` + `dead`; 26 workspace (LIFE IN,
+  SPACE, STORM…); thumbs cache tại `data/radary/thumbs/<ws_id>/
+  <yt_id>_<ck10>.jpg` (261M). "Đang nổ" = last_vph cao + tuổi 2-60 ngày.
+- **Cách match "cùng chủ đề" (đề xuất):** title nhập casefold → bỏ stopword
+  EN → n-gram 1-3; video khớp khi trùng ≥1 cụm 2-3 từ HOẶC ≥2 từ đơn; xếp
+  theo last_vph, lấy top ~8. **Van chống bịa: <3 video khớp → nói thẳng
+  "chưa tìm thấy video nổ cùng chủ đề", giữ card mẫu — không độn video lạc.**
+- Đường vào app: GET `/thumby-api/cung-chu-de` (JSON) + GET `/thumby-thumb/…`
+  (đọc thumbs chỉ-đọc, validate tên; thiếu file → client fallback i.ytimg) —
+  **vẫn toàn GET, van "không route ghi" của V1 giữ nguyên.**
+- RBAC: RadarY cho mọi bộ phận L1 xem → user ThumbY (KD L2) luôn đủ quyền,
+  không luật mới. A/B + Shuffle giữ nguyên, A/B đứng giữa video thật.
+- **3 CHỐT GĐ2 (Owner 31/08):** (1) BẮT CHỌN POOL trước khi tìm (không quét
+  mọi pool); (2) kích hoạt = BẬT NÚT một lần, sau đó sửa title ~1s tự tìm lại
+  (query local 0 quota); (3) KHÔNG vòng mockup riêng — đi thẳng code, UI dùng
+  chỗ đứng sẵn (mở khóa nút + dropdown pool + thay card mẫu bằng card thật).
+  LƯU Ý THIẾT KẾ: trang KÊNH giữ card mẫu (đó là video CÙNG KÊNH mình, không
+  phải chỗ của đối thủ); thumb chỉ trả URL local khi FILE TỒN TẠI, thiếu →
+  client fallback i.ytimg.com (offline thì còn gradient mẫu).
+- **GĐ2 CODE XONG (31/08 tối):** `src/radary_reader.py` (cô lập mọi truy cập
+  RadarY, mode=ro) + 3 route GET mới (`/thumby-api/pools`, `/thumby-api/
+  cung-chu-de`, `/thumby-thumb/{ws}/{file}` — tên file khớp khuôn chặt chống
+  traversal, thiếu claims 401) + tien_to khai thêm 2 tiền tố (proxy tự viết
+  lại cả trong JSON — đã kiểm _LOAI_CHU); template: nút "Cùng chủ đề (RadarY)"
+  + dropdown pool + dòng trạng thái, 11 slot card mẫu data-vs (Kênh giữ mẫu),
+  bật là thay card thật, tắt/không-đủ là PHỤC HỒI nguyên card mẫu; sửa title
+  debounce 900ms tự tìm lại. 13 test app + 3 root xanh. HAI CHỈNH SAU KHI ĐO
+  DỮ LIỆU THẬT: (a) sàn tuổi 2 ngày (mượn mạch dviews) loại oan video vừa
+  đăng đang nổ vph 16-19k → hạ về 0 (last_vph có sẵn từ ngày đầu); (b) số
+  nhiều 'Storms' không khớp 'Storm' → cắt 's' đuôi khi từ ≥5 ký tự ('news'
+  giữ nguyên). GIỚI HẠN ĐÃ BIẾT (ghi để nâng cấp sau): match theo MẶT CHỮ
+  title — video cùng chủ đề mà title không chung cụm từ nào sẽ sót (vd "Two
+  Large Storms Are Coming" vs title 'tropical storm gulf'); đường nâng cấp:
+  bảng keywords RadarY / embedding. Nghiệm thu thật pool STORM — US: top là
+  video 1 ngày tuổi vph ~19k đúng chủ đề; title lạc chủ đề → du=False giữ
+  card mẫu. CHỜ Owner kiểm mắt trên trình duyệt.
 - **Đường dữ liệu — CHỐT (Owner 31/08): đọc `data\radary\` CHỈ-ĐỌC** (SQLite
   mở `mode=ro` theo luật sổ địa bạ; thumbs đọc file trực tiếp). Đánh đổi chấp
   nhận: dính schema nội bộ RadarY → khi RadarY đổi schema phải sửa ThumbY theo;
@@ -273,3 +308,14 @@ Ghi để định hướng, CHƯA cam kết:
   không tạo tài khoản trên iam.db sống theo lệ): đăng nhập KD L2 thấy nút
   ThumbY + trang mở được; thả thumbnail thật soi 5 vị trí × 2 nền; đặt cạnh
   mockup thumby-v2.html đối chiếu (lệ đối-chiếu-mockup).
+- 31/08/2026 (tiếp 9) — **OWNER KIỂM MẮT BÁO VỠ UI → SỬA + ĐỐI CHIẾU MOCKUP
+  BẰNG MÁY** (commit 0ad3d68). 2 lỗi Owner báo: (a) tên file ảnh thật rất dài
+  (784076103_18000..._n.jpg) tràn vỡ sang cột bên → 1 dòng cắt "…" + hover xem
+  đủ; (b) trang HẸP hơn app khác — GỐC: base .noi-dung mặc định bó 900px, trang
+  rộng phải khai block `lop_noi_dung=rong` (chuẩn board Tasky) — LỆ CHO APP SAU:
+  app mới extends base nhớ cân nhắc block này. Kéo theo: màn rộng làm player
+  Trang xem phình → bó cột player minmax(0,854px) theo trần player YouTube
+  thật. Đối chiếu mockup đúng lệ bằng Chrome headless (fetch trang qua claims
+  → vá URL asset tuyệt đối → chụp dark+light đặt cạnh mockup): bố cục khớp;
+  khác có chủ đích duy nhất = topbar dùng khung base thay wordmark riêng.
+  Template-only nên hệ đang chạy tự ăn (Jinja auto-reload, đã curl kiểm).

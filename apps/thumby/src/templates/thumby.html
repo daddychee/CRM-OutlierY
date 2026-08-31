@@ -55,6 +55,11 @@
   .tb-cc b{color:var(--acc);font-weight:600}
   .tb-toggles{display:flex;gap:18px;flex-wrap:wrap;align-items:flex-end;margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
   .tb-toggles .grp{display:flex;flex-direction:column}
+  .tb-radary{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:12px}
+  .tb-radary select{background:var(--th-090c12);color:var(--th-e8edf4);border:1px solid var(--line);
+    border-radius:8px;padding:8px 10px;font:inherit;font-size:13px;min-width:220px}
+  .tb-tt{font-size:12.5px;color:var(--mut)}
+  .tb-tt.co{color:var(--acc)}
 
   /* ---- thanh vị trí (dính trong vùng cuộn nội dung) ---- */
   .posbar{position:sticky;top:0;z-index:20;background:var(--th-090c12);padding:8px 0 10px;
@@ -200,9 +205,13 @@
       <div class="grp"><span class="tb-lab">Công cụ soi</span>
         <span class="tb-seg"><button type="button" class="ktab" id="btnSquint">Squint test</button><button type="button" class="ktab" id="btnVbar">Thanh đã-xem</button><button type="button" class="ktab" id="btnMark">Ẩn chip A/B</button></span></div>
       <div class="grp"><span class="tb-lab">Card xung quanh</span>
-        <span class="tb-seg"><button type="button" class="ktab on">Mẫu tĩnh</button><button type="button" class="ktab" disabled title="Giai đoạn 2 — đọc pool RadarY, thumbnail đối thủ thật đứng cạnh A/B">Pool RadarY<small>giai đoạn 2</small></button></span></div>
+        <span class="tb-seg"><button type="button" class="ktab on" id="btnMau">Mẫu tĩnh</button><button type="button" class="ktab" id="btnRadary" title="Thumbnail video ĐANG NỔ cùng chủ đề với title (dữ liệu RadarY, 0 quota) đứng cạnh A/B">Cùng chủ đề<small>RadarY</small></button></span></div>
       <div class="grp" style="margin-left:auto"><span class="tb-lab">&nbsp;</span>
         <button type="button" class="tb-btn" id="btnShuffle">Shuffle vị trí</button></div>
+    </div>
+    <div class="tb-radary" id="khuRadary" hidden>
+      <select id="selPool"><option value="">— Chọn pool —</option></select>
+      <span class="tb-tt" id="ttRadary">Chọn pool rồi hệ tự tìm video đang nổ cùng chủ đề với title; sửa title là tự tìm lại.</span>
     </div>
   </div>
 
@@ -231,15 +240,15 @@
           <div class="wmeta"><span class="avt"></span><div><b style="font-size:14px">Echo Lab</b><div class="meta">2.1M subscribers</div></div></div>
         </div>
         <div>
-          <div class="sg"><div class="thumb s1"><span class="sph">video mẫu</span><span class="dur">12:08</span><span class="vbar"><i style="--w:62%"></i></span></div>
+          <div class="sg" data-vs="0"><div class="thumb s1"><span class="sph">video mẫu</span><span class="dur">12:08</span><span class="vbar"><i style="--w:62%"></i></span></div>
             <div><h4 class="t2">The Lost Highway That Connected Two Countries</h4><div class="meta">Atlas Files<br>842K views · 1 day ago</div></div></div>
           <div class="sg"><div class="thumb va"><span class="mark">A</span><span class="ph">ẢNH A</span><span class="dur jsDur">18:42</span></div>
             <div><h4 class="t2 jsTitle"></h4><div class="meta"><span class="jsChan"></span><br><span class="jsViews"></span> · <span class="jsTime"></span></div></div></div>
-          <div class="sg"><div class="thumb s2"><span class="sph">video mẫu</span><span class="dur">24:51</span></div>
+          <div class="sg" data-vs="1"><div class="thumb s2"><span class="sph">video mẫu</span><span class="dur">24:51</span></div>
             <div><h4 class="t2">Why Nobody Builds Wooden Ships Anymore</h4><div class="meta">Drydock<br>1.4M views · 2 weeks ago</div></div></div>
           <div class="sg chi-b"><div class="thumb vb"><span class="mark">B</span><span class="ph">ẢNH B</span><span class="dur jsDur">18:42</span></div>
             <div><h4 class="t2 jsTitle"></h4><div class="meta"><span class="jsChan"></span><br><span class="jsViews"></span> · <span class="jsTime"></span></div></div></div>
-          <div class="sg"><div class="thumb s3"><span class="sph">video mẫu</span><span class="dur">9:37</span><span class="vbar"><i style="--w:24%"></i></span></div>
+          <div class="sg" data-vs="2"><div class="thumb s3"><span class="sph">video mẫu</span><span class="dur">9:37</span><span class="vbar"><i style="--w:24%"></i></span></div>
             <div><h4 class="t2">We Tested 1930s Survival Advice for a Week</h4><div class="meta">Field Manual<br>623K views · 5 days ago</div></div></div>
         </div>
       </div>
@@ -253,17 +262,17 @@
     <h2>Home PC <small>(A/B cùng lưới — Shuffle đảo vị trí, đổi 3/4/5 cột ở thanh điều khiển)</small></h2>
     <div class="yt">
       <div class="home" id="homeGrid">
-        <div class="card"><div class="thumb s4"><span class="sph">video mẫu</span><span class="dur">14:03</span><span class="vbar"><i style="--w:80%"></i></span></div>
+        <div class="card" data-vs="3"><div class="thumb s4"><span class="sph">video mẫu</span><span class="dur">14:03</span><span class="vbar"><i style="--w:80%"></i></span></div>
           <div class="row"><span class="avt"></span><div><h3 class="t2">The Man Who Mapped Every Cave in Kentucky</h3><div class="meta">Atlas Files · 1.1M views · 4 days ago</div></div></div></div>
         <div class="card"><div class="thumb va"><span class="mark">A</span><span class="ph">ẢNH A</span><span class="dur jsDur">18:42</span></div>
           <div class="row"><span class="avt"></span><div><h3 class="t2 jsTitle"></h3><div class="meta"><span class="jsChan"></span> · <span class="jsViews"></span> · <span class="jsTime"></span></div></div></div></div>
-        <div class="card"><div class="thumb s5"><span class="sph">video mẫu</span><span class="dur">21:17</span></div>
+        <div class="card" data-vs="4"><div class="thumb s5"><span class="sph">video mẫu</span><span class="dur">21:17</span></div>
           <div class="row"><span class="avt"></span><div><h3 class="t2">Living on a Fire Lookout Tower — Full Season</h3><div class="meta">High Country · 3.4M views · 3 weeks ago</div></div></div></div>
-        <div class="card"><div class="thumb s6"><span class="sph">video mẫu</span><span class="dur">8:54</span></div>
+        <div class="card" data-vs="5"><div class="thumb s6"><span class="sph">video mẫu</span><span class="dur">8:54</span></div>
           <div class="row"><span class="avt"></span><div><h3 class="t2">Why Old Farmhouses Never Get Cold</h3><div class="meta">Timber &amp; Stone · 967K views · 1 week ago</div></div></div></div>
         <div class="card chi-b"><div class="thumb vb"><span class="mark">B</span><span class="ph">ẢNH B</span><span class="dur jsDur">18:42</span></div>
           <div class="row"><span class="avt"></span><div><h3 class="t2 jsTitle"></h3><div class="meta"><span class="jsChan"></span> · <span class="jsViews"></span> · <span class="jsTime"></span></div></div></div></div>
-        <div class="card"><div class="thumb s7"><span class="sph">video mẫu</span><span class="dur">16:29</span><span class="vbar"><i style="--w:35%"></i></span></div>
+        <div class="card" data-vs="6"><div class="thumb s7"><span class="sph">video mẫu</span><span class="dur">16:29</span><span class="vbar"><i style="--w:35%"></i></span></div>
           <div class="row"><span class="avt"></span><div><h3 class="t2">I Spent 24 Hours in an Abandoned Ghost Town</h3><div class="meta">Field Manual · 2.2M views · 6 days ago</div></div></div></div>
       </div>
     </div>
@@ -275,7 +284,7 @@
   <div class="panel">
     <h2>Kết quả tìm kiếm PC</h2>
     <div class="yt">
-      <div class="srch"><div class="thumb s8"><span class="sph">video mẫu</span><span class="dur">11:26</span></div>
+      <div class="srch" data-vs="7"><div class="thumb s8"><span class="sph">video mẫu</span><span class="dur">11:26</span></div>
         <div><h3 class="t2">Cabin Life: What a Year Off-Grid Actually Costs</h3>
           <div class="meta">418K views · 2 months ago</div>
           <div class="chan"><span class="avt"></span><span class="meta">Timber &amp; Stone</span></div>
@@ -335,11 +344,11 @@
   <div class="panel">
     <h2>Điện thoại — danh sách xem tiếp <small>(dưới video đang xem)</small></h2>
     <div class="phone"><div class="yt">
-      <div class="mrow"><div class="thumb s1"><span class="sph">mẫu</span><span class="dur">12:08</span></div>
+      <div class="mrow" data-vs="0"><div class="thumb s1"><span class="sph">mẫu</span><span class="dur">12:08</span></div>
         <div><h4 class="t2">The Lost Highway That Connected Two Countries</h4><div class="meta">Atlas Files · 842K · 1 day ago</div></div><span class="mdots">⋮</span></div>
       <div class="mrow"><div class="thumb va"><span class="mark">A</span><span class="ph">ẢNH A</span><span class="dur jsDur">18:42</span></div>
         <div><h4 class="t2 jsTitle"></h4><div class="meta"><span class="jsChan"></span> · <span class="jsViews"></span> · <span class="jsTime"></span></div></div><span class="mdots">⋮</span></div>
-      <div class="mrow"><div class="thumb s3"><span class="sph">mẫu</span><span class="dur">9:37</span></div>
+      <div class="mrow" data-vs="1"><div class="thumb s3"><span class="sph">mẫu</span><span class="dur">9:37</span></div>
         <div><h4 class="t2">We Tested 1930s Survival Advice for a Week</h4><div class="meta">Field Manual · 623K · 5 days ago</div></div><span class="mdots">⋮</span></div>
       <div class="mrow chi-b"><div class="thumb vb"><span class="mark">B</span><span class="ph">ẢNH B</span><span class="dur jsDur">18:42</span></div>
         <div><h4 class="t2 jsTitle"></h4><div class="meta"><span class="jsChan"></span> · <span class="jsViews"></span> · <span class="jsTime"></span></div></div><span class="mdots">⋮</span></div>
@@ -352,7 +361,7 @@
   <div class="panel">
     <h2>Điện thoại — Home feed <small>(thumbnail tràn bề ngang)</small></h2>
     <div class="phone"><div class="yt mfeed">
-      <div><div class="thumb s4"><span class="sph">video mẫu</span><span class="dur">14:03</span></div>
+      <div data-vs="2"><div class="thumb s4"><span class="sph">video mẫu</span><span class="dur">14:03</span></div>
         <div class="mline"><span class="avt"></span><div><h4 class="t2">The Man Who Mapped Every Cave in Kentucky</h4><div class="meta">Atlas Files · 1.1M views · 4 days ago</div></div></div></div>
       <div><div class="thumb va"><span class="mark">A</span><span class="ph">ẢNH A</span><span class="dur jsDur">18:42</span></div>
         <div class="mline"><span class="avt"></span><div><h4 class="t2 jsTitle"></h4><div class="meta"><span class="jsChan"></span> · <span class="jsViews"></span> · <span class="jsTime"></span></div></div></div></div>
@@ -438,6 +447,75 @@
   // thả trượt ra ngoài ô không được làm trình duyệt mở file thay trang
   document.addEventListener('dragover',function(e){e.preventDefault()});
   document.addEventListener('drop',function(e){e.preventDefault()});
+
+  /* ---- GĐ2: card xung quanh = video ĐANG NỔ cùng chủ đề (RadarY, chỉ-đọc) ---- */
+  var cheDo='mau', khuR=$('#khuRadary'), selPool=$('#selPool'), ttR=$('#ttRadary'),
+      daNapPool=false, hentg=null;
+  function fmtViews(n){if(n==null)return'';if(n>=1e6)return(n/1e6).toFixed(n>=1e7?0:1).replace(/\.0$/,'')+'M';
+    if(n>=1e3)return Math.round(n/1e3)+'K';return String(n)}
+  function fmtDur(s){s=Math.max(0,s|0);var h=(s/3600)|0,m=((s%3600)/60)|0,g=s%60;
+    return(h?h+':'+String(m).padStart(2,'0'):m)+':'+String(g).padStart(2,'0')}
+  function oSlot(el){return{thumb:el.querySelector('.thumb'),sph:el.querySelector('.sph'),
+    dur:el.querySelector('.dur'),tit:el.querySelector('h3.t2,h4.t2'),meta:el.querySelector('.meta')}}
+  function apDung(videos){
+    $$('[data-vs]').forEach(function(el){
+      var v=videos[Number(el.dataset.vs)%videos.length],o=oSlot(el);
+      if(!el._goc)el._goc={bg:o.thumb.style.backgroundImage,dur:o.dur.textContent,
+        tit:o.tit.textContent,meta:o.meta.innerHTML,sph:o.sph?o.sph.style.display:''};
+      var url=v.thumb||('https://i.ytimg.com/vi/'+v.yt_id+'/mqdefault.jpg');
+      o.thumb.style.backgroundImage='url("'+url+'")';
+      o.thumb.style.backgroundSize='cover';o.thumb.style.backgroundPosition='center';
+      if(o.sph)o.sph.style.display='none';
+      o.dur.textContent=fmtDur(v.duration_s);
+      o.tit.textContent=v.title;o.tit.title=v.title;
+      o.meta.textContent=(v.kenh?v.kenh+' · ':'')+
+        (v.views!=null?fmtViews(v.views)+' views · ':'')+v.ngay_tuoi+' days ago';
+    });
+    doTooltip();
+  }
+  function phucHoiMau(){
+    $$('[data-vs]').forEach(function(el){
+      if(!el._goc)return;var o=oSlot(el);
+      o.thumb.style.backgroundImage=el._goc.bg;o.thumb.style.backgroundSize='';
+      o.thumb.style.backgroundPosition='';
+      if(o.sph)o.sph.style.display=el._goc.sph;
+      o.dur.textContent=el._goc.dur;o.tit.textContent=el._goc.tit;o.tit.title='';
+      o.meta.innerHTML=el._goc.meta;el._goc=null;
+    });
+  }
+  function baoR(chu,co){ttR.textContent=chu;ttR.classList.toggle('co',!!co)}
+  function napPools(){
+    if(daNapPool)return;daNapPool=true;
+    fetch('/thumby-api/pools').then(function(r){return r.json()}).then(function(d){
+      (d.pools||[]).forEach(function(p){var o=document.createElement('option');
+        o.value=p.id;o.textContent=p.ten+' ('+p.so_video+' video)';selPool.appendChild(o)});
+      if(d.loi)baoR(d.loi);
+    }).catch(function(){baoR('Không gọi được dữ liệu RadarY.')});
+  }
+  function timCungChuDe(){
+    if(cheDo!=='radary')return;
+    if(!selPool.value){baoR('Chọn pool rồi hệ tự tìm video đang nổ cùng chủ đề với title.');return}
+    baoR('Đang tìm trong pool…');
+    fetch('/thumby-api/cung-chu-de?ws='+encodeURIComponent(selPool.value)+
+          '&title='+encodeURIComponent(inT.value))
+      .then(function(r){return r.json()}).then(function(d){
+        if(cheDo!=='radary')return;
+        if(!d.du){phucHoiMau();baoR(d.ly_do||'Chưa tìm thấy video nổ cùng chủ đề — giữ card mẫu.');return}
+        apDung(d.videos);
+        baoR('Đang đứng cạnh '+d.videos.length+' video nổ cùng chủ đề (xếp theo views/giờ RadarY).',true);
+      }).catch(function(){baoR('Không gọi được dữ liệu RadarY.')});
+  }
+  seg([$('#btnMau'),$('#btnRadary')],function(b){
+    cheDo=(b.id==='btnRadary')?'radary':'mau';
+    khuR.hidden=(cheDo!=='radary');
+    if(cheDo==='radary'){napPools();timCungChuDe()}
+    else{phucHoiMau();doTooltip()}
+  });
+  selPool.addEventListener('change',timCungChuDe);
+  inT.addEventListener('input',function(){
+    if(cheDo!=='radary')return;
+    clearTimeout(hentg);hentg=setTimeout(timCungChuDe,900); // Owner chốt: sửa title ~1s tự tìm lại
+  });
 
   /* ---- đồng bộ chữ + đếm ký tự + tooltip phần bị cắt ---- */
   var inT=$('#inTitle'),inC=$('#inChan'),inD=$('#inDur'),inV=$('#inViews'),inG=$('#inTime');

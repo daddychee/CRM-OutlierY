@@ -34,9 +34,9 @@ def test_trang_render_du_khoi():
     assert 'id="posbar"' in b
     for pos in ("sug", "home", "srch", "chan", "zoom", "mnext", "mhome"):
         assert f'data-pos="{pos}"' in b, pos
-    # điều khiển: 2 ô thả ảnh + chỗ đứng GĐ2 (nút Pool RadarY khóa)
+    # điều khiển: 2 ô thả ảnh + GĐ2 (nút Cùng chủ đề RadarY + dropdown pool)
     assert 'id="dropA"' in b and 'id="dropB"' in b
-    assert "Pool RadarY" in b and "giai đoạn 2" in b
+    assert 'id="btnRadary"' in b and 'id="selPool"' in b
     # font Roboto bundle local — không gọi font ngoài Internet
     assert "/thumby-static/roboto-local.css" in b
     assert "fonts.googleapis.com" not in b

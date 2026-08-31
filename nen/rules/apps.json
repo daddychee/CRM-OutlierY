@@ -814,7 +814,9 @@
       "cong": 9119,
       "tien_to": [
         "/thumby",
-        "/thumby-static"
+        "/thumby-static",
+        "/thumby-api",
+        "/thumby-thumb"
       ],
       "health": "/health",
       "phien_ban": "0.1.0",
