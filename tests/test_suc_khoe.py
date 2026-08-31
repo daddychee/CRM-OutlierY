@@ -187,6 +187,46 @@ def test_trang_applications_hien_mo_dun_va_canh_bao(app_stub, monkeypatch,
     assert "catalog 10 mà kho 3 point" in r.text
 
 
+# ---------- plannery: sức khỏe sâu (B3 lan dần) ----------
+
+def _spin_plannery(tmp_path, monkeypatch):
+    monkeypatch.setenv("PLANNER_DATA_DIR", str(tmp_path))
+    monkeypatch.syspath_prepend(str(ROOT / "apps" / "plannery"))
+    spec = importlib.util.spec_from_file_location(
+        "plannery_server_sk2", ROOT / "apps" / "plannery" / "server.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    from http.server import ThreadingHTTPServer
+    sv = ThreadingHTTPServer(("127.0.0.1", 0), mod.Handler)
+    t = threading.Thread(target=sv.serve_forever, daemon=True)
+    t.start()
+    return sv, t
+
+
+def test_plannery_suc_khoe_plan_ok_va_hong(tmp_path, monkeypatch):
+    """plan-json là dữ liệu VÀNG của plannery: đọc được → ok kèm số người/dự án
+    + _rev; file hỏng → loi (lịch cả team trắng); chưa có → canh_bao nói thẳng.
+    App tự đủ (repo riêng) nên KHÔNG import nen.* — khuôn suc_khoe là HỢP ĐỒNG
+    JSON, không phải import bắt buộc."""
+    import httpx
+    (tmp_path / "plan.json").write_text(
+        '{"_rev": 7, "people": [{"id": "a"}], "projects": []}', encoding="utf-8")
+    sv, t = _spin_plannery(tmp_path, monkeypatch)
+    try:
+        cong = sv.server_address[1]
+        b = httpx.get(f"http://127.0.0.1:{cong}/api/suc-khoe", timeout=3).json()
+        assert b["app"] == "plannery" and b["trang_thai"] == "ok"
+        md = {m["ten"]: m for m in b["mo_dun"]}
+        assert "_rev 7" in md["plan-json"]["chi_tiet"]
+        # plan hỏng → loi (đọc SỐNG mỗi lần gọi, không cần restart)
+        (tmp_path / "plan.json").write_text("{hong", encoding="utf-8")
+        b = httpx.get(f"http://127.0.0.1:{cong}/api/suc-khoe", timeout=3).json()
+        assert b["trang_thai"] == "loi"
+    finally:
+        sv.shutdown()
+        t.join(timeout=5)
+
+
 # ---------- sửa health lệch: plannery dùng /api/me (auth) làm health ----------
 
 def test_plannery_co_endpoint_health_that(tmp_path, monkeypatch):

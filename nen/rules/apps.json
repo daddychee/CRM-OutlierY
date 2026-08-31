@@ -239,6 +239,7 @@
         "/api"
       ],
       "health": "/health",
+      "suc_khoe": "/api/suc-khoe",
       "phien_ban": "3.0-v3",
       "chay": {
         "kieu": "python-script",
