@@ -1521,13 +1521,15 @@ async def nen_ung_dung(request: Request):
     user = await run_in_threadpool(_gate_nen, request, "general_ung_dung")
     if isinstance(user, Response):
         return user
+    from nen.common import dem_loi
     ds = await _do_dich_vu()
     dich_vu = {d["ten"]: d["song"] for d in ds}
     nav = await run_in_threadpool(_nav_gen, user)
     return templates.TemplateResponse(
         request, "nen_ung_dung.html",
         {"user": user, "trang": "ung-dung", "apps": doc_hop_dong(),
-         "dich_vu": dich_vu, "chi_tiet": {d["ten"]: d for d in ds}, **nav})
+         "dich_vu": dich_vu, "chi_tiet": {d["ten"]: d for d in ds},
+         "dem": dem_loi.tom_tat(), **nav})
 
 
 # ---------- DANH BẠ THỰC THỂ — Niches + Channels (Đ1 khối đế, DE.md) ----------

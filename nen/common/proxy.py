@@ -26,6 +26,8 @@ import httpx
 from fastapi import Request
 from fastapi.responses import Response, StreamingResponse
 
+from nen.common import dem_loi
+
 _client: httpx.AsyncClient | None = None
 _client_loop = None
 
@@ -148,16 +150,32 @@ async def chuyen_tiep(request: Request, cong: int, goc: str, duong_dan: str,
         headers["X-Remote-Actions"] = ",".join(hanh_dong)
     than = await request.body()
 
+    # B2 giám sát (31/08): proxy là cửa duy nhất mọi request app đi qua → trạm đo.
+    # 5xx của app / cổng chết / timeout trước đây đi xuyên KHÔNG để lại vết nào.
+    dem_loi.ghi_yeu_cau(cong)
+
     client = _lay_client()
     try:
         req = client.build_request(request.method, dich, headers=headers, content=than,
                                    params=dict(request.query_params))
         phan_hoi = await client.send(req, stream=True, follow_redirects=False)
     except httpx.ConnectError:
+        dem_loi.ghi_loi(cong, 502, "/" + duong_dan, "cong chet")
         return Response(
             f"<p style='font-family:system-ui;padding:24px'>⚠️ Chưa mở được app "
             f"(cổng {cong} không trả lời). Xem trang Sức khỏe hệ.</p>",
             status_code=502, media_type="text/html; charset=utf-8")
+    except httpx.TimeoutException:
+        # Trước B2: nổ thô lên FastAPI thành 500 không vết (họ bài học LLM_TIMEOUT
+        # 19/07 — mọi lời gọi ra ngoài phải có vết). Giờ 504 tử tế + ghi nhận.
+        dem_loi.ghi_loi(cong, 504, "/" + duong_dan, "timeout")
+        return Response(
+            f"<p style='font-family:system-ui;padding:24px'>⚠️ App (cổng {cong}) "
+            f"nhận yêu cầu nhưng không trả lời kịp. Xem trang Sức khỏe hệ.</p>",
+            status_code=504, media_type="text/html; charset=utf-8")
+
+    if phan_hoi.status_code >= 500:
+        dem_loi.ghi_loi(cong, phan_hoi.status_code, "/" + duong_dan)
 
     loai = phan_hoi.headers.get("content-type", "")
     bo_ra = {"content-length", "transfer-encoding", "content-encoding"}
