@@ -117,6 +117,40 @@ async def health():
     return {"trang_thai": "ok", "app": "video-review", "phien_ban": PHIEN_BAN}
 
 
+@app.get("/api/suc-khoe")
+async def api_suc_khoe():
+    """Sức khỏe SÂU (B3 giám sát 31/08): `nas` — video KHÔNG nằm trong app,
+    gốc NAS rời là thêm/xem chết; `ffprobe` — thiếu chỉ bỏ dò codec (thiết kế
+    20/08) → canh_bao, và VR_FFPROBE đang trỏ C:\\OutlierY di sản (xóa ~22/09):
+    ngày đó module này tự vàng nhắc chuyển ffmpeg."""
+    import os
+    import shutil
+    from pathlib import Path
+
+    from nen.common import suc_khoe
+
+    def _nas():
+        d = os.environ.get("VR_NAS_DIR", "").strip()
+        if not d:
+            return "canh_bao", "VR_NAS_DIR chưa khai — tính năng NAS đang ẩn"
+        if not Path(d).is_dir():
+            return "loi", f"gốc NAS {d} không đọc được — thêm/xem video từ NAS chết"
+        return "ok", f"gốc NAS đọc được ({d})"
+
+    def _ffprobe():
+        p = os.environ.get("VR_FFPROBE", "").strip()
+        if p and Path(p).exists():
+            return "ok", f"ffprobe tại {p}"
+        if shutil.which("ffprobe"):
+            return "ok", "ffprobe trong PATH"
+        return "canh_bao", ("không thấy ffprobe — bỏ bước dò codec (file H.265 "
+                            "phát tiếng-màn-đen sẽ không được cảnh báo); nhớ vụ "
+                            "chuyển ffmpeg khỏi C:\\OutlierY trước ~22/09")
+
+    return suc_khoe.bao_cao("video-review", PHIEN_BAN, [
+        ("nas", _nas), ("ffprobe", _ffprobe)])
+
+
 @app.get("/")
 async def goc():
     return RedirectResponse("/danh-sach", status_code=303)
