@@ -57,6 +57,19 @@
     `schtasks /run /tn OUTLIERY-V3` (start-all tự bỏ qua app còn sống). Máy
     reboot 9:00 hằng ngày cũng tự ăn bản mới nếu không restart tay.
 
+- **31/08/2026 (tối) — DEPLOY + PHÁT HIỆN THẬT ĐẦU TIÊN của tab giám sát.**
+  Restart gateway/plannery/ai-agent (dừng theo cổng, Owner duyệt; schtasks
+  OUTLIERY-V3 dựng lại) — nghiệm thu sống: 9000 lên, plannery /health 200,
+  ai-agent /api/suc-khoe 200. Module kho-vector lập tức báo **canh_bao:
+  ai-agent đang chạy MOCK_MODE trên hệ thật** — start-all.ps1 KHÔNG đặt
+  MOCK_MODE (default trong vector_client.py:203 là true), trong khi qdrant-test
+  :6343 vẫn được start-all dựng và kho_v1 có **157 point thật** (dense 1024 +
+  sparse, status green). Nghĩa là hỏi–đáp V3 từ cutover 22/08 nhiều khả năng
+  trả từ KHO MẪU. Đây đúng loại "chạy sai logic lặng lẽ" mà Owner đặt hàng tab
+  này bắt. CHỜ OWNER QUYẾT: đặt `$env:MOCK_MODE='false'` (+ QDRANT_URL nếu
+  cần) trong khối ai-agent của start-all.ps1 rồi restart ai-agent — không tự
+  đổi vì đụng hành vi hỏi–đáp đang chạy (có thể phiên khác đang lo mạch nạp kho).
+
 ## Việc còn (theo thứ tự đề xuất đã duyệt hướng)
 
 - [ ] **Nghiệm thu sống sau restart**: tab Applications hiện Modules ai-agent
