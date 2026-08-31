@@ -312,8 +312,18 @@ async def api_suc_khoe():
     def _catalog():
         return "ok", f"đọc được {len(doc_catalog())} dòng catalog"
 
+    def _writer():
+        # Ca thật 31/08: két có critic mà vai writer trống → trả lời MẪU trên hệ
+        # thật dù kho đã thật. Chỉ đọc cờ cấu hình — không gọi LLM (health phải rẻ).
+        if getattr(qa.writer, "mock", True):
+            return "canh_bao", ("writer đang MOCK — hỏi–đáp trả lời mẫu; điền vai "
+                                "writer trong két (General → API keys)")
+        so_critic = sum(1 for c in qa.critics if not getattr(c, "mock", True))
+        return "ok", (f"writer thật ({getattr(qa.writer, 'model', '?')}), "
+                      f"{so_critic} critic thật")
+
     return suc_khoe.bao_cao("ai-agent", PHIEN_BAN, [
-        ("kho-vector", _kho), ("catalog", _catalog)])
+        ("kho-vector", _kho), ("catalog", _catalog), ("llm-writer", _writer)])
 
 
 # ================= các hàm phụ nhập liệu (chuyển thể nguyên từ app.py cũ) =================

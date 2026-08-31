@@ -57,3 +57,25 @@ def test_kho_khop_catalog_la_ok(monkeypatch):
     b, md = _mo_dun()
     assert md["kho-vector"]["trang_thai"] == "ok"
     assert "53" in md["kho-vector"]["chi_tiet"]
+
+
+def test_writer_mock_la_canh_bao_chi_duong_ket(monkeypatch):
+    """Ca thật 31/08: két có critic mà vai WRITER trống → hỏi–đáp trả lời MẪU
+    trên hệ thật dù kho đã thật. Tab giám sát phải tự soi được, kèm lời chỉ
+    đường điền két — không chờ ai nghi ngờ câu trả lời."""
+    from types import SimpleNamespace
+    monkeypatch.setattr(main.qa, "writer",
+                        SimpleNamespace(mock=True, model="glm-4.5-air"))
+    b, md = _mo_dun()
+    assert md["llm-writer"]["trang_thai"] == "canh_bao"
+    assert "két" in md["llm-writer"]["chi_tiet"]
+
+
+def test_writer_that_la_ok_kem_ten_model(monkeypatch):
+    from types import SimpleNamespace
+    monkeypatch.setattr(main.qa, "writer",
+                        SimpleNamespace(mock=False, model="glm-4.5-air"))
+    monkeypatch.setattr(main.qa, "critics", [SimpleNamespace(mock=False)])
+    b, md = _mo_dun()
+    assert md["llm-writer"]["trang_thai"] == "ok"
+    assert "glm-4.5-air" in md["llm-writer"]["chi_tiet"]
