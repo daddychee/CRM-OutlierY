@@ -165,6 +165,43 @@ async def health():
     return {"trang_thai": "ok", "app": "to-chuc", "phien_ban": PHIEN_BAN}
 
 
+@app.get("/api/suc-khoe")
+async def api_suc_khoe():
+    """Sức khỏe SÂU (B3 giám sát 31/08, khuôn nen/common/suc_khoe.py).
+
+    kpi-nguon: KPI đọc nguồn CHỈ-ĐỌC ngoài app — nguồn chết thì KPI hiện '—'
+    (van chống bịa) nhưng không ai biết vì sao; đây khai thẳng: chưa nối (env
+    chưa đặt) là canh_bao, ĐÃ nối mà file mất là loi. Default env khớp kpi.py.
+    """
+    import os
+    from pathlib import Path
+
+    from nen.common import suc_khoe
+
+    def _kpi_nguon():
+        nguon = [("PLANNERY_PLAN", "plannery-plan.json"),
+                 ("CONTENT_HISTORY", "content-history.jsonl"),
+                 ("BAO_CAO_DIR", "bao-cao-lich-su")]
+        chua_noi, mat = [], []
+        for env, mac_dinh in nguon:
+            gia_tri = os.getenv(env, "").strip()
+            if not gia_tri:
+                if not Path(mac_dinh).exists():
+                    chua_noi.append(env)
+            elif not Path(gia_tri).exists():
+                mat.append(f"{env}={gia_tri}")
+        if mat:
+            return "loi", ("nguồn KPI ĐÃ nối mà mất: " + "; ".join(mat)
+                           + " — KPI đang hiện '—'")
+        if chua_noi:
+            return "canh_bao", ("nguồn KPI chưa nối (env chưa đặt trong "
+                                "start-all): " + ", ".join(chua_noi)
+                                + " — KPI hiện '—' cho phần đó")
+        return "ok", f"{len(nguon)}/{len(nguon)} nguồn KPI đọc được"
+
+    return suc_khoe.bao_cao("to-chuc", PHIEN_BAN, [("kpi-nguon", _kpi_nguon)])
+
+
 @app.get("/", response_class=HTMLResponse)
 async def goc():
     # /nas là trang mọi người vào được (KPI cần Manager+, vault cần Owner)
