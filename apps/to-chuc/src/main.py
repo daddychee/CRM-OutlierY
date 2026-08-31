@@ -50,11 +50,13 @@ ROOT = _APP_DIR.parents[1]                               # D:\AI AGENT OUTLIERY
 # lúc gọi hàm nên setdefault ở đây là đủ; conftest test đè lại bằng monkeypatch).
 os.environ.setdefault("CHAM_CONG_DIR", str(ROOT / "data" / "to-chuc" / "db" / "cham-cong"))
 os.environ.setdefault("VAULT_DIR", str(ROOT / "data" / "vault"))
-# Nguồn KPI: mặc định KHÔNG TỒN TẠI → kpi.py trả None → UI "—" (van chống bịa).
-# Muốn nối nguồn thật (PlannerY/Content/SpeakY còn chạy hệ cũ) → Owner đặt env
-# trỏ đường CHỈ-ĐỌC, app không bao giờ ghi vào các file này.
-os.environ.setdefault("PLANNERY_PLAN", str(ROOT / "data" / "to-chuc" / "nguon" / "plannery-plan.json"))
-os.environ.setdefault("CONTENT_HISTORY", str(ROOT / "data" / "to-chuc" / "nguon" / "content-history.jsonl"))
+# Nguồn KPI (đổi 31/08, tab giám sát B3 bắt được "đã nối mà mất"): thời V2-song-
+# song default trỏ hộp thư data/to-chuc/nguon/ KHÔNG tồn tại (KPI "—" chờ nối);
+# cutover 22/08 xong thì PlannerY + Content V3 cùng máy LÀ nguồn thật → trỏ
+# THẲNG, chỉ-đọc, app không bao giờ ghi vào các file này. SpeakY đã khai tử —
+# giữ placeholder không tồn tại, KPI speaky hiện "—" là đúng sự thật.
+os.environ.setdefault("PLANNERY_PLAN", str(ROOT / "data" / "plannery" / "plan.json"))
+os.environ.setdefault("CONTENT_HISTORY", str(ROOT / "data" / "content-ultimate" / "admin" / "history.jsonl"))
 os.environ.setdefault("SPEAKY_JOBS_LOG", str(ROOT / "data" / "to-chuc" / "nguon" / "speaky-jobs_log.csv"))
 os.environ.setdefault("BAO_CAO_DIR", str(ROOT / "data" / "data-analytics" / "db" / "bao-cao-lich-su"))
 # HR Hub + Finance Hub (DE.md mục 10) — 4 store mới, đều khai du_lieu trong apps.json
