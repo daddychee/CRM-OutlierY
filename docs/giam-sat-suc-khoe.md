@@ -70,11 +70,28 @@
   cần) trong khối ai-agent của start-all.ps1 rồi restart ai-agent — không tự
   đổi vì đụng hành vi hỏi–đáp đang chạy (có thể phiên khác đang lo mạch nạp kho).
 
+- **31/08/2026 (khuya) — FIX MOCK LẶNG LẼ, hỏi–đáp về kho thật** (commit
+  c2512b7). Owner chốt là sót di trú → sửa theo tiền lệ 1161072 (default trong
+  CODE): vector_client MOCK_MODE default false + QDRANT_URL default :6343
+  (:6333 là V2 đã tắt); test ghim default bằng module giả (không đụng kho thật),
+  suite app 314 pass. BẪY GỠ KÈM: (a) KHÔNG set $env:MOCK_MODE global trong
+  start-all — data-analytics cũng đọc biến này (LLM diễn giải), set global là
+  lây; (b) tác vụ SYSTEM có Temp riêng C:\Windows\Temp KHÔNG có model
+  fastembed (cache thật nằm Temp của Administrator — họ bẫy HF_HOME SpeakY
+  31/07) → copy 6.8GB về data/fastembed_cache + start-all set
+  FASTEMBED_CACHE_PATH. Restart ai-agent: lên sau ~30s nạp model, suc-khoe
+  chuyển **ok "157 point / 19 tài liệu"**; nghiệm thu search read-only:
+  "cách nuôi kênh" → KD-2026-71369B (ngâm kênh) + KD-2026-1814CB (GA) đúng
+  nguồn. Vòng khép: tab giám sát bắt bệnh → sửa → chính tab xác nhận khỏi.
+
 ## Việc còn (theo thứ tự đề xuất đã duyệt hướng)
 
 - [ ] **Nghiệm thu sống sau restart**: tab Applications hiện Modules ai-agent
       (kho thật :6343 → ok "N point / M tài liệu"); plannery Status xanh với
       /health mới; thử 1 request lỗi xem cột Errors 5′.
+- [ ] **Kiểm data-analytics cùng bệnh MOCK?** — app cũng đọc MOCK_MODE cho
+      tầng LLM diễn giải (src/llm/factory.py); start-all không set → xem
+      default của nó là gì, diễn giải Analyze trên hệ có đang mock không.
 - [ ] **B3 lan dần**: khai `suc_khoe` cho radary (giờ quét cuối + quota),
       to-chuc (chấm công hôm nay), rendery/thumby (ffmpeg + đĩa), plannery
       (plan.json đọc được + _rev)… mỗi app một commit, test trong app.
