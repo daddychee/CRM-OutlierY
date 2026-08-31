@@ -381,6 +381,7 @@
         "/xem"
       ],
       "health": "/health",
+      "suc_khoe": "/api/suc-khoe",
       "phien_ban": "0.3.0",
       "chay": {
         "kieu": "uvicorn",
@@ -649,6 +650,7 @@
         "/finance"
       ],
       "health": "/health",
+      "suc_khoe": "/api/suc-khoe",
       "phien_ban": "2.0.0",
       "chay": {
         "kieu": "uvicorn",
@@ -726,6 +728,7 @@
         "/tasky-static"
       ],
       "health": "/health",
+      "suc_khoe": "/api/suc-khoe",
       "phien_ban": "0.2.0",
       "chay": {
         "kieu": "uvicorn",
@@ -820,6 +823,7 @@
         "/thumby-thumb"
       ],
       "health": "/health",
+      "suc_khoe": "/api/suc-khoe",
       "phien_ban": "0.1.0",
       "chay": {
         "kieu": "uvicorn",
