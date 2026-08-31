@@ -84,7 +84,33 @@
   "cách nuôi kênh" → KD-2026-71369B (ngâm kênh) + KD-2026-1814CB (GA) đúng
   nguồn. Vòng khép: tab giám sát bắt bệnh → sửa → chính tab xác nhận khỏi.
 
-## Việc còn (theo thứ tự đề xuất đã duyệt hướng)
+- **31/08/2026 (khuya, tiếp) — B4 + B5 XONG, deploy sống** (commit ecde652
+  llm-writer · f4ccc40 B4 · 854d1ee B5; root 268 pass / 1 fail baseline, app
+  ai-agent 316 pass). (a) DA KHÔNG cùng bệnh mock — dien_giai nạp cấu hình từ
+  KÉT qua gateway, mock chỉ là fallback két trống; NHƯNG két đang TRỐNG vai
+  writer cho CẢ ai-agent lẫn DA (critic ai-agent có glm-5) → hỏi–đáp writer
+  đang mock. Thêm module `llm-writer` vào suc-khoe ai-agent: tab tự soi, kèm
+  lời chỉ đường điền két — CHỜ OWNER điền vai writer (General → API keys).
+  (b) B4 heartbeat: nen/common/nhip_viec.py + luật nen/rules/nhip_viec.json
+  (start-all 90' + backup-dem 26h) + POST /api/nhip-viec/<ma> chỉ loopback +
+  khối Scheduled jobs trên tab; ping đã nối cuối start-all.ps1 + backup.ps1
+  (try/catch — gateway chết không hỏng job). Nghiệm thu end-to-end: lần
+  restart deploy chính nó ping nhịp start-all đầu tiên (22:27:26).
+  (c) B5 vòng giám sát nền: giam_sat.vong trong event loop gateway (chu kỳ
+  GIAM_SAT_CHU_KY 60s, ngủ-trước-đo-sau, bất tử), so_sanh() HÀM THUẦN
+  edge-trigger: chết 2 chu kỳ mới báo (chống flap) / module loi báo một lần /
+  nhịp trễ báo một lần / hồi phục báo lại; phát = sổ sự cố bền
+  data/logs/giam-sat TRƯỚC + ntfy sau (canh_bao.py stdlib, khuôn radary).
+  CHỜ OWNER bật push: bỏ comment GIAM_SAT_NTFY_TOPIC trong start-all (đổi
+  topic khó đoán — ntfy.sh công khai theo topic) + subscribe trên điện thoại.
+
+## Việc còn (cập nhật khuya 31/08)
+
+- [ ] **TAY OWNER — điền két vai writer** cho ai-agent (+ DA nếu muốn Analyze
+      thật): General → API keys; xong thì module llm-writer tự chuyển ok.
+- [ ] **TAY OWNER — bật ntfy**: start-all.ps1 dòng GIAM_SAT_NTFY_TOPIC +
+      subscribe topic; chưa bật thì cảnh báo vẫn nằm sổ + tab.
+
 
 - [ ] **Nghiệm thu sống sau restart**: tab Applications hiện Modules ai-agent
       (kho thật :6343 → ok "N point / M tài liệu"); plannery Status xanh với
