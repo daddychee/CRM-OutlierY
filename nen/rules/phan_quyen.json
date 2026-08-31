@@ -196,7 +196,7 @@
       },
       "giao_viec": {
         "nhan": "Giao việc",
-        "mo_ta": "Giao việc tuần cho nhân sự cấp dưới trong bộ phận mình (app kiểm thêm: level người giao phải LỚN HƠN level người nhận)",
+        "mo_ta": "Giao việc tuần cho cấp dưới trong bộ phận mình + gửi yêu cầu phối hợp sang bộ phận khác (app kiểm thêm ở server: giao = level LỚN HƠN và cùng bộ phận; phối hợp = cả hai L3+, KHÁC bộ phận, chênh tối đa 1 bậc)",
         "min_level": 3
       },
       "xac_nhan_ket_qua": {
@@ -295,6 +295,35 @@
         "min_level": 5
       },
       "vai_xoa": "manager"
+    },
+    "rendery": {
+      "vao": {
+        "min_level": 2,
+        "bo_phan": [
+          "Vận hành - Sản xuất"
+        ]
+      },
+      "nop_viec": {
+        "nhan": "Nộp việc dựng",
+        "mo_ta": "Chọn thư mục chương trên NAS rồi xếp vào hàng đợi; huỷ việc CỦA MÌNH khi chưa chạy. LƯU Ý ĐẶT TÊN: khóa tránh substring them/tao/sua/xoa/toan_quyen (bẫy iam.vai_cho_app) — 'nop_viec' cố ý không dùng 'tao'.",
+        "min_level": 2,
+        "bo_phan": [
+          "Vận hành - Sản xuất"
+        ]
+      },
+      "quan_tri": {
+        "nhan": "Quản trị",
+        "mo_ta": "Xem/huỷ việc của MỌI người + sửa khoá API nguồn footage (Pexels/Pixabay/Envato). Mặc định chỉ Owner.",
+        "min_level": 5
+      }
+    },
+    "thumby": {
+      "vao": {
+        "min_level": 2,
+        "bo_phan": [
+          "Kinh doanh"
+        ]
+      }
     }
   }
 }
