@@ -21,10 +21,10 @@ Best-practice áp từ qdrant/skills (_references/qdrant-skills):
   Model qua RERANK_MODEL trong .env — không đóng cứng, giống writer/critic.
   Tắt: RERANK_SEARCH=false.
 
-MOCK_MODE=true (mặc định): dữ liệu mẫu, không cần Qdrant/model.
-CHẠY THẬT: đặt MOCK_MODE=false trong .env + Qdrant chạy ở QDRANT_URL
-(docker run -p 6333:6333 qdrant/qdrant). Lần chạy thật đầu tiên sẽ tải
-model embedding về máy (e5-large nặng cỡ GB) — chỉ tải một lần.
+MẶC ĐỊNH CHẠY THẬT (đổi 31/08/2026): kho Qdrant V3 :6343, model embedding local
+(cache FASTEMBED_CACHE_PATH — start-all trỏ data/fastembed_cache; lần đầu thiếu
+cache sẽ tải e5-large + reranker cỡ GB, chỉ tải một lần). Dev/test không cần
+Qdrant: đặt MOCK_MODE=true (conftest test đã ép sẵn).
 """
 
 import copy
@@ -200,7 +200,11 @@ class QdrantClientWrapper:
     def __init__(self, url: str | None = None, mock: bool | None = None,
                  hybrid: bool | None = None):
         if mock is None:
-            mock = os.getenv("MOCK_MODE", "true").strip().lower() == "true"
+            # Default CHẠY THẬT (31/08/2026 — tab giám sát B3 bắt được: start-all
+            # V3 không đặt MOCK_MODE nên app mock lặng lẽ trên hệ thật từ cutover
+            # 22/08, kho :6343 có 157 point mà không dùng). Tiền lệ 1161072:
+            # hành vi chuẩn nằm trong DEFAULT CODE, env chỉ để dev/test bật mock.
+            mock = os.getenv("MOCK_MODE", "false").strip().lower() == "true"
         self.mock = mock
         if hybrid is None:
             # Mặc định BẬT trong CODE (không chỉ .env — .env bị gitignore, không theo
@@ -228,7 +232,8 @@ class QdrantClientWrapper:
         # "localhost" làm Windows thử IPv6 ::1 trước → +2s MỖI kết nối, sidebar phiên
         # gọi Qdrant ~11 lần/trang render → trang 22-45s (đo thật). Docker cũ nghe cả
         # hai stack nên bệnh chỉ phát khi chuyển native.
-        self.client = QdrantClient(url=url or os.getenv("QDRANT_URL", "http://127.0.0.1:6333"))
+        # Default :6343 = Qdrant V3 (start-all dựng); :6333 là kho V2 đã tắt cutover 22/08
+        self.client = QdrantClient(url=url or os.getenv("QDRANT_URL", "http://127.0.0.1:6343"))
         # e5-large, KHÔNG phải -small: fastembed chỉ đóng gói bản -large;
         # bản -small làm TextEmbedding ném ValueError ngay lúc khởi động
         self.dense_model = TextEmbedding(

@@ -60,6 +60,13 @@ $env:PLANNER_TRUST_PROXY = '1'
 # Bay UTF-8 may Windows nay: app in tieng Viet ra stdout -> cp1252 chet luc khoi dong.
 $env:PYTHONIOENCODING = 'utf-8'
 
+# AI Agent (31/08 — tab giam sat B3 bat duoc): app tung chay MOCK lang le tren he
+# that vi start-all khong dat MOCK_MODE; default CODE da doi sang chay that + kho
+# :6343 (vector_client.py). Model embedding cache o data\fastembed_cache — task
+# SYSTEM co Temp rieng (C:\Windows\Temp) KHONG co model, thieu env nay la tai lai
+# ~2GB moi lan (cung ho bay HF_HOME cua SpeakY 31/07).
+$env:FASTEMBED_CACHE_PATH = (Join-Path $root 'data\fastembed_cache')
+
 # NAS (to-chuc doc nen/common/nas_sync.py; gateway goi dong_bo_nen luc dang nhap/
 # doi mat khau): app con KHONG tu goi load_dotenv() - chi nen/gateway/main.py doc
 # thang .env goc, moi app khac phai duoc bom bien qua day (cung khuon
