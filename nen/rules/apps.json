@@ -150,6 +150,7 @@
         "/vendor"
       ],
       "health": "/api/health",
+      "suc_khoe": "/api/suc-khoe",
       "phien_ban": "1.0-v3",
       "chay": {
         "kieu": "uvicorn",
