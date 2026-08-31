@@ -104,6 +104,30 @@
   CHỜ OWNER bật push: bỏ comment GIAM_SAT_NTFY_TOPIC trong start-all (đổi
   topic khó đoán — ntfy.sh công khai theo topic) + subscribe trên điện thoại.
 
+- **31/08/2026 (đêm) — "TIẾP TOÀN BỘ": suc_khoe phủ 9/13 app + B6 canary +
+  fix nguồn KPI** (repo cha tới sau b18b6b6…; radary 1f971f4, plannery b630494;
+  root 269 pass / 1 fail baseline outline; to-chuc thêm 1 fail test_finance
+  baseline mạch Finance). Đã khai suc_khoe: ai-agent, radary, to-chuc,
+  video-review, plannery, tasky, thumby, rendery, app-mau — mỗi app module
+  theo bệnh thật: radary du-lieu (0 workspace = bẫy RADARY_DATA_DIR 22/08) +
+  quet (scheduler/tick cuối >26h); to-chuc kpi-nguon; video-review nas +
+  ffprobe (tự vàng khi C:\OutlierY bị xóa ~22/09); tasky nas-goc; thumby
+  radary-db (chết chỉ canh_bao — mô phỏng vẫn chạy); plannery plan-json (repo
+  lồng, KHÔNG import nen.* — khuôn là HỢP ĐỒNG JSON); rendery /health thật +
+  hang-doi + nas (F:/RenderY không git — kiểm 0 job running trước khi đụng).
+  B6 canary search ai-agent: search câu phổ quát thật, 0 kết quả → loi (bắt
+  tầng truy xuất lệch dù health khác xanh), cache 10'. Restart 8 app — nghiệm
+  thu sống 8/8, deep health trả thật (radary 26 ws/33k video tick 0.0h;
+  plannery 8 người/6 dự án _rev 1123; rendery 0 dựng/3 xong/3 lỗi).
+  **PHÁT HIỆN THẬT #3 và vòng khép lần 3**: to-chuc báo loi "nguồn KPI ĐÃ nối
+  mà mất" — default main.py trỏ hộp thư data/to-chuc/nguon/ không tồn tại
+  (chủ đích thời V2-song-song); cutover xong → trỏ THẲNG data/plannery/
+  plan.json + data/content-ultimate/admin/history.jsonl (chỉ-đọc), SpeakY giữ
+  '—' (khai tử). Restart to-chuc → ok "3/3 nguồn KPI đọc được". CÒN LẠI 4 app
+  chưa khai suc_khoe: content-ultimate / niche-research / seo-optimize (repo
+  lồng — làm khi có mạch mở các repo đó) + data-analytics (chờ điền két rồi
+  thêm module llm giống ai-agent).
+
 ## Việc còn (cập nhật khuya 31/08)
 
 - [ ] **TAY OWNER — điền két vai writer** cho ai-agent (+ DA nếu muốn Analyze
