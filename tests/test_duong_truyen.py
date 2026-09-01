@@ -83,13 +83,15 @@ def test_api_tong_hop_gom_du_khoi(san, tmp_path, monkeypatch):
     conn.close()
     from nen.gateway import main as gw
     monkeypatch.setattr(gw, "doc_hop_dong", lambda: [])
+    # két THẬT của máy có khóa apify — test tuyệt đối không gọi Apify thật
+    monkeypatch.setattr(gw, "_apify_credit", lambda: None)
     client = TestClient(gw.app, follow_redirects=False)
     client.post("/login", data={"ten": "owner-test", "mat_khau": "mk-test"})
     r = client.get("/general/api/giam-sat/tong-hop")
     assert r.status_code == 200
     b = r.json()
     for khoa in ("dich_vu", "dem", "nhip", "canary", "duong_truyen",
-                 "lich_su", "su_co"):
+                 "lich_su", "su_co", "apify_credit"):
         assert khoa in b, khoa
     # trang command center render + gate — NẰM TRONG KHUNG GENERAL (Owner 01/09:
     # "hiển thị như các tab trong khối general"), không phải trang trần

@@ -590,7 +590,13 @@ async def api_giam_sat_tong_hop(request: Request):
         "su_co": await run_in_threadpool(giam_sat.doc_su_co),
         "ket": await run_in_threadpool(_ket_tom_tat),
         "so_goi": await run_in_threadpool(so_goi.tom_tat_hom_nay),
+        "apify_credit": await run_in_threadpool(_apify_credit),
     })
+
+
+def _apify_credit():
+    from nen.common import quota_ngoai
+    return quota_ngoai.apify_credit()
 
 
 def _thong_ke_de() -> dict:

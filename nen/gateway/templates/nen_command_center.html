@@ -710,7 +710,14 @@ function renderQuota(){
        <div class="sub">${sgL.loi?`<span style="color:var(--err)">${sgL.loi} lỗi</span> · `:""}từ sổ gọi hôm nay</div></div>`
     : '<div class="meter"><span class="n">0</span><span class="u">calls</span><div class="sub">chưa có call LLM ghi sổ hôm nay</div></div>';
 
-  $("q-ngoai").innerHTML='<tr><th>Tuyến</th><th class="r">ms</th><th class="r"></th></tr>'+
+  // Apify — dịch vụ hiếm hoi TRA ĐƯỢC credit còn lại thật (/users/me)
+  const ac=D.apify_credit;
+  const dongApify = ac
+    ? `<tr><td><b>Apify credit tháng</b><div class="mut" style="font-size:10.5px">gói ${esc(ac.goi)} · đo ${esc(ac.luc)} · cache 30′</div></td>
+       <td class="r"><b style="color:${ac.con_usd<1?"var(--err)":"var(--ok)"}">$${ac.con_usd}</b><span class="mut">/$${ac.tran_usd}</span></td>
+       <td class="r"><span class="pill ${ac.con_usd<1?"p-err":"p-ok"}">${ac.con_usd<1?"SẮP CẠN":"CÒN"}</span></td></tr>`
+    : "";
+  $("q-ngoai").innerHTML='<tr><th>Tuyến</th><th class="r">ms</th><th class="r"></th></tr>'+dongApify+
     (D.duong_truyen||[]).map(t=>`<tr><td><b>${esc(t.ten)}</b></td><td class="r">${t.ms??"—"}</td>
       <td class="r"><span class="pill p-${t.ok?"ok":"err"}">${t.ok?"THÔNG":"ĐỨT"}</span></td></tr>`).join("");
 
