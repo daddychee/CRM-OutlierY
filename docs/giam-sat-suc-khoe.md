@@ -274,6 +274,12 @@
     cột "Hôm nay" (units + bar + call cuối + SỐNG/403); bảng cấp phát đầy đủ;
     LLM hôm nay từ sổ. Suite: root 294 · radary 213 · seo 28 · content 783 ·
     ai-agent 321 · DA 137 (fail baseline như cũ).
+  → Nghiệm thu sống trong 5 phút đầu: 111 dòng sổ từ quét RadarY thật — bắt
+  ngay key api-001 (••-9cc) trả 403 CẠN QUOTA, RadarY tự xoay key (UI hiện đỏ
+  403 / xanh SỐNG per key). Chart units cộng dồn theo giờ chạy thật (theo_gio
+  trong so_goi — trần tự tính theo số key youtube trong két). Két đủ MỌI loại:
+  20 youtube · 2 llm · 1 transcript · 2 serp · 1 apify · 2 stock; cấp phát đủ
+  mọi việc kể cả ai-agent·writer TẮT (0 KHÓA) hiện đỏ.
 
 ## Việc còn (cập nhật khuya 31/08)
 
