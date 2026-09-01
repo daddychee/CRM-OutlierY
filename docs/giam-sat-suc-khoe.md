@@ -280,6 +280,11 @@
   trong so_goi — trần tự tính theo số key youtube trong két). Két đủ MỌI loại:
   20 youtube · 2 llm · 1 transcript · 2 serp · 1 apify · 2 stock; cấp phát đủ
   mọi việc kể cả ai-agent·writer TẮT (0 KHÓA) hiện đỏ.
+  → Owner bắt thiếu SERP + Apify/reddit — móc nốt 2 điểm gọi tập trung của
+  radary (serp._goi wrapper 1 unit/call, hết quota ghi lỗi trước khi xoay;
+  reddit._goi ghi cả HTTP lỗi lẫn thành công), helper chung so_goi_nen cho
+  scan/serp/reddit (radary 390cf96 + gộp helper). Suite 212 pass. Ứng viên
+  P2: Apify có API du_credit thật — hiện credit còn trên màn Quota.
 
 ## Việc còn (cập nhật khuya 31/08)
 
