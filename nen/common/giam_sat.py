@@ -15,15 +15,59 @@ so_sanh() là HÀM THUẦN (trạng thái vào → trạng thái mới + danh s�
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 import os
+import time
+from collections import deque
+from pathlib import Path
 
 from nen.common import canh_bao, nhat_ky, nhip_viec
 
 NGUONG_CHET = 2  # số chu kỳ chết liên tiếp trước khi báo (chống flap 1 nhịp mạng)
 
+# Ring buffer lịch sử tick (P1-M3) — 1440 điểm × 60s = 24h; RAM, restart về 0
+# (giới hạn đã biết, khuôn dem_loi). UI command center vẽ dòng chảy từ đây.
+_LICH_SU: deque = deque(maxlen=1440)
 
-def so_sanh(truoc: dict, dich_vu: list[dict], nhip: list[dict]) -> tuple[dict, list[str]]:
+
+def luu_tick(d: dict) -> None:
+    _LICH_SU.append(d)
+
+
+def lay_lich_su(n: int = 60) -> list[dict]:
+    return list(_LICH_SU)[-n:]
+
+
+def lay_duong_truyen_moi() -> list[dict] | None:
+    return _LICH_SU[-1].get("duong_truyen") if _LICH_SU else None
+
+
+def xoa_lich_su() -> None:
+    _LICH_SU.clear()
+
+
+def doc_su_co(n: int = 40) -> list[dict]:
+    """Đọc sổ sự cố bền (data/logs/giam-sat, JSON-lines) — 2 ngày gần nhất,
+    mới nhất trước. Sổ hỏng/thiếu → [] (không nổ)."""
+    goc = Path(os.environ.get("LOGS_DIR",
+                              Path(__file__).resolve().parents[2] / "data" / "logs"))
+    dong: list[dict] = []
+    files = sorted((goc / "giam-sat").rglob("*.log"))[-2:]
+    for f in files:
+        try:
+            for ln in f.read_text(encoding="utf-8").splitlines():
+                try:
+                    dong.append(json.loads(ln))
+                except ValueError:
+                    continue
+        except OSError:
+            continue
+    return dong[::-1][:n]
+
+
+def so_sanh(truoc: dict, dich_vu: list[dict], nhip: list[dict],
+            tuyen: list[dict] | None = None) -> tuple[dict, list[str]]:
     """Trả (trạng_thái_mới, cảnh_báo[]). `truoc` là dict trả ra từ lần trước."""
     moi: dict = {"app": {}, "nhip": {}}
     bao: list[str] = []
@@ -61,6 +105,15 @@ def so_sanh(truoc: dict, dich_vu: list[dict], nhip: list[dict]) -> tuple[dict, l
         if tre_cu and not tre and v.get("nhip_cuoi"):
             bao.append(f"🟢 Việc nền '{v['ten']}' đã hồi phục nhịp")
         moi["nhip"][v["ma"]] = tre
+
+    # đường truyền (P1-M3): tuyến thông→đứt báo một lần, thông lại báo lại
+    for t in (tuyen or []):
+        cu = truoc.get("tuyen", {}).get(t["ma"], True)
+        moi.setdefault("tuyen", {})[t["ma"]] = t["ok"]
+        if cu and not t["ok"]:
+            bao.append(f"🔴 Đường truyền '{t['ten']}' ĐỨT")
+        if not cu and t["ok"]:
+            bao.append(f"🟢 Đường truyền '{t['ten']}' đã thông lại ({t['ms']} ms)")
     return moi, bao
 
 
@@ -88,7 +141,15 @@ async def vong(do_dich_vu) -> None:
             tick += 1
             dich_vu = await do_dich_vu()
             nhip = await asyncio.to_thread(nhip_viec.tom_tat)
-            trang_thai, bao = so_sanh(trang_thai, dich_vu, nhip)
+            from nen.common import dem_loi, duong_truyen
+            tuyen = await duong_truyen.do_tat_ca()
+            trang_thai, bao = so_sanh(trang_thai, dich_vu, nhip, tuyen)
+            dem = dem_loi.tom_tat()
+            luu_tick({"ts": round(time.time()),
+                      "req": sum(d["yeu_cau"] for d in dem.values()),
+                      "loi": sum(d["loi"] + d["nut_chet"] for d in dem.values()),
+                      "app_loi": sum(1 for d in dich_vu if not d["song"]),
+                      "duong_truyen": tuyen})
             # CANARY LOGIC (P1-M2): kiểm ĐỀU ĐẶN tự động — mỗi CANARY_CHU_KY
             # giây (mặc định 1800) chạy toàn bộ kịch bản; cảnh báo edge của
             # canary đi chung kênh phát (sổ sự cố + ntfy).

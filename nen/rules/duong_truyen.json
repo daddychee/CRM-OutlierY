@@ -1,0 +1,10 @@
+{
+  "_ghi_chu": "ĐƯỜNG TRUYỀN (P1-M3) — vòng giám sát đo mỗi tick 60s: kieu 'tcp' = bắt tay TCP đo ms (không tải nội dung, 0 quota); kieu 'doc' = đọc thử file/thư mục (NAS đơ lộ ở latency). Thêm tuyến = thêm dòng. LAN nội bộ không cần khai — p95 gateway→app lấy sẵn từ trạm đo proxy.",
+  "tuyen": [
+    { "ma": "z-ai", "ten": "Z.ai (LLM)", "kieu": "tcp", "dich": "api.z.ai:443" },
+    { "ma": "youtube-api", "ten": "YouTube API", "kieu": "tcp", "dich": "www.googleapis.com:443" },
+    { "ma": "ntfy", "ten": "ntfy.sh (push)", "kieu": "tcp", "dich": "ntfy.sh:443" },
+    { "ma": "nas-f", "ten": "NAS F: (Video)", "kieu": "doc", "dich": "F:/OutlierY Nas 2" },
+    { "ma": "nas-g", "ten": "NAS G: (NAS1)", "kieu": "doc", "dich": "G:/OutlierY Nas 1" }
+  ]
+}

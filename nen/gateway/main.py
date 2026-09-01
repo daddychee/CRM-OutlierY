@@ -491,6 +491,32 @@ async def api_canary_doc(request: Request):
     return JSONResponse({s: canary.doc_ket_qua(s) for s in canary.cac_slug()})
 
 
+@app.get("/general/api/giam-sat/tong-hop")
+async def api_giam_sat_tong_hop(request: Request):
+    """P1-M3: MỘT cục JSON cho Command Center — dịch vụ + đếm lỗi/latency +
+    nhịp + canary + đường truyền + lịch sử tick + sổ sự cố. UI poll 15s."""
+    from starlette.concurrency import run_in_threadpool
+
+    from nen.common import canary, dem_loi, duong_truyen, giam_sat, nhip_viec
+    user = await run_in_threadpool(_gate_nen, request, "general_ung_dung")
+    if isinstance(user, Response):
+        return user
+    ds = await _do_dich_vu()
+    tuyen = giam_sat.lay_duong_truyen_moi()
+    if tuyen is None:  # vòng nền chưa tick nào (mới restart) → đo tươi
+        tuyen = await duong_truyen.do_tat_ca()
+    return JSONResponse({
+        "luc": __import__("time").strftime("%H:%M:%S"),
+        "dich_vu": ds,
+        "dem": {str(k): v for k, v in dem_loi.tom_tat().items()},
+        "nhip": await run_in_threadpool(nhip_viec.tom_tat),
+        "canary": {s: canary.doc_ket_qua(s) for s in canary.cac_slug()},
+        "duong_truyen": tuyen,
+        "lich_su": giam_sat.lay_lich_su(60),
+        "su_co": await run_in_threadpool(giam_sat.doc_su_co),
+    })
+
+
 def _thong_ke_de() -> dict:
     """Đế đã nạp gì — số liệu THẬT đọc tại chỗ, nguồn chết thì None (không bịa 0)."""
     import datetime
