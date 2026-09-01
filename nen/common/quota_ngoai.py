@@ -44,8 +44,10 @@ def apify_credit() -> dict | None:
                 d = (json.loads(r.read().decode()) or {}).get("data") or {}
             ky = d.get("currentBillingPeriod") or {}
             tran = (d.get("plan") or {}).get("monthlyUsageCreditsUsd")
-            dung = ky.get("usageUsd")
-            if tran is not None and dung is not None:
+            # Kỳ chưa tiêu đồng nào → Apify trả currentBillingPeriod RỖNG
+            # (đo thật 01/09) — vắng usageUsd nghĩa là 0, không phải không biết.
+            dung = ky.get("usageUsd", 0) or 0
+            if tran is not None:
                 kq = {"goi": (d.get("plan") or {}).get("id") or "",
                       "tran_usd": tran, "da_dung_usd": round(dung, 2),
                       "con_usd": round(tran - dung, 2),

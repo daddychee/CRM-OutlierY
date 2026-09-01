@@ -49,6 +49,27 @@ def test_doc_credit_va_cache(san, monkeypatch):
     assert len(dem) == 1
 
 
+def test_ky_rong_nghia_la_chua_tieu_0_usd(san, monkeypatch):
+    """Đo thật 01/09: tài khoản chưa tiêu kỳ này → currentBillingPeriod RỖNG —
+    phải hiểu là đã dùng $0, không phải 'không biết' rồi trả None."""
+    def _gia(url, timeout=8):
+        class _R:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *a):
+                return False
+
+            def read(self):
+                return json.dumps({"data": {
+                    "plan": {"id": "FREE", "monthlyUsageCreditsUsd": 5},
+                    "currentBillingPeriod": {}}}).encode()
+        return _R()
+    monkeypatch.setattr(quota_ngoai.urllib.request, "urlopen", _gia)
+    kq = quota_ngoai.apify_credit()
+    assert kq["da_dung_usd"] == 0 and kq["con_usd"] == 5
+
+
 def test_khong_khoa_apify_tra_none(tmp_path, monkeypatch):
     monkeypatch.setenv("KET_DB", str(tmp_path / "ket-rong.db"))
     quota_ngoai.xoa_cache()
