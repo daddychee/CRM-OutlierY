@@ -157,6 +157,19 @@
   quota YouTube theo két · đĩa/NAS · nhịp kinh doanh ngày · hành động nhanh
   (restart app, Owner-only 2 lớp) · MTTR/lịch sử sự cố · lưới ngoài Gatus.
   CHƯA CODE — chờ Owner duyệt mockup + chốt danh sách phase 2.
+  → **Vòng 2 (01/09, artifact f648a5e6 + file v2 riêng, v1 giữ nguyên làm mốc)**
+  theo góp ý Owner: (1) ĐA MÀN — Tổng quan / App chi tiết / Quota & Calls / Sổ
+  sự cố; (2) màn app có tầng ĐO LOGIC 4 lớp: canary logic (gọi tính năng thật
+  input mẫu, so kỳ vọng — bắt ca "HTTP 200 nhưng kết quả rỗng" họ bài học nút
+  chia chương Content 30/08; kịch bản khai ngoài code nen/rules/canary/*.json)
+  · nút chết (quét tĩnh fetch/form UI ↔ bảng route server + đếm 404/405 POST
+  tại proxy) · bất biến dữ liệu · chỉ số kết quả (tỉ lệ thao tác thành công từ
+  log — 21% lượt viết hỏng từng là chỉ số bệnh 07/08); (3) màn QUOTA: YouTube
+  per-key dùng/còn/sống (usage đếm client-side từ sổ gọi của hệ, "sống" theo
+  call thật gần nhất — không probe đốt quota, tự thử lại sau reset 0:00 PT) +
+  LLM usage per app/vai (sổ llm_usage JSON-lines ghi tại provider wrapper) +
+  bảng dịch vụ ngoài. Ca chia-chương-đỏ + số quota trong mockup là VÍ DỤ TÁI
+  HIỆN để duyệt UI.
 
 ## Việc còn (cập nhật khuya 31/08)
 
