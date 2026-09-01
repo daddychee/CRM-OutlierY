@@ -309,7 +309,7 @@ def test_khu_general_cap_theo_tung_trang(client, iam_db):
 
     _login(client, "director", "mk-dir-9")
     for duong in ("/general/audit-log", "/general/data-backup",
-                  "/general/applications"):
+                  "/general/command-center"):  # applications nghỉ hưu 01/09 → pin đường mới
         assert client.get(duong).status_code == 403, f"{duong} phải Owner-only khi chưa tick"
     # '/general' là CỬA: L4 vốn có Niches/Channels (luật cũ) nên được đưa sang đó,
     # KHÔNG phải xem được trang Overview.
@@ -325,7 +325,7 @@ def test_khu_general_cap_theo_tung_trang(client, iam_db):
     _login(client, "director", "mk-dir-9")
     assert client.get("/general/audit-log").status_code == 200      # mở đúng trang đã tick
     assert client.get("/general/data-backup").status_code == 403    # trang chưa tick vẫn đóng
-    assert client.get("/general/applications").status_code == 403
+    assert client.get("/general/command-center").status_code == 403
     assert client.get("/general/permissions").status_code == 403    # giỏ tuyệt đối
     assert client.get("/general/api-keys").status_code == 403
     assert "Audit Log" in client.get("/general/audit-log").text     # nav hiện link đã cấp

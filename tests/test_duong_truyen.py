@@ -94,5 +94,10 @@ def test_api_tong_hop_gom_du_khoi(san, tmp_path, monkeypatch):
     # trang command center render + gate
     r = client.get("/general/command-center")
     assert r.status_code == 200 and "COMMAND CENTER" in r.text
+    # theme TRÙNG cả hệ (Owner 01/09): đọc + ghi khóa outliery_theme, nghe
+    # storage event (tab khác đổi là đổi theo), có nút gạt
+    assert "outliery_theme" in r.text
+    assert '"storage"' in r.text or "'storage'" in r.text
+    assert "nutTheme" in r.text
     khach = TestClient(gw.app, follow_redirects=False)
     assert khach.get("/general/command-center").status_code in (303, 401, 403)

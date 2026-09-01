@@ -1,4 +1,9 @@
 <title>OUTLIERY Command Center</title>
+<script>/* Theme TRÙNG cả hệ (khuôn nen_base): khóa chung outliery_theme, fallback OS.
+Stamp TRƯỚC khi CSS parse để không nháy sai theme. */
+(function(){var d=document.documentElement,t=null;try{t=localStorage.getItem("outliery_theme")}catch(e){}
+if(t!=="light"&&t!=="dark"){t=(window.matchMedia&&matchMedia("(prefers-color-scheme: light)").matches)?"light":"dark"}
+d.setAttribute("data-theme",t)})()</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap">
 <style>
@@ -139,6 +144,7 @@ svg{display:block}
     <span class="wordmark"><span class="bars"><i></i><i></i><i></i><i></i><i></i></span>OUTLIERY</span>
     <span class="crumb">COMMAND CENTER · máy chủ 192.168.1.250 · V3</span>
     <span class="live"><span class="dot" id="liveDot"></span> LIVE · poll 15s · <b id="tickAgo">đang tải…</b></span>
+    <button class="btn" id="nutTheme" title="Đổi giao diện — cả hệ OUTLIERY đổi theo (khóa chung outliery_theme)">TỐI</button>
   </div>
   <div class="nav">
     <button class="on" data-s="tong">TỔNG QUAN</button><button data-s="app">APP CHI TIẾT</button>
@@ -668,6 +674,26 @@ async function tai(){
   }
 }
 setInterval(()=>{ giayTuTick++; if (DATA) $("tickAgo").textContent=giayTuTick+"s trước"; },1000);
+
+/* Theme trùng cả hệ: nút gạt ghi khóa chung; tab khác đổi → storage event đổi theo
+   (lệ 22/08 — app không nghe storage là đổi theme khung mà app trơ). */
+function capNutTheme(){
+  $("nutTheme").textContent =
+    document.documentElement.getAttribute("data-theme")==="light" ? "SÁNG" : "TỐI";
+}
+capNutTheme();
+$("nutTheme").addEventListener("click", ()=>{
+  const t = document.documentElement.getAttribute("data-theme")==="light" ? "dark" : "light";
+  document.documentElement.setAttribute("data-theme", t);
+  try{ localStorage.setItem("outliery_theme", t); }catch(e){}
+  capNutTheme();
+});
+window.addEventListener("storage", e=>{
+  if (e.key==="outliery_theme" && (e.newValue==="light"||e.newValue==="dark")){
+    document.documentElement.setAttribute("data-theme", e.newValue);
+    capNutTheme();
+  }
+});
 if (window.BOOT_DATA){ DATA=window.BOOT_DATA; render(); $("tickAgo").textContent="ảnh tĩnh đối chiếu"; }
 else { tai(); setInterval(tai,15000); }
 

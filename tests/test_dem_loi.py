@@ -222,13 +222,14 @@ def owner_client(tmp_path, monkeypatch):
     return client
 
 
-def test_trang_applications_hien_so_loi(owner_client, monkeypatch):
+def test_command_center_hien_so_loi_qua_api(owner_client, monkeypatch):
+    """Trang Applications nghỉ hưu (01/09) — lỗi gần nhất giờ tới UI qua API
+    tổng-hợp của Command Center."""
     from nen.gateway import main as gw
     monkeypatch.setattr(gw, "doc_hop_dong", lambda: [
         {"slug": "stub", "ten": "Stub App", "cong": 9190, "health": "/health",
          "tien_to": [], "du_lieu": []}])
     dem_loi.ghi_yeu_cau(9190)
     dem_loi.ghi_loi(9190, 500, "/api/vo")
-    r = owner_client.get("/general/applications")
-    assert r.status_code == 200
-    assert "/api/vo" in r.text  # lỗi gần nhất hiện trên tab, kèm đường dẫn
+    b = owner_client.get("/general/api/giam-sat/tong-hop").json()
+    assert b["dem"]["9190"]["gan_nhat"]["duong"] == "/api/vo"

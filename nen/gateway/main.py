@@ -307,14 +307,14 @@ KE_TOAN_BO_PHAN = "Kế toán"
 _NHAN_GEN = {"general_tong_quan": "Overview", "general_niches": "Niches",
              "general_channels": "Channels", "general_nhat_ky": "Audit Log",
              "general_du_lieu": "Data & Backup",
-             "general_ung_dung": "Applications"}
+             "general_ung_dung": "Command Center"}
 _MO_TA_GEN = {
     "general_tong_quan": "Trang tổng quan: sức khỏe dịch vụ + thống kê đế",
     "general_niches": "Danh bạ ngách + thị trường (mặc định Manager L4+)",
     "general_channels": "Danh bạ kênh: hồ sơ, trạng thái, liên kết app (mặc định Manager L4+)",
     "general_nhat_ky": "Nhật ký quyền toàn hệ (200 dòng gần nhất)",
     "general_du_lieu": "Kho dữ liệu từng app + mốc backup gần nhất",
-    "general_ung_dung": "Danh sách app trong hợp đồng + trạng thái sống"}
+    "general_ung_dung": "Command Center — canary logic, đường truyền, sự cố, quota"}
 # Biến template cho nav (nen_base.html dùng 'la_owner or <biến>')
 _BIEN_NAV_GEN = {"general_tong_quan": "g_tong_quan", "general_niches": "g_niches",
                  "general_channels": "g_channels", "general_nhat_ky": "g_nhat_ky",
@@ -323,7 +323,7 @@ _DUONG_GEN = {"general_tong_quan": "/general", "general_niches": "/general/niche
               "general_channels": "/general/channels",
               "general_nhat_ky": "/general/audit-log",
               "general_du_lieu": "/general/data-backup",
-              "general_ung_dung": "/general/applications"}
+              "general_ung_dung": "/general/command-center"}
 # Hai trang danh bạ vốn mở cho Manager L4+ (không phải Owner-only): ô tick THẮNG
 # luật đó — mở cho team dưới L4, hoặc chặn đúng một người. KHÔNG dùng co_quyen
 # thẳng vì hành động lạ với co_quyen là fail-closed = sẽ TƯỚC quyền L4 đang có.
@@ -1597,22 +1597,11 @@ def nen_nhat_ky(request: Request):
         {"user": user, "trang": "nhat-ky", "nhat_ky": nk, **_nav_gen(user)})
 
 
-@app.get("/general/applications", response_class=HTMLResponse)
-async def nen_ung_dung(request: Request):
-    from starlette.concurrency import run_in_threadpool
-    user = await run_in_threadpool(_gate_nen, request, "general_ung_dung")
-    if isinstance(user, Response):
-        return user
-    from nen.common import dem_loi, nhip_viec
-    ds = await _do_dich_vu()
-    dich_vu = {d["ten"]: d["song"] for d in ds}
-    nav = await run_in_threadpool(_nav_gen, user)
-    return templates.TemplateResponse(
-        request, "nen_ung_dung.html",
-        {"user": user, "trang": "ung-dung", "apps": doc_hop_dong(),
-         "dich_vu": dich_vu, "chi_tiet": {d["ten"]: d for d in ds},
-         "dem": dem_loi.tom_tat(),
-         "nhip": await run_in_threadpool(nhip_viec.tom_tat), **nav})
+@app.get("/general/applications")
+async def nen_ung_dung():
+    """Nghỉ hưu 01/09 (Owner chốt): Command Center bao trọn trang này —
+    bookmark cũ redirect, không mất đường."""
+    return RedirectResponse("/general/command-center", status_code=303)
 
 
 @app.post("/api/nhip-viec/{ma}")
@@ -2281,7 +2270,7 @@ _NEN_CU = {
     "/cau-hinh/llm": "/general/ai-models/llm",
     "/du-lieu": "/general/data-backup",
     "/nhat-ky": "/general/audit-log",
-    "/ung-dung": "/general/applications",
+    "/ung-dung": "/general/command-center",
 }
 
 

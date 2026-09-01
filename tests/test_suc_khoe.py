@@ -187,14 +187,18 @@ def owner_client(tmp_path, monkeypatch):
     return client
 
 
-def test_trang_applications_hien_mo_dun_va_canh_bao(app_stub, monkeypatch,
-                                                    owner_client):
+def test_trang_applications_ve_huu_redirect_command_center(app_stub, monkeypatch,
+                                                           owner_client):
+    """Owner chốt 01/09: Command Center bao trọn Applications — trang cũ nghỉ
+    hưu, bookmark cũ redirect; dữ liệu module vẫn đủ qua API tổng-hợp."""
     from nen.gateway import main as gw
     monkeypatch.setattr(gw, "doc_hop_dong", lambda: _hop_dong_stub(app_stub))
     r = owner_client.get("/general/applications")
-    assert r.status_code == 200
-    assert "kho-vector-gia" in r.text
-    assert "catalog 10 mà kho 3 point" in r.text
+    assert r.status_code == 303
+    assert r.headers["location"] == "/general/command-center"
+    b = owner_client.get("/general/api/giam-sat/tong-hop").json()
+    stub = {d["ten"]: d for d in b["dich_vu"]}["Stub App"]
+    assert any(m["ten"] == "kho-vector-gia" for m in stub["mo_dun"])
 
 
 # ---------- plannery: sức khỏe sâu (B3 lan dần) ----------
