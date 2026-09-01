@@ -28,20 +28,23 @@ def get_provider(role: str) -> LLMProvider:
     model = _env(role, "MODEL").strip()
 
     if nha == "anthropic":
-        return AnthropicProvider(
+        p = AnthropicProvider(
             model=model or "claude-opus-4-8",
             api_key=_env(role, "API_KEY") or os.getenv("ANTHROPIC_API_KEY", ""),
             mock=mock,
         )
-    if nha == "openai_compatible":
-        return OpenAICompatibleProvider(
+    elif nha == "openai_compatible":
+        p = OpenAICompatibleProvider(
             model=model,
             api_key=_env(role, "API_KEY"),
             base_url=_env(role, "BASE_URL").strip() or None,
             mock=mock,
         )
-    raise ValueError(f"Vai '{role}': provider '{nha}' chưa hỗ trợ "
-                     f"(chọn: anthropic | openai_compatible)")
+    else:
+        raise ValueError(f"Vai '{role}': provider '{nha}' chưa hỗ trợ "
+                         f"(chọn: anthropic | openai_compatible)")
+    p.vai = role   # sổ gọi ghi calls per app·vai (01/09)
+    return p
 
 
 def get_critics() -> list[LLMProvider]:

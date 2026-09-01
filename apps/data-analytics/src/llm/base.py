@@ -9,6 +9,19 @@ from collections.abc import Iterator
 
 
 class LLMProvider(ABC):
+    APP_SO_GOI = "data-analytics"   # bản sao — hằng app riêng
+
+    def _ghi_so(self, ms: float, ok: bool, ma_loi: str = "") -> None:
+        """SỔ GỌI nền (01/09): 1 dòng mỗi call LLM THẬT (mock không ghi) —
+        Command Center đếm calls/lỗi per app·vai. Sổ chết không hỏng call."""
+        try:
+            from nen.common import so_goi
+            so_goi.ghi(self.APP_SO_GOI, "llm", viec=getattr(self, "vai", ""),
+                       model=getattr(self, "model", ""), ms=ms, ok=ok,
+                       ma_loi=ma_loi[:120])
+        except Exception:  # noqa: BLE001
+            pass
+
     @abstractmethod
     def generate(self, system_prompt: str, user_prompt: str) -> str:
         """Gửi 1 lượt hỏi (system + user), trả về text."""

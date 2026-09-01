@@ -46,13 +46,20 @@ class OpenAICompatibleProvider(LLMProvider):
         if self.mock:
             return (f"[MOCK {self.model or 'openai-compatible'}] Trả lời mô phỏng — "
                     f"đặt *_MOCK_MODE=false trong .env để gọi model thật.")
-        resp = self.client.chat.completions.create(
-            model=self.model,
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt},
-            ],
-        )
+        import time as _t
+        _t0 = _t.perf_counter()
+        try:
+            resp = self.client.chat.completions.create(
+                model=self.model,
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt},
+                ],
+            )
+        except Exception as e:
+            self._ghi_so((_t.perf_counter() - _t0) * 1000, False, str(e))
+            raise
+        self._ghi_so((_t.perf_counter() - _t0) * 1000, True)
         return resp.choices[0].message.content or ""
 
     def generate_stream(self, system_prompt: str, user_prompt: str):
