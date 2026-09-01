@@ -53,7 +53,7 @@ def doc_su_co(n: int = 40) -> list[dict]:
     goc = Path(os.environ.get("LOGS_DIR",
                               Path(__file__).resolve().parents[2] / "data" / "logs"))
     dong: list[dict] = []
-    files = sorted((goc / "giam-sat").rglob("*.log"))[-2:]
+    files = sorted((goc / "giam-sat").rglob("*.log"))[-8:]  # ~8 ngày gần nhất
     for f in files:
         try:
             for ln in f.read_text(encoding="utf-8").splitlines():
@@ -145,10 +145,12 @@ async def vong(do_dich_vu) -> None:
             tuyen = await duong_truyen.do_tat_ca()
             trang_thai, bao = so_sanh(trang_thai, dich_vu, nhip, tuyen)
             dem = dem_loi.tom_tat()
+            p95s = [d["p95"] for d in dem.values() if d["p95"] is not None]
             luu_tick({"ts": round(time.time()),
                       "req": sum(d["yeu_cau"] for d in dem.values()),
                       "loi": sum(d["loi"] + d["nut_chet"] for d in dem.values()),
                       "app_loi": sum(1 for d in dich_vu if not d["song"]),
+                      "p95": max(p95s) if p95s else None,
                       "duong_truyen": tuyen})
             # CANARY LOGIC (P1-M2): kiểm ĐỀU ĐẶN tự động — mỗi CANARY_CHU_KY
             # giây (mặc định 1800) chạy toàn bộ kịch bản; cảnh báo edge của

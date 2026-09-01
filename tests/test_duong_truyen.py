@@ -91,3 +91,8 @@ def test_api_tong_hop_gom_du_khoi(san, tmp_path, monkeypatch):
     for khoa in ("dich_vu", "dem", "nhip", "canary", "duong_truyen",
                  "lich_su", "su_co"):
         assert khoa in b, khoa
+    # trang command center render + gate
+    r = client.get("/general/command-center")
+    assert r.status_code == 200 and "COMMAND CENTER" in r.text
+    khach = TestClient(gw.app, follow_redirects=False)
+    assert khach.get("/general/command-center").status_code in (303, 401, 403)

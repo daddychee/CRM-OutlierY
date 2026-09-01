@@ -140,6 +140,16 @@ def test_do_dich_vu_gom_muc_va_mo_dun_tu_app_co_khai(app_stub, monkeypatch):
     assert "kho-vector-gia" in ten_mo_dun
 
 
+def test_do_dich_vu_tra_kem_cong_va_slug(app_stub, monkeypatch):
+    """UI command center ghép app ↔ trạm đo lỗi (khóa = cổng) — dịch vụ phải
+    tự khai cong/slug, không bắt UI đoán."""
+    from nen.gateway import main as gw
+    monkeypatch.setattr(gw, "doc_hop_dong", lambda: _hop_dong_stub(app_stub))
+    ds = {d["ten"]: d for d in asyncio.run(gw._do_dich_vu())}
+    assert ds["Stub App"]["cong"] == app_stub and ds["Stub App"]["slug"] == "stub"
+    assert ds["Qdrant (kho vector)"]["slug"] is None
+
+
 def test_do_dich_vu_app_khong_khai_giu_hanh_vi_cu(app_stub, monkeypatch):
     """Hồi quy: app chưa khai suc_khoe → chỉ liveness, muc=None, không gọi thêm."""
     from nen.gateway import main as gw

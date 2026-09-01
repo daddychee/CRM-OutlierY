@@ -167,6 +167,16 @@ def test_yeu_cau_khong_ms_van_dem_duoc():
     assert tt["yeu_cau"] == 1 and tt["p50"] is None
 
 
+def test_tom_tat_dem_loi_theo_loai():
+    """Donut UI cần lỗi phân loại: 5xx app / 502 cổng chết / 504 timeout."""
+    dem_loi.ghi_loi(9190, 500, "/a")
+    dem_loi.ghi_loi(9190, 503, "/b")
+    dem_loi.ghi_loi(9190, 502, "/c")
+    dem_loi.ghi_loi(9190, 504, "/d")
+    tl = dem_loi.tom_tat()[9190]["theo_loai"]
+    assert tl == {"5xx": 2, "502": 1, "504": 1}
+
+
 def test_nut_chet_runtime_dem_rieng():
     """POST trả 404/405 = người dùng bấm trúng NÚT CHẾT — đếm riêng, không trộn
     vào 'loi' 5xx (bệnh khác nhau: nút chết là UI↔server lệch, 5xx là app nổ)."""

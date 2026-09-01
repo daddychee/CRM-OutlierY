@@ -1,0 +1,674 @@
+<title>OUTLIERY Command Center</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap">
+<style>
+/* ═══ V4 — NOC BIG-SCREEN: dark = SkySpark/big-screen · light = Grafana-clean ═══ */
+:root{
+  --void:#070B14; --panel:#0E1626; --phead:#16233B; --line:#223049; --inset:#0A111E;
+  --ink:#E8EDF4; --ink-2:#8B96A8; --ink-3:#5C6678;
+  --accent:#4C8FE0; --cyan:#56C8DC;
+  --ok:#46C078; --warn:#E8A03C; --err:#E05548;
+  --ok-soft:#153224; --warn-soft:#332510; --err-soft:#361715;
+  --glow:0 0 14px rgba(76,143,224,.35); --grid:rgba(139,150,168,.14);
+}
+@media (prefers-color-scheme: light){
+  :root:not([data-theme="dark"]){
+    --void:#F2F4F7; --panel:#FFFFFF; --phead:#F7F8FA; --line:#E2E5EA; --inset:#F7F8FA;
+    --ink:#16181C; --ink-2:#5C6470; --ink-3:#9AA0AA;
+    --accent:#2C6FC4; --cyan:#1893AD;
+    --ok:#1F7A44; --warn:#B57A00; --err:#C03A30;
+    --ok-soft:#E7F5EC; --warn-soft:#FCF3D9; --err-soft:#FBEAE8;
+    --glow:none; --grid:rgba(22,24,28,.09);
+  }
+}
+:root[data-theme="light"]{
+  --void:#F2F4F7; --panel:#FFFFFF; --phead:#F7F8FA; --line:#E2E5EA; --inset:#F7F8FA;
+  --ink:#16181C; --ink-2:#5C6470; --ink-3:#9AA0AA;
+  --accent:#2C6FC4; --cyan:#1893AD;
+  --ok:#1F7A44; --warn:#B57A00; --err:#C03A30;
+  --ok-soft:#E7F5EC; --warn-soft:#FCF3D9; --err-soft:#FBEAE8;
+  --glow:none; --grid:rgba(22,24,28,.09);
+}
+:root[data-theme="dark"]{
+  --void:#070B14; --panel:#0E1626; --phead:#16233B; --line:#223049; --inset:#0A111E;
+  --ink:#E8EDF4; --ink-2:#8B96A8; --ink-3:#5C6678;
+  --accent:#4C8FE0; --cyan:#56C8DC;
+  --ok:#46C078; --warn:#E8A03C; --err:#E05548;
+  --ok-soft:#153224; --warn-soft:#332510; --err-soft:#361715;
+  --glow:0 0 14px rgba(76,143,224,.35); --grid:rgba(139,150,168,.14);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--void);color:var(--ink);
+  font:13px/1.5 'Inter',system-ui,sans-serif;font-variant-numeric:tabular-nums}
+.wrap{max-width:1360px;margin:0 auto;padding:0 14px 40px}
+
+/* topbar */
+.topbar{display:flex;align-items:center;gap:12px;padding:10px 2px;border-bottom:1px solid var(--line)}
+.wordmark{font:700 16px/1 'Space Grotesk',Inter,sans-serif;letter-spacing:.04em}
+.bars{display:inline-flex;gap:2px;align-items:flex-end;margin-right:7px;height:13px}
+.bars i{width:3px;background:var(--ink-3);border-radius:1px}
+.bars i:nth-child(1){height:5px}.bars i:nth-child(2){height:8px}
+.bars i:nth-child(3){height:6px}.bars i:nth-child(4){height:13px;background:var(--accent)}
+.bars i:nth-child(5){height:9px}
+.crumb{color:var(--ink-2);font-size:12px}
+.live{display:flex;align-items:center;gap:7px;margin-left:auto;font-size:11.5px;color:var(--ink-2);
+  border:1px solid var(--line);background:var(--panel);border-radius:4px;padding:5px 11px}
+.live b{color:var(--ink)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--ok)}
+@media (prefers-reduced-motion: no-preference){.dot{animation:pu 2s ease-in-out infinite}@keyframes pu{50%{opacity:.3}}}
+.nav{display:flex;gap:2px;margin:10px 0 12px}
+.nav button{font:600 12px Inter,sans-serif;color:var(--ink-2);background:var(--panel);
+  border:1px solid var(--line);border-radius:4px;padding:7px 16px;cursor:pointer}
+.nav button.on{color:#fff;background:var(--accent);border-color:var(--accent)}
+:root[data-theme="light"] .nav button.on{color:#fff}
+.screen{display:none}.screen.on{display:block}
+
+/* SECTION headers — thanh lớn kiểu SkySpark */
+.sec{display:flex;align-items:center;gap:10px;background:var(--phead);border:1px solid var(--line);
+  border-left:4px solid var(--accent);border-radius:4px;padding:7px 12px;margin:14px 0 8px}
+.sec h2{font:700 12.5px/1 'Space Grotesk',Inter,sans-serif;letter-spacing:.14em;text-transform:uppercase;margin:0}
+.sec small{color:var(--ink-3);font-size:11px;margin-left:auto;letter-spacing:0}
+
+/* PANEL khít, header strip riêng */
+.g{display:grid;gap:8px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:5px;overflow:hidden}
+.ph{background:var(--phead);border-bottom:1px solid var(--line);padding:6px 11px;
+  font:600 10.5px/1 Inter,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-2);
+  display:flex;justify-content:space-between;align-items:center}
+.pb{padding:10px 12px}
+
+/* meter số lớn */
+.meter .n{font:600 34px/1 'Space Grotesk',Inter,sans-serif;text-shadow:var(--glow)}
+.meter .u{font:500 13px Inter,sans-serif;color:var(--ink-2);margin-left:4px}
+.meter .sub{font-size:11px;color:var(--ink-2);margin-top:3px}
+.n.c-ok{color:var(--ok)}.n.c-warn{color:var(--warn)}.n.c-err{color:var(--err)}.n.c-ac{color:var(--accent)}
+
+/* alarm hbars */
+.abar{display:grid;grid-template-columns:86px 1fr 34px;gap:8px;align-items:center;padding:5px 0;font-size:12px}
+.abar .tag{font-weight:700;font-size:10.5px;letter-spacing:.06em;padding:3px 8px;border-radius:3px;text-align:center}
+.abar .tr{height:16px;background:var(--inset);border:1px solid var(--line);border-radius:3px;overflow:hidden}
+.abar .tr i{display:block;height:100%}
+.abar b{text-align:right;font-size:15px;font-family:'Space Grotesk',Inter,sans-serif}
+
+/* online/offline boxes */
+.oo{display:grid;grid-template-columns:1fr 1fr;gap:6px;text-align:center}
+.oo>div{border:1px solid var(--line);border-radius:4px;padding:7px 4px;background:var(--inset)}
+.oo .lb{font-size:10px;letter-spacing:.08em;color:var(--ink-2)}
+.oo .num{font:600 22px/1.2 'Space Grotesk',Inter,sans-serif}
+
+/* gauge */
+.gauge{display:flex;flex-direction:column;align-items:center;padding:4px 0 0}
+.gauge .val{font:600 26px/1 'Space Grotesk',Inter,sans-serif;margin-top:-38px;text-shadow:var(--glow)}
+.gauge .cap{font-size:10.5px;color:var(--ink-2);margin-top:2px;text-align:center}
+
+/* app grid dày */
+.appg{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px}
+.appc{border:1px solid var(--line);background:var(--inset);border-radius:4px;padding:7px 9px;cursor:pointer}
+.appc:hover{border-color:var(--accent)}
+.appc .r1{display:flex;align-items:center;gap:6px;font-weight:600;font-size:12px}
+.appc .led{width:8px;height:8px;border-radius:50%;background:var(--ok);flex:none}
+.appc.warn .led{background:var(--warn)}.appc.err .led{background:var(--err)}
+.appc .r2{font-size:10.5px;color:var(--ink-2);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* net lanes */
+.lane{display:grid;grid-template-columns:120px 60px 1fr 60px;gap:8px;align-items:center;
+  padding:6px 0;border-top:1px solid var(--line);font-size:12px}
+.lane:first-child{border-top:none}
+.lane .ms{font:600 15px 'Space Grotesk',Inter,sans-serif;text-align:right}
+.lane .pill{justify-self:end;font-size:10px;font-weight:700;letter-spacing:.06em;padding:2px 8px;border-radius:3px}
+.p-ok{background:var(--ok-soft);color:var(--ok)}.p-warn{background:var(--warn-soft);color:var(--warn)}.p-err{background:var(--err-soft);color:var(--err)}
+
+.tb{width:100%;border-collapse:collapse;font-size:12px}
+.tb th{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-3);text-align:left;
+  padding:5px 8px;border-bottom:1px solid var(--line);font-weight:600}
+.tb td{padding:6px 8px;border-bottom:1px solid var(--line)}
+.tb tr:last-child td{border-bottom:none}
+.tb .r{text-align:right}
+.mut{color:var(--ink-2)}
+.note{font-size:11.5px;color:var(--ink-3);margin-top:10px}
+.leg{display:flex;gap:14px;font-size:10.5px;color:var(--ink-2);flex-wrap:wrap}
+.leg i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.chartbox{position:relative}
+.tip{position:absolute;pointer-events:none;background:var(--phead);border:1px solid var(--line);
+  border-radius:4px;padding:5px 9px;font-size:11px;display:none;white-space:nowrap;z-index:2}
+svg{display:block}
+</style>
+
+<div class="wrap">
+  <div class="topbar">
+    <span class="wordmark"><span class="bars"><i></i><i></i><i></i><i></i><i></i></span>OUTLIERY</span>
+    <span class="crumb">COMMAND CENTER · máy chủ 192.168.1.250 · V3</span>
+    <span class="live"><span class="dot" id="liveDot"></span> LIVE · poll 15s · <b id="tickAgo">đang tải…</b></span>
+  </div>
+  <div class="nav">
+    <button class="on" data-s="tong">TỔNG QUAN</button><button data-s="app">APP CHI TIẾT</button>
+    <button data-s="quota">QUOTA &amp; CALLS</button><button data-s="suco">SỔ SỰ CỐ</button>
+  </div>
+
+  <div class="screen on" id="s-tong">
+    <!-- ═════════ SECTION 1 · TÌNH TRẠNG HỆ ═════════ -->
+    <div class="sec"><h2>Tình trạng hệ</h2><small>13 app · gateway · Qdrant · cập nhật 60 giây</small></div>
+    <div class="g" style="grid-template-columns:1.35fr 1fr .9fr .9fr 1.15fr">
+      <div class="panel"><div class="ph">Cảnh báo đang mở</div><div class="pb">
+        <div class="abar"><span class="tag" style="background:var(--err);color:#fff">LOGIC ĐỎ</span><span class="tr"><i id="ab-err-w" style="width:0%;background:var(--err)"></i></span><b id="ab-err">—</b></div>
+        <div class="abar"><span class="tag" style="background:var(--warn);color:#1A1206">CẢNH BÁO</span><span class="tr"><i id="ab-warn-w" style="width:0%;background:var(--warn)"></i></span><b id="ab-warn">—</b></div>
+        <div class="abar"><span class="tag" style="background:var(--ok);color:#06150C">ỔN ĐỊNH</span><span class="tr"><i id="ab-ok-w" style="width:0%;background:var(--ok)"></i></span><b id="ab-ok">—</b></div>
+        <div class="note" style="margin-top:6px" id="ab-note"></div>
+      </div></div>
+      <div class="panel"><div class="ph">Dịch vụ</div><div class="pb">
+        <div class="oo">
+          <div><div class="lb">ONLINE</div><div class="num" style="color:var(--ok)" id="oo-on">—</div></div>
+          <div><div class="lb">OFFLINE</div><div class="num" id="oo-off">—</div></div>
+          <div><div class="lb">VIỆC NỀN ĐÚNG NHỊP</div><div class="num" style="color:var(--ok)" id="oo-nhip">—</div></div>
+          <div><div class="lb">MODULE CẢNH BÁO</div><div class="num" style="color:var(--warn)" id="oo-mod">—</div></div>
+        </div>
+      </div></div>
+      <div class="panel"><div class="ph">Uptime 24h</div><div class="pb gauge" id="gauge1"></div></div>
+      <div class="panel"><div class="ph">Quota YouTube còn</div><div class="pb gauge" id="gauge2"></div></div>
+      <div class="panel"><div class="ph">Nhịp hiện tại</div><div class="pb">
+        <div class="meter"><span class="n c-ac" id="heroNow">—</span><span class="u">req/phút (TB 5′)</span>
+          <div class="sub">p95 <b id="m-p95">—</b> · lỗi 5′ <b id="m-loi" style="color:var(--ok)">—</b></div></div>
+        <div class="meter" style="margin-top:8px"><span class="n" style="font-size:22px" id="m-nhip-nen">—</span><span class="u">việc nền đúng nhịp</span>
+          <div class="sub" id="m-nhip-s"></div></div>
+      </div></div>
+    </div>
+
+    <!-- ═════════ SECTION 2 · LƯU LƯỢNG & ĐƯỜNG TRUYỀN ═════════ -->
+    <div class="sec"><h2>Lưu lượng &amp; đường truyền</h2><small>dòng chảy liên tục — rê chuột xem từng phút</small></div>
+    <div class="g" style="grid-template-columns:2fr 1.1fr">
+      <div class="panel"><div class="ph">Hoạt động toàn hệ · 60 phút
+        <span class="leg"><span><i style="background:var(--accent)"></i>req/phút</span><span><i style="background:var(--err)"></i>lỗi</span></span></div>
+        <div class="pb chartbox"><svg id="heroSvg" height="150" viewBox="0 0 1000 150" preserveAspectRatio="none" style="width:100%"></svg>
+        <div class="tip" id="heroTip"></div></div></div>
+      <div class="panel"><div class="ph">Đường truyền · đo 60s/lần</div><div class="pb" id="net"></div></div>
+    </div>
+    <div class="g" style="grid-template-columns:1.4fr 1fr;margin-top:8px">
+      <div class="panel"><div class="ph">Request theo giờ + p95 latency
+        <span class="leg"><span><i style="background:var(--accent)"></i>requests</span><span><i style="background:var(--warn)"></i>p95 ms</span></span></div>
+        <div class="pb"><svg id="comboSvg" height="150" viewBox="0 0 640 150" style="width:100%"></svg></div></div>
+      <div class="panel"><div class="ph">Lỗi 24h theo loại</div><div class="pb" style="display:flex;gap:14px;align-items:center">
+        <svg id="donutSvg" width="120" height="120" viewBox="0 0 120 120"></svg>
+        <div style="flex:1;font-size:12px" id="donutLeg"></div></div></div>
+    </div>
+
+    <!-- ═════════ SECTION 3 · BẢN ĐỒ APP ═════════ -->
+    <div class="sec"><h2>Bản đồ hệ — 13 app</h2><small>click → màn chi tiết: module · canary logic · nút chết · chỉ số kết quả</small></div>
+    <div class="appg" id="map"></div>
+
+    <!-- ═════════ SECTION 4 · QUOTA & SỰ CỐ ═════════ -->
+    <div class="sec"><h2>Quota · sự cố · việc nền</h2><small>chi tiết ở màn Quota &amp; Calls và Sổ sự cố</small></div>
+    <div class="g" style="grid-template-columns:1.2fr 1fr 1.1fr">
+      <div class="panel"><div class="ph">Việc nền theo nhịp (dead-man's switch)</div><div class="pb" id="qbars"></div></div>
+      <div class="panel"><div class="ph">Sự cố 8 ngày · theo ngày</div><div class="pb">
+        <svg id="stackSvg" height="120" viewBox="0 0 420 120" style="width:100%"></svg>
+        <div class="leg" style="margin-top:6px"><span><i style="background:var(--err)"></i>lỗi/logic</span><span><i style="background:var(--warn)"></i>cảnh báo</span></div></div></div>
+      <div class="panel"><div class="ph">Dòng sự cố mới nhất</div><div class="pb"><table class="tb" id="sc-mini"></table></div></div>
+    </div>
+    <div class="note">Command Center P1 · dữ liệu THẬT poll 15 giây · canary tự động mỗi 30 phút + nút CHẠY NGAY · ô ghi P2 = giữ chỗ theo mockup, nối ở phase sau.</div>
+  </div>
+
+  <!-- ═══════════════ MÀN 2 · APP CHI TIẾT (Content Ultimate) ═══════════════ -->
+  <div class="screen" id="s-app">
+    <div class="sec"><h2 id="app-ten">App · —</h2>
+      <small><span id="app-cong"></span> &nbsp;|&nbsp; <button class="btn" id="nut-canary" style="padding:4px 12px">CHẠY CANARY NGAY</button> <span id="nut-canary-tt" class="mut"></span></small></div>
+    <div class="g" style="grid-template-columns:1.35fr 1fr .9fr 1.1fr">
+      <div class="panel"><div class="ph">Đo logic — 4 tầng</div><div class="pb">
+        <div class="abar"><span class="tag" style="background:var(--err);color:#fff">SAI LOGIC</span><span class="tr"><i id="aab-err-w" style="width:0%;background:var(--err)"></i></span><b id="aab-err">—</b></div>
+        <div class="abar"><span class="tag" style="background:var(--warn);color:#1A1206">LỖI GỌI</span><span class="tr"><i id="aab-warn-w" style="width:0%;background:var(--warn)"></i></span><b id="aab-warn">—</b></div>
+        <div class="abar"><span class="tag" style="background:var(--ok);color:#06150C">ĐÚNG</span><span class="tr"><i id="aab-ok-w" style="width:0%;background:var(--ok)"></i></span><b id="aab-ok">—</b></div>
+        <div class="note" style="margin-top:6px" id="aab-note">canary logic — lần chạy gần nhất</div>
+      </div></div>
+      <div class="panel"><div class="ph">Module &amp; nút</div><div class="pb">
+        <div class="oo">
+          <div><div class="lb">MODULE OK</div><div class="num" style="color:var(--ok)" id="aoo-mod">—</div></div>
+          <div><div class="lb">NÚT CHẾT 5′</div><div class="num" id="aoo-nut">—</div></div>
+          <div><div class="lb">CANARY PASS</div><div class="num" id="aoo-canary">—</div></div>
+          <div><div class="lb">LỖI 5′</div><div class="num" id="aoo-loi">—</div></div>
+        </div>
+      </div></div>
+      <div class="panel"><div class="ph">Uptime hệ 24h</div><div class="pb gauge" id="gaugeApp"></div></div>
+      <div class="panel"><div class="ph">Nhịp app</div><div class="pb">
+        <div class="meter"><span class="n c-ac" id="am-req">—</span><span class="u">req 5′ qua proxy</span>
+          <div class="sub">p50 <b id="am-p50">—</b> · p95 <b id="am-p95">—</b></div></div>
+        <div class="meter" style="margin-top:8px"><span class="n" style="font-size:22px" id="am-loi">—</span><span class="u">lỗi + nút chết 5′</span>
+          <div class="sub" id="am-loi-s"></div></div>
+      </div></div>
+    </div>
+
+    <div class="sec"><h2>Module hạ tầng (suc_khoe)</h2><small>app tự khai — đọc sống mỗi 15 giây</small></div>
+    <div class="panel"><div class="pb" style="padding-top:6px"><table class="tb" id="app-mods"></table></div></div>
+
+    <div class="sec"><h2>Canary logic</h2><small>gọi tính năng THẬT với input mẫu, so KẾT QUẢ với kỳ vọng · 30′/lần — kịch bản khai ngoài code (nen/rules/canary/*.json)</small></div>
+    <div class="panel"><div class="pb" style="padding-top:6px"><table class="tb" id="app-canary"></table></div></div>
+
+    <div class="g" style="grid-template-columns:1.2fr 1fr;margin-top:8px">
+      <div class="panel"><div class="ph">Nút chết — runtime 5′ (đo tại proxy)</div><div class="pb"><table class="tb" id="app-nut"></table><div class="note">Quét tĩnh UI↔route: P2</div></div></div>
+      <div class="panel"><div class="ph">Lỗi gần nhất của app</div><div class="pb"><table class="tb" id="app-suco"></table></div></div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ MÀN 3 · QUOTA & CALLS ═══════════════ -->
+  <div class="screen" id="s-quota">
+    <div class="sec"><h2>Quota &amp; Calls</h2><small>két là sổ gốc — usage đếm từ sổ gọi của chính hệ, "sống" theo call thật gần nhất</small></div>
+    <div class="g" style="grid-template-columns:.9fr 1fr 1fr 1.1fr">
+      <div class="panel"><div class="ph">YouTube còn hôm nay</div><div class="pb gauge" id="gaugeQ"></div></div>
+      <div class="panel"><div class="ph">Khóa</div><div class="pb"><div class="oo"><div><div class="lb">SỐNG</div><div class="num">—</div></div><div><div class="lb">CHẾT (403)</div><div class="num">—</div></div><div><div class="lb">NÓNG &gt;80%</div><div class="num">—</div></div><div><div class="lb">RESET SAU</div><div class="num" id="q-reset">—</div></div></div><div class="note">P2 — sổ usage per key chưa nối</div></div></div>
+      <div class="panel"><div class="ph">LLM hôm nay</div><div class="pb"><div class="meter"><span class="n">—</span><span class="u">calls</span><div class="sub">P2 — sổ llm_usage chưa nối</div></div></div></div>
+      <div class="panel"><div class="ph">Dịch vụ ngoài (đo thật)</div><div class="pb"><table class="tb" id="q-ngoai"></table></div></div>
+    </div>
+
+    <div class="sec"><h2>Nhịp tiêu quota trong ngày</h2><small>units cộng dồn — dốc hơn hôm qua là biết cạn TRƯỚC khi cạn</small></div>
+    <div class="panel"><div class="ph">Units cộng dồn trong ngày</div><div class="pb"><div class="note" style="margin:20px 0">P2 — chart units cộng dồn hiện sau khi nối sổ usage (tra_cuu_log radary + sổ mới seo/niche). Giữ chỗ theo mockup.</div></div></div>
+
+    <div class="g" style="grid-template-columns:1.1fr 1.3fr;margin-top:8px">
+      <div class="panel"><div class="ph">Khóa YouTube theo két · dùng hôm nay</div><div class="pb" id="qbars2"><div class="note">P2 — sổ usage per key</div></div></div>
+      <div class="panel"><div class="ph">LLM theo app · vai (cấu hình đọc thật từ két)</div><div class="pb"><table class="tb" id="q-llm"></table><div class="note">usage calls/token là P2</div></div></div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ MÀN 4 · SỔ SỰ CỐ ═══════════════ -->
+  <div class="screen" id="s-suco">
+    <div class="sec"><h2>Sổ sự cố</h2><small>sổ bền data/logs/giam-sat · giữ 30 ngày · cảnh báo lúc CHUYỂN trạng thái</small></div>
+    <div class="g" style="grid-template-columns:repeat(4,1fr)">
+      <div class="panel"><div class="ph">Sự cố 8 ngày</div><div class="pb meter"><span class="n" id="sc-tong">—</span><span class="u">dòng cảnh báo</span><div class="sub">từ sổ bền giam-sat</div></div></div>
+      <div class="panel"><div class="ph">Hôm nay</div><div class="pb meter"><span class="n c-warn" id="sc-homnay">—</span><div class="sub">cảnh báo + hồi phục</div></div></div>
+      <div class="panel"><div class="ph">Hồi phục</div><div class="pb meter"><span class="n c-ok" id="sc-hoiphuc">—</span><div class="sub">dòng hồi phục trong sổ</div></div></div>
+      <div class="panel"><div class="ph">MTTR</div><div class="pb meter"><span class="n" style="font-size:20px">P2</span><div class="sub">cần ghép cặp báo↔hồi phục</div></div></div>
+    </div>
+    <div class="g" style="grid-template-columns:1fr 1.4fr;margin-top:8px">
+      <div class="panel"><div class="ph">Nhịp sự cố 14 ngày
+        <span class="leg"><span><i style="background:var(--err)"></i>lỗi/logic</span><span><i style="background:var(--warn)"></i>cảnh báo</span></span></div>
+        <div class="pb"><svg id="stackSvg2" height="130" viewBox="0 0 420 130" style="width:100%"></svg><div class="note">Cột = số dòng cảnh báo mỗi ngày từ sổ bền (đêm dựng giám sát cao là bình thường — hệ bắt đầu NHÌN THẤY bệnh vốn có).</div></div></div></div>
+      <div class="panel"><div class="ph">Dòng sự cố (mới nhất trước)</div><div class="pb"><table class="tb" id="sc-bang"></table></div></div>
+    </div>
+  </div>
+</div>
+
+
+<script>
+/* Command Center P1 — JS thật: poll /general/api/giam-sat/tong-hop 15s.
+   BOOT_DATA (nếu trang được bơm sẵn) dùng cho screenshot đối chiếu mockup. */
+"use strict";
+const $ = id => document.getElementById(id);
+const esc = x => String(x ?? "").replace(/[&<>"']/g,
+  c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+let DATA = null, appDangXem = null, giayTuTick = 0;
+
+/* ── điều hướng màn ── */
+function moMan(id){
+  document.querySelectorAll(".screen").forEach(s=>s.classList.toggle("on", s.id==="s-"+id));
+  document.querySelectorAll(".nav button").forEach(b=>b.classList.toggle("on", b.dataset.s===id));
+  window.scrollTo({top:0});
+}
+document.querySelectorAll(".nav [data-s]").forEach(b=>b.addEventListener("click", ()=>moMan(b.dataset.s)));
+
+/* ── gauge bán nguyệt (pct=null → "—") ── */
+function gauge(el, pct, mau, cap){
+  let cung = "";
+  if (pct !== null && pct !== undefined){
+    const r=52, cx=64, cy=64, a=Math.PI*(1-pct/100);
+    const x=cx+r*Math.cos(a), y=cy-r*Math.sin(a), big=pct>50?1:0;
+    cung = `<path d="M12 64 A52 52 0 ${big} 1 ${x.toFixed(1)} ${y.toFixed(1)}" fill="none" stroke="${mau}" stroke-width="13" stroke-linecap="round"/>`;
+  }
+  $(el).innerHTML =
+   `<svg width="128" height="78" viewBox="0 0 128 78">
+     <path d="M12 64 A52 52 0 0 1 116 64" fill="none" stroke="var(--inset)" stroke-width="13" stroke-linecap="round"/>${cung}
+    </svg><div class="val" style="color:${pct==null?"var(--ink-3)":mau}">${pct==null?"—":pct+"%"}</div><div class="cap">${cap}</div>`;
+}
+
+const nhanKQ = {dung:["p-ok","ĐÚNG"], sai:["p-err","SAI LOGIC"], loi:["p-warn","LỖI GỌI"]};
+
+/* ── render tổng ── */
+function render(){
+  const D = DATA; if (!D) return;
+  const ds = D.dich_vu, dem = D.dem, canary = D.canary || {};
+
+  // gom canary toàn hệ
+  let cSai=0, cLoi=0, cDung=0, dongDo=[];
+  for (const [slug, kq] of Object.entries(canary)){
+    for (const k of (kq && kq.kich_ban) || []){
+      if (k.ket_qua==="dung") cDung++;
+      else if (k.ket_qua==="sai"){ cSai++; dongDo.push(slug+" · "+k.ten); }
+      else { cLoi++; dongDo.push(slug+" · "+k.ten+" (lỗi gọi)"); }
+    }
+  }
+  const tongC = cSai+cLoi+cDung || 1;
+  $("ab-err").textContent=cSai; $("ab-err-w").style.width=(cSai/tongC*100)+"%";
+  $("ab-warn").textContent=cLoi; $("ab-warn-w").style.width=(cLoi/tongC*100)+"%";
+  $("ab-ok").textContent=cDung; $("ab-ok-w").style.width=(cDung/tongC*100)+"%";
+  $("ab-note").textContent = dongDo.length
+    ? "Đỏ: "+dongDo.slice(0,2).join(" · ") : `${cDung}/${tongC} logic gọi tên đều ĐÚNG (canary ${Object.keys(canary).length} app)`;
+
+  // dịch vụ
+  const on = ds.filter(d=>d.song).length;
+  $("oo-on").textContent = on; $("oo-off").textContent = ds.length-on;
+  const modCB = ds.reduce((s,d)=>s+(d.mo_dun||[]).filter(m=>m.trang_thai==="canh_bao").length,0);
+  const modLoi = ds.reduce((s,d)=>s+(d.mo_dun||[]).filter(m=>m.trang_thai==="loi").length,0);
+  $("oo-mod").textContent = modCB + modLoi;
+  const nhipOk = D.nhip.filter(v=>v.tre===false).length;
+  $("oo-nhip").textContent = `${nhipOk}/${D.nhip.length}`;
+  $("m-nhip-nen").textContent = `${nhipOk}/${D.nhip.length}`;
+  $("m-nhip-s").textContent = D.nhip.filter(v=>v.tre).map(v=>v.ten+" TRỄ").join(" · ") || "không việc nào trễ";
+
+  // uptime từ ring (P1: từ lúc gateway lên; <5 tick → chưa đủ)
+  const ls = D.lich_su || [];
+  const upPct = ls.length>=5 ? Math.round(100*ls.filter(t=>!t.app_loi).length/ls.length) : null;
+  gauge("gauge1", upPct, "var(--ok)", ls.length>=5
+    ? `${ls.length} tick × 60s từ lúc gateway lên` : "chưa đủ dữ liệu (vòng nền mới chạy)");
+  gauge("gauge2", null, "var(--warn)", "P2 — sổ usage quota chưa nối");
+  if ($("gaugeApp")) gauge("gaugeApp", upPct, "var(--ok)", "toàn hệ, từ vòng giám sát");
+  if ($("gaugeQ")) gauge("gaugeQ", null, "var(--warn)", "P2 — sổ usage quota chưa nối");
+
+  // nhịp hiện tại
+  const tongReq = Object.values(dem).reduce((s,d)=>s+d.yeu_cau,0);
+  const tongLoi = Object.values(dem).reduce((s,d)=>s+d.loi+d.nut_chet,0);
+  const p95s = Object.values(dem).map(d=>d.p95).filter(v=>v!=null);
+  $("heroNow").textContent = Math.round(tongReq/5);
+  $("m-p95").textContent = p95s.length? Math.max(...p95s)+" ms" : "—";
+  $("m-loi").textContent = tongLoi; $("m-loi").style.color = tongLoi? "var(--err)":"var(--ok)";
+
+  veHero(ls); veNet(D.duong_truyen, ls); veCombo(ls); veDonut(dem);
+  veMap(ds, dem, canary); veNhipBars(D.nhip); veStack(D.su_co, "stackSvg"); veScMini(D.su_co);
+
+  // màn phụ
+  renderApp(); renderQuota(); renderSuCo();
+}
+
+/* ── hero chart: lich_su tick 60s → req/phút ── */
+const W=1000, HH=150;
+function veHero(ls){
+  const pts = ls.slice(-60).map(t=>({req:Math.round(t.req/5), loi:t.loi, ts:t.ts}));
+  if (!pts.length){ $("heroSvg").innerHTML=""; return; }
+  while (pts.length<2) pts.unshift(pts[0]);
+  const max=Math.max(...pts.map(p=>p.req),1)*1.15;
+  const px=i=>i/(pts.length-1)*W, py=v=>HH-12-(v/max)*(HH-26);
+  const line=pts.map((p,i)=>`${px(i).toFixed(1)},${py(p.req).toFixed(1)}`).join(" ");
+  const grid=[0.33,0.66].map(f=>`<line x1="0" x2="${W}" y1="${py(max*f)}" y2="${py(max*f)}" stroke="var(--grid)"/>`).join("");
+  const bars=pts.map((p,i)=>p.loi?`<rect x="${px(i)-2}" y="${HH-12-Math.min(p.loi,5)*11}" width="4" height="${Math.min(p.loi,5)*11}" rx="2" fill="var(--err)"/>`:"").join("");
+  const e=[px(pts.length-1),py(pts[pts.length-1].req)];
+  $("heroSvg").innerHTML=grid+
+   `<polygon points="0,${HH-12} ${line} ${W},${HH-12}" fill="var(--accent)" opacity=".16"/>
+    <polyline points="${line}" fill="none" stroke="var(--accent)" stroke-width="2.4" stroke-linejoin="round"/>`+bars+
+   `<circle cx="${e[0]}" cy="${e[1]}" r="4" fill="var(--accent)"/>
+    <line id="hx" x1="0" x2="0" y1="6" y2="${HH-12}" stroke="var(--ink-3)" stroke-dasharray="3,3" visibility="hidden"/>`;
+  $("heroSvg").onmousemove = ev=>{
+    const rc=$("heroSvg").getBoundingClientRect();
+    const i=Math.max(0,Math.min(pts.length-1,Math.round((ev.clientX-rc.left)/rc.width*(pts.length-1))));
+    const hx=$("hx"); if(!hx) return;
+    hx.setAttribute("visibility","visible"); hx.setAttribute("x1",px(i)); hx.setAttribute("x2",px(i));
+    const d=new Date(pts[i].ts*1000);
+    const tip=$("heroTip"); tip.style.display="block";
+    tip.style.left=Math.min((px(i)/W)*rc.width+12, rc.width-150)+"px"; tip.style.top="14px";
+    tip.innerHTML=`<b>${d.getHours()}:${String(d.getMinutes()).padStart(2,"0")}</b> · ${pts[i].req} req/phút · ${pts[i].loi} lỗi`;
+  };
+  $("heroSvg").onmouseleave = ()=>{ $("heroTip").style.display="none";
+    const hx=$("hx"); if(hx) hx.setAttribute("visibility","hidden"); };
+}
+
+/* ── đường truyền: giá trị mới + sparkline từ lich_su ── */
+function veNet(tuyen, ls){
+  $("net").innerHTML=(tuyen||[]).map(t=>{
+    const vals=ls.map(k=>{
+      const x=(k.duong_truyen||[]).find(d=>d.ma===t.ma);
+      return x && x.ms!=null ? x.ms : null;
+    }).filter(v=>v!=null).slice(-30);
+    const w=150,h=22,max=Math.max(...vals,1);
+    const pts=vals.map((v,i)=>`${(i/Math.max(vals.length-1,1)*w).toFixed(1)},${(h-2-(v/max)*(h-6)).toFixed(1)}`).join(" ");
+    const sv=vals.length>1?`<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" style="width:100%"><polyline points="${pts}" fill="none" stroke="var(--cyan)" stroke-width="1.6"/></svg>`
+      : `<span class="mut" style="font-size:11px">${t.ok?"đang gom lịch sử…":"không đo được"}</span>`;
+    return `<div class="lane"><b>${esc(t.ten)}</b><span class="ms">${t.ms!=null?t.ms+'<small style="font-weight:400;color:var(--ink-3)">ms</small>':"—"}</span>
+      ${sv}<span class="pill p-${t.ok?"ok":"err"}">${t.ok?"THÔNG":"ĐỨT"}</span></div>`;
+  }).join("") || '<div class="mut small">chưa khai tuyến nào (nen/rules/duong_truyen.json)</div>';
+}
+
+/* ── combo: lich_su gộp theo 10 phút — req (cột) + p95 (đường) ── */
+function veCombo(ls){
+  const nhom=[];
+  for (const t of ls){
+    const khoa=Math.floor(t.ts/600);
+    let n=nhom[nhom.length-1];
+    if (!n || n.khoa!==khoa){ n={khoa, ts:t.ts, req:0, p95:[], so:0}; nhom.push(n); }
+    n.req+=t.req/5; n.so++; if (t.p95!=null) n.p95.push(t.p95);
+  }
+  const ds=nhom.slice(-12);
+  if (!ds.length){ $("comboSvg").innerHTML=""; return; }
+  const W2=640,H2=150,bw=Math.min(34,(W2-60)/ds.length*0.62),gap=(W2-40)/Math.max(ds.length,1);
+  const maxR=Math.max(...ds.map(d=>d.req/d.so),1)*1.15;
+  const p95s=ds.map(d=>d.p95.length?Math.max(...d.p95):null);
+  const maxL=Math.max(...p95s.filter(v=>v!=null),1)*1.3;
+  let out="";
+  ds.forEach((d,i)=>{
+    const v=d.req/d.so, h=(v/maxR)*(H2-38);
+    const gio=new Date(d.ts*1000);
+    out+=`<rect x="${28+i*gap}" y="${H2-24-h}" width="${bw}" height="${h}" rx="3" fill="var(--accent)" opacity=".85"/>
+      <text x="${28+i*gap+bw/2}" y="${H2-10}" text-anchor="middle" font-size="9.5" fill="var(--ink-3)">${gio.getHours()}:${String(gio.getMinutes()).padStart(2,"0")}</text>`;
+  });
+  const ln=ds.map((d,i)=>p95s[i]!=null?`${(28+i*gap+bw/2).toFixed(1)},${(H2-24-(p95s[i]/maxL)*(H2-38)).toFixed(1)}`:null).filter(Boolean).join(" ");
+  if (ln) out+=`<polyline points="${ln}" fill="none" stroke="var(--warn)" stroke-width="2" stroke-linejoin="round"/>`;
+  $("comboSvg").innerHTML=out;
+}
+
+/* ── donut lỗi theo loại (cửa sổ 5′ toàn hệ) ── */
+function veDonut(dem){
+  const gop={"5xx":0,"502":0,"504":0,"nut-chet":0};
+  for (const d of Object.values(dem)){
+    for (const [k,v] of Object.entries(d.theo_loai||{})) gop[k]=(gop[k]||0)+v;
+    gop["nut-chet"]+=d.nut_chet;
+  }
+  const data=[["Timeout 504",gop["504"],"var(--warn)"],["5xx app",gop["5xx"],"var(--err)"],
+              ["Cổng chết 502",gop["502"],"var(--ink-3)"],["Nút chết",gop["nut-chet"],"var(--cyan)"]];
+  const tot=data.reduce((s,d)=>s+d[1],0);
+  let out="";
+  if (tot===0){
+    out=`<circle cx="60" cy="60" r="46" fill="none" stroke="var(--inset)" stroke-width="15"/>
+      <text x="60" y="57" text-anchor="middle" font-size="21" font-weight="600" fill="var(--ok)" font-family="Space Grotesk">0</text>
+      <text x="60" y="72" text-anchor="middle" font-size="9" fill="var(--ink-3)">lỗi 5 phút</text>`;
+  } else {
+    let a0=-Math.PI/2;
+    for (const [nm,v,c] of data){
+      if (!v) continue;
+      const a1=a0+v/tot*2*Math.PI;
+      const x0=60+46*Math.cos(a0),y0=60+46*Math.sin(a0),x1=60+46*Math.cos(a1),y1=60+46*Math.sin(a1);
+      out+=`<path d="M${x0.toFixed(1)} ${y0.toFixed(1)} A46 46 0 ${a1-a0>Math.PI?1:0} 1 ${x1.toFixed(1)} ${y1.toFixed(1)}" fill="none" stroke="${c}" stroke-width="15"/>`;
+      a0=a1+0.03;
+    }
+    out+=`<text x="60" y="57" text-anchor="middle" font-size="21" font-weight="600" fill="var(--ink)" font-family="Space Grotesk">${tot}</text>
+      <text x="60" y="72" text-anchor="middle" font-size="9" fill="var(--ink-3)">lỗi 5 phút</text>`;
+  }
+  $("donutSvg").innerHTML=out;
+  $("donutLeg").innerHTML=data.map(([nm,v,c])=>
+   `<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--line)">
+     <span><i style="display:inline-block;width:9px;height:9px;border-radius:2px;background:${c};margin-right:7px"></i>${nm}</span><b>${v}</b></div>`).join("");
+}
+
+/* ── bản đồ app ── */
+function veMap(ds, dem, canary){
+  $("map").innerHTML = ds.map(d=>{
+    const cKq=(canary[d.slug]&&canary[d.slug].kich_ban)||[];
+    const xau=cKq.some(k=>k.ket_qua==="sai")?"err":null;
+    const st=!d.song?"err":(xau||( d.muc==="loi"?"err":d.muc==="canh_bao"?"warn":"ok"));
+    const dm=dem[String(d.cong)]||{};
+    const tt=[];
+    if (!d.song) tt.push("KHÔNG TRẢ LỜI");
+    else{
+      if (cKq.length) tt.push(`canary ${cKq.filter(k=>k.ket_qua==="dung").length}/${cKq.length}`);
+      if (dm.yeu_cau) tt.push(`${dm.yeu_cau} req 5′`);
+      if ((dm.loi||0)+(dm.nut_chet||0)) tt.push(`${dm.loi+dm.nut_chet} lỗi`);
+      const cb=(d.mo_dun||[]).find(m=>m.trang_thai!=="ok");
+      if (cb) tt.push(cb.ten+" "+(cb.trang_thai==="loi"?"LỖI":"cảnh báo"));
+    }
+    return `<div class="appc ${st}" tabindex="0" data-slug="${esc(d.slug||"")}" role="button">
+      <div class="r1"><span class="led"></span>${esc(d.ten)}</div>
+      <div class="r2">${esc(tt.join(" · ")||"ổn định")}</div></div>`;
+  }).join("");
+  document.querySelectorAll("#map .appc").forEach(el=>el.addEventListener("click", ()=>{
+    if (el.dataset.slug){ appDangXem=el.dataset.slug; renderApp(); moMan("app"); }
+  }));
+}
+
+/* ── việc nền bars (màn tổng) ── */
+function veNhipBars(nhip){
+  $("qbars").innerHTML = nhip.map(v=>{
+    const pct = v.tre==null?0:Math.min(100, v.tre?100:30);
+    const mau = v.tre?"var(--err)":v.tre==null?"var(--ink-3)":"var(--ok)";
+    const nh = v.nhip_cuoi ? v.nhip_cuoi.replace("T"," ").slice(5,16) : "chưa có nhịp";
+    return `<div class="abar" style="grid-template-columns:150px 1fr 90px"><span style="font-size:11px" class="mut">${esc(v.ten)}</span>
+      <span class="tr"><i style="width:${pct}%;background:${mau}"></i></span>
+      <b style="font-size:11px;${v.tre?"color:var(--err)":""}">${v.tre?"TRỄ":v.tre==null?"—":"đúng nhịp"}</b></div>
+      <div class="note" style="margin:-2px 0 4px">${esc(nh)} · hạn ${v.chu_ky_phut}′</div>`;
+  }).join("") || '<div class="mut small">chưa khai việc nền nào</div>';
+}
+
+/* ── sự cố: stacked theo ngày + bảng ── */
+function nhomTheoNgay(su_co){
+  const m={};
+  for (const d of su_co||[]){
+    const ngay=(d.luc||"").slice(5,10);
+    if (!ngay) continue;
+    m[ngay]=m[ngay]||{err:0,warn:0};
+    if ((d.chi_tiet||"").startsWith("🟢")) continue;
+    if ((d.chi_tiet||"").startsWith("🔴")||(d.chi_tiet||"").includes("SAI")) m[ngay].err++;
+    else m[ngay].warn++;
+  }
+  return Object.entries(m).sort().slice(-14);
+}
+function veStack(su_co, elId){
+  const days=nhomTheoNgay(su_co);
+  const el=$(elId); if(!el) return;
+  if (!days.length){ el.innerHTML='<text x="10" y="60" font-size="12" fill="var(--ink-3)">sổ sự cố trống — tin tốt</text>'; return; }
+  const W3=420,H3=elId==="stackSvg"?120:130,gap=(W3-30)/Math.max(days.length,1),bw=Math.min(20,gap*0.7);
+  const maxN=Math.max(...days.map(([,v])=>v.err+v.warn),1);
+  let out="";
+  days.forEach(([d,v],i)=>{
+    const he=v.err/maxN*(H3-34), hw=v.warn/maxN*(H3-34), x=18+i*gap;
+    out+=`<rect x="${x}" y="${H3-20-hw}" width="${bw}" height="${Math.max(hw,0)}" rx="2" fill="var(--warn)"/>
+      <rect x="${x}" y="${H3-20-hw-he-(he&&hw?2:0)}" width="${bw}" height="${Math.max(he,0)}" rx="2" fill="var(--err)"/>
+      <text x="${x+bw/2}" y="${H3-6}" text-anchor="middle" font-size="9.5" fill="var(--ink-3)">${d.slice(3)}</text>`;
+  });
+  el.innerHTML=out;
+}
+function dongSuCo(d){
+  const ct=d.chi_tiet||"";
+  const mau=ct.startsWith("🟢")?"p-ok":ct.startsWith("🔴")?"p-err":"p-warn";
+  const nhan=ct.startsWith("🟢")?"HỒI PHỤC":ct.startsWith("🔴")?"NẶNG":"CẢNH BÁO";
+  return {luc:(d.luc||"").slice(11,16)||"—", ngay:(d.luc||"").slice(5,10), ct, mau, nhan};
+}
+function veScMini(su_co){
+  $("sc-mini").innerHTML=(su_co||[]).slice(0,4).map(d=>{
+    const x=dongSuCo(d);
+    return `<tr><td class="mut">${x.luc}</td><td>${esc(x.ct.slice(0,70))}</td>
+      <td class="r"><span class="pill ${x.mau}" style="padding:2px 8px;border-radius:3px;font-size:10px;font-weight:700">${x.nhan}</span></td></tr>`;
+  }).join("") || '<tr><td class="mut">sổ sự cố trống — tin tốt</td></tr>';
+}
+function renderSuCo(){
+  const sc=DATA.su_co||[];
+  $("sc-tong").textContent=sc.length;
+  const homNay=new Date().toISOString().slice(5,10);
+  $("sc-homnay").textContent=sc.filter(d=>(d.luc||"").slice(5,10)===homNay).length;
+  $("sc-hoiphuc").textContent=sc.filter(d=>(d.chi_tiet||"").startsWith("🟢")).length;
+  veStack(sc,"stackSvg2");
+  $("sc-bang").innerHTML='<tr><th>Lúc</th><th>Sự việc</th><th class="r">Mức</th></tr>'+
+    sc.slice(0,25).map(d=>{
+      const x=dongSuCo(d);
+      return `<tr><td class="mut">${x.ngay} ${x.luc}</td><td>${esc(x.ct)}</td>
+        <td class="r"><span class="pill ${x.mau}" style="padding:2px 8px;border-radius:3px;font-size:10px;font-weight:700">${x.nhan}</span></td></tr>`;
+    }).join("");
+}
+
+/* ── màn app chi tiết ── */
+function renderApp(){
+  const D=DATA; if(!D) return;
+  const ds=D.dich_vu.filter(d=>d.slug);
+  if (!appDangXem) appDangXem=(ds.find(d=>{
+    const c=(D.canary[d.slug]&&D.canary[d.slug].kich_ban)||[];
+    return c.some(k=>k.ket_qua!=="dung");
+  })||ds[0]||{}).slug;
+  const d=ds.find(x=>x.slug===appDangXem); if(!d) return;
+  const dm=D.dem[String(d.cong)]||{};
+  const kq=D.canary[d.slug]; const cKq=(kq&&kq.kich_ban)||[];
+  $("app-ten").textContent="App · "+d.ten;
+  $("app-cong").textContent=":"+d.cong+(d.song?" · đang chạy":" · KHÔNG TRẢ LỜI")+(kq?" · canary "+kq.luc.slice(11,16):"");
+  const sai=cKq.filter(k=>k.ket_qua==="sai").length, lg=cKq.filter(k=>k.ket_qua==="loi").length,
+        dg=cKq.filter(k=>k.ket_qua==="dung").length, tc=Math.max(cKq.length,1);
+  $("aab-err").textContent=sai; $("aab-err-w").style.width=(sai/tc*100)+"%";
+  $("aab-warn").textContent=lg; $("aab-warn-w").style.width=(lg/tc*100)+"%";
+  $("aab-ok").textContent=dg; $("aab-ok-w").style.width=(dg/tc*100)+"%";
+  $("aab-note").textContent=cKq.length?`${cKq.length} logic gọi tên trong nen/rules/canary/${d.slug}.json`:"app chưa khai kịch bản canary";
+  const mods=d.mo_dun||[];
+  $("aoo-mod").textContent=`${mods.filter(m=>m.trang_thai==="ok").length}/${mods.length||"—"}`;
+  $("aoo-nut").textContent=dm.nut_chet??"—";
+  $("aoo-nut").style.color=dm.nut_chet?"var(--err)":"";
+  $("aoo-canary").textContent=cKq.length?`${dg}/${cKq.length}`:"—";
+  $("aoo-loi").textContent=(dm.loi||0)+(dm.nut_chet||0);
+  $("am-req").textContent=dm.yeu_cau??"—";
+  $("am-p50").textContent=dm.p50!=null?dm.p50+" ms":"—";
+  $("am-p95").textContent=dm.p95!=null?dm.p95+" ms":"—";
+  $("am-loi").textContent=(dm.loi||0)+(dm.nut_chet||0);
+  $("am-loi-s").textContent=dm.gan_nhat?`gần nhất ${dm.gan_nhat.luc} · HTTP ${dm.gan_nhat.status} · ${dm.gan_nhat.duong}`:"không có lỗi trong 5′";
+  $("app-mods").innerHTML=mods.map(m=>{
+    const p=m.trang_thai==="ok"?"p-ok":m.trang_thai==="canh_bao"?"p-warn":"p-err";
+    return `<tr><td style="width:110px"><span class="pill ${p}">${m.trang_thai==="ok"?"OK":m.trang_thai==="canh_bao"?"CẢNH BÁO":"LỖI"}</span></td>
+      <td><b>${esc(m.ten)}</b><div class="mut" style="font-size:11px">${esc(m.chi_tiet)}</div></td></tr>`;
+  }).join("")||'<tr><td class="mut">app chưa khai suc_khoe</td></tr>';
+  $("app-canary").innerHTML='<tr><th style="width:110px">Kết quả</th><th>Kịch bản (mã · tên logic)</th><th>Chi tiết</th><th class="r">ms</th></tr>'+
+    (cKq.map(k=>{
+      const [p,nh]=nhanKQ[k.ket_qua]||["p-warn","?"];
+      return `<tr><td><span class="pill ${p}">${nh}</span></td>
+        <td><b>${esc(k.ten)}</b><div class="mut" style="font-size:11px">${esc(k.ma)}</div></td>
+        <td class="${k.ket_qua==="dung"?"mut":""}" ${k.ket_qua!=="dung"?'style="color:var(--err)"':""}>${esc(k.chi_tiet||"đúng kỳ vọng")}</td>
+        <td class="r mut">${k.ms??"—"}</td></tr>`;
+    }).join("")||'<tr><td class="mut">chưa khai kịch bản — thêm vào nen/rules/canary/'+esc(appDangXem)+'.json</td></tr>');
+  $("app-nut").innerHTML=`<tr><td style="width:100px"><span class="pill ${dm.nut_chet?"p-err":"p-ok"}">${dm.nut_chet||0}</span></td>
+    <td><b>POST/PUT/DELETE trả 404·405</b> trong 5 phút<div class="mut" style="font-size:11px">${dm.nut_chet_gan_nhat?esc(dm.nut_chet_gan_nhat.luc+" · "+dm.nut_chet_gan_nhat.duong):"không có — chưa ai bấm trúng nút chết"}</div></td></tr>`;
+  $("app-suco").innerHTML=(DATA.su_co||[]).filter(x=>(x.chi_tiet||"").includes(d.ten)||(x.chi_tiet||"").includes(d.slug))
+    .slice(0,4).map(x=>{const y=dongSuCo(x);
+      return `<tr><td class="mut" style="width:80px">${y.ngay} ${y.luc}</td><td>${esc(y.ct.slice(0,80))}</td></tr>`;})
+    .join("")||'<tr><td class="mut">không có sự cố ghi sổ cho app này</td></tr>';
+}
+
+/* nút hard-test canary */
+$("nut-canary").addEventListener("click", async ()=>{
+  if (!appDangXem) return;
+  $("nut-canary").disabled=true; $("nut-canary-tt").textContent="đang chạy…";
+  try{
+    const r=await fetch(`/general/api/canary/${appDangXem}/chay`,{method:"POST"});
+    if (r.ok){ DATA.canary[appDangXem]=await r.json(); $("nut-canary-tt").textContent="xong "+new Date().toLocaleTimeString("vi-VN"); render(); }
+    else $("nut-canary-tt").textContent="lỗi HTTP "+r.status;
+  }catch(e){ $("nut-canary-tt").textContent="không gọi được"; }
+  $("nut-canary").disabled=false;
+});
+
+/* ── màn quota ── */
+function renderQuota(){
+  const D=DATA;
+  const gioVN=new Date().getHours();
+  const toiReset=(14-gioVN+24)%24; // 0:00 PT = 14:00 VN
+  $("q-reset").textContent=toiReset+"h";
+  $("q-ngoai").innerHTML='<tr><th>Tuyến</th><th class="r">ms</th><th class="r"></th></tr>'+
+    (D.duong_truyen||[]).map(t=>`<tr><td><b>${esc(t.ten)}</b></td><td class="r">${t.ms??"—"}</td>
+      <td class="r"><span class="pill p-${t.ok?"ok":"err"}">${t.ok?"THÔNG":"ĐỨT"}</span></td></tr>`).join("");
+  $("q-llm").innerHTML='<tr><th>App</th><th>Module LLM (suc_khoe)</th><th class="r">Trạng thái</th></tr>'+
+    D.dich_vu.filter(d=>(d.mo_dun||[]).some(m=>m.ten.startsWith("llm")))
+     .map(d=>{const m=(d.mo_dun||[]).find(x=>x.ten.startsWith("llm"));
+       const p=m.trang_thai==="ok"?"p-ok":m.trang_thai==="canh_bao"?"p-warn":"p-err";
+       return `<tr><td><b>${esc(d.ten)}</b></td><td class="mut" style="font-size:11px">${esc(m.chi_tiet)}</td>
+         <td class="r"><span class="pill ${p}">${m.trang_thai==="ok"?"THẬT":m.trang_thai==="canh_bao"?"CHỜ KÉT":"LỖI"}</span></td></tr>`;}).join("");
+}
+
+/* ── poll ── */
+async function tai(){
+  try{
+    const r=await fetch("/general/api/giam-sat/tong-hop");
+    if (r.status===303||r.redirected){ location.href="/login"; return; }
+    DATA=await r.json(); giayTuTick=0; render();
+    $("liveDot").style.background="var(--ok)";
+  }catch(e){
+    $("liveDot").style.background="var(--err)";
+    $("tickAgo").textContent="mất kết nối — thử lại 15s";
+  }
+}
+setInterval(()=>{ giayTuTick++; if (DATA) $("tickAgo").textContent=giayTuTick+"s trước"; },1000);
+if (window.BOOT_DATA){ DATA=window.BOOT_DATA; render(); $("tickAgo").textContent="ảnh tĩnh đối chiếu"; }
+else { tai(); setInterval(tai,15000); }
+
+</script>

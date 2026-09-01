@@ -98,9 +98,14 @@ def tom_tat() -> dict[int, dict]:
         loi = [x for x in _LOI[cong] if x[0] >= bay_gio - CUA_SO]
         nut = [x for x in _NUT[cong] if x[0] >= bay_gio - CUA_SO]
         ms = [m for ts, m in _MS[cong] if ts >= bay_gio - CUA_SO]
+        theo_loai: dict[str, int] = {}
+        for _ts, status, _d in loi:
+            nhan = str(status) if status in (502, 504) else "5xx"
+            theo_loai[nhan] = theo_loai.get(nhan, 0) + 1
         ket[cong] = {"yeu_cau": len(yc), "loi": len(loi), "nut_chet": len(nut),
                      "p50": round(_bach_phan(ms, 0.5)) if ms else None,
                      "p95": round(_bach_phan(ms, 0.95)) if ms else None,
+                     "theo_loai": theo_loai,
                      "gan_nhat": _moi_nhat(loi),
                      "nut_chet_gan_nhat": _moi_nhat(nut)}
     return ket

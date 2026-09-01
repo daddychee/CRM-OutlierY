@@ -424,8 +424,9 @@ async def _do_dich_vu() -> list[dict]:
     """
     import asyncio
 
-    async def _mot(client, ten, url, muc_sk=None):
-        ket = {"ten": ten, "song": False, "muc": None, "mo_dun": []}
+    async def _mot(client, ten, url, muc_sk=None, cong=None, slug=None):
+        ket = {"ten": ten, "song": False, "muc": None, "mo_dun": [],
+               "cong": cong, "slug": slug}
         try:
             r = await client.get(url)
             ket["song"] = r.status_code == 200
@@ -446,9 +447,11 @@ async def _do_dich_vu() -> list[dict]:
     async with httpx.AsyncClient(timeout=3.0) as client:
         viec = [_mot(client, m["ten"],
                      f"http://127.0.0.1:{m['cong']}{m['health']}",
-                     muc_sk=m if m.get("suc_khoe") else None)
+                     muc_sk=m if m.get("suc_khoe") else None,
+                     cong=m["cong"], slug=m["slug"])
                 for m in doc_hop_dong()]
-        viec.append(_mot(client, "Qdrant (kho vector)", qdrant + "/readyz"))
+        viec.append(_mot(client, "Qdrant (kho vector)", qdrant + "/readyz",
+                         cong=6343))
         return list(await asyncio.gather(*viec))
 
 
@@ -489,6 +492,17 @@ async def api_canary_doc(request: Request):
     if isinstance(user, Response):
         return user
     return JSONResponse({s: canary.doc_ket_qua(s) for s in canary.cac_slug()})
+
+
+@app.get("/general/command-center", response_class=HTMLResponse)
+async def nen_command_center(request: Request):
+    """P1-M4: trung tâm chỉ huy 4 màn (mockup v5 đã duyệt) — trang standalone
+    full-bleed kiểu NOC, JS poll /general/api/giam-sat/tong-hop mỗi 15s."""
+    from starlette.concurrency import run_in_threadpool
+    user = await run_in_threadpool(_gate_nen, request, "general_ung_dung")
+    if isinstance(user, Response):
+        return user
+    return templates.TemplateResponse(request, "nen_command_center.html", {})
 
 
 @app.get("/general/api/giam-sat/tong-hop")
