@@ -285,6 +285,11 @@
   reddit._goi ghi cả HTTP lỗi lẫn thành công), helper chung so_goi_nen cho
   scan/serp/reddit (radary 390cf96 + gộp helper). Suite 212 pass. Ứng viên
   P2: Apify có API du_credit thật — hiện credit còn trên màn Quota.
+  → Owner "làm luôn" — nen/common/quota_ngoai.py (c84bfc6 + vá kỳ-rỗng):
+  đọc khóa apify từ két → /users/me → credit còn/trần USD, cache 30′, dòng
+  đầu bảng Dịch vụ ngoài (đỏ SẮP CẠN khi <$1). Bẫy đo thật: tài khoản chưa
+  tiêu kỳ này → currentBillingPeriod RỖNG = đã dùng $0 (không trả None oan).
+  Nghiệm thu sống: FREE · còn $5/$5.
 
 ## Việc còn (cập nhật khuya 31/08)
 
