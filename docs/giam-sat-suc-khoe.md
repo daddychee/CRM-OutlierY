@@ -170,6 +170,18 @@
   LLM usage per app/vai (sổ llm_usage JSON-lines ghi tại provider wrapper) +
   bảng dịch vụ ngoài. Ca chia-chương-đỏ + số quota trong mockup là VÍ DỤ TÁI
   HIỆN để duyệt UI.
+  → **Vòng 3 (01/09, artifact f772c9d2, file v3 riêng)** theo góp ý Owner "trung
+  tâm điều hành xem HOẠT ĐỘNG LIÊN TỤC, không phải trạng thái tĩnh + bổ sung
+  đường truyền": (1) HERO CHART màn tổng — request/phút + lỗi/phút 60 phút,
+  chảy liên tục (SSE), crosshair rê chuột xem từng phút; (2) khối ĐƯỜNG TRUYỀN
+  6 tuyến đo mỗi 60s: Z.ai · YouTube API · LAN nội bộ (p95 loopback) · NAS F:
+  · NAS G: (đọc thử 4KB) · ntfy — mỗi tuyến latency hiện tại + sparkline 60′
+  + pill thông/chờ; (3) màn app thêm chart request+p95+lỗi cùng trục thời
+  gian; (4) màn quota thêm chart UNITS CỘNG DỒN trong ngày vs nhịp hôm qua vs
+  trần 50k (thấy cạn TRƯỚC khi cạn); (5) màn sự cố thêm cột 14 ngày. Kỹ thuật
+  đo đường truyền khi thi công: vòng nền B5 thêm 1 lượt đo tuyến (TCP/HTTPS
+  connect tới đích ngoài đo ms — không tải nội dung; NAS đọc file 4KB đo ms;
+  LAN = p95 sẵn có từ dem_loi), ring buffer 60′ chung khuôn.
 
 ## Việc còn (cập nhật khuya 31/08)
 
