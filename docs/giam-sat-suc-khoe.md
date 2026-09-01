@@ -192,6 +192,15 @@
   HAI THEME = HAI MẪU Owner thích: dark = NOC big-screen, light = Grafana trắng
   sạch (cùng khóa outliery_theme). Màn App/Quota/Sự cố sẽ theo cùng ngôn ngữ
   sau khi Owner duyệt hướng.
+  → **Vòng 5 (01/09, artifact 79c0eb2d, file v5 riêng) — OWNER DUYỆT HƯỚNG NOC,
+  trải trọn bộ 4 màn**: Tổng quan (giữ v4) + App chi tiết (alarm bars 4 tầng đo
+  logic, ô đếm module/nút-chết/canary/404, gauge tỉ-lệ-viết-thành-công 79%,
+  combo request+p95 12 giờ, bảng canary/nút chết/bất biến kiểu NOC) + Quota &
+  Calls (gauge còn 38%, ô key sống/chết/nóng/reset, chart units cộng dồn hôm
+  nay↔hôm qua↔trần, hbars per key, bảng LLM per app/vai, dịch vụ ngoài) + Sổ
+  sự cố (4 meter: 7 ngày/đang mở/MTTR 41′/ốm nhất, stacked 14 ngày, bảng dòng
+  có cột MTTR + trạng thái MỞ/THEO DÕI/KHÉP). Nav 4 màn hoạt động, click ô
+  Content trên bản đồ mở màn app. SẴN SÀNG THI CÔNG P1 khi Owner chốt.
 
 ## Việc còn (cập nhật khuya 31/08)
 
