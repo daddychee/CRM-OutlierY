@@ -233,6 +233,16 @@
     riêng 10s (liveness giữ 3s). Đo sau vá: search lạnh 0.235s.
   - Trang Applications có link → Command Center. Hết mạch P1.
 
+- **01/09/2026 (tối) — APPLICATIONS NGHỈ HƯU, CHỈ CÒN COMMAND CENTER + theme
+  trùng cả hệ** (commit f4e4f50, Owner chốt "Command Center bao trọn"). 
+  /general/applications redirect 303 → /general/command-center (bookmark cũ
+  sống); nav General nhãn "Command Center"; alias /ung-dung trỏ theo; template
+  nen_ung_dung.html xóa; pin quyền test_gateway chuyển sang đường mới (khóa
+  quyền general_ung_dung GIỮ NGUYÊN — không đổi hệ quyền). Theme: stamp
+  data-theme từ khóa chung outliery_theme trước khi CSS parse (khuôn nen_base),
+  nút gạt SÁNG/TỐI ghi khóa chung — cả hệ đổi theo, nghe storage event (lệ
+  22/08). Chụp light kiểm mắt: đúng Grafana-clean như mockup. Root 287 pass.
+
 ## Việc còn (cập nhật khuya 31/08)
 
 - [ ] **TAY OWNER — điền két vai writer** cho ai-agent (+ DA nếu muốn Analyze
