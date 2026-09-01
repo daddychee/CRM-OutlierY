@@ -182,6 +182,16 @@
   đo đường truyền khi thi công: vòng nền B5 thêm 1 lượt đo tuyến (TCP/HTTPS
   connect tới đích ngoài đo ms — không tải nội dung; NAS đọc file 4KB đo ms;
   LAN = p95 sẵn có từ dem_loi), ring buffer 60′ chung khuôn.
+  → **Vòng 4 (01/09, artifact 2f1ea5dd, file v4 riêng) — ĐỔI HƯỚNG THẨM MỸ theo
+  3 mẫu Owner gửi** (chê v3 "xấu quá"): SkySpark NOC + Grafana trắng + big-screen
+  neon. Ngôn ngữ mới: mật độ CAO kiểu phòng điều khiển — section header thanh
+  lớn IN HOA viền accent, panel có header strip riêng, SỐ LỚN Space Grotesk
+  (glow nhẹ ở dark), gauge bán nguyệt (uptime, quota còn), alarm bars ngang
+  đỏ/cam/lá, ô ONLINE/OFFLINE, combo bar+line (request giờ + p95), donut lỗi
+  theo loại, stacked bar sự cố 14 ngày, hero live + crosshair giữ từ v3.
+  HAI THEME = HAI MẪU Owner thích: dark = NOC big-screen, light = Grafana trắng
+  sạch (cùng khóa outliery_theme). Màn App/Quota/Sự cố sẽ theo cùng ngôn ngữ
+  sau khi Owner duyệt hướng.
 
 ## Việc còn (cập nhật khuya 31/08)
 
