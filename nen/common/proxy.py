@@ -152,14 +152,18 @@ async def chuyen_tiep(request: Request, cong: int, goc: str, duong_dan: str,
 
     # B2 giám sát (31/08): proxy là cửa duy nhất mọi request app đi qua → trạm đo.
     # 5xx của app / cổng chết / timeout trước đây đi xuyên KHÔNG để lại vết nào.
-    dem_loi.ghi_yeu_cau(cong)
+    # P1 (01/09): đo thêm TTFB (ms tới khi app trả header) → p50/p95 per app.
+    import time as _t
+    _t0 = _t.perf_counter()
 
     client = _lay_client()
     try:
         req = client.build_request(request.method, dich, headers=headers, content=than,
                                    params=dict(request.query_params))
         phan_hoi = await client.send(req, stream=True, follow_redirects=False)
+        dem_loi.ghi_yeu_cau(cong, ms=(_t.perf_counter() - _t0) * 1000)
     except httpx.ConnectError:
+        dem_loi.ghi_yeu_cau(cong)
         dem_loi.ghi_loi(cong, 502, "/" + duong_dan, "cong chet")
         return Response(
             f"<p style='font-family:system-ui;padding:24px'>⚠️ Chưa mở được app "
@@ -168,6 +172,7 @@ async def chuyen_tiep(request: Request, cong: int, goc: str, duong_dan: str,
     except httpx.TimeoutException:
         # Trước B2: nổ thô lên FastAPI thành 500 không vết (họ bài học LLM_TIMEOUT
         # 19/07 — mọi lời gọi ra ngoài phải có vết). Giờ 504 tử tế + ghi nhận.
+        dem_loi.ghi_yeu_cau(cong)
         dem_loi.ghi_loi(cong, 504, "/" + duong_dan, "timeout")
         return Response(
             f"<p style='font-family:system-ui;padding:24px'>⚠️ App (cổng {cong}) "
@@ -176,6 +181,11 @@ async def chuyen_tiep(request: Request, cong: int, goc: str, duong_dan: str,
 
     if phan_hoi.status_code >= 500:
         dem_loi.ghi_loi(cong, phan_hoi.status_code, "/" + duong_dan)
+    elif (phan_hoi.status_code in (404, 405)
+          and request.method in ("POST", "PUT", "DELETE")):
+        # NÚT CHẾT runtime (P1 01/09): nút UI gọi đường server không đỡ —
+        # GET 404 thường là link cũ/bots, chỉ method GHI mới đáng tin là nút.
+        dem_loi.ghi_nut_chet(cong, phan_hoi.status_code, "/" + duong_dan)
 
     loai = phan_hoi.headers.get("content-type", "")
     bo_ra = {"content-length", "transfer-encoding", "content-encoding"}

@@ -101,10 +101,10 @@ def stub_loi():
     t.join(timeout=5)
 
 
-def _req(path="/"):
+def _req(path="/", method="GET"):
     async def receive():
         return {"type": "http.request", "body": b"", "more_body": False}
-    scope = {"type": "http", "http_version": "1.1", "method": "GET",
+    scope = {"type": "http", "http_version": "1.1", "method": method,
              "scheme": "http", "path": path, "raw_path": path.encode(),
              "query_string": b"", "headers": [(b"host", b"t")],
              "client": ("127.0.0.1", 1), "server": ("t", 80)}
@@ -142,6 +142,58 @@ def test_proxy_timeout_thanh_504_va_ghi_nhan(stub_loi, monkeypatch):
     assert r.status_code == 504
     tt = dem_loi.tom_tat()[stub_loi]
     assert tt["loi"] == 1 and tt["gan_nhat"]["status"] == 504
+
+
+# ---------- P1 command center: latency p50/p95 + nút chết runtime ----------
+
+def test_latency_p50_p95(monkeypatch):
+    """Proxy đo ms mỗi request → tom_tat trả p50/p95 trong cửa sổ."""
+    t = [1000.0]
+    monkeypatch.setattr(dem_loi, "_gio", lambda: t[0])
+    for ms in [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000]:
+        dem_loi.ghi_yeu_cau(9190, ms=ms)
+    tt = dem_loi.tom_tat()[9190]
+    assert tt["p50"] == 500 and tt["p95"] >= 900
+    # quá cửa sổ → hết số liệu, trả None (không bịa 0)
+    t[0] += dem_loi.CUA_SO + 1
+    tt = dem_loi.tom_tat().get(9190, {})
+    assert tt.get("p50") is None
+
+
+def test_yeu_cau_khong_ms_van_dem_duoc():
+    """Tương thích ngược: gọi không ms (chỗ chưa đo) vẫn đếm request, p50 None."""
+    dem_loi.ghi_yeu_cau(9190)
+    tt = dem_loi.tom_tat()[9190]
+    assert tt["yeu_cau"] == 1 and tt["p50"] is None
+
+
+def test_nut_chet_runtime_dem_rieng():
+    """POST trả 404/405 = người dùng bấm trúng NÚT CHẾT — đếm riêng, không trộn
+    vào 'loi' 5xx (bệnh khác nhau: nút chết là UI↔server lệch, 5xx là app nổ)."""
+    dem_loi.ghi_nut_chet(9190, 404, "/api/chia-chuong")
+    dem_loi.ghi_nut_chet(9190, 405, "/api/x")
+    tt = dem_loi.tom_tat()[9190]
+    assert tt["nut_chet"] == 2
+    assert tt["nut_chet_gan_nhat"]["duong"] == "/api/x"
+    assert tt["loi"] == 0
+
+
+def test_proxy_do_ms_va_bat_post_404(stub_loi):
+    """Tích hợp: qua chuyen_tiep thật — GET ok có ms; POST vào đường không tồn
+    tại → 404 ghi nút chết."""
+    r = _goi(stub_loi, "ok")
+    assert r.status_code == 200
+    tt = dem_loi.tom_tat()[stub_loi]
+    assert tt["p50"] is not None and tt["p50"] >= 0
+
+    async def run():
+        return await proxy.chuyen_tiep(
+            _req("/khong-co", method="POST"), stub_loi, "/app/stub",
+            "khong-co", "tester", [])
+    r = asyncio.run(run())
+    assert r.status_code == 404
+    tt = dem_loi.tom_tat()[stub_loi]
+    assert tt["nut_chet"] == 1
 
 
 # ---------- tab Applications hiện số lỗi ----------

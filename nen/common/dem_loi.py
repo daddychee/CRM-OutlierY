@@ -24,7 +24,9 @@ TRAN_GHI_DIA = 60     # dòng nhật ký đĩa tối đa mỗi cổng mỗi cử
 
 _gio = time.time      # tách ra để test tua đồng hồ
 _YEU_CAU: dict[int, deque] = defaultdict(deque)            # [ts, ...]
+_MS: dict[int, deque] = defaultdict(lambda: deque(maxlen=2000))  # [(ts, ms)] — latency
 _LOI: dict[int, deque] = defaultdict(lambda: deque(maxlen=500))  # [(ts, status, duong)]
+_NUT: dict[int, deque] = defaultdict(lambda: deque(maxlen=200))  # nút chết: POST 404/405
 _GHI_DIA: dict[int, deque] = defaultdict(deque)            # ts các dòng đã xuống đĩa
 
 
@@ -33,10 +35,28 @@ def _don(dq: deque, bay_gio: float, lay_ts=lambda x: x) -> None:
         dq.popleft()
 
 
-def ghi_yeu_cau(cong: int) -> None:
+def ghi_yeu_cau(cong: int, ms: float | None = None) -> None:
+    """Đếm request; kèm ms (TTFB đo tại proxy, P1 01/09) thì nuôi luôn p50/p95.
+    Chỗ chưa đo gọi không ms vẫn đếm được (tương thích ngược)."""
+    bay_gio = _gio()
     dq = _YEU_CAU[cong]
-    dq.append(_gio())
-    _don(dq, dq[-1])
+    dq.append(bay_gio)
+    _don(dq, bay_gio)
+    if ms is not None:
+        _MS[cong].append((bay_gio, ms))
+
+
+def ghi_nut_chet(cong: int, status: int, duong: str) -> None:
+    """NÚT CHẾT runtime (P1): người dùng bấm nút mà server trả 404/405 cho
+    POST/PUT/DELETE — UI↔server lệch. Đếm RIÊNG, không trộn 'loi' 5xx (bệnh
+    khác nhau); vết bền đi chung kênh nhật ký."""
+    bay_gio = _gio()
+    _NUT[cong].append((bay_gio, status, duong))
+    try:
+        nhat_ky.ghi("gateway", "he-thong", "nut_chet",
+                    f"cong={cong} status={status} duong={duong}")
+    except OSError:
+        pass
 
 
 def ghi_loi(cong: int, status: int, duong: str, ghi_chu: str = "") -> None:
@@ -54,25 +74,42 @@ def ghi_loi(cong: int, status: int, duong: str, ghi_chu: str = "") -> None:
             pass  # đĩa hỏng không được giết proxy — bộ đếm RAM vẫn đủ
 
 
+def _bach_phan(vals: list[float], q: float) -> float:
+    vals = sorted(vals)
+    return vals[int(q * (len(vals) - 1))]
+
+
+def _moi_nhat(ds: list) -> dict | None:
+    if not ds:
+        return None
+    ts, status, duong = ds[-1]
+    return {"luc": time.strftime("%H:%M:%S", time.localtime(ts)),
+            "status": status, "duong": duong}
+
+
 def tom_tat() -> dict[int, dict]:
-    """{cong: {yeu_cau, loi, gan_nhat{luc,status,duong}|None}} trong cửa sổ."""
+    """{cong: {yeu_cau, loi, nut_chet, p50, p95, gan_nhat, nut_chet_gan_nhat}}
+    trong cửa sổ; không có số đo → None (không bịa 0)."""
     bay_gio = _gio()
     ket: dict[int, dict] = {}
-    for cong in set(_YEU_CAU) | set(_LOI):
+    for cong in set(_YEU_CAU) | set(_LOI) | set(_NUT):
         yc = _YEU_CAU[cong]
         _don(yc, bay_gio)
         loi = [x for x in _LOI[cong] if x[0] >= bay_gio - CUA_SO]
-        gan = None
-        if loi:
-            ts, status, duong = loi[-1]
-            gan = {"luc": time.strftime("%H:%M:%S", time.localtime(ts)),
-                   "status": status, "duong": duong}
-        ket[cong] = {"yeu_cau": len(yc), "loi": len(loi), "gan_nhat": gan}
+        nut = [x for x in _NUT[cong] if x[0] >= bay_gio - CUA_SO]
+        ms = [m for ts, m in _MS[cong] if ts >= bay_gio - CUA_SO]
+        ket[cong] = {"yeu_cau": len(yc), "loi": len(loi), "nut_chet": len(nut),
+                     "p50": round(_bach_phan(ms, 0.5)) if ms else None,
+                     "p95": round(_bach_phan(ms, 0.95)) if ms else None,
+                     "gan_nhat": _moi_nhat(loi),
+                     "nut_chet_gan_nhat": _moi_nhat(nut)}
     return ket
 
 
 def xoa_het() -> None:
     """Cho test — mỗi ca một trạng thái sạch."""
     _YEU_CAU.clear()
+    _MS.clear()
     _LOI.clear()
+    _NUT.clear()
     _GHI_DIA.clear()
