@@ -63,11 +63,14 @@ def tom_tat_hom_nay() -> dict:
             continue
         dv = ket.setdefault(d.get("dich_vu", "?"), {
             "calls": 0, "loi": 0, "tong_units": 0,
-            "theo_duoi": {}, "theo_viec": {}})
+            "theo_duoi": {}, "theo_viec": {}, "theo_gio": {}})
         dv["calls"] += 1
         if not d.get("ok", True):
             dv["loi"] += 1
         dv["tong_units"] += d.get("units", 0) or 0
+        gio_call = (d.get("luc") or "")[11:13]
+        if gio_call:
+            dv["theo_gio"][gio_call] = dv["theo_gio"].get(gio_call, 0) + (d.get("units", 0) or 0)
         duoi = d.get("duoi") or ""
         if duoi:
             k = dv["theo_duoi"].setdefault(duoi, {

@@ -36,6 +36,10 @@ def test_ghi_va_tom_tat_hom_nay(monkeypatch):
     assert tt["youtube"]["tong_units"] == 102
     assert tt["llm"]["calls"] == 1
     assert tt["llm"]["theo_viec"]["ai-agent · writer"]["calls"] == 1
+    # gom theo GIỜ — nuôi chart units cộng dồn trong ngày
+    from datetime import datetime
+    gio = f"{datetime.now():%H}"
+    assert tt["youtube"]["theo_gio"][gio] == 102
 
 
 def test_dong_hong_khong_giet_tom_tat(tmp_path):
