@@ -47,7 +47,7 @@ def xoa_lich_su() -> None:
     _LICH_SU.clear()
 
 
-def doc_su_co(n: int = 40) -> list[dict]:
+def doc_su_co(n: int = 200) -> list[dict]:
     """Đọc sổ sự cố bền (data/logs/giam-sat, JSON-lines) — 2 ngày gần nhất,
     mới nhất trước. Sổ hỏng/thiếu → [] (không nổ)."""
     goc = Path(os.environ.get("LOGS_DIR",

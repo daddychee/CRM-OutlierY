@@ -66,6 +66,11 @@ $env:PYTHONIOENCODING = 'utf-8'
 # SYSTEM co Temp rieng (C:\Windows\Temp) KHONG co model, thieu env nay la tai lai
 # ~2GB moi lan (cung ho bay HF_HOME cua SpeakY 31/07).
 $env:FASTEMBED_CACHE_PATH = (Join-Path $root 'data\fastembed_cache')
+# Rerank TAT tren may nay (01/09 — dashboard bat flap ai-agent moi 10 phut:
+# canary search luot dau sau cache chay reranker 5-9s tren kho 157 chunk,
+# vuot timeout suc-khoe → bao loi oan). Tien le V2: kho nho rerank khong loi;
+# kho len hang tram-ngan chunk thi bat lai bang cach xoa dong nay.
+$env:RERANK_SEARCH = 'false'
 
 # Canh bao day B5 (31/08): vong giam sat nen cua gateway phat ntfy khi app chet/
 # module loi/viec nen tre nhip. Owner: bo comment dong duoi + thay topic KHO DOAN

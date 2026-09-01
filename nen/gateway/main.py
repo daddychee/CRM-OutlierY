@@ -434,8 +434,11 @@ async def _do_dich_vu() -> list[dict]:
             pass
         if muc_sk:
             try:
+                # Deep health được chậm hơn liveness (01/09 — flap ai-agent mỗi
+                # 10': canary search lượt đầu sau cache vượt 3s → báo lỗi oan).
                 r2 = await client.get(
-                    f"http://127.0.0.1:{muc_sk['cong']}{muc_sk['suc_khoe']}")
+                    f"http://127.0.0.1:{muc_sk['cong']}{muc_sk['suc_khoe']}",
+                    timeout=10.0)
                 b = r2.json() if r2.status_code == 200 else {}
                 ket["muc"] = b.get("trang_thai") or "loi"
                 ket["mo_dun"] = b.get("mo_dun") or []
