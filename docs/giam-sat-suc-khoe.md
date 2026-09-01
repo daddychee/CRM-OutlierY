@@ -144,6 +144,20 @@
   các mạch khác đêm nay: root test_content_ultimate (outline) + to-chuc
   test_finance + content test_cli_write — đều có trước, đã ghi chú từng nơi.
 
+- **01/09/2026 — ĐỀ XUẤT COMMAND CENTER (vòng mockup 1, CHỜ DUYỆT).** Owner đặt
+  hàng nâng tab thành trung tâm chỉ huy dashboard realtime. Mockup vòng 1 (lệ
+  mỗi-vòng-một-file): artifact 3d9d6284 + file scratchpad
+  command-center-mockup-v1.html — brand Breakout Signal, dark-first + light,
+  dữ liệu trạng thái THẬT đêm 31/08. Phương án kỹ thuật đề xuất: trang mới
+  /general/command-center; nguồn dữ liệu dùng lại toàn bộ (B1-B6); thêm (1)
+  ring buffer 24h trong vòng B5 + ghi sổ mỗi giờ cho uptime, (2) SSE
+  /general/api/giam-sat/stream (full health 60s + đếm lỗi 15s; mồi 2KB +
+  no-transform theo bài học streaming V2, fallback poll), (3) đo p50/p95
+  latency tại proxy chuyen_tiep. 6 tính năng phase 2 vẽ sẵn chỗ trong mockup:
+  quota YouTube theo két · đĩa/NAS · nhịp kinh doanh ngày · hành động nhanh
+  (restart app, Owner-only 2 lớp) · MTTR/lịch sử sự cố · lưới ngoài Gatus.
+  CHƯA CODE — chờ Owner duyệt mockup + chốt danh sách phase 2.
+
 ## Việc còn (cập nhật khuya 31/08)
 
 - [ ] **TAY OWNER — điền két vai writer** cho ai-agent (+ DA nếu muốn Analyze
