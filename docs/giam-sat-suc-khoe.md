@@ -243,6 +243,17 @@
   nút gạt SÁNG/TỐI ghi khóa chung — cả hệ đổi theo, nghe storage event (lệ
   22/08). Chụp light kiểm mắt: đúng Grafana-clean như mockup. Root 287 pass.
 
+- **01/09/2026 (tối, tiếp) — VÀO KHUNG GENERAL + QUOTA NỐI THẬT VỚI KÉT**
+  (commit a336310, 2 góp ý Owner). (1) Template extends nen_base — Command
+  Center hiện như MỘT TAB khối General (nav muc, header, user), main nới
+  1340px (bài học ThumbY), CSS scope #cc; bỏ topbar trùng. (2) API tổng-hợp
+  thêm khối `ket` (_ket_tom_tat): khóa che đuôi 4 + cấp phát app·việc + cấu
+  hình LLM per việc — test soi TUYỆT ĐỐI không key trần. Màn Quota giờ là
+  gương của tab API Keys: 28 khóa thật (20 YouTube + 2 LLM…), bảng cấp-cho
+  từng app·việc, 11 việc LLM ĐÃ CẤP (dien_giai/extract/critic/viet_kich_ban/
+  chia_beat…) + 2 dòng CHỜ KÉT (writer ai-agent + DA) khớp cảnh báo suc_khoe
+  — Owner nhìn 1 màn biết vai nào thiếu. Root 288 pass.
+
 ## Việc còn (cập nhật khuya 31/08)
 
 - [ ] **TAY OWNER — điền két vai writer** cho ai-agent (+ DA nếu muốn Analyze
