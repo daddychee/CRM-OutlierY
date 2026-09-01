@@ -1,0 +1,44 @@
+{
+ "_ghi_chu": "CANARY LOGIC — moi logic mot MA TEN, kiem tu dong moi CANARY_CHU_KY (1800s) + nut hard-test tren Command Center. Kich ban CHI-DOC/dry-run, khong ghi du lieu that. Them phep do = them 1 dong o day, khong sua code. Kich ban goi tinh nang sau hon (vd POST voi input mau) them dan khi mo mach app do — so docs/giam-sat-suc-khoe.md.",
+ "kich_ban": [
+  {
+   "ma": "kho-vector-khop-catalog",
+   "ten": "Kho vector khớp catalog (hỏi–đáp trích được)",
+   "method": "GET",
+   "duong": "/api/suc-khoe",
+   "cho": [
+    [
+     "mo_dun.ten=kho-vector.trang_thai",
+     "==",
+     "ok"
+    ]
+   ]
+  },
+  {
+   "ma": "tim-kiem-tra-ket-qua",
+   "ten": "Search kho thật trả kết quả (canary search)",
+   "method": "GET",
+   "duong": "/api/suc-khoe",
+   "cho": [
+    [
+     "mo_dun.ten=search-canary.trang_thai",
+     "!=",
+     "loi"
+    ]
+   ]
+  },
+  {
+   "ma": "writer-khong-chet",
+   "ten": "Writer LLM không chết (mock/thật đều được, không loi)",
+   "method": "GET",
+   "duong": "/api/suc-khoe",
+   "cho": [
+    [
+     "mo_dun.ten=llm-writer.trang_thai",
+     "!=",
+     "loi"
+    ]
+   ]
+  }
+ ]
+}

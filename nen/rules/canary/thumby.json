@@ -1,0 +1,18 @@
+{
+ "_ghi_chu": "CANARY LOGIC — moi logic mot MA TEN, kiem tu dong moi CANARY_CHU_KY (1800s) + nut hard-test tren Command Center. Kich ban CHI-DOC/dry-run, khong ghi du lieu that. Them phep do = them 1 dong o day, khong sua code. Kich ban goi tinh nang sau hon (vd POST voi input mau) them dan khi mo mach app do — so docs/giam-sat-suc-khoe.md.",
+ "kich_ban": [
+  {
+   "ma": "doc-radary-chi-doc",
+   "ten": "Đọc RadarY chỉ-đọc (tab video đang nổ)",
+   "method": "GET",
+   "duong": "/api/suc-khoe",
+   "cho": [
+    [
+     "mo_dun.ten=radary-db.trang_thai",
+     "!=",
+     "loi"
+    ]
+   ]
+  }
+ ]
+}

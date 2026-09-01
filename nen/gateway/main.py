@@ -463,6 +463,34 @@ async def _bat_vong_giam_sat():
     asyncio.create_task(giam_sat.vong(_do_dich_vu))
 
 
+# ---------- CANARY LOGIC (P1-M2 01/09) — hard test + đọc kết quả ----------
+# Owner chốt: logic gọi tên từng app, kiểm tự động (vòng giám sát) HOẶC bấm
+# chạy ngay. Kịch bản ngoài code nen/rules/canary/<slug>.json.
+
+@app.post("/general/api/canary/{slug}/chay")
+async def api_canary_chay(slug: str, request: Request):
+    from starlette.concurrency import run_in_threadpool
+
+    from nen.common import canary
+    user = await run_in_threadpool(_gate_nen, request, "general_ung_dung")
+    if isinstance(user, Response):
+        return user
+    if not canary.doc_kich_ban(slug):
+        return Response("Không tìm thấy", status_code=404)
+    return JSONResponse(await canary.chay_app(slug))
+
+
+@app.get("/general/api/canary")
+async def api_canary_doc(request: Request):
+    from starlette.concurrency import run_in_threadpool
+
+    from nen.common import canary
+    user = await run_in_threadpool(_gate_nen, request, "general_ung_dung")
+    if isinstance(user, Response):
+        return user
+    return JSONResponse({s: canary.doc_ket_qua(s) for s in canary.cac_slug()})
+
+
 def _thong_ke_de() -> dict:
     """Đế đã nạp gì — số liệu THẬT đọc tại chỗ, nguồn chết thì None (không bịa 0)."""
     import datetime

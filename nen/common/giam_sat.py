@@ -80,12 +80,22 @@ async def vong(do_dich_vu) -> None:
     kịp chạy tick nào trong test ngắn. Vòng không bao giờ được chết: mọi lỗi
     một tick chỉ log rồi đi tiếp."""
     trang_thai: dict = {}
+    tick = 0
     while True:
-        await asyncio.sleep(float(os.environ.get("GIAM_SAT_CHU_KY", "60")))
+        chu_ky = float(os.environ.get("GIAM_SAT_CHU_KY", "60"))
+        await asyncio.sleep(chu_ky)
         try:
+            tick += 1
             dich_vu = await do_dich_vu()
             nhip = await asyncio.to_thread(nhip_viec.tom_tat)
             trang_thai, bao = so_sanh(trang_thai, dich_vu, nhip)
+            # CANARY LOGIC (P1-M2): kiểm ĐỀU ĐẶN tự động — mỗi CANARY_CHU_KY
+            # giây (mặc định 1800) chạy toàn bộ kịch bản; cảnh báo edge của
+            # canary đi chung kênh phát (sổ sự cố + ntfy).
+            moi_tick = max(1, round(float(os.environ.get("CANARY_CHU_KY", "1800")) / chu_ky))
+            if tick % moi_tick == 0:
+                from nen.common import canary
+                bao.extend(await canary.chay_tat_ca())
             if bao:
                 await asyncio.to_thread(phat, bao)
         except Exception as e:  # noqa: BLE001 — vòng giám sát phải bất tử

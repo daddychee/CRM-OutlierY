@@ -1,0 +1,31 @@
+{
+ "_ghi_chu": "CANARY LOGIC — moi logic mot MA TEN, kiem tu dong moi CANARY_CHU_KY (1800s) + nut hard-test tren Command Center. Kich ban CHI-DOC/dry-run, khong ghi du lieu that. Them phep do = them 1 dong o day, khong sua code. Kich ban goi tinh nang sau hon (vd POST voi input mau) them dan khi mo mach app do — so docs/giam-sat-suc-khoe.md.",
+ "kich_ban": [
+  {
+   "ma": "plan-json-doc-duoc",
+   "ten": "plan.json đọc được (lịch cả team)",
+   "method": "GET",
+   "duong": "/api/suc-khoe",
+   "cho": [
+    [
+     "mo_dun.ten=plan-json.trang_thai",
+     "==",
+     "ok"
+    ]
+   ]
+  },
+  {
+   "ma": "api-state-tra-lich",
+   "ten": "API state trả lịch có _rev (CAS còn nguyên)",
+   "method": "GET",
+   "duong": "/api/state",
+   "cho": [
+    [
+     "_rev",
+     ">=",
+     0
+    ]
+   ]
+  }
+ ]
+}
