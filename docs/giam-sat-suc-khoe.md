@@ -254,6 +254,27 @@
   chia_beat…) + 2 dòng CHỜ KÉT (writer ai-agent + DA) khớp cảnh báo suc_khoe
   — Owner nhìn 1 màn biết vai nào thiếu. Root 288 pass.
 
+- **01/09/2026 (tối muộn) — SỔ GỌI API NỐI THẬT (Owner phê "đã yêu cầu mà
+  chưa nối" — nhận lỗi: tôi tự xếp P2 sai ưu tiên; sửa ngay trong ngày).**
+  (repo cha 5d1000f + radary 175bd7c + seo d48209d + content f8cc68d).
+  - nen/common/so_goi.py + POST /api/so-goi loopback: mỗi call ra ngoài 1
+    dòng JSON-lines {app, dich_vu, ĐUÔI key 4, viec/model, units, ms, ok,
+    ma_loi}; tổng hợp hôm nay per key/việc; SỐNG/CHẾT theo call thật gần
+    nhất (không probe đốt quota). Key trần không bao giờ rời app.
+  - Móc 5 điểm gọi TẬP TRUNG: radary API.get (units=cost, 403 ghi lỗi trước
+    khi xoay key) · seo yt_get (search=100, khác=1) · content httpx.post
+    (điểm LLM duy nhất) · ai-agent + DA llm providers (helper _ghi_so ở base,
+    factory gán vai; mock KHÔNG ghi — không đổ số giả). Content hóa ra có
+    voiceprofile/usage nội bộ riêng — sổ nền bổ sung góc nhìn hệ.
+  - Két tracking ĐỦ (ý 1+2 Owner): _ket_tom_tat thêm `viec` — MỌI cấp phát
+    hiện diện kể cả việc không-LLM và việc TẮT 0 khóa (test ghim: rút hết
+    khóa vẫn hiện TẮT, không biến mất) + `theo_loai` đếm động (loại khóa mới
+    thêm vào két tự có mặt, UI không enum cứng).
+  - UI Quota: gauge còn-hôm-nay = units sổ gọi ÷ (số key yt × 10k); bảng khóa
+    cột "Hôm nay" (units + bar + call cuối + SỐNG/403); bảng cấp phát đầy đủ;
+    LLM hôm nay từ sổ. Suite: root 294 · radary 213 · seo 28 · content 783 ·
+    ai-agent 321 · DA 137 (fail baseline như cũ).
+
 ## Việc còn (cập nhật khuya 31/08)
 
 - [ ] **TAY OWNER — điền két vai writer** cho ai-agent (+ DA nếu muốn Analyze
