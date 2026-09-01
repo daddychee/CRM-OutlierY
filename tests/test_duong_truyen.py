@@ -144,3 +144,30 @@ def test_tong_hop_noi_that_voi_ket(san, tmp_path, monkeypatch):
     llm = {(d["app"], d["viec"]): d for d in b["ket"]["llm"]}
     assert llm[("data-analytics", "writer")]["model"] == "glm-4.5-air"
     assert llm[("data-analytics", "writer")]["provider"]
+    # Owner 01/09 "không thiếu bất kỳ cái gì": MỌI cấp phát đều hiện — kể cả
+    # việc KHÔNG-LLM (youtube) và việc đã TẮT (0 khóa)
+    viec = {(v["app"], v["viec"]): v for v in b["ket"]["viec"]}
+    assert viec[("seo-optimize", "trich_kenh")]["loai"] == "youtube"
+    assert viec[("seo-optimize", "trich_kenh")]["so_khoa"] == 1
+    assert viec[("data-analytics", "writer")]["loai"] == "llm"
+    # đếm khóa theo loại (ô UI động — loại mới thêm vào két tự có mặt)
+    assert b["ket"]["theo_loai"]["youtube"] == 1 and b["ket"]["theo_loai"]["llm"] == 1
+    # sổ gọi có mặt trong tổng hợp (nối sổ — Owner phê 01/09)
+    assert "so_goi" in b
+
+
+def test_cap_phat_0_khoa_van_hien_tat(tmp_path, monkeypatch):
+    """Việc từng cấp giờ 0 khóa = TẮT TƯỜNG MINH — phải hiện, không biến mất."""
+    from nen.ket_cau_hinh import ket
+    monkeypatch.setenv("KET_DB", str(tmp_path / "ket2.db"))
+    kc = ket.ket_noi()
+    kid = ket.them_api_key(kc, "youtube", "AIzaTamThoi9999ZZZZ")
+    ket.luu_cap_phat_viec(kc, "radary", "quet_kenh", [kid])
+    ket.luu_cap_phat_viec(kc, "radary", "quet_kenh", [])   # rút hết khóa
+    kc.commit()
+    kc.close()
+    from nen.gateway import main as gw
+    kq = gw._ket_tom_tat()
+    viec = {(v["app"], v["viec"]): v for v in kq["viec"]}
+    assert viec[("radary", "quet_kenh")]["so_khoa"] == 0
+    assert viec[("radary", "quet_kenh")]["tat"] is True

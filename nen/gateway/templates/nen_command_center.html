@@ -256,8 +256,8 @@ main{max-width:1340px}
     <div class="sec"><h2>Quota &amp; Calls</h2><small>két là sổ gốc — usage đếm từ sổ gọi của chính hệ, "sống" theo call thật gần nhất</small></div>
     <div class="g" style="grid-template-columns:.9fr 1fr 1fr 1.1fr">
       <div class="panel"><div class="ph">YouTube còn hôm nay</div><div class="pb gauge" id="gaugeQ"></div></div>
-      <div class="panel"><div class="ph">Khóa trong két</div><div class="pb"><div class="oo"><div><div class="lb">TỔNG</div><div class="num" id="q-tong">—</div></div><div><div class="lb">YOUTUBE</div><div class="num" id="q-yt">—</div></div><div><div class="lb">LLM</div><div class="num" id="q-llm-so">—</div></div><div><div class="lb">RESET SAU</div><div class="num" id="q-reset">—</div></div></div><div class="note">sống/chết + usage per key: P2</div></div></div>
-      <div class="panel"><div class="ph">LLM hôm nay</div><div class="pb"><div class="meter"><span class="n">—</span><span class="u">calls</span><div class="sub">P2 — sổ llm_usage chưa nối</div></div></div></div>
+      <div class="panel"><div class="ph">Khóa trong két</div><div class="pb"><div class="oo"><div><div class="lb">TỔNG</div><div class="num" id="q-tong">—</div></div><div><div class="lb">YOUTUBE</div><div class="num" id="q-yt">—</div></div><div><div class="lb">LLM</div><div class="num" id="q-llm-so">—</div></div><div><div class="lb">RESET SAU</div><div class="num" id="q-reset">—</div></div></div><div class="note" id="q-loai-note"></div></div></div>
+      <div class="panel"><div class="ph">LLM hôm nay (sổ gọi)</div><div class="pb" id="q-llm-hom-nay"></div></div>
       <div class="panel"><div class="ph">Dịch vụ ngoài (đo thật)</div><div class="pb"><table class="tb" id="q-ngoai"></table></div></div>
     </div>
 
@@ -359,9 +359,19 @@ function render(){
   const upPct = ls.length>=5 ? Math.round(100*ls.filter(t=>!t.app_loi).length/ls.length) : null;
   gauge("gauge1", upPct, "var(--ok)", ls.length>=5
     ? `${ls.length} tick × 60s từ lúc gateway lên` : "chưa đủ dữ liệu (vòng nền mới chạy)");
-  gauge("gauge2", null, "var(--warn)", "P2 — sổ usage quota chưa nối");
+  // Quota YouTube còn — từ SỔ GỌI (usage thật hôm nay) ÷ trần (số key × 10k)
+  const sgYt = (D.so_goi||{}).youtube;
+  const soKeyYt = ((D.ket||{}).khoa||[]).filter(k=>k.loai==="youtube").length;
+  let qPct = null, qCap = "chưa có call nào được ghi sổ hôm nay";
+  if (sgYt && soKeyYt){
+    const tran = soKeyYt*10000;
+    qPct = Math.max(0, 100 - Math.round(sgYt.tong_units/tran*100));
+    qCap = `đã dùng ${Math.round(sgYt.tong_units).toLocaleString("vi")} / ${tran.toLocaleString("vi")} units (sổ gọi)`;
+  }
+  gauge("gauge2", qPct, qPct!=null && qPct<20 ? "var(--err)" : "var(--warn)", qCap);
+  if ($("t-quota")) $("t-quota").textContent = qPct!=null ? qPct+"%" : "—";
   if ($("gaugeApp")) gauge("gaugeApp", upPct, "var(--ok)", "toàn hệ, từ vòng giám sát");
-  if ($("gaugeQ")) gauge("gaugeQ", null, "var(--warn)", "P2 — sổ usage quota chưa nối");
+  if ($("gaugeQ")) gauge("gaugeQ", qPct, qPct!=null && qPct<20 ? "var(--err)" : "var(--warn)", qCap);
 
   // nhịp hiện tại
   const tongReq = Object.values(dem).reduce((s,d)=>s+d.yeu_cau,0);
@@ -642,37 +652,63 @@ $("nut-canary").addEventListener("click", async ()=>{
   $("nut-canary").disabled=false;
 });
 
-/* ── màn quota — ĐỒNG NHẤT tab API Keys: đọc thật từ két (Owner 01/09) ── */
+/* ── màn quota — gương tab API Keys + SỔ GỌI usage thật (Owner 01/09) ── */
 function renderQuota(){
-  const D=DATA, K=D.ket||{khoa:[],llm:[]};
+  const D=DATA, K=D.ket||{khoa:[],llm:[],viec:[],theo_loai:{}}, SG=D.so_goi||{};
   const gioVN=new Date().getHours();
   const toiReset=(14-gioVN+24)%24; // 0:00 PT = 14:00 VN
   $("q-reset").textContent=toiReset+"h";
   $("q-tong").textContent=K.khoa.length;
-  $("q-yt").textContent=K.khoa.filter(k=>k.loai==="youtube").length;
-  $("q-llm-so").textContent=K.khoa.filter(k=>k.loai==="llm").length;
+  $("q-yt").textContent=K.theo_loai["youtube"]||0;
+  $("q-llm-so").textContent=K.theo_loai["llm"]||0;
+  // loại nào MỚI thêm vào két cũng có mặt — liệt kê đủ dưới ô đếm
+  const dsLoai = Object.entries(K.theo_loai).map(([l,n])=>`${n} ${l}`).join(" · ");
+  $("q-loai-note").textContent = dsLoai ? "đủ loại trong két: "+dsLoai : "két trống";
 
-  // bảng khóa: đuôi che + loại + nhà/model + cấp cho app·việc (như tab API Keys)
-  $("qbars2").innerHTML='<table class="tb"><tr><th>Khóa</th><th>Loại</th><th>Nhà · model</th><th>Cấp cho</th></tr>'+
-    (K.khoa.map(k=>`<tr><td><b>•••• ${esc(k.duoi||"????")}</b><div class="mut" style="font-size:10.5px">${esc(k.id)}</div></td>
+  // bảng khóa: đuôi + loại + nhà/model + cấp cho + USAGE HÔM NAY từ sổ gọi
+  const duoiSG = {};
+  for (const dv of Object.values(SG)) for (const [duoi,x] of Object.entries(dv.theo_duoi||{})) duoiSG[duoi]=x;
+  $("qbars2").innerHTML='<table class="tb"><tr><th>Khóa</th><th>Loại</th><th>Cấp cho</th><th style="width:190px">Hôm nay (sổ gọi)</th></tr>'+
+    (K.khoa.map(k=>{
+      const u=duoiSG[k.duoi];
+      let usage='<span class="mut">chưa có call ghi sổ</span>';
+      if (u){
+        const pct=k.loai==="youtube"?Math.min(100,Math.round(u.units/10000*100)):null;
+        usage=(pct!=null?`<div class="qbar ${u.ok_cuoi?(pct>80?"hot":""):"dead"}"><i style="width:${pct}%"></i></div>
+            <div class="mut" style="font-size:10.5px">${Math.round(u.units)} units · ${u.calls} call`
+          :`<div class="mut" style="font-size:10.5px">${u.calls} call`)+
+          ` · ${u.luc_cuoi} ${u.ok_cuoi?'<span class="pill p-ok">SỐNG</span>':'<span class="pill p-err">'+esc(u.ma_loi.slice(0,20)||"LỖI")+'</span>'}</div>`;
+      }
+      return `<tr><td><b>•••• ${esc(k.duoi||"????")}</b><div class="mut" style="font-size:10.5px">${esc(k.id)}${k.nha?" · "+esc(k.nha):""}</div></td>
       <td class="mut">${esc(k.loai)}</td>
-      <td class="mut">${esc([k.nha,k.model].filter(Boolean).join(" · ")||"—")}</td>
-      <td>${k.cap_cho.length?k.cap_cho.map(esc).join("<br>"):'<span class="pill p-warn">CHƯA CẤP VIỆC NÀO</span>'}</td></tr>`).join("")
-     ||'<tr><td class="mut">két trống — thêm ở tab API Keys</td></tr>')+'</table>'+
-    '<div class="note">usage per key (dùng/còn/sống) là P2 — danh sách + cấp phát đọc sống từ két</div>';
+      <td style="font-size:11px">${k.cap_cho.length?k.cap_cho.map(esc).join("<br>"):'<span class="pill p-warn">CHƯA CẤP VIỆC NÀO</span>'}</td>
+      <td>${usage}</td></tr>`;
+    }).join("")||'<tr><td class="mut">két trống — thêm ở tab API Keys</td></tr>')+'</table>'+
+    '<div class="note">usage đếm từ sổ gọi của chính hệ (app ghi mỗi call) · "sống/chết" theo call thật gần nhất, tự thử lại sau reset 0:00 PT</div>';
 
-  // LLM theo app·việc từ CẤP PHÁT của két; provider rỗng = tắt tường minh
+  // CẤP PHÁT ĐẦY ĐỦ mọi app·việc (kể cả không-LLM và việc TẮT 0 khóa) + usage
+  const viecSG = {};
+  for (const dv of Object.values(SG)) for (const [kv,x] of Object.entries(dv.theo_viec||{})) viecSG[kv]=x;
   const suckhoeLLM = D.dich_vu.filter(d=>(d.mo_dun||[]).some(m=>m.ten.startsWith("llm")&&m.trang_thai!=="ok"));
-  $("q-llm").innerHTML='<tr><th>App · việc</th><th>Provider · model (từ két)</th><th class="r">Trạng thái</th></tr>'+
-    (K.llm.map(d=>{
-      const ok=!!d.provider;
-      return `<tr><td><b>${esc(d.app)}</b> · ${esc(d.viec)}</td>
-        <td class="mut">${ok?esc([d.provider,d.model].filter(Boolean).join(" · ")):"—"}</td>
-        <td class="r"><span class="pill ${ok?"p-ok":"p-warn"}">${ok?"ĐÃ CẤP":"TẮT"}</span></td></tr>`;
-    }).join("")||'<tr><td class="mut" colspan="3">chưa việc LLM nào được cấp trong két</td></tr>')+
+  $("q-llm").innerHTML='<tr><th>App · việc</th><th>Loại · cấu hình (từ két)</th><th class="r">Hôm nay</th><th class="r">Trạng thái</th></tr>'+
+    ((K.viec||[]).map(v=>{
+      const u=viecSG[v.app+" · "+v.viec];
+      const cauhinh=v.loai==="llm"?[v.provider,v.model].filter(Boolean).join(" · "):(v.loai||"—")+` · ${v.so_khoa} khóa`;
+      return `<tr><td><b>${esc(v.app)}</b> · ${esc(v.viec)}</td>
+        <td class="mut">${esc(cauhinh||"—")}</td>
+        <td class="r mut">${u?`${u.calls} call${u.loi?` · <span style="color:var(--err)">${u.loi} lỗi</span>`:""}`:"—"}</td>
+        <td class="r"><span class="pill ${v.tat?"p-err":"p-ok"}">${v.tat?"TẮT (0 KHÓA)":"ĐÃ CẤP"}</span></td></tr>`;
+    }).join("")||'<tr><td class="mut" colspan="4">chưa việc nào được cấp trong két</td></tr>')+
     (suckhoeLLM.map(d=>{const m=(d.mo_dun||[]).find(x=>x.ten.startsWith("llm"));
-      return `<tr><td class="mut">${esc(d.ten)}</td><td class="mut" style="font-size:11px">${esc(m.chi_tiet)}</td>
+      return `<tr><td class="mut">${esc(d.ten)}</td><td class="mut" style="font-size:11px" colspan="2">${esc(m.chi_tiet)}</td>
         <td class="r"><span class="pill p-warn">CHỜ KÉT</span></td></tr>`;}).join(""));
+
+  // LLM hôm nay (meter) từ sổ gọi
+  const sgL=SG.llm;
+  if ($("q-llm-hom-nay")) $("q-llm-hom-nay").innerHTML = sgL
+    ? `<div class="meter"><span class="n">${sgL.calls}</span><span class="u">calls</span>
+       <div class="sub">${sgL.loi?`<span style="color:var(--err)">${sgL.loi} lỗi</span> · `:""}từ sổ gọi hôm nay</div></div>`
+    : '<div class="meter"><span class="n">0</span><span class="u">calls</span><div class="sub">chưa có call LLM ghi sổ hôm nay</div></div>';
 
   $("q-ngoai").innerHTML='<tr><th>Tuyến</th><th class="r">ms</th><th class="r"></th></tr>'+
     (D.duong_truyen||[]).map(t=>`<tr><td><b>${esc(t.ten)}</b></td><td class="r">${t.ms??"—"}</td>

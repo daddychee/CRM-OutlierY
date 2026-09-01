@@ -520,10 +520,34 @@ def _ket_tom_tat() -> dict:
                                 "model": ch.get("model", "")})
     finally:
         conn.close()
+    # "Không thiếu bất kỳ cái gì" (Owner 01/09): MỌI cấp phát đều có mặt —
+    # kể cả việc không-LLM và việc đã TẮT (0 khóa); đếm khóa theo TỪNG loại
+    # (loại mới thêm vào két tự có mặt, không enum cứng ở UI).
+    viec_ds = []
+    conn2 = ket.ket_noi()
+    try:
+        for app_slug, viecs in cp.items():
+            for viec, muc in (viecs or {}).items():
+                kids = (muc or {}).get("khoa", [])
+                loai = loai_cua.get(kids[0], "") if kids else ""
+                mot = {"app": app_slug, "viec": viec, "so_khoa": len(kids),
+                       "loai": loai, "tat": not kids,
+                       "duoi": [next((k["duoi"] for k in keys if k["id"] == kid), "")
+                                for kid in kids]}
+                if loai == "llm":
+                    ch = ket.cau_hinh_llm(conn2, app_slug, viec)
+                    mot["provider"] = ch.get("provider", "")
+                    mot["model"] = ch.get("model", "")
+                viec_ds.append(mot)
+    finally:
+        conn2.close()
+    theo_loai: dict[str, int] = {}
+    for k in keys:
+        theo_loai[k["loai"]] = theo_loai.get(k["loai"], 0) + 1
     return {"khoa": [{"id": k["id"], "loai": k["loai"], "nha": k["nha"],
                       "model": k["model"], "duoi": k["duoi"],
                       "cap_cho": cap.get(k["id"], [])} for k in keys],
-            "llm": llm}
+            "llm": llm, "viec": viec_ds, "theo_loai": theo_loai}
 
 
 @app.get("/general/command-center", response_class=HTMLResponse)
@@ -546,7 +570,8 @@ async def api_giam_sat_tong_hop(request: Request):
     nhịp + canary + đường truyền + lịch sử tick + sổ sự cố. UI poll 15s."""
     from starlette.concurrency import run_in_threadpool
 
-    from nen.common import canary, dem_loi, duong_truyen, giam_sat, nhip_viec
+    from nen.common import (canary, dem_loi, duong_truyen, giam_sat, nhip_viec,
+                            so_goi)
     user = await run_in_threadpool(_gate_nen, request, "general_ung_dung")
     if isinstance(user, Response):
         return user
@@ -564,6 +589,7 @@ async def api_giam_sat_tong_hop(request: Request):
         "lich_su": giam_sat.lay_lich_su(60),
         "su_co": await run_in_threadpool(giam_sat.doc_su_co),
         "ket": await run_in_threadpool(_ket_tom_tat),
+        "so_goi": await run_in_threadpool(so_goi.tom_tat_hom_nay),
     })
 
 
@@ -1650,6 +1676,31 @@ async def api_nhip_viec(ma: str, request: Request):
         return Response("Không tìm thấy", status_code=404)
     if not await run_in_threadpool(nhip_viec.ghi_nhip, ma):
         return Response("Không tìm thấy", status_code=404)
+    return JSONResponse({"ok": True})
+
+
+@app.post("/api/so-goi")
+async def api_so_goi(request: Request):
+    """SỔ GỌI API (01/09): app tự đủ (radary/seo/content…) ghi một dòng mỗi
+    call ra dịch vụ ngoài — CHỈ loopback, không session (khuôn heartbeat).
+    Body tối thiểu {app, dich_vu}; không bao giờ nhận/ghi key trần (app chỉ
+    gửi ĐUÔI 4)."""
+    from starlette.concurrency import run_in_threadpool
+
+    from nen.common import so_goi
+    if request.client and request.client.host not in ("127.0.0.1", "::1"):
+        return Response("Không tìm thấy", status_code=404)
+    try:
+        b = await request.json()
+    except Exception:  # noqa: BLE001
+        return Response("Body phải là JSON", status_code=400)
+    if not b.get("app") or not b.get("dich_vu"):
+        return Response("Thiếu app/dich_vu", status_code=400)
+    await run_in_threadpool(
+        so_goi.ghi, b["app"], b["dich_vu"], duoi=str(b.get("duoi", ""))[-4:],
+        viec=b.get("viec", ""), model=b.get("model", ""),
+        units=b.get("units", 0) or 0, ms=b.get("ms"),
+        ok=bool(b.get("ok", True)), ma_loi=str(b.get("ma_loi", ""))[:200])
     return JSONResponse({"ok": True})
 
 
