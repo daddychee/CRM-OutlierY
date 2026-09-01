@@ -202,6 +202,37 @@
   có cột MTTR + trạng thái MỞ/THEO DÕI/KHÉP). Nav 4 màn hoạt động, click ô
   Content trên bản đồ mở màn app. SẴN SÀNG THI CÔNG P1 khi Owner chốt.
 
+- **01/09/2026 (chiều) — THI CÔNG P1 COMMAND CENTER XONG, sống tại
+  /general/command-center** (7 commit 3d7dd10→…; test-first từng mảnh; root
+  287 pass / 1 fail baseline outline). Kỷ luật Owner chốt: Karpathy + canary
+  là trung tâm + đối chiếu mockup tới khi khớp.
+  - M1: proxy đo TTFB → p50/p95 per app; POST/PUT/DELETE trả 404/405 = NÚT
+    CHẾT runtime, đếm riêng khỏi 5xx; theo_loai (5xx/502/504) cho donut.
+  - M2 CANARY LOGIC (trọng tâm): nen/common/canary.py — kịch bản ngoài code
+    nen/rules/canary/<slug>.json, mỗi logic MỘT MÃ TÊN; kỳ vọng
+    [đường_json, toán_tử, giá_trị] (resolver ten=xxx — thứ tự module đổi
+    không vỡ); 'sai' = gọi được mà KẾT QUẢ lệch (bắt ca HTTP-200-rỗng);
+    kết quả bền data/canary/; tự động mỗi CANARY_CHU_KY 1800s trong vòng
+    giám sát + POST /general/api/canary/<slug>/chay (nút CHẠY NGAY trên UI).
+    22 kịch bản / 13 app — nghiệm thu sống 22/22 ĐÚNG ngay lượt đầu.
+  - M3: nen/common/duong_truyen.py (5 tuyến thật tcp/doc, luật ngoài code;
+    đo thật Z.ai 92ms · YouTube 53 · ntfy 268 · NAS 2) + ring buffer 1440
+    tick + edge cảnh báo tuyến đứt/thông + GET /general/api/giam-sat/tong-hop
+    (chọn POLL 15s thay SSE cho P1 — cùng UX, ít bẫy đệm LAN, ít code).
+  - M4: template nen_command_center.html = đúng khung mockup v5 (builder
+    replace có assert từng anchor) + JS render dữ liệu thật; 4 màn Tổng/App/
+    Quota/Sự cố; ô chưa có nguồn (quota usage, LLM usage, quét tĩnh, MTTR)
+    giữ chỗ nhãn P2 theo mockup. Đối chiếu: chụp Chrome headless 4 màn thật
+    (session ký SESSION_SECRET chỉ-đọc + BOOT_DATA hook) đặt cạnh mockup —
+    bố cục khớp; lệch = dữ liệu thật thay số minh họa + ô P2 đã đánh dấu.
+  - **PHÁT HIỆN THẬT #4 (dashboard tự bắt khi đối chiếu)**: ai-agent FLAP
+    'suc-khoe không đọc được ↔ hồi phục' mỗi ~10-11 phút suốt chiều 01/09 —
+    canary search lượt đầu sau cache 10' chạy RERANKER (default bật) 5-9s
+    vượt timeout 3s → báo lỗi oan. Fix: RERANK_SEARCH=false trong start-all
+    (tiền lệ V2 kho nhỏ; kho lớn xóa 1 dòng là bật lại) + deep health timeout
+    riêng 10s (liveness giữ 3s). Đo sau vá: search lạnh 0.235s.
+  - Trang Applications có link → Command Center. Hết mạch P1.
+
 ## Việc còn (cập nhật khuya 31/08)
 
 - [ ] **TAY OWNER — điền két vai writer** cho ai-agent (+ DA nếu muốn Analyze
