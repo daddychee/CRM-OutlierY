@@ -1,13 +1,12 @@
-<title>OUTLIERY Command Center</title>
-<script>/* Theme TRÙNG cả hệ (khuôn nen_base): khóa chung outliery_theme, fallback OS.
-Stamp TRƯỚC khi CSS parse để không nháy sai theme. */
-(function(){var d=document.documentElement,t=null;try{t=localStorage.getItem("outliery_theme")}catch(e){}
-if(t!=="light"&&t!=="dark"){t=(window.matchMedia&&matchMedia("(prefers-color-scheme: light)").matches)?"light":"dark"}
-d.setAttribute("data-theme",t)})()</script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap">
+{% extends "nen_base.html" %}
+{% block tieu_de %}Command Center{% endblock %}
+{% block noi_dung %}
 <style>
-/* ═══ V4 — NOC BIG-SCREEN: dark = SkySpark/big-screen · light = Grafana-clean ═══ */
+/* Trong khung General (Owner 01/09): main cua nen_base bo 1020px — dashboard
+   can rong (bai hoc ThumbY). CSS scope #cc, khong de khung. */
+main{max-width:1340px}
+#cc table{background:transparent;border:0;border-radius:0}
+/* NOC BIG-SCREEN: dark = SkySpark · light = Grafana-clean */
 :root{
   --void:#070B14; --panel:#0E1626; --phead:#16233B; --line:#223049; --inset:#0A111E;
   --ink:#E8EDF4; --ink-2:#8B96A8; --ink-3:#5C6678;
@@ -42,10 +41,9 @@ d.setAttribute("data-theme",t)})()</script>
   --ok-soft:#153224; --warn-soft:#332510; --err-soft:#361715;
   --glow:0 0 14px rgba(76,143,224,.35); --grid:rgba(139,150,168,.14);
 }
-*{box-sizing:border-box}
-body{margin:0;background:var(--void);color:var(--ink);
-  font:13px/1.5 'Inter',system-ui,sans-serif;font-variant-numeric:tabular-nums}
-.wrap{max-width:1360px;margin:0 auto;padding:0 14px 40px}
+#cc{color:var(--ink);font:13px/1.5 'Inter',system-ui,sans-serif;font-variant-numeric:tabular-nums}
+#cc *{box-sizing:border-box}
+#cc .wrap{margin:0;padding:0 0 30px}
 
 /* topbar */
 .topbar{display:flex;align-items:center;gap:12px;padding:10px 2px;border-bottom:1px solid var(--line)}
@@ -136,13 +134,13 @@ body{margin:0;background:var(--void);color:var(--ink);
 .chartbox{position:relative}
 .tip{position:absolute;pointer-events:none;background:var(--phead);border:1px solid var(--line);
   border-radius:4px;padding:5px 9px;font-size:11px;display:none;white-space:nowrap;z-index:2}
-svg{display:block}
+#cc svg{display:block}
 </style>
 
-<div class="wrap">
+<div id="cc"><div class="wrap">
   <div class="topbar">
-    <span class="wordmark"><span class="bars"><i></i><i></i><i></i><i></i><i></i></span>OUTLIERY</span>
-    <span class="crumb">COMMAND CENTER · máy chủ 192.168.1.250 · V3</span>
+    <span style="font:700 13px 'Space Grotesk',Inter,sans-serif;letter-spacing:.1em">COMMAND CENTER</span>
+    <span class="crumb">máy chủ 192.168.1.250 · V3</span>
     <span class="live"><span class="dot" id="liveDot"></span> LIVE · poll 15s · <b id="tickAgo">đang tải…</b></span>
     <button class="btn" id="nutTheme" title="Đổi giao diện — cả hệ OUTLIERY đổi theo (khóa chung outliery_theme)">TỐI</button>
   </div>
@@ -258,7 +256,7 @@ svg{display:block}
     <div class="sec"><h2>Quota &amp; Calls</h2><small>két là sổ gốc — usage đếm từ sổ gọi của chính hệ, "sống" theo call thật gần nhất</small></div>
     <div class="g" style="grid-template-columns:.9fr 1fr 1fr 1.1fr">
       <div class="panel"><div class="ph">YouTube còn hôm nay</div><div class="pb gauge" id="gaugeQ"></div></div>
-      <div class="panel"><div class="ph">Khóa</div><div class="pb"><div class="oo"><div><div class="lb">SỐNG</div><div class="num">—</div></div><div><div class="lb">CHẾT (403)</div><div class="num">—</div></div><div><div class="lb">NÓNG &gt;80%</div><div class="num">—</div></div><div><div class="lb">RESET SAU</div><div class="num" id="q-reset">—</div></div></div><div class="note">P2 — sổ usage per key chưa nối</div></div></div>
+      <div class="panel"><div class="ph">Khóa trong két</div><div class="pb"><div class="oo"><div><div class="lb">TỔNG</div><div class="num" id="q-tong">—</div></div><div><div class="lb">YOUTUBE</div><div class="num" id="q-yt">—</div></div><div><div class="lb">LLM</div><div class="num" id="q-llm-so">—</div></div><div><div class="lb">RESET SAU</div><div class="num" id="q-reset">—</div></div></div><div class="note">sống/chết + usage per key: P2</div></div></div>
       <div class="panel"><div class="ph">LLM hôm nay</div><div class="pb"><div class="meter"><span class="n">—</span><span class="u">calls</span><div class="sub">P2 — sổ llm_usage chưa nối</div></div></div></div>
       <div class="panel"><div class="ph">Dịch vụ ngoài (đo thật)</div><div class="pb"><table class="tb" id="q-ngoai"></table></div></div>
     </div>
@@ -267,7 +265,7 @@ svg{display:block}
     <div class="panel"><div class="ph">Units cộng dồn trong ngày</div><div class="pb"><div class="note" style="margin:20px 0">P2 — chart units cộng dồn hiện sau khi nối sổ usage (tra_cuu_log radary + sổ mới seo/niche). Giữ chỗ theo mockup.</div></div></div>
 
     <div class="g" style="grid-template-columns:1.1fr 1.3fr;margin-top:8px">
-      <div class="panel"><div class="ph">Khóa YouTube theo két · dùng hôm nay</div><div class="pb" id="qbars2"><div class="note">P2 — sổ usage per key</div></div></div>
+      <div class="panel"><div class="ph">Khóa theo két · cấp cho app · việc</div><div class="pb" id="qbars2"></div></div>
       <div class="panel"><div class="ph">LLM theo app · vai (cấu hình đọc thật từ két)</div><div class="pb"><table class="tb" id="q-llm"></table><div class="note">usage calls/token là P2</div></div></div>
     </div>
   </div>
@@ -644,21 +642,41 @@ $("nut-canary").addEventListener("click", async ()=>{
   $("nut-canary").disabled=false;
 });
 
-/* ── màn quota ── */
+/* ── màn quota — ĐỒNG NHẤT tab API Keys: đọc thật từ két (Owner 01/09) ── */
 function renderQuota(){
-  const D=DATA;
+  const D=DATA, K=D.ket||{khoa:[],llm:[]};
   const gioVN=new Date().getHours();
   const toiReset=(14-gioVN+24)%24; // 0:00 PT = 14:00 VN
   $("q-reset").textContent=toiReset+"h";
+  $("q-tong").textContent=K.khoa.length;
+  $("q-yt").textContent=K.khoa.filter(k=>k.loai==="youtube").length;
+  $("q-llm-so").textContent=K.khoa.filter(k=>k.loai==="llm").length;
+
+  // bảng khóa: đuôi che + loại + nhà/model + cấp cho app·việc (như tab API Keys)
+  $("qbars2").innerHTML='<table class="tb"><tr><th>Khóa</th><th>Loại</th><th>Nhà · model</th><th>Cấp cho</th></tr>'+
+    (K.khoa.map(k=>`<tr><td><b>•••• ${esc(k.duoi||"????")}</b><div class="mut" style="font-size:10.5px">${esc(k.id)}</div></td>
+      <td class="mut">${esc(k.loai)}</td>
+      <td class="mut">${esc([k.nha,k.model].filter(Boolean).join(" · ")||"—")}</td>
+      <td>${k.cap_cho.length?k.cap_cho.map(esc).join("<br>"):'<span class="pill p-warn">CHƯA CẤP VIỆC NÀO</span>'}</td></tr>`).join("")
+     ||'<tr><td class="mut">két trống — thêm ở tab API Keys</td></tr>')+'</table>'+
+    '<div class="note">usage per key (dùng/còn/sống) là P2 — danh sách + cấp phát đọc sống từ két</div>';
+
+  // LLM theo app·việc từ CẤP PHÁT của két; provider rỗng = tắt tường minh
+  const suckhoeLLM = D.dich_vu.filter(d=>(d.mo_dun||[]).some(m=>m.ten.startsWith("llm")&&m.trang_thai!=="ok"));
+  $("q-llm").innerHTML='<tr><th>App · việc</th><th>Provider · model (từ két)</th><th class="r">Trạng thái</th></tr>'+
+    (K.llm.map(d=>{
+      const ok=!!d.provider;
+      return `<tr><td><b>${esc(d.app)}</b> · ${esc(d.viec)}</td>
+        <td class="mut">${ok?esc([d.provider,d.model].filter(Boolean).join(" · ")):"—"}</td>
+        <td class="r"><span class="pill ${ok?"p-ok":"p-warn"}">${ok?"ĐÃ CẤP":"TẮT"}</span></td></tr>`;
+    }).join("")||'<tr><td class="mut" colspan="3">chưa việc LLM nào được cấp trong két</td></tr>')+
+    (suckhoeLLM.map(d=>{const m=(d.mo_dun||[]).find(x=>x.ten.startsWith("llm"));
+      return `<tr><td class="mut">${esc(d.ten)}</td><td class="mut" style="font-size:11px">${esc(m.chi_tiet)}</td>
+        <td class="r"><span class="pill p-warn">CHỜ KÉT</span></td></tr>`;}).join(""));
+
   $("q-ngoai").innerHTML='<tr><th>Tuyến</th><th class="r">ms</th><th class="r"></th></tr>'+
     (D.duong_truyen||[]).map(t=>`<tr><td><b>${esc(t.ten)}</b></td><td class="r">${t.ms??"—"}</td>
       <td class="r"><span class="pill p-${t.ok?"ok":"err"}">${t.ok?"THÔNG":"ĐỨT"}</span></td></tr>`).join("");
-  $("q-llm").innerHTML='<tr><th>App</th><th>Module LLM (suc_khoe)</th><th class="r">Trạng thái</th></tr>'+
-    D.dich_vu.filter(d=>(d.mo_dun||[]).some(m=>m.ten.startsWith("llm")))
-     .map(d=>{const m=(d.mo_dun||[]).find(x=>x.ten.startsWith("llm"));
-       const p=m.trang_thai==="ok"?"p-ok":m.trang_thai==="canh_bao"?"p-warn":"p-err";
-       return `<tr><td><b>${esc(d.ten)}</b></td><td class="mut" style="font-size:11px">${esc(m.chi_tiet)}</td>
-         <td class="r"><span class="pill ${p}">${m.trang_thai==="ok"?"THẬT":m.trang_thai==="canh_bao"?"CHỜ KÉT":"LỖI"}</span></td></tr>`;}).join("");
 }
 
 /* ── poll ── */
@@ -698,3 +716,5 @@ if (window.BOOT_DATA){ DATA=window.BOOT_DATA; render(); $("tickAgo").textContent
 else { tai(); setInterval(tai,15000); }
 
 </script>
+</div>
+{% endblock %}

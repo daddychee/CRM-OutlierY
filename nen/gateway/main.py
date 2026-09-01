@@ -497,15 +497,47 @@ async def api_canary_doc(request: Request):
     return JSONResponse({s: canary.doc_ket_qua(s) for s in canary.cac_slug()})
 
 
+def _ket_tom_tat() -> dict:
+    """Màn Quota ĐỒNG NHẤT tab API Keys (Owner 01/09): khóa (che, chỉ đuôi 4)
+    + cấp phát app·việc + cấu hình LLM per app/việc — đọc THẬT từ két.
+    TUYỆT ĐỐI không đưa key trần/base_url kèm key vào JSON."""
+    conn = ket.ket_noi()
+    try:
+        keys = ket.liet_ke_api_keys(conn)
+        cp = ket.doc_cap_phat(conn)
+        loai_cua = {k["id"]: k["loai"] for k in keys}
+        cap: dict[str, list[str]] = {}
+        llm = []
+        for app_slug, viecs in cp.items():
+            for viec, muc in (viecs or {}).items():
+                kids = (muc or {}).get("khoa", [])
+                for kid in kids:
+                    cap.setdefault(kid, []).append(f"{app_slug} · {viec}")
+                if any(loai_cua.get(k) == "llm" for k in kids):
+                    ch = ket.cau_hinh_llm(conn, app_slug, viec)
+                    llm.append({"app": app_slug, "viec": viec,
+                                "provider": ch.get("provider", ""),
+                                "model": ch.get("model", "")})
+    finally:
+        conn.close()
+    return {"khoa": [{"id": k["id"], "loai": k["loai"], "nha": k["nha"],
+                      "model": k["model"], "duoi": k["duoi"],
+                      "cap_cho": cap.get(k["id"], [])} for k in keys],
+            "llm": llm}
+
+
 @app.get("/general/command-center", response_class=HTMLResponse)
 async def nen_command_center(request: Request):
-    """P1-M4: trung tâm chỉ huy 4 màn (mockup v5 đã duyệt) — trang standalone
-    full-bleed kiểu NOC, JS poll /general/api/giam-sat/tong-hop mỗi 15s."""
+    """P1-M4: trung tâm chỉ huy 4 màn — NẰM TRONG khung General (extends
+    nen_base, Owner 01/09), JS poll /general/api/giam-sat/tong-hop mỗi 15s."""
     from starlette.concurrency import run_in_threadpool
     user = await run_in_threadpool(_gate_nen, request, "general_ung_dung")
     if isinstance(user, Response):
         return user
-    return templates.TemplateResponse(request, "nen_command_center.html", {})
+    nav = await run_in_threadpool(_nav_gen, user)
+    return templates.TemplateResponse(
+        request, "nen_command_center.html",
+        {"user": user, "trang": "ung-dung", **nav})
 
 
 @app.get("/general/api/giam-sat/tong-hop")
@@ -531,6 +563,7 @@ async def api_giam_sat_tong_hop(request: Request):
         "duong_truyen": tuyen,
         "lich_su": giam_sat.lay_lich_su(60),
         "su_co": await run_in_threadpool(giam_sat.doc_su_co),
+        "ket": await run_in_threadpool(_ket_tom_tat),
     })
 
 
