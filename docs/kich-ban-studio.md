@@ -1120,3 +1120,21 @@ Owner yêu cầu audit toàn bộ. 40 phát hiện, chia ba nhóm:
 4. **Trung tâm thông báo** Outline Board: mọi toast được LƯU vào panel — nút
    "Thông báo" ở header + badge chưa đọc, xem lại lịch sử cảnh báo của phiên
    (50 mục, per-browser). Banner sắp-tắt dùng chung khung.
+
+### 15.13 A/B SINH KHUNG glm-5.3 vs glm-5.2 (02/09, cùng brief tibet-2, n=1 mỗi bên)
+
+| | glm-5.3 | glm-5.2 |
+|---|---|---|
+| Thời gian trọn 4 lượt | 500s (~8'20) | 320s (~5'20) |
+| Beat | 10, brief đủ 10/10 | 6 (+1 đề xuất), 1 brief rỗng |
+| Tổng brief | 6.410 ch | 4.156 ch |
+| Mật độ số liệu trong brief | 4,7/1000 từ | 10,3/1000 từ |
+| ContentFilter | 0 | 1 beat (Tourist Door — 400 level 1) |
+| Van | 6 ĐẠT + budget CẢNH_BÁO | 6 ĐẠT + budget CẢNH_BÁO |
+
+Nhận xét (n=1 — chưa phải kết luận chắc, luật A/B nhiều lượt): 5.3 khung DÀY hơn
+(10 beat phủ rộng, EXPENDABLE xếp đúng đuôi, tên chương cụ thể có số); 5.2 nhanh
+hơn ~40% + brief đậm số hơn, nhưng khung mỏng và DÍNH contentFilter với chủ đề
+Tibet (5.3 cùng chủ đề không dính — điểm cộng lớn cho niche nhạy cảm TQ).
+Lượt 5.2 đồng thời là kiểm chứng sống 2 lưới 31/08: gói chung bị chặn → viết
+cách ly 7 beat tự chạy có tiến độ; beat chết filter → báo lỗi thật trong bước.
