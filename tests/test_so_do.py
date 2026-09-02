@@ -197,3 +197,39 @@ def test_gauge_ban_nguyet_khong_dung_large_arc_flag():
             f"large-arc-flag = {co!r} — nền là NỬA vòng tròn nên cung không bao "
             "giờ quá 180°; đặt khác 0 là trình duyệt vẽ cung lớn (phần bù) và "
             "gauge vỡ thành hai mẩu rời khi pct > 50")
+
+
+def test_gauge_viewbox_khit_chan_cung_khong_thua_trang():
+    """Owner báo gauge lệch (OCD) 02/09 — ĐO ra: canh giữa NGANG đã đúng
+    (svg_x_giua = 0), lệch nằm ở CHIỀU DỌC.
+
+    Nét cung dày 13 + linecap round nên hình thật tràn ±6,5px quanh đường tâm:
+    đỉnh y = 64−52−6,5 = 5,5 · chân y = 64+6,5 = 70,5 · cao 65. Bản cũ để
+    height 78 → thừa 14px trắng chết dưới đáy, khối gauge bị đẩy lệch lên trong
+    panel. Cắt khít xong đo lại: trên 10 / dưới 10 cân nhau.
+
+    Ba số này phải đi cùng nhau — đổi một mà quên hai kia là lệch lại."""
+    import re
+    from pathlib import Path
+
+    goc = Path(__file__).resolve().parents[1]
+    s = (goc / "nen" / "gateway" / "templates"
+         / "nen_command_center.html").read_text(encoding="utf-8")
+
+    m = re.search(r'<svg width="128" height="(\d+)" viewBox="([\d. ]+)"', s)
+    assert m, "không tìm thấy thẻ svg của gauge"
+    cao, vb = int(m.group(1)), [float(x) for x in m.group(2).split()]
+
+    r, cy, net = 52, 64, 13
+    dinh, chan = cy - r - net / 2, cy + net / 2
+    assert vb[1] == dinh, f"viewBox bắt đầu {vb[1]} — đỉnh cung thật ở {dinh}"
+    assert vb[3] == chan - dinh == cao, (
+        f"viewBox cao {vb[3]} / svg cao {cao} — chân cung tới {chan} nên phải "
+        f"là {chan - dinh}; lệch là thừa/thiếu trắng dưới đáy")
+
+    # số % kéo lên nằm trong lòng cung — margin âm không được vượt chiều cao svg
+    mv = re.search(r"\.gauge \.val\{[^}]*margin-top:(-?\d+)px", s)
+    assert mv, "không tìm thấy margin-top của .gauge .val"
+    assert -cao < int(mv.group(1)) < 0, (
+        f"margin-top {mv.group(1)}px không hợp với svg cao {cao}px — "
+        "số % sẽ rơi ra ngoài lòng cung")

@@ -99,10 +99,12 @@ main{max-width:1340px}
 .oo .lb{font-size:10px;letter-spacing:.08em;color:var(--ink-2)}
 .oo .num{font:600 22px/1.2 'Space Grotesk',Inter,sans-serif}
 
-/* gauge */
+/* gauge — SVG cao 65 (viewBox khít chân cung, xem hàm gauge()). Số % kéo lên
+   nằm giữa LÒNG cung: tâm cung ở y=64 trong viewBox bắt đầu 5,5 → cách đáy
+   svg 6,5px; số cao 26px nên -26-6,5+~7 ≈ -26 để mắt thấy cân trong lòng. */
 .gauge{display:flex;flex-direction:column;align-items:center;padding:4px 0 0}
-.gauge .val{font:600 26px/1 'Space Grotesk',Inter,sans-serif;margin-top:-38px;text-shadow:var(--glow)}
-.gauge .cap{font-size:10.5px;color:var(--ink-2);margin-top:2px;text-align:center}
+.gauge .val{font:600 26px/1 'Space Grotesk',Inter,sans-serif;margin-top:-26px;text-shadow:var(--glow)}
+.gauge .cap{font-size:10.5px;color:var(--ink-2);margin-top:4px;text-align:center}
 
 /* app grid dày */
 .appg{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px}
@@ -350,8 +352,13 @@ function gauge(el, pct, mau, cap){
     // lỗi sống lâu; 67% mới lộ hẳn (Owner báo 02/09).
     cung = `<path d="M12 64 A52 52 0 0 1 ${x.toFixed(1)} ${y.toFixed(1)}" fill="none" stroke="${mau}" stroke-width="13" stroke-linecap="round"/>`;
   }
+  // viewBox KHÍT chân cung. Nét dày 13 + linecap round → hình thật tràn ±6,5px
+  // quanh đường tâm: đỉnh y=64-52-6,5=5,5 · chân y=64+6,5=70,5 · cao 65.
+  // Bản cũ để height 78 = thừa 14px trắng chết dưới đáy, khối gauge bị đẩy lệch
+  // lên trong panel dù canh giữa ngang vẫn đúng (Owner báo lệch 02/09 — đo ra
+  // svg_x_giua=0 nhưng svg_duoi_trong=14). Cắt xong thì trên/dưới cân nhau.
   $(el).innerHTML =
-   `<svg width="128" height="78" viewBox="0 0 128 78">
+   `<svg width="128" height="65" viewBox="0 5.5 128 65">
      <path d="M12 64 A52 52 0 0 1 116 64" fill="none" stroke="var(--inset)" stroke-width="13" stroke-linecap="round"/>${cung}
     </svg><div class="val" style="color:${pct==null?"var(--ink-3)":mau}">${pct==null?"—":pct+"%"}</div><div class="cap">${cap}</div>`;
 }
