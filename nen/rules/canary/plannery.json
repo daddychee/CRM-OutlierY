@@ -12,7 +12,26 @@
      "==",
      "ok"
     ]
-   ]
+   ],
+   "loai": "bat_bien",
+   "canh": [
+    "server",
+    "plan-json"
+   ],
+   "mo_ta": "plan.json đọc được — nguồn chân lý lịch cả team; hỏng là mất lịch.",
+   "so_do": {
+    "buoc": [
+     {
+      "ten": "data/plannery/plan.json"
+     },
+     {
+      "ten": "Đọc + parse"
+     }
+    ],
+    "kiem": [
+     "đọc được plan.json"
+    ]
+   }
   },
   {
    "ma": "api-state-tra-lich",
@@ -25,7 +44,26 @@
      ">=",
      0
     ]
-   ]
+   ],
+   "loai": "goi",
+   "canh": [
+    "ui",
+    "server"
+   ],
+   "mo_ta": "API state trả lịch KÈM _rev — mất _rev là mất cơ chế CAS chống ghi đè (app chuẩn duy nhất đợt audit).",
+   "so_do": {
+    "buoc": [
+     {
+      "ten": "GET /api/state"
+     },
+     {
+      "ten": "Trả lịch + _rev"
+     }
+    ],
+    "kiem": [
+     "phản hồi có _rev (CAS còn nguyên)"
+    ]
+   }
   }
  ]
 }

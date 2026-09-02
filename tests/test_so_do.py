@@ -87,3 +87,45 @@ def test_so_do_ai_agent_that_hop_le():
             assert n["canary"] in ma_canary, n
         if n.get("suc_khoe"):
             assert n["suc_khoe"] in module_thuc, n
+
+
+def test_moi_canh_kich_ban_phai_co_that_tren_so_do():
+    """HỆ KIỂM 02/09 — trạm trên dây tổng hợp logic gắn `canh`. Nếu `canh` trỏ
+    dây KHÔNG có trên sơ đồ thì logic đó biến mất khỏi map lặng lẽ (trạm không
+    bao giờ hiện) — ghim để sửa sơ đồ/kịch bản là biết ngay."""
+    from nen.common import canary
+    hong = []
+    for slug in canary.cac_slug():
+        sd = so_do.doc(slug)
+        if not sd:
+            continue
+        co_canh = {(c[0], c[1]) for c in sd["canh"]}
+        co_nut = {n["ma"] for n in sd["nut"]}
+        for k in canary.doc_kich_ban(slug):
+            canh = k.get("canh")
+            if not canh:
+                continue
+            assert len(canh) == 2, f"{slug}/{k['ma']}: canh phải là [tu, den]"
+            tu, den = canh
+            if tu not in co_nut or den not in co_nut:
+                hong.append(f"{slug}/{k['ma']}: nút {tu}→{den} không có trên sơ đồ")
+            elif (tu, den) not in co_canh:
+                hong.append(f"{slug}/{k['ma']}: dây {tu}→{den} không có trên sơ đồ")
+    assert not hong, "canh trỏ dây không tồn tại:\n" + "\n".join(hong)
+
+
+def test_kich_ban_khai_du_truong_he_kiem():
+    """Logic có `canh` phải khai đủ loai + mo_ta để UI dựng bảng/panel; logic
+    `chua_kiem` phải nêu LÝ DO (ghi_chua) — trung thực, không để trống."""
+    from nen.common import canary
+    thieu = []
+    for slug in canary.cac_slug():
+        for k in canary.doc_kich_ban(slug):
+            if k.get("canh"):
+                if k.get("loai") not in ("goi", "vet", "bat_bien"):
+                    thieu.append(f"{slug}/{k['ma']}: loai phải goi|vet|bat_bien")
+                if not (k.get("mo_ta") or k.get("ghi_chua")):
+                    thieu.append(f"{slug}/{k['ma']}: thiếu mo_ta")
+            if k.get("chua_kiem") and not k.get("ghi_chua"):
+                thieu.append(f"{slug}/{k['ma']}: chua_kiem phải nêu ghi_chua")
+    assert not thieu, "\n".join(thieu)

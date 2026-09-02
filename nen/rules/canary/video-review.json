@@ -12,7 +12,26 @@
      "==",
      "ok"
     ]
-   ]
+   ],
+   "loai": "bat_bien",
+   "canh": [
+    "lien-ket",
+    "nas"
+   ],
+   "mo_ta": "Gốc NAS video đọc được — hỏng thì không thêm/xem được bản dựng nào.",
+   "so_do": {
+    "buoc": [
+     {
+      "ten": "VR_NAS_DIR"
+     },
+     {
+      "ten": "Duyệt cây thư mục"
+     }
+    ],
+    "kiem": [
+     "đọc được gốc NAS"
+    ]
+   }
   },
   {
    "ma": "do-codec-san-sang",
@@ -25,7 +44,26 @@
      "!=",
      "loi"
     ]
-   ]
+   ],
+   "loai": "bat_bien",
+   "canh": [
+    "lien-ket",
+    "ffmpeg"
+   ],
+   "mo_ta": "ffprobe sẵn sàng dò codec — thiếu thì app IM LẶNG không cảnh báo H.265 (video không phát được mà không ai biết).",
+   "so_do": {
+    "buoc": [
+     {
+      "ten": "ffprobe/ffmpeg"
+     },
+     {
+      "ten": "Dò codec thử"
+     }
+    ],
+    "kiem": [
+     "ffprobe gọi được"
+    ]
+   }
   }
  ]
 }

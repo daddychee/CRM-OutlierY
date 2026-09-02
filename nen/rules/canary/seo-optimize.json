@@ -12,7 +12,26 @@
      "!=",
      "loi"
     ]
-   ]
+   ],
+   "loai": "bat_bien",
+   "canh": [
+    "extract-kenh",
+    "yt-api"
+   ],
+   "mo_ta": "Khóa YouTube lấy được từ két — thiếu thì extract/harvest chết ngay cửa.",
+   "so_do": {
+    "buoc": [
+     {
+      "ten": "Két khóa"
+     },
+     {
+      "ten": "Xin khóa trích kênh"
+     }
+    ],
+    "kiem": [
+     "két cấp được khóa"
+    ]
+   }
   },
   {
    "ma": "du-lieu-doc-duoc",
@@ -25,7 +44,26 @@
      "==",
      "ok"
     ]
-   ]
+   ],
+   "loai": "bat_bien",
+   "canh": [
+    "extract-kenh",
+    "kho-profile"
+   ],
+   "mo_ta": "Kho dữ liệu SEO (profiles/formats/runs) đọc được — hỏng thì mất hồ sơ kênh.",
+   "so_do": {
+    "buoc": [
+     {
+      "ten": "Kho profiles/formats"
+     },
+     {
+      "ten": "Đọc + đếm"
+     }
+    ],
+    "kiem": [
+     "đọc được kho dữ liệu"
+    ]
+   }
   }
  ]
 }

@@ -12,7 +12,26 @@
      "!=",
      "loi"
     ]
-   ]
+   ],
+   "loai": "bat_bien",
+   "canh": [
+    "cung-chu-de",
+    "radary-db"
+   ],
+   "mo_ta": "Đọc RadarY CHỈ-ĐỌC — hỏng chỉ mất tab video-đang-nổ, mô phỏng thumbnail VẪN chạy (tự hạ mức cảnh báo, không báo lỗi).",
+   "so_do": {
+    "buoc": [
+     {
+      "ten": "RadarY DB (mode=ro)"
+     },
+     {
+      "ten": "Truy vấn thử"
+     }
+    ],
+    "kiem": [
+     "đọc được DB (hỏng → cảnh báo, không phải lỗi)"
+    ]
+   }
   }
  ]
 }

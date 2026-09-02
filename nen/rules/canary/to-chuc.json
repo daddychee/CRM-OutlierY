@@ -12,7 +12,26 @@
      "==",
      "ok"
     ]
-   ]
+   ],
+   "loai": "bat_bien",
+   "canh": [
+    "kpi",
+    "nguon-kpi"
+   ],
+   "mo_ta": "KPI đọc đủ nguồn — nguồn chết phải hiện '—' kèm lý do, KHÔNG bịa số 0; canary bắt ca hiện gạch ngang OAN.",
+   "so_do": {
+    "buoc": [
+     {
+      "ten": "4 nguồn KPI"
+     },
+     {
+      "ten": "Đọc từng nguồn"
+     }
+    ],
+    "kiem": [
+     "đủ nguồn đọc được (thiếu → '—' có lý do)"
+    ]
+   }
   }
  ]
 }

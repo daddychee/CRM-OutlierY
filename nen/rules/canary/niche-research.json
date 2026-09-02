@@ -12,7 +12,26 @@
      "!=",
      "loi"
     ]
-   ]
+   ],
+   "loai": "bat_bien",
+   "canh": [
+    "ket-khoa",
+    "orchestrator"
+   ],
+   "mo_ta": "Khóa YouTube lấy được TỪ KÉT — V3 không rơi về .env; thiếu khóa thì pipeline chạy mù.",
+   "so_do": {
+    "buoc": [
+     {
+      "ten": "Két khóa OUTLIERY"
+     },
+     {
+      "ten": "Xin khóa theo việc"
+     }
+    ],
+    "kiem": [
+     "két cấp được khóa quét kênh"
+    ]
+   }
   },
   {
    "ma": "du-an-doc-duoc",
@@ -25,7 +44,26 @@
      "==",
      "ok"
     ]
-   ]
+   ],
+   "loai": "bat_bien",
+   "canh": [
+    "tang-py",
+    "niche-data"
+   ],
+   "mo_ta": "Thư mục dự án (artifact) đọc được — hỏng thì mọi stage sau mất đầu vào.",
+   "so_do": {
+    "buoc": [
+     {
+      "ten": "Kho artifact"
+     },
+     {
+      "ten": "Đọc + đếm dự án"
+     }
+    ],
+    "kiem": [
+     "đọc được thư mục dự án"
+    ]
+   }
   }
  ]
 }

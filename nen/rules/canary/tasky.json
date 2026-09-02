@@ -12,7 +12,26 @@
      "!=",
      "loi"
     ]
-   ]
+   ],
+   "loai": "bat_bien",
+   "canh": [
+    "vong-doi",
+    "so-tuan"
+   ],
+   "mo_ta": "Gốc lưu file đính kèm đọc được — hỏng thì đính kèm việc mất lặng lẽ.",
+   "so_do": {
+    "buoc": [
+     {
+      "ten": "Gốc lưu đính kèm"
+     },
+     {
+      "ten": "Kiểm ghi/đọc"
+     }
+    ],
+    "kiem": [
+     "gốc đính kèm sẵn sàng"
+    ]
+   }
   }
  ]
 }

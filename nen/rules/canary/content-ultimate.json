@@ -12,7 +12,26 @@
      "!=",
      "loi"
     ]
-   ]
+   ],
+   "loai": "bat_bien",
+   "canh": [
+    "writer",
+    "kho-hoso"
+   ],
+   "mo_ta": "Kho hồ sơ giọng đọc được — hỏng thì Writer mất neo giọng, kịch bản ra văn máy mà không ai biết.",
+   "so_do": {
+    "buoc": [
+     {
+      "ten": "Kho hồ sơ giọng"
+     },
+     {
+      "ten": "Đọc + đếm hồ sơ"
+     }
+    ],
+    "kiem": [
+     "đọc được ≥1 hồ sơ giọng"
+    ]
+   }
   }
  ]
 }

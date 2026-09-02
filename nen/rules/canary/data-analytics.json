@@ -12,7 +12,26 @@
      "!=",
      "loi"
     ]
-   ]
+   ],
+   "loai": "bat_bien",
+   "canh": [
+    "dien-giai",
+    "zai"
+   ],
+   "mo_ta": "Tầng diễn giải LLM còn sống — chết thì engine vẫn ra phán quyết nhưng mất phần giải thích.",
+   "so_do": {
+    "buoc": [
+     {
+      "ten": "Cấu hình LLM từ két"
+     },
+     {
+      "ten": "Kiểm provider"
+     }
+    ],
+    "kiem": [
+     "provider khai đủ, không lỗi"
+    ]
+   }
   },
   {
    "ma": "kho-bao-cao-doc-duoc",
@@ -25,7 +44,26 @@
      "!=",
      "loi"
     ]
-   ]
+   ],
+   "loai": "bat_bien",
+   "canh": [
+    "so-bao-cao",
+    "xem-lich-su"
+   ],
+   "mo_ta": "Kho báo cáo lịch sử đọc được — hỏng thì xem lại báo cáo cũ trắng trang.",
+   "so_do": {
+    "buoc": [
+     {
+      "ten": "Thư mục báo cáo"
+     },
+     {
+      "ten": "Đọc bản ghi"
+     }
+    ],
+    "kiem": [
+     "đọc được sổ báo cáo"
+    ]
+   }
   }
  ]
 }
