@@ -89,13 +89,23 @@ async def health():
 
 
 def _hoi_ket_writer() -> dict:
-    """Hỏi két cấu hình vai writer của app (tách hàm để test monkeypatch)."""
+    """Hỏi két cấu hình việc DIỄN GIẢI của app (tách hàm để test monkeypatch).
+
+    LỖI ĐÃ SỬA 02/09: hàm này hỏi vai "writer" — cái tên đã bị bỏ từ 18/08 khi
+    két đổi sang tra theo APP × VIỆC-TRONG-HỢP-ĐỒNG. Đường nạp thật
+    (dien_giai.nap_cau_hinh_llm) xin đúng việc "dien_giai" và LUÔN lấy được khóa,
+    còn health hỏi tên việc không tồn tại nên vĩnh viễn nhận provider rỗng →
+    báo động giả "két chưa có vai writer" suốt trong khi tính năng vẫn chạy.
+    Báo động giả nguy hơn im lặng: đọc mãi thành quen, tới lúc két hỏng thật thì
+    không ai buồn nhìn. Giờ đọc CHUNG ANH_XA_VAI với đường nạp — một nguồn sự
+    thật, đổi tên việc là cả hai đi theo."""
     import os
 
     import httpx
     goc = os.getenv("GATEWAY_URL", "http://127.0.0.1:9000")
+    viec = next(iter(dien_giai.ANH_XA_VAI))       # "dien_giai"
     with httpx.Client(timeout=3) as c:
-        return c.get(f"{goc}/api/cau-hinh/llm/writer",
+        return c.get(f"{goc}/api/cau-hinh/llm/{viec}",
                      params={"app": "data-analytics"}).json()
 
 
@@ -103,8 +113,8 @@ def _hoi_ket_writer() -> dict:
 async def api_suc_khoe():
     """Sức khỏe SÂU (B3 giám sát 31/08, khuôn nen/common/suc_khoe.py).
 
-    llm-dien-giai: két trống vai writer → Analyze trả diễn giải MẪU lặng lẽ
-    (cùng họ bệnh ai-agent 31/08) — health nói thẳng + chỉ đường. Không gọi LLM.
+    llm-dien-giai: két trống việc `dien_giai` → Analyze trả diễn giải MẪU lặng
+    lẽ (cùng họ bệnh ai-agent 31/08) — health nói thẳng + chỉ đường. Không gọi LLM.
     """
     import os
     from pathlib import Path
@@ -117,9 +127,10 @@ async def api_suc_khoe():
         except Exception:  # noqa: BLE001 — gateway chết không được 500
             return "canh_bao", "không hỏi được két (gateway 9000?) — diễn giải sẽ dùng env/mock"
         if not ch.get("provider"):
-            return "canh_bao", ("két chưa có vai writer cho data-analytics — "
-                                "Analyze trả diễn giải MẪU; điền ở General → API keys")
-        return "ok", f"writer từ két: {ch.get('model') or ch['provider']}"
+            return "canh_bao", ("két chưa cấp khóa cho việc `dien_giai` của "
+                                "data-analytics — Analyze trả diễn giải MẪU; "
+                                "điền ở General → API keys → Per-app config")
+        return "ok", f"dien_giai từ két: {ch.get('model') or ch['provider']}"
 
     def _bao_cao():
         d = Path(os.getenv("BAO_CAO_DIR", "bao-cao-lich-su"))
