@@ -420,3 +420,35 @@ Windows giữ khóa file → fixture test sau không dọn được DB (đã vá
       (vd radary: cột `dead_ts`; sổ gọi ghi `viec` cho SERP; ai-agent: cửa kiểm
       cho vòng phản biện / đa chiều / verbatim / chunk mồ côi).
 - [ ] rendery: cần quyền đọc `F:/RenderY/autoedit` mới vẽ sơ đồ + khai logic.
+
+### 02/09 (tiếp) — RÀ LƯỢT CUỐI 12 APP + RenderY vào hệ
+
+**RenderY — app cuối cùng, giờ 12/12 app có sơ đồ** (commit e6391ef). Mã nguồn ở
+`F:\RenderY\autoedit` (ngoài repo V3) nhưng nằm trong working dir nên đọc được.
+Sơ đồ 23 nút / 27 dây: nhân sự → NAS → hàng đợi (2 worker) → align → director →
+cutter → sourcer → ranker → packager → compose → **4 KẾT QUẢ** (draft CapCut ·
+footage theo chương · DOC_TRUOC/report · badge "xong chưa xem"). App **đã có sẵn**
+`/health` + `/api/suc-khoe` đúng khuôn nền (2 module `hang-doi` + `nas`, sống thật:
+"0 đang dựng / 0 chờ / 3 xong / 3 lỗi").
+Kịch bản 16 logic: 2 dùng deep health sẵn có, **14 `chua_kiem` nêu RÕ đường kiểm**
+(thứ tự chương H→C1..C10→E — sắp theo tên là sai cả hai đầu · ép mọi đường dẫn
+trong gốc NAS — rào DUY NHẤT chặn bơm đường dẫn vào worker · claim độc quyền
+≤2 running · nạp khóa đúng TÊN BIẾN, sự cố thật 30/08 GLM_API_KEY thiếu làm vision
+gate tắt lặng lẽ · xoay khóa 429 · trần 75s chống tải nhỏ giọt, bug thật 20/06 kẹt
+15 phút · **phễu chấm footage: điểm máy KHÔNG được lật nghĩa** — sai lặng lẽ nhất
+app · chỉ giao chương chạy XONG · tái dùng draft cũ chỉ khi nguồn không đổi).
+Ba chỗ CHƯA CÓ VẾT ở tầng sổ: `jobs.db` chỉ có bảng `jobs` — không lưu số beat
+`needs_human`, không tổng hợp chi phí/token LLM theo job.
+
+**Đóng lỗ hổng "0 dây phủ"** (commit e68dfca): rà thấy 10 app có sơ đồ nhưng canary
+cũ chưa khai `canh` → **mọi dây hiện `?`** dù app đang được canh. Gắn `canh` +
+`loai` + `mo_ta` + `so_do` cho 13 canary hạ tầng của 9 app; **sửa 5 `canh` trỏ nút
+sai tên** (`kq-tk`→`kq-tu-khoa`, `cache`→`tra-cuu-log`, `serp`→`serp-apify`,
+`llm`→`dien-giai`, `van-kho-rong` gắn nhầm dây không tồn tại).
+**Hai test ghim mới** (`tests/test_so_do.py`) — chính chúng bắt ra 5 lỗi trên:
+- `canh` phải trỏ dây CÓ THẬT trên sơ đồ (trỏ sai = logic biến mất khỏi map lặng lẽ)
+- logic có `canh` phải khai đủ `loai` + `mo_ta`; `chua_kiem` **phải nêu `ghi_chua`**
+
+**Độ phủ sau rà**: ai-agent 9/17 dây · radary 8/13 · các app khác 1-2/n (mới có
+canary hạ tầng). Dây còn `?` giờ đúng là chỗ THẬT SỰ chưa có logic nào — không còn
+`?` giả do khai thiếu. `app-mau` không cần sơ đồ (app mẫu, không phải app thật).
