@@ -1,47 +1,179 @@
 {
  "_ghi_chu": "SO DO VAN HANH content-ultimate (02/09) — tu kiem ke code that (generator/soi_ho_so/deai/chon_neo/oe.titles/usage).",
  "nut": [
-  {"ma": "team", "ten": "Team Content", "cot": 0, "loai": "nguoi"},
-  {"ma": "extract-giong", "ten": "Extract hồ sơ giọng", "cot": 1,
-   "ghi_chu": "corpus tác phẩm → profile"},
-  {"ma": "oe-song", "ten": "Pipeline sóng OE (S1→S5)", "cot": 1,
-   "ghi_chu": "ingest→peaks→beats→cluster→outline"},
-  {"ma": "writer", "ten": "Writer sinh kịch bản", "cot": 1},
-  {"ma": "kiem-chung", "ten": "Kiểm chứng bản viết", "cot": 1,
-   "ghi_chu": "3 nhóm A/B/C, không điểm tổng"},
-  {"ma": "kho-hoso", "ten": "Kho hồ sơ giọng", "cot": 2, "loai": "kho",
-   "ghi_chu": "exemplars + targets"},
-  {"ma": "kho-corpus", "ten": "Kho corpus tác phẩm", "cot": 2, "loai": "kho",
-   "ghi_chu": "nguồn neo dày"},
-  {"ma": "kho-run-oe", "ten": "Kho run OE", "cot": 2, "loai": "kho"},
-  {"ma": "so-usage", "ten": "Sổ chi phí + lịch sử job", "cot": 2, "loai": "kho"},
-  {"ma": "llm-cu", "ten": "LLM (Claude · GLM)", "cot": 3, "loai": "ngoai"},
-  {"ma": "yt-transcript", "ten": "YouTube + transcript", "cot": 3, "loai": "ngoai"},
-  {"ma": "kq-hoso-giong", "ten": "Hồ sơ giọng CÓ đánh giá tin cậy", "cot": 4,
-   "loai": "ket_qua", "ghi_chu": "do_duoc / neo_du"},
-  {"ma": "kq-kich-ban", "ten": "Kịch bản bám giọng tác giả", "cot": 4,
-   "loai": "ket_qua", "ghi_chu": "kèm 3 nhóm chấm tách bạch"},
-  {"ma": "kq-outline", "ten": "Outline có bằng chứng sóng", "cot": 4,
-   "loai": "ket_qua"}
+  {
+   "ma": "team",
+   "ten": "Team Content",
+   "cot": 0,
+   "loai": "nguoi"
+  },
+  {
+   "ma": "extract-giong",
+   "ten": "Extract hồ sơ giọng",
+   "cot": 1,
+   "ghi_chu": "corpus tác phẩm → profile"
+  },
+  {
+   "ma": "oe-song",
+   "ten": "Pipeline sóng OE (S1→S5)",
+   "cot": 1,
+   "ghi_chu": "ingest→peaks→beats→cluster→outline"
+  },
+  {
+   "ma": "writer",
+   "ten": "Writer sinh kịch bản",
+   "cot": 1
+  },
+  {
+   "ma": "kiem-chung",
+   "ten": "Kiểm chứng bản viết",
+   "cot": 1,
+   "ghi_chu": "3 nhóm A/B/C, không điểm tổng"
+  },
+  {
+   "ma": "kho-hoso",
+   "ten": "Kho hồ sơ giọng",
+   "cot": 2,
+   "loai": "kho",
+   "ghi_chu": "exemplars + targets"
+  },
+  {
+   "ma": "kho-corpus",
+   "ten": "Kho corpus tác phẩm",
+   "cot": 2,
+   "loai": "kho",
+   "ghi_chu": "nguồn neo dày"
+  },
+  {
+   "ma": "kho-run-oe",
+   "ten": "Kho run OE",
+   "cot": 2,
+   "loai": "kho"
+  },
+  {
+   "ma": "so-usage",
+   "ten": "Sổ chi phí + lịch sử job",
+   "cot": 2,
+   "loai": "kho"
+  },
+  {
+   "ma": "llm-cu",
+   "ten": "LLM (Claude · GLM)",
+   "cot": 3,
+   "loai": "ngoai"
+  },
+  {
+   "ma": "yt-transcript",
+   "ten": "YouTube + transcript",
+   "cot": 3,
+   "loai": "ngoai"
+  },
+  {
+   "ma": "kq-hoso-giong",
+   "ten": "Hồ sơ giọng CÓ đánh giá tin cậy",
+   "cot": 4,
+   "loai": "ket_qua",
+   "ghi_chu": "do_duoc / neo_du"
+  },
+  {
+   "ma": "kq-kich-ban",
+   "ten": "Kịch bản bám giọng tác giả",
+   "cot": 4,
+   "loai": "ket_qua",
+   "ghi_chu": "kèm 3 nhóm chấm tách bạch"
+  },
+  {
+   "ma": "kq-outline",
+   "ten": "Outline có bằng chứng sóng",
+   "cot": 4,
+   "loai": "ket_qua"
+  }
  ],
  "canh": [
-  ["team", "extract-giong"],
-  ["team", "oe-song"],
-  ["team", "writer"],
-  ["team", "kiem-chung"],
-  ["extract-giong", "kho-corpus", "đọc .txt/.md"],
-  ["extract-giong", "llm-cu"],
-  ["extract-giong", "kho-hoso", "ghi profile"],
-  ["oe-song", "yt-transcript", "transcript + heatmap"],
-  ["oe-song", "kho-run-oe"],
-  ["writer", "kho-hoso", "exemplar + targets"],
-  ["writer", "kho-corpus", "neo dày ~1800 từ"],
-  ["writer", "llm-cu"],
-  ["writer", "kq-kich-ban"],
-  ["kiem-chung", "kho-hoso", "cửa chặn nhóm C"],
-  ["kiem-chung", "kq-kich-ban", "3 nhóm A/B/C"],
-  ["llm-cu", "so-usage", "token thật"],
-  ["kho-hoso", "kq-hoso-giong"],
-  ["kho-run-oe", "kq-outline"]
+  [
+   "team",
+   "extract-giong"
+  ],
+  [
+   "team",
+   "oe-song"
+  ],
+  [
+   "team",
+   "writer"
+  ],
+  [
+   "team",
+   "kiem-chung"
+  ],
+  [
+   "extract-giong",
+   "kho-corpus",
+   "đọc .txt/.md"
+  ],
+  [
+   "extract-giong",
+   "llm-cu"
+  ],
+  [
+   "extract-giong",
+   "kho-hoso",
+   "ghi profile"
+  ],
+  [
+   "oe-song",
+   "yt-transcript",
+   "transcript + heatmap"
+  ],
+  [
+   "oe-song",
+   "kho-run-oe"
+  ],
+  [
+   "writer",
+   "kho-hoso",
+   "exemplar + targets"
+  ],
+  [
+   "writer",
+   "kho-corpus",
+   "neo dày ~1800 từ"
+  ],
+  [
+   "writer",
+   "llm-cu"
+  ],
+  [
+   "writer",
+   "kq-kich-ban"
+  ],
+  [
+   "kiem-chung",
+   "kho-hoso",
+   "cửa chặn nhóm C"
+  ],
+  [
+   "kiem-chung",
+   "kq-kich-ban",
+   "3 nhóm A/B/C"
+  ],
+  [
+   "llm-cu",
+   "so-usage",
+   "token thật"
+  ],
+  [
+   "kho-hoso",
+   "kq-hoso-giong"
+  ],
+  [
+   "kho-run-oe",
+   "kq-outline"
+  ],
+  [
+   "kiem-chung",
+   "kho-corpus",
+   "chuẩn nhịp lấy từ corpus (nối 02/09)"
+  ]
  ]
 }

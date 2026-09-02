@@ -1,5 +1,5 @@
 {
- "_ghi_chu": "CANARY LOGIC — moi logic mot MA TEN, kiem tu dong moi CANARY_CHU_KY (1800s) + nut hard-test tren Command Center. Kich ban CHI-DOC/dry-run, khong ghi du lieu that. Them phep do = them 1 dong o day, khong sua code. Kich ban goi tinh nang sau hon (vd POST voi input mau) them dan khi mo mach app do — so docs/giam-sat-suc-khoe.md.",
+ "_ghi_chu": "HE KIEM LOGIC content-ultimate (mo rong 02/09). Truoc do 1 kich ban (kho ho so doc duoc) — trong khi day la app team DA NGUNG DUNG vi 'viet khong tot', va moi van chat luong nam o tang cham (deai/soi_ho_so/chon_neo) hoan toan khong duoc canh. Cua kiem /api/kiem/<ma> CHI-DOC 0 quota 0 tien — deai.py khong goi LLM dong nao.",
  "kich_ban": [
   {
    "ma": "ho-so-giong-doc-duoc",
@@ -30,6 +30,212 @@
     ],
     "kiem": [
      "đọc được ≥1 hồ sơ giọng"
+    ]
+   }
+  },
+  {
+   "ma": "cua-chan-nhom-c",
+   "ten": "Hồ sơ hỏng → từ chối chấm giọng",
+   "loai": "goi",
+   "canh": [
+    "kiem-chung",
+    "kho-hoso"
+   ],
+   "mo_ta": "4/9 hồ sơ thật dựng trên corpus transcript thô có sentence_len_mean = 1085; chấm bằng nó thì bản SẠCH bị đánh trượt còn bản VỤN được cho đạt. Nới điều kiện là cửa mở IM LẶNG — UI vẫn hiện 'Bám giọng: đạt 9/14', nhìn y như bình thường, chỉ là số rác.",
+   "method": "GET",
+   "duong": "/api/kiem/cua-chan-nhom-c",
+   "cho": [
+    [
+     "soi_do_duoc",
+     "==",
+     false
+    ],
+    [
+     "ho_so_hong_bi_chan",
+     "==",
+     true
+    ],
+    [
+     "khong_ho_so_thi_noi_thang",
+     "==",
+     true
+    ]
+   ],
+   "so_do": {
+    "buoc": [
+     {
+      "ten": "Hồ sơ mẫu sentence_len_mean 1085"
+     },
+     {
+      "ten": "soi_profile"
+     },
+     {
+      "ten": "Cửa chặn nhóm C"
+     }
+    ],
+    "kiem": [
+     "soi nhận ra hồ sơ KHÔNG đo được",
+     "hồ sơ hỏng → 'không đủ cơ sở', không phán số",
+     "không hồ sơ → nói thẳng"
+    ]
+   }
+  },
+  {
+   "ma": "chuan-nhip-uu-tien-corpus",
+   "ten": "Chuẩn nhịp lấy từ CORPUS trước",
+   "loai": "goi",
+   "canh": [
+    "kiem-chung",
+    "kho-corpus"
+   ],
+   "mo_ta": "LỖI THẬT sửa 02/09: route gọi kiem_chung KHÔNG truyền corpus nên nhánh corpus CHẾT, luôn chấm bằng 3 exemplar — mà 3 mẫu đó chọn LỆCH (đo thật: A013 mẫu 33,3% câu dài trong khi corpus thật 9,3%). Bản viết ĐÚNG nhịp corpus bị báo 'câu vụn hơn giọng tác giả', bản SAI được cho qua; UI vẫn hiện nguồn 'exemplar' nên không ai đọc ra.",
+   "method": "GET",
+   "duong": "/api/kiem/chuan-nhip-uu-tien-corpus",
+   "cho": [
+    [
+     "uu_tien_corpus",
+     "==",
+     true
+    ],
+    [
+     "lui_ve_exemplar",
+     "==",
+     true
+    ]
+   ],
+   "lay_chang": [
+    [
+     "nguồn khi có corpus",
+     "nguon_khi_co_corpus"
+    ],
+    [
+     "nguồn khi không",
+     "nguon_khi_khong_corpus"
+    ]
+   ],
+   "so_do": {
+    "buoc": [
+     {
+      "ten": "Corpus câu dài + exemplar câu ngắn"
+     },
+     {
+      "ten": "Chấm nhịp CÓ corpus"
+     },
+     {
+      "ten": "Chấm nhịp KHÔNG corpus"
+     }
+    ],
+    "kiem": [
+     "có corpus → chuẩn lấy từ corpus",
+     "không corpus → lùi về exemplar (không chết)"
+    ]
+   }
+  },
+  {
+   "ma": "khong-diem-tong",
+   "ten": "3 nhóm KHÔNG cộng thành điểm tổng",
+   "loai": "goi",
+   "canh": [
+    "kiem-chung",
+    "kq-kich-ban"
+   ],
+   "mo_ta": "Trượt 2/7 chỉ số mà tổng tụt 29 điểm = thang quá thô, gây hiểu nhầm hơn là giúp (cùng lớp lỗi với bảng điểm đã bị bác). Nhóm A trả MẬT ĐỘ/1000 từ để so sánh được giữa các bản.",
+   "method": "GET",
+   "duong": "/api/kiem/khong-diem-tong",
+   "cho": [
+    [
+     "khong_co_diem_tong",
+     "==",
+     true
+    ],
+    [
+     "nhom_a_dung_mat_do",
+     "==",
+     true
+    ]
+   ],
+   "so_do": {
+    "buoc": [
+     {
+      "ten": "Chấm trọn một bản"
+     },
+     {
+      "ten": "Soi khóa trả về"
+     }
+    ],
+    "kiem": [
+     "0 khóa điểm tổng",
+     "nhóm A dùng mật độ/1000 từ"
+    ]
+   }
+  },
+  {
+   "ma": "burstiness-chi-mo-ta",
+   "ten": "burstiness_cv KHÔNG làm ngưỡng phán",
+   "loai": "goi",
+   "canh": [
+    "kiem-chung",
+    "kq-kich-ban"
+   ],
+   "mo_ta": "Đã thử và BÁC BỎ: đo lại chính văn NGƯỜI ra cv 0,36–0,60 — trùng dải bản máy (0,51–0,67), nên ngưỡng 'câu đều tăm tắp = máy' sẽ đánh oan người thật. Ai thêm lại ngưỡng này là tái phạm.",
+   "method": "GET",
+   "duong": "/api/kiem/burstiness-chi-mo-ta",
+   "cho": [
+    [
+     "cv_khong_lam_nguong",
+     "==",
+     true
+    ]
+   ],
+   "so_do": {
+    "buoc": [
+     {
+      "ten": "Đo nhịp"
+     },
+     {
+      "ten": "Soi mã nguồn deai"
+     }
+    ],
+    "kiem": [
+     "không dòng nào dùng cv để set mức"
+    ]
+   }
+  },
+  {
+   "ma": "neo-loc-muc-khoi",
+   "ten": "Lọc transcript thô ở mức KHỐI",
+   "loai": "goi",
+   "canh": [
+    "writer",
+    "kho-corpus"
+   ],
+   "mo_ta": "Đo GỘP che sự thật: A003 gộp ra 9,3 dấu/1000 (qua ngưỡng) nhưng 2/5 file là transcript thô 0,1 — neo dày rút ra vẫn dính văn không dấu câu, rồi writer học nhịp từ đó.",
+   "method": "GET",
+   "duong": "/api/kiem/neo-loc-muc-khoi",
+   "cho": [
+    [
+     "loc_duoc_transcript_tho",
+     "==",
+     true
+    ]
+   ],
+   "lay_chang": [
+    [
+     "file bị bỏ",
+     "file_bo_qua"
+    ]
+   ],
+   "so_do": {
+    "buoc": [
+     {
+      "ten": "3 file sạch + 2 file thô"
+     },
+     {
+      "ten": "Chọn neo"
+     }
+    ],
+    "kiem": [
+     "loại đúng 2 file transcript thô ở mức khối"
     ]
    }
   }
