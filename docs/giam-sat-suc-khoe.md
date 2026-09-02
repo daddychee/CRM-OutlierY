@@ -498,3 +498,57 @@ mà bảng trông vẫn "đầy". Dấu hiệu nhận biết thiếu: **đếm r
 so với số nút trên sơ đồ**; lệch nhiều lần là chắc chắn sót mạch. Và `chua_kiem`
 phải rà lại định kỳ — có cái ghi "không kiểm được" chỉ vì chưa tìm đúng nguồn dữ
 liệu đã có sẵn.
+
+### 02/09 (tiếp 3) — RÀ LẠI TOÀN BỘ 11 APP: LỖI KHUÔN MẪU "CANARY XANH GIẢ"
+
+Owner yêu cầu "chạy lại từng app để không bỏ sót". 5 agent đọc code thật song song.
+Kết quả **nặng hơn dự đoán** — không chỉ thiếu, mà **hệ giám sát đang tự nói dối**.
+
+**LỖI KHUÔN MẪU: 9 canary XANH GIẢ.** Kịch bản dùng `!= "loi"` trong khi hàm
+deep-health của app **không bao giờ trả `"loi"`** ở nhánh hỏng — nó trả
+`"canh_bao"`. Điều kiện vì thế **không thể sai được**:
+
+| App | Canary | Nhánh hỏng thật trả gì |
+|---|---|---|
+| tasky | `nas-goc-luu-dinh-kem` | `NAS_TASKY_GOC` chưa khai → `canh_bao`. **Đây là canary DUY NHẤT của tasky** → cả app thực tế không được canh |
+| niche-research | `khoa-tu-ket` | CẢ 3 nhánh hỏng (standalone / két chết / két 0 khóa) → `canh_bao` |
+| seo-optimize | `khoa-tu-ket` | két lỗi / 0 khóa → `canh_bao` |
+| data-analytics | ×2 | két lỗi / thư mục chưa có → `canh_bao` |
+| video-review | `do-codec-san-sang` | không thấy ffprobe → `canh_bao` |
+| ai-agent | ×3 | **MOCK** → `canh_bao` |
+
+Ba cái của ai-agent che đúng **sự cố 31/08**: writer chạy mock = hỏi–đáp trả lời
+MẪU trên hệ thật. Siết xong `== ok`, canary **đỏ ngay** và lộ ra sự thật đó đang
+diễn ra. Giữ `!= loi` cho thumby vì đó là **chủ đích** (RadarY chết chỉ mất 1 tab,
+mô phỏng thumbnail vẫn chạy).
+
+**Nguyên tắc rút ra**: siết điều kiện canary phải soi CODE THẬT của hàm kiểm
+trước — không sửa hàng loạt theo mẫu. Test ghim mẫu này ở `tests/test_canary.py`.
+
+**Kịch bản VÔ DỤNG**: plannery `api-state-tra-lich` dùng `_rev >= 0`, mà
+`EMPTY_STATE` có sẵn `_rev=0` → **PASS cả khi plan.json mất sạch**. Đổi thành
+`_rev>=1` + có người + có dự án.
+
+**BUG THẬT trong code (không phải khai thiếu)** — rendery `claim_next`: đếm
+`running` và `UPDATE` nằm ở **hai câu lệnh**, hai worker cùng đọc `running=1` thì
+cả hai thấy còn suất và cùng claim hai job khác nhau → **3 job dựng song song,
+vượt trần 2**. Mỗi job chạy ffmpeg + LLM cả tập nên vượt trần là nghẽn máy chủ,
+nhìn từ ngoài chỉ thấy "dựng chậm". Tái hiện được bằng cách ép hai connection
+cùng đọc trước khi ai ghi. **Sửa**: gộp điều kiện trần vào chính câu UPDATE để
+SQLite đánh giá nguyên tử; test dùng barrier ép đúng khoảnh khắc đó.
+
+**Khai SAI kiểu "không kiểm được"** (đúng bệnh RadarY): rendery 4 logic ghi "cần
+mở cửa kiểm trong app" trong khi `GET /api/sources` và `GET /api/kiem-tap` **đã
+tồn tại và chỉ-đọc**. Hai cái mở được ngay (`nguon-3-noi`, `sub-khong-khoa`); hai
+cái còn lại cần một TẬP MẪU cố định trên NAS mới trỏ vào được — ghi rõ thay vì
+nói suông "không kiểm được".
+
+**Khai SAI bất biến**: rendery `job-mo-coi` mô tả "không job running nào cũ hơn
+STALE_AFTER 4h" — nhưng `requeue_orphans` UPDATE **MỌI** job running, không lọc
+theo `started_at`; tham số `stale_after` khai mà **không dùng** (vết chết gây
+hiểu nhầm). Bất biến đúng: sau khởi động, không job running nào kế thừa từ lần
+chạy trước.
+
+**Bài học mới**: `TypeError` do lệch DẤU tiếng Việt — kịch bản tôi gõ "khóa" (ó)
+trong khi app trả "khoá" (oá), canary đỏ oan. Chuỗi so trong `cho` nên chọn đoạn
+KHÔNG dấu hoặc ít dấu nhất.
