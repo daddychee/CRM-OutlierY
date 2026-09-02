@@ -269,13 +269,27 @@ client = QdrantClientWrapper()  # MOCK_MODE=true thì chưa cần Qdrant thật
 qa = QAPipeline()  # writer + critics đọc từ env qua factory (mock mặc định)
 
 
+def nap_lai_llm_tu_ket() -> bool:
+    """Hỏi KÉT rồi dựng lại writer/critics. Trả True nếu nạp được vai nào.
+
+    Tách khỏi startup vì SỰ CỐ 02/09: két chỉ được đọc MỘT LẦN lúc khởi động.
+    Owner điền vai writer lúc 16:00 trong khi app chạy từ 14:38 → app giữ writer
+    MOCK suốt, hỏi–đáp trả lời MẪU trên hệ thật, mà không chỗ nào nói phải
+    restart. Đây đúng là ca 31/08 tái diễn, lần này vì lý do THỜI ĐIỂM chứ không
+    phải két trống. Giờ health tự nạp lại khi thấy mình đang mock (xem `_writer`)
+    — điền két xong là ăn ngay, không cần restart."""
+    if cau_hinh_llm.nap_cau_hinh_llm():
+        qa.writer = get_provider("writer")
+        qa.critics = get_critics()
+        return True
+    return False
+
+
 @app.on_event("startup")
 async def _startup():
     # Cấu hình LLM từ KÉT qua gateway — nạp được vai nào thì dựng lại provider ngay
     # (qa đã khởi tạo từ env lúc import; gateway chết → giữ env/mock, app vẫn sống).
-    if cau_hinh_llm.nap_cau_hinh_llm():
-        qa.writer = get_provider("writer")
-        qa.critics = get_critics()
+    nap_lai_llm_tu_ket()
 
 
 # ================= health (hợp đồng app) =================
@@ -288,6 +302,9 @@ async def health():
 # Cache canary search B6 (ts + số kết quả) — vòng giám sát nền hỏi suc-khoe
 # mỗi 60s, search chỉ chạy lại khi cache quá 10 phút.
 _CANARY = {"ts": 0.0, "kq": None}
+
+# Chặn nhịp thử-nạp-lại két ở nhánh writer-đang-mock (vòng giám sát hỏi mỗi 60s).
+_NAP_LAI = {"ts": 0.0}
 
 
 @app.get("/api/suc-khoe")
@@ -320,6 +337,15 @@ async def api_suc_khoe():
     def _writer():
         # Ca thật 31/08: két có critic mà vai writer trống → trả lời MẪU trên hệ
         # thật dù kho đã thật. Chỉ đọc cờ cấu hình — không gọi LLM (health phải rẻ).
+        if getattr(qa.writer, "mock", True):
+            # SỰ CỐ 02/09: két điền lúc 16:00, app chạy từ 14:38 → giữ mock suốt
+            # vì két chỉ đọc một lần lúc khởi động. Đang mock thì thử nạp lại
+            # (rẻ: một GET loopback, và CHỈ chạy ở nhánh hỏng nên hệ khỏe không
+            # tốn gì) — điền két xong là ăn ngay, không phải restart.
+            import time as _t
+            if _t.time() - _NAP_LAI["ts"] > 60:
+                _NAP_LAI["ts"] = _t.time()
+                nap_lai_llm_tu_ket()
         if getattr(qa.writer, "mock", True):
             return "canh_bao", ("writer đang MOCK — hỏi–đáp trả lời mẫu; điền vai "
                                 "writer trong két (General → API keys)")

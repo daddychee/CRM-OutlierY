@@ -110,3 +110,53 @@ def test_writer_that_la_ok_kem_ten_model(monkeypatch):
     b, md = _mo_dun()
     assert md["llm-writer"]["trang_thai"] == "ok"
     assert "glm-4.5-air" in md["llm-writer"]["chi_tiet"]
+
+
+def test_ket_dien_SAU_khi_app_chay_thi_health_tu_nap_lai(monkeypatch):
+    """SỰ CỐ 02/09 — cùng hậu quả ca 31/08 nhưng nguyên nhân là THỜI ĐIỂM.
+
+    Két chỉ được đọc MỘT LẦN lúc khởi động. Owner điền vai writer vào két lúc
+    16:00 trong khi app chạy từ 14:38 → app giữ writer MOCK suốt 1h22, hỏi–đáp
+    trả lời MẪU trên hệ thật, và không chỗ nào nói phải restart. Health nói
+    "điền vai writer trong két" trong khi két ĐÃ có — người đọc đi điền lại thì
+    vẫn y nguyên.
+
+    Ghim: đang mock mà két đã có → health tự nạp lại và trả ok, KHÔNG cần
+    restart; và nhánh này có chặn nhịp (vòng giám sát hỏi mỗi 60s)."""
+    from types import SimpleNamespace
+
+    goi = []
+    monkeypatch.setattr(main.qa, "writer", SimpleNamespace(mock=True, model="?"))
+    monkeypatch.setattr(main, "_NAP_LAI", {"ts": 0.0})
+
+    def _nap_lai_gia():
+        goi.append(1)
+        main.qa.writer = SimpleNamespace(mock=False, model="glm-5")
+        main.qa.critics = [SimpleNamespace(mock=False)]
+        return True
+
+    monkeypatch.setattr(main, "nap_lai_llm_tu_ket", _nap_lai_gia)
+    b, md = _mo_dun()
+    assert md["llm-writer"]["trang_thai"] == "ok", md["llm-writer"]
+    assert "glm-5" in md["llm-writer"]["chi_tiet"]
+    assert len(goi) == 1
+
+    # đã thật rồi thì không hỏi két nữa (nhánh nạp lại CHỈ chạy khi đang mock)
+    _mo_dun()
+    assert len(goi) == 1
+
+
+def test_nap_lai_ket_co_chan_nhip_khong_hoi_moi_60s(monkeypatch):
+    """Vòng giám sát nền gọi /api/suc-khoe mỗi 60s. Két vẫn trống thì nhánh nạp
+    lại phải BỊ CHẶN NHỊP, không bắn GET loopback mỗi lượt."""
+    from types import SimpleNamespace
+
+    goi = []
+    monkeypatch.setattr(main.qa, "writer", SimpleNamespace(mock=True, model="?"))
+    monkeypatch.setattr(main, "_NAP_LAI", {"ts": 0.0})
+    monkeypatch.setattr(main, "nap_lai_llm_tu_ket",
+                        lambda: goi.append(1) or False)   # két vẫn trống
+    for _ in range(3):
+        b, md = _mo_dun()
+        assert md["llm-writer"]["trang_thai"] == "canh_bao"
+    assert len(goi) == 1, f"hỏi két {len(goi)} lần — thiếu chặn nhịp"
