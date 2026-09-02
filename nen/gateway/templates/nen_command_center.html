@@ -149,6 +149,11 @@ main{max-width:1340px}
 .leg{display:flex;gap:14px;font-size:10.5px;color:var(--ink-2);flex-wrap:wrap}
 .leg i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
 .chartbox{position:relative}
+/* thanh cuộn sơ đồ — mặc định trên nền tối gần như vô hình, không ai biết kéo được */
+#cc .chartbox ::-webkit-scrollbar{height:11px;width:11px}
+#cc .chartbox ::-webkit-scrollbar-track{background:var(--inset);border-radius:6px}
+#cc .chartbox ::-webkit-scrollbar-thumb{background:var(--line);border-radius:6px}
+#cc .chartbox ::-webkit-scrollbar-thumb:hover{background:var(--ink-3)}
 .tip{position:absolute;pointer-events:none;background:var(--phead);border:1px solid var(--line);
   border-radius:4px;padding:5px 9px;font-size:11px;display:none;white-space:nowrap;z-index:2}
 #cc svg{display:block}
@@ -759,8 +764,9 @@ function renderLogic(l, kqApp){
       if(cuoi) svg+=`<text x="${v.x+BW-9}" y="${v.y+BH-6}" text-anchor="end" font-size="7.5" letter-spacing="1.5" font-weight="700" fill="var(--accent)" opacity=".85">KẾT QUẢ</text>`;
       svg+="</g>";
     });
-    sdBox.innerHTML=`<svg viewBox="0 0 ${W} ${H}" style="width:100%;max-height:300px" preserveAspectRatio="xMidYMin meet">
-      <defs><marker id="mtLg" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto"><path d="M0 0 L7 3 L0 6 Z" fill="var(--ink-3)"/></marker></defs>${svg}</svg>
+    sdBox.innerHTML=`<div style="overflow:auto;max-height:${Math.min(H+10,420)}px;padding-bottom:4px">
+      <svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" style="display:block">
+      <defs><marker id="mtLg" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto"><path d="M0 0 L7 3 L0 6 Z" fill="var(--ink-3)"/></marker></defs>${svg}</svg></div>
       <div class="note">trạm trên từng mũi tên = kiểm của bước đó · bấm dòng bảng khác → sơ đồ đổi theo, mỗi lúc một sơ đồ</div>`;
   }
   // panel: logic bằng lời + số đo chặng THẬT + kỳ vọng + lần kiểm cuối
@@ -828,12 +834,11 @@ function veSoDo(d, cKq, logics){
   const BW=218,BH=54,GX=330,GY=84,X0=14,Y0=16;
   const theoCot={};
   for(const n of sd.nut) (theoCot[n.cot||0]=theoCot[n.cot||0]||[]).push(n);
-  // CỘT ĐÔNG TỰ CHIA 2 LÀN (02/09 — Owner: "sơ đồ nhỏ quá không nhìn được"):
-  // RenderY dồn 10 nút vào cột lõi → cột đó cao gấp 5 lần cột khác, cả sơ đồ bị
-  // bóp nhỏ. Quá TOI_DA_MOT_COT thì xếp 2 làn con trong CÙNG cột (nửa bề ngang
-  // khe), cạnh vẫn nối đúng vì mọi thứ đọc từ viTri.
-  // LAN_LECH phải > BW, không thì hộp làn 2 ĐÈ LÊN hộp làn 1 (đo thật RenderY)
-  const TOI_DA_MOT_COT=6, LAN_LECH=BW+22;
+  // CỘT ĐÔNG TỰ CHIA 2 LÀN: RenderY dồn 10 nút vào cột lõi → cột cao gấp 5 lần
+  // cột khác, phải cuộn dọc rất nhiều. Quá TOI_DA_MOT_COT thì xếp 2 làn con
+  // trong CÙNG cột; cạnh vẫn nối đúng vì mọi thứ đọc từ viTri.
+  // LAN_LECH phải > BW, không thì hộp làn 2 ĐÈ LÊN hộp làn 1 (đo thật RenderY).
+  const TOI_DA_MOT_COT=8, LAN_LECH=BW+22;
   const viTri={};
   let maxY=0, maxCot=0;
   // Cột chia làn CHIẾM CHỖ RỘNG HƠN → cột sau phải dời sang phải, không thì đè.
@@ -858,10 +863,9 @@ function veSoDo(d, cKq, logics){
   }
   const W3=mocX[maxCot]+(theoCot[maxCot].length>TOI_DA_MOT_COT?LAN_LECH:0)+BW+14;
   const H3=maxY+16;
-  // Sơ đồ lớn: KHÔNG ép vừa trần 340px (chữ teo không đọc nổi) — cho cao thật,
-  // panel tự cuộn dọc. Ngưỡng theo tỉ lệ khung thật, không theo số nút.
-  const caoThat=Math.min(H3*(1180/W3), 900);   // 1180 ≈ bề ngang panel thực tế
-  const tranCao=Math.max(340, Math.round(caoThat));
+  // Khung nhìn: SVG vẽ cỡ THẬT (chữ luôn đọc được), khung cao tối đa 620px rồi
+  // cuộn — sơ đồ thấp hơn thì khung tự co theo, không để khoảng trống.
+  const tranCao=Math.min(H3+10, 620);
   const mauMuc={ok:"var(--ok)", warn:"var(--warn)", err:"var(--err)", "":"var(--line)"};
   const nenMuc={ok:"var(--ok-soft)", warn:"var(--warn-soft)", err:"var(--err-soft)", "":"var(--inset)"};
 
@@ -942,12 +946,17 @@ function veSoDo(d, cKq, logics){
     const tenDen=(sd.nut.find(n=>n.ma===c.den)||{}).ten||c.den;
     return `<span style="white-space:nowrap"><b>${esc(tenTu)}</b> → <b>${esc(tenDen)}</b> <span class="mut">· ${esc(c.nhan)}</span></span>`;
   }).join(' <span class="mut" style="margin:0 8px">|</span> ');
-  box.innerHTML=`<svg id="soDoSvg" viewBox="0 0 ${W3} ${H3}" style="width:100%;max-height:${tranCao}px" preserveAspectRatio="xMidYMin meet">
-    <defs><marker id="muiTen" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto"><path d="M0 0 L7 3 L0 6 Z" fill="var(--ink-3)"/></marker></defs>${svg}</svg>
+  // CỠ THẬT + CUỘN (02/09 — Owner: "vẫn bé lắm, cho to lên rồi kéo thanh trượt"):
+  // trước đây ép width:100% nên sơ đồ rộng bị CO LẠI đến khi chữ không đọc nổi.
+  // Giờ SVG giữ đúng kích thước pixel đã tính; rộng hơn panel thì khung cuộn
+  // ngang. Chỉ co lại khi sơ đồ NHỎ hơn panel (không phóng to vô ích).
+  box.innerHTML=`<div style="overflow:auto;max-height:${tranCao}px;padding-bottom:4px">
+    <svg id="soDoSvg" width="${W3}" height="${H3}" viewBox="0 0 ${W3} ${H3}" style="display:block">
+    <defs><marker id="muiTen" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto"><path d="M0 0 L7 3 L0 6 Z" fill="var(--ink-3)"/></marker></defs>${svg}</svg></div>
     ${chuGiai?(canhVe.filter(c=>c.nhan).length>8
       ? `<details class="note"><summary style="cursor:pointer">Chú giải ${canhVe.filter(c=>c.nhan).length} luồng — bấm để mở</summary><div style="line-height:2;margin-top:6px">${chuGiai}</div></details>`
       : `<div class="note" style="line-height:2">${chuGiai}</div>`):""}
-    <div class="note" style="margin-top:2px">trạm ✓ = mọi logic của dây đúng · ✗ = có logic sai · số vàng = có logic chưa kiểm · ? = dây chưa phủ kiểm · ×N = số logic trên dây — bấm trạm mở sơ đồ logic bên dưới &nbsp;|&nbsp; rê chuột / bấm một khối để làm sáng các luồng của nó kèm nhãn</div>`;
+    <div class="note" style="margin-top:2px">sơ đồ vẽ CỠ THẬT — <b>kéo thanh trượt ngang/dọc</b> để xem hết (${W3}×${H3}px) &nbsp;|&nbsp; trạm ✓ = mọi logic của dây đúng · ✗ = có logic sai · số vàng = có logic chưa kiểm · ? = dây chưa phủ kiểm · ×N = số logic trên dây — bấm trạm mở sơ đồ logic bên dưới &nbsp;|&nbsp; rê chuột / bấm một khối để làm sáng các luồng của nó kèm nhãn</div>`;
   // hover/click khối → luồng liên quan sáng + nhãn hiện
   const svgEl=document.getElementById("soDoSvg");
   function toSang(ma, bat){
