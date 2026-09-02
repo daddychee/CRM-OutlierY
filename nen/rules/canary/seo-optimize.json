@@ -1,5 +1,5 @@
 {
- "_ghi_chu": "CANARY LOGIC — moi logic mot MA TEN, kiem tu dong moi CANARY_CHU_KY (1800s) + nut hard-test tren Command Center. Kich ban CHI-DOC/dry-run, khong ghi du lieu that. Them phep do = them 1 dong o day, khong sua code. Kich ban goi tinh nang sau hon (vd POST voi input mau) them dan khi mo mach app do — so docs/giam-sat-suc-khoe.md.",
+ "_ghi_chu": "HE KIEM LOGIC seo-optimize (mo rong 02/09). Truoc do 2 kich ban doc co ha tang, trong khi app co SAN 8 bo self-test 0 quota khong he duoc noi vao giam sat. Cua kiem /api/kiem/<ma> CHI-DOC 0 quota 0 tien — ham thuan, khong goi YouTube/LLM, khong ghi kho; CHI loopback (app bind LAN nen tu chan, khong dua vao tuong lua).",
  "kich_ban": [
   {
    "ma": "khoa-tu-ket",
@@ -62,6 +62,247 @@
     ],
     "kiem": [
      "đọc được kho dữ liệu"
+    ]
+   }
+  },
+  {
+   "ma": "audit-khong-lot-mat-khau",
+   "ten": "Nhật ký không bao giờ chứa mật khẩu",
+   "loai": "goi",
+   "canh": [
+    "extract-kenh",
+    "so-audit"
+   ],
+   "mo_ta": "4 đường (/api/login, /api/change-password, /api/user-passwd, /api/reset-approve) mang mật khẩu TRẦN trong body, và audit ghi cho MỌI POST. Lọc hỏng → mật khẩu trần nằm VĨNH VIỄN trong file chỉ-thêm mà chính Owner mở ra đọc. Bẫy tinh: khóa 'old' vừa nghĩa 'mật khẩu cũ' vừa nghĩa 'tên thị trường cũ' — phải lọc THEO ĐƯỜNG.",
+   "method": "GET",
+   "duong": "/api/kiem/audit-khong-lot-mat-khau",
+   "cho": [
+    [
+     "khong_lot_mat_khau",
+     "==",
+     true
+    ],
+    [
+     "van_giu_truong_lanh",
+     "==",
+     true
+    ]
+   ],
+   "lay_chang": [
+    [
+     "đường nhạy cảm",
+     "so_duong_nhay_cam"
+    ]
+   ],
+   "so_do": {
+    "buoc": [
+     {
+      "ten": "Body có password/old/new"
+     },
+     {
+      "ten": "Lọc theo đường"
+     }
+    ],
+    "kiem": [
+     "0 trường mật khẩu lọt ở đường đổi mật khẩu",
+     "'old' ở đường thị trường VẪN giữ (không lọc mù theo tên khóa)"
+    ]
+   }
+  },
+  {
+   "ma": "cta-khong-bia-url",
+   "ten": "LLM viết chữ, Python giữ URL",
+   "loai": "goi",
+   "canh": [
+    "sinh-cta",
+    "kq-metadata"
+   ],
+   "mo_ta": "LLM bịa URL trông y như thật; sai 1 ký tự trong handle = LINK CHẾT trên video ĐÃ ĐĂNG, phát hiện sau nhiều ngày. sanitize bỏ theo DÒNG mọi dòng còn placeholder hoặc URL lạ.",
+   "method": "GET",
+   "duong": "/api/kiem/cta-khong-bia-url",
+   "cho": [
+    [
+     "url_la_bi_loai",
+     "==",
+     true
+    ],
+    [
+     "placeholder_duoc_thay",
+     "==",
+     true
+    ],
+    [
+     "dong_lanh_con_lai",
+     "==",
+     true
+    ]
+   ],
+   "lay_chang": [
+    [
+     "dòng bị bỏ",
+     "so_dong_bi_bo"
+    ]
+   ],
+   "so_do": {
+    "buoc": [
+     {
+      "ten": "CTA có {{SUB}} + URL bịa + dòng sạch"
+     },
+     {
+      "ten": "sanitize"
+     }
+    ],
+    "kiem": [
+     "URL lạ bị loại",
+     "{{SUB}} thay bằng link thật",
+     "dòng sạch KHÔNG bị bỏ oan"
+    ]
+   }
+  },
+  {
+   "ma": "chapter-tu-srt",
+   "ten": "Timestamp từ SRT thật, LLM chỉ đặt tên",
+   "loai": "goi",
+   "canh": [
+    "sinh-metadata",
+    "kq-metadata"
+   ],
+   "mo_ta": "Luật YouTube CỨNG: bắt đầu 00:00 · ≥3 chapter · mỗi chapter ≥10 giây · tăng dần. Sai luật thì YouTube LẶNG LẼ không hiện chapter — video đăng rồi mới biết, không thông báo lỗi nào. SRT thưa thì số chapter không được vượt số dòng.",
+   "method": "GET",
+   "duong": "/api/kiem/chapter-tu-srt",
+   "cho": [
+    [
+     "hop_le",
+     "==",
+     true
+    ],
+    [
+     "bat_dau_tu_0",
+     "==",
+     true
+    ],
+    [
+     "khong_vuot_so_dong",
+     "==",
+     true
+    ]
+   ],
+   "lay_chang": [
+    [
+     "chapter sinh ra",
+     "so_chapter"
+    ],
+    [
+     "auto_n SRT thưa",
+     "auto_n_srt_thua"
+    ]
+   ],
+   "so_do": {
+    "buoc": [
+     {
+      "ten": "SRT 40 phút"
+     },
+     {
+      "ten": "auto_n + cắt đoạn"
+     },
+     {
+      "ten": "Luật YouTube"
+     }
+    ],
+    "kiem": [
+     "qua luật YouTube",
+     "chapter đầu ở 00:00",
+     "SRT thưa: không sinh nhiều hơn số dòng"
+    ]
+   }
+  },
+  {
+   "ma": "guess-lang-chi-de-xuat",
+   "ten": "Máy đoán ngôn ngữ chỉ ĐỀ XUẤT",
+   "loai": "goi",
+   "canh": [
+    "extract-format",
+    "kho-format"
+   ],
+   "mo_ta": "Tự ghi vào format = máy tự quyết thị trường → format bị gán sai ÂM THẦM lọt vào bộ lọc thị trường khác (người phụ trách US thấy format Tây Ban Nha, hoặc mất format của mình). Không chắc thì THẢ RỖNG kèm lý do, không bốc thăm hộ.",
+   "method": "GET",
+   "duong": "/api/kiem/guess-lang-chi-de-xuat",
+   "cho": [
+    [
+     "khong_tu_ghi_vao_format",
+     "==",
+     true
+    ],
+    [
+     "khong_chac_thi_tha_rong",
+     "==",
+     true
+    ],
+    [
+     "luon_kem_ly_do",
+     "==",
+     true
+    ]
+   ],
+   "so_do": {
+    "buoc": [
+     {
+      "ten": "Format mẫu"
+     },
+     {
+      "ten": "guess_lang"
+     },
+     {
+      "ten": "Ca không đủ căn cứ"
+     }
+    ],
+    "kiem": [
+     "KHÔNG ghi khóa 'lang' vào format truyền vào",
+     "không chắc → thả rỗng",
+     "luôn kèm lý do"
+    ]
+   }
+  },
+  {
+   "ma": "lang-mismatch-tra-rong",
+   "ten": "Lệch ngôn ngữ thì báo, thiếu thì im",
+   "loai": "goi",
+   "canh": [
+    "sinh-metadata",
+    "kho-format"
+   ],
+   "mo_ta": "Ứng viên khác thứ tiếng bị đếm là bịa toàn bộ → loại sạch, ra 0 title dùng được. Nhưng THIẾU một bên mà vẫn đoán là chặn OAN cả format hợp lệ.",
+   "method": "GET",
+   "duong": "/api/kiem/lang-mismatch-tra-rong",
+   "cho": [
+    [
+     "lech_thi_bao",
+     "==",
+     true
+    ],
+    [
+     "thieu_thi_im",
+     "==",
+     true
+    ],
+    [
+     "hop_thi_im",
+     "==",
+     true
+    ]
+   ],
+   "so_do": {
+    "buoc": [
+     {
+      "ten": "4 cặp profile × format"
+     },
+     {
+      "ten": "Luật lệch ngôn ngữ"
+     }
+    ],
+    "kiem": [
+     "lệch thật → cảnh báo",
+     "thiếu/khớp → im lặng (không chặn oan)"
     ]
    }
   }
