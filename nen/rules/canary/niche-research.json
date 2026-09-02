@@ -1,5 +1,5 @@
 {
- "_ghi_chu": "CANARY LOGIC — moi logic mot MA TEN, kiem tu dong moi CANARY_CHU_KY (1800s) + nut hard-test tren Command Center. Kich ban CHI-DOC/dry-run, khong ghi du lieu that. Them phep do = them 1 dong o day, khong sua code. Kich ban goi tinh nang sau hon (vd POST voi input mau) them dan khi mo mach app do — so docs/giam-sat-suc-khoe.md.",
+ "_ghi_chu": "HE KIEM LOGIC niche-research (mo rong 02/09). Truoc do 2 kich ban doc co ha tang — khong cham TANG DO SO, noi ra phan quyet Go/No-Go cho viec do tien vao mot ngach. Cua kiem /api/kiem/<ma> CHI-DOC 0 quota: ham thuan tren du lieu dung trong bo nho, khong goi YouTube.",
  "kich_ban": [
   {
    "ma": "khoa-tu-ket",
@@ -62,6 +62,189 @@
     ],
     "kiem": [
      "đọc được thư mục dự án"
+    ]
+   }
+  },
+  {
+   "ma": "shorts-gate",
+   "ten": "Shorts gate chặn video ≤180s",
+   "loai": "goi",
+   "canh": [
+    "tang-py",
+    "niche-data"
+   ],
+   "mo_ta": "Gate xóa Short IN PLACE ngay đầu compute_outliers nên mọi stage sau đều sạch. Hỏng → Short lọt vào pool, kéo baseline xuống, MỌI OX và phán quyết Go/No-Go sai theo mà không báo lỗi gì.",
+   "method": "GET",
+   "duong": "/api/kiem/shorts-gate",
+   "cho": [
+    [
+     "gate_chan_short",
+     "==",
+     true
+    ],
+    [
+     "xoa_in_place",
+     "==",
+     true
+    ]
+   ],
+   "lay_chang": [
+    [
+     "video vào",
+     "vao"
+    ],
+    [
+     "còn lại",
+     "con_lai"
+    ],
+    [
+     "ngưỡng Short (giây)",
+     "nguong_short_giay"
+    ]
+   ],
+   "so_do": {
+    "buoc": [
+     {
+      "ten": "4 video (2 Short + 2 Long)"
+     },
+     {
+      "ten": "compute_outliers"
+     }
+    ],
+    "kiem": [
+     "0 Short còn sót",
+     "danh sách bị rút NGAY TẠI CHỖ (caller cũng sạch)"
+    ]
+   }
+  },
+  {
+   "ma": "fresh-khong-vao-normals",
+   "ten": "Video fresh KHÔNG BAO GIỜ là 'normal'",
+   "loai": "goi",
+   "canh": [
+    "tang-py",
+    "niche-data"
+   ],
+   "mo_ta": "Video mới chỉ chưa có thời gian, không phải 'bình thường'. Đưa vào mẫu số lift là ĐẦU ĐỘC mẫu số → mọi từ khóa lift sai theo mà bảng vẫn đầy số, không dấu hiệu nào.",
+   "method": "GET",
+   "duong": "/api/kiem/fresh-khong-vao-normals",
+   "cho": [
+    [
+     "fresh_khong_vao_normals",
+     "==",
+     true
+    ],
+    [
+     "co_scope_fresh",
+     "==",
+     true
+    ]
+   ],
+   "lay_chang": [
+    [
+     "video",
+     "so_video"
+    ],
+    [
+     "vào mẫu số normals",
+     "so_normals"
+    ]
+   ],
+   "so_do": {
+    "buoc": [
+     {
+      "ten": "12 video chín + 1 video mới view cao"
+     },
+     {
+      "ten": "Tách winners/normals"
+     }
+    ],
+    "kiem": [
+     "0 video fresh lọt vào normals",
+     "thật sự CÓ video fresh để kiểm (không rỗng giả)"
+    ]
+   }
+  },
+  {
+   "ma": "co-valid-du-nen",
+   "ten": "Cờ valid đòi đủ nền + vượt sàn view",
+   "loai": "goi",
+   "canh": [
+    "tang-py",
+    "niche-data"
+   ],
+   "mo_ta": "Bật ẩu → video nền mỏng vào bảng outlier, kết luận dựa trên nhiễu thống kê mà trông y như bằng chứng. Đây là chốt chặn im lặng nhất: sai thì toàn bộ winners/normals sai.",
+   "method": "GET",
+   "duong": "/api/kiem/co-valid-du-nen",
+   "cho": [
+    [
+     "mong_khong_valid",
+     "==",
+     true
+    ],
+    [
+     "day_co_valid",
+     "==",
+     true
+    ]
+   ],
+   "lay_chang": [
+    [
+     "nền tối thiểu",
+     "min_base"
+    ],
+    [
+     "sàn view",
+     "san_view"
+    ]
+   ],
+   "so_do": {
+    "buoc": [
+     {
+      "ten": "Kênh 3 video (nền mỏng)"
+     },
+     {
+      "ten": "Kênh 12 video (đủ nền)"
+     }
+    ],
+    "kiem": [
+     "nền mỏng: 0 video valid",
+     "nền đủ: có video valid"
+    ]
+   }
+  },
+  {
+   "ma": "ghim-moc-scan",
+   "ten": "Ghim mốc theo lúc scan, không theo đồng hồ",
+   "loai": "goi",
+   "canh": [
+    "tang-py",
+    "niche-data"
+   ],
+   "mo_ta": "Không ghim thì mỗi lần render lại, age/scope/valid đổi theo giờ chạy → hai báo cáo cùng dữ liệu ra số khác nhau, không ai truy được vì sao khác.",
+   "method": "GET",
+   "duong": "/api/kiem/ghim-moc-scan",
+   "cho": [
+    [
+     "moc_khac_thi_ket_qua_khac",
+     "==",
+     true
+    ]
+   ],
+   "so_do": {
+    "buoc": [
+     {
+      "ten": "Cùng 10 video"
+     },
+     {
+      "ten": "Mốc scan A"
+     },
+     {
+      "ten": "Mốc + 30 ngày"
+     }
+    ],
+    "kiem": [
+     "mốc khác ra OX khác — chứng minh hàm dùng tham số now truyền vào"
     ]
    }
   }
