@@ -120,6 +120,20 @@ main{max-width:1340px}
 .lane .ms{font:600 15px 'Space Grotesk',Inter,sans-serif;text-align:right}
 .lane .pill{justify-self:end;font-size:10px;font-weight:700;letter-spacing:.06em;padding:2px 8px;border-radius:3px}
 .p-ok{background:var(--ok-soft);color:var(--ok)}.p-warn{background:var(--warn-soft);color:var(--warn)}.p-err{background:var(--err-soft);color:var(--err)}
+/* hệ kiểm 16-logic-16-sơ-đồ (02/09) */
+.loai-pill{font-size:9px;font-weight:700;letter-spacing:.08em;padding:2px 7px;border-radius:3px;white-space:nowrap}
+.l-goi{background:rgba(76,143,224,.15);color:var(--accent)}
+.l-vet{background:var(--warn-soft);color:var(--warn)}
+.l-bb{background:rgba(86,200,220,.13);color:var(--cyan)}
+.tb .day-hdr td{background:var(--phead);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-2);font-weight:700;padding:5px 8px}
+.tb tr.chon td{background:rgba(76,143,224,.08)}
+.tb tr.dong-logic{cursor:pointer}
+.kv{display:grid;grid-template-columns:18px 1fr;gap:8px;padding:4px 0;font-size:12px;align-items:start}
+.kv .d{width:14px;height:14px;border-radius:3px;text-align:center;font-size:10px;line-height:14px;font-weight:700}
+.d-ok{background:var(--ok-soft);color:var(--ok)}.d-err{background:var(--err-soft);color:var(--err)}.d-mo{background:var(--inset);color:var(--ink-3)}
+.chang{display:flex;align-items:center;gap:6px;font-size:11.5px;flex-wrap:wrap}
+.chang b{font-family:'Space Grotesk',Inter,sans-serif;font-size:14px}
+.chang .mt{color:var(--ink-3)}
 
 .tb{width:100%;border-collapse:collapse;font-size:12px}
 .tb th{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-3);text-align:left;
@@ -239,14 +253,20 @@ main{max-width:1340px}
       </div></div>
     </div>
 
-    <div class="sec"><h2>Sơ đồ vận hành (sống)</h2><small>khối tô màu theo trạng thái ĐO THẬT — suc_khoe · canary · đường truyền; sơ đồ khai ở nen/rules/so_do/&lt;app&gt;.json</small></div>
+    <div class="sec"><h2>Sơ đồ vận hành (sống) — trạm kiểm trên từng dây</h2><small>khối tô màu theo trạng thái ĐO THẬT · TRẠM trên dây = tổng hợp các logic của dây (✓ đúng hết · ✗ có sai · số vàng = có chưa kiểm · ? = dây chưa phủ) — bấm trạm mở logic bên dưới; sơ đồ khai ở nen/rules/so_do/&lt;app&gt;.json</small></div>
     <div class="panel"><div class="pb chartbox" id="soDoBox"></div></div>
 
     <div class="sec"><h2>Module hạ tầng (suc_khoe)</h2><small>app tự khai — đọc sống mỗi 15 giây</small></div>
     <div class="panel"><div class="pb" style="padding-top:6px"><table class="tb" id="app-mods"></table></div></div>
 
-    <div class="sec"><h2>Canary logic</h2><small>gọi tính năng THẬT với input mẫu, so KẾT QUẢ với kỳ vọng · 30′/lần — kịch bản khai ngoài code (nen/rules/canary/*.json)</small></div>
-    <div class="panel"><div class="pb" style="padding-top:6px"><table class="tb" id="app-canary"></table></div></div>
+    <div class="sec"><h2>Hệ kiểm — logic gọi tên, mỗi logic một sơ đồ</h2><small>bấm TRẠM trên sơ đồ trên hoặc DÒNG BẢNG dưới → sơ đồ + panel đổi theo logic đó (mỗi lúc MỘT sơ đồ) · GỌI = canary 0 quota · VẾT = đọc sổ chạy thật · BẤT BIẾN = kiểm dữ liệu đã ghi — kịch bản nen/rules/canary/*.json</small></div>
+    <div class="g" style="grid-template-columns:1.5fr 1fr;align-items:stretch">
+      <div class="panel"><div class="ph" style="display:flex;justify-content:space-between;align-items:center"><span id="lg-sd-ten">SƠ ĐỒ LOGIC</span>
+        <span style="display:flex;gap:14px;font-size:10px;letter-spacing:.06em;color:var(--ink-2)"><span><i style="display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--ok);margin-right:5px;vertical-align:-1px"></i>KIỂM ĐÚNG</span><span><i style="display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--err);margin-right:5px;vertical-align:-1px"></i>SAI LOGIC</span><span><i style="display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--ink-3);margin-right:5px;vertical-align:-1px"></i>CHƯA KIỂM</span></span></div>
+        <div class="pb chartbox" id="lgSoDo"></div></div>
+      <div class="panel" style="border-color:var(--accent)"><div class="ph" id="lg-panel-ten" style="border-bottom-color:var(--accent)">LOGIC</div><div class="pb" id="lgPanel"></div></div>
+    </div>
+    <div class="panel" style="margin-top:8px"><div class="pb" style="padding-top:6px"><table class="tb" id="app-canary"></table></div></div>
 
     <div class="g" style="grid-template-columns:1.2fr 1fr;margin-top:8px">
       <div class="panel"><div class="ph">Nút chết — runtime 5′ (đo tại proxy)</div><div class="pb"><table class="tb" id="app-nut"></table><div class="note">Quét tĩnh UI↔route: P2</div></div></div>
@@ -299,7 +319,7 @@ main{max-width:1340px}
 const $ = id => document.getElementById(id);
 const esc = x => String(x ?? "").replace(/[&<>"']/g,
   c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-let DATA = null, appDangXem = null, giayTuTick = 0;
+let DATA = null, appDangXem = null, logicDangXem = null, giayTuTick = 0;
 
 /* ── điều hướng màn ── */
 function moMan(id){
@@ -323,7 +343,9 @@ function gauge(el, pct, mau, cap){
     </svg><div class="val" style="color:${pct==null?"var(--ink-3)":mau}">${pct==null?"—":pct+"%"}</div><div class="cap">${cap}</div>`;
 }
 
-const nhanKQ = {dung:["p-ok","ĐÚNG"], sai:["p-err","SAI LOGIC"], loi:["p-warn","LỖI GỌI"]};
+const nhanKQ = {dung:["p-ok","ĐÚNG"], sai:["p-err","SAI LOGIC"], loi:["p-warn","LỖI GỌI"],
+                chua:["p-warn","CHƯA KIỂM"]};
+const nhanLoai = {goi:["l-goi","GỌI"], vet:["l-vet","VẾT"], bat_bien:["l-bb","B.BIẾN"]};
 
 /* ── render tổng ── */
 function render(){
@@ -519,7 +541,7 @@ function veMap(ds, dem, canary){
       <div class="r2">${esc(tt.join(" · ")||"ổn định")}</div></div>`;
   }).join("");
   document.querySelectorAll("#map .appc").forEach(el=>el.addEventListener("click", ()=>{
-    if (el.dataset.slug){ appDangXem=el.dataset.slug; renderApp(); moMan("app"); }
+    if (el.dataset.slug){ appDangXem=el.dataset.slug; logicDangXem=null; renderApp(); moMan("app"); }
   }));
 }
 
@@ -610,7 +632,8 @@ function renderApp(){
   $("aab-err").textContent=sai; $("aab-err-w").style.width=(sai/tc*100)+"%";
   $("aab-warn").textContent=lg; $("aab-warn-w").style.width=(lg/tc*100)+"%";
   $("aab-ok").textContent=dg; $("aab-ok-w").style.width=(dg/tc*100)+"%";
-  $("aab-note").textContent=cKq.length?`${cKq.length} logic gọi tên trong nen/rules/canary/${d.slug}.json`:"app chưa khai kịch bản canary";
+  const cChua=cKq.filter(k=>k.ket_qua==="chua").length;
+  $("aab-note").textContent=cKq.length?`${cKq.length} logic gọi tên trong nen/rules/canary/${d.slug}.json`+(cChua?` · ${cChua} CHƯA có đường kiểm (trung thực, không bịa)`:""):"app chưa khai kịch bản canary";
   const mods=d.mo_dun||[];
   $("aoo-mod").textContent=`${mods.filter(m=>m.trang_thai==="ok").length}/${mods.length||"—"}`;
   $("aoo-nut").textContent=dm.nut_chet??"—";
@@ -627,14 +650,41 @@ function renderApp(){
     return `<tr><td style="width:110px"><span class="pill ${p}">${m.trang_thai==="ok"?"OK":m.trang_thai==="canh_bao"?"CẢNH BÁO":"LỖI"}</span></td>
       <td><b>${esc(m.ten)}</b><div class="mut" style="font-size:11px">${esc(m.chi_tiet)}</div></td></tr>`;
   }).join("")||'<tr><td class="mut">app chưa khai suc_khoe</td></tr>';
-  $("app-canary").innerHTML='<tr><th style="width:110px">Kết quả</th><th>Kịch bản (mã · tên logic)</th><th>Chi tiết</th><th class="r">ms</th></tr>'+
-    (cKq.map(k=>{
-      const [p,nh]=nhanKQ[k.ket_qua]||["p-warn","?"];
-      return `<tr><td><span class="pill ${p}">${nh}</span></td>
-        <td><b>${esc(k.ten)}</b><div class="mut" style="font-size:11px">${esc(k.ma)}</div></td>
-        <td class="${k.ket_qua==="dung"?"mut":""}" ${k.ket_qua!=="dung"?'style="color:var(--err)"':""}>${esc(k.chi_tiet||"đúng kỳ vọng")}</td>
-        <td class="r mut">${k.ms??"—"}</td></tr>`;
-    }).join("")||'<tr><td class="mut">chưa khai kịch bản — thêm vào nen/rules/canary/'+esc(appDangXem)+'.json</td></tr>');
+  // HỆ KIỂM (02/09): merge kịch bản (loai/canh/mo_ta/so_do) với kết quả theo ma
+  const sdApp=(DATA.so_do||{})[d.slug]||{nut:[],canh:[]};
+  const tenNut=m=>((sdApp.nut||[]).find(n=>n.ma===m)||{}).ten||m;
+  const kqTheoMa={}; cKq.forEach(k=>{kqTheoMa[k.ma]=k;});
+  const logics=((DATA.canary_kich_ban||{})[d.slug]||[]).map(kb=>({
+    ...kb, kq:kqTheoMa[kb.ma]||{ket_qua:kb.chua_kiem?"chua":"chua",
+                                chi_tiet:kb.ghi_chua||"chưa chạy lượt nào"}}));
+  if(!logicDangXem||!logics.some(l=>l.ma===logicDangXem))
+    logicDangXem=((logics.find(l=>["sai","loi"].includes(l.kq.ket_qua))||logics[0])||{}).ma;
+  // bảng nhóm theo DÂY (canh) — nguồn sự thật của trạm trên sơ đồ
+  const theoDay=new Map();
+  for(const l of logics){
+    const khoa=l.canh?l.canh.join("|"):"";
+    if(!theoDay.has(khoa)) theoDay.set(khoa,[]);
+    theoDay.get(khoa).push(l);
+  }
+  let bang='<tr><th style="width:96px">Kết quả</th><th>Logic — bấm dòng để mở sơ đồ</th><th style="width:82px">Loại</th><th class="r" style="width:70px">Lần cuối</th></tr>';
+  for(const [khoa,ds2] of theoDay){
+    bang+=`<tr class="day-hdr"><td colspan="4">${khoa?("DÂY · "+esc(tenNut(khoa.split("|")[0]))+" → "+esc(tenNut(khoa.split("|")[1]))):"CHƯA GẮN DÂY"}</td></tr>`;
+    for(const l of ds2){
+      const [p,nh]=nhanKQ[l.kq.ket_qua]||["p-warn","?"];
+      const [lp,ln]=nhanLoai[l.loai]||["l-goi","GỌI"];
+      bang+=`<tr class="dong-logic${l.ma===logicDangXem?" chon":""}" data-logic="${esc(l.ma)}">
+        <td><span class="pill ${p}">${nh}</span></td>
+        <td><b>${esc(l.ten)}</b> <span class="mut" style="font-size:11px">${esc((l.mo_ta||l.ghi_chua||"").slice(0,90))}</span>${l.ma===logicDangXem?' <b style="color:var(--accent)">◂ đang mở sơ đồ</b>':""}</td>
+        <td><span class="loai-pill ${lp}">${ln}</span></td>
+        <td class="r mut">${l.kq.ms!=null?(kq?kq.luc.slice(11,16):"—"):"—"}</td></tr>`;
+    }
+  }
+  $("app-canary").innerHTML=logics.length?bang
+    :'<tr><td class="mut">chưa khai kịch bản — thêm vào nen/rules/canary/'+esc(appDangXem)+'.json</td></tr>';
+  $("app-canary").querySelectorAll(".dong-logic").forEach(tr=>{
+    tr.addEventListener("click",()=>{ logicDangXem=tr.dataset.logic; renderApp(); });
+  });
+  renderLogic(logics.find(l=>l.ma===logicDangXem), kq);
   $("app-nut").innerHTML=`<tr><td style="width:100px"><span class="pill ${dm.nut_chet?"p-err":"p-ok"}">${dm.nut_chet||0}</span></td>
     <td><b>POST/PUT/DELETE trả 404·405</b> trong 5 phút<div class="mut" style="font-size:11px">${dm.nut_chet_gan_nhat?esc(dm.nut_chet_gan_nhat.luc+" · "+dm.nut_chet_gan_nhat.duong):"không có — chưa ai bấm trúng nút chết"}</div></td></tr>`;
   $("app-suco").innerHTML=(DATA.su_co||[]).filter(x=>(x.chi_tiet||"").includes(d.ten)||(x.chi_tiet||"").includes(d.slug))
@@ -642,19 +692,112 @@ function renderApp(){
       return `<tr><td class="mut" style="width:80px">${y.ngay} ${y.luc}</td><td>${esc(y.ct.slice(0,80))}</td></tr>`;})
     .join("")||'<tr><td class="mut">không có sự cố ghi sổ cho app này</td></tr>';
 
-  veSoDo(d, cKq);
+  veSoDo(d, cKq, logics);
+}
+
+/* ── SƠ ĐỒ MỘT LOGIC + PANEL (02/09 — Owner chốt "16 logic = 16 sơ đồ, hiện
+   lần lượt"): chuỗi bước snake 3 cột cùng ngôn ngữ hộp/mũi tên/trạm với map;
+   trạm trên mũi tên i = kiem[i] ↔ cho[i] của kịch bản. ── */
+function renderLogic(l, kqApp){
+  const sdBox=$("lgSoDo"), pn=$("lgPanel"); if(!sdBox||!pn) return;
+  if(!l){ $("lg-sd-ten").textContent="SƠ ĐỒ LOGIC";
+    sdBox.innerHTML='<div class="note" style="margin:14px 0">app chưa khai kịch bản kiểm</div>';
+    $("lg-panel-ten").textContent="LOGIC"; pn.innerHTML=""; return; }
+  const [lp,ln]=nhanLoai[l.loai]||["l-goi","GỌI"];
+  $("lg-sd-ten").textContent="SƠ ĐỒ LOGIC · "+l.ten.toUpperCase();
+  $("lg-panel-ten").innerHTML=`LOGIC: ${esc(l.ten.toUpperCase())} <span class="loai-pill ${lp}" style="float:right">${ln}${l.loai!=="goi"?"":" · 0 QUOTA"}</span>`;
+  const sd=l.so_do||{buoc:[],kiem:[]};
+  const kiemKq=(l.kq&&l.kq.kiem)||[];
+  if(!sd.buoc.length){
+    sdBox.innerHTML=`<div class="note" style="margin:14px 0">${l.chua_kiem?
+      "logic đã GỌI TÊN nhưng CHƯA có đường kiểm tự động — "+esc(l.ghi_chua||""):
+      "kịch bản chưa khai so_do (buoc + kiem) — thêm vào nen/rules/canary/"+esc(appDangXem)+".json"}</div>`;
+  } else {
+    // snake 3 cột: hàng chẵn trái→phải, hàng lẻ phải→trái
+    const BW=214,BH=56,GX=300,GY=104,X0=8,Y0=10,COT=3;
+    const vt=sd.buoc.map((b,i)=>{
+      const hang=Math.floor(i/COT), c=i%COT, cot=hang%2?COT-1-c:c;
+      return {x:X0+cot*GX, y:Y0+hang*GY, hang, cot};
+    });
+    const W=X0+(Math.min(sd.buoc.length,COT)-1)*GX+BW+8, H=Y0+(vt[vt.length-1].hang+1)*GY-GY+BH+8;
+    let svg="";
+    for(let i=0;i<sd.buoc.length-1;i++){
+      const a=vt[i], b=vt[i+1];
+      let d2, tx, ty;
+      if(a.hang===b.hang){ // ngang
+        const x1=a.cot<b.cot?a.x+BW:a.x, x2=a.cot<b.cot?b.x:b.x+BW;
+        d2=`M${x1} ${a.y+BH/2} H${x2}`; tx=(x1+x2)/2; ty=a.y+BH/2;
+      } else {             // xuống hàng
+        d2=`M${a.x+BW/2} ${a.y+BH} V${b.y}`; tx=a.x+BW/2; ty=(a.y+BH+b.y)/2;
+      }
+      svg+=`<path d="${d2}" fill="none" stroke="var(--ink-3)" stroke-width="1.4" marker-end="url(#mtLg)" opacity=".5"/>`;
+      const kk=kiemKq[i];
+      if(i<(sd.kiem||[]).length){
+        const dat=kk?kk.dat:null;
+        const m=dat===true?"var(--ok)":dat===false?"var(--err)":"var(--ink-3)";
+        const f=dat==null?"var(--inset)":m;
+        const chu=dat===true?"✓":dat===false?"✗":"?";
+        svg+=`<circle cx="${tx}" cy="${ty}" r="10" fill="${f}" stroke="${m}" stroke-width="1.5"/>
+          <text x="${tx}" y="${ty+3.5}" text-anchor="middle" font-size="10" font-weight="700" fill="${dat==null?"var(--ink-3)":(dat?"#06150C":"#fff")}">${chu}</text>`;
+      }
+    }
+    sd.buoc.forEach((b,i)=>{
+      const v=vt[i], dau=i===0, cuoi=i===sd.buoc.length-1;
+      const vien=cuoi?"var(--accent)":"var(--line)";
+      const nen2=cuoi?"rgba(76,143,224,.10)":"var(--inset)";
+      svg+=`<g><rect x="${v.x}" y="${v.y}" width="${BW}" height="${BH}" rx="6" fill="${nen2}" stroke="${vien}" stroke-width="${cuoi?2:1.2}"${dau?' stroke-dasharray="6,4"':""}/>
+        <text x="${v.x+11}" y="${v.y+21}" font-size="11.5" font-weight="600" fill="var(--ink)">${esc(b.ten.slice(0,34))}</text>`;
+      if(b.ghi) svg+=`<text x="${v.x+11}" y="${v.y+39}" font-size="9.5" fill="var(--ink-2)">${esc(b.ghi.slice(0,38))}</text>`;
+      if(cuoi) svg+=`<text x="${v.x+BW-9}" y="${v.y+BH-6}" text-anchor="end" font-size="7.5" letter-spacing="1.5" font-weight="700" fill="var(--accent)" opacity=".85">KẾT QUẢ</text>`;
+      svg+="</g>";
+    });
+    sdBox.innerHTML=`<svg viewBox="0 0 ${W} ${H}" style="width:100%;max-height:300px" preserveAspectRatio="xMidYMin meet">
+      <defs><marker id="mtLg" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto"><path d="M0 0 L7 3 L0 6 Z" fill="var(--ink-3)"/></marker></defs>${svg}</svg>
+      <div class="note">trạm trên từng mũi tên = kiểm của bước đó · bấm dòng bảng khác → sơ đồ đổi theo, mỗi lúc một sơ đồ</div>`;
+  }
+  // panel: logic bằng lời + số đo chặng THẬT + kỳ vọng + lần kiểm cuối
+  const chang=(l.kq&&l.kq.chang)||[];
+  const changHtml=chang.length?`<div style="margin:10px 0 4px;font-size:10px;letter-spacing:.08em;color:var(--ink-3)">SỐ ĐO TỪNG CHẶNG — lần kiểm ${kqApp?esc(kqApp.luc.slice(11,16)):"—"}</div>
+    <div class="chang">${chang.map(c=>`<b>${esc(String(c.so??"—"))}</b><span class="mt">${esc(c.nhan)}</span>`).join(" → ")}</div>`:"";
+  const kyVong=(l.so_do&&l.so_do.kiem)||[];
+  const kvHtml=kyVong.length?`<div style="margin:10px 0 4px;font-size:10px;letter-spacing:.08em;color:var(--ink-3)">KỲ VỌNG — ${kyVong.length} KIỂM TRÊN SƠ ĐỒ</div>`+
+    kyVong.map((nh,i)=>{
+      const kk=kiemKq[i], dat=kk?kk.dat:null;
+      const d3=dat===true?["d-ok","✓"]:dat===false?["d-err","✗"]:["d-mo","?"];
+      return `<div class="kv"><span class="d ${d3[0]}">${d3[1]}</span><span>${esc(nh)}${dat===false?` <span style="color:var(--err)">— ${esc(kk.chi_tiet||"")}</span>`:""}</span></div>`;
+    }).join(""):"";
+  pn.innerHTML=`${l.mo_ta?`<div class="mut" style="font-size:11.5px;line-height:1.6;border-left:2px solid var(--accent);padding-left:9px"><b style="color:var(--ink)">Logic:</b> ${esc(l.mo_ta)}</div>`:""}
+    ${l.chua_kiem?`<div class="kv" style="margin-top:8px"><span class="d d-mo">?</span><span><b>CHƯA KIỂM</b> — ${esc(l.ghi_chua||"chưa có đường kiểm tự động")}</span></div>`:""}
+    ${changHtml}${kvHtml}
+    ${l.kq&&l.kq.ket_qua==="loi"?`<div class="kv" style="margin-top:8px"><span class="d d-err">!</span><span style="color:var(--err)">LỖI GỌI: ${esc(l.kq.chi_tiet||"")}</span></div>`:""}
+    <div style="display:flex;gap:8px;margin-top:12px;align-items:center;flex-wrap:wrap">
+      ${l.chua_kiem?"":'<button class="btn" style="border-color:var(--accent);color:var(--accent)" id="nut-kiem-logic">KIỂM LOGIC NÀY</button>'}
+      <span class="mut" style="font-size:11px">${kqApp&&!l.chua_kiem?("gần nhất "+esc(kqApp.luc.slice(11,16))+" "+(nhanKQ[l.kq.ket_qua]||["","?"])[1]):""}</span>
+    </div>`;
+  const nutK=$("nut-kiem-logic");
+  if(nutK) nutK.addEventListener("click",()=>$("nut-canary").click());
 }
 
 /* ── SƠ ĐỒ VẬN HÀNH SỐNG v2 (02/09) — Owner chê nhãn chồng: đường gấp khúc
    vuông góc mỗi cạnh MỘT LÀN riêng; nhãn ẨN mặc định, rê/bấm một khối thì
    luồng của khối đó sáng + nhãn hiện; chú giải luồng text dưới sơ đồ. ── */
-function veSoDo(d, cKq){
+function veSoDo(d, cKq, logics){
   const box=$("soDoBox"); if(!box) return;
   const sd=(DATA.so_do||{})[d.slug];
   if(!sd||!sd.nut.length){
     box.innerHTML=`<div class="note" style="margin:14px 0">App chưa khai sơ đồ — thêm nen/rules/so_do/${esc(d.slug)}.json (khuôn: ai-agent.json). Khối có binding suc_khoe/canary/tuyen tự tô màu trạng thái thật.</div>`;
     return;
   }
+  // TRẠM KIỂM trên dây (02/09): tổng hợp các logic gắn canh=[tu,den] — bảng
+  // hệ kiểm là nguồn sự thật; dây 0 logic → trạm "?" tự tố cáo chưa phủ.
+  const logicTheoDay=new Map();
+  for(const l of logics||[]){
+    if(!l.canh) continue;
+    const khoa=l.canh.join("|");
+    if(!logicTheoDay.has(khoa)) logicTheoDay.set(khoa,[]);
+    logicTheoDay.get(khoa).push(l);
+  }
+  const loaiNut={}; for(const n of sd.nut) loaiNut[n.ma]=n.loai||"";
   const modTT={}; for(const m of d.mo_dun||[]) modTT[m.ten]=m;
   const caTT={}; for(const k of cKq||[]) caTT[k.ma]=k;
   const netTT={}; for(const t of DATA.duong_truyen||[]) netTT[t.ma]=t;
@@ -709,6 +852,26 @@ function veSoDo(d, cKq){
       ${c.nhan?`<text class="nhanLuong" x="${(lane+6).toFixed(0)}" y="${((y1+y2)/2+3).toFixed(0)}"
         font-size="10" font-weight="600" fill="var(--ink)" opacity="0">${esc(c.nhan)}</text>`:""}
     </g>`;
+    // trạm kiểm trên dây — bấm trạm mở logic của dây đó ở khối hệ kiểm
+    const dsL=logicTheoDay.get(c.tu+"|"+c.den)||[];
+    const cx=lane.toFixed(0), cy=((y1+y2)/2).toFixed(0);
+    if(dsL.length){
+      const kqs=dsL.map(l=>l.kq.ket_qua);
+      const muc=kqs.includes("sai")?"err":kqs.includes("loi")||kqs.includes("chua")?"warn":"ok";
+      const soXau=kqs.filter(k=>k!=="dung").length;
+      const chu=muc==="ok"?"✓":muc==="err"?"✗":String(soXau);
+      const m=mauMuc[muc];
+      const dich=(dsL.find(l=>["sai","loi"].includes(l.kq.ket_qua))||dsL[0]).ma;
+      svg+=`<g class="tram" data-logic="${esc(dich)}" style="cursor:pointer">
+        <circle cx="${cx}" cy="${cy}" r="10" fill="${m}" stroke="${m}" stroke-width="1.5"/>
+        <text x="${cx}" y="${+cy+3.5}" text-anchor="middle" font-size="10" font-weight="700" fill="${muc==="ok"?"#06150C":"#fff"}">${chu}</text>
+        ${dsL.length>1&&muc!=="warn"?`<text x="${+cx+13}" y="${+cy-8}" font-size="8" fill="var(--ink-3)">×${dsL.length}</text>`:""}
+        <title>${esc(dsL.map(l=>l.ten+" — "+(nhanKQ[l.kq.ket_qua]||["","?"])[1]).join("\n"))}</title></g>`;
+    } else if(loaiNut[c.tu]!=="nguoi"){
+      svg+=`<g class="tram" style="cursor:default"><circle cx="${cx}" cy="${cy}" r="8" fill="var(--inset)" stroke="var(--ink-3)" stroke-width="1.2" opacity=".7"/>
+        <text x="${cx}" y="${+cy+3}" text-anchor="middle" font-size="9" font-weight="700" fill="var(--ink-3)">?</text>
+        <title>dây chưa phủ kiểm — thêm logic với canh ["${esc(c.tu)}","${esc(c.den)}"]</title></g>`;
+    }
   }
   for(const n of sd.nut){
     const v=viTri[n.ma], st=trangThai(n);
@@ -755,6 +918,13 @@ function veSoDo(d, cKq){
     g.addEventListener("mouseleave",()=>{ if(!ghim) toSang(null,false); });
     g.addEventListener("click",()=>{ ghim=(ghim===g.dataset.ma)?null:g.dataset.ma;
       toSang(ghim, !!ghim); });
+  });
+  // bấm TRẠM → mở logic của dây đó ở khối hệ kiểm bên dưới
+  svgEl.querySelectorAll(".tram[data-logic]").forEach(g=>{
+    g.addEventListener("click",ev=>{ ev.stopPropagation();
+      logicDangXem=g.dataset.logic; renderApp();
+      const lg=$("lgSoDo"); if(lg) lg.scrollIntoView({behavior:"smooth",block:"center"});
+    });
   });
 }
 

@@ -1,0 +1,41 @@
+{
+ "_ghi_chu": "SO DO VAN HANH data-analytics (02/09) — tu kiem ke code that (diagnosis_engine/dien_giai/bao_cao_lich_su). Sua so do = sua file nay.",
+ "nut": [
+  {"ma": "team", "ten": "Team (cổng 9000)", "cot": 0, "loai": "nguoi"},
+  {"ma": "nap-report", "ten": "Nạp report YouTube Studio", "cot": 1,
+   "ghi_chu": ".xlsx/.csv + loại kênh + vòng đời"},
+  {"ma": "xem-lich-su", "ten": "Xem lại báo cáo cũ", "cot": 1,
+   "ghi_chu": "chạy lại từ file gốc, KHÔNG gọi LLM"},
+  {"ma": "anh-xa", "ten": "Ánh xạ cột (EN+VN)", "cot": 2, "loai": "kho",
+   "ghi_chu": "rules/column_mapping.csv — luật ngoài code"},
+  {"ma": "engine", "ten": "Engine 4 trục + 7 phán quyết", "cot": 2,
+   "ghi_chu": "Python thuần, KHÔNG LLM"},
+  {"ma": "luat-csv", "ten": "Luật + profile loại kênh", "cot": 2, "loai": "kho",
+   "ghi_chu": "diagnosis_rules + content_type_profiles"},
+  {"ma": "dien-giai", "ten": "Diễn giải LLM + phản biện", "cot": 2,
+   "ghi_chu": "chỉ diễn giải mục có số"},
+  {"ma": "so-bao-cao", "ten": "Sổ báo cáo + file gốc", "cot": 2, "loai": "kho"},
+  {"ma": "zai", "ten": "Z.ai (GLM)", "cot": 3, "loai": "ngoai", "tuyen": "z-ai"},
+  {"ma": "kq-phan-quyet", "ten": "Phán quyết từng video (1/7)", "cot": 4,
+   "loai": "ket_qua", "ghi_chu": "thẻ điểm 4 trục"},
+  {"ma": "kq-bao-cao-9", "ten": "Báo cáo kênh 9 mục A1..C3", "cot": 4,
+   "loai": "ket_qua", "ghi_chu": "mỗi mục tự khai 3 trạng thái"},
+  {"ma": "kq-chi-so", "ten": "Bảng chỉ-số (chưa monetize)", "cot": 4,
+   "loai": "ket_qua", "ghi_chu": "không phán quyết, không LLM"}
+ ],
+ "canh": [
+  ["team", "nap-report"],
+  ["team", "xem-lich-su"],
+  ["nap-report", "anh-xa", "đổi tên cột + hệ số %"],
+  ["anh-xa", "engine", "biến luật chuẩn"],
+  ["luat-csv", "engine", "luật ngoài code"],
+  ["engine", "kq-phan-quyet"],
+  ["engine", "kq-bao-cao-9"],
+  ["engine", "kq-chi-so", "rẽ nhánh sớm"],
+  ["engine", "dien-giai", "chỉ mục có số"],
+  ["dien-giai", "zai"],
+  ["dien-giai", "kq-bao-cao-9", "gắn vào mục"],
+  ["engine", "so-bao-cao", "lưu bản ghi + file gốc"],
+  ["so-bao-cao", "xem-lich-su", "cache, 0 LLM"]
+ ]
+}
