@@ -1119,7 +1119,9 @@ function renderQuota(){
      2. Đếm CALLS chứ không units — llm units toàn 0 (chưa ghi token), vẽ theo
         units là thấy "không dùng" trong khi đang chạy 132 call.
      3. Dịch vụ nào KHÔNG có dòng nào hôm nay thì KHÔNG vẽ khung rỗng — nói
-        thẳng "chưa có call nào ghi sổ", không bịa đường 0 trông như đã đo. */
+        thẳng "chưa có call nào ghi sổ", không bịa đường 0 trông như đã đo.
+     4. MỘT CỘT = MỘT LẦN CALL cho dịch vụ có `moi_call` (Owner chốt: chỉ LLM và
+        serp — xem so_goi.VE_TUNG_CALL). Dịch vụ khác giữ nhánh gộp theo giờ. */
   (function(){
     const el=$("nhipKhac"); if(!el) return;
     const bo = Object.entries(SG).filter(([ten])=>ten!=="youtube")
@@ -1137,6 +1139,7 @@ function renderQuota(){
     const bw=W/24*0.62, pxG=g=>g/24*W+(W/24-bw)/2;
     const truc=[0,6,9,12,15,18,21,23].map(g=>
       `<text x="${(pxG(g)+bw/2).toFixed(1)}" y="10" text-anchor="middle" font-size="9.5" fill="var(--ink-3)">${g}h</text>`).join("");
+    let conDongGopGio = false;
     el.innerHTML = bo.sort((a,b)=>b[1].calls-a[1].calls).map(([ten,v])=>{
       const tgC=v.theo_gio_calls||{}, tgL=v.theo_gio_loi||{};
       const cot=[]; let dinh=0;
@@ -1145,14 +1148,65 @@ function renderQuota(){
         const c=tgC[k]||0, l=tgL[k]||0;
         cot.push([g,c,l]); if(c>dinh) dinh=c;
       }
-      const py=c=>dinh? H-4-(c/dinh)*(H-10) : H-4;
-      const thanh=cot.filter(([,c])=>c).map(([g,c,l])=>{
-        const y=py(c), cao=Math.max(H-4-y,1.5);
-        // phần lỗi vẽ đè màu đỏ TỪ ĐÁY LÊN — nhìn là biết tỉ lệ hỏng
-        const caoL=l? Math.max(cao*(l/c),1.5):0;
-        return `<rect x="${pxG(g).toFixed(1)}" y="${y.toFixed(1)}" width="${bw.toFixed(1)}" height="${cao.toFixed(1)}" rx="1.5" fill="var(--accent)" opacity=".85"><title>${g}h · ${c} call${l?" · "+l+" lỗi":""}</title></rect>`
-          + (caoL? `<rect x="${pxG(g).toFixed(1)}" y="${(H-4-caoL).toFixed(1)}" width="${bw.toFixed(1)}" height="${caoL.toFixed(1)}" rx="1.5" fill="var(--err)"><title>${g}h · ${l}/${c} lỗi</title></rect>`:"");
-      }).join("");
+      /* TỪNG LẦN CALL một cột (Owner 02/09) khi sổ có `moi_call` — chỉ LLM và
+         serp được trả kèm (so_goi.VE_TUNG_CALL), đo thật 132 và 58 call/ngày.
+         CHIỀU CAO = ms khi có: với LLM đó mới là thứ đáng nhìn (đo hôm nay có
+         call 538 GIÂY = treo). Không có ms (serp) → cột cao đều, chỉ đọc nhịp.
+         Thang ms cắt ở phân vị 95 để một call treo không dí cả hàng xuống đáy.
+
+         CỘT XẾP LIỀN NHAU THEO THỨ TỰ THỜI GIAN, không đặt theo tọa độ giờ.
+         Bản đầu đặt x theo giờ thật thì call gọi sát nhau trùng vị trí và ĐÈ
+         MẤT NHAU — đo: 67/132 cột LLM và 23/58 cột serp biến mất, người xem đếm
+         thiếu một nửa và call LỖI có thể bị call thành công che. "Một cột một
+         call" mà giấu mất call thì hỏng mục đích; vạch giờ ở dưới lo phần "lúc
+         nào", nên xếp liền là đúng — đổi lại trục dưới KHÔNG còn tuyến tính
+         theo giờ, vì thế mỗi dòng tự vẽ mốc giờ của chính nó. */
+      const mc = v.moi_call;
+      let thanh, ghiChu = "", mocRieng = "";
+      if (mc && mc.length){
+        const dsMs = mc.filter(c=>c.ms).map(c=>c.ms).sort((a,b)=>a-b);
+        const tranMs = dsMs.length? dsMs[Math.floor(dsMs.length*0.95)] || dsMs[dsMs.length-1] : 0;
+        const o = W/mc.length, bwC = Math.max(o*0.78, 1.2);
+        thanh = mc.map((c,i)=>{
+          const cao = tranMs && c.ms
+            ? Math.max((Math.min(c.ms,tranMs)/tranMs)*(H-10), 2)
+            : H-14;
+          const x = i*o + (o-bwC)/2;
+          const mau = c.ok ? "var(--accent)" : "var(--err)";
+          const giayD = c.ms ? (c.ms/1000).toFixed(1)+"s" : "—";
+          const treo = tranMs && c.ms > tranMs ? " ▲" : "";
+          return `<rect x="${x.toFixed(2)}" y="${(H-4-cao).toFixed(1)}" width="${bwC.toFixed(2)}" height="${cao.toFixed(1)}" rx="${bwC>3?1.5:0}" fill="${mau}" opacity="${c.ok?".85":"1"}"><title>${esc(c.luc)} · ${esc(c.nhan||c.duoi||c.app)} · ${giayD}${treo}${c.ok?"":" · "+esc(c.ma_loi||"lỗi")}</title></rect>`;
+        }).join("");
+        // Mốc giờ THEO VỊ TRÍ CỘT: đánh dấu call đầu tiên của mỗi giờ mới.
+        // Bỏ mốc nào nằm sát mốc trước dưới 34px — giờ đầu thường chỉ có vài
+        // call nên "12h" và "13h" từng cách nhau 15px và chữ đè lên nhau.
+        let gioTruoc = "", xTruoc = -99;
+        mocRieng = mc.map((c,i)=>{
+          const g = c.luc.slice(0,2);
+          if (g === gioTruoc) return "";
+          gioTruoc = g;
+          // kẹp vào trong khung: mốc đầu ở x≈4 thì chữ căn giữa bị CẮT CỤT ở mép
+          // trái — "12h" từng hiện thành "2h", đọc sai giờ.
+          const x = Math.min(Math.max(i*o + o/2, 12), W-12);
+          if (x - xTruoc < 34) return "";
+          xTruoc = x;
+          return `<text x="${x.toFixed(1)}" y="10" text-anchor="middle" font-size="9" fill="var(--ink-3)">${+g}h</text>`;
+        }).join("");
+        ghiChu = tranMs ? `cao = thời gian gọi (trần ${(tranMs/1000).toFixed(0)}s)`
+                        : "không đo thời gian — cột đều";
+        if (v.moi_call_cat) ghiChu += ` · ${v.moi_call_cat} call cũ không vẽ`;
+      } else {
+        // dự phòng: dịch vụ không được trả từng call thì vẫn vẽ gộp theo giờ
+        const py=c=>dinh? H-4-(c/dinh)*(H-10) : H-4;
+        thanh=cot.filter(([,c])=>c).map(([g,c,l])=>{
+          const y=py(c), cao=Math.max(H-4-y,1.5);
+          const caoL=l? Math.max(cao*(l/c),1.5):0;
+          return `<rect x="${pxG(g).toFixed(1)}" y="${y.toFixed(1)}" width="${bw.toFixed(1)}" height="${cao.toFixed(1)}" rx="1.5" fill="var(--accent)" opacity=".85"><title>${g}h · ${c} call${l?" · "+l+" lỗi":""}</title></rect>`
+            + (caoL? `<rect x="${pxG(g).toFixed(1)}" y="${(H-4-caoL).toFixed(1)}" width="${bw.toFixed(1)}" height="${caoL.toFixed(1)}" rx="1.5" fill="var(--err)"><title>${g}h · ${l}/${c} lỗi</title></rect>`:"");
+        }).join("");
+        ghiChu = "gộp theo giờ";
+        conDongGopGio = true;
+      }
       // units: KHÔNG làm tròn nghìn khi số nhỏ — serp 29 units từng hiện
       // "0.0k units" nhìn như bằng 0.
       const u=v.tong_units;
@@ -1160,17 +1214,22 @@ function renderQuota(){
                : u>=10000 ? `${(u/1000).toFixed(1)}k units` : `${Math.round(u)} units`;
       const tiLoi = v.loi ? Math.round(v.loi/v.calls*100) : 0;
       return `<div style="display:grid;grid-template-columns:132px 1fr 96px;gap:10px;align-items:center;padding:5px 0;border-top:1px solid var(--line)">
-        <div><b style="font-size:12px">${esc(ten)}</b><div class="mut" style="font-size:10px">${dv}</div></div>
-        <svg height="${H}" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="width:100%;display:block">${thanh}
-          <line x1="0" x2="${W}" y1="${H-4}" y2="${H-4}" stroke="var(--line)" stroke-width="1"/></svg>
+        <div><b style="font-size:12px">${esc(ten)}</b><div class="mut" style="font-size:10px">${dv}</div>
+          <div class="mut" style="font-size:9.5px;color:var(--ink-3)">${ghiChu}</div></div>
+        <svg height="${H+(mocRieng?12:0)}" viewBox="0 0 ${W} ${H+(mocRieng?12:0)}" preserveAspectRatio="none" style="width:100%;display:block">${thanh}
+          <line x1="0" x2="${W}" y1="${H-4}" y2="${H-4}" stroke="var(--line)" stroke-width="1"/>
+          ${mocRieng?`<g transform="translate(0,${H})">${mocRieng}</g>`:""}</svg>
         <div style="text-align:right"><b style="font-size:13px">${v.calls}</b><span class="mut" style="font-size:10px"> call</span>
           <div class="mut" style="font-size:10px;color:${tiLoi?"var(--err)":"var(--ink-3)"}">${v.loi? v.loi+" lỗi · "+tiLoi+"%" : "không lỗi"}</div></div>
       </div>`;
     }).join("")
-    + `<div style="display:grid;grid-template-columns:132px 1fr 96px;gap:10px">
+    // trục giờ CHUNG chỉ có nghĩa cho dòng gộp-theo-giờ; dòng vẽ-từng-call xếp
+    // cột liền nhau nên trục ngang KHÔNG tuyến tính theo giờ — mỗi dòng đó tự
+    // in mốc giờ của chính nó ngay dưới cột.
+    + (conDongGopGio ? `<div style="display:grid;grid-template-columns:132px 1fr 96px;gap:10px">
          <div></div><svg height="14" viewBox="0 0 ${W} 14" preserveAspectRatio="none" style="width:100%;display:block">${truc}</svg><div></div>
-       </div>`
-    + `<div class="note" style="margin-top:4px">cột = số call mỗi giờ · phần đỏ dưới chân = lỗi · mỗi dòng thang riêng, KHÔNG so cao thấp giữa các dòng</div>`;
+       </div>` : "")
+    + `<div class="note" style="margin-top:4px">MỘT CỘT = MỘT LẦN CALL, xếp theo thứ tự thời gian (mốc giờ ghi dưới cột — khoảng cách ngang KHÔNG tỉ lệ thời gian) · cao = thời gian gọi, dịch vụ không đo ms thì cột đều · <span style="color:var(--err)">đỏ = call lỗi</span> · rê chuột xem giờ, model/khóa, thời gian · mỗi dòng thang riêng, KHÔNG so cao thấp giữa các dòng</div>`;
   })();
 }
 

@@ -28,6 +28,13 @@ ROOT = Path(__file__).resolve().parents[2]
 # cứu được mới là cơ chế hỏng thật.
 TI_LE_XOAY_DAT = 0.8
 
+# Dịch vụ được trả kèm TỪNG LẦN CALL để UI vẽ mỗi call một cột. Chỉ dịch vụ
+# THƯA (Owner chốt 02/09: LLM + serp) — YouTube 29.704 call/ngày vừa không vẽ
+# nổi vừa đã có biểu đồ units cộng dồn riêng. Thêm dịch vụ mới vào đây là UI tự
+# vẽ, không phải sửa code UI.
+VE_TUNG_CALL = ("llm", "serp")
+TOI_DA_CALL = 600
+
 
 def _goc() -> Path:
     return Path(os.environ.get("SO_GOI_DIR", ROOT / "data" / "logs" / "so-goi"))
@@ -185,4 +192,19 @@ def tom_tat_hom_nay() -> dict:
                 v["loi"] += 1
             if d.get("ms"):
                 v["ms_max"] = max(v["ms_max"], d["ms"])
+        # TỪNG LẦN CALL (Owner 02/09, "chỉ dùng cho LLM và serp"): hai dịch vụ
+        # này thưa — đo thật hôm chốt là 132 và 58 call/ngày, vẽ mỗi call một
+        # cột thì rộng 7,5px và 17px, đọc được. YouTube 29.704 call thì KHÔNG
+        # (0,03px/cột) và cũng không cần: nó đã có biểu đồ units cộng dồn riêng.
+        # Trần TOI_DA_CALL để một ngày bất thường không bơm cả vạn dòng qua mạng.
+        if d.get("dich_vu") in VE_TUNG_CALL:
+            ds = dv.setdefault("moi_call", [])
+            if len(ds) < TOI_DA_CALL:
+                ds.append({"luc": (d.get("luc") or "")[11:19],
+                           "ms": d.get("ms"), "ok": bool(d.get("ok", True)),
+                           "ma_loi": d.get("ma_loi", ""),
+                           "nhan": d.get("viec") or d.get("model") or "",
+                           "duoi": d.get("duoi") or "", "app": d.get("app") or ""})
+            else:
+                dv["moi_call_cat"] = dv.get("moi_call_cat", 0) + 1
     return ket

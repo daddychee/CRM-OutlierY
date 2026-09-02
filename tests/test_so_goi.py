@@ -179,3 +179,41 @@ def test_theo_gio_calls_dem_ca_dich_vu_KHONG_tinh_units(monkeypatch):
         "theo_gio (units) bằng 0 — chính là lý do phải có theo_gio_calls")
     assert tt["llm"]["theo_gio_calls"][gio] == 3
     assert tt["llm"]["theo_gio_loi"][gio] == 1
+
+
+def test_moi_call_chi_kem_dich_vu_thua_va_co_tran(monkeypatch):
+    """Owner 02/09: "hiển thị theo từng lần call là cột được không?" → "chỉ dùng
+    cho LLM và serp".
+
+    Hai dịch vụ này thưa (đo thật 132 và 58 call/ngày) nên vẽ mỗi call một cột
+    được. YouTube 29.704 call thì KHÔNG — vừa không vẽ nổi (0,03px/cột) vừa bơm
+    cả vạn dòng qua mạng mỗi 15s, mà nó đã có biểu đồ units cộng dồn riêng.
+
+    Ghim: chỉ dịch vụ trong VE_TUNG_CALL được kèm moi_call, và có trần chống
+    ngày bất thường."""
+    for _ in range(3):
+        so_goi.ghi("radary", "youtube", duoi="k1", units=1, ok=True)
+    so_goi.ghi("content-ultimate", "llm", model="glm-5", ms=5800, ok=True)
+    so_goi.ghi("radary", "serp", duoi="66c7", ok=False, ma_loi="het quota")
+    tt = so_goi.tom_tat_hom_nay()
+
+    assert "moi_call" not in tt["youtube"], (
+        "YouTube KHÔNG được kèm từng call — 29k dòng/ngày qua mạng mỗi 15s")
+    assert len(tt["llm"]["moi_call"]) == 1
+    assert len(tt["serp"]["moi_call"]) == 1
+    c = tt["llm"]["moi_call"][0]
+    assert c["ms"] == 5800 and c["ok"] is True and c["nhan"] == "glm-5"
+    assert len(c["luc"]) == 8, f"cần HH:MM:SS để vẽ đúng mốc giờ, có {c['luc']!r}"
+    assert tt["serp"]["moi_call"][0]["ok"] is False
+
+
+def test_moi_call_co_tran_va_dem_phan_bi_cat(monkeypatch):
+    """Trần TOI_DA_CALL: ngày bất thường không bơm cả vạn dòng — và phần bị cắt
+    phải ĐẾM ĐƯỢC để UI nói thật "N call cũ không vẽ", không im lặng giấu."""
+    monkeypatch.setattr(so_goi, "TOI_DA_CALL", 5)
+    for _ in range(8):
+        so_goi.ghi("radary", "serp", duoi="k", ok=True)
+    tt = so_goi.tom_tat_hom_nay()
+    assert len(tt["serp"]["moi_call"]) == 5
+    assert tt["serp"]["moi_call_cat"] == 3
+    assert tt["serp"]["calls"] == 8, "tổng calls vẫn phải đếm đủ, không bị trần cắt"
