@@ -128,3 +128,29 @@ def test_route_khong_loopback_404():
 
 def test_route_thieu_truong_400():
     assert _post({"app": "x"}).status_code == 400
+
+
+def test_kiem_vet_do_TI_LE_khong_de_mot_ca_lat_ket_qua():
+    """LỖI THẬT tự bắt 02/09: hệ chạy 990 sự kiện 403, cơ chế xoay khóa hoạt
+    động đúng, nhưng phép kiểm cũ để MỘT ca cuối ngày không cứu được lật cả kết
+    quả thành SAI — xóa mất 989 ca đúng. Đo tỉ lệ: cứu được ≥90% là ĐẠT; dưới
+    ngưỡng (80%) mới là hỏng thật."""
+    # 9 ca cứu được + 2 ca không → 9/11 = 82% ≥ 80% → vẫn ĐẠT
+    for i in range(9):
+        so_goi.ghi("radary", "youtube", duoi="aaaa", ok=False, ma_loi="403 quota")
+        so_goi.ghi("radary", "youtube", duoi="bbbb", ok=True)
+    so_goi.ghi("radary", "youtube", duoi="aaaa", ok=False, ma_loi="403 quota")
+    so_goi.ghi("radary", "youtube", duoi="aaaa", ok=False, ma_loi="403 quota")
+    xk = so_goi.kiem_vet("radary")["xoay_khoa"]
+    assert xk["so_403"] == 11
+    assert xk["so_cuu_duoc"] == 9
+    assert xk["xoay_ok"] is True          # 82% ≥ ngưỡng 80%
+
+
+def test_kiem_vet_hong_that_khi_hau_het_khong_cuu_duoc():
+    """Đa số 403 không được cứu = cơ chế xoay khóa hỏng thật → phải báo SAI."""
+    for _ in range(8):
+        so_goi.ghi("radary", "youtube", duoi="aaaa", ok=False, ma_loi="403 quota")
+    so_goi.ghi("radary", "youtube", duoi="bbbb", ok=True)
+    xk = so_goi.kiem_vet("radary")["xoay_khoa"]
+    assert xk["xoay_ok"] is False and xk["so_cuu_duoc"] < xk["so_403"]

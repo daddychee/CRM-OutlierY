@@ -1,5 +1,5 @@
 {
- "_ghi_chu": "HE KIEM LOGIC radary (02/09 — Owner chot '16 logic = 16 so do'). Moi logic: loai goi/vet/bat_bien + canh (day tren so_do/radary.json — tram tong hop theo canh) + mo_ta + so_do {buoc[], kiem[]} voi kiem[i] ↔ cho[i]. GOI/BAT_BIEN qua cua kiem /api/kiem/<ma> cua app (CHI-DOC 0 quota); VET so goi qua noi='nen' /api/vet/so-goi. chua_kiem=true: logic goi ten nhung chua co duong kiem — hien CHUA trung thuc, khong bia.",
+ "_ghi_chu": "HE KIEM LOGIC radary (mo rong 02/09 sau khi Owner bao 'van thieu tinh nang va logic' — ra lai thay bang cu chi phu ~40% app). Moi logic: loai goi/vet/bat_bien + canh (day tren so_do/radary.json) + mo_ta + so_do {buoc[], kiem[]} voi kiem[i] <-> cho[i]. GOI/BAT_BIEN qua cua kiem /api/kiem/<ma> (CHI-DOC 0 quota); VET so goi qua noi='nen'. chua_kiem=true: logic goi ten nhung chua co duong kiem — hien CHUA trung thuc, khong bia.",
  "kich_ban": [
   {
    "ma": "du-lieu-co-workspace",
@@ -117,7 +117,7 @@
     "quet",
     "youtube"
    ],
-   "mo_ta": "Sau 403 quota key A, call kế cùng dịch vụ trong ≤5s phải OK với key KHÁC — đọc sổ gọi thật, 0 sự kiện 403 thì không phán.",
+   "mo_ta": "Sau 403 quota key A, call kế cùng dịch vụ trong ≤5s phải OK với key KHÁC — đọc sổ gọi thật. LƯU Ý ĐỌC SỐ: 0 sự kiện 403 thì phép kiểm KHÔNG phán (hiện ĐÚNG nhưng nghĩa là 'chưa được kiểm chứng hôm nay', không phải 'khỏe') — xem số chặng 'sự kiện 403 hôm nay' để biết.",
    "method": "GET",
    "duong": "/api/vet/so-goi/radary",
    "noi": "nen",
@@ -132,6 +132,10 @@
     [
      "sự kiện 403 hôm nay",
      "xoay_khoa.so_403"
+    ],
+    [
+     "cứu được",
+     "xoay_khoa.so_cuu_duoc"
     ]
    ],
    "so_do": {
@@ -148,19 +152,19 @@
      }
     ],
     "kiem": [
-     "call kế OK và dùng key KHÁC (0 sự kiện → không phán)"
+     "cứu được ≥80% sự kiện 403 (0 sự kiện → chưa kiểm chứng, không phán)"
     ]
    }
   },
   {
    "ma": "tier-thang-giang",
-   "ten": "Thăng/giáng tier T1–T4 đúng config",
+   "ten": "Thăng bậc T4 khi VPH vượt ngưỡng",
    "loai": "goi",
    "canh": [
     "db",
     "kq-alert"
    ],
-   "mo_ta": "Engine tier chạy thật trên video mẫu VPH ~13k > T4_vph 12k (DEFAULT_CFG) → phải ra bậc 4. 0 chạm DB, 0 quota.",
+   "mo_ta": "Engine tier chạy thật trên video mẫu VPH ~13k > T4_vph 12k (DEFAULT_CFG) → phải ra bậc 4. CHỈ phủ vế THĂNG — vế giáng + trần push nằm ở logic 'tier-giang-cap' (tách ra 02/09 vì tên cũ 'T1–T4' hứa rộng hơn thực kiểm, tạo cảm giác an toàn giả).",
    "method": "GET",
    "duong": "/api/kiem/tier-mau",
    "cho": [
@@ -245,8 +249,42 @@
     "db",
     "kq-alert"
    ],
-   "chua_kiem": true,
-   "ghi_chua": "DB chưa lưu MỐC THỜI ĐIỂM đánh dead nên không kiểm được 'sau khi dead thì hết tick' — cần thêm cột dead_ts"
+   "mo_ta": "Video đánh chết phải NGỪNG nhận tick — còn tick sau đó là vòng quét vẫn đốt quota cho video zombie. Mốc chết đọc từ events kind='dead' (nguồn series.py đang dùng) — KHÔNG cần thêm cột dead_ts như khai cũ (khai đó SAI, đã sửa 02/09).",
+   "method": "GET",
+   "duong": "/api/kiem/dead-ngung-tick",
+   "cho": [
+    [
+     "so_tick_sau_khi_chet",
+     "==",
+     0
+    ]
+   ],
+   "lay_chang": [
+    [
+     "video đã chết",
+     "so_video_dead"
+    ],
+    [
+     "tick lọt sau khi chết",
+     "so_tick_sau_khi_chet"
+    ]
+   ],
+   "so_do": {
+    "buoc": [
+     {
+      "ten": "Video dead=1"
+     },
+     {
+      "ten": "Mốc chết từ events"
+     },
+     {
+      "ten": "Đếm tick sau mốc +2h"
+     }
+    ],
+    "kiem": [
+     "0 tick nào ghi sau khi video đã chết"
+    ]
+   }
   },
   {
    "ma": "ung-vien-n-gram",
@@ -565,6 +603,313 @@
    ],
    "chua_kiem": true,
    "ghi_chua": "kiểm GỌI sẽ đốt tiền LLM mỗi 30' — chờ chuyển sang VẾT (lưu bản diễn giải gần nhất rồi soi mệnh lệnh 'nên làm')"
+  },
+  {
+   "ma": "vung-thi-truong-ep-that",
+   "ten": "Ép vùng/ngôn ngữ theo thị trường pool",
+   "loai": "bat_bien",
+   "canh": [
+    "quet",
+    "ket-outliery"
+   ],
+   "mo_ta": "NGUY HIỂM NHẤT: vung_ngon_ngu trả rỗng khi market lạ → 13 chỗ gọi rơi về IP máy chủ (VN), pool 'Mỹ' âm thầm đo thị trường Việt. Sự cố thật 21/08; vá cũ chỉ khai cứng 6 mã nên NGÁCH MỚI là tái phát.",
+   "method": "GET",
+   "duong": "/api/kiem/vung-thi-truong",
+   "cho": [
+    [
+     "so_market_khong_ep",
+     "==",
+     0
+    ]
+   ],
+   "lay_chang": [
+    [
+     "thị trường đang dùng",
+     "so_market"
+    ],
+    [
+     "không ép được",
+     "so_market_khong_ep"
+    ]
+   ],
+   "so_do": {
+    "buoc": [
+     {
+      "ten": "Mọi market trong DB"
+     },
+     {
+      "ten": "Ép vùng + ngôn ngữ"
+     }
+    ],
+    "kiem": [
+     "mọi thị trường ép được cả regionCode lẫn relevanceLanguage"
+    ]
+   }
+  },
+  {
+   "ma": "tier-giang-cap",
+   "ten": "Giáng bậc 2 kỳ + trần push T2/ngày",
+   "loai": "goi",
+   "canh": [
+    "db",
+    "kq-alert"
+   ],
+   "mo_ta": "Hai luật CHỐNG NHIỄU mà 'thăng bậc T4' không chạm: (1) hạ bậc phải 2 kỳ liên tiếp — hỏng thì alert nhấp nháy lên xuống; (2) quá trần T2/ngày chỉ ghi board không push — hỏng thì ntfy spam đến mức team tắt thông báo, mất cả hệ cảnh báo.",
+   "method": "GET",
+   "duong": "/api/kiem/tier-giang-cap",
+   "cho": [
+    [
+     "ky1_chua_giang",
+     "==",
+     true
+    ],
+    [
+     "ky2_giang",
+     "==",
+     true
+    ],
+    [
+     "cap_chan_push",
+     "==",
+     true
+    ]
+   ],
+   "lay_chang": [
+    [
+     "trần T2/ngày",
+     "t2_daily_cap"
+    ]
+   ],
+   "so_do": {
+    "buoc": [
+     {
+      "ten": "Video T4, VPH tụt mức T1"
+     },
+     {
+      "ten": "Kỳ 1: fail=1"
+     },
+     {
+      "ten": "Kỳ 2: hạ bậc"
+     },
+     {
+      "ten": "Thăng T2 khi hết trần"
+     }
+    ],
+    "kiem": [
+     "kỳ 1 CHƯA hạ (hysteresis chống nhấp nháy)",
+     "kỳ 2 mới hạ, ghi chú '2 kỳ'",
+     "hết trần → chỉ ghi board, không push"
+    ]
+   }
+  },
+  {
+   "ma": "hang-cho-khong-dot-quota",
+   "ten": "Pool chưa phân loại không bị quét tự động",
+   "loai": "goi",
+   "canh": [
+    "pool",
+    "quet"
+   ],
+   "mo_ta": "Pool 'Chưa phân loại' (có ngách, CHƯA xếp thị trường) là hàng chờ — scheduler không được chạm, nếu chạm là âm thầm đốt quota của pool thật. Quét TAY vẫn được (chính là bước lấy tiêu đề để phân loại).",
+   "method": "GET",
+   "duong": "/api/kiem/hang-cho",
+   "cho": [
+    [
+     "so_sai",
+     "==",
+     0
+    ]
+   ],
+   "lay_chang": [
+    [
+     "ca kiểm",
+     "so_ca"
+    ]
+   ],
+   "so_do": {
+    "buoc": [
+     {
+      "ten": "3 ca pool mẫu"
+     },
+     {
+      "ten": "Luật hàng chờ"
+     }
+    ],
+    "kiem": [
+     "cả 3 ca quyết định đúng (chờ / quét / quét)"
+    ]
+   }
+  },
+  {
+   "ma": "gop-bien-the-thuc-the",
+   "ten": "Gộp biến thể thực thể, KHÔNG gộp mù",
+   "loai": "goi",
+   "canh": [
+    "trending",
+    "kq-tu-khoa"
+   ],
+   "mo_ta": "japan/japanese là MỘT thực thể — không gộp thì 'polish' 5 video nằm ô ĐÃ-THỬ-KHÔNG-ĂN như thể chủ đề thất bại, gộp lại là 36 video = BÃO HÒA. Nhưng KHÔNG gộp mù: 'french' phần lớn bổ nghĩa French Guiana / French Polynesia — lãnh thổ KHÁC. Sai là bản đồ báo sai trạng thái cả chục nước, không dấu hiệu gì.",
+   "method": "GET",
+   "duong": "/api/kiem/gop-bien-the",
+   "cho": [
+    [
+     "gop_dung_bien_the",
+     "==",
+     true
+    ],
+    [
+     "khong_gop_mu",
+     "==",
+     true
+    ]
+   ],
+   "so_do": {
+    "buoc": [
+     {
+      "ten": "Kho title mẫu"
+     },
+     {
+      "ten": "japan + japanese"
+     },
+     {
+      "ten": "france + french"
+     }
+    ],
+    "kiem": [
+     "gộp đúng biến thể cùng thực thể",
+     "KHÔNG gộp khi là lãnh thổ khác"
+    ]
+   }
+  },
+  {
+   "ma": "nhip-dang-khong-mat-video",
+   "ten": "Nhịp đăng không mất/nhân đôi video",
+   "loai": "goi",
+   "canh": [
+    "db",
+    "kq-nhip-dang"
+   ],
+   "mo_ta": "Tổng phải bằng tổng các ô; đổi múi giờ chỉ DỊCH ô không đổi tổng; pool rỗng → không bịa 'giờ vàng'. Sai thì team đọc giờ đăng sai hoàn toàn mà số vẫn trông hợp lý.",
+   "method": "GET",
+   "duong": "/api/kiem/heatmap",
+   "cho": [
+    [
+     "tong_khop_o",
+     "==",
+     true
+    ],
+    [
+     "doi_tz_giu_tong",
+     "==",
+     true
+    ],
+    [
+     "rong_khong_bia_peak",
+     "==",
+     true
+    ]
+   ],
+   "lay_chang": [
+    [
+     "video vào lưới",
+     "tong"
+    ]
+   ],
+   "so_do": {
+    "buoc": [
+     {
+      "ten": "Pool lớn nhất"
+     },
+     {
+      "ten": "Lưới 7×24 giờ"
+     },
+     {
+      "ten": "Đổi múi giờ"
+     }
+    ],
+    "kiem": [
+     "tổng khớp tổng các ô",
+     "đổi múi giờ giữ nguyên tổng",
+     "pool rỗng → peak None, không bịa"
+    ]
+   }
+  },
+  {
+   "ma": "harvest-noi-tiep",
+   "ten": "Harvest PAUSE/ERROR nối tiếp đúng chỗ dừng",
+   "loai": "vet",
+   "canh": [
+    "harvest",
+    "kho-harvest"
+   ],
+   "chua_kiem": true,
+   "ghi_chua": "Job dừng giữa chừng phải nối tiếp từ checkpoint, không quét lại từ đầu (2500+ units/lượt) — sự cố kẹt ERROR vĩnh viễn 24/07. Cần cửa kiểm đọc harvest_jobs: job PAUSED/ERROR phải có checkpoint khác rỗng"
+  },
+  {
+   "ma": "harvest-hang-a",
+   "ten": "Chấm hạng A/B kênh harvest",
+   "loai": "goi",
+   "canh": [
+    "harvest",
+    "kq-kenh-moi"
+   ],
+   "chua_kiem": true,
+   "ghi_chua": "Hạng A = mạnh ≥2 trục VÀ ≥1 trục hiệu suất ('giống nội dung mà không ai xem thì không phải đối thủ'). Sai là team nhập nhầm kênh bảo tàng 7 view/ngày vào pool. Cần cửa kiểm gọi runner._grade với bộ kênh mẫu"
+  },
+  {
+   "ma": "nen-moi-cung-he-quy-chieu",
+   "ten": "Bội số nhịp mới so CÙNG hệ quy chiếu",
+   "loai": "goi",
+   "canh": [
+    "trending",
+    "kq-tu-khoa"
+   ],
+   "chua_kiem": true,
+   "ghi_chua": "Nâng tử số (vpd video MỚI của cụm) mà giữ mẫu số cả-đời → mọi cụm đều thoát bão hòa = biến tín hiệu thành nhiễu (sự cố Nepal 27/08). Cần cửa kiểm gọi trending.nen_moi: phải bằng trung vị video ≤30 ngày, và trả None khi <10 video mới"
+  },
+  {
+   "ma": "cum-nong-phan-vi-dot",
+   "ten": "Cụm nóng = p90 của chính đợt, so > nghiêm ngặt",
+   "loai": "goi",
+   "canh": [
+    "trending",
+    "kq-tu-khoa"
+   ],
+   "chua_kiem": true,
+   "ghi_chua": "Cùng họ bẫy với 'video nổ p90' nhưng ở mạch TRENDING (khác hàm, khác file) — đợt ai cũng chạy mạnh thì không có gì là nóng. Cần cửa kiểm gọi trending.cum_nong: 12 ứng viên bằng nhau → rỗng; <10 ứng viên → rỗng"
+  },
+  {
+   "ma": "chuyen-kenh-giu-lich-su",
+   "ten": "Chuyển kênh giữa pool không mất lịch sử",
+   "loai": "bat_bien",
+   "canh": [
+    "ngach-tt",
+    "db"
+   ],
+   "chua_kiem": true,
+   "ghi_chua": "Chuyển kênh phải dời channels+videos, CỘNG DỒN channel_stats, ghi pool_change cả 2 bên. Sai → volume ngách hụt/nhân đôi lặng lẽ. Cần cửa kiểm đếm channel_stats mồ côi (kênh đã chuyển mà số liệu ở lại)"
+  },
+  {
+   "ma": "verdict-gan-dung-song",
+   "ten": "Verdict người chấm gắn đúng sự kiện",
+   "loai": "bat_bien",
+   "canh": [
+    "team",
+    "kq-alert"
+   ],
+   "chua_kiem": true,
+   "ghi_chua": "Verdict gắn vào event T2+ đại diện của video; gắn nhầm → phản hồi người bị mất/lệch, vòng học của hệ hỏng âm thầm. Cần cửa kiểm: mọi dòng verdicts JOIN events phải có kind='tier' và payload.to >= 2"
+  },
+  {
+   "ma": "khoa-theo-viec-khong-roi-noi-bo",
+   "ten": "Khóa lấy từ KÉT, không rơi về sổ nội bộ",
+   "loai": "goi",
+   "canh": [
+    "harvest",
+    "ket-outliery"
+   ],
+   "chua_kiem": true,
+   "ghi_chua": "Gateway chết → DỪNG với thông điệp rõ, không âm thầm rơi về api_keys nội bộ (chống 2 nguồn khóa lệch nhau). Cần cửa kiểm gọi khoa_v3.lay_khoa với GATEWAY_URL cổng chết → phải NÉM lỗi, không trả rỗng"
   }
  ]
 }

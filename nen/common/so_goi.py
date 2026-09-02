@@ -23,6 +23,11 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 
+# Xoay khóa 403 ĐẠT khi cứu được ≥ ngưỡng này. Không đòi 100%: ngày cạn quota
+# thì ca cuối không còn key nào để xoay là bình thường — chỉ khi ĐA SỐ không
+# cứu được mới là cơ chế hỏng thật.
+TI_LE_XOAY_DAT = 0.8
+
 
 def _goc() -> Path:
     return Path(os.environ.get("SO_GOI_DIR", ROOT / "data" / "logs" / "so-goi"))
@@ -77,9 +82,12 @@ def kiem_vet(app: str) -> dict:
         if d.get("ms"):
             v["ms_max"] = max(v["ms_max"], d["ms"])
         v["luc_cuoi"] = (d.get("luc") or "")[11:16]
-    so_403 = 0
-    xoay_ok: bool | None = None
-    chi_tiet = "0 sự kiện 403 hôm nay — không có gì để xoay"
+    # ĐO TỈ LỆ, không để MỘT ca lật kết quả (lỗi thật tự bắt 02/09: hệ có 990
+    # sự kiện 403, xoay khóa chạy đúng, nhưng một ca cuối ngày không cứu được
+    # làm phép kiểm báo SAI — xóa mất 989 ca đúng). Ngày cuối quota cạn thì ca
+    # không-cứu-được là BÌNH THƯỜNG; chỉ khi ĐA SỐ không cứu mới là hỏng thật.
+    so_403 = so_cuu = 0
+    vd_cuu = vd_hong = ""
     for i, d in enumerate(dong):
         if d.get("ok", True) or "403" not in str(d.get("ma_loi", "")):
             continue
@@ -101,17 +109,23 @@ def kiem_vet(app: str) -> dict:
             if sau.get("ok", True) and sau.get("duoi") != d.get("duoi"):
                 cuu = sau
             break
-        if cuu is not None and xoay_ok is not False:
-            xoay_ok = True
-            chi_tiet = (f"403 key ••{d.get('duoi', '?')} → ≤5s key "
-                        f"••{cuu.get('duoi', '?')} OK")
+        if cuu is not None:
+            so_cuu += 1
+            vd_cuu = (f"403 key ••{d.get('duoi', '?')} → ≤5s key "
+                      f"••{cuu.get('duoi', '?')} OK")
         else:
-            xoay_ok = False
-            chi_tiet = (f"403 key ••{d.get('duoi', '?')} — call kế không cứu "
-                        f"(cùng key hoặc vẫn lỗi)")
+            vd_hong = f"403 key ••{d.get('duoi', '?')} — call kế không cứu"
+    if so_403 == 0:
+        xoay_ok: bool | None = None
+        chi_tiet = "0 sự kiện 403 hôm nay — CHƯA được kiểm chứng (không phải khỏe)"
+    else:
+        ti_le = so_cuu / so_403
+        xoay_ok = ti_le >= TI_LE_XOAY_DAT
+        chi_tiet = (f"cứu {so_cuu}/{so_403} ({ti_le:.0%}) — "
+                    + (vd_cuu if xoay_ok else vd_hong))
     return {"theo_viec": theo_viec,
-            "xoay_khoa": {"so_403": so_403, "xoay_ok": xoay_ok,
-                          "chi_tiet": chi_tiet}}
+            "xoay_khoa": {"so_403": so_403, "so_cuu_duoc": so_cuu,
+                          "xoay_ok": xoay_ok, "chi_tiet": chi_tiet}}
 
 
 def tom_tat_hom_nay() -> dict:

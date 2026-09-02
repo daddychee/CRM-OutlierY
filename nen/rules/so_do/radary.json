@@ -1,40 +1,315 @@
 {
-  "_ghi_chu": "SƠ ĐỒ VẬN HÀNH RadarY (02/09, Owner chốt bổ sung: mỗi logic phải chỉ rõ KẾT QUẢ). Cột 4 = kết quả đầu ra. Sai đâu sửa file này là sơ đồ đổi.",
-  "nut": [
-    { "ma": "team", "ten": "Team (L1 xem · L3+ thao tác)", "cot": 0, "loai": "nguoi" },
-
-    { "ma": "pool", "ten": "Pool kênh đối thủ", "cot": 1, "ghi_chu": "workspace theo thị trường · chỉ canh pool đã nhập" },
-    { "ma": "quet", "ten": "Quét định kỳ (scheduler)", "cot": 1, "suc_khoe": "quet", "ghi_chu": "video mới + ticks view theo tier" },
-    { "ma": "dang-nong", "ten": "Đang nóng + bản đồ cầu–cung", "cot": 1, "ghi_chu": "n-gram video nổ · 0 quota · probe 5 cụm/ngày" },
-    { "ma": "tra-cuu", "ten": "Tra cứu ngoài 1 cụm", "cot": 1, "ghi_chu": "leader kích · Trends + PAA + Reddit" },
-
-    { "ma": "db", "ten": "DB pool (ticks · events · verdicts)", "cot": 2, "loai": "kho", "suc_khoe": "du-lieu", "ghi_chu": "events append-only" },
-    { "ma": "tra-cuu-log", "ten": "tra_cuu_log (cache tra cứu)", "cot": 2, "loai": "kho", "ghi_chu": "xem lại 0 quota" },
-    { "ma": "dien-giai", "ten": "Diễn giải LLM (glm-5)", "cot": 2, "ghi_chu": "chỉ diễn giải — người chọn (A3)" },
-    { "ma": "youtube", "ten": "YouTube API (16+15 khóa két)", "cot": 2, "loai": "ngoai", "tuyen": "youtube-api" },
-    { "ma": "serp-apify", "ten": "SERP (2 khóa) · Apify Reddit (1)", "cot": 2, "loai": "ngoai" },
-
-    { "ma": "kq-alert", "ten": "Alert video đối thủ đang NỔ", "cot": 3, "loai": "ket_qua", "ghi_chu": "board + ntfy: tier lên, đổi title/thumb → biết ĐỀ TÀI đang ăn" },
-    { "ma": "kq-tu-khoa", "ten": "Danh sách từ khóa NÓNG + 4 ô", "cot": 3, "loai": "ket_qua", "ghi_chu": "Khoảng trống / Đỏ lửa / Bão hòa / Hoang → chọn đề tài" },
-    { "ma": "kq-ho-so", "ten": "Hồ sơ CẦU của một cụm", "cot": 3, "loai": "ket_qua", "ghi_chu": "trends 12T + câu hỏi thật + Reddit → quyết làm/bỏ" },
-    { "ma": "kq-nuoi-he", "ten": "Dữ liệu nuôi hệ", "cot": 3, "loai": "ket_qua", "ghi_chu": "Niche Research 8-phase · ThumbY video-đang-nổ" }
+ "_ghi_chu": "SO DO VAN HANH radary (mo rong 02/09 sau khi Owner bao 'van thieu tinh nang va logic' — ra lai thay so do cu chi phu ~40% app: thieu han Harvest / Trending / Niche Report / Ngach x Thi truong). 9 tab UI that: Board Alerts Trending Mapping Report DataPool Harvest Tuning Setting.",
+ "nut": [
+  {
+   "ma": "team",
+   "ten": "Team (L1 xem · L3+ thao tác)",
+   "cot": 0,
+   "loai": "nguoi"
+  },
+  {
+   "ma": "pool",
+   "ten": "Pool kênh đối thủ",
+   "cot": 1,
+   "ghi_chu": "workspace theo thị trường · chỉ canh pool đã nhập"
+  },
+  {
+   "ma": "quet",
+   "ten": "Quét định kỳ (scheduler)",
+   "cot": 1,
+   "suc_khoe": "quet",
+   "ghi_chu": "video mới + ticks view theo tier"
+  },
+  {
+   "ma": "dang-nong",
+   "ten": "Đang nóng + bản đồ cầu–cung",
+   "cot": 1,
+   "ghi_chu": "n-gram video nổ · 0 quota · probe 5 cụm/ngày"
+  },
+  {
+   "ma": "tra-cuu",
+   "ten": "Tra cứu ngoài 1 cụm",
+   "cot": 1,
+   "ghi_chu": "leader kích · Trends + PAA + Reddit"
+  },
+  {
+   "ma": "db",
+   "ten": "DB pool (ticks · events · verdicts)",
+   "cot": 2,
+   "loai": "kho",
+   "suc_khoe": "du-lieu",
+   "ghi_chu": "events append-only"
+  },
+  {
+   "ma": "tra-cuu-log",
+   "ten": "tra_cuu_log (cache tra cứu)",
+   "cot": 2,
+   "loai": "kho",
+   "ghi_chu": "xem lại 0 quota"
+  },
+  {
+   "ma": "dien-giai",
+   "ten": "Diễn giải LLM (glm-5)",
+   "cot": 2,
+   "ghi_chu": "chỉ diễn giải — người chọn (A3)"
+  },
+  {
+   "ma": "youtube",
+   "ten": "YouTube API (16+15 khóa két)",
+   "cot": 2,
+   "loai": "ngoai",
+   "tuyen": "youtube-api"
+  },
+  {
+   "ma": "serp-apify",
+   "ten": "SERP (2 khóa) · Apify Reddit (1)",
+   "cot": 2,
+   "loai": "ngoai"
+  },
+  {
+   "ma": "kq-alert",
+   "ten": "Alert video đối thủ đang NỔ",
+   "cot": 3,
+   "loai": "ket_qua",
+   "ghi_chu": "board + ntfy: tier lên, đổi title/thumb → biết ĐỀ TÀI đang ăn"
+  },
+  {
+   "ma": "kq-tu-khoa",
+   "ten": "Danh sách từ khóa NÓNG + 4 ô",
+   "cot": 3,
+   "loai": "ket_qua",
+   "ghi_chu": "Khoảng trống / Đỏ lửa / Bão hòa / Hoang → chọn đề tài"
+  },
+  {
+   "ma": "kq-ho-so",
+   "ten": "Hồ sơ CẦU của một cụm",
+   "cot": 3,
+   "loai": "ket_qua",
+   "ghi_chu": "trends 12T + câu hỏi thật + Reddit → quyết làm/bỏ"
+  },
+  {
+   "ma": "kq-nuoi-he",
+   "ten": "Dữ liệu nuôi hệ",
+   "cot": 3,
+   "loai": "ket_qua",
+   "ghi_chu": "Niche Research 8-phase · ThumbY video-đang-nổ"
+  },
+  {
+   "ma": "harvest",
+   "ten": "Harvest — thu thập kênh",
+   "cot": 1,
+   "ghi_chu": "job nền resumable · snowball tới hội tụ · chấm hạng A/B"
+  },
+  {
+   "ma": "trending",
+   "ten": "Trending — đo thị trường NGOÀI pool",
+   "cot": 1,
+   "ghi_chu": "Google Trends Now → đối chiếu pool · 'vì sao nóng'"
+  },
+  {
+   "ma": "niche-report",
+   "ten": "Niche Report 8 phase",
+   "cot": 1,
+   "ghi_chu": "tự sinh, ghi đè overview"
+  },
+  {
+   "ma": "ngach-tt",
+   "ten": "Ngách × Thị trường",
+   "cot": 1,
+   "ghi_chu": "tách pool · chuyển kênh giữ lịch sử"
+  },
+  {
+   "ma": "kho-harvest",
+   "ten": "Sổ harvest (job + checkpoint)",
+   "cot": 2,
+   "loai": "kho",
+   "ghi_chu": "PAUSE/ERROR nối tiếp đúng chỗ dừng"
+  },
+  {
+   "ma": "ket-outliery",
+   "ten": "Két khóa OUTLIERY (9000)",
+   "cot": 2,
+   "loai": "kho",
+   "ghi_chu": "cấp theo VIỆC · chết thì dừng, không rơi về sổ nội bộ"
+  },
+  {
+   "ma": "ngoai-trends",
+   "ten": "Google Trends · GDELT · Wikipedia",
+   "cot": 2,
+   "loai": "ngoai",
+   "ghi_chu": "nguồn 0-khóa, hay chết lặng"
+  },
+  {
+   "ma": "kq-kenh-moi",
+   "ten": "Kênh đối thủ đề xuất (hạng A/B)",
+   "cot": 3,
+   "loai": "ket_qua",
+   "ghi_chu": "advisory — người tự áp dụng vào pool"
+  },
+  {
+   "ma": "kq-nhip-dang",
+   "ten": "Nhịp đăng của pool (heatmap)",
+   "cot": 3,
+   "loai": "ket_qua",
+   "ghi_chu": "mô tả, KHÔNG khuyến nghị giờ đăng"
+  }
+ ],
+ "canh": [
+  [
+   "team",
+   "pool",
+   "thêm kênh"
   ],
-  "canh": [
-    ["team", "pool", "thêm kênh"],
-    ["team", "dang-nong"],
-    ["team", "tra-cuu", "kích 1 cụm"],
-    ["pool", "quet"],
-    ["quet", "youtube", "xoay khóa 403"],
-    ["quet", "db", "ticks + events"],
-    ["dang-nong", "db", "đọc 0 quota"],
-    ["dang-nong", "youtube", "probe 102u/cụm"],
-    ["tra-cuu", "serp-apify"],
-    ["tra-cuu", "tra-cuu-log"],
-    ["tra-cuu", "dien-giai"],
-    ["db", "kq-alert", "T2+ · ntfy"],
-    ["dang-nong", "kq-tu-khoa"],
-    ["dien-giai", "kq-ho-so"],
-    ["tra-cuu-log", "kq-ho-so"],
-    ["db", "kq-nuoi-he"]
+  [
+   "team",
+   "dang-nong"
+  ],
+  [
+   "team",
+   "tra-cuu",
+   "kích 1 cụm"
+  ],
+  [
+   "pool",
+   "quet"
+  ],
+  [
+   "quet",
+   "youtube",
+   "xoay khóa 403"
+  ],
+  [
+   "quet",
+   "db",
+   "ticks + events"
+  ],
+  [
+   "dang-nong",
+   "db",
+   "đọc 0 quota"
+  ],
+  [
+   "dang-nong",
+   "youtube",
+   "probe 102u/cụm"
+  ],
+  [
+   "tra-cuu",
+   "serp-apify"
+  ],
+  [
+   "tra-cuu",
+   "tra-cuu-log"
+  ],
+  [
+   "tra-cuu",
+   "dien-giai"
+  ],
+  [
+   "db",
+   "kq-alert",
+   "T2+ · ntfy"
+  ],
+  [
+   "dang-nong",
+   "kq-tu-khoa"
+  ],
+  [
+   "dien-giai",
+   "kq-ho-so"
+  ],
+  [
+   "tra-cuu-log",
+   "kq-ho-so"
+  ],
+  [
+   "db",
+   "kq-nuoi-he"
+  ],
+  [
+   "team",
+   "harvest",
+   "dán seed/pool"
+  ],
+  [
+   "harvest",
+   "ket-outliery",
+   "xin khóa theo việc"
+  ],
+  [
+   "harvest",
+   "youtube",
+   "search 100u/query"
+  ],
+  [
+   "harvest",
+   "kho-harvest",
+   "checkpoint mỗi vòng"
+  ],
+  [
+   "harvest",
+   "kq-kenh-moi",
+   "chấm hạng A/B"
+  ],
+  [
+   "team",
+   "trending",
+   "quét thị trường"
+  ],
+  [
+   "trending",
+   "ngoai-trends",
+   "Trends + vì sao nóng"
+  ],
+  [
+   "trending",
+   "db",
+   "đối chiếu pool"
+  ],
+  [
+   "trending",
+   "kq-tu-khoa",
+   "cụm nóng ngoài pool"
+  ],
+  [
+   "team",
+   "niche-report",
+   "sinh báo cáo ngách"
+  ],
+  [
+   "niche-report",
+   "dien-giai",
+   "lớp tường thuật"
+  ],
+  [
+   "niche-report",
+   "kq-nuoi-he",
+   "8 phase"
+  ],
+  [
+   "team",
+   "ngach-tt",
+   "tách pool · chuyển kênh"
+  ],
+  [
+   "ngach-tt",
+   "db",
+   "dời kênh + cộng dồn số liệu"
+  ],
+  [
+   "quet",
+   "ket-outliery",
+   "khóa YouTube"
+  ],
+  [
+   "db",
+   "kq-nhip-dang",
+   "giờ × thứ"
+  ],
+  [
+   "team",
+   "kq-alert",
+   "chấm verdict (vòng phản hồi)"
   ]
+ ]
 }
