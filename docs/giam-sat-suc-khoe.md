@@ -300,6 +300,15 @@
   Kho vector XANH (157 point) · Writer VÀNG ("writer đang MOCK") — đúng chỗ
   nghẽn hiện trên sơ đồ · Z.ai nét đứt 100ms. CHỜ OWNER duyệt khuôn để trải
   12 app còn lại (tôi soạn nháp JSON, Owner chỉnh luồng nghiệp vụ nếu lệch).
+  → Owner chê nhãn chồng → v2: đường vuông góc MỖI CẠNH MỘT LÀN, nhãn ẩn mặc
+  định (rê/bấm khối → luồng sáng + nhãn), chú giải text dưới sơ đồ.
+  → Owner CHỐT thiếu: "logic này cho ra KẾT QUẢ gì" → thêm loại nút `ket_qua`
+  (cột cuối, viền accent + tag KẾT QUẢ): radary 4 đầu ra (Alert video đối thủ
+  đang NỔ · Danh sách từ khóa NÓNG + 4 ô · Hồ sơ CẦU một cụm · Dữ liệu nuôi
+  hệ) + ai-agent 3 đầu ra (Câu trả lời có trích nguồn · Kho tri thức chuẩn
+  hóa RBAC · Bài học -PT). Sơ đồ radary là BẢN TRÌNH — Owner đang soát logic
+  (3 câu chưa chắc: harvest vs quet_dinh_ky · SEO có ăn dữ liệu radary? ·
+  luồng thiếu).
 
 ## Việc còn (cập nhật khuya 31/08)
 
