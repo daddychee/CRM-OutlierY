@@ -1,0 +1,117 @@
+{
+ "_ghi_chu": "SO DO VAN HANH tasky (02/09) — tu kiem ke code that (tuan.py/muc_tieu.py).",
+ "nut": [
+  {
+   "ma": "quan-ly",
+   "ten": "Owner / Manager / Leader",
+   "cot": 0,
+   "loai": "nguoi"
+  },
+  {
+   "ma": "nhan-vien",
+   "ten": "Nhân sự",
+   "cot": 0,
+   "loai": "nguoi"
+  },
+  {
+   "ma": "muc-tieu",
+   "ten": "Mục tiêu (Goal)",
+   "cot": 1
+  },
+  {
+   "ma": "giao-viec",
+   "ten": "Giao việc / phối hợp",
+   "cot": 1,
+   "ghi_chu": "2 luật quyền khác nhau"
+  },
+  {
+   "ma": "vong-doi",
+   "ten": "Vòng đời việc 9 trạng thái",
+   "cot": 1
+  },
+  {
+   "ma": "so-tuan",
+   "ten": "Sổ tuần YYYY-Www",
+   "cot": 2,
+   "loai": "kho"
+  },
+  {
+   "ma": "nhat-ky",
+   "ten": "nhat-ky.jsonl CHỈ-THÊM",
+   "cot": 2,
+   "loai": "kho"
+  },
+  {
+   "ma": "iam",
+   "ten": "Sổ IAM",
+   "cot": 3,
+   "loai": "ngoai",
+   "ghi_chu": "level + bộ phận thật"
+  },
+  {
+   "ma": "kq-bao-cao",
+   "ten": "Báo cáo tuần theo người",
+   "cot": 4,
+   "loai": "ket_qua",
+   "ghi_chu": "tỉ lệ None khi mẫu số rỗng"
+  },
+  {
+   "ma": "kq-tien-do",
+   "ten": "Tiến độ mục tiêu",
+   "cot": 4,
+   "loai": "ket_qua",
+   "ghi_chu": "người chốt, máy không tự"
+  },
+  {
+   "ma": "kq-vet",
+   "ten": "Vết ai giao/nhận/từ chối",
+   "cot": 4,
+   "loai": "ket_qua"
+  }
+ ],
+ "canh": [
+  [
+   "quan-ly",
+   "muc-tieu"
+  ],
+  [
+   "quan-ly",
+   "giao-viec"
+  ],
+  [
+   "giao-viec",
+   "iam",
+   "level + bộ phận"
+  ],
+  [
+   "giao-viec",
+   "so-tuan",
+   "sinh việc chờ nhận"
+  ],
+  [
+   "nhan-vien",
+   "vong-doi"
+  ],
+  [
+   "vong-doi",
+   "so-tuan"
+  ],
+  [
+   "vong-doi",
+   "nhat-ky",
+   "mỗi bước ghi vết"
+  ],
+  [
+   "so-tuan",
+   "kq-bao-cao"
+  ],
+  [
+   "muc-tieu",
+   "kq-tien-do"
+  ],
+  [
+   "nhat-ky",
+   "kq-vet"
+  ]
+ ]
+}

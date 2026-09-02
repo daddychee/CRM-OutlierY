@@ -1,0 +1,139 @@
+{
+ "_ghi_chu": "SO DO VAN HANH to-chuc (02/09) — tu kiem ke code that (kpi/cham_cong/luong/tai_chinh/vault).",
+ "nut": [
+  {
+   "ma": "manager",
+   "ten": "Manager+ (KPI)",
+   "cot": 0,
+   "loai": "nguoi"
+  },
+  {
+   "ma": "hr",
+   "ten": "HR / Kế toán",
+   "cot": 0,
+   "loai": "nguoi"
+  },
+  {
+   "ma": "kpi",
+   "ten": "Bảng KPI 4 nguồn",
+   "cot": 1,
+   "ghi_chu": "chỉ đọc, nguồn chết → '—'"
+  },
+  {
+   "ma": "cham-cong",
+   "ten": "Chấm công hiện diện",
+   "cot": 1,
+   "ghi_chu": "nhịp 5' + beacon"
+  },
+  {
+   "ma": "finance",
+   "ten": "Finance Hub",
+   "cot": 1,
+   "ghi_chu": "sổ chỉ-thêm, sửa = bút toán đảo"
+  },
+  {
+   "ma": "vault",
+   "ten": "Két tài khoản số",
+   "cot": 1,
+   "ghi_chu": "AES-GCM, chỉ Owner"
+  },
+  {
+   "ma": "so-cham-cong",
+   "ten": "Sổ chấm công + bản chốt",
+   "cot": 2,
+   "loai": "kho"
+  },
+  {
+   "ma": "so-tien",
+   "ten": "Sổ tiền CHỈ-THÊM",
+   "cot": 2,
+   "loai": "kho"
+  },
+  {
+   "ma": "iam",
+   "ten": "Sổ IAM (nen/iam)",
+   "cot": 3,
+   "loai": "ngoai",
+   "ghi_chu": "CHỈ ĐỌC, chết → nói thẳng"
+  },
+  {
+   "ma": "nguon-kpi",
+   "ten": "PlannerY · Content · DA",
+   "cot": 3,
+   "loai": "ngoai"
+  },
+  {
+   "ma": "kq-kpi",
+   "ten": "Bảng KPI kỳ (trung thực)",
+   "cot": 4,
+   "loai": "ket_qua"
+  },
+  {
+   "ma": "kq-luong",
+   "ten": "Bảng lương + phiếu đã duyệt",
+   "cot": 4,
+   "loai": "ket_qua"
+  },
+  {
+   "ma": "kq-so-tien",
+   "ten": "Sổ thu chi + P&L",
+   "cot": 4,
+   "loai": "ket_qua"
+  }
+ ],
+ "canh": [
+  [
+   "manager",
+   "kpi"
+  ],
+  [
+   "hr",
+   "finance"
+  ],
+  [
+   "hr",
+   "cham-cong"
+  ],
+  [
+   "hr",
+   "vault"
+  ],
+  [
+   "kpi",
+   "nguon-kpi",
+   "đọc 4 nguồn"
+  ],
+  [
+   "kpi",
+   "iam",
+   "danh sách người"
+  ],
+  [
+   "cham-cong",
+   "so-cham-cong",
+   "ghi nguyên tử throttle 60s"
+  ],
+  [
+   "finance",
+   "so-cham-cong",
+   "số ngày cho bảng lương"
+  ],
+  [
+   "finance",
+   "so-tien",
+   "bút toán"
+  ],
+  [
+   "kpi",
+   "kq-kpi"
+  ],
+  [
+   "finance",
+   "kq-luong"
+  ],
+  [
+   "so-tien",
+   "kq-so-tien"
+  ]
+ ]
+}

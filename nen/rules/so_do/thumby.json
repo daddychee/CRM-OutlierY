@@ -1,0 +1,79 @@
+{
+ "_ghi_chu": "SO DO VAN HANH thumby (02/09) — app nho nhat, KHONG co route ghi nao (test ghim).",
+ "nut": [
+  {
+   "ma": "packaging",
+   "ten": "Người làm packaging",
+   "cot": 0,
+   "loai": "nguoi"
+  },
+  {
+   "ma": "mo-phong",
+   "ten": "Mô phỏng vị trí YouTube",
+   "cot": 1,
+   "ghi_chu": "chạy TRONG trình duyệt"
+  },
+  {
+   "ma": "cung-chu-de",
+   "ten": "Tìm video nổ cùng chủ đề",
+   "cot": 1,
+   "ghi_chu": "n-gram trên title"
+  },
+  {
+   "ma": "trinh-duyet",
+   "ten": "Bộ nhớ trình duyệt",
+   "cot": 2,
+   "loai": "kho",
+   "ghi_chu": "ảnh KHÔNG rời máy"
+  },
+  {
+   "ma": "radary-db",
+   "ten": "RadarY DB (mode=ro)",
+   "cot": 3,
+   "loai": "ngoai"
+  },
+  {
+   "ma": "kq-so-sanh",
+   "ten": "So sánh A/B đúng cỡ thật",
+   "cot": 4,
+   "loai": "ket_qua",
+   "ghi_chu": "app KHÔNG chấm điểm"
+  },
+  {
+   "ma": "kq-doi-thu",
+   "ten": "Video đang nổ cùng chủ đề",
+   "cot": 4,
+   "loai": "ket_qua",
+   "ghi_chu": "<3 khớp → nói thẳng"
+  }
+ ],
+ "canh": [
+  [
+   "packaging",
+   "mo-phong",
+   "thả ảnh A/B"
+  ],
+  [
+   "mo-phong",
+   "trinh-duyet",
+   "FileReader, không upload"
+  ],
+  [
+   "packaging",
+   "cung-chu-de"
+  ],
+  [
+   "cung-chu-de",
+   "radary-db",
+   "truy vấn chỉ-đọc"
+  ],
+  [
+   "mo-phong",
+   "kq-so-sanh"
+  ],
+  [
+   "cung-chu-de",
+   "kq-doi-thu"
+  ]
+ ]
+}
