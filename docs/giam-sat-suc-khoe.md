@@ -309,6 +309,16 @@
   hóa RBAC · Bài học -PT). Sơ đồ radary là BẢN TRÌNH — Owner đang soát logic
   (3 câu chưa chắc: harvest vs quet_dinh_ky · SEO có ăn dữ liệu radary? ·
   luồng thiếu).
+  → **Owner chốt khuyết điểm lớn (02/09): canary mới kiểm HẠ TẦNG, chưa kiểm
+  LOGIC NGHIỆP VỤ** (RadarY chỉ 2 kịch bản trong khi có ~16 logic; "sợi dây"
+  sơ đồ trống logic). Owner muốn màn App = WORKSPACE kiểm logic từng bước.
+  Phân tích phản biện đã trình (chính đáng; 3 ranh giới: unit test ≠ canary
+  sống · logic tốn tiền kiểm bằng VẾT sổ · cần cửa kiểm per app). MOCKUP
+  workspace v1 (artifact 21c2353b): trạm kiểm trên sợi dây (✓/✗/? bấm được) +
+  panel bước (logic bằng lời + SỐ ĐO TỪNG CHẶNG 1.132→4.209→113→177→23 + kỳ
+  vọng ✓ + nút KIỂM BƯỚC NÀY + lịch sử) + BẢNG KIỂM KÊ 16 LOGIC RadarY với
+  loại kiểm GỌI/VẾT/BẤT BIẾN — bảng này đồng thời là bản Owner duyệt trước
+  khi mở cửa kiểm /api/kiem/<mã> trong app. CHỜ OWNER duyệt mockup + bảng.
 
 ## Việc còn (cập nhật khuya 31/08)
 
