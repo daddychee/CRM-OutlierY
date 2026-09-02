@@ -645,12 +645,14 @@ function renderApp(){
   veSoDo(d, cKq);
 }
 
-/* ── SƠ ĐỒ VẬN HÀNH SỐNG (02/09) — vẽ từ nen/rules/so_do/<slug>.json ── */
+/* ── SƠ ĐỒ VẬN HÀNH SỐNG v2 (02/09) — Owner chê nhãn chồng: đường gấp khúc
+   vuông góc mỗi cạnh MỘT LÀN riêng; nhãn ẨN mặc định, rê/bấm một khối thì
+   luồng của khối đó sáng + nhãn hiện; chú giải luồng text dưới sơ đồ. ── */
 function veSoDo(d, cKq){
   const box=$("soDoBox"); if(!box) return;
   const sd=(DATA.so_do||{})[d.slug];
   if(!sd||!sd.nut.length){
-    box.innerHTML=`<div class="note" style="margin:14px 0">App chưa khai sơ đồ — thêm nen/rules/so_do/${esc(d.slug)}.json (khuôn: ai-agent.json). Khối nào có binding suc_khoe/canary/tuyen sẽ tự tô màu trạng thái thật.</div>`;
+    box.innerHTML=`<div class="note" style="margin:14px 0">App chưa khai sơ đồ — thêm nen/rules/so_do/${esc(d.slug)}.json (khuôn: ai-agent.json). Khối có binding suc_khoe/canary/tuyen tự tô màu trạng thái thật.</div>`;
     return;
   }
   const modTT={}; for(const m of d.mo_dun||[]) modTT[m.ten]=m;
@@ -672,34 +674,48 @@ function veSoDo(d, cKq){
     }
     return {muc:"", tt:""};
   }
-  // layout cột
-  const BW=218,BH=54,GX=300,GY=80,X0=14,Y0=16;
+  const BW=218,BH=54,GX=330,GY=84,X0=14,Y0=16;
   const theoCot={};
   for(const n of sd.nut) (theoCot[n.cot||0]=theoCot[n.cot||0]||[]).push(n);
   const viTri={};
   let maxY=0, maxCot=0;
   for(const [cot,ds] of Object.entries(theoCot)){
     maxCot=Math.max(maxCot,+cot);
-    ds.forEach((n,i)=>{ viTri[n.ma]={x:X0+(+cot)*GX, y:Y0+i*GY};
+    ds.forEach((n,i)=>{ viTri[n.ma]={x:X0+(+cot)*GX, y:Y0+i*GY, cot:+cot};
       maxY=Math.max(maxY, Y0+i*GY+BH); });
   }
-  const W3=X0+(maxCot)*GX+BW+14, H3=maxY+16;
+  const W3=X0+maxCot*GX+BW+14, H3=maxY+16;
   const mauMuc={ok:"var(--ok)", warn:"var(--warn)", err:"var(--err)", "":"var(--line)"};
   const nenMuc={ok:"var(--ok-soft)", warn:"var(--warn-soft)", err:"var(--err-soft)", "":"var(--inset)"};
+
+  // LÀN riêng cho từng cạnh trong khe giữa 2 cột (không đường nào đè đường nào)
+  const lanTheoKhe={};
+  const canhVe=[];
+  sd.canh.forEach((c,idx)=>{
+    const a=viTri[c[0]], b=viTri[c[1]]; if(!a||!b) return;
+    const khe=Math.min(a.cot,b.cot);
+    const stt=(lanTheoKhe[khe]=(lanTheoKhe[khe]||0)+1);
+    canhVe.push({tu:c[0], den:c[1], nhan:c[2]||"", a, b, khe, stt, idx});
+  });
   let svg="";
-  // cạnh trước (nằm dưới nút)
-  for(const c of sd.canh){
-    const a=viTri[c[0]], b=viTri[c[1]]; if(!a||!b) continue;
-    const x1=a.x+BW, y1=a.y+BH/2, x2=b.x, y2=b.y+BH/2, mx=(x1+x2)/2;
-    svg+=`<path d="M${x1} ${y1} C ${mx} ${y1}, ${mx} ${y2}, ${x2} ${y2}" fill="none" stroke="var(--ink-3)" stroke-width="1.5" marker-end="url(#muiTen)" opacity=".75"/>`;
-    if(c[2]) svg+=`<text x="${mx}" y="${(y1+y2)/2-5}" text-anchor="middle" font-size="9" fill="var(--ink-3)">${esc(c[2])}</text>`;
+  for(const c of canhVe){
+    const soLan=lanTheoKhe[c.khe];
+    const kheRong=GX-BW;               // bề ngang khe giữa 2 cột
+    const lane=c.a.x+BW + kheRong*(c.stt/(soLan+1));
+    const x1=c.a.x+BW, y1=c.a.y+BH/2, x2=c.b.x, y2=c.b.y+BH/2;
+    svg+=`<g class="luong" data-tu="${esc(c.tu)}" data-den="${esc(c.den)}">
+      <path d="M${x1} ${y1} H${lane.toFixed(0)} V${y2} H${x2}" fill="none"
+        stroke="var(--ink-3)" stroke-width="1.5" marker-end="url(#muiTen)" opacity=".55"/>
+      ${c.nhan?`<text class="nhanLuong" x="${(lane+6).toFixed(0)}" y="${((y1+y2)/2+3).toFixed(0)}"
+        font-size="10" font-weight="600" fill="var(--ink)" opacity="0">${esc(c.nhan)}</text>`:""}
+    </g>`;
   }
-  // nút
   for(const n of sd.nut){
     const v=viTri[n.ma], st=trangThai(n);
     const netDut=n.loai==="ngoai"?' stroke-dasharray="6,4"':"";
     const bo=n.loai==="nguoi"?27:6;
-    svg+=`<g><rect x="${v.x}" y="${v.y}" width="${BW}" height="${BH}" rx="${bo}" fill="${nenMuc[st.muc]}" stroke="${mauMuc[st.muc]}" stroke-width="${st.muc?2:1.2}"${netDut}/>`;
+    svg+=`<g class="khoi" data-ma="${esc(n.ma)}" style="cursor:pointer">
+      <rect x="${v.x}" y="${v.y}" width="${BW}" height="${BH}" rx="${bo}" fill="${nenMuc[st.muc]}" stroke="${mauMuc[st.muc]}" stroke-width="${st.muc?2:1.2}"${netDut}/>`;
     if(n.loai==="kho") svg+=`<line x1="${v.x+8}" x2="${v.x+BW-8}" y1="${v.y+16}" y2="${v.y+16}" stroke="${mauMuc[st.muc]}" stroke-width="1" opacity=".4"/>`;
     if(st.muc) svg+=`<circle cx="${v.x+14}" cy="${v.y+15}" r="4.5" fill="${mauMuc[st.muc]}"/>`;
     svg+=`<text x="${v.x+(st.muc?25:12)}" y="${v.y+19}" font-size="12" font-weight="600" fill="var(--ink)">${esc(n.ten)}</text>`;
@@ -707,8 +723,35 @@ function veSoDo(d, cKq){
     if(phu) svg+=`<text x="${v.x+12}" y="${v.y+38}" font-size="9.5" fill="var(--ink-2)">${esc(phu.slice(0,40))}</text>`;
     svg+="</g>";
   }
-  box.innerHTML=`<svg viewBox="0 0 ${W3} ${H3}" style="width:100%;max-height:340px" preserveAspectRatio="xMidYMin meet">
-    <defs><marker id="muiTen" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto"><path d="M0 0 L7 3 L0 6 Z" fill="var(--ink-3)"/></marker></defs>${svg}</svg>`;
+  // chú giải luồng — nhìn tĩnh/in vẫn đủ thông tin, không cần rê chuột
+  const chuGiai=canhVe.filter(c=>c.nhan).map(c=>{
+    const tenTu=(sd.nut.find(n=>n.ma===c.tu)||{}).ten||c.tu;
+    const tenDen=(sd.nut.find(n=>n.ma===c.den)||{}).ten||c.den;
+    return `<span style="white-space:nowrap"><b>${esc(tenTu)}</b> → <b>${esc(tenDen)}</b> <span class="mut">· ${esc(c.nhan)}</span></span>`;
+  }).join(' <span class="mut" style="margin:0 8px">|</span> ');
+  box.innerHTML=`<svg id="soDoSvg" viewBox="0 0 ${W3} ${H3}" style="width:100%;max-height:340px" preserveAspectRatio="xMidYMin meet">
+    <defs><marker id="muiTen" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto"><path d="M0 0 L7 3 L0 6 Z" fill="var(--ink-3)"/></marker></defs>${svg}</svg>
+    ${chuGiai?`<div class="note" style="line-height:2">${chuGiai}</div>`:""}
+    <div class="note" style="margin-top:2px">rê chuột / bấm một khối để làm sáng các luồng của nó kèm nhãn</div>`;
+  // hover/click khối → luồng liên quan sáng + nhãn hiện
+  const svgEl=document.getElementById("soDoSvg");
+  function toSang(ma, bat){
+    svgEl.querySelectorAll(".luong").forEach(g=>{
+      const trung = ma && (g.dataset.tu===ma || g.dataset.den===ma);
+      const duong=g.querySelector("path"), nhan=g.querySelector(".nhanLuong");
+      duong.setAttribute("stroke", trung?"var(--accent)":"var(--ink-3)");
+      duong.setAttribute("stroke-width", trung?"2.5":"1.5");
+      duong.setAttribute("opacity", trung?"1":(bat?".18":".55"));
+      if(nhan) nhan.setAttribute("opacity", trung?"1":"0");
+    });
+  }
+  let ghim=null;
+  svgEl.querySelectorAll(".khoi").forEach(g=>{
+    g.addEventListener("mouseenter",()=>{ if(!ghim) toSang(g.dataset.ma,true); });
+    g.addEventListener("mouseleave",()=>{ if(!ghim) toSang(null,false); });
+    g.addEventListener("click",()=>{ ghim=(ghim===g.dataset.ma)?null:g.dataset.ma;
+      toSang(ghim, !!ghim); });
+  });
 }
 
 /* nút hard-test canary */
