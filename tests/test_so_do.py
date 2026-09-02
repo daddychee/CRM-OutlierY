@@ -233,3 +233,31 @@ def test_gauge_viewbox_khit_chan_cung_khong_thua_trang():
     assert -cao < int(mv.group(1)) < 0, (
         f"margin-top {mv.group(1)}px không hợp với svg cao {cao}px — "
         "số % sẽ rơi ra ngoài lòng cung")
+
+
+def test_cache_bat_duoc_ban_moi_khi_ghi_de_ngay_trong_cung_khoanh_khac(san):
+    """Lộ ra 02/09 qua test đỏ CHẬP CHỜN (chạy nhanh thì dính, chậm thì thoát).
+
+    Khóa cache cũ chỉ có mtime, mà mtime trên Windows thô — sửa file rồi đọc lại
+    ngay trong cùng khoảnh khắc là trúng khóa cũ, trả BẢN CŨ. Đo bản cũ: hỏng
+    45/300 lượt (15%). Ngoài đời nghĩa là Owner sửa JSON sơ đồ rồi F5 thấy y
+    nguyên, tưởng file không ăn.
+
+    Ghim: ghi đè liên tiếp thì lần đọc sau luôn ra bản MỚI."""
+    import json
+
+    hong = 0
+    for _ in range(120):
+        (san / "nhip.json").write_text(json.dumps({
+            "nut": [{"ma": "a", "ten": "A", "cot": 0},
+                    {"ma": "b", "ten": "B", "cot": 1}],
+            "canh": [["a", "b"]]}), encoding="utf-8")
+        so_do.doc("nhip")
+        (san / "nhip.json").write_text(json.dumps({
+            "nut": [{"ma": "a", "ten": "A", "cot": 0}],
+            "canh": [["a", "khong-co"]]}), encoding="utf-8")
+        if so_do.doc("nhip")["canh"] != []:
+            hong += 1
+    assert hong == 0, (
+        f"{hong}/120 lượt đọc trúng bản CŨ — khóa cache không phân biệt được "
+        "hai lần ghi sát nhau")

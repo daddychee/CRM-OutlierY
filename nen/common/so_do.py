@@ -30,7 +30,13 @@ def doc(slug: str) -> dict | None:
     duong = _goc() / f"{slug}.json"
     if not duong.exists():
         return None
-    khoa = (str(duong), duong.stat().st_mtime)
+    # Khóa cache gồm CẢ st_size, không chỉ mtime: mtime trên Windows thô (có khi
+    # tới ~1s), nên sửa file rồi đọc lại NGAY trong cùng khoảnh khắc sẽ trúng
+    # khóa cũ và trả bản CŨ — Owner sửa JSON sơ đồ rồi F5 thấy y nguyên, tưởng
+    # file không ăn. Lộ ra 02/09 qua test đỏ chập chờn (chạy nhanh thì dính,
+    # chạy chậm thì thoát). Kích thước đổi là bắt được phần lớn ca sửa thật.
+    st = duong.stat()
+    khoa = (str(duong), st.st_mtime, st.st_size)
     if khoa in _cache:
         return _cache[khoa]
     try:
