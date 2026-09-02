@@ -239,6 +239,9 @@ main{max-width:1340px}
       </div></div>
     </div>
 
+    <div class="sec"><h2>Sơ đồ vận hành (sống)</h2><small>khối tô màu theo trạng thái ĐO THẬT — suc_khoe · canary · đường truyền; sơ đồ khai ở nen/rules/so_do/&lt;app&gt;.json</small></div>
+    <div class="panel"><div class="pb chartbox" id="soDoBox"></div></div>
+
     <div class="sec"><h2>Module hạ tầng (suc_khoe)</h2><small>app tự khai — đọc sống mỗi 15 giây</small></div>
     <div class="panel"><div class="pb" style="padding-top:6px"><table class="tb" id="app-mods"></table></div></div>
 
@@ -638,6 +641,74 @@ function renderApp(){
     .slice(0,4).map(x=>{const y=dongSuCo(x);
       return `<tr><td class="mut" style="width:80px">${y.ngay} ${y.luc}</td><td>${esc(y.ct.slice(0,80))}</td></tr>`;})
     .join("")||'<tr><td class="mut">không có sự cố ghi sổ cho app này</td></tr>';
+
+  veSoDo(d, cKq);
+}
+
+/* ── SƠ ĐỒ VẬN HÀNH SỐNG (02/09) — vẽ từ nen/rules/so_do/<slug>.json ── */
+function veSoDo(d, cKq){
+  const box=$("soDoBox"); if(!box) return;
+  const sd=(DATA.so_do||{})[d.slug];
+  if(!sd||!sd.nut.length){
+    box.innerHTML=`<div class="note" style="margin:14px 0">App chưa khai sơ đồ — thêm nen/rules/so_do/${esc(d.slug)}.json (khuôn: ai-agent.json). Khối nào có binding suc_khoe/canary/tuyen sẽ tự tô màu trạng thái thật.</div>`;
+    return;
+  }
+  const modTT={}; for(const m of d.mo_dun||[]) modTT[m.ten]=m;
+  const caTT={}; for(const k of cKq||[]) caTT[k.ma]=k;
+  const netTT={}; for(const t of DATA.duong_truyen||[]) netTT[t.ma]=t;
+  function trangThai(n){
+    if(n.suc_khoe && modTT[n.suc_khoe]){
+      const t=modTT[n.suc_khoe];
+      return {muc:t.trang_thai==="ok"?"ok":t.trang_thai==="canh_bao"?"warn":"err", tt:t.chi_tiet};
+    }
+    if(n.canary && caTT[n.canary]){
+      const k=caTT[n.canary];
+      return {muc:k.ket_qua==="dung"?"ok":k.ket_qua==="sai"?"err":"warn",
+              tt:k.ket_qua==="dung"?"canary đúng":"canary "+k.ket_qua+": "+(k.chi_tiet||"")};
+    }
+    if(n.tuyen && netTT[n.tuyen]){
+      const t=netTT[n.tuyen];
+      return {muc:t.ok?"ok":"err", tt:t.ok?t.ms+" ms":"ĐỨT"};
+    }
+    return {muc:"", tt:""};
+  }
+  // layout cột
+  const BW=218,BH=54,GX=300,GY=80,X0=14,Y0=16;
+  const theoCot={};
+  for(const n of sd.nut) (theoCot[n.cot||0]=theoCot[n.cot||0]||[]).push(n);
+  const viTri={};
+  let maxY=0, maxCot=0;
+  for(const [cot,ds] of Object.entries(theoCot)){
+    maxCot=Math.max(maxCot,+cot);
+    ds.forEach((n,i)=>{ viTri[n.ma]={x:X0+(+cot)*GX, y:Y0+i*GY};
+      maxY=Math.max(maxY, Y0+i*GY+BH); });
+  }
+  const W3=X0+(maxCot)*GX+BW+14, H3=maxY+16;
+  const mauMuc={ok:"var(--ok)", warn:"var(--warn)", err:"var(--err)", "":"var(--line)"};
+  const nenMuc={ok:"var(--ok-soft)", warn:"var(--warn-soft)", err:"var(--err-soft)", "":"var(--inset)"};
+  let svg="";
+  // cạnh trước (nằm dưới nút)
+  for(const c of sd.canh){
+    const a=viTri[c[0]], b=viTri[c[1]]; if(!a||!b) continue;
+    const x1=a.x+BW, y1=a.y+BH/2, x2=b.x, y2=b.y+BH/2, mx=(x1+x2)/2;
+    svg+=`<path d="M${x1} ${y1} C ${mx} ${y1}, ${mx} ${y2}, ${x2} ${y2}" fill="none" stroke="var(--ink-3)" stroke-width="1.5" marker-end="url(#muiTen)" opacity=".75"/>`;
+    if(c[2]) svg+=`<text x="${mx}" y="${(y1+y2)/2-5}" text-anchor="middle" font-size="9" fill="var(--ink-3)">${esc(c[2])}</text>`;
+  }
+  // nút
+  for(const n of sd.nut){
+    const v=viTri[n.ma], st=trangThai(n);
+    const netDut=n.loai==="ngoai"?' stroke-dasharray="6,4"':"";
+    const bo=n.loai==="nguoi"?27:6;
+    svg+=`<g><rect x="${v.x}" y="${v.y}" width="${BW}" height="${BH}" rx="${bo}" fill="${nenMuc[st.muc]}" stroke="${mauMuc[st.muc]}" stroke-width="${st.muc?2:1.2}"${netDut}/>`;
+    if(n.loai==="kho") svg+=`<line x1="${v.x+8}" x2="${v.x+BW-8}" y1="${v.y+16}" y2="${v.y+16}" stroke="${mauMuc[st.muc]}" stroke-width="1" opacity=".4"/>`;
+    if(st.muc) svg+=`<circle cx="${v.x+14}" cy="${v.y+15}" r="4.5" fill="${mauMuc[st.muc]}"/>`;
+    svg+=`<text x="${v.x+(st.muc?25:12)}" y="${v.y+19}" font-size="12" font-weight="600" fill="var(--ink)">${esc(n.ten)}</text>`;
+    const phu=st.tt||n.ghi_chu||"";
+    if(phu) svg+=`<text x="${v.x+12}" y="${v.y+38}" font-size="9.5" fill="var(--ink-2)">${esc(phu.slice(0,40))}</text>`;
+    svg+="</g>";
+  }
+  box.innerHTML=`<svg viewBox="0 0 ${W3} ${H3}" style="width:100%;max-height:340px" preserveAspectRatio="xMidYMin meet">
+    <defs><marker id="muiTen" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto"><path d="M0 0 L7 3 L0 6 Z" fill="var(--ink-3)"/></marker></defs>${svg}</svg>`;
 }
 
 /* nút hard-test canary */

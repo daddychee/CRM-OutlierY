@@ -571,7 +571,7 @@ async def api_giam_sat_tong_hop(request: Request):
     from starlette.concurrency import run_in_threadpool
 
     from nen.common import (canary, dem_loi, duong_truyen, giam_sat, nhip_viec,
-                            so_goi)
+                            so_do, so_goi)
     user = await run_in_threadpool(_gate_nen, request, "general_ung_dung")
     if isinstance(user, Response):
         return user
@@ -591,6 +591,7 @@ async def api_giam_sat_tong_hop(request: Request):
         "ket": await run_in_threadpool(_ket_tom_tat),
         "so_goi": await run_in_threadpool(so_goi.tom_tat_hom_nay),
         "apify_credit": await run_in_threadpool(_apify_credit),
+        "so_do": await run_in_threadpool(so_do.tat_ca),
     })
 
 
