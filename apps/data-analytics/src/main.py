@@ -131,6 +131,20 @@ async def api_suc_khoe():
         ("llm-dien-giai", _llm), ("bao-cao", _bao_cao)])
 
 
+@app.get("/api/kiem/{ma}")
+async def api_kiem(ma: str, request: Request):
+    """CỬA KIỂM LOGIC (02/09 — "mỗi logic một sơ đồ"): trả SỐ ĐO THẬT của một
+    logic nghiệp vụ, CHỈ-ĐỌC 0 quota (engine thuần Python, KHÔNG gọi LLM);
+    canary nền so kỳ vọng. Chỉ loopback — cùng khuôn radary/ai-agent."""
+    from src import kiem
+    if request.client and request.client.host not in ("127.0.0.1", "::1"):
+        raise HTTPException(404)
+    ham = kiem.CAC_MA.get(ma)
+    if ham is None:
+        raise HTTPException(404, f"không có mã kiểm {ma!r}")
+    return ham()
+
+
 @app.get("/", response_class=HTMLResponse)
 async def goc():
     # Mặt tiền = trang chọn module 2 khối (user chốt 18/08).

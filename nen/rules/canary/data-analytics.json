@@ -1,5 +1,5 @@
 {
- "_ghi_chu": "CANARY LOGIC — moi logic mot MA TEN, kiem tu dong moi CANARY_CHU_KY (1800s) + nut hard-test tren Command Center. Kich ban CHI-DOC/dry-run, khong ghi du lieu that. Them phep do = them 1 dong o day, khong sua code. Kich ban goi tinh nang sau hon (vd POST voi input mau) them dan khi mo mach app do — so docs/giam-sat-suc-khoe.md.",
+ "_ghi_chu": "HE KIEM LOGIC data-analytics (mo rong 02/09 sau dot ra soat 11 app). Truoc do chi 2 kich ban doc co ha tang — engine la noi RA PHAN QUYET cho nguoi dung ma khong logic nao duoc canh. Cua kiem /api/kiem/<ma> CHI-DOC 0 quota, KHONG goi LLM (engine thuan Python).",
  "kich_ban": [
   {
    "ma": "dien-giai-khong-chet",
@@ -62,6 +62,304 @@
     ],
     "kiem": [
      "đọc được sổ báo cáo"
+    ]
+   }
+  },
+  {
+   "ma": "phan-quyet-huu-han",
+   "ten": "7 phán quyết là tập ĐÓNG",
+   "loai": "goi",
+   "canh": [
+    "engine",
+    "kq-phan-quyet"
+   ],
+   "mo_ta": "Engine KHÔNG được sinh phán quyết ngoài tập PHAN_QUYET — 'cỗ máy đẻ luật': một nhánh mới trả chuỗi lạ thì UI hiện phán quyết không ai định nghĩa, không neo hành động nào. Quét MỌI tổ hợp 4 trục × 4 trạng thái × 5 nhãn bệnh.",
+   "method": "GET",
+   "duong": "/api/kiem/phan-quyet-huu-han",
+   "cho": [
+    [
+     "so_ngoai_tap",
+     "==",
+     0
+    ],
+    [
+     "thieu_du_lieu_luon_dung",
+     "==",
+     true
+    ],
+    [
+     "so_to_hop",
+     ">=",
+     200
+    ]
+   ],
+   "lay_chang": [
+    [
+     "tổ hợp quét",
+     "so_to_hop"
+    ],
+    [
+     "ngoài tập",
+     "so_ngoai_tap"
+    ],
+    [
+     "phán quyết khai",
+     "so_phan_quyet_khai"
+    ]
+   ],
+   "so_do": {
+    "buoc": [
+     {
+      "ten": "4 trục × 4 trạng thái × 5 bệnh"
+     },
+     {
+      "ten": "Chạy ladder phán quyết"
+     },
+     {
+      "ten": "So với tập PHAN_QUYET"
+     }
+    ],
+    "kiem": [
+     "0 phán quyết ngoài tập đóng",
+     "nội dung '?' (mẫu nhỏ) LUÔN ra 'chưa đủ dữ liệu'",
+     "quét đủ ≥200 tổ hợp"
+    ]
+   }
+  },
+  {
+   "ma": "anh-xa-he-so-don-vi",
+   "ten": "Hệ số quy đổi %→tỷ lệ",
+   "loai": "goi",
+   "canh": [
+    "nap-report",
+    "anh-xa"
+   ],
+   "mo_ta": "Report ghi CTR 4.61 (%); thiếu hệ số 0.01 thì engine so 4.61 với ngưỡng 0.03 → MỌI video 'CTR xuất sắc', không luật nào khớp, báo cáo trắng mà HTTP vẫn 200. Report EN và VN phải ra CÙNG biến luật.",
+   "method": "GET",
+   "duong": "/api/kiem/anh-xa-don-vi",
+   "cho": [
+    [
+     "ctr_dung_don_vi",
+     "==",
+     true
+    ],
+    [
+     "en_va_vn_cung_bien",
+     "==",
+     true
+    ]
+   ],
+   "lay_chang": [
+    [
+     "CTR sau quy đổi",
+     "ctr_en"
+    ]
+   ],
+   "so_do": {
+    "buoc": [
+     {
+      "ten": "Cột EN + cột VN",
+      "ghi": "4.61%"
+     },
+     {
+      "ten": "Ánh xạ + nhân hệ số"
+     },
+     {
+      "ten": "Biến luật chuẩn"
+     }
+    ],
+    "kiem": [
+     "4.61% → 0.0461 (không phải 4.61)",
+     "EN và VN ra cùng giá trị"
+    ]
+   }
+  },
+  {
+   "ma": "van-mau-nho",
+   "ten": "Van chống bịa cỡ mẫu động",
+   "loai": "goi",
+   "canh": [
+    "engine",
+    "kq-phan-quyet"
+   ],
+   "mo_ta": "Ngưỡng ĐỘNG max(100, 10% median kênh) — video 40 view không được chấm retention/CTR; phán quyết trên nhiễu thống kê là bịa có vẻ khoa học. Ngưỡng động nên dễ hỏng khi refactor.",
+   "method": "GET",
+   "duong": "/api/kiem/van-mau-nho",
+   "cho": [
+    [
+     "so_sai",
+     "==",
+     0
+    ]
+   ],
+   "lay_chang": [
+    [
+     "ca kiểm",
+     "so_ca"
+    ],
+    [
+     "sàn tối thiểu",
+     "nguong_san"
+    ]
+   ],
+   "so_do": {
+    "buoc": [
+     {
+      "ten": "6 ca (view, median)"
+     },
+     {
+      "ten": "Luật đủ mẫu"
+     }
+    ],
+    "kiem": [
+     "cả 6 ca quyết định đúng (kể cả median thiếu → dùng sàn)"
+    ]
+   }
+  },
+  {
+   "ma": "baseline-khai-nguon",
+   "ten": "Baseline 3 lớp KHAI nguồn đang so",
+   "loai": "goi",
+   "canh": [
+    "anh-xa",
+    "engine"
+   ],
+   "mo_ta": "Video nhóm 'dài' bị so với median toàn kênh mà KHÔNG nói → diễn giải LLM viết 'so với kênh' trong khi số là nhóm khác; người đọc tin nhầm căn cứ. Nhóm thiếu mẫu phải LÙI về toàn kênh và ghi rõ.",
+   "method": "GET",
+   "duong": "/api/kiem/baseline-nguon",
+   "cho": [
+    [
+     "so_sai",
+     "==",
+     0
+    ],
+    [
+     "luon_khai_nguon",
+     "==",
+     true
+    ]
+   ],
+   "lay_chang": [
+    [
+     "ca kiểm",
+     "so_ca"
+    ]
+   ],
+   "so_do": {
+    "buoc": [
+     {
+      "ten": "Baseline 3 lớp"
+     },
+     {
+      "ten": "Chọn theo mục đích"
+     },
+     {
+      "ten": "Lùi khi nhóm thiếu mẫu"
+     }
+    ],
+    "kiem": [
+     "chọn đúng lớp + lùi đúng",
+     "LUÔN trả chuỗi khai nguồn"
+    ]
+   }
+  },
+  {
+   "ma": "che-do-chi-so-khong-phan-quyet",
+   "ten": "Chưa monetize → không phán quyết",
+   "loai": "goi",
+   "canh": [
+    "engine",
+    "kq-chi-so"
+   ],
+   "mo_ta": "Kênh ươm mầm/sandbox: Owner chốt 'số chưa chính xác, KHÔNG khuyến nghị'. Rẽ nhánh chỉ-số phải chặn TUYỆT ĐỐI mọi phán quyết + mọi lời gọi LLM — rò một phán quyết là đưa lời khuyên trên dữ liệu vô nghĩa, và tốn tiền token.",
+   "method": "GET",
+   "duong": "/api/kiem/che-do-chi-so",
+   "cho": [
+    [
+     "che_do",
+     "==",
+     "chi_so"
+    ],
+    [
+     "so_phan_quyet_ro_ri",
+     "==",
+     0
+    ]
+   ],
+   "lay_chang": [
+    [
+     "video xử lý",
+     "so_video"
+    ]
+   ],
+   "so_do": {
+    "buoc": [
+     {
+      "ten": "Kênh ươm mầm, không cột tiền"
+     },
+     {
+      "ten": "Rẽ nhánh SỚM"
+     },
+     {
+      "ten": "Bảng chỉ số (không phán quyết)"
+     }
+    ],
+    "kiem": [
+     "chế độ = chỉ-số",
+     "0 video rò phán quyết"
+    ]
+   }
+  },
+  {
+   "ma": "so-sanh-ky-chan-chong-lan",
+   "ten": "So sánh 2 kỳ — bẫy cửa sổ trượt",
+   "loai": "goi",
+   "canh": [
+    "so-sanh-ky",
+    "kq-so-sanh"
+   ],
+   "mo_ta": "Report 28 ngày xuất cách nhau 1 tuần CHỒNG 21 ngày; so ngây thơ ra 'tăng trưởng +300%' hoàn toàn ảo mà KHÔNG dấu hiệu nào là sai. Loại sai lặng lẽ nguy hiểm nhất app: người ra quyết định kinh doanh trên số ảo. 5 van chặn cứng.",
+   "method": "GET",
+   "duong": "/api/kiem/so-sanh-ky",
+   "cho": [
+    [
+     "so_sai",
+     "==",
+     0
+    ],
+    [
+     "bat_duoc_chong_lan",
+     "==",
+     true
+    ],
+    [
+     "ca_hop_le_ra_so",
+     "==",
+     true
+    ]
+   ],
+   "lay_chang": [
+    [
+     "ca kiểm",
+     "so_ca"
+    ]
+   ],
+   "so_do": {
+    "buoc": [
+     {
+      "ten": "5 ca hỏng + 1 ca lành"
+     },
+     {
+      "ten": "Van chặn cứng"
+     },
+     {
+      "ten": "Chỉ ca lành mới ra số"
+     }
+    ],
+    "kiem": [
+     "mọi ca hỏng bị chặn (kể cả CHỒNG LẤN 21 ngày)",
+     "bắt đúng ca chồng lấn",
+     "ca hợp lệ vẫn ra số bình thường"
     ]
    }
   }
