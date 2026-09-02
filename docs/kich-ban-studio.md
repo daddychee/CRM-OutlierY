@@ -1138,3 +1138,20 @@ hơn ~40% + brief đậm số hơn, nhưng khung mỏng và DÍNH contentFilter 
 Tibet (5.3 cùng chủ đề không dính — điểm cộng lớn cho niche nhạy cảm TQ).
 Lượt 5.2 đồng thời là kiểm chứng sống 2 lưới 31/08: gói chung bị chặn → viết
 cách ly 7 beat tự chạy có tiến độ; beat chết filter → báo lỗi thật trong bước.
+
+### 15.14 PHẢN BIỆN HỌ BỆNH THINKING + QUYẾT ĐỊNH TẮT MẶC ĐỊNH (02/09)
+
+Ba sự cố sản xuất trong 2 ngày cùng gốc (content rỗng → 5.3 cấm disable → chương
+19 ký tự) đều được vá ở tầng LƯỚI CỨU — phản biện: đó là chữa triệu chứng, bệnh
+nằm ở LƯỢT ĐẦU: Z.ai TỰ BẬT thinking cho mọi model GLM. Số đo:
+- Usage 2 ngày: 88% output token là suy nghĩ ngầm (209.546/237.456) — trả tiền
+  gấp ~8 lần phần chữ nhận được.
+- Cặp đo sống cùng prompt (glm-5.2): BẬT = 26,3s, 2.000/2.000 token suy nghĩ,
+  0 ký tự văn (tái hiện đúng bệnh); TẮT = 5,2s, 192 token, 918 ký tự văn.
+QUYẾT ĐỊNH: tắt thinking MẶC ĐỊNH từ lượt đầu cho mọi call GLM ("sửa ở nguồn");
+`GLM_THINKING=auto` trong .env để trả về hành vi provider khi thí nghiệm; chuỗi
+cứu 2 nấc (disabled → 400/1210 → reasoning_effort=low) giữ nguyên làm lưới.
+VỀ CÂU "CÓ CỐ CHẤP GLM?": V3 hiện CHỈ có key GLM — chưa phải lựa chọn. Khuyến
+nghị: giữ GLM (đã tắt thinking) làm ngựa kéo vì rẻ; Owner cấp key Claude/Gemini
+để (a) A/B chất lượng thật (việc treo từ 23/08), (b) đường thoát contentFilter
+1301 với đề tài nhạy cảm TQ — rủi ro CHIẾN LƯỢC không vá được bằng code.
