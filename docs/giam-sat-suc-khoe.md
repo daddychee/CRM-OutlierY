@@ -452,3 +452,49 @@ sai tên** (`kq-tk`→`kq-tu-khoa`, `cache`→`tra-cuu-log`, `serp`→`serp-apif
 **Độ phủ sau rà**: ai-agent 9/17 dây · radary 8/13 · các app khác 1-2/n (mới có
 canary hạ tầng). Dây còn `?` giờ đúng là chỗ THẬT SỰ chưa có logic nào — không còn
 `?` giả do khai thiếu. `app-mau` không cần sơ đồ (app mẫu, không phải app thật).
+
+### 02/09 (tiếp 2) — OWNER PHÊ "RadarY vẫn thiếu tính năng và logic" → RÀ LẠI, ĐÚNG
+
+Owner nghi ngờ bảng kiểm kê RadarY. Rà lại bằng agent đọc toàn bộ code: **app có
+80 route + 9 tab thật** (Board · Alerts · Trending · Mapping · Report · Data Pool ·
+Harvest · Tuning · Setting) trong khi sơ đồ chỉ 14 nút — **phủ ~40%**.
+
+**BỐN MẠCH NGHIỆP VỤ LỚN bị bỏ sót hoàn toàn** (0 nút, 0 dây):
+- **Harvest** ~800 dòng, 5 module — pipeline thu kênh 3 tầng (vân tay nội dung →
+  snowball centroid đóng băng → khán giả co-occurrence), 7 route riêng
+- **Trending** **1006 dòng** (module lớn thứ 3 app) — đo thị trường NGOÀI pool, có
+  **3 luật riêng** đều là bẫy đã nổ thật: từ điển thực thể phải theo từng pool (sự
+  cố 21/08 "từ khóa US lọt sang Spain"), ngưỡng lấy từ phân vị của chính pool (đo
+  23/08: ngưỡng cố định ôm 36% ngách này nhưng 60% ngách kia)
+- **Niche Report** 8 phase tự sinh · **Ngách × Thị trường** (chuyển kênh giữ lịch sử)
+
+**BA KHAI SAI trong bảng cũ** (nghiêm trọng — tạo cảm giác an toàn giả):
+1. `video-dead` ghi "không kiểm được, cần thêm cột `dead_ts`" — **SAI**:
+   `series.py:105-112` đã đọc `events kind='dead'` để lấy mốc. Kiểm được ngay.
+2. `tier-thang-giang` tên hứa "T1–T4" nhưng chỉ kiểm MỘT đường thăng lên T4; toàn
+   bộ **giáng bậc** (hysteresis 2 kỳ) + **trần push T2/ngày** không được chạm →
+   đổi tên `tier-thang-t4` + tách logic mới `tier-giang-cap`.
+3. `xoay-khoa-403` dùng `!= false` nên **vĩnh viễn xanh** khi 0 sự cố 403.
+
+**Sơ đồ 14→23 nút / 33 dây · kịch bản 17→29 logic** (18 có đường kiểm, 11
+`chua_kiem` nêu rõ cần gì). Sáu cửa kiểm mới trong `radary/kiem.py`.
+
+**HỆ KIỂM BẮT ĐƯỢC 2 LỖI THẬT ngay lượt chạy đầu** — đúng việc nó sinh ra để làm:
+- **`TT-DEU` không ép được vùng**: đế có 5 thị trường, `MA_VUNG` khai cứng chỉ 6 mã
+  và **thiếu Đức** → pool Đức gọi YouTube KHÔNG có `regionCode`, rơi về IP máy chủ
+  (VN). **Đúng họ sự cố 21/08**, tái phát y như mô tả logic đã cảnh báo. Vá gốc +
+  test ghim `test_moi_thi_truong_trong_de_deu_ep_duoc_vung`.
+- **`kiem_vet` để MỘT ca lật kết quả**: hệ có 990 sự kiện 403, xoay khóa chạy đúng,
+  nhưng một ca cuối ngày không cứu được làm phép kiểm báo SAI — **xóa mất 989 ca
+  đúng**. Sửa: đo **TỈ LỆ** (`TI_LE_XOAY_DAT=0.8`), ngày cạn quota thì ca cuối
+  không xoay được là bình thường; chỉ khi ĐA SỐ không cứu mới là hỏng thật.
+
+**Nghiệm thu sống sau khi vá: 18 ĐÚNG / 0 SAI / 11 CHƯA** — xoay khóa cứu 938/998
+(94%), thị trường ép được 4/4, nhịp đăng 5.990 video vào lưới không mất.
+Test: radary 252 pass · nền 18 pass (so_do + canary) · so_goi 11 pass.
+
+**BÀI HỌC**: kiểm kê bằng agent đọc code **một lượt là chưa đủ** — lần đầu phủ 40%
+mà bảng trông vẫn "đầy". Dấu hiệu nhận biết thiếu: **đếm route và tab UI thật rồi
+so với số nút trên sơ đồ**; lệch nhiều lần là chắc chắn sót mạch. Và `chua_kiem`
+phải rà lại định kỳ — có cái ghi "không kiểm được" chỉ vì chưa tìm đúng nguồn dữ
+liệu đã có sẵn.
