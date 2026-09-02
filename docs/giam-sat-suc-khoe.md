@@ -290,6 +290,16 @@
   đầu bảng Dịch vụ ngoài (đỏ SẮP CẠN khi <$1). Bẫy đo thật: tài khoản chưa
   tiêu kỳ này → currentBillingPeriod RỖNG = đã dùng $0 (không trả None oan).
   Nghiệm thu sống: FREE · còn $5/$5.
+- **02/09/2026 — SƠ ĐỒ VẬN HÀNH SỐNG per app** (commit 92562b6, Owner đặt
+  hàng "hiện sơ đồ vận hành từng app"). Luật ngoài code nen/rules/so_do/
+  <slug>.json: nút theo CỘT (người dùng → tính năng → lõi → dịch vụ ngoài) +
+  cạnh có nhãn; binding suc_khoe/canary/tuyen → khối TÔ MÀU trạng thái đo
+  thật — nhìn sơ đồ thấy ngay nghẽn ở khâu nào. Nút thiếu trường/cạnh mồ côi
+  bỏ qua (sửa JSON tay không vỡ UI); test ghim mọi binding của sơ đồ mẫu phải
+  trỏ thứ CÓ THẬT. Mẫu ai-agent nghiệm thu sống: Hỏi–đáp XANH (canary đúng) ·
+  Kho vector XANH (157 point) · Writer VÀNG ("writer đang MOCK") — đúng chỗ
+  nghẽn hiện trên sơ đồ · Z.ai nét đứt 100ms. CHỜ OWNER duyệt khuôn để trải
+  12 app còn lại (tôi soạn nháp JSON, Owner chỉnh luồng nghiệp vụ nếu lệch).
 
 ## Việc còn (cập nhật khuya 31/08)
 
