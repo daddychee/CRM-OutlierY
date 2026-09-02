@@ -1,5 +1,5 @@
 {
- "_ghi_chu": "CANARY LOGIC — moi logic mot MA TEN, kiem tu dong moi CANARY_CHU_KY (1800s) + nut hard-test tren Command Center. Kich ban CHI-DOC/dry-run, khong ghi du lieu that. Them phep do = them 1 dong o day, khong sua code. Kich ban goi tinh nang sau hon (vd POST voi input mau) them dan khi mo mach app do — so docs/giam-sat-suc-khoe.md.",
+ "_ghi_chu": "HE KIEM LOGIC video-review (mo rong 02/09 sau dot ra soat 11 app). Truoc do 2 kich ban, ca hai do HA TANG (goc NAS doc duoc? ffprobe co ton tai?) — khong phep nao cham nghiep vu, trong khi sai mot chot o day la MAT BAN GOC tren kho cong ty (NAS khong co Recycle Bin). Cua kiem /api/kiem/<ma> CHI-DOC 0 quota — ham thuan + thu muc tam, khong dung NAS/SQLite that.",
  "kich_ban": [
   {
    "ma": "nas-doc-duoc",
@@ -62,6 +62,220 @@
     ],
     "kiem": [
      "ffprobe gọi được"
+    ]
+   }
+  },
+  {
+   "ma": "van-tay-chi-dung-luong",
+   "ten": "Vân tay chỉ tin DUNG LƯỢNG",
+   "loai": "goi",
+   "canh": [
+    "lien-ket",
+    "so-sqlite"
+   ],
+   "mo_ta": "Tin mtime → la 'file bị ghi đè' OAN mỗi lần NAS nhích ngày sửa (sự cố 26/08: Explorer đặt sẵn dung lượng đầy đủ nhưng mtime còn chạy 3 phút); người dùng học cách bỏ qua cảnh báo, rồi lần ghi đè THẬT cũng bị bỏ qua. Ngược lại dung lượng khác PHẢI báo — không thì bình luận gắn mốc giây trỏ vào bản khác.",
+   "method": "GET",
+   "duong": "/api/kiem/van-tay-dung-luong",
+   "cho": [
+    [
+     "mtime_lech_khong_bao",
+     "==",
+     true
+    ],
+    [
+     "dung_luong_khac_thi_bao",
+     "==",
+     true
+    ]
+   ],
+   "so_do": {
+    "buoc": [
+     {
+      "ten": "File mẫu trong NAS tạm"
+     },
+     {
+      "ten": "mtime lệch 1h, dung lượng khớp"
+     },
+     {
+      "ten": "dung lượng khác"
+     }
+    ],
+    "kiem": [
+     "mtime lệch một mình → KHÔNG báo (lành tính)",
+     "dung lượng khác → PHẢI báo đổi"
+    ]
+   }
+  },
+  {
+   "ma": "ngoai-goc-nas-bi-chan",
+   "ten": "Đường ngoài gốc NAS bị chặn",
+   "loai": "goi",
+   "canh": [
+    "lien-ket",
+    "nas"
+   ],
+   "mo_ta": "Rào DUY NHẤT chặn đọc/xóa file bất kỳ trên máy chủ. Route dịch thành 404 LẶNG LẼ (không 403 — 403 lộ ra 'có thứ gì đó ở đây', thành oracle dò ổ đĩa).",
+   "method": "GET",
+   "duong": "/api/kiem/ngoai-goc-404",
+   "cho": [
+    [
+     "so_sai",
+     "==",
+     0
+    ]
+   ],
+   "lay_chang": [
+    [
+     "ca kiểm",
+     "so_ca"
+    ]
+   ],
+   "so_do": {
+    "buoc": [
+     {
+      "ten": "3 đường mẫu"
+     },
+     {
+      "ten": "Ép nằm trong gốc"
+     }
+    ],
+    "kiem": [
+     "đường trong gốc qua, ../.. và ..\\.. đều bị chặn"
+    ]
+   }
+  },
+  {
+   "ma": "canh-bao-h265",
+   "ten": "H.265/HEVC phải bị cảnh báo",
+   "loai": "goi",
+   "canh": [
+    "lien-ket",
+    "ffmpeg"
+   ],
+   "mo_ta": "Chrome/Edge phát HEVC ra TIẾNG + MÀN HÌNH ĐEN và KHÔNG bắn sự kiện lỗi — kiểu hỏng tệ nhất. Bảng CODEC_PHAT_DUOC lỡ thêm 'hevc' là tắt cảnh báo TOÀN HỆ mà canary hạ tầng (chỉ kiểm ffprobe tồn tại) không hề biết.",
+   "method": "GET",
+   "duong": "/api/kiem/canh-bao-codec",
+   "cho": [
+    [
+     "so_sai",
+     "==",
+     0
+    ],
+    [
+     "hevc_khong_trong_bang",
+     "==",
+     true
+    ]
+   ],
+   "lay_chang": [
+    [
+     "codec phát được",
+     "so_codec_phat_duoc"
+    ]
+   ],
+   "so_do": {
+    "buoc": [
+     {
+      "ten": "5 codec mẫu"
+     },
+     {
+      "ten": "Bảng CODEC_PHAT_DUOC"
+     }
+    ],
+    "kiem": [
+     "hevc/h265 có cảnh báo, h264/av1 không",
+     "hevc KHÔNG nằm trong bảng phát được"
+    ]
+   }
+  },
+  {
+   "ma": "xoa-an-toan-3-chot",
+   "ten": "Ba chốt an toàn của đường dọn NAS",
+   "loai": "goi",
+   "canh": [
+    "duyet",
+    "nhat-ky-xoa"
+   ],
+   "mo_ta": "Hỏng chốt nào cũng MẤT BẢN GỐC (không Recycle Bin trên NAS): (1) chỉ xóa đuôi video+phụ đề, không .prproj/.aep/.psd — mất công trình dựng; (2) chỉ nhận đúng chữ 'feedback', nhận 'FB' là mở đường xóa cả thư mục tập chứa bản master; (3) duyệt đúng 3 nấc — 'can_sua' đã nghỉ hưu, hồi sinh là hỏng câm.",
+   "method": "GET",
+   "duong": "/api/kiem/xoa-an-toan",
+   "cho": [
+    [
+     "khong_xoa_du_an_dung",
+     "==",
+     true
+    ],
+    [
+     "feedback_dung_mot_ten",
+     "==",
+     true
+    ],
+    [
+     "dung_3_nac",
+     "==",
+     true
+    ]
+   ],
+   "lay_chang": [
+    [
+     "đuôi xóa được",
+     "so_duoi_xoa_duoc"
+    ]
+   ],
+   "so_do": {
+    "buoc": [
+     {
+      "ten": "Bảng đuôi xóa được"
+     },
+     {
+      "ten": "Tên thư mục Feedback"
+     },
+     {
+      "ten": "Tập trạng thái duyệt"
+     }
+    ],
+    "kiem": [
+     "0 đuôi dự án dựng lọt vào danh sách xóa được",
+     "chỉ đúng một tên 'feedback'",
+     "đúng 3 nấc, không hồi sinh 'can_sua'"
+    ]
+   }
+  },
+  {
+   "ma": "phat-206-tung-khuc",
+   "ten": "Phát video 206 từng khúc ≤8MB",
+   "loai": "goi",
+   "canh": [
+    "xem-review",
+    "nas"
+   ],
+   "mo_ta": "Trả trọn file 2–10GB mỗi lần tua = nghẽn LAN, trình duyệt treo — 'vẫn chạy được' nên không ai báo lỗi, chỉ thấy 'mạng chậm'.",
+   "method": "GET",
+   "duong": "/api/kiem/phat-206-khuc",
+   "cho": [
+    [
+     "trong_tran",
+     "==",
+     true
+    ]
+   ],
+   "lay_chang": [
+    [
+     "khúc (MB)",
+     "khuc_mb"
+    ]
+   ],
+   "so_do": {
+    "buoc": [
+     {
+      "ten": "Cấu hình VR_KHUC_MB"
+     },
+     {
+      "ten": "Trần 8MB"
+     }
+    ],
+    "kiem": [
+     "khúc ≤ 8MB"
     ]
    }
   }

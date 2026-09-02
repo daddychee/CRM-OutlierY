@@ -151,6 +151,20 @@ async def api_suc_khoe():
         ("nas", _nas), ("ffprobe", _ffprobe)])
 
 
+@app.get("/api/kiem/{ma}")
+async def api_kiem(ma: str, request: Request):
+    """CỬA KIỂM LOGIC (02/09 — "mỗi logic một sơ đồ"): trả SỐ ĐO THẬT của một
+    logic nghiệp vụ, CHỈ-ĐỌC 0 quota — hàm thuần + thư mục tạm, không đụng NAS
+    thật, không đụng sổ SQLite thật. Chỉ loopback."""
+    from src import kiem
+    if request.client and request.client.host not in ("127.0.0.1", "::1"):
+        raise HTTPException(404)
+    ham = kiem.CAC_MA.get(ma)
+    if ham is None:
+        raise HTTPException(404, f"không có mã kiểm {ma!r}")
+    return ham()
+
+
 @app.get("/")
 async def goc():
     return RedirectResponse("/danh-sach", status_code=303)

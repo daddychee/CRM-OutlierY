@@ -74,6 +74,30 @@
    "cot": 4,
    "loai": "ket_qua",
    "ghi_chu": "chưa AI KHÁC xem"
+  },
+  {
+   "ma": "phu-de",
+   "ten": "Phụ đề (app · NAS · kho)",
+   "cot": 1,
+   "ghi_chu": "phụ đề trên NAS thì app KHÔNG gỡ được"
+  },
+  {
+   "ma": "van-tay",
+   "ten": "Vân tay + nhận bản mới",
+   "cot": 1,
+   "ghi_chu": "đường duy nhất tắt cảnh báo file-changed"
+  },
+  {
+   "ma": "xoa-cung",
+   "ten": "Xóa cứng cả tập",
+   "cot": 1,
+   "ghi_chu": "không hồi được — bình luận mất theo"
+  },
+  {
+   "ma": "nhat-ky-ban-ghi",
+   "ten": "Nhật ký xóa bản ghi",
+   "cot": 2,
+   "loai": "kho"
   }
  ],
  "canh": [
@@ -137,6 +161,34 @@
    "so-sqlite",
    "kq-awaiting",
    "so_khac = 0"
+  ],
+  [
+   "xem-review",
+   "phu-de"
+  ],
+  [
+   "phu-de",
+   "nas"
+  ],
+  [
+   "van-tay",
+   "so-sqlite"
+  ],
+  [
+   "van-tay",
+   "nas"
+  ],
+  [
+   "duyet",
+   "xoa-cung"
+  ],
+  [
+   "xoa-cung",
+   "nhat-ky-ban-ghi"
+  ],
+  [
+   "xoa-cung",
+   "so-sqlite"
   ]
  ]
 }
