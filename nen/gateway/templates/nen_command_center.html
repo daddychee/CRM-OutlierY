@@ -862,7 +862,11 @@ function veSoDo(d, cKq, logics){
     </g>`;
     // trạm kiểm trên dây — bấm trạm mở logic của dây đó ở khối hệ kiểm
     const dsL=logicTheoDay.get(c.tu+"|"+c.den)||[];
-    const cx=lane.toFixed(0), cy=((y1+y2)/2).toFixed(0);
+    // ĐẶT TRẠM trên đoạn NGANG ĐẦU (sát nút nguồn) tại vị trí riêng theo LÀN:
+    // nhiều dây rời cùng một nút thì đoạn ngang trùng y — rải theo stt để không
+    // đè nhau; giữa đoạn dọc cũng đè khi 2 làn sát nhau (đo thật ai-agent).
+    const cx=(x1+(lane-x1)*(0.30+0.55*c.stt/(soLan+1))).toFixed(0);
+    const cy=y1.toFixed(0);
     if(dsL.length){
       const kqs=dsL.map(l=>l.kq.ket_qua);
       const muc=kqs.includes("sai")?"err":kqs.includes("loi")||kqs.includes("chua")?"warn":"ok";
