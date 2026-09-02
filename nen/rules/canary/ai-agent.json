@@ -1,44 +1,142 @@
 {
- "_ghi_chu": "CANARY LOGIC — moi logic mot MA TEN, kiem tu dong moi CANARY_CHU_KY (1800s) + nut hard-test tren Command Center. Kich ban CHI-DOC/dry-run, khong ghi du lieu that. Them phep do = them 1 dong o day, khong sua code. Kich ban goi tinh nang sau hon (vd POST voi input mau) them dan khi mo mach app do — so docs/giam-sat-suc-khoe.md.",
+ "_ghi_chu": "HE KIEM LOGIC ai-agent (02/09 — Owner chot '16 logic = 16 so do'). Moi logic: loai goi/vet/bat_bien + canh (day tren so_do/ai-agent.json) + mo_ta + so_do {buoc[], kiem[]} voi kiem[i] ↔ cho[i]. Cua kiem /api/kiem/<ma> CHI-DOC 0 quota, KHONG goi LLM.",
  "kich_ban": [
   {
    "ma": "kho-vector-khop-catalog",
    "ten": "Kho vector khớp catalog (hỏi–đáp trích được)",
-   "method": "GET",
-   "duong": "/api/suc-khoe",
-   "cho": [
-    [
-     "mo_dun.ten=kho-vector.trang_thai",
-     "==",
-     "ok"
-    ]
-   ]
+   "loai": "bat_bien", "canh": ["nhap-lieu", "kho-vector"],
+   "mo_ta": "Sự cố 31/07: catalog có 10 tài liệu mà Qdrant 0 point — hỏi–đáp chết lặng lẽ 3 ngày. Deep health tự khai module kho-vector.",
+   "method": "GET", "duong": "/api/suc-khoe",
+   "cho": [["mo_dun.ten=kho-vector.trang_thai", "!=", "loi"]],
+   "so_do": {"buoc": [{"ten": "Catalog + kho vector"},
+                      {"ten": "Đếm point ↔ đếm tài liệu"}],
+             "kiem": ["kho có point khi catalog có tài liệu"]}
   },
   {
    "ma": "tim-kiem-tra-ket-qua",
-   "ten": "Search kho thật trả kết quả (canary search)",
-   "method": "GET",
-   "duong": "/api/suc-khoe",
-   "cho": [
-    [
-     "mo_dun.ten=search-canary.trang_thai",
-     "!=",
-     "loi"
-    ]
-   ]
+   "ten": "Search kho thật trả kết quả (canary truy xuất)",
+   "loai": "goi", "canh": ["hoi-dap", "kho-vector"],
+   "mo_ta": "Kho có point mà search câu phổ quát ra 0 kết quả = tầng truy xuất lệch (model/hybrid/alias) dù mọi health khác xanh. Cache 10 phút.",
+   "method": "GET", "duong": "/api/suc-khoe",
+   "cho": [["mo_dun.ten=search-canary.trang_thai", "!=", "loi"]],
+   "so_do": {"buoc": [{"ten": "Câu hỏi phổ quát mẫu"},
+                      {"ten": "Search kho thật", "ghi": "dense + BM25 RRF"}],
+             "kiem": ["trả >0 kết quả khi kho có point"]}
   },
   {
    "ma": "writer-khong-chet",
-   "ten": "Writer LLM không chết (mock/thật đều được, không loi)",
-   "method": "GET",
-   "duong": "/api/suc-khoe",
-   "cho": [
-    [
-     "mo_dun.ten=llm-writer.trang_thai",
-     "!=",
-     "loi"
-    ]
-   ]
+   "ten": "Writer LLM còn sống (không chết lặng lẽ)",
+   "loai": "bat_bien", "canh": ["writer", "zai"],
+   "mo_ta": "Key hết số dư / model đổi tên → writer chết; health tự khai để không phải đợi người dùng báo.",
+   "method": "GET", "duong": "/api/suc-khoe",
+   "cho": [["mo_dun.ten=llm-writer.trang_thai", "!=", "loi"]],
+   "so_do": {"buoc": [{"ten": "Cấu hình writer từ két"},
+                      {"ten": "Kiểm provider + model"}],
+             "kiem": ["writer khai báo đủ, không lỗi"]}
+  },
+  {
+   "ma": "van-kho-rong",
+   "ten": "Van chống bịa — kho rỗng KHÔNG gọi model",
+   "loai": "goi", "canh": ["hoi-dap", "kq-tra-loi"],
+   "mo_ta": "Tính năng CỐT LÕI: kho trả 0 chunk → trả câu cố định 'chưa có thông tin', TUYỆT ĐỐI không gọi model (không bịa, không tốn tiền). Đếm lời gọi bằng client giả.",
+   "method": "GET", "duong": "/api/kiem/van-kho-rong",
+   "cho": [["tra_loi_co_dinh", "==", true], ["so_lan_goi_model", "==", 0],
+           ["so_nguon", "==", 0]],
+   "lay_chang": [["lần gọi model", "so_lan_goi_model"], ["nguồn trích", "so_nguon"]],
+   "so_do": {"buoc": [{"ten": "Câu hỏi ngoài kho"},
+                      {"ten": "Search trả 0 chunk"},
+                      {"ten": "Trả câu cố định", "ghi": "không gọi writer"}],
+             "kiem": ["đúng câu 'chưa có thông tin' (không bịa)",
+                      "0 lần gọi model — không đốt tiền cho câu không trả lời được",
+                      "0 nguồn trích — không vẽ đường tới tài liệu không có"]}
+  },
+  {
+   "ma": "rbac-mot-nguon",
+   "ten": "RBAC một nguồn sự thật (ma trận quyền)",
+   "loai": "goi", "canh": ["hoi-dap", "kho-vector"],
+   "mo_ta": "Luật _duoc_xem là NGUỒN DUY NHẤT; chạy ma trận 5 user × 4 chunk so với luật viết bằng lời — lệch một ô là rò quyền. Ca then chốt: min_level THIẾU phải ẨN (tài liệu chưa gán quyền không được lọt).",
+   "method": "GET", "duong": "/api/kiem/rbac-ma-tran",
+   "cho": [["so_sai", "==", 0], ["thieu_min_level_an", "==", true],
+           ["owner_thay_tat", "==", true]],
+   "lay_chang": [["ca kiểm", "so_ca"], ["ca sai", "so_sai"]],
+   "so_do": {"buoc": [{"ten": "5 user × 4 chunk", "ghi": "level 2..5, 2 bộ phận"},
+                      {"ten": "Chạy _duoc_xem thật"},
+                      {"ten": "So với luật viết bằng lời"}],
+             "kiem": ["0 ô lệch trên toàn ma trận",
+                      "min_level thiếu → ẩn với user thật",
+                      "Owner (L5) thấy mọi tài liệu"]}
+  },
+  {
+   "ma": "mac-dinh-noi-bo",
+   "ten": "Hỏi–đáp thường chỉ tầng nội bộ",
+   "loai": "goi", "canh": ["hoi-dap", "kho-vector"],
+   "mo_ta": "Lỗ hổng vá 07/08: thiếu lọc tang_nguon=noi_bo thì tài liệu chuyên gia/ngoài lẫn vào MỌI câu trả lời không gắn nhãn tầng — nút Đa chiều thành vô nghĩa.",
+   "method": "GET", "duong": "/api/kiem/mac-dinh-noi-bo",
+   "cho": [["co_loc_noi_bo", "==", true], ["co_loc_hieu_luc", "==", true]],
+   "so_do": {"buoc": [{"ten": "Hỏi–đáp thường (không bật 🧭)"},
+                      {"ten": "Bắt filters gửi xuống kho"}],
+             "kiem": ["có tang_nguon=noi_bo (không trộn tầng ngoài lặng lẽ)",
+                      "có effective_status=Còn hiệu lực"]}
+  },
+  {
+   "ma": "viet-lai-cau-hoi",
+   "ten": "Viết lại câu hỏi đa lượt đúng ca",
+   "loai": "goi", "canh": ["hoi-dap", "writer"],
+   "mo_ta": "Câu NGẮN phụ thuộc ngữ cảnh mới đáng tốn lượt model viết lại; câu dài tự đứng thì không — sai chiều nào cũng tốn tiền hoặc lạc đề.",
+   "method": "GET", "duong": "/api/kiem/viet-lai-cau",
+   "cho": [["so_sai", "==", 0]],
+   "lay_chang": [["ca kiểm", "so_ca"]],
+   "so_do": {"buoc": [{"ten": "3 câu mẫu", "ghi": "2 phụ thuộc + 1 tự đứng"},
+                      {"ten": "Chạy luật quyết định"}],
+             "kiem": ["cả 3 ca ra đúng quyết định viết-lại/không"]}
+  },
+  {
+   "ma": "qa-ke-thua-quyen",
+   "ten": "Q&A bổ sung kế thừa quyền gốc",
+   "loai": "bat_bien", "canh": ["qa-bo-sung", "kq-qa"],
+   "mo_ta": "Tài liệu -QA phải trùng KHỚP 4 cột quyền của tài liệu gốc (bộ phận / mức truy cập / level / hiệu lực) — lệch một cột là rò quyền. Đọc catalog thật.",
+   "method": "GET", "duong": "/api/kiem/qa-ke-thua-quyen",
+   "cho": [["so_lech", "==", 0]],
+   "lay_chang": [["tài liệu Q&A", "so_qa"], ["lệch quyền", "so_lech"]],
+   "so_do": {"buoc": [{"ten": "Catalog thật"},
+                      {"ten": "Ghép cặp gốc ↔ -QA"},
+                      {"ten": "So 4 cột quyền"}],
+             "kiem": ["0 cặp lệch quyền"]}
+  },
+  {
+   "ma": "vong-phan-bien",
+   "ten": "Vòng phản biện — critic báo LỖI thì viết lại",
+   "loai": "goi", "canh": ["writer", "kq-tra-loi"],
+   "chua_kiem": true,
+   "ghi_chua": "kiểm GỌI cần writer+critic giả chạy qua _sinh_va_phan_bien — chưa mở cửa kiểm (làm cùng đợt lan sang app khác)"
+  },
+  {
+   "ma": "da-chieu-tach-khoi",
+   "ten": "Đa chiều tách khối theo tầng nguồn",
+   "loai": "goi", "canh": ["goc-nhin-khac", "writer"],
+   "chua_kiem": true,
+   "ghi_chua": "cần cửa kiểm dựng 2 tầng giả rồi soi thứ tự khối (công ty LUÔN trước) + tầng rỗng bỏ hẳn khối"
+  },
+  {
+   "ma": "kho-thieu-ghi-dung",
+   "ten": "Sổ kho-thiếu ghi đúng ca (≠ chặn quyền)",
+   "loai": "bat_bien", "canh": ["hoi-dap", "kho-thieu"],
+   "chua_kiem": true,
+   "ghi_chua": "cần cửa kiểm đối chiếu cau_kho_thieu.csv với lịch sử: mọi dòng phải có lượt chua_tra_loi_duoc=True và KHÔNG dòng nào ứng với bi_chan_quyen=True"
+  },
+  {
+   "ma": "van-verbatim",
+   "ten": "Van verbatim trích đoạn nguồn ngoài",
+   "loai": "goi", "canh": ["nguon-ngoai", "writer"],
+   "chua_kiem": true,
+   "ghi_chua": "cần cửa kiểm chạy trich_doan với 3 khối mẫu (nguyên văn / paraphrase / quá ngắn) — chỉ giữ 1"
+  },
+  {
+   "ma": "chong-chunk-mo-coi",
+   "ten": "Chống chunk mồ côi khi cập nhật nội dung",
+   "loai": "goi", "canh": ["nhap-lieu", "kho-vector"],
+   "chua_kiem": true,
+   "ghi_chua": "cần cửa kiểm nạp file 5 chunk → nạp lại bản 2 chunk cùng doc_code → đếm phải = 2 (không phải 5)"
   }
  ]
 }

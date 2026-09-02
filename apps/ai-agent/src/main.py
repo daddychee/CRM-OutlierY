@@ -348,6 +348,20 @@ async def api_suc_khoe():
         ("search-canary", _canary)])
 
 
+@app.get("/api/kiem/{ma}")
+async def api_kiem(ma: str, request: Request):
+    """CỬA KIỂM LOGIC (02/09 — "16 logic = 16 sơ đồ"): trả SỐ ĐO THẬT của một
+    logic nghiệp vụ, CHỈ-ĐỌC 0 quota (không gọi LLM); canary nền so kỳ vọng.
+    Chỉ loopback — cùng khuôn /api/so-goi của nền."""
+    from src import kiem
+    if request.client and request.client.host not in ("127.0.0.1", "::1"):
+        raise HTTPException(404)
+    ham = kiem.CAC_MA.get(ma)
+    if ham is None:
+        raise HTTPException(404, f"không có mã kiểm {ma!r}")
+    return ham()
+
+
 # ================= các hàm phụ nhập liệu (chuyển thể nguyên từ app.py cũ) =================
 
 def bo_dau(s: str) -> str:

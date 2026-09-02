@@ -96,14 +96,18 @@
    "loai": "goi", "canh": ["dang-nong", "kq-tk"],
    "mo_ta": "Ngưỡng nổ cắt theo phân vị p90 của CHÍNH phiên (không hệ số cứng); so > NGHIÊM NGẶT — bẫy '≥' cũ làm nền phồng 100%. Chạy thật trên pool lớn nhất, <30 video mới → nói thẳng.",
    "method": "GET", "duong": "/api/kiem/dang-nong",
-   "cho": [["co_du_lieu", "==", true], ["nen", "<=", 0.2]],
+   "cho": [["co_du_lieu", "==", true], ["so_video_moi", ">=", 30],
+           ["nguong_no_view_ngay", ">=", 1], ["nen", "<=", 0.2]],
    "lay_chang": [["video pool", "so_video_pool"], ["video 2–60 ngày", "so_video_moi"],
                  ["ngưỡng nổ view/ngày", "nguong_no_view_ngay"], ["cụm nóng ra", "so_cum"]],
    "so_do": {"buoc": [{"ten": "Pool lớn nhất", "ghi": "tai_kho 1 lượt đọc"},
                       {"ten": "Lọc video 2–60 ngày"},
                       {"ten": "p90 view/ngày của phiên"},
                       {"ten": "Lọc so > nghiêm ngặt"}],
-             "kiem": ["đủ mẫu ≥30 — thiếu phải nói thẳng", "nền nổ ≤20% (p90 → ~10%, phồng 100% là bệnh '≥')"]}
+             "kiem": ["pool đọc được — có dữ liệu để tính",
+                      "đủ mẫu ≥30 video mới — thiếu phải nói thẳng, không đoán",
+                      "ngưỡng p90 tính trên phân phối PHIÊN NÀY (không hệ số cứng)",
+                      "nền nổ ≤20% (p90 → ~10%; phồng 100% là bệnh '≥' cũ)"]}
   },
   {
    "ma": "gop-ho-cum",

@@ -1,0 +1,43 @@
+{
+ "_ghi_chu": "SO DO VAN HANH seo-optimize (02/09) — tu kiem ke code that (common/profile/niche_format/pipeline/cta/chapters/audit).",
+ "nut": [
+  {"ma": "team", "ten": "Team SEO (vai seo/leader+)", "cot": 0, "loai": "nguoi"},
+  {"ma": "extract-kenh", "ten": "Extract hồ sơ kênh mình", "cot": 1,
+   "ghi_chu": "URL/@handle → profile"},
+  {"ma": "extract-format", "ten": "Extract Format đối thủ", "cot": 1,
+   "ghi_chu": "outlier ≥2× median"},
+  {"ma": "sinh-metadata", "ten": "Sinh metadata tập video", "cot": 1,
+   "ghi_chu": "title + tag + description + chapter"},
+  {"ma": "sinh-cta", "ten": "Sinh CTA + hashtag", "cot": 1},
+  {"ma": "kho-profile", "ten": "Kho hồ sơ kênh (profiles/)", "cot": 2, "loai": "kho",
+   "ghi_chu": "mã kênh + lang + skeleton"},
+  {"ma": "kho-format", "ten": "Kho Format niche (formats/)", "cot": 2, "loai": "kho"},
+  {"ma": "so-audit", "ten": "Sổ audit chỉ-thêm", "cot": 2, "loai": "kho",
+   "ghi_chu": "không lọt secret"},
+  {"ma": "yt-api", "ten": "YouTube API (pool key)", "cot": 3, "loai": "ngoai",
+   "ghi_chu": "xoay key nhớ con trỏ"},
+  {"ma": "llm-seo", "ten": "LLM (GLM/Claude)", "cot": 3, "loai": "ngoai"},
+  {"ma": "kq-metadata", "ten": "Bộ metadata xuất YouTube", "cot": 4, "loai": "ket_qua",
+   "ghi_chu": "qua van chống bịa"},
+  {"ma": "kq-format", "ten": "Format niche học từ đối thủ", "cot": 4, "loai": "ket_qua"},
+  {"ma": "kq-hoso", "ten": "Hồ sơ kênh chuẩn hóa", "cot": 4, "loai": "ket_qua"}
+ ],
+ "canh": [
+  ["team", "extract-kenh"],
+  ["team", "extract-format"],
+  ["team", "sinh-metadata"],
+  ["team", "sinh-cta"],
+  ["extract-kenh", "yt-api", "resolve + N video"],
+  ["extract-kenh", "kho-profile", "ghi theo channel_id"],
+  ["extract-format", "yt-api", "outlier + package"],
+  ["extract-format", "kho-format"],
+  ["sinh-metadata", "kho-format", "skeleton + rules"],
+  ["sinh-metadata", "llm-seo", "4 call"],
+  ["sinh-metadata", "kq-metadata"],
+  ["sinh-cta", "llm-seo", "1 call/kênh"],
+  ["sinh-cta", "kq-metadata", "hashtag có nguồn"],
+  ["extract-kenh", "so-audit"],
+  ["kho-format", "kq-format"],
+  ["kho-profile", "kq-hoso"]
+ ]
+}

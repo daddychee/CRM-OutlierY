@@ -134,6 +134,9 @@ main{max-width:1340px}
 .chang{display:flex;align-items:center;gap:6px;font-size:11.5px;flex-wrap:wrap}
 .chang b{font-family:'Space Grotesk',Inter,sans-serif;font-size:14px}
 .chang .mt{color:var(--ink-3)}
+#cc .btn{background:transparent;border:1px solid var(--line);border-radius:4px;color:var(--ink);
+  font:600 11px Inter,system-ui,sans-serif;letter-spacing:.06em;padding:7px 14px;cursor:pointer}
+#cc .btn:hover{background:var(--inset)}
 
 .tb{width:100%;border-collapse:collapse;font-size:12px}
 .tb th{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-3);text-align:left;
@@ -657,8 +660,13 @@ function renderApp(){
   const logics=((DATA.canary_kich_ban||{})[d.slug]||[]).map(kb=>({
     ...kb, kq:kqTheoMa[kb.ma]||{ket_qua:kb.chua_kiem?"chua":"chua",
                                 chi_tiet:kb.ghi_chua||"chưa chạy lượt nào"}}));
+  // mặc định mở: logic ĐANG SAI trước, không có thì logic nghiệp vụ nhiều bước
+  // nhất (sơ đồ đáng xem), cuối cùng mới tới logic đầu danh sách
   if(!logicDangXem||!logics.some(l=>l.ma===logicDangXem))
-    logicDangXem=((logics.find(l=>["sai","loi"].includes(l.kq.ket_qua))||logics[0])||{}).ma;
+    logicDangXem=((logics.find(l=>["sai","loi"].includes(l.kq.ket_qua))
+      ||logics.slice().sort((a,b)=>((b.so_do&&b.so_do.buoc||[]).length)
+                                  -((a.so_do&&a.so_do.buoc||[]).length))[0]
+      ||logics[0])||{}).ma;
   // bảng nhóm theo DÂY (canh) — nguồn sự thật của trạm trên sơ đồ
   const theoDay=new Map();
   for(const l of logics){
@@ -899,7 +907,7 @@ function veSoDo(d, cKq, logics){
   box.innerHTML=`<svg id="soDoSvg" viewBox="0 0 ${W3} ${H3}" style="width:100%;max-height:340px" preserveAspectRatio="xMidYMin meet">
     <defs><marker id="muiTen" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto"><path d="M0 0 L7 3 L0 6 Z" fill="var(--ink-3)"/></marker></defs>${svg}</svg>
     ${chuGiai?`<div class="note" style="line-height:2">${chuGiai}</div>`:""}
-    <div class="note" style="margin-top:2px">rê chuột / bấm một khối để làm sáng các luồng của nó kèm nhãn</div>`;
+    <div class="note" style="margin-top:2px">trạm ✓ = mọi logic của dây đúng · ✗ = có logic sai · số vàng = có logic chưa kiểm · ? = dây chưa phủ kiểm · ×N = số logic trên dây — bấm trạm mở sơ đồ logic bên dưới &nbsp;|&nbsp; rê chuột / bấm một khối để làm sáng các luồng của nó kèm nhãn</div>`;
   // hover/click khối → luồng liên quan sáng + nhãn hiện
   const svgEl=document.getElementById("soDoSvg");
   function toSang(ma, bat){
