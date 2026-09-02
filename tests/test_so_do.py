@@ -129,3 +129,40 @@ def test_kich_ban_khai_du_truong_he_kiem():
             if k.get("chua_kiem") and not k.get("ghi_chua"):
                 thieu.append(f"{slug}/{k['ma']}: chua_kiem phải nêu ghi_chua")
     assert not thieu, "\n".join(thieu)
+
+
+def test_canh_bao_so_do_phu_qua_it_so_voi_app():
+    """LƯỚI CHỐNG SÓT (02/09 — Owner bắt được RadarY khai 14 nút trong khi app
+    có 80 route): app nhiều đường mà sơ đồ ít nút gần như chắc chắn SÓT MẠCH.
+    Không chặn cứng (app khác nhau mật độ khác nhau) — chỉ ghim mức đã rà, để
+    lần sau app phình ra là test đỏ và có người đi rà lại."""
+    import re
+    from pathlib import Path
+    from nen.common import so_do
+
+    # trần route/nút đã RÀ THẬT 02/09 — nới trần phải kèm rà lại sơ đồ
+    TRAN = 4.0
+    goc = Path(__file__).resolve().parents[1] / "apps"
+    if not goc.is_dir():
+        return
+    qua_it = []
+    for d in sorted(goc.iterdir()):
+        if not d.is_dir():
+            continue
+        sd = so_do.doc(d.name)
+        if not sd:
+            continue
+        n = 0
+        for f in d.rglob("*.py"):
+            if ".venv" in str(f) or "test" in f.name:
+                continue
+            try:
+                s = f.read_text(encoding="utf-8", errors="ignore")
+            except OSError:
+                continue
+            n += len(re.findall(r"@(?:app|router)\.(?:get|post|put|delete|patch)\(", s))
+        if n and n / len(sd["nut"]) > TRAN:
+            qua_it.append(f"{d.name}: {n} route / {len(sd['nut'])} nút "
+                          f"= {n/len(sd['nut']):.1f} (trần {TRAN})")
+    assert not qua_it, ("sơ đồ có thể đang SÓT MẠCH — rà lại rồi mới nới trần:\n"
+                        + "\n".join(qua_it))
