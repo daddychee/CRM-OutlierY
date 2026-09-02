@@ -67,6 +67,44 @@
    "ten": "Vết ai giao/nhận/từ chối",
    "cot": 4,
    "loai": "ket_qua"
+  },
+  {
+   "ma": "bang-keo",
+   "ten": "Bảng kéo-thả 3 trục",
+   "cot": 1,
+   "ghi_chu": "kéo = đổi trạng thái, luật chặn ở SERVER"
+  },
+  {
+   "ma": "dong-tuan",
+   "ten": "Đóng / mở lại tuần",
+   "cot": 1,
+   "ghi_chu": "còn việc treo thì chặn"
+  },
+  {
+   "ma": "kho-tep",
+   "ten": "Kho tệp đính kèm",
+   "cot": 2,
+   "loai": "kho",
+   "ghi_chu": "ghi nguyên tử, không ghi đè"
+  },
+  {
+   "ma": "nas-goc",
+   "ten": "Gốc NAS",
+   "cot": 3,
+   "loai": "ngoai"
+  },
+  {
+   "ma": "kq-dashboard",
+   "ten": "Dashboard Manager/Owner",
+   "cot": 4,
+   "loai": "ket_qua",
+   "ghi_chu": "van chống bịa: mẫu số rỗng → '—'"
+  },
+  {
+   "ma": "kq-thong-bao",
+   "ten": "Thông báo việc cần hành động",
+   "cot": 4,
+   "loai": "ket_qua"
   }
  ],
  "canh": [
@@ -112,6 +150,41 @@
   [
    "nhat-ky",
    "kq-vet"
+  ],
+  [
+   "nhan-vien",
+   "bang-keo",
+   "kéo thẻ"
+  ],
+  [
+   "bang-keo",
+   "vong-doi",
+   "qua luật quyền"
+  ],
+  [
+   "quan-ly",
+   "dong-tuan"
+  ],
+  [
+   "dong-tuan",
+   "so-tuan"
+  ],
+  [
+   "vong-doi",
+   "kho-tep",
+   "đính tài liệu"
+  ],
+  [
+   "kho-tep",
+   "nas-goc"
+  ],
+  [
+   "so-tuan",
+   "kq-dashboard"
+  ],
+  [
+   "so-tuan",
+   "kq-thong-bao"
   ]
  ]
 }

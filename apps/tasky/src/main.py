@@ -173,6 +173,20 @@ async def api_suc_khoe():
     return suc_khoe.bao_cao("tasky", PHIEN_BAN, [("nas-goc", _nas_goc)])
 
 
+@app.get("/api/kiem/{ma}")
+async def api_kiem(ma: str, request: Request):
+    """CỬA KIỂM LOGIC (02/09 — "mỗi logic một sơ đồ"): trả SỐ ĐO THẬT của một
+    logic nghiệp vụ, CHỈ-ĐỌC 0 quota (chỉ chạy hàm thuần, không đụng sổ tuần);
+    canary nền so kỳ vọng. Chỉ loopback — cùng khuôn radary/ai-agent."""
+    from src import kiem
+    if request.client and request.client.host not in ("127.0.0.1", "::1"):
+        raise HTTPException(404)
+    ham = kiem.CAC_MA.get(ma)
+    if ham is None:
+        raise HTTPException(404, f"không có mã kiểm {ma!r}")
+    return ham()
+
+
 # ---------- trang ----------
 
 @app.get("/tasky", response_class=HTMLResponse)

@@ -1,5 +1,5 @@
 {
- "_ghi_chu": "CANARY LOGIC — moi logic mot MA TEN, kiem tu dong moi CANARY_CHU_KY (1800s) + nut hard-test tren Command Center. Kich ban CHI-DOC/dry-run, khong ghi du lieu that. Them phep do = them 1 dong o day, khong sua code. Kich ban goi tinh nang sau hon (vd POST voi input mau) them dan khi mo mach app do — so docs/giam-sat-suc-khoe.md.",
+ "_ghi_chu": "HE KIEM LOGIC tasky (mo rong 02/09 sau dot ra soat 11 app). Truoc do CHI MOT kich ban, va no dung '!= loi' tren module chi ha 'canh_bao' nen VINH VIEN XANH — ca app khong duoc canh dong nao. Cua kiem /api/kiem/<ma> CHI-DOC 0 quota, chi chay HAM THUAN, khong dung so tuan that.",
  "kich_ban": [
   {
    "ma": "nas-goc-luu-dinh-kem",
@@ -30,6 +30,292 @@
     ],
     "kiem": [
      "gốc đính kèm sẵn sàng"
+    ]
+   }
+  },
+  {
+   "ma": "luat-giao-viec",
+   "ten": "Luật giao việc theo level × bộ phận",
+   "loai": "goi",
+   "canh": [
+    "giao-viec",
+    "iam"
+   ],
+   "mo_ta": "Level cao giao level thấp CÙNG bộ phận; NGANG CẤP không giao được nhau; Owner giao mọi bộ phận. Lỏng → người bộ phận khác giao việc chéo, không ai chịu trách nhiệm. Chặt quá → Manager không giao được cho quân mình.",
+   "method": "GET",
+   "duong": "/api/kiem/luat-giao-viec",
+   "cho": [
+    [
+     "so_sai",
+     "==",
+     0
+    ]
+   ],
+   "lay_chang": [
+    [
+     "ca kiểm",
+     "so_ca"
+    ]
+   ],
+   "so_do": {
+    "buoc": [
+     {
+      "ten": "6 cặp người mẫu",
+      "ghi": "L2..L5, 2 bộ phận"
+     },
+     {
+      "ten": "Luật duoc_giao_cho"
+     }
+    ],
+    "kiem": [
+     "cả 6 ca quyết định đúng (kể cả ngang cấp → cấm)"
+    ]
+   }
+  },
+  {
+   "ma": "phoi-hop-ngang",
+   "ten": "Phối hợp ngang giữa 2 bộ phận",
+   "loai": "goi",
+   "canh": [
+    "giao-viec",
+    "iam"
+   ],
+   "mo_ta": "Cả hai phải L3+, KHÁC bộ phận, chênh ≤1 bậc — đây là YÊU CẦU (bên kia từ chối được), không phải lệnh. Sai → nhân viên thường 'yêu cầu' người bộ phận khác = đường giao việc lách luật.",
+   "method": "GET",
+   "duong": "/api/kiem/phoi-hop-ngang",
+   "cho": [
+    [
+     "so_sai",
+     "==",
+     0
+    ]
+   ],
+   "lay_chang": [
+    [
+     "ca kiểm",
+     "so_ca"
+    ]
+   ],
+   "so_do": {
+    "buoc": [
+     {
+      "ten": "5 cặp mẫu"
+     },
+     {
+      "ten": "Luật phối hợp ngang"
+     }
+    ],
+    "kiem": [
+     "cả 5 ca đúng (cùng bộ phận / dưới L3 / chênh 2 bậc đều cấm)"
+    ]
+   }
+  },
+  {
+   "ma": "van-chong-bia-ti-le",
+   "ten": "Mẫu số rỗng → tỉ lệ '—', KHÔNG phải 0%",
+   "loai": "goi",
+   "canh": [
+    "so-tuan",
+    "kq-bao-cao"
+   ],
+   "mo_ta": "Trả 0% thì người CHƯA ĐƯỢC GIAO việc nào bị chấm '0% hoàn thành' → đánh giá nhân sự sai trên số bịa. Van lặp ở HAI nơi (thống kê người + dashboard) nên kiểm cả hai.",
+   "method": "GET",
+   "duong": "/api/kiem/van-ti-le",
+   "cho": [
+    [
+     "mau_so_rong_la_none",
+     "==",
+     true
+    ],
+    [
+     "dashboard_rong_la_none",
+     "==",
+     true
+    ],
+    [
+     "dashboard_toan_khong_viec",
+     "==",
+     true
+    ]
+   ],
+   "so_do": {
+    "buoc": [
+     {
+      "ten": "Người 0 việc"
+     },
+     {
+      "ten": "Thống kê + dashboard"
+     }
+    ],
+    "kiem": [
+     "thống kê người: tỉ lệ None",
+     "dashboard rỗng: None",
+     "dashboard toàn người 0 việc: None"
+    ]
+   }
+  },
+  {
+   "ma": "nghiem-thu-dung-nguoi",
+   "ten": "Chỉ người GIAO nghiệm thu",
+   "loai": "goi",
+   "canh": [
+    "vong-doi",
+    "nhat-ky"
+   ],
+   "mo_ta": "Owner nghiệm thu tất; việc PHỐI HỢP thì BÊN YÊU CẦU ký — bên làm KHÔNG tự ký cho mình. Tự ký được thì việc phối hợp luôn 'hoàn thành', bên yêu cầu không bao giờ biết chất lượng.",
+   "method": "GET",
+   "duong": "/api/kiem/nghiem-thu-dung-nguoi",
+   "cho": [
+    [
+     "so_sai",
+     "==",
+     0
+    ]
+   ],
+   "lay_chang": [
+    [
+     "ca kiểm",
+     "so_ca"
+    ]
+   ],
+   "so_do": {
+    "buoc": [
+     {
+      "ten": "5 ca (thường / Owner / người lạ / phối hợp)"
+     },
+     {
+      "ten": "Luật duoc_xac_nhan"
+     }
+    ],
+    "kiem": [
+     "cả 5 ca đúng — đặc biệt việc phối hợp bên làm KHÔNG tự ký"
+    ]
+   }
+  },
+  {
+   "ma": "chan-tep-thuc-thi",
+   "ten": "Chặn tệp chạy được + đường dẫn trong tên",
+   "loai": "goi",
+   "canh": [
+    "vong-doi",
+    "so-tuan"
+   ],
+   "mo_ta": "Lọt .exe/.ps1 → Tasky thành đường phát tán mã độc nội bộ; lọt '../' trong tên → ghi đè file ngoài thư mục đích.",
+   "method": "GET",
+   "duong": "/api/kiem/chan-tep",
+   "cho": [
+    [
+     "so_sai",
+     "==",
+     0
+    ],
+    [
+     "chan_duong_dan",
+     "==",
+     true
+    ]
+   ],
+   "lay_chang": [
+    [
+     "ca kiểm",
+     "so_ca"
+    ],
+    [
+     "đuôi cấm",
+     "so_duoi_cam"
+    ]
+   ],
+   "so_do": {
+    "buoc": [
+     {
+      "ten": "6 ca tệp mẫu"
+     },
+     {
+      "ten": "Làm sạch tên"
+     },
+     {
+      "ten": "Chặn đuôi + trần"
+     }
+    ],
+    "kiem": [
+     "cả 6 ca đúng",
+     "bỏ mọi thành phần đường dẫn khỏi tên"
+    ]
+   }
+  },
+  {
+   "ma": "han-sai-noi-thang",
+   "ten": "Hạn sai định dạng → báo lỗi",
+   "loai": "goi",
+   "canh": [
+    "giao-viec",
+    "so-tuan"
+   ],
+   "mo_ta": "Âm thầm bỏ qua hạn sai → người giao tưởng đã đặt hạn mà thật ra việc không có hạn nào, không ai bị nhắc.",
+   "method": "GET",
+   "duong": "/api/kiem/han-hop-le",
+   "cho": [
+    [
+     "so_sai",
+     "==",
+     0
+    ]
+   ],
+   "lay_chang": [
+    [
+     "ca kiểm",
+     "so_ca"
+    ]
+   ],
+   "so_do": {
+    "buoc": [
+     {
+      "ten": "4 chuỗi hạn"
+     },
+     {
+      "ten": "Luật định dạng"
+     }
+    ],
+    "kiem": [
+     "đúng dạng qua, sai dạng NÉM LỖI (không im lặng bỏ)"
+    ]
+   }
+  },
+  {
+   "ma": "muc-tieu-nguoi-chot",
+   "ten": "Mục tiêu KHÔNG tự đạt",
+   "loai": "goi",
+   "canh": [
+    "muc-tieu",
+    "kq-tien-do"
+   ],
+   "mo_ta": "Xong hết việc con KHÔNG tự thành 'đạt' — người chốt kèm nhận xét, máy không tự (máy tự chốt = mục tiêu công ty tự hoàn thành trên giấy). Mục tiêu chưa có việc → tiến độ '—', không phải 0% (mục tiêu mới lập trông như đang thất bại).",
+   "method": "GET",
+   "duong": "/api/kiem/muc-tieu-nguoi-chot",
+   "cho": [
+    [
+     "tien_do_rong_la_none",
+     "==",
+     true
+    ],
+    [
+     "bat_ket_qua_can_dat",
+     "==",
+     true
+    ]
+   ],
+   "so_do": {
+    "buoc": [
+     {
+      "ten": "Mục tiêu chưa có việc"
+     },
+     {
+      "ten": "Tiến độ + van kết quả cần đạt"
+     }
+    ],
+    "kiem": [
+     "tiến độ rỗng → None (không bịa 0%)",
+     "bắt buộc nêu 'kết quả cần đạt' khi tạo"
     ]
    }
   }
