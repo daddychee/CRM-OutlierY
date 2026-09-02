@@ -1,5 +1,5 @@
 {
- "_ghi_chu": "CANARY LOGIC — moi logic mot MA TEN, kiem tu dong moi CANARY_CHU_KY (1800s) + nut hard-test tren Command Center. Kich ban CHI-DOC/dry-run, khong ghi du lieu that. Them phep do = them 1 dong o day, khong sua code. Kich ban goi tinh nang sau hon (vd POST voi input mau) them dan khi mo mach app do — so docs/giam-sat-suc-khoe.md.",
+ "_ghi_chu": "HE KIEM LOGIC plannery (mo rong 02/09). Truoc do 2 kich ban va mot trong hai ('_rev >= 0') PASS ca khi plan.json mat sach vi EMPTY_STATE co san _rev=0 — da siet. Day la app giu LICH SAN XUAT ca team: sai mot luat la lich bia ma van ra so dep. Cua kiem /api/kiem/<ma> CHI-DOC 0 quota — chi ham thuan, KHONG dung plan.json.",
  "kich_ban": [
   {
    "ma": "plan-json-doc-duoc",
@@ -90,6 +90,254 @@
      "projects"
     ]
    ]
+  },
+  {
+   "ma": "planning-theo-chuan",
+   "ten": "Lịch theo KPI cam kết, không theo tuần trước",
+   "loai": "goi",
+   "canh": [
+    "server",
+    "engine"
+   ],
+   "mo_ta": "Dùng last_week_rate làm kế hoạch = kế hoạch TỰ HẠ theo người yếu, deadline giãn âm thầm, KPI mất nghĩa — không ai thấy vì lịch vẫn 'khả thi'. 'Tuần trước' chỉ để CẢNH BÁO.",
+   "method": "GET",
+   "duong": "/api/kiem/planning-theo-chuan",
+   "cho": [
+    [
+     "dung_standard_khong_dung_last_week",
+     "==",
+     true
+    ]
+   ],
+   "lay_chang": [
+    [
+     "chuẩn người yếu",
+     "yeu_standard"
+    ],
+    [
+     "tuần trước người yếu",
+     "yeu_last_week"
+    ],
+    [
+     "dùng để xếp lịch",
+     "yeu_planning"
+    ]
+   ],
+   "so_do": {
+    "buoc": [
+     {
+      "ten": "Người yếu (chuẩn 2, tuần trước 0.5)"
+     },
+     {
+      "ten": "Người khỏe (chuẩn 2, tuần trước 5)"
+     },
+     {
+      "ten": "planning_rate"
+     }
+    ],
+    "kiem": [
+     "cả hai đều xếp theo CHUẨN 2.0, không theo tuần trước"
+    ]
+   }
+  },
+  {
+   "ma": "gio-nhay-nghi-trua",
+   "ten": "Giờ bàn giao nhảy qua nghỉ trưa",
+   "loai": "goi",
+   "canh": [
+    "engine",
+    "kq-lich"
+   ],
+   "mo_ta": "Nội suy tuyến tính trên 9:00–18:00 cho mốc rơi vào 12:30 — nhân sự tới nhận thì KHÔNG CÓ AI, mà lịch nhìn vẫn hợp lý. Lẻ = 0 phải trả giờ kết thúc ca cuối.",
+   "method": "GET",
+   "duong": "/api/kiem/gio-nhay-nghi-trua",
+   "cho": [
+    [
+     "khong_roi_gio_nghi",
+     "==",
+     true
+    ],
+    [
+     "le_0_tra_cuoi_ca",
+     "==",
+     true
+    ]
+   ],
+   "lay_chang": [
+    [
+     "mốc rơi giờ nghỉ",
+     "so_moc_roi_gio_nghi"
+    ]
+   ],
+   "so_do": {
+    "buoc": [
+     {
+      "ten": "21 mốc từ 0.00 đến 1.00"
+     },
+     {
+      "ten": "Quy ra giờ đồng hồ"
+     }
+    ],
+    "kiem": [
+     "0 mốc rơi vào giờ nghỉ trưa",
+     "lẻ 0 → giờ kết thúc ca cuối"
+    ]
+   }
+  },
+  {
+   "ma": "ngay-nghi-chi-ngay-lam",
+   "ten": "Ngày nghỉ đếm theo ngày LÀM VIỆC",
+   "loai": "goi",
+   "canh": [
+    "server",
+    "engine"
+   ],
+   "mo_ta": "Đếm cả Chủ nhật → người nghỉ T7–T2 bị trừ OAN một ngày, lịch lùi sai mà không ai truy được vì sao.",
+   "method": "GET",
+   "duong": "/api/kiem/ngay-nghi-chi-ngay-lam",
+   "cho": [
+    [
+     "chu_nhat_khong_tinh",
+     "==",
+     true
+    ],
+    [
+     "thu_2_co_tinh",
+     "==",
+     true
+    ]
+   ],
+   "so_do": {
+    "buoc": [
+     {
+      "ten": "T7 · CN · T2"
+     },
+     {
+      "ten": "Luật ngày làm việc"
+     }
+    ],
+    "kiem": [
+     "Chủ nhật KHÔNG tính",
+     "Thứ Hai có tính"
+    ]
+   }
+  },
+  {
+   "ma": "quyen-ghi-server",
+   "ten": "Ma trận quyền ghi kiểm Ở SERVER",
+   "loai": "goi",
+   "canh": [
+    "ui",
+    "server"
+   ],
+   "mo_ta": "Chỉ ẩn nút ở UI thì vai seo curl thẳng là sửa được dự án/nhân sự — đây là rào DUY NHẤT. Nhưng cũng không được chặn OAN: không đổi gì thì không báo lỗi.",
+   "method": "GET",
+   "duong": "/api/kiem/quyen-ghi-server",
+   "cho": [
+    [
+     "seo_sua_nhan_su_bi_chan",
+     "==",
+     true
+    ],
+    [
+     "viewer_bi_chan",
+     "==",
+     true
+    ],
+    [
+     "khong_doi_thi_khong_bao",
+     "==",
+     true
+    ]
+   ],
+   "so_do": {
+    "buoc": [
+     {
+      "ten": "seo sửa nhân sự"
+     },
+     {
+      "ten": "viewer sửa"
+     },
+     {
+      "ten": "không đổi gì"
+     }
+    ],
+    "kiem": [
+     "seo bị chặn",
+     "viewer bị chặn",
+     "không đổi → KHÔNG báo oan"
+    ]
+   }
+  },
+  {
+   "ma": "header-chi-loopback",
+   "ten": "X-Remote-* chỉ nhận từ loopback",
+   "loai": "goi",
+   "canh": [
+    "ui",
+    "server"
+   ],
+   "mo_ta": "Nhận header từ LAN → bất kỳ ai trong mạng tự xưng admin bằng MỘT header và app tin ngay. Cổng 9000 tiêm header qua loopback nên chỉ cần tin loopback.",
+   "method": "GET",
+   "duong": "/api/kiem/header-chi-loopback",
+   "cho": [
+    [
+     "lan_bi_bo_qua",
+     "==",
+     true
+    ],
+    [
+     "loopback_duoc_nhan",
+     "==",
+     true
+    ]
+   ],
+   "so_do": {
+    "buoc": [
+     {
+      "ten": "Header admin từ IP LAN"
+     },
+     {
+      "ten": "Cùng header từ loopback"
+     }
+    ],
+    "kiem": [
+     "từ LAN → bỏ qua, về viewer",
+     "từ loopback → nhận đúng vai"
+    ]
+   }
+  },
+  {
+   "ma": "de-nghi-khong-tu-duyet",
+   "ten": "Đề nghị sản xuất không tự duyệt",
+   "loai": "goi",
+   "canh": [
+    "ui",
+    "server"
+   ],
+   "mo_ta": "Đề nghị MỚI bắt buộc ở trạng thái 'chờ'; đổi trạng thái = DUYỆT, chỉ Leader ngách trở lên. Tự duyệt được thì người phụ trách chen tập vào lịch sản xuất mà không ai gác.",
+   "method": "GET",
+   "duong": "/api/kiem/de-nghi-khong-tu-duyet",
+   "cho": [
+    [
+     "de_nghi_moi_phai_cho",
+     "==",
+     true
+    ]
+   ],
+   "so_do": {
+    "buoc": [
+     {
+      "ten": "Đề nghị mới khai 'duyệt' luôn"
+     },
+     {
+      "ten": "Ma trận quyền"
+     }
+    ],
+    "kiem": [
+     "bị chặn — đề nghị mới phải ở trạng thái chờ"
+    ]
+   }
   }
  ]
 }
