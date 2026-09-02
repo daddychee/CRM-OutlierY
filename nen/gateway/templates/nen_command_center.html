@@ -342,8 +342,13 @@ function gauge(el, pct, mau, cap){
   let cung = "";
   if (pct !== null && pct !== undefined){
     const r=52, cx=64, cy=64, a=Math.PI*(1-pct/100);
-    const x=cx+r*Math.cos(a), y=cy-r*Math.sin(a), big=pct>50?1:0;
-    cung = `<path d="M12 64 A52 52 0 ${big} 1 ${x.toFixed(1)} ${y.toFixed(1)}" fill="none" stroke="${mau}" stroke-width="13" stroke-linecap="round"/>`;
+    const x=cx+r*Math.cos(a), y=cy-r*Math.sin(a);
+    // large-arc-flag LUÔN 0: nền là NỬA vòng tròn nên cung không bao giờ quét
+    // quá 180°. Bản cũ đặt 1 khi pct>50 → trình duyệt vẽ CUNG LỚN (phần bù),
+    // đi vòng ngược phía dưới; từ 51% trở lên gauge vỡ thành hai mẩu rời ở hai
+    // đầu. Càng gần 100% mẩu càng to nên 93% trông "gần đúng" — chính vì thế
+    // lỗi sống lâu; 67% mới lộ hẳn (Owner báo 02/09).
+    cung = `<path d="M12 64 A52 52 0 0 1 ${x.toFixed(1)} ${y.toFixed(1)}" fill="none" stroke="${mau}" stroke-width="13" stroke-linecap="round"/>`;
   }
   $(el).innerHTML =
    `<svg width="128" height="78" viewBox="0 0 128 78">

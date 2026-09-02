@@ -166,3 +166,34 @@ def test_canh_bao_so_do_phu_qua_it_so_voi_app():
                           f"= {n/len(sd['nut']):.1f} (trần {TRAN})")
     assert not qua_it, ("sơ đồ có thể đang SÓT MẠCH — rà lại rồi mới nới trần:\n"
                         + "\n".join(qua_it))
+
+
+def test_gauge_ban_nguyet_khong_dung_large_arc_flag():
+    """LỖI UI 02/09 (Owner báo): gauge "Quota YouTube còn" 67% vẽ thành HAI MẨU
+    RỜI ở hai đầu thay vì một cung liền.
+
+    Nền gauge là NỬA vòng tròn (M12 64 A52 52 0 0 1 116 64) nên cung giá trị
+    không bao giờ quét quá 180° → large-arc-flag phải LUÔN 0. Bản cũ đặt
+    `big = pct>50 ? 1 : 0`, bảo trình duyệt vẽ CUNG LỚN tức phần bù, đi vòng
+    ngược phía dưới. Càng gần 100% mẩu càng to nên 93% trông "gần đúng" — chính
+    vì thế lỗi sống lâu mà không ai bắt; 67% mới lộ hẳn.
+
+    Ghim: khối gauge không được sinh large-arc-flag theo pct."""
+    import re
+    from pathlib import Path
+
+    goc = Path(__file__).resolve().parents[1]
+    s = (goc / "nen" / "gateway" / "templates"
+         / "nen_command_center.html").read_text(encoding="utf-8")
+    m = re.search(r"function gauge\(el, pct, mau, cap\)\{.*?\n\}", s, re.S)
+    assert m, "không tìm thấy hàm gauge — đổi tên thì sửa test này theo"
+    ham = m.group(0)
+
+    # mọi lệnh vẽ cung trong hàm phải có large-arc-flag = 0
+    cung = re.findall(r"A52 52 0 ([^ ]+) 1", ham)
+    assert cung, "không thấy lệnh vẽ cung nào trong hàm gauge"
+    for co in cung:
+        assert co == "0", (
+            f"large-arc-flag = {co!r} — nền là NỬA vòng tròn nên cung không bao "
+            "giờ quá 180°; đặt khác 0 là trình duyệt vẽ cung lớn (phần bù) và "
+            "gauge vỡ thành hai mẩu rời khi pct > 50")
