@@ -75,6 +75,15 @@ main{max-width:1340px}
 /* PANEL khít, header strip riêng */
 .g{display:grid;gap:8px}
 .panel{background:var(--panel);border:1px solid var(--line);border-radius:5px;overflow:hidden}
+/* Panel trong grid bị KÉO CAO BẰNG panel cao nhất cùng hàng (vd "Dịch vụ" có 4
+   ô số). Không khai gì thì thân panel dính lên ĐỈNH, chừa mảng trống dưới đáy —
+   đúng cái Owner thấy lệch ở gauge 02/09 (lần 1 tôi sửa hình học SVG: hết trắng
+   thừa TRONG svg nhưng KHÔNG chạm nguyên nhân này). CHỈ áp cho panel chứa
+   gauge: cho nó làm cột + thân ăn hết phần dư → gauge tự nằm giữa dọc. KHÔNG
+   áp cho .panel nói chung — trang có panel 3 thân (sơ đồ logic), flex:1 sẽ chia
+   đều cả ba và phá layout. */
+.panel:has(> .gauge){display:flex;flex-direction:column}
+.panel:has(> .gauge) > .gauge{flex:1}
 .ph{background:var(--phead);border-bottom:1px solid var(--line);padding:6px 11px;
   font:600 10.5px/1 Inter,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-2);
   display:flex;justify-content:space-between;align-items:center}
@@ -102,7 +111,9 @@ main{max-width:1340px}
 /* gauge — SVG cao 65 (viewBox khít chân cung, xem hàm gauge()). Số % kéo lên
    nằm giữa LÒNG cung: tâm cung ở y=64 trong viewBox bắt đầu 5,5 → cách đáy
    svg 6,5px; số cao 26px nên -26-6,5+~7 ≈ -26 để mắt thấy cân trong lòng. */
-.gauge{display:flex;flex-direction:column;align-items:center;padding:4px 0 0}
+/* padding-top 4px cũ làm lệch 4px khi đã căn giữa dọc — bỏ, để justify-content
+   lo cân trên/dưới. */
+.gauge{display:flex;flex-direction:column;align-items:center;justify-content:center}
 .gauge .val{font:600 26px/1 'Space Grotesk',Inter,sans-serif;margin-top:-26px;text-shadow:var(--glow)}
 .gauge .cap{font-size:10.5px;color:var(--ink-2);margin-top:4px;text-align:center}
 
