@@ -348,3 +348,75 @@
       đường end-to-end với kỳ vọng cụ thể (search có chunk, SSO đúng vai).
 - [ ] Gatus binary đứng NGOÀI gateway làm lưới cuối (gateway chết thì ai báo?)
       — cân nhắc sau khi B5 chạy.
+
+---
+
+## 02/09/2026 — HỆ KIỂM LOGIC: "16 logic = 16 sơ đồ" (Owner chốt sau 4 vòng UI)
+
+**Vấn đề Owner chỉ ra** (soi sơ đồ radary hôm trước): canary chỉ kiểm HẠ TẦNG —
+radary 2 canary trong khi app có ~16 logic nghiệp vụ thật; "Đang nóng, bản đồ
+cầu–cung → anh đang không có log để check logic đó". Sơ đồ vận hành chỉ show
+input → kết quả, **không có logic nào trên sợi dây liên kết**.
+
+**Kiến trúc chốt (2 tầng, sau 4 vòng mockup)**
+- **Tầng ① Flow toàn map (BẤT BIẾN)**: sơ đồ hộp/mũi tên chuẩn của app, git có
+  vết, đổi phải Owner duyệt. Mới: **TRẠM KIỂM trên từng sợi dây** — tổng hợp các
+  logic gắn `canh:[tu,den]`. ✓ = mọi logic của dây đúng · ✗ = có logic sai · số
+  vàng = có logic chưa kiểm · **? = dây chưa phủ kiểm (tự tố cáo lỗ hổng)** · ×N
+  = số logic trên dây. Bấm trạm → mở logic của dây đó.
+- **Tầng ② Hệ kiểm — mỗi logic MỘT sơ đồ, hiện LẦN LƯỢT**: bấm dòng bảng nào thì
+  sơ đồ + panel đổi theo (mỗi lúc một sơ đồ, Owner chốt rõ). Sơ đồ logic = chuỗi
+  bước snake 3 cột cùng ngôn ngữ hộp/mũi tên/trạm với map; **trạm trên mũi tên i
+  = kiem[i] ↔ cho[i]** của kịch bản. Panel: logic bằng lời + SỐ ĐO TỪNG CHẶNG
+  thật + kỳ vọng ✓/✗ + nút KIỂM LOGIC NÀY + lần kiểm gần nhất.
+
+**BA LOẠI KIỂM** (Owner duyệt): **GỌI** = canary gọi cửa kiểm, 0 quota ·
+**VẾT** = đọc sổ lần chạy thật (logic tốn tiền không kiểm bằng gọi được) ·
+**BẤT BIẾN** = truy vấn dữ liệu đã ghi + điều kiện phải đúng.
+
+**Nền (commit 19ccad3)**
+- `canary._chay_mot` đánh giá **ĐỦ mọi `cho`** (không dừng sớm) → `kiem[i]` ↔
+  `cho[i]` là trạng thái từng trạm; `chi_tiet` vẫn nêu kỳ vọng ĐẦU vỡ.
+- `lay_chang` [[nhãn, đường_json]] → `chang` = SỐ ĐO CHẶNG thật hiện trên panel.
+- `chua_kiem: true` → logic **được GỌI TÊN nhưng chưa có đường kiểm**, kết quả
+  `"chua"` kèm `ghi_chua` — **trung thực, không bịa** (bằng chứng lỗ hổng còn lại).
+- `noi: "nen"` → kịch bản gọi cổng NỀN thay cổng app (dùng cho kiểm VẾT).
+- `so_goi.kiem_vet(app)`: `theo_viec` + **xoay_khoa** (sau 403, call kế ≤5s phải
+  OK với key KHÁC; **0 sự kiện 403 → `xoay_ok=None`, không bịa ĐÚNG**). Route
+  `GET /api/vet/so-goi/{slug}` loopback.
+- `/general/api/giam-sat/tong-hop` trả thêm `canary_kich_ban` (UI merge theo `ma`).
+
+**App: cửa kiểm `/api/kiem/{ma}` — CHỈ-ĐỌC, 0 quota, chỉ loopback**
+- **radary** (commit 1981b3d, app repo riêng): 9 mã — `n-gram` · `dang-nong`
+  (chạy THẬT trên pool lớn nhất, trả 4 chặng) · `gop-ho` · `ban-do` · `tier-mau`
+  (core.evaluate thật, VPH 13k > T4 12k) · `ticks-lui` (tụt >10% giữa 2 tick) ·
+  `probe` · `cache-tra-cuu` · `title-thumb`. **17 logic khai**, chạy sống:
+  13 ĐÚNG / 4 CHƯA.
+- **ai-agent** (commit b9fea9f): 5 mã — `rbac-ma-tran` (5 user × 4 chunk, so
+  `_duoc_xem` THẬT với luật viết bằng lời; ca then chốt min_level thiếu → ẩn) ·
+  `van-kho-rong` (**đếm lời gọi model = 0** bằng client giả) · `viet-lai-cau` ·
+  `mac-dinh-noi-bo` (bắt filters gửi xuống kho — lỗ hổng vá 07/08) ·
+  `qa-ke-thua-quyen` (so 4 cột quyền gốc ↔ -QA trên catalog thật). **13 logic
+  khai**, chạy sống: 8 ĐÚNG / 5 CHƯA.
+
+**Kiểm kê logic 12 app**: 4 agent đọc code thật, mỗi logic kèm `file:line` —
+KHÔNG bịa; chỗ không có đường kiểm khả thi ghi thẳng "CHƯA CÓ VẾT — cần thêm X".
+**Sơ đồ vận hành: 11/12 app** (rendery mã nguồn ở `F:/RenderY/autoedit`, ngoài
+repo — chưa vẽ được).
+
+**Nghiệm thu sống**: cả 30 logic 2 app chạy qua gateway thật — 21 ĐÚNG / 9 CHƯA;
+số đo chặng thật (radary 7.455 video pool → 4.416 video 2–60 ngày → ngưỡng nổ
+5.669 view/ngày → 40 cụm nóng; nền nổ 10% ⇒ bẫy "≥" không tái diễn). Chụp màn
+đặt cạnh mockup từng khối, sửa 3 lệch (nút `.btn` chưa có CSS trong Command
+Center · logic mặc định mở phải là logic NGHIỆP VỤ nhiều bước · thiếu 2 kỳ vọng
+nên sơ đồ 4 bước chỉ có 2 trạm).
+
+**Bug tự tìm ra khi làm**: 2 test cache của radary mở `db.connect()` không đóng →
+Windows giữ khóa file → fixture test sau không dọn được DB (đã vá `try/finally`).
+
+**CÒN LẠI (không gấp)**
+- [ ] Lan cửa kiểm sang 10 app còn lại (bảng kiểm kê đã có sẵn `file:line`).
+- [ ] 9 logic `chua_kiem` — mỗi cái cần một thứ cụ thể đã ghi trong `ghi_chua`
+      (vd radary: cột `dead_ts`; sổ gọi ghi `viec` cho SERP; ai-agent: cửa kiểm
+      cho vòng phản biện / đa chiều / verbatim / chunk mồ côi).
+- [ ] rendery: cần quyền đọc `F:/RenderY/autoedit` mới vẽ sơ đồ + khai logic.
