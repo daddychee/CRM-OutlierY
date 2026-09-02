@@ -1,5 +1,5 @@
 {
- "_ghi_chu": "CANARY LOGIC — moi logic mot MA TEN, kiem tu dong moi CANARY_CHU_KY (1800s) + nut hard-test tren Command Center. Kich ban CHI-DOC/dry-run, khong ghi du lieu that. Them phep do = them 1 dong o day, khong sua code. Kich ban goi tinh nang sau hon (vd POST voi input mau) them dan khi mo mach app do — so docs/giam-sat-suc-khoe.md.",
+ "_ghi_chu": "HE KIEM LOGIC to-chuc (mo rong 02/09 sau dot ra soat 11 app). Truoc do CHI MOT kich ban va no chi soi '3 file co ton tai khong' — khong cham logic nao, trong khi day la app NGUY HIEM NHAT he: sai la TRA TIEN SAI, DANH GIA NGUOI SAI, hoac LO MAT KHAU cong ty. Cua kiem /api/kiem/<ma> CHI-DOC 0 quota; phep nao can ghi thi ghi vao THU MUC TAM rieng, khong dung so tien/cham cong that.",
  "kich_ban": [
   {
    "ma": "kpi-nguon-du",
@@ -31,6 +31,321 @@
     ],
     "kiem": [
      "đủ nguồn đọc được (thiếu → '—' có lý do)"
+    ]
+   }
+  },
+  {
+   "ma": "luong-khong-tu-tru",
+   "ten": "Máy KHÔNG tự trừ lương theo ngày công",
+   "loai": "goi",
+   "canh": [
+    "finance",
+    "so-cham-cong"
+   ],
+   "mo_ta": "Owner chốt TUYỆT ĐỐI: đi muộn/ngày công chỉ CẢNH BÁO, đường duy nhất ảnh hưởng lương là ô 'điều chỉnh HR' có lý do bắt buộc. Ai 'tối ưu' thêm hệ số ngày công là tiền bị cắt tự động theo con số đo hiện diện — sai kiểu này im như tờ vì bảng vẫn ra số đẹp. Kiểm: 2 người cùng lương + cùng xếp loại, ngày công 3 vs 12 → thực nhận PHẢI bằng nhau.",
+   "method": "GET",
+   "duong": "/api/kiem/luong-khong-tu-tru",
+   "cho": [
+    [
+     "cung_luong_du_khac_ngay_cong",
+     "==",
+     true
+    ],
+    [
+     "thieu_du_lieu_de_trong",
+     "==",
+     true
+    ]
+   ],
+   "lay_chang": [
+    [
+     "thực nhận A (3 ngày công)",
+     "thuc_nhan_a"
+    ],
+    [
+     "thực nhận B (12 ngày công)",
+     "thuc_nhan_b"
+    ]
+   ],
+   "so_do": {
+    "buoc": [
+     {
+      "ten": "2 người cùng lương + xếp loại"
+     },
+     {
+      "ten": "Ngày công 3 vs 12"
+     },
+     {
+      "ten": "Bảng lương"
+     }
+    ],
+    "kiem": [
+     "thực nhận BẰNG NHAU (ngày công không vào công thức)",
+     "thiếu lương cơ bản → để trống kèm lý do, không đoán"
+    ]
+   }
+  },
+  {
+   "ma": "kpi-van-chong-bia",
+   "ten": "Nguồn KPI chết → '—', không 0 giả",
+   "loai": "goi",
+   "canh": [
+    "kpi",
+    "nguon-kpi"
+   ],
+   "mo_ta": "Hiện 0 thì Manager đọc thành 'người này không làm gì' → đánh giá sai NGƯỜI THẬT. Van chống bịa hỏng là hỏng câm: bảng vẫn đầy số, chỉ là số bịa.",
+   "method": "GET",
+   "duong": "/api/kiem/kpi-van-chong-bia",
+   "cho": [
+    [
+     "nguon_chet_la_none",
+     "==",
+     true
+    ],
+    [
+     "khong_co_so_0_gia",
+     "==",
+     true
+    ]
+   ],
+   "lay_chang": [
+    [
+     "nguồn báo thiếu",
+     "so_nguon_thieu"
+    ]
+   ],
+   "so_do": {
+    "buoc": [
+     {
+      "ten": "4 nguồn trỏ đường KHÔNG tồn tại"
+     },
+     {
+      "ten": "Tổng hợp KPI"
+     }
+    ],
+    "kiem": [
+     "mọi nguồn báo thiếu kèm lý do",
+     "0 chỉ số nào ra số 0 giả"
+    ]
+   }
+  },
+  {
+   "ma": "cham-cong-vao-khong-doi",
+   "ten": "Giờ VÀO là tín hiệu đầu ngày",
+   "loai": "goi",
+   "canh": [
+    "cham-cong",
+    "so-cham-cong"
+   ],
+   "mo_ta": "Nếu thành gán thẳng, giờ vào bị đẩy theo tín hiệu cuối → MỌI NGƯỜI thành đi làm lúc 18h, bảng công vô nghĩa mà không ai thấy lỗi. Tín hiệu chủ đích (đóng app) không được throttle nuốt.",
+   "method": "GET",
+   "duong": "/api/kiem/cham-cong-vao-ra",
+   "cho": [
+    [
+     "vao_giu_tin_hieu_dau",
+     "==",
+     true
+    ],
+    [
+     "ra_theo_tin_hieu_cuoi",
+     "==",
+     true
+    ]
+   ],
+   "lay_chang": [
+    [
+     "giờ vào",
+     "vao"
+    ],
+    [
+     "giờ ra",
+     "ra"
+    ]
+   ],
+   "so_do": {
+    "buoc": [
+     {
+      "ten": "3 tín hiệu 08:05 / 12:00 / 18:00"
+     },
+     {
+      "ten": "Ghi nhận hiện diện"
+     }
+    ],
+    "kiem": [
+     "giờ vào giữ 08:05 (không bị đè)",
+     "giờ ra theo tín hiệu cuối 18:00"
+    ]
+   }
+  },
+  {
+   "ma": "chot-cong-chi-them",
+   "ten": "Chốt công kỳ ghi ĐÚNG MỘT LẦN",
+   "loai": "goi",
+   "canh": [
+    "cham-cong",
+    "so-cham-cong"
+   ],
+   "mo_ta": "Chốt đè = sửa lịch sử chấm công SAU KHI đã trả lương → đối chiếu về sau mất cơ sở. Sổ chỉ-thêm là nền của mọi đối soát.",
+   "method": "GET",
+   "duong": "/api/kiem/chot-cong-chi-them",
+   "cho": [
+    [
+     "lan_hai_bi_tu_choi",
+     "==",
+     true
+    ]
+   ],
+   "so_do": {
+    "buoc": [
+     {
+      "ten": "Chốt kỳ lần 1"
+     },
+     {
+      "ten": "Chốt lại lần 2"
+     }
+    ],
+    "kiem": [
+     "lần 2 bị TỪ CHỐI (không ghi đè lịch sử)"
+    ]
+   }
+  },
+  {
+   "ma": "so-tien-chi-them",
+   "ten": "Sổ tiền chỉ-thêm, sửa = bút toán đảo",
+   "loai": "bat_bien",
+   "canh": [
+    "finance",
+    "so-tien"
+   ],
+   "mo_ta": "Nếu đường nào ghi đè dòng cũ thì sổ mất tính bất biến → đối soát/kiểm toán SỤP mà báo cáo vẫn ra số đẹp. Đảo hai lần = hủy hai lần → số dư ví sai vĩnh viễn. Đọc SỔ THẬT (chỉ đọc).",
+   "method": "GET",
+   "duong": "/api/kiem/so-tien-chi-them",
+   "cho": [
+    [
+     "dong_goc_con_nguyen",
+     "==",
+     true
+    ],
+    [
+     "dao_sinh_dong_moi",
+     "==",
+     true
+    ]
+   ],
+   "lay_chang": [
+    [
+     "dòng sổ",
+     "so_dong"
+    ],
+    [
+     "bút toán đảo",
+     "so_dao"
+    ]
+   ],
+   "so_do": {
+    "buoc": [
+     {
+      "ten": "Sổ tiền thật"
+     },
+     {
+      "ten": "Soi id trùng"
+     },
+     {
+      "ten": "Soi đảo-của-đảo"
+     }
+    ],
+    "kiem": [
+     "0 id xuất hiện 2 lần (không ghi đè)",
+     "mọi đảo trỏ dòng có thật, không đảo-của-đảo"
+    ]
+   }
+  },
+  {
+   "ma": "vault-dia-ma-hoa",
+   "ten": "Trên đĩa không bao giờ có bản rõ",
+   "loai": "goi",
+   "canh": [
+    "vault",
+    "audit"
+   ],
+   "mo_ta": "Bản rõ lọt ra đĩa = trộm file / backup là đọc được HẾT mật khẩu công ty — đúng thứ AES-GCM sinh ra để chặn. Dựng vault TẠM rồi soi bytes; vault thật không bị đụng.",
+   "method": "GET",
+   "duong": "/api/kiem/vault-dia-ma-hoa",
+   "cho": [
+    [
+     "dia_khong_chua_ban_ro",
+     "==",
+     true
+    ],
+    [
+     "chua_mo_khong_doc_duoc",
+     "==",
+     true
+    ]
+   ],
+   "lay_chang": [
+    [
+     "byte trên đĩa",
+     "so_byte_dia"
+    ]
+   ],
+   "so_do": {
+    "buoc": [
+     {
+      "ten": "Vault tạm + mục mẫu"
+     },
+     {
+      "ten": "Đọc thô toàn bộ file"
+     },
+     {
+      "ten": "Khóa lại rồi thử đọc"
+     }
+    ],
+    "kiem": [
+     "bytes đĩa KHÔNG chứa mật khẩu mốc",
+     "khóa rồi thì không đọc được mục"
+    ]
+   }
+  },
+  {
+   "ma": "nguoi-nghi-ra-khoi-bang",
+   "ten": "Người đã nghỉ ra khỏi bảng lương",
+   "loai": "bat_bien",
+   "canh": [
+    "kpi",
+    "iam"
+   ],
+   "mo_ta": "Người thôi việc còn trong bảng lương = CHI TIỀN cho người không còn làm; sổ chỉ-thêm nên bút toán đó không xóa được, phải đảo tay. Tài khoản hệ thống (không mã hồ sơ) cũng không được vào bảng.",
+   "method": "GET",
+   "duong": "/api/kiem/nguoi-nghi-ra-khoi-bang",
+   "cho": [
+    [
+     "nghi_khong_vao_bang",
+     "==",
+     true
+    ]
+   ],
+   "lay_chang": [
+    [
+     "người trong IAM",
+     "so_nguoi_iam"
+    ],
+    [
+     "dòng bảng lương",
+     "so_dong_bang"
+    ]
+   ],
+   "so_do": {
+    "buoc": [
+     {
+      "ten": "Danh sách IAM (đã lọc nghỉ)"
+     },
+     {
+      "ten": "Bảng lương kỳ này"
+     }
+    ],
+    "kiem": [
+     "0 dòng thiếu mã hồ sơ (không tài khoản hệ thống)"
     ]
    }
   }

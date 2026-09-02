@@ -79,6 +79,48 @@
    "ten": "Sổ thu chi + P&L",
    "cot": 4,
    "loai": "ket_qua"
+  },
+  {
+   "ma": "hr-hub",
+   "ten": "HR Hub 4 tab",
+   "cot": 1,
+   "ghi_chu": "tài khoản · chấm công · xếp loại KPI · nghỉ phép"
+  },
+  {
+   "ma": "xep-loai",
+   "ten": "Xếp loại KPI A/B/C",
+   "cot": 1,
+   "ghi_chu": "biến DUY NHẤT máy dùng nhân lương"
+  },
+  {
+   "ma": "luong",
+   "ten": "Bảng lương (không tự trừ)",
+   "cot": 1
+  },
+  {
+   "ma": "so-luong",
+   "ten": "Sổ lương cơ bản + điều chỉnh",
+   "cot": 2,
+   "loai": "kho",
+   "ghi_chu": "chỉ-thêm, giữ lịch sử ai đặt bao nhiêu"
+  },
+  {
+   "ma": "audit",
+   "ten": "Audit vault chỉ-thêm",
+   "cot": 2,
+   "loai": "kho",
+   "ghi_chu": "ghi cả lần XEM mật khẩu"
+  },
+  {
+   "ma": "nas",
+   "ten": "Trang NAS + .bat cài ổ",
+   "cot": 1
+  },
+  {
+   "ma": "nas-sync",
+   "ten": "Tài khoản Windows NAS",
+   "cot": 3,
+   "loai": "ngoai"
   }
  ],
  "canh": [
@@ -134,6 +176,48 @@
   [
    "so-tien",
    "kq-so-tien"
+  ],
+  [
+   "hr",
+   "hr-hub"
+  ],
+  [
+   "hr-hub",
+   "so-cham-cong"
+  ],
+  [
+   "hr-hub",
+   "xep-loai"
+  ],
+  [
+   "xep-loai",
+   "luong",
+   "hệ số nhân"
+  ],
+  [
+   "luong",
+   "so-luong"
+  ],
+  [
+   "luong",
+   "so-cham-cong",
+   "điều kiện chốt công trước khi duyệt"
+  ],
+  [
+   "luong",
+   "kq-luong"
+  ],
+  [
+   "vault",
+   "audit"
+  ],
+  [
+   "manager",
+   "nas"
+  ],
+  [
+   "nas",
+   "nas-sync"
   ]
  ]
 }
