@@ -552,3 +552,43 @@ chạy trước.
 **Bài học mới**: `TypeError` do lệch DẤU tiếng Việt — kịch bản tôi gõ "khóa" (ó)
 trong khi app trả "khoá" (oá), canary đỏ oan. Chuỗi so trong `cho` nên chọn đoạn
 KHÔNG dấu hoặc ít dấu nhất.
+
+### 02/09 (tiếp 4) — MỞ CỬA KIỂM CHO 7 APP, LÀM LẦN LƯỢT
+
+Owner: "làm lần lượt". Thứ tự theo mức nguy hiểm khi sai. Mỗi app một vòng đầy
+đủ: đọc code → viết test → `kiem.py` → route → nghiệm thu sống → commit.
+
+| App | Trước | Sau | Logic mở thêm |
+|---|---|---|---|
+| data-analytics | 2 | **8** | 7 phán quyết là tập ĐÓNG (quét 1.280 tổ hợp) · hệ số %→tỷ lệ EN+VN · van cỡ mẫu động · baseline khai nguồn · chế độ chỉ-số không rò phán quyết · **bẫy cửa sổ trượt** (2 report 28 ngày chồng 21 ngày) |
+| tasky | 1 (xanh giả) | **8** | luật giao việc level×bộ phận (ngang cấp CẤM) · phối hợp ngang · van tỉ lệ ở CẢ HAI nơi · nghiệm thu đúng người · chặn 17 đuôi chạy được · hạn sai nói thẳng · mục tiêu không tự đạt |
+| to-chuc | 1 | **8** | **lương KHÔNG tự trừ** (ngày công 3 vs 12 → cùng 10tr) · KPI nguồn chết ra "—" · giờ vào giữ tín hiệu đầu · chốt công chỉ-thêm · sổ tiền không đảo-của-đảo · **vault đĩa không bản rõ** · người nghỉ ra khỏi bảng lương |
+| video-review | 2 | **7** | vân tay CHỈ tin dung lượng · ngoài gốc NAS bị chặn · **H.265 phải cảnh báo** · 3 chốt xóa an toàn · phát 206 khúc ≤8MB |
+| niche-research | 2 | **6** | shorts gate xóa IN PLACE · fresh KHÔNG BAO GIỜ là normal · cờ valid đủ nền + sàn view · ghim mốc scan |
+| seo-optimize | 2 | **7** | audit không lọt mật khẩu (lọc THEO ĐƯỜNG vì 'old' hai nghĩa) · CTA không bịa URL · chapter từ SRT · guess_lang chỉ đề xuất · lang_mismatch thiếu thì im |
+| content-ultimate | 1 | **6** | cửa chặn nhóm C · **chuẩn nhịp ưu tiên corpus** · không điểm tổng · burstiness chỉ mô tả · neo lọc mức KHỐI |
+| plannery | 2 | **8** | lịch theo KPI cam kết · giờ nhảy nghỉ trưa · ngày nghỉ chỉ ngày làm · quyền ghi Ở SERVER · header chỉ loopback · đề nghị không tự duyệt |
+
+**LỖI THẬT thứ ba tìm ra** (sau race rendery và MA_VUNG thiếu TT-DEU):
+`content-ultimate` route `/api/kiem-chung` gọi `cham_nhip` **KHÔNG truyền
+corpus** → nhánh corpus CHẾT từ 23/08, luôn chấm bằng 3 exemplar CHỌN LỆCH (đo
+thật: A013 mẫu 33,3% câu dài trong khi corpus thật 9,3%). Bản viết ĐÚNG nhịp bị
+báo "câu vụn hơn giọng tác giả", bản SAI được cho qua — **đúng cái bệnh module
+sinh ra để chữa**, và UI vẫn hiện nguồn "exemplar" nên không ai đọc ra. Đã sửa +
+thêm dây `kiem-chung → kho-corpus` vào sơ đồ (giờ có thật trong code).
+
+**LỖI của chính phép kiểm** (tự bắt khi nghiệm thu toàn hệ): to-chuc
+`chot_cong_chi_them` chỉ trỏ `CHAM_CONG_DIR` sang thư mục tạm mà **quên
+`CHAM_CONG_CHOT_DIR`** (bản chốt dùng env RIÊNG) → phép kiểm **ghi bản chốt GIẢ
+vào sổ thật**; lượt canary sau đỏ oan, và tệ hơn: **HR không chốt được kỳ đó nữa**
+("kỳ đã chốt rồi"). Đã xóa 2 file bẩn + dọn cache `_da_ghi` cấp tiến trình +
+test ghim "chạy lặp 3 lần cùng kết quả VÀ sổ thật không mọc file".
+
+> **BÀI HỌC**: cửa kiểm có ghi tạm phải trỏ **HẾT** mọi env kho của module, không
+> chỉ cái dễ thấy. Và phải nghiệm thu bằng cách **chạy lặp** — lượt đầu xanh
+> không chứng minh gì, lỗi rò trạng thái chỉ lộ ở lượt hai.
+
+**Toàn hệ sau đợt**: 122 logic khai / **94 có đường kiểm** (trước cả mạch: 47/45).
+Nghiệm thu sống 12 app: **88 ĐÚNG · 2 SAI · 28 CHƯA**. Hai cái SAI đều là **sự
+thật bị che trước đây**, không phải lỗi phép kiểm: ai-agent writer đang MOCK
+(hỏi–đáp trả lời mẫu trên hệ thật), data-analytics két chưa có vai writer.
