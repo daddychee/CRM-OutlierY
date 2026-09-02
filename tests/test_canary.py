@@ -243,3 +243,29 @@ def test_edge_canh_bao_khi_chuyen_dung_sang_sai():
     bao = canary.so_canary("app-x", moi_sai, cu)
     assert len(bao) == 1 and "hồi phục" in bao[0]
     assert canary.so_canary("app-x", None, cu) == []           # lần đầu → im
+
+
+def test_khong_dung_khac_loi_khi_nhanh_hong_chi_tra_canh_bao():
+    """LỖI KHUÔN MẪU tự bắt 02/09: kịch bản dùng `!= "loi"` trong khi hàm kiểm
+    của app KHÔNG BAO GIỜ trả "loi" ở nhánh hỏng (nó trả "canh_bao") → canary
+    VĨNH VIỄN XANH. Tasky dính nặng nhất: đó là canary DUY NHẤT của app nên cả
+    app thực tế không được canh.
+
+    Ghim: kịch bản nhắm module deep-health mà app chỉ hạ xuống 'canh_bao' khi
+    hỏng thì PHẢI so `== "ok"`. Danh sách dưới là các module đã soi code thật.
+    """
+    from nen.common import canary
+    # (slug, tên module) mà nhánh HỎNG của app chỉ trả 'canh_bao'
+    CHI_CANH_BAO = {("tasky", "nas-goc"), ("niche-research", "khoa"),
+                    ("seo-optimize", "khoa"), ("data-analytics", "llm-dien-giai"),
+                    ("data-analytics", "bao-cao")}
+    long = []
+    for slug, mo_dun in CHI_CANH_BAO:
+        for k in canary.doc_kich_ban(slug):
+            for duong, toan_tu, gia_tri in k.get("cho") or []:
+                if f"ten={mo_dun}." not in duong:
+                    continue
+                if toan_tu == "!=" and gia_tri == "loi":
+                    long.append(f"{slug}/{k['ma']}: `!= loi` trên module "
+                                f"'{mo_dun}' chỉ hạ 'canh_bao' → xanh giả")
+    assert not long, "canary xanh giả:\n" + "\n".join(long)

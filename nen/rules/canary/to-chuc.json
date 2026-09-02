@@ -18,11 +18,12 @@
     "kpi",
     "nguon-kpi"
    ],
-   "mo_ta": "KPI đọc đủ nguồn — nguồn chết phải hiện '—' kèm lý do, KHÔNG bịa số 0; canary bắt ca hiện gạch ngang OAN.",
+   "mo_ta": "KPI đọc đủ nguồn — nguồn chết phải hiện '—' kèm lý do, KHÔNG bịa số 0; canary bắt ca hiện gạch ngang OAN. LƯU Ý PHẠM VI: phép kiểm chỉ soi 3 file CÓ TỒN TẠI không, KHÔNG chạy tong_hop_kpi nên không bắt được ca van chống bịa hỏng (trả 0 thay vì None) — cần cửa kiểm /api/kiem để phủ.",
    "so_do": {
     "buoc": [
      {
-      "ten": "4 nguồn KPI"
+      "ten": "3 nguồn KPI đang nối",
+      "ghi": "SpeakY đã bỏ — không nằm trong danh sách kiểm"
      },
      {
       "ten": "Đọc từng nguồn"

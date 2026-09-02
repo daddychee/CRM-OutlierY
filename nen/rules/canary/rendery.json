@@ -68,24 +68,24 @@
   {
    "ma": "thu-tu-chuong",
    "ten": "Thứ tự chương H→C1..Cn→E",
-   "loai": "goi",
+   "loai": "vet",
    "canh": [
     "hang-doi",
     "align"
    ],
    "chua_kiem": true,
-   "ghi_chua": "Sắp theo TÊN là sai cả hai đầu ('E' trước 'H', 'C10' trước 'C2') → timeline lộn, dựng lại cả tập. Kiểm 0 quota: gọi chapters.doc_chuong() trên thư mục giả H,C1,C2,C10,E — cần mở cửa kiểm /api/kiem trong app (mã ở F:)"
+   "ghi_chua": "Sắp theo TÊN sai cả hai đầu ('E' trước 'H', 'C10' trước 'C2') → timeline lộn, dựng lại cả tập. GET /api/kiem-tap (chỉ-đọc) ĐÃ trả chuong[] sắp đúng — nhưng cần một TẬP MẪU cố định trên NAS để canary trỏ vào (đường dẫn thay đổi theo tập thật). Cần thêm: thư mục mẫu <NAS>/_canary/H,C1,C2,C10,E rồi khai duong=/api/kiem-tap?duong_dan=..."
   },
   {
    "ma": "chan-thieu-file",
    "ten": "Chặn thiếu script/voice TRƯỚC hàng đợi",
-   "loai": "goi",
+   "loai": "vet",
    "canh": [
     "nop-job",
     "hang-doi"
    ],
    "chua_kiem": true,
-   "ghi_chua": "Không chặn thì job chạy 24 phút rồi mới báo thiếu voice. Kiểm: doc_chuong() trên chương chỉ có .txt → lỗi 'thiếu voice'; POST /api/jobs phải 422 và KHÔNG tạo dòng jobs"
+   "ghi_chua": "Không chặn thì job chạy 24 phút rồi mới báo thiếu voice. Vế chính (doc_chuong báo 'thiếu voice') ĐÃ lộ qua GET /api/kiem-tap → san_sang=false + loi[] — cùng cần TẬP MẪU cố định như thu-tu-chuong. Cần thêm: <NAS>/_canary/thieu-voice/ (1 chương chỉ có .txt)"
   },
   {
    "ma": "ep-trong-nas",
@@ -107,7 +107,7 @@
     "align"
    ],
    "chua_kiem": true,
-   "ghi_chua": "2 worker cùng nhận 1 job → dựng đôi, ghi đè kết quả. Bất biến: SELECT COUNT(*) FROM jobs WHERE status='running' LUÔN ≤ 2 (MAX_WORKERS). Cần cửa kiểm đọc jobs.db"
+   "ghi_chua": "2 worker cùng nhận 1 job → dựng đôi, ghi đè kết quả. LỊCH SỬ: rà 02/09 tìm ra RACE THẬT — đếm running và UPDATE nằm ở hai câu lệnh, hai worker cùng đọc running=1 thì cả hai thấy còn suất và cùng claim hai job khác nhau = vượt trần. ĐÃ SỬA: gộp điều kiện trần vào chính câu UPDATE (SQLite đánh giá nguyên tử), test ép đúng khoảnh khắc đó ghim lại. Bất biến: COUNT(running) <= MAX_WORKERS. Cần cửa kiểm đọc jobs.db để canh trên hệ đang chạy (deep health đã trả '{n} đang dựng' — parse được)."
   },
   {
    "ma": "job-mo-coi",
@@ -118,7 +118,7 @@
     "theo-doi"
    ],
    "chua_kiem": true,
-   "ghi_chua": "Runbook bắt Stop/Start; không trả về thì job kẹt 'running' vĩnh viễn, nhân sự chờ mãi. Bất biến: không job nào running mà started_at cũ hơn STALE_AFTER (4h)"
+   "ghi_chua": "Runbook bắt Stop/Start; không trả về thì job kẹt 'running' vĩnh viễn, nhân sự chờ mãi. BẤT BIẾN ĐÚNG (sửa 02/09 — khai cũ SAI): sau khi server khởi động, KHÔNG job nào ở 'running' được kế thừa từ lần chạy trước. Khai cũ ghi 'không job nào running mà started_at cũ hơn STALE_AFTER 4h' là SAI — requeue_orphans UPDATE MỌI job running, không lọc theo started_at (tham số stale_after khai mà không dùng, queue.py:272 vs :280). Cần cửa kiểm đọc jobs.db đối chiếu mốc khởi động tiến trình."
   },
   {
    "ma": "khoa-tu-ket",
@@ -139,8 +139,38 @@
     "cai-dat",
     "ket-v3"
    ],
-   "chua_kiem": true,
-   "ghi_chua": "Chỉ nhìn .env thì báo 'thiếu' trong khi job chạy được — sai lệch nguy hiểm hơn không báo. Kiểm: collect_pexels_keys tách theo phẩy/khoảng trắng + khử trùng"
+   "mo_ta": "Chỉ nhìn .env thì báo 'thiếu' trong khi job chạy được — sai lệch nguy hiểm hơn không báo. /api/sources hợp nhất két V3 + os.environ + .env rồi mới kết luận. (Khai cũ ghi 'chưa kiểm được' là SAI — route chỉ-đọc đã tồn tại, sửa 02/09.)",
+   "method": "GET",
+   "duong": "/api/sources",
+   "cho": [
+    [
+     "sources",
+     "len>=",
+     4
+    ]
+   ],
+   "lay_chang": [
+    [
+     "nguồn khai báo",
+     "sources"
+    ]
+   ],
+   "so_do": {
+    "buoc": [
+     {
+      "ten": "Két V3 + os.environ + .env"
+     },
+     {
+      "ten": "Hợp nhất 3 nơi"
+     },
+     {
+      "ten": "Kết luận ready/need"
+     }
+    ],
+    "kiem": [
+     "liệt kê đủ các nguồn (Pexels·Pixabay·Envato·Vecteezy)"
+    ]
+   }
   },
   {
    "ma": "sub-khong-khoa",
@@ -150,8 +180,29 @@
     "sourcer",
     "sub-site"
    ],
-   "chua_kiem": true,
-   "ghi_chua": "Nguồn subscription cần email + hồ sơ trình duyệt; báo nhầm 'sẵn sàng' → job im lặng bỏ qua nguồn này. Kiểm: available_sites(env={}) → [] ; có email nhưng chưa có hồ sơ → vẫn []"
+   "mo_ta": "Nguồn subscription cần email + hồ sơ trình duyệt, KHÔNG có khóa API; báo nhầm 'sẵn sàng' → job im lặng bỏ qua nguồn này khi stock nghèo. /api/sources trả thẳng nhãn nguồn. (Khai cũ 'chưa kiểm được' là SAI — sửa 02/09.)",
+   "method": "GET",
+   "duong": "/api/sources",
+   "cho": [
+    [
+     "sources.name=envato.nguon",
+     "chua",
+     "tài khoản"
+    ]
+   ],
+   "so_do": {
+    "buoc": [
+     {
+      "ten": "Envato + Vecteezy"
+     },
+     {
+      "ten": "Soi cách xác thực"
+     }
+    ],
+    "kiem": [
+     "nguồn khai là tài khoản (không dùng khoá API), không phải khoá"
+    ]
+   }
   },
   {
    "ma": "xoay-khoa-429",

@@ -9,8 +9,8 @@
    "cho": [
     [
      "mo_dun.ten=khoa.trang_thai",
-     "!=",
-     "loi"
+     "==",
+     "ok"
     ]
    ],
    "loai": "bat_bien",
@@ -18,7 +18,7 @@
     "extract-kenh",
     "yt-api"
    ],
-   "mo_ta": "Khóa YouTube lấy được từ két — thiếu thì extract/harvest chết ngay cửa.",
+   "mo_ta": "Khóa YouTube lấy được từ két — thiếu thì extract/harvest chết ngay cửa. XANH GIẢ đã sửa 02/09: `!= loi` không bao giờ sai vì hàm kiểm của app chỉ hạ 'canh_bao' ở nhánh hỏng (soi code thật) — canary vĩnh viễn xanh kể cả khi tính năng đã chết. Đổi sang `== ok`.",
    "so_do": {
     "buoc": [
      {

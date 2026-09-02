@@ -9,8 +9,8 @@
    "cho": [
     [
      "mo_dun.ten=llm-dien-giai.trang_thai",
-     "!=",
-     "loi"
+     "==",
+     "ok"
     ]
    ],
    "loai": "bat_bien",
@@ -18,7 +18,7 @@
     "dien-giai",
     "zai"
    ],
-   "mo_ta": "Tầng diễn giải LLM còn sống — chết thì engine vẫn ra phán quyết nhưng mất phần giải thích.",
+   "mo_ta": "Tầng diễn giải LLM còn sống — chết thì engine vẫn ra phán quyết nhưng mất phần giải thích. XANH GIẢ đã sửa 02/09: `!= loi` không bao giờ sai vì hàm kiểm của app chỉ hạ 'canh_bao' ở nhánh hỏng (soi code thật) — canary vĩnh viễn xanh kể cả khi tính năng đã chết. Đổi sang `== ok`.",
    "so_do": {
     "buoc": [
      {
@@ -41,8 +41,8 @@
    "cho": [
     [
      "mo_dun.ten=bao-cao.trang_thai",
-     "!=",
-     "loi"
+     "==",
+     "ok"
     ]
    ],
    "loai": "bat_bien",
@@ -50,7 +50,7 @@
     "so-bao-cao",
     "xem-lich-su"
    ],
-   "mo_ta": "Kho báo cáo lịch sử đọc được — hỏng thì xem lại báo cáo cũ trắng trang.",
+   "mo_ta": "Kho báo cáo lịch sử đọc được — hỏng thì xem lại báo cáo cũ trắng trang. XANH GIẢ đã sửa 02/09: `!= loi` không bao giờ sai vì hàm kiểm của app chỉ hạ 'canh_bao' ở nhánh hỏng (soi code thật) — canary vĩnh viễn xanh kể cả khi tính năng đã chết. Đổi sang `== ok`.",
    "so_do": {
     "buoc": [
      {

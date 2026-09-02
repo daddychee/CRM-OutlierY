@@ -42,7 +42,17 @@
     [
      "_rev",
      ">=",
-     0
+     1
+    ],
+    [
+     "people",
+     "len>=",
+     1
+    ],
+    [
+     "projects",
+     "len>=",
+     1
     ]
    ],
    "loai": "goi",
@@ -50,7 +60,7 @@
     "ui",
     "server"
    ],
-   "mo_ta": "API state trả lịch KÈM _rev — mất _rev là mất cơ chế CAS chống ghi đè (app chuẩn duy nhất đợt audit).",
+   "mo_ta": "API state trả lịch KÈM _rev — mất _rev là mất cơ chế CAS chống ghi đè (app chuẩn duy nhất đợt audit). SỬA 02/09: điều kiện cũ `_rev >= 0` VÔ DỤNG vì EMPTY_STATE có sẵn _rev=0 → PASS cả khi plan.json mất sạch. Nay đòi _rev>=1 và có người + dự án thật.",
    "so_do": {
     "buoc": [
      {
@@ -61,9 +71,25 @@
      }
     ],
     "kiem": [
-     "phản hồi có _rev (CAS còn nguyên)"
+     "phản hồi có _rev >= 1 (CAS còn nguyên, không phải state rỗng)",
+     "có ít nhất 1 người trong lịch",
+     "có ít nhất 1 dự án"
     ]
-   }
+   },
+   "lay_chang": [
+    [
+     "phiên bản lịch",
+     "_rev"
+    ],
+    [
+     "người",
+     "people"
+    ],
+    [
+     "dự án",
+     "projects"
+    ]
+   ]
   }
  ]
 }

@@ -9,8 +9,8 @@
    "cho": [
     [
      "mo_dun.ten=nas-goc.trang_thai",
-     "!=",
-     "loi"
+     "==",
+     "ok"
     ]
    ],
    "loai": "bat_bien",
@@ -18,7 +18,7 @@
     "vong-doi",
     "so-tuan"
    ],
-   "mo_ta": "Gốc lưu file đính kèm đọc được — hỏng thì đính kèm việc mất lặng lẽ.",
+   "mo_ta": "Gốc lưu file đính kèm đọc được — hỏng thì đính kèm việc mất lặng lẽ. XANH GIẢ đã sửa 02/09: `!= loi` không bao giờ sai vì hàm kiểm của app chỉ hạ 'canh_bao' ở nhánh hỏng (soi code thật) — canary vĩnh viễn xanh kể cả khi tính năng đã chết. Đổi sang `== ok`.",
    "so_do": {
     "buoc": [
      {

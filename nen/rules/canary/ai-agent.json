@@ -9,14 +9,14 @@
     "nhap-lieu",
     "kho-vector"
    ],
-   "mo_ta": "Sự cố 31/07: catalog có 10 tài liệu mà Qdrant 0 point — hỏi–đáp chết lặng lẽ 3 ngày. Deep health tự khai module kho-vector.",
+   "mo_ta": "Sự cố 31/07: catalog có 10 tài liệu mà Qdrant 0 point — hỏi–đáp chết lặng lẽ 3 ngày. Deep health tự khai module kho-vector. XANH GIẢ đã sửa 02/09: `!= loi` không bao giờ sai vì nhánh MOCK trả 'canh_bao' — canary xanh trong khi app đang chạy mock (đúng sự cố 31/08: writer mock trả lời MẪU trên hệ thật). Đổi sang `== ok`.",
    "method": "GET",
    "duong": "/api/suc-khoe",
    "cho": [
     [
      "mo_dun.ten=kho-vector.trang_thai",
-     "!=",
-     "loi"
+     "==",
+     "ok"
     ]
    ],
    "so_do": {
@@ -36,19 +36,19 @@
   {
    "ma": "tim-kiem-tra-ket-qua",
    "ten": "Search kho thật trả kết quả (canary truy xuất)",
-   "loai": "goi",
+   "loai": "bat_bien",
    "canh": [
     "hoi-dap",
     "kho-vector"
    ],
-   "mo_ta": "Kho có point mà search câu phổ quát ra 0 kết quả = tầng truy xuất lệch (model/hybrid/alias) dù mọi health khác xanh. Cache 10 phút.",
+   "mo_ta": "Kho có point mà search câu phổ quát ra 0 kết quả = tầng truy xuất lệch (model/hybrid/alias) dù mọi health khác xanh. Cache 10 phút. XANH GIẢ đã sửa 02/09: `!= loi` không bao giờ sai vì nhánh MOCK trả 'canh_bao' — canary xanh trong khi app đang chạy mock (đúng sự cố 31/08: writer mock trả lời MẪU trên hệ thật). Đổi sang `== ok`.",
    "method": "GET",
    "duong": "/api/suc-khoe",
    "cho": [
     [
      "mo_dun.ten=search-canary.trang_thai",
-     "!=",
-     "loi"
+     "==",
+     "ok"
     ]
    ],
    "so_do": {
@@ -74,14 +74,14 @@
     "writer",
     "zai"
    ],
-   "mo_ta": "Key hết số dư / model đổi tên → writer chết; health tự khai để không phải đợi người dùng báo.",
+   "mo_ta": "Key hết số dư / model đổi tên → writer chết; health tự khai để không phải đợi người dùng báo. XANH GIẢ đã sửa 02/09: `!= loi` không bao giờ sai vì nhánh MOCK trả 'canh_bao' — canary xanh trong khi app đang chạy mock (đúng sự cố 31/08: writer mock trả lời MẪU trên hệ thật). Đổi sang `== ok`.",
    "method": "GET",
    "duong": "/api/suc-khoe",
    "cho": [
     [
      "mo_dun.ten=llm-writer.trang_thai",
-     "!=",
-     "loi"
+     "==",
+     "ok"
     ]
    ],
    "so_do": {
