@@ -828,14 +828,40 @@ function veSoDo(d, cKq, logics){
   const BW=218,BH=54,GX=330,GY=84,X0=14,Y0=16;
   const theoCot={};
   for(const n of sd.nut) (theoCot[n.cot||0]=theoCot[n.cot||0]||[]).push(n);
+  // CỘT ĐÔNG TỰ CHIA 2 LÀN (02/09 — Owner: "sơ đồ nhỏ quá không nhìn được"):
+  // RenderY dồn 10 nút vào cột lõi → cột đó cao gấp 5 lần cột khác, cả sơ đồ bị
+  // bóp nhỏ. Quá TOI_DA_MOT_COT thì xếp 2 làn con trong CÙNG cột (nửa bề ngang
+  // khe), cạnh vẫn nối đúng vì mọi thứ đọc từ viTri.
+  // LAN_LECH phải > BW, không thì hộp làn 2 ĐÈ LÊN hộp làn 1 (đo thật RenderY)
+  const TOI_DA_MOT_COT=6, LAN_LECH=BW+22;
   const viTri={};
   let maxY=0, maxCot=0;
-  for(const [cot,ds] of Object.entries(theoCot)){
-    maxCot=Math.max(maxCot,+cot);
-    ds.forEach((n,i)=>{ viTri[n.ma]={x:X0+(+cot)*GX, y:Y0+i*GY, cot:+cot};
-      maxY=Math.max(maxY, Y0+i*GY+BH); });
+  // Cột chia làn CHIẾM CHỖ RỘNG HƠN → cột sau phải dời sang phải, không thì đè.
+  // Duyệt cột theo thứ tự tăng dần, cộng dồn mốc x.
+  const cacCot=Object.keys(theoCot).map(Number).sort((a,b)=>a-b);
+  const mocX={};
+  let x=X0;
+  for(const cot of cacCot){
+    mocX[cot]=x;
+    x += (theoCot[cot].length>TOI_DA_MOT_COT ? LAN_LECH : 0) + GX;
   }
-  const W3=X0+maxCot*GX+BW+14, H3=maxY+16;
+  for(const cot of cacCot){
+    const ds=theoCot[cot];
+    maxCot=Math.max(maxCot, cot);
+    const chia=ds.length>TOI_DA_MOT_COT;
+    const soHang=chia?Math.ceil(ds.length/2):ds.length;
+    ds.forEach((n,i)=>{
+      const lan=chia?Math.floor(i/soHang):0, hang=chia?i%soHang:i;
+      viTri[n.ma]={x:mocX[cot]+lan*LAN_LECH, y:Y0+hang*GY, cot};
+      maxY=Math.max(maxY, Y0+hang*GY+BH);
+    });
+  }
+  const W3=mocX[maxCot]+(theoCot[maxCot].length>TOI_DA_MOT_COT?LAN_LECH:0)+BW+14;
+  const H3=maxY+16;
+  // Sơ đồ lớn: KHÔNG ép vừa trần 340px (chữ teo không đọc nổi) — cho cao thật,
+  // panel tự cuộn dọc. Ngưỡng theo tỉ lệ khung thật, không theo số nút.
+  const caoThat=Math.min(H3*(1180/W3), 900);   // 1180 ≈ bề ngang panel thực tế
+  const tranCao=Math.max(340, Math.round(caoThat));
   const mauMuc={ok:"var(--ok)", warn:"var(--warn)", err:"var(--err)", "":"var(--line)"};
   const nenMuc={ok:"var(--ok-soft)", warn:"var(--warn-soft)", err:"var(--err-soft)", "":"var(--inset)"};
 
@@ -848,11 +874,19 @@ function veSoDo(d, cKq, logics){
     const stt=(lanTheoKhe[khe]=(lanTheoKhe[khe]||0)+1);
     canhVe.push({tu:c[0], den:c[1], nhan:c[2]||"", a, b, khe, stt, idx});
   });
+  // mép PHẢI NHẤT của từng cột (cột chia làn thì là mép làn 2) — làn đi dây
+  // phải nằm SAU mép này, không thì đường xuyên qua hộp của chính cột đó
+  const mepPhai={};
+  for(const n of sd.nut){
+    const v=viTri[n.ma];
+    mepPhai[v.cot]=Math.max(mepPhai[v.cot]||0, v.x+BW);
+  }
   let svg="";
   for(const c of canhVe){
     const soLan=lanTheoKhe[c.khe];
-    const kheRong=GX-BW;               // bề ngang khe giữa 2 cột
-    const lane=c.a.x+BW + kheRong*(c.stt/(soLan+1));
+    const goc=Math.max(c.a.x+BW, mepPhai[c.a.cot]||0);
+    const kheRong=Math.max((mocX[c.a.cot+1]??(goc+GX-BW))-goc, 40); // trống tới cột sau
+    const lane=goc + kheRong*(c.stt/(soLan+1));
     const x1=c.a.x+BW, y1=c.a.y+BH/2, x2=c.b.x, y2=c.b.y+BH/2;
     svg+=`<g class="luong" data-tu="${esc(c.tu)}" data-den="${esc(c.den)}">
       <path d="M${x1} ${y1} H${lane.toFixed(0)} V${y2} H${x2}" fill="none"
@@ -908,9 +942,11 @@ function veSoDo(d, cKq, logics){
     const tenDen=(sd.nut.find(n=>n.ma===c.den)||{}).ten||c.den;
     return `<span style="white-space:nowrap"><b>${esc(tenTu)}</b> → <b>${esc(tenDen)}</b> <span class="mut">· ${esc(c.nhan)}</span></span>`;
   }).join(' <span class="mut" style="margin:0 8px">|</span> ');
-  box.innerHTML=`<svg id="soDoSvg" viewBox="0 0 ${W3} ${H3}" style="width:100%;max-height:340px" preserveAspectRatio="xMidYMin meet">
+  box.innerHTML=`<svg id="soDoSvg" viewBox="0 0 ${W3} ${H3}" style="width:100%;max-height:${tranCao}px" preserveAspectRatio="xMidYMin meet">
     <defs><marker id="muiTen" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto"><path d="M0 0 L7 3 L0 6 Z" fill="var(--ink-3)"/></marker></defs>${svg}</svg>
-    ${chuGiai?`<div class="note" style="line-height:2">${chuGiai}</div>`:""}
+    ${chuGiai?(canhVe.filter(c=>c.nhan).length>8
+      ? `<details class="note"><summary style="cursor:pointer">Chú giải ${canhVe.filter(c=>c.nhan).length} luồng — bấm để mở</summary><div style="line-height:2;margin-top:6px">${chuGiai}</div></details>`
+      : `<div class="note" style="line-height:2">${chuGiai}</div>`):""}
     <div class="note" style="margin-top:2px">trạm ✓ = mọi logic của dây đúng · ✗ = có logic sai · số vàng = có logic chưa kiểm · ? = dây chưa phủ kiểm · ×N = số logic trên dây — bấm trạm mở sơ đồ logic bên dưới &nbsp;|&nbsp; rê chuột / bấm một khối để làm sáng các luồng của nó kèm nhãn</div>`;
   // hover/click khối → luồng liên quan sáng + nhãn hiện
   const svgEl=document.getElementById("soDoSvg");
