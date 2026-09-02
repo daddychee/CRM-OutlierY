@@ -1155,3 +1155,16 @@ VỀ CÂU "CÓ CỐ CHẤP GLM?": V3 hiện CHỈ có key GLM — chưa phải l
 nghị: giữ GLM (đã tắt thinking) làm ngựa kéo vì rẻ; Owner cấp key Claude/Gemini
 để (a) A/B chất lượng thật (việc treo từ 23/08), (b) đường thoát contentFilter
 1301 với đề tài nhạy cảm TQ — rủi ro CHIẾN LƯỢC không vá được bằng code.
+
+### 15.15 ĐÁNH GIÁ GLM vs GEMINI (02/09, Owner hỏi)
+Đo sống GLM-5.2 (thinking off): thân 200 từ = 6,3s/$0.0011, 19,1 từ/câu, 0% cụt,
+0 dash; hook bám FACTUAL MATERIAL = KHÔNG số lạ. Gemini KHÔNG đo được: key trong
+.env V2 đã CHẾT ("Please pass a valid API key" — vì thế bị comment). Bằng chứng
+nội bộ Gemini: 30/08 là đường thoát 1301, viết 2/6 video Tibet khi GLM từ chối.
+Giá niêm yết (web 02/09): GLM-5.2 $1.40/$4.40 · GLM-5 $0.60/$1.92 · Gemini Flash
+hiện hành $1.50/$7.50 · Pro $2/$12 /1M tok. Ước bài 22k ký tự: GLM-5.2 ~$0.11,
+Flash ~$0.14, Pro ~$0.19; GLM CÓ thinking (trước khi tắt) từng ~$0.30 = đắt hơn
+cả Pro — thuế thinking mới là biến chi phí lớn, không phải đơn giá.
+Nhắc từ bảng 23/08: trong họ GLM, 5.3 bám neo giọng gần hoàn hảo (lệch nhịp 0,01
+vs 1,11 của 5.2) — nhưng số đó đo khi thinking auto; 5.3-effort-low chưa đo lại.
+CHỜ OWNER: cấp key Gemini mới (+ Claude nếu muốn) để đo viết thật 3 nhà cùng thước.
