@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import logging
 import os
+import time
 
 import httpx
 
@@ -58,6 +59,10 @@ SYSTEM_DIEN_GIAI_MUC = (
 _writer = None
 _critics = None
 
+# Chặn nhịp thử-hỏi-lại két ở nhánh writer-đang-mock (một lần hỏi khi gateway
+# không với tới tốn 2,5s đo thật — không chặn thì mỗi lượt Analyze cõng thêm).
+_NAP_LAI = {"ts": 0.0}
+
 
 # Việc trong CONTRACT data-analytics (apps.json viec_api) → prefix env cục bộ
 # của factory hệ cũ (WRITER_*/CRITIC_* — khuôn nội bộ KHÔNG đổi). Bug đã sửa
@@ -91,8 +96,25 @@ def nap_cau_hinh_llm() -> None:
 
 
 def _lay_writer():
+    """Dựng writer/critics MỘT LẦN rồi cache — trừ khi đang MOCK.
+
+    SỰ CỐ 02/09 ở ai-agent (cùng khuôn nạp két, app này dính y hệt): két chỉ đọc
+    một lần lúc khởi động, nên Owner điền khóa SAU khi app đã chạy thì app giữ
+    mock cho tới lần restart, mà không chỗ nào nói phải restart. Ở đây còn kín
+    hơn: `_writer` cache vĩnh viễn sau lần Analyze đầu, nên diễn giải MẪU đóng
+    băng luôn. Đang mock thì thử hỏi lại két (một GET loopback, CHỈ ở nhánh
+    hỏng) — điền két xong là ăn ngay.
+
+    CÓ CHẶN NHỊP: đo thật, một lần hỏi két khi gateway không với tới tốn 2,5s
+    (timeout httpx + retry). Không chặn thì gateway chết là MỖI lần bấm Analyze
+    cõng thêm 2,5s, nhân với từng video — đúng kiểu chậm không ai truy ra."""
     global _writer, _critics
     if _writer is None:
+        _writer = get_provider("writer")
+        _critics = get_critics()
+    if getattr(_writer, "mock", False) and time.time() - _NAP_LAI["ts"] > 60:
+        _NAP_LAI["ts"] = time.time()
+        nap_cau_hinh_llm()
         _writer = get_provider("writer")
         _critics = get_critics()
     return _writer, _critics

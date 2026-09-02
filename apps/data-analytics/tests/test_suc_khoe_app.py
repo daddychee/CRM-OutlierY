@@ -85,3 +85,58 @@ def test_bao_cao_dir_doc_duoc(tmp_path, monkeypatch):
     md = _mo_dun()
     assert md["bao-cao"]["trang_thai"] == "ok"
     assert "1" in md["bao-cao"]["chi_tiet"]
+
+
+def test_ket_dien_SAU_khi_app_chay_thi_analyze_tu_nap_lai(monkeypatch):
+    """Cùng bẫy ai-agent 02/09, ở app này còn KÍN HƠN.
+
+    Két chỉ đọc một lần lúc khởi động, mà `_lay_writer` lại cache `_writer`
+    vĩnh viễn sau lần Analyze đầu → Owner điền khóa sau khi app đã chạy thì
+    diễn giải MẪU đóng băng luôn, không lần restart thì không thoát.
+
+    Ghim: writer đang mock → lần gọi sau tự hỏi lại két và dựng writer thật;
+    writer đã thật thì KHÔNG hỏi lại (giữ cache, không bắn GET mỗi lượt).
+    Và nhánh này PHẢI có chặn nhịp: đo thật, một lần hỏi két khi gateway không
+    với tới tốn 2,5s — không chặn thì gateway chết là mỗi lượt Analyze cõng
+    thêm 2,5s, nhân với từng video."""
+    from types import SimpleNamespace
+
+    from src import dien_giai
+
+    goi = []
+    monkeypatch.setattr(dien_giai, "_writer", SimpleNamespace(mock=True))
+    monkeypatch.setattr(dien_giai, "_critics", [])
+    monkeypatch.setattr(dien_giai, "_NAP_LAI", {"ts": 0.0})
+    monkeypatch.setattr(dien_giai, "nap_cau_hinh_llm", lambda: goi.append(1))
+    monkeypatch.setattr(dien_giai, "get_provider",
+                        lambda vai: SimpleNamespace(mock=False, model="glm-5"))
+    monkeypatch.setattr(dien_giai, "get_critics",
+                        lambda: [SimpleNamespace(mock=False)])
+
+    w, _ = dien_giai._lay_writer()
+    assert w.mock is False and len(goi) == 1
+
+    # đã thật rồi → không hỏi két nữa
+    dien_giai._lay_writer()
+    assert len(goi) == 1
+
+
+def test_hoi_lai_ket_co_chan_nhip_khong_moi_lan_analyze(monkeypatch):
+    """Két vẫn trống thì nhánh hỏi-lại phải BỊ CHẶN NHỊP. Đo thật: một lần hỏi
+    khi gateway không với tới tốn 2,5s (timeout httpx) — mỗi lượt Analyze cõng
+    thêm 2,5s là kiểu chậm không ai truy ra nguyên nhân."""
+    from types import SimpleNamespace
+
+    from src import dien_giai
+
+    goi = []
+    monkeypatch.setattr(dien_giai, "_writer", SimpleNamespace(mock=True))
+    monkeypatch.setattr(dien_giai, "_critics", [])
+    monkeypatch.setattr(dien_giai, "_NAP_LAI", {"ts": 0.0})
+    monkeypatch.setattr(dien_giai, "nap_cau_hinh_llm", lambda: goi.append(1))
+    monkeypatch.setattr(dien_giai, "get_provider",
+                        lambda vai: SimpleNamespace(mock=True))   # két vẫn trống
+    monkeypatch.setattr(dien_giai, "get_critics", lambda: [])
+    for _ in range(4):
+        dien_giai._lay_writer()
+    assert len(goi) == 1, f"hỏi két {len(goi)} lần — thiếu chặn nhịp"
