@@ -72,15 +72,23 @@ def doc_kich_ban(slug: str) -> list[dict]:
 
 
 def _lay(d, duong: str):
-    """Resolver đường_json: 'a.b.0.c' + 'ten=xxx' tìm trong list theo trường ten."""
+    """Resolver đường_json: 'a.b.0.c' + '<truong>=xxx' tìm trong list theo trường đó.
+
+    Lọc theo TRƯỜNG BẤT KỲ, không riêng 'ten': app dùng khoá tiếng Anh (RenderY
+    /api/sources trả `name`) thì 'ten=' không khớp gì, resolver trả None và canary
+    báo SAI LOGIC oan — trong khi API trả đúng. Sự cố 02/09: 'sources.name=envato'
+    -> None, kịch bản đỏ dù nguồn khai chuẩn 'tài khoản (không dùng khoá API)'.
+    """
     hien_tai = d
     for phan in duong.split("."):
         if hien_tai is None:
             return None
         if isinstance(hien_tai, list):
-            if phan.startswith("ten="):
+            if "=" in phan:
+                truong, _, gia_tri = phan.partition("=")
                 hien_tai = next((x for x in hien_tai
-                                 if isinstance(x, dict) and x.get("ten") == phan[4:]), None)
+                                 if isinstance(x, dict)
+                                 and str(x.get(truong)) == gia_tri), None)
                 continue
             try:
                 hien_tai = hien_tai[int(phan)]

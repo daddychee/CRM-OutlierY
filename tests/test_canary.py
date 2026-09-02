@@ -33,6 +33,20 @@ def test_lay_duong_json_long_va_tim_theo_ten():
     assert canary._lay(d, "khong.co") is None
 
 
+def test_lay_loc_list_theo_TRUONG_BAT_KY_khong_rieng_ten():
+    """App dùng khoá tiếng Anh thì 'ten=' không khớp gì -> resolver trả None và
+    canary báo SAI LOGIC oan, dù API trả đúng. Sự cố 02/09: RenderY /api/sources
+    trả `name`, kịch bản 'sources.name=envato.nguon' đỏ trong khi nguồn khai chuẩn
+    'tài khoản (không dùng khoá API)'."""
+    d = {"sources": [{"name": "envato", "nguon": "tài khoản (không dùng khoá API)"},
+                     {"name": "pexels", "nguon": "két V3"}]}
+    assert canary._lay(d, "sources.name=envato.nguon") == "tài khoản (không dùng khoá API)"
+    assert canary._lay(d, "sources.name=pexels.nguon") == "két V3"
+    assert canary._lay(d, "sources.name=khong-co.nguon") is None
+    # trường số cũng lọc được, không chỉ chuỗi
+    assert canary._lay({"a": [{"id": 7, "v": "x"}]}, "a.id=7.v") == "x"
+
+
 def test_kiem_cac_toan_tu():
     assert canary._kiem("ok", "==", "ok")
     assert canary._kiem("canh_bao", "!=", "loi")

@@ -1,274 +1,274 @@
 {
- "_ghi_chu": "HE KIEM LOGIC RenderY (02/09 — '16 logic = 16 so do'). Ma nguon o F:/RenderY/autoedit (NGOAI repo V3) nen chua mo cua kiem /api/kiem — cac logic GOI/BAT_BIEN duoi day da co duong kiem cu the (ghi trong ghi_chua), cho dot sua app. Hai logic ha tang dung deep health san co.",
- "kich_ban": [
-  {
-   "ma": "hang-doi-dung-doc-duoc",
-   "ten": "Hàng đợi jobs.db đọc được",
-   "loai": "bat_bien",
-   "canh": [
-    "hang-doi",
-    "align"
-   ],
-   "mo_ta": "Sổ hàng đợi hỏng thì nộp tập không vào, nhân sự chờ mãi không biết. Deep health tự khai module hang-doi (đếm jobs theo status).",
-   "method": "GET",
-   "duong": "/api/suc-khoe",
-   "cho": [
-    [
-     "mo_dun.ten=hang-doi.trang_thai",
-     "==",
-     "ok"
-    ]
-   ],
-   "so_do": {
-    "buoc": [
-     {
-      "ten": "jobs.db"
-     },
-     {
-      "ten": "Đếm job theo trạng thái"
-     }
-    ],
-    "kiem": [
-     "sổ hàng đợi đọc được"
-    ]
-   }
-  },
-  {
-   "ma": "nas-goc-dung",
-   "ten": "Gốc NAS đọc được (nguồn vào + nơi giao)",
-   "loai": "bat_bien",
-   "canh": [
-    "compose",
-    "nas-kho"
-   ],
-   "mo_ta": "NAS vừa là nơi nhân sự đặt kịch bản/voice vừa là nơi giao draft — mất NAS là đứt cả hai đầu.",
-   "method": "GET",
-   "duong": "/api/suc-khoe",
-   "cho": [
-    [
-     "mo_dun.ten=nas.trang_thai",
-     "==",
-     "ok"
-    ]
-   ],
-   "so_do": {
-    "buoc": [
-     {
-      "ten": "RENDERY_NAS"
-     },
-     {
-      "ten": "Kiểm thư mục gốc"
-     }
-    ],
-    "kiem": [
-     "gốc NAS tồn tại và đọc được"
-    ]
-   }
-  },
-  {
-   "ma": "thu-tu-chuong",
-   "ten": "Thứ tự chương H→C1..Cn→E",
-   "loai": "vet",
-   "canh": [
-    "hang-doi",
-    "align"
-   ],
-   "chua_kiem": true,
-   "ghi_chua": "Sắp theo TÊN sai cả hai đầu ('E' trước 'H', 'C10' trước 'C2') → timeline lộn, dựng lại cả tập. GET /api/kiem-tap (chỉ-đọc) ĐÃ trả chuong[] sắp đúng — nhưng cần một TẬP MẪU cố định trên NAS để canary trỏ vào (đường dẫn thay đổi theo tập thật). Cần thêm: thư mục mẫu <NAS>/_canary/H,C1,C2,C10,E rồi khai duong=/api/kiem-tap?duong_dan=..."
-  },
-  {
-   "ma": "chan-thieu-file",
-   "ten": "Chặn thiếu script/voice TRƯỚC hàng đợi",
-   "loai": "vet",
-   "canh": [
-    "nop-job",
-    "hang-doi"
-   ],
-   "chua_kiem": true,
-   "ghi_chua": "Không chặn thì job chạy 24 phút rồi mới báo thiếu voice. Vế chính (doc_chuong báo 'thiếu voice') ĐÃ lộ qua GET /api/kiem-tap → san_sang=false + loi[] — cùng cần TẬP MẪU cố định như thu-tu-chuong. Cần thêm: <NAS>/_canary/thieu-voice/ (1 chương chỉ có .txt)"
-  },
-  {
-   "ma": "ep-trong-nas",
-   "ten": "Ép mọi đường dẫn nằm trong gốc NAS",
-   "loai": "goi",
-   "canh": [
-    "nop-job",
-    "hang-doi"
-   ],
-   "chua_kiem": true,
-   "ghi_chua": "Rào DUY NHẤT chặn bơm đường dẫn tùy ý vào worker (worker chạy lệnh trên thư mục đó). Kiểm 3 ca: Z:\\... quy đổi đúng · C:\\Windows → 422 · đường ..\\..\\Windows → 422 (resolve rồi mới relative_to)"
-  },
-  {
-   "ma": "claim-doc-quyen",
-   "ten": "Nhận job độc quyền, trần 2 việc song song",
-   "loai": "bat_bien",
-   "canh": [
-    "hang-doi",
-    "align"
-   ],
-   "chua_kiem": true,
-   "ghi_chua": "2 worker cùng nhận 1 job → dựng đôi, ghi đè kết quả. LỊCH SỬ: rà 02/09 tìm ra RACE THẬT — đếm running và UPDATE nằm ở hai câu lệnh, hai worker cùng đọc running=1 thì cả hai thấy còn suất và cùng claim hai job khác nhau = vượt trần. ĐÃ SỬA: gộp điều kiện trần vào chính câu UPDATE (SQLite đánh giá nguyên tử), test ép đúng khoảnh khắc đó ghim lại. Bất biến: COUNT(running) <= MAX_WORKERS. Cần cửa kiểm đọc jobs.db để canh trên hệ đang chạy (deep health đã trả '{n} đang dựng' — parse được)."
-  },
-  {
-   "ma": "job-mo-coi",
-   "ten": "Trả job kẹt 'running' về hàng đợi khi restart",
-   "loai": "bat_bien",
-   "canh": [
-    "hang-doi",
-    "theo-doi"
-   ],
-   "chua_kiem": true,
-   "ghi_chua": "Runbook bắt Stop/Start; không trả về thì job kẹt 'running' vĩnh viễn, nhân sự chờ mãi. BẤT BIẾN ĐÚNG (sửa 02/09 — khai cũ SAI): sau khi server khởi động, KHÔNG job nào ở 'running' được kế thừa từ lần chạy trước. Khai cũ ghi 'không job nào running mà started_at cũ hơn STALE_AFTER 4h' là SAI — requeue_orphans UPDATE MỌI job running, không lọc theo started_at (tham số stale_after khai mà không dùng, queue.py:272 vs :280). Cần cửa kiểm đọc jobs.db đối chiếu mốc khởi động tiến trình."
-  },
-  {
-   "ma": "khoa-tu-ket",
-   "ten": "Nạp khóa từ két đúng TÊN BIẾN",
-   "loai": "goi",
-   "canh": [
-    "ket-v3",
-    "director"
-   ],
-   "chua_kiem": true,
-   "ghi_chua": "Sự cố thật 30/08: két có khóa GLM mà không set GLM_API_KEY → vision gate TẮT LẶNG LẼ. Kiểm: nap_env() với két giả → os.environ phải đủ LLM_API_KEY + GLM_API_KEY + LLM_PROVIDER + L3_MODEL"
-  },
-  {
-   "ma": "nguon-3-noi",
-   "ten": "Trang Nguồn nhìn đủ 3 nơi khóa",
-   "loai": "goi",
-   "canh": [
-    "cai-dat",
-    "ket-v3"
-   ],
-   "mo_ta": "Chỉ nhìn .env thì báo 'thiếu' trong khi job chạy được — sai lệch nguy hiểm hơn không báo. /api/sources hợp nhất két V3 + os.environ + .env rồi mới kết luận. (Khai cũ ghi 'chưa kiểm được' là SAI — route chỉ-đọc đã tồn tại, sửa 02/09.)",
-   "method": "GET",
-   "duong": "/api/sources",
-   "cho": [
-    [
-     "sources",
-     "len>=",
-     4
-    ]
-   ],
-   "lay_chang": [
-    [
-     "nguồn khai báo",
-     "sources"
-    ]
-   ],
-   "so_do": {
-    "buoc": [
-     {
-      "ten": "Két V3 + os.environ + .env"
-     },
-     {
-      "ten": "Hợp nhất 3 nơi"
-     },
-     {
-      "ten": "Kết luận ready/need"
-     }
-    ],
-    "kiem": [
-     "liệt kê đủ các nguồn (Pexels·Pixabay·Envato·Vecteezy)"
-    ]
-   }
-  },
-  {
-   "ma": "sub-khong-khoa",
-   "ten": "Envato/Vecteezy KHÔNG dùng khóa API",
-   "loai": "goi",
-   "canh": [
-    "sourcer",
-    "sub-site"
-   ],
-   "mo_ta": "Nguồn subscription cần email + hồ sơ trình duyệt, KHÔNG có khóa API; báo nhầm 'sẵn sàng' → job im lặng bỏ qua nguồn này khi stock nghèo. /api/sources trả thẳng nhãn nguồn. (Khai cũ 'chưa kiểm được' là SAI — sửa 02/09.)",
-   "method": "GET",
-   "duong": "/api/sources",
-   "cho": [
-    [
-     "sources.name=envato.nguon",
-     "chua",
-     "không dùng kho"
-    ]
-   ],
-   "so_do": {
-    "buoc": [
-     {
-      "ten": "Envato + Vecteezy"
-     },
-     {
-      "ten": "Soi cách xác thực"
-     }
-    ],
-    "kiem": [
-     "nguồn khai là tài khoản (không dùng khoá API), không phải khoá"
-    ]
-   }
-  },
-  {
-   "ma": "xoay-khoa-429",
-   "ten": "Xoay khóa stock khi 429, dừng mềm khi cạn",
-   "loai": "goi",
-   "canh": [
-    "sourcer",
-    "stock-api"
-   ],
-   "chua_kiem": true,
-   "ghi_chua": "Cạn hạn mức mà không dừng → gọi mạng vô ích cả stage; hoặc giết cả video thay vì để beat thành needs_human. Kiểm: client 2 khóa, giả 429 cho k1 → dùng k2; cả hai 429 → trả None, KHÔNG gọi mạng lượt sau"
-  },
-  {
-   "ma": "tai-nho-giot",
-   "ten": "Trần 75s cho một lần tải (chống nhỏ giọt)",
-   "loai": "goi",
-   "canh": [
-    "sourcer",
-    "stock-api"
-   ],
-   "chua_kiem": true,
-   "ghi_chua": "timeout=(connect,read) KHÔNG bắt được stream nhỏ giọt — bug thật 20/06 kẹt 15 phút trên 1 beat. Kiểm: iterator nhỏ giọt + giả đồng hồ nhảy >75s → RuntimeError và file đích đã bị xóa"
-  },
-  {
-   "ma": "pheu-2-cua",
-   "ten": "Phễu chấm footage — điểm máy KHÔNG lật nghĩa",
-   "loai": "goi",
-   "canh": [
-    "sourcer",
-    "ranker"
-   ],
-   "chua_kiem": true,
-   "ghi_chua": "Nếu điểm máy lật được nghĩa thì chọn clip SAI NỘI DUNG mà vẫn 'OK' — sai lặng lẽ nhất app. Bất biến số học 0 quota: A nghĩa 6 không bonus vs B nghĩa 5 + MỌI bonus máy → phải chọn A"
-  },
-  {
-   "ma": "san-pool-3",
-   "ten": "Thủng sàn 3 → trả lại có trừ nặng + cảnh báo",
-   "loai": "goi",
-   "canh": [
-    "sourcer",
-    "ranker"
-   ],
-   "chua_kiem": true,
-   "ghi_chua": "Trả lại mà không trừ nặng/không cảnh báo → clip bị veto lọt lên top mà editor không biết. Kiểm: 1 ok + 2 veto nhẹ → warnings có 'thủng sàn 3', ứng viên ok vẫn top-1"
-  },
-  {
-   "ma": "giao-dan-chuong",
-   "ten": "Chỉ giao chương chạy XONG (giao dần)",
-   "loai": "vet",
-   "canh": [
-    "packager",
-    "compose"
-   ],
-   "chua_kiem": true,
-   "ghi_chua": "Chương chết giữa chừng vẫn có project_id (in ngay lúc tạo) — giao ra là timeline DỞ mà nhân sự tưởng xong. Bất biến: Compose Timeline CHỈ chứa chương chạy xong; job chưa xong hết thì DOC_TRUOC.txt phải ghi 'ĐANG CHẠY'"
-  },
-  {
-   "ma": "tai-dung-draft-cu",
-   "ten": "Tái dùng draft cũ chỉ khi nguồn KHÔNG đổi",
-   "loai": "goi",
-   "canh": [
-    "hang-doi",
-    "align"
-   ],
-   "chua_kiem": true,
-   "ghi_chua": "Writer sửa kịch bản rồi nộp lại mà tool giao draft CŨ → sai nội dung hoàn toàn, im lặng. Kiểm: chạm file script sau created_at → phải dựng lại (trả None); không chạm → dùng lại"
-  }
- ]
+  "_ghi_chu": "HE KIEM LOGIC RenderY (02/09 — '16 logic = 16 so do'). Ma nguon o F:/RenderY/autoedit (NGOAI repo V3) nen chua mo cua kiem /api/kiem — cac logic GOI/BAT_BIEN duoi day da co duong kiem cu the (ghi trong ghi_chua), cho dot sua app. Hai logic ha tang dung deep health san co.",
+  "kich_ban": [
+    {
+      "ma": "hang-doi-dung-doc-duoc",
+      "ten": "Hàng đợi jobs.db đọc được",
+      "loai": "bat_bien",
+      "canh": [
+        "hang-doi",
+        "align"
+      ],
+      "mo_ta": "Sổ hàng đợi hỏng thì nộp tập không vào, nhân sự chờ mãi không biết. Deep health tự khai module hang-doi (đếm jobs theo status).",
+      "method": "GET",
+      "duong": "/api/suc-khoe",
+      "cho": [
+        [
+          "mo_dun.ten=hang-doi.trang_thai",
+          "==",
+          "ok"
+        ]
+      ],
+      "so_do": {
+        "buoc": [
+          {
+            "ten": "jobs.db"
+          },
+          {
+            "ten": "Đếm job theo trạng thái"
+          }
+        ],
+        "kiem": [
+          "sổ hàng đợi đọc được"
+        ]
+      }
+    },
+    {
+      "ma": "nas-goc-dung",
+      "ten": "Gốc NAS đọc được (nguồn vào + nơi giao)",
+      "loai": "bat_bien",
+      "canh": [
+        "compose",
+        "nas-kho"
+      ],
+      "mo_ta": "NAS vừa là nơi nhân sự đặt kịch bản/voice vừa là nơi giao draft — mất NAS là đứt cả hai đầu.",
+      "method": "GET",
+      "duong": "/api/suc-khoe",
+      "cho": [
+        [
+          "mo_dun.ten=nas.trang_thai",
+          "==",
+          "ok"
+        ]
+      ],
+      "so_do": {
+        "buoc": [
+          {
+            "ten": "RENDERY_NAS"
+          },
+          {
+            "ten": "Kiểm thư mục gốc"
+          }
+        ],
+        "kiem": [
+          "gốc NAS tồn tại và đọc được"
+        ]
+      }
+    },
+    {
+      "ma": "thu-tu-chuong",
+      "ten": "Thứ tự chương H→C1..Cn→E",
+      "loai": "vet",
+      "canh": [
+        "hang-doi",
+        "align"
+      ],
+      "chua_kiem": true,
+      "ghi_chua": "Sắp theo TÊN sai cả hai đầu ('E' trước 'H', 'C10' trước 'C2') → timeline lộn, dựng lại cả tập. GET /api/kiem-tap (chỉ-đọc) ĐÃ trả chuong[] sắp đúng — nhưng cần một TẬP MẪU cố định trên NAS để canary trỏ vào (đường dẫn thay đổi theo tập thật). Cần thêm: thư mục mẫu <NAS>/_canary/H,C1,C2,C10,E rồi khai duong=/api/kiem-tap?duong_dan=..."
+    },
+    {
+      "ma": "chan-thieu-file",
+      "ten": "Chặn thiếu script/voice TRƯỚC hàng đợi",
+      "loai": "vet",
+      "canh": [
+        "nop-job",
+        "hang-doi"
+      ],
+      "chua_kiem": true,
+      "ghi_chua": "Không chặn thì job chạy 24 phút rồi mới báo thiếu voice. Vế chính (doc_chuong báo 'thiếu voice') ĐÃ lộ qua GET /api/kiem-tap → san_sang=false + loi[] — cùng cần TẬP MẪU cố định như thu-tu-chuong. Cần thêm: <NAS>/_canary/thieu-voice/ (1 chương chỉ có .txt)"
+    },
+    {
+      "ma": "ep-trong-nas",
+      "ten": "Ép mọi đường dẫn nằm trong gốc NAS",
+      "loai": "goi",
+      "canh": [
+        "nop-job",
+        "hang-doi"
+      ],
+      "chua_kiem": true,
+      "ghi_chua": "Rào DUY NHẤT chặn bơm đường dẫn tùy ý vào worker (worker chạy lệnh trên thư mục đó). Kiểm 3 ca: Z:\\... quy đổi đúng · C:\\Windows → 422 · đường ..\\..\\Windows → 422 (resolve rồi mới relative_to)"
+    },
+    {
+      "ma": "claim-doc-quyen",
+      "ten": "Nhận job độc quyền, trần 2 việc song song",
+      "loai": "bat_bien",
+      "canh": [
+        "hang-doi",
+        "align"
+      ],
+      "chua_kiem": true,
+      "ghi_chua": "2 worker cùng nhận 1 job → dựng đôi, ghi đè kết quả. LỊCH SỬ: rà 02/09 tìm ra RACE THẬT — đếm running và UPDATE nằm ở hai câu lệnh, hai worker cùng đọc running=1 thì cả hai thấy còn suất và cùng claim hai job khác nhau = vượt trần. ĐÃ SỬA: gộp điều kiện trần vào chính câu UPDATE (SQLite đánh giá nguyên tử), test ép đúng khoảnh khắc đó ghim lại. Bất biến: COUNT(running) <= MAX_WORKERS. Cần cửa kiểm đọc jobs.db để canh trên hệ đang chạy (deep health đã trả '{n} đang dựng' — parse được)."
+    },
+    {
+      "ma": "job-mo-coi",
+      "ten": "Trả job kẹt 'running' về hàng đợi khi restart",
+      "loai": "bat_bien",
+      "canh": [
+        "hang-doi",
+        "theo-doi"
+      ],
+      "chua_kiem": true,
+      "ghi_chua": "Runbook bắt Stop/Start; không trả về thì job kẹt 'running' vĩnh viễn, nhân sự chờ mãi. BẤT BIẾN ĐÚNG (sửa 02/09 — khai cũ SAI): sau khi server khởi động, KHÔNG job nào ở 'running' được kế thừa từ lần chạy trước. Khai cũ ghi 'không job nào running mà started_at cũ hơn STALE_AFTER 4h' là SAI — requeue_orphans UPDATE MỌI job running, không lọc theo started_at (tham số stale_after khai mà không dùng, queue.py:272 vs :280). Cần cửa kiểm đọc jobs.db đối chiếu mốc khởi động tiến trình."
+    },
+    {
+      "ma": "khoa-tu-ket",
+      "ten": "Nạp khóa từ két đúng TÊN BIẾN",
+      "loai": "goi",
+      "canh": [
+        "ket-v3",
+        "director"
+      ],
+      "chua_kiem": true,
+      "ghi_chua": "Sự cố thật 30/08: két có khóa GLM mà không set GLM_API_KEY → vision gate TẮT LẶNG LẼ. Kiểm: nap_env() với két giả → os.environ phải đủ LLM_API_KEY + GLM_API_KEY + LLM_PROVIDER + L3_MODEL"
+    },
+    {
+      "ma": "nguon-3-noi",
+      "ten": "Trang Nguồn nhìn đủ 3 nơi khóa",
+      "loai": "goi",
+      "canh": [
+        "cai-dat",
+        "ket-v3"
+      ],
+      "mo_ta": "Chỉ nhìn .env thì báo 'thiếu' trong khi job chạy được — sai lệch nguy hiểm hơn không báo. /api/sources hợp nhất két V3 + os.environ + .env rồi mới kết luận. (Khai cũ ghi 'chưa kiểm được' là SAI — route chỉ-đọc đã tồn tại, sửa 02/09.)",
+      "method": "GET",
+      "duong": "/api/sources",
+      "cho": [
+        [
+          "sources",
+          "len>=",
+          4
+        ]
+      ],
+      "lay_chang": [
+        [
+          "nguồn khai báo",
+          "sources"
+        ]
+      ],
+      "so_do": {
+        "buoc": [
+          {
+            "ten": "Két V3 + os.environ + .env"
+          },
+          {
+            "ten": "Hợp nhất 3 nơi"
+          },
+          {
+            "ten": "Kết luận ready/need"
+          }
+        ],
+        "kiem": [
+          "liệt kê đủ các nguồn (Pexels·Pixabay·Envato·Vecteezy)"
+        ]
+      }
+    },
+    {
+      "ma": "sub-khong-khoa",
+      "ten": "Envato/Vecteezy KHÔNG dùng khóa API",
+      "loai": "goi",
+      "canh": [
+        "sourcer",
+        "sub-site"
+      ],
+      "mo_ta": "Nguồn subscription cần email + hồ sơ trình duyệt, KHÔNG có khóa API; báo nhầm 'sẵn sàng' → job im lặng bỏ qua nguồn này khi stock nghèo. /api/sources trả thẳng nhãn nguồn. (Khai cũ 'chưa kiểm được' là SAI — sửa 02/09. Kịch bản này từng đỏ oan vì resolver canary chỉ lọc list theo trường 'ten', mà /api/sources trả 'name' — đã sửa _lay() nhận trường bất kỳ.)",
+      "method": "GET",
+      "duong": "/api/sources",
+      "cho": [
+        [
+          "sources.name=envato.nguon",
+          "chua",
+          "không dùng kho"
+        ]
+      ],
+      "so_do": {
+        "buoc": [
+          {
+            "ten": "Envato + Vecteezy"
+          },
+          {
+            "ten": "Soi cách xác thực"
+          }
+        ],
+        "kiem": [
+          "nguồn khai là tài khoản (không dùng khoá API), không phải khoá"
+        ]
+      }
+    },
+    {
+      "ma": "xoay-khoa-429",
+      "ten": "Xoay khóa stock khi 429, dừng mềm khi cạn",
+      "loai": "goi",
+      "canh": [
+        "sourcer",
+        "stock-api"
+      ],
+      "chua_kiem": true,
+      "ghi_chua": "Cạn hạn mức mà không dừng → gọi mạng vô ích cả stage; hoặc giết cả video thay vì để beat thành needs_human. Kiểm: client 2 khóa, giả 429 cho k1 → dùng k2; cả hai 429 → trả None, KHÔNG gọi mạng lượt sau"
+    },
+    {
+      "ma": "tai-nho-giot",
+      "ten": "Trần 75s cho một lần tải (chống nhỏ giọt)",
+      "loai": "goi",
+      "canh": [
+        "sourcer",
+        "stock-api"
+      ],
+      "chua_kiem": true,
+      "ghi_chua": "timeout=(connect,read) KHÔNG bắt được stream nhỏ giọt — bug thật 20/06 kẹt 15 phút trên 1 beat. Kiểm: iterator nhỏ giọt + giả đồng hồ nhảy >75s → RuntimeError và file đích đã bị xóa"
+    },
+    {
+      "ma": "pheu-2-cua",
+      "ten": "Phễu chấm footage — điểm máy KHÔNG lật nghĩa",
+      "loai": "goi",
+      "canh": [
+        "sourcer",
+        "ranker"
+      ],
+      "chua_kiem": true,
+      "ghi_chua": "Nếu điểm máy lật được nghĩa thì chọn clip SAI NỘI DUNG mà vẫn 'OK' — sai lặng lẽ nhất app. Bất biến số học 0 quota: A nghĩa 6 không bonus vs B nghĩa 5 + MỌI bonus máy → phải chọn A"
+    },
+    {
+      "ma": "san-pool-3",
+      "ten": "Thủng sàn 3 → trả lại có trừ nặng + cảnh báo",
+      "loai": "goi",
+      "canh": [
+        "sourcer",
+        "ranker"
+      ],
+      "chua_kiem": true,
+      "ghi_chua": "Trả lại mà không trừ nặng/không cảnh báo → clip bị veto lọt lên top mà editor không biết. Kiểm: 1 ok + 2 veto nhẹ → warnings có 'thủng sàn 3', ứng viên ok vẫn top-1"
+    },
+    {
+      "ma": "giao-dan-chuong",
+      "ten": "Chỉ giao chương chạy XONG (giao dần)",
+      "loai": "vet",
+      "canh": [
+        "packager",
+        "compose"
+      ],
+      "chua_kiem": true,
+      "ghi_chua": "Chương chết giữa chừng vẫn có project_id (in ngay lúc tạo) — giao ra là timeline DỞ mà nhân sự tưởng xong. Bất biến: Compose Timeline CHỈ chứa chương chạy xong; job chưa xong hết thì DOC_TRUOC.txt phải ghi 'ĐANG CHẠY'"
+    },
+    {
+      "ma": "tai-dung-draft-cu",
+      "ten": "Tái dùng draft cũ chỉ khi nguồn KHÔNG đổi",
+      "loai": "goi",
+      "canh": [
+        "hang-doi",
+        "align"
+      ],
+      "chua_kiem": true,
+      "ghi_chua": "Writer sửa kịch bản rồi nộp lại mà tool giao draft CŨ → sai nội dung hoàn toàn, im lặng. Kiểm: chạm file script sau created_at → phải dựng lại (trả None); không chạm → dùng lại"
+    }
+  ]
 }
