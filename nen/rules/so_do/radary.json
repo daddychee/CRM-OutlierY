@@ -1,0 +1,37 @@
+{
+  "_ghi_chu": "SƠ ĐỒ VẬN HÀNH RadarY — BẢN TRÌNH ĐỂ OWNER CHỐT (02/09). Vẽ theo roadmap + sổ discovery-mapping; chỗ nào sai logic Owner chỉ, sửa file này là sơ đồ đổi.",
+  "nut": [
+    { "ma": "team", "ten": "Team (L1 xem · L3+ thao tác)", "cot": 0, "loai": "nguoi" },
+
+    { "ma": "pool", "ten": "Pool kênh đối thủ", "cot": 1, "ghi_chu": "workspace theo thị trường · chỉ canh pool đã nhập" },
+    { "ma": "quet", "ten": "Quét định kỳ (scheduler)", "cot": 1, "suc_khoe": "quet", "ghi_chu": "video mới + ticks view theo tier" },
+    { "ma": "dang-nong", "ten": "Đang nóng + bản đồ cầu–cung", "cot": 1, "ghi_chu": "n-gram video nổ · 0 quota · probe 5 cụm/ngày" },
+    { "ma": "tra-cuu", "ten": "Tra cứu ngoài 1 cụm", "cot": 1, "ghi_chu": "leader kích · Trends + PAA + Reddit" },
+
+    { "ma": "db", "ten": "DB pool (ticks · events · verdicts)", "cot": 2, "loai": "kho", "suc_khoe": "du-lieu", "ghi_chu": "events append-only → alerts + board" },
+    { "ma": "tra-cuu-log", "ten": "tra_cuu_log (cache tra cứu)", "cot": 2, "loai": "kho", "ghi_chu": "xem lại 0 quota" },
+    { "ma": "dien-giai", "ten": "Diễn giải LLM (glm-5)", "cot": 2, "ghi_chu": "chỉ diễn giải — người chọn (A3)" },
+
+    { "ma": "youtube", "ten": "YouTube API (16+15 khóa két)", "cot": 3, "loai": "ngoai", "tuyen": "youtube-api" },
+    { "ma": "serp", "ten": "SERP (2 khóa · trends+search)", "cot": 3, "loai": "ngoai" },
+    { "ma": "apify", "ten": "Apify → Reddit (1 khóa)", "cot": 3, "loai": "ngoai" },
+    { "ma": "ntfy", "ten": "ntfy push (per pool)", "cot": 3, "loai": "ngoai", "tuyen": "ntfy" },
+    { "ma": "ra-he", "ten": "Niche Research · ThumbY đọc ké", "cot": 3, "ghi_chu": "pool nuôi báo cáo 8-phase · DB chỉ-đọc" }
+  ],
+  "canh": [
+    ["team", "pool", "thêm kênh"],
+    ["team", "dang-nong"],
+    ["team", "tra-cuu", "kích 1 cụm"],
+    ["pool", "quet"],
+    ["quet", "youtube", "xoay khóa 403"],
+    ["quet", "db", "ticks + events"],
+    ["db", "ntfy", "alert T2+"],
+    ["dang-nong", "db", "đọc 0 quota"],
+    ["dang-nong", "youtube", "probe khối B 102u"],
+    ["tra-cuu", "serp", "trends + PAA"],
+    ["tra-cuu", "apify", "bài + upvote"],
+    ["tra-cuu", "tra-cuu-log"],
+    ["tra-cuu", "dien-giai"],
+    ["db", "ra-he"]
+  ]
+}
