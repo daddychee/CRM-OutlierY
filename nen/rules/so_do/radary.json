@@ -1,5 +1,5 @@
 {
-  "_ghi_chu": "SƠ ĐỒ VẬN HÀNH RadarY — BẢN TRÌNH ĐỂ OWNER CHỐT (02/09). Vẽ theo roadmap + sổ discovery-mapping; chỗ nào sai logic Owner chỉ, sửa file này là sơ đồ đổi.",
+  "_ghi_chu": "SƠ ĐỒ VẬN HÀNH RadarY (02/09, Owner chốt bổ sung: mỗi logic phải chỉ rõ KẾT QUẢ). Cột 4 = kết quả đầu ra. Sai đâu sửa file này là sơ đồ đổi.",
   "nut": [
     { "ma": "team", "ten": "Team (L1 xem · L3+ thao tác)", "cot": 0, "loai": "nguoi" },
 
@@ -8,15 +8,16 @@
     { "ma": "dang-nong", "ten": "Đang nóng + bản đồ cầu–cung", "cot": 1, "ghi_chu": "n-gram video nổ · 0 quota · probe 5 cụm/ngày" },
     { "ma": "tra-cuu", "ten": "Tra cứu ngoài 1 cụm", "cot": 1, "ghi_chu": "leader kích · Trends + PAA + Reddit" },
 
-    { "ma": "db", "ten": "DB pool (ticks · events · verdicts)", "cot": 2, "loai": "kho", "suc_khoe": "du-lieu", "ghi_chu": "events append-only → alerts + board" },
+    { "ma": "db", "ten": "DB pool (ticks · events · verdicts)", "cot": 2, "loai": "kho", "suc_khoe": "du-lieu", "ghi_chu": "events append-only" },
     { "ma": "tra-cuu-log", "ten": "tra_cuu_log (cache tra cứu)", "cot": 2, "loai": "kho", "ghi_chu": "xem lại 0 quota" },
     { "ma": "dien-giai", "ten": "Diễn giải LLM (glm-5)", "cot": 2, "ghi_chu": "chỉ diễn giải — người chọn (A3)" },
+    { "ma": "youtube", "ten": "YouTube API (16+15 khóa két)", "cot": 2, "loai": "ngoai", "tuyen": "youtube-api" },
+    { "ma": "serp-apify", "ten": "SERP (2 khóa) · Apify Reddit (1)", "cot": 2, "loai": "ngoai" },
 
-    { "ma": "youtube", "ten": "YouTube API (16+15 khóa két)", "cot": 3, "loai": "ngoai", "tuyen": "youtube-api" },
-    { "ma": "serp", "ten": "SERP (2 khóa · trends+search)", "cot": 3, "loai": "ngoai" },
-    { "ma": "apify", "ten": "Apify → Reddit (1 khóa)", "cot": 3, "loai": "ngoai" },
-    { "ma": "ntfy", "ten": "ntfy push (per pool)", "cot": 3, "loai": "ngoai", "tuyen": "ntfy" },
-    { "ma": "ra-he", "ten": "Niche Research · ThumbY đọc ké", "cot": 3, "ghi_chu": "pool nuôi báo cáo 8-phase · DB chỉ-đọc" }
+    { "ma": "kq-alert", "ten": "Alert video đối thủ đang NỔ", "cot": 3, "loai": "ket_qua", "ghi_chu": "board + ntfy: tier lên, đổi title/thumb → biết ĐỀ TÀI đang ăn" },
+    { "ma": "kq-tu-khoa", "ten": "Danh sách từ khóa NÓNG + 4 ô", "cot": 3, "loai": "ket_qua", "ghi_chu": "Khoảng trống / Đỏ lửa / Bão hòa / Hoang → chọn đề tài" },
+    { "ma": "kq-ho-so", "ten": "Hồ sơ CẦU của một cụm", "cot": 3, "loai": "ket_qua", "ghi_chu": "trends 12T + câu hỏi thật + Reddit → quyết làm/bỏ" },
+    { "ma": "kq-nuoi-he", "ten": "Dữ liệu nuôi hệ", "cot": 3, "loai": "ket_qua", "ghi_chu": "Niche Research 8-phase · ThumbY video-đang-nổ" }
   ],
   "canh": [
     ["team", "pool", "thêm kênh"],
@@ -25,13 +26,15 @@
     ["pool", "quet"],
     ["quet", "youtube", "xoay khóa 403"],
     ["quet", "db", "ticks + events"],
-    ["db", "ntfy", "alert T2+"],
     ["dang-nong", "db", "đọc 0 quota"],
-    ["dang-nong", "youtube", "probe khối B 102u"],
-    ["tra-cuu", "serp", "trends + PAA"],
-    ["tra-cuu", "apify", "bài + upvote"],
+    ["dang-nong", "youtube", "probe 102u/cụm"],
+    ["tra-cuu", "serp-apify"],
     ["tra-cuu", "tra-cuu-log"],
     ["tra-cuu", "dien-giai"],
-    ["db", "ra-he"]
+    ["db", "kq-alert", "T2+ · ntfy"],
+    ["dang-nong", "kq-tu-khoa"],
+    ["dien-giai", "kq-ho-so"],
+    ["tra-cuu-log", "kq-ho-so"],
+    ["db", "kq-nuoi-he"]
   ]
 }

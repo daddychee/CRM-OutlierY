@@ -1,26 +1,150 @@
 {
   "_ghi_chu": "SƠ ĐỒ VẬN HÀNH SỐNG (02/09) — nut: cot 0..3 trái→phải; binding suc_khoe/canary/tuyen để UI tô trạng thái THẬT. Sửa sơ đồ = sửa file này.",
   "nut": [
-    { "ma": "team", "ten": "Team (cổng 9000)", "cot": 0, "loai": "nguoi" },
-    { "ma": "hoi-dap", "ten": "Hỏi–đáp RAG", "cot": 1, "canary": "tim-kiem-tra-ket-qua", "ghi_chu": "tìm → trả lời → phản biện" },
-    { "ma": "nhap-lieu", "ten": "Nhập tài liệu", "cot": 1, "ghi_chu": "kéo-thả + metadata dropdown" },
-    { "ma": "nguon-ngoai", "ten": "Nguồn ngoài → bài học", "cot": 1, "ghi_chu": "transcript → trích có neo" },
-    { "ma": "kho-vector", "ten": "Kho vector Qdrant", "cot": 2, "loai": "kho", "suc_khoe": "kho-vector" },
-    { "ma": "catalog", "ten": "Catalog + kho file", "cot": 2, "loai": "kho", "suc_khoe": "catalog" },
-    { "ma": "writer", "ten": "Writer + Critic LLM", "cot": 2, "suc_khoe": "llm-writer" },
-    { "ma": "zai", "ten": "Z.ai (GLM)", "cot": 3, "loai": "ngoai", "tuyen": "z-ai" },
-    { "ma": "transcript", "ten": "YouTube transcript", "cot": 3, "loai": "ngoai" }
+    {
+      "ma": "team",
+      "ten": "Team (cổng 9000)",
+      "cot": 0,
+      "loai": "nguoi"
+    },
+    {
+      "ma": "hoi-dap",
+      "ten": "Hỏi–đáp RAG",
+      "cot": 1,
+      "canary": "tim-kiem-tra-ket-qua",
+      "ghi_chu": "tìm → trả lời → phản biện"
+    },
+    {
+      "ma": "nhap-lieu",
+      "ten": "Nhập tài liệu",
+      "cot": 1,
+      "ghi_chu": "kéo-thả + metadata dropdown"
+    },
+    {
+      "ma": "nguon-ngoai",
+      "ten": "Nguồn ngoài → bài học",
+      "cot": 1,
+      "ghi_chu": "transcript → trích có neo"
+    },
+    {
+      "ma": "kho-vector",
+      "ten": "Kho vector Qdrant",
+      "cot": 2,
+      "loai": "kho",
+      "suc_khoe": "kho-vector"
+    },
+    {
+      "ma": "catalog",
+      "ten": "Catalog + kho file",
+      "cot": 2,
+      "loai": "kho",
+      "suc_khoe": "catalog"
+    },
+    {
+      "ma": "writer",
+      "ten": "Writer + Critic LLM",
+      "cot": 2,
+      "suc_khoe": "llm-writer"
+    },
+    {
+      "ma": "zai",
+      "ten": "Z.ai (GLM)",
+      "cot": 3,
+      "loai": "ngoai",
+      "tuyen": "z-ai"
+    },
+    {
+      "ma": "transcript",
+      "ten": "YouTube transcript",
+      "cot": 3,
+      "loai": "ngoai"
+    },
+    {
+      "ma": "kq-tra-loi",
+      "ten": "Câu trả lời CÓ TRÍCH NGUỒN",
+      "cot": 4,
+      "loai": "ket_qua",
+      "ghi_chu": "van chống bịa: thiếu tài liệu → nói thẳng"
+    },
+    {
+      "ma": "kq-kho",
+      "ten": "Kho tri thức chuẩn hóa + RBAC",
+      "cot": 4,
+      "loai": "ket_qua",
+      "ghi_chu": "catalog + vector, quyền bộ phận × level"
+    },
+    {
+      "ma": "kq-bai-hoc",
+      "ten": "Bài học kinh nghiệm (-PT)",
+      "cot": 4,
+      "loai": "ket_qua",
+      "ghi_chu": "có neo bằng chứng, vào kho như tài liệu"
+    }
   ],
   "canh": [
-    ["team", "hoi-dap"],
-    ["team", "nhap-lieu"],
-    ["team", "nguon-ngoai"],
-    ["hoi-dap", "kho-vector", "tìm chunk + RBAC"],
-    ["hoi-dap", "writer", "soạn + phản biện"],
-    ["nhap-lieu", "catalog", "file + metadata"],
-    ["nhap-lieu", "kho-vector", "cắt đoạn + embedding"],
-    ["nguon-ngoai", "transcript", "lấy phụ đề"],
-    ["nguon-ngoai", "writer", "trích bài học có neo"],
-    ["writer", "zai"]
+    [
+      "team",
+      "hoi-dap"
+    ],
+    [
+      "team",
+      "nhap-lieu"
+    ],
+    [
+      "team",
+      "nguon-ngoai"
+    ],
+    [
+      "hoi-dap",
+      "kho-vector",
+      "tìm chunk + RBAC"
+    ],
+    [
+      "hoi-dap",
+      "writer",
+      "soạn + phản biện"
+    ],
+    [
+      "nhap-lieu",
+      "catalog",
+      "file + metadata"
+    ],
+    [
+      "nhap-lieu",
+      "kho-vector",
+      "cắt đoạn + embedding"
+    ],
+    [
+      "nguon-ngoai",
+      "transcript",
+      "lấy phụ đề"
+    ],
+    [
+      "nguon-ngoai",
+      "writer",
+      "trích bài học có neo"
+    ],
+    [
+      "writer",
+      "zai"
+    ],
+    [
+      "writer",
+      "kq-tra-loi",
+      "sau phản biện"
+    ],
+    [
+      "kho-vector",
+      "kq-tra-loi",
+      "nguồn trích"
+    ],
+    [
+      "catalog",
+      "kq-kho"
+    ],
+    [
+      "nguon-ngoai",
+      "kq-bai-hoc"
+    ]
   ]
 }

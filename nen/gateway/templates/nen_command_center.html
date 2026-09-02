@@ -714,8 +714,12 @@ function veSoDo(d, cKq){
     const v=viTri[n.ma], st=trangThai(n);
     const netDut=n.loai==="ngoai"?' stroke-dasharray="6,4"':"";
     const bo=n.loai==="nguoi"?27:6;
+    const laKq=n.loai==="ket_qua";
+    const vien=laKq&&!st.muc?"var(--accent)":mauMuc[st.muc];
+    const nen=laKq&&!st.muc?"rgba(76,143,224,.10)":nenMuc[st.muc];
     svg+=`<g class="khoi" data-ma="${esc(n.ma)}" style="cursor:pointer">
-      <rect x="${v.x}" y="${v.y}" width="${BW}" height="${BH}" rx="${bo}" fill="${nenMuc[st.muc]}" stroke="${mauMuc[st.muc]}" stroke-width="${st.muc?2:1.2}"${netDut}/>`;
+      <rect x="${v.x}" y="${v.y}" width="${BW}" height="${BH}" rx="${bo}" fill="${nen}" stroke="${vien}" stroke-width="${laKq?2:(st.muc?2:1.2)}"${netDut}/>`;
+    if(laKq) svg+=`<text x="${v.x+BW-10}" y="${v.y+13}" text-anchor="end" font-size="8" letter-spacing="1.5" font-weight="700" fill="var(--accent)">KẾT QUẢ</text>`;
     if(n.loai==="kho") svg+=`<line x1="${v.x+8}" x2="${v.x+BW-8}" y1="${v.y+16}" y2="${v.y+16}" stroke="${mauMuc[st.muc]}" stroke-width="1" opacity=".4"/>`;
     if(st.muc) svg+=`<circle cx="${v.x+14}" cy="${v.y+15}" r="4.5" fill="${mauMuc[st.muc]}"/>`;
     svg+=`<text x="${v.x+(st.muc?25:12)}" y="${v.y+19}" font-size="12" font-weight="600" fill="var(--ink)">${esc(n.ten)}</text>`;
