@@ -147,8 +147,9 @@ def tom_tat_hom_nay() -> dict:
         except ValueError:
             continue
         dv = ket.setdefault(d.get("dich_vu", "?"), {
-            "calls": 0, "loi": 0, "tong_units": 0,
-            "theo_duoi": {}, "theo_viec": {}, "theo_gio": {}})
+            "calls": 0, "loi": 0, "tong_units": 0, "theo_duoi": {},
+            "theo_viec": {}, "theo_gio": {}, "theo_gio_calls": {},
+            "theo_gio_loi": {}})
         dv["calls"] += 1
         if not d.get("ok", True):
             dv["loi"] += 1
@@ -156,6 +157,14 @@ def tom_tat_hom_nay() -> dict:
         gio_call = (d.get("luc") or "")[11:13]
         if gio_call:
             dv["theo_gio"][gio_call] = dv["theo_gio"].get(gio_call, 0) + (d.get("units", 0) or 0)
+            # theo_gio chỉ cộng UNITS — dịch vụ không tính units (LLM: đo thật
+            # 02/09 là 132 call / units toàn 0 vì chưa ghi token; transcript,
+            # stock…) sẽ ra đường phẳng 0, tưởng "không dùng" trong khi đang
+            # chạy. Đếm thêm CALLS + LỖI theo giờ để mọi dịch vụ đều vẽ được
+            # nhịp bằng thước của chính nó.
+            dv["theo_gio_calls"][gio_call] = dv["theo_gio_calls"].get(gio_call, 0) + 1
+            if not d.get("ok", True):
+                dv["theo_gio_loi"][gio_call] = dv["theo_gio_loi"].get(gio_call, 0) + 1
         duoi = d.get("duoi") or ""
         if duoi:
             k = dv["theo_duoi"].setdefault(duoi, {

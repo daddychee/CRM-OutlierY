@@ -154,3 +154,28 @@ def test_kiem_vet_hong_that_khi_hau_het_khong_cuu_duoc():
     so_goi.ghi("radary", "youtube", duoi="bbbb", ok=True)
     xk = so_goi.kiem_vet("radary")["xoay_khoa"]
     assert xk["xoay_ok"] is False and xk["so_cuu_duoc"] < xk["so_403"]
+
+
+def test_theo_gio_calls_dem_ca_dich_vu_KHONG_tinh_units(monkeypatch):
+    """Owner 02/09: "ngoài YouTube cũng cần thấy lưu lượng các API khác".
+
+    `theo_gio` chỉ cộng UNITS, nên dịch vụ không tính units ra đường phẳng 0 —
+    đo thật hôm đó: LLM 132 call mà units toàn 0 (chưa ghi token), vẽ theo units
+    là thấy "không dùng" trong khi đang chạy. Thêm theo_gio_calls (+ theo_gio_loi)
+    để mọi dịch vụ vẽ được nhịp bằng thước của chính nó.
+
+    Ghim: dịch vụ units=0 vẫn phải đếm được call và lỗi theo giờ."""
+    from datetime import datetime
+
+    so_goi.ghi("content-ultimate", "llm", viec="viet", model="glm-5", ok=True)
+    so_goi.ghi("content-ultimate", "llm", viec="viet", model="glm-5", ok=True)
+    so_goi.ghi("content-ultimate", "llm", viec="viet", model="glm-5", ok=False,
+               ma_loi="429")
+    tt = so_goi.tom_tat_hom_nay()
+    gio = f"{datetime.now():%H}"
+
+    assert tt["llm"]["tong_units"] == 0, "ca này cố ý không có units"
+    assert tt["llm"]["theo_gio"].get(gio, 0) == 0, (
+        "theo_gio (units) bằng 0 — chính là lý do phải có theo_gio_calls")
+    assert tt["llm"]["theo_gio_calls"][gio] == 3
+    assert tt["llm"]["theo_gio_loi"][gio] == 1
