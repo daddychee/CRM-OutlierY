@@ -60,8 +60,12 @@ def doc_kich_ban(slug: str) -> list[dict]:
     if khoa in _cache_luat:
         return _cache_luat[khoa]
     du_lieu = json.loads(duong.read_text(encoding="utf-8-sig"))
+    # chua_kiem=true: logic được GỌI TÊN nhưng chưa có đường kiểm tự động —
+    # không cần method/duong/cho, runner trả 'chua' trung thực (02/09).
     ket = [k for k in du_lieu.get("kich_ban", [])
-           if all(k.get(t) for t in ("ma", "ten", "method", "duong", "cho"))]
+           if all(k.get(t) for t in ("ma", "ten"))
+           and (k.get("chua_kiem")
+                or all(k.get(t) for t in ("method", "duong", "cho")))]
     _cache_luat.clear()
     _cache_luat[khoa] = ket
     return ket
@@ -131,15 +135,25 @@ async def _chay_mot(client: httpx.AsyncClient, cong: int, kb: dict) -> dict:
     except ValueError:
         ket.update(ket_qua="loi", chi_tiet="phản hồi không phải JSON")
         return ket
+    # Đánh giá ĐỦ mọi kỳ vọng (không dừng sớm): kiem[i] ↔ cho[i] là trạng thái
+    # từng TRẠM trên sơ đồ logic (02/09); chi_tiet vẫn nêu kỳ vọng ĐẦU vỡ.
+    kiem_ds = []
     for duong_json, toan_tu, muc_tieu in kb["cho"]:
         thuc_te = _lay(body, duong_json)
-        if not _kiem(thuc_te, toan_tu, muc_tieu):
-            gon = thuc_te if not isinstance(thuc_te, (list, dict)) else (
-                f"len={len(thuc_te)}")
+        dat = _kiem(thuc_te, toan_tu, muc_tieu)
+        gon = thuc_te if not isinstance(thuc_te, (list, dict)) else (
+            f"len={len(thuc_te)}")
+        kiem_ds.append({"dat": dat,
+                        "chi_tiet": f"{duong_json} {toan_tu} {muc_tieu!r}"
+                                    + ("" if dat else f" ↔ thực tế {gon!r}")})
+        if not dat and ket["ket_qua"] == "dung":
             ket.update(ket_qua="sai",
                        chi_tiet=f"kỳ vọng {duong_json} {toan_tu} {muc_tieu!r} "
                                 f"↔ thực tế {gon!r}")
-            return ket
+    ket["kiem"] = kiem_ds
+    if kb.get("lay_chang"):
+        ket["chang"] = [{"nhan": nhan, "so": _lay(body, dj)}
+                        for nhan, dj in kb["lay_chang"]]
     return ket
 
 
@@ -159,13 +173,22 @@ async def chay_app(slug: str) -> dict:
     ds = doc_kich_ban(slug)
     ket = {"app": slug, "luc": datetime.now().isoformat(timespec="seconds"),
            "kich_ban": []}
-    if cong is None:
-        ket["kich_ban"] = [{"ma": k["ma"], "ten": k["ten"], "ket_qua": "loi",
-                            "chi_tiet": "app không có trong hợp đồng"} for k in ds]
-    else:
-        async with httpx.AsyncClient(timeout=15.0) as client:
-            for kb in ds:
-                ket["kich_ban"].append(await _chay_mot(client, cong, kb))
+    async with httpx.AsyncClient(timeout=15.0) as client:
+        for kb in ds:
+            if kb.get("chua_kiem"):
+                ket["kich_ban"].append({
+                    "ma": kb["ma"], "ten": kb["ten"], "ket_qua": "chua",
+                    "chi_tiet": kb.get("ghi_chua", "chưa có đường kiểm tự động")})
+                continue
+            # noi='nen': route nằm ở gateway (kiểm VẾT đọc sổ gọi nền)
+            cong_kb = (int(os.environ.get("CONG_NEN", "9000"))
+                       if kb.get("noi") == "nen" else cong)
+            if cong_kb is None:
+                ket["kich_ban"].append({
+                    "ma": kb["ma"], "ten": kb["ten"], "ket_qua": "loi",
+                    "chi_tiet": "app không có trong hợp đồng"})
+                continue
+            ket["kich_ban"].append(await _chay_mot(client, cong_kb, kb))
     d = _duong_data_dir()
     d.mkdir(parents=True, exist_ok=True)
     tmp = d / f"{slug}.json.tmp"

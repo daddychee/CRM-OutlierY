@@ -52,6 +52,56 @@ def test_dong_hong_khong_giet_tom_tat(tmp_path):
     assert tt["youtube"]["tong_units"] == 1
 
 
+# ---------- kiem_vet: đọc sổ làm bằng chứng kiểm logic (02/09) ----------
+
+def test_kiem_vet_theo_viec_va_xoay_khoa():
+    """VẾT cho hệ kiểm logic: theo_viec của MỘT app + kiểm xoay khóa 403 —
+    sau 403 key A, call kế cùng dịch vụ trong ≤5s phải OK với key KHÁC."""
+    so_goi.ghi("radary", "youtube", duoi="4Yx1", viec="quet", units=1, ok=True)
+    so_goi.ghi("radary", "youtube", duoi="4Yx1", viec="quet", units=1, ok=False,
+               ma_loi="403 quotaExceeded")
+    so_goi.ghi("radary", "youtube", duoi="2Fd3", viec="quet", units=1, ok=True)
+    so_goi.ghi("seo-optimize", "youtube", duoi="9Ab0", viec="extract",
+               units=100, ok=True)   # app khác — không được lẫn
+    v = so_goi.kiem_vet("radary")
+    assert v["theo_viec"]["quet"]["calls"] == 3
+    assert v["theo_viec"]["quet"]["loi"] == 1
+    assert "extract" not in v["theo_viec"]
+    xk = v["xoay_khoa"]
+    assert xk["so_403"] == 1 and xk["xoay_ok"] is True
+    assert "2Fd3" in xk["chi_tiet"]
+
+
+def test_kiem_vet_khong_403_khong_phan():
+    """0 sự kiện 403 → xoay_ok=None (không có gì để phán, không bịa ĐÚNG)."""
+    so_goi.ghi("radary", "youtube", duoi="4Yx1", viec="quet", units=1, ok=True)
+    v = so_goi.kiem_vet("radary")
+    assert v["xoay_khoa"]["so_403"] == 0 and v["xoay_khoa"]["xoay_ok"] is None
+
+
+def test_kiem_vet_403_khong_xoay_la_fail():
+    """403 mà call kế vẫn CÙNG key hoặc vẫn lỗi → xoay_ok=False."""
+    so_goi.ghi("radary", "youtube", duoi="4Yx1", viec="quet", ok=False,
+               ma_loi="403 quotaExceeded")
+    so_goi.ghi("radary", "youtube", duoi="4Yx1", viec="quet", ok=False,
+               ma_loi="403 quotaExceeded")
+    v = so_goi.kiem_vet("radary")
+    assert v["xoay_khoa"]["xoay_ok"] is False
+
+
+def test_route_vet_loopback():
+    from nen.gateway.main import app as gw
+    so_goi.ghi("radary", "youtube", duoi="4Yx1", viec="quet", ok=True)
+
+    async def run(addr):
+        tr = httpx.ASGITransport(app=gw, client=addr)
+        async with httpx.AsyncClient(transport=tr, base_url="http://t") as cl:
+            return await cl.get("/api/vet/so-goi/radary")
+    r = asyncio.run(run(("127.0.0.1", 50000)))
+    assert r.status_code == 200 and r.json()["theo_viec"]["quet"]["calls"] == 1
+    assert asyncio.run(run(("192.168.1.9", 1))).status_code == 404
+
+
 # ---------- route loopback cho app tự đủ ----------
 
 def _post(body, client_addr=("127.0.0.1", 50000)):

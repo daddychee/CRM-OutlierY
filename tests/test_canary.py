@@ -165,6 +165,73 @@ def test_route_chan_nguoi_chua_dang_nhap(san, tmp_path, monkeypatch):
     assert r.status_code in (303, 401, 403)
 
 
+# ---------- mở rộng "16 logic = 16 sơ đồ" (02/09) ----------
+# Kịch bản thêm trường loai/canh/mo_ta/so_do (UI dùng, runner bỏ qua) +
+# lay_chang (số đo chặng THẬT từ body) + chua_kiem (logic gọi tên nhưng chưa
+# có đường kiểm — hiện CHƯA trung thực, không bịa) + noi="nen" (route ở gateway
+# — kiểm VẾT đọc sổ gọi nền). kiem[i] trong kết quả ↔ cho[i] trong kịch bản.
+
+
+def test_danh_gia_du_moi_cho_khong_dung_som(san):
+    """Mỗi phần tử cho = một trạm trên sơ đồ logic → phải đánh giá HẾT,
+    không dừng ở kỳ vọng đầu vỡ; kiem[i] ↔ cho[i] theo thứ tự."""
+    luat = san / "rules" / "stub-app.json"
+    d = json.loads(luat.read_text(encoding="utf-8"))
+    d["kich_ban"] = [{"ma": "nhieu-kiem", "ten": "Nhiều kiểm", "method": "GET",
+                      "duong": "/api/suc-khoe",
+                      "cho": [["trang_thai", "==", "hong"],      # vỡ
+                              ["mo_dun", "len>=", 1],            # đạt
+                              ["trang_thai", "==", "cung-hong"]]}]  # vỡ
+    luat.write_text(json.dumps(d, ensure_ascii=False), encoding="utf-8")
+    kq = asyncio.run(canary.chay_app("stub-app"))
+    k = kq["kich_ban"][0]
+    assert k["ket_qua"] == "sai"
+    assert [x["dat"] for x in k["kiem"]] == [False, True, False]
+    assert "hong" in k["chi_tiet"]  # chi_tiet vẫn nêu kỳ vọng đầu vỡ
+
+
+def test_lay_chang_so_do_that(san):
+    """lay_chang trích SỐ ĐO TỪNG CHẶNG từ body — panel sơ đồ hiện số thật."""
+    luat = san / "rules" / "stub-app.json"
+    d = json.loads(luat.read_text(encoding="utf-8"))
+    d["kich_ban"] = [{"ma": "co-chang", "ten": "Có chặng", "method": "POST",
+                      "duong": "/api/py-split", "body": {},
+                      "cho": [["chuong", "len>=", 1]],
+                      "lay_chang": [["số chương", "chuong.0.i"]]}]
+    luat.write_text(json.dumps(d, ensure_ascii=False), encoding="utf-8")
+    kq = asyncio.run(canary.chay_app("stub-app"))
+    assert kq["kich_ban"][0]["chang"] == [{"nhan": "số chương", "so": 0}]
+
+
+def test_chua_kiem_hien_trung_thuc_khong_goi(san):
+    """Logic chưa có đường kiểm: khai chua_kiem=true (không method/duong/cho)
+    → vẫn được GỌI TÊN, kết quả 'chua' — không bịa, không gọi HTTP."""
+    luat = san / "rules" / "stub-app.json"
+    d = json.loads(luat.read_text(encoding="utf-8"))
+    d["kich_ban"] = [{"ma": "serp-tach", "ten": "SERP tách rising",
+                      "chua_kiem": True, "loai": "vet",
+                      "ghi_chua": "cần route đọc tra_cuu_log"}]
+    luat.write_text(json.dumps(d, ensure_ascii=False), encoding="utf-8")
+    assert len(canary.doc_kich_ban("stub-app")) == 1   # reader không loại
+    kq = asyncio.run(canary.chay_app("stub-app"))
+    k = kq["kich_ban"][0]
+    assert k["ket_qua"] == "chua" and "tra_cuu_log" in k["chi_tiet"]
+
+
+def test_noi_nen_goi_cong_gateway(san, stub, monkeypatch):
+    """noi='nen' → kịch bản gọi cổng NỀN (CONG_NEN) thay cổng app — dùng cho
+    kiểm VẾT đọc sổ gọi nằm ở gateway."""
+    monkeypatch.setenv("CONG_NEN", str(stub))          # giả gateway = stub
+    monkeypatch.setattr(canary, "_cong_cua", lambda slug: None)  # app KHÔNG có cổng
+    luat = san / "rules" / "stub-app.json"
+    d = {"kich_ban": [{"ma": "vet-nen", "ten": "Vết ở nền", "method": "GET",
+                       "duong": "/api/suc-khoe", "noi": "nen",
+                       "cho": [["trang_thai", "==", "ok"]]}]}
+    luat.write_text(json.dumps(d, ensure_ascii=False), encoding="utf-8")
+    kq = asyncio.run(canary.chay_app("stub-app"))
+    assert kq["kich_ban"][0]["ket_qua"] == "dung"
+
+
 def test_edge_canh_bao_khi_chuyen_dung_sang_sai():
     """so_canary là HÀM THUẦN: chỉ báo lúc CHUYỂN (dung→sai/loi, và hồi phục)."""
     cu = {"kich_ban": [{"ma": "a", "ten": "Logic A", "ket_qua": "dung"}]}

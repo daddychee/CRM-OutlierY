@@ -585,6 +585,9 @@ async def api_giam_sat_tong_hop(request: Request):
         "dem": {str(k): v for k, v in dem_loi.tom_tat().items()},
         "nhip": await run_in_threadpool(nhip_viec.tom_tat),
         "canary": {s: canary.doc_ket_qua(s) for s in canary.cac_slug()},
+        # kịch bản (loai/canh/mo_ta/so_do…) để UI vẽ 16-logic-16-sơ-đồ — UI
+        # merge với kết quả theo ma (02/09)
+        "canary_kich_ban": {s: canary.doc_kich_ban(s) for s in canary.cac_slug()},
         "duong_truyen": tuyen,
         "lich_su": giam_sat.lay_lich_su(60),
         "su_co": await run_in_threadpool(giam_sat.doc_su_co),
@@ -1709,6 +1712,19 @@ async def api_so_goi(request: Request):
         units=b.get("units", 0) or 0, ms=b.get("ms"),
         ok=bool(b.get("ok", True)), ma_loi=str(b.get("ma_loi", ""))[:200])
     return JSONResponse({"ok": True})
+
+
+@app.get("/api/vet/so-goi/{slug}")
+async def api_vet_so_goi(slug: str, request: Request):
+    """HỆ KIỂM LOGIC (02/09): bằng chứng VẾT từ sổ gọi hôm nay của MỘT app —
+    canary loại VẾT (noi='nen') gọi route này rồi so kỳ vọng. CHỈ loopback,
+    không session (khuôn /api/so-goi — dữ liệu là aggregate, không key trần)."""
+    from starlette.concurrency import run_in_threadpool
+
+    from nen.common import so_goi
+    if request.client and request.client.host not in ("127.0.0.1", "::1"):
+        return Response("Không tìm thấy", status_code=404)
+    return JSONResponse(await run_in_threadpool(so_goi.kiem_vet, slug))
 
 
 # ---------- DANH BẠ THỰC THỂ — Niches + Channels (Đ1 khối đế, DE.md) ----------
