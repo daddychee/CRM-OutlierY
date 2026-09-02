@@ -125,6 +125,10 @@ def cham_cong_vao_ra() -> dict:
     chủ đích (đóng app) KHÔNG bị throttle nuốt."""
     import json
     with _kho_tam("CHAM_CONG_DIR"):
+        # `_da_ghi` là cache CẤP TIẾN TRÌNH (throttle 60s): lượt kiểm sau bị nó
+        # chặn ghi nên đọc ra dữ liệu lượt trước — phải dọn, nếu không phép kiểm
+        # đỏ oan khi canary chạy nhiều lượt trong cùng tiến trình app.
+        cham_cong._da_ghi.clear()
         t = datetime(2026, 8, 3, 8, 5, 0)
         cham_cong.ghi_nhan("canary", luc=t)
         cham_cong.ghi_nhan("canary", luc=t.replace(hour=12))
@@ -132,6 +136,7 @@ def cham_cong_vao_ra() -> dict:
         p = Path(os.environ["CHAM_CONG_DIR"]) / "2026-08.json"
         du = json.loads(p.read_text(encoding="utf-8")) if p.is_file() else {}
         n = (du.get("2026-08-03") or {}).get("canary") or {}
+        cham_cong._da_ghi.clear()
     return {"vao": n.get("vao"), "ra": n.get("ra"), "nguon_ra": n.get("nguon_ra"),
             "vao_giu_tin_hieu_dau": (n.get("vao") or "").startswith("08:05"),
             "ra_theo_tin_hieu_cuoi": (n.get("ra") or "").startswith("18:")}
@@ -140,13 +145,17 @@ def cham_cong_vao_ra() -> dict:
 def chot_cong_chi_them() -> dict:
     """Chốt công kỳ ghi ĐÚNG MỘT LẦN — chốt đè = sửa lịch sử chấm công sau khi
     đã trả lương, đối chiếu về sau mất cơ sở."""
-    with _kho_tam("CHAM_CONG_DIR"):
+    # PHẢI trỏ CẢ CHAM_CONG_CHOT_DIR: bản chốt dùng env RIÊNG, thiếu là phép
+    # kiểm ghi vào sổ chốt THẬT rồi lượt sau đỏ oan (dính đúng vậy 02/09).
+    with _kho_tam("CHAM_CONG_DIR", "CHAM_CONG_CHOT_DIR"):
+        cham_cong._da_ghi.clear()
         cham_cong.chot_ky("2026-08", "hr-canary")
         lan_hai_tu_choi = False
         try:
             cham_cong.chot_ky("2026-08", "hr-canary")
         except ValueError:
             lan_hai_tu_choi = True
+        cham_cong._da_ghi.clear()
     return {"lan_hai_bi_tu_choi": lan_hai_tu_choi}
 
 

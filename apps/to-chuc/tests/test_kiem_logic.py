@@ -84,3 +84,23 @@ def test_nguoi_nghi_ra_khoi_bang():
     TIỀN cho người không còn làm, mà sổ chỉ-thêm nên bút toán đó không xóa."""
     b = _kiem("nguoi-nghi-ra-khoi-bang")
     assert b["nghi_khong_vao_bang"] is True
+
+
+def test_kiem_chay_lap_khong_ban_so_that():
+    """LỖI THẬT tự bắt 02/09: `chot_cong_chi_them` chỉ trỏ CHAM_CONG_DIR sang
+    thư mục tạm, quên CHAM_CONG_CHOT_DIR (bản chốt dùng env RIÊNG) → phép kiểm
+    GHI BẢN CHỐT GIẢ vào sổ thật, rồi lượt canary sau đỏ oan; tệ hơn: HR không
+    chốt được kỳ đó nữa vì "kỳ đã chốt rồi".
+
+    Ghim: chạy lặp phải ra CÙNG kết quả, và sổ chốt thật không mọc file nào."""
+    import os
+    from pathlib import Path
+
+    from src import cham_cong
+    truoc = set(Path(cham_cong._thu_muc_chot()).glob("*.json")) \
+        if Path(cham_cong._thu_muc_chot()).is_dir() else set()
+    ket = [_kiem("chot-cong-chi-them")["lan_hai_bi_tu_choi"] for _ in range(3)]
+    sau = set(Path(cham_cong._thu_muc_chot()).glob("*.json")) \
+        if Path(cham_cong._thu_muc_chot()).is_dir() else set()
+    assert ket == [True, True, True], f"chạy lặp ra kết quả khác nhau: {ket}"
+    assert sau == truoc, f"phép kiểm ghi bẩn sổ chốt thật: {sau - truoc}"
