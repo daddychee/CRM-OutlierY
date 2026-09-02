@@ -342,3 +342,30 @@ Quy ước từ 16/08/2026 (user chốt): mỗi mạch việc lớn có MỘT s�
   (hết mượn /api/me); RENDERY còn nợ /health (repo F:, chờ lúc không job dựng).
   KẾ TIẾP: B4 heartbeat việc nền → B5 cảnh báo ntfy → B6 canary; lan suc_khoe
   sang radary/to-chuc/thumby.
+- 02/09/2026 — **HỆ KIỂM LOGIC "16 logic = 16 sơ đồ" — Owner chốt sau 4 vòng UI**
+  (6 commit nền/UI 19ccad3→…, radary lồng 1981b3d; sổ chi tiết:
+  `docs/giam-sat-suc-khoe.md` mục 02/09). Owner chỉ ra khuyết điểm cấp kiến trúc:
+  canary chỉ kiểm HẠ TẦNG (radary 2 canary / ~16 logic nghiệp vụ thật), sơ đồ vận
+  hành chỉ show input→kết quả **không có logic nào trên sợi dây**. Chốt 2 tầng:
+  **① Flow toàn map BẤT BIẾN** + **TRẠM KIỂM trên từng dây** (tổng hợp logic gắn
+  `canh:[tu,den]`; ✓ đúng hết · ✗ có sai · số vàng có chưa kiểm · **? = dây chưa
+  phủ kiểm, tự tố cáo lỗ hổng** · ×N số logic); **② Hệ kiểm — mỗi logic MỘT sơ đồ,
+  hiện LẦN LƯỢT** (bấm dòng bảng/trạm → sơ đồ + panel đổi theo; trạm trên mũi tên
+  i = `kiem[i]` ↔ `cho[i]`; panel = logic bằng lời + SỐ ĐO TỪNG CHẶNG thật + kỳ
+  vọng ✓/✗ + nút KIỂM LOGIC NÀY). **BA LOẠI KIỂM**: GỌI (canary gọi cửa kiểm, 0
+  quota) · VẾT (đọc sổ lần chạy thật — logic tốn tiền) · BẤT BIẾN (dữ liệu đã ghi).
+  NỀN: canary đánh giá ĐỦ mọi `cho` (không dừng sớm), `lay_chang` trả số đo chặng,
+  **`chua_kiem` = logic GỌI TÊN nhưng chưa có đường kiểm → hiện "CHƯA", trung
+  thực không bịa**, `noi:"nen"` gọi cổng nền; `so_goi.kiem_vet` (theo_viec +
+  xoay khóa 403, **0 sự kiện 403 → không phán ĐÚNG**). APP: cửa kiểm
+  `/api/kiem/{ma}` CHỈ-ĐỌC 0 quota, chỉ loopback — radary 9 mã (dang-nong chạy
+  THẬT trên pool, tier-mau qua core.evaluate, ticks-lui, probe…), ai-agent 5 mã
+  (rbac ma trận 5×4, van-kho-rong **đếm lời gọi model = 0**, mac-dinh-noi-bo…).
+  Kiểm kê logic 12 app bằng 4 agent đọc code thật (mỗi logic kèm `file:line`,
+  chỗ không kiểm được ghi thẳng "CHƯA CÓ VẾT — cần thêm X"); **sơ đồ 11/12 app**
+  (rendery mã ở `F:/RenderY/autoedit` ngoài repo). Nghiệm thu sống: 30 logic 2
+  app qua gateway thật — **21 ĐÚNG / 9 CHƯA**, số đo chặng thật (radary 7.455
+  video pool → 4.416 video 2–60 ngày → ngưỡng nổ 5.669 view/ngày → 40 cụm nóng,
+  nền nổ 10%). Chụp màn đặt cạnh mockup, sửa 4 lệch. Bug tự tìm: 2 test cache
+  radary rò `db.connect()` → Windows khóa file, fixture sau không dọn được DB.
+  KẾ TIẾP: lan cửa kiểm sang 10 app còn lại; đóng dần 9 logic `chua_kiem`.
