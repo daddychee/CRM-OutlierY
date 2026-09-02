@@ -1,0 +1,155 @@
+{
+ "_ghi_chu": "SO DO VAN HANH niche-research (02/09) — tu kiem ke code that (orchestrator DAG S1..S19, _common/crackability/decision).",
+ "nut": [
+  {
+   "ma": "team",
+   "ten": "Team nghiên cứu ngách",
+   "cot": 0,
+   "loai": "nguoi",
+   "ghi_chu": "dán competitors + bấm START"
+  },
+  {
+   "ma": "orchestrator",
+   "ten": "Orchestrator DAG S1→S19",
+   "cot": 1,
+   "ghi_chu": "idempotent + resumable"
+  },
+  {
+   "ma": "tang-py",
+   "ten": "Tầng PY đo số (S1–S11)",
+   "cot": 1,
+   "ghi_chu": "Python đo mọi thứ đo được"
+  },
+  {
+   "ma": "tang-llm",
+   "ten": "Tầng LLM diễn giải",
+   "cot": 1,
+   "ghi_chu": "optional — lỗi chỉ skip stage"
+  },
+  {
+   "ma": "niche-data",
+   "ten": "Kho artifact niche-data/",
+   "cot": 2,
+   "loai": "kho"
+  },
+  {
+   "ma": "snapshots",
+   "ten": "Snapshot theo ngày",
+   "cot": 2,
+   "loai": "kho"
+  },
+  {
+   "ma": "ket-khoa",
+   "ten": "Két khóa OUTLIERY",
+   "cot": 2,
+   "loai": "kho",
+   "ghi_chu": "không rơi về .env"
+  },
+  {
+   "ma": "youtube",
+   "ten": "YouTube Data API",
+   "cot": 3,
+   "loai": "ngoai",
+   "ghi_chu": "hết quota → PAUSE"
+  },
+  {
+   "ma": "nha-llm",
+   "ten": "Nhà LLM",
+   "cot": 3,
+   "loai": "ngoai"
+  },
+  {
+   "ma": "kq-go-nogo",
+   "ten": "Phán quyết Go/No-Go + 5 trụ",
+   "cot": 4,
+   "loai": "ket_qua",
+   "ghi_chu": "hard gate crackability"
+  },
+  {
+   "ma": "kq-beachhead",
+   "ten": "Sub-niche đánh trước",
+   "cot": 4,
+   "loai": "ket_qua",
+   "ghi_chu": "hoặc WIDEN SEARCH"
+  },
+  {
+   "ma": "kq-bao-cao",
+   "ten": "Báo cáo gộp 8 PHASE",
+   "cot": 4,
+   "loai": "ket_qua",
+   "ghi_chu": "SỐ→NGHĨA→GATE"
+  },
+  {
+   "ma": "kq-tin-hieu",
+   "ten": "Tín hiệu theo dõi tuần",
+   "cot": 4,
+   "loai": "ket_qua"
+  }
+ ],
+ "canh": [
+  [
+   "team",
+   "orchestrator",
+   "competitors.txt"
+  ],
+  [
+   "ket-khoa",
+   "orchestrator",
+   "cấp khóa theo việc"
+  ],
+  [
+   "orchestrator",
+   "tang-py",
+   "DAG tất định"
+  ],
+  [
+   "orchestrator",
+   "tang-llm",
+   "chỉ khi --llm"
+  ],
+  [
+   "tang-py",
+   "youtube",
+   "scan + comments"
+  ],
+  [
+   "tang-llm",
+   "nha-llm"
+  ],
+  [
+   "tang-py",
+   "niche-data",
+   "ghi artifact"
+  ],
+  [
+   "tang-llm",
+   "niche-data",
+   "ghi nghĩa"
+  ],
+  [
+   "niche-data",
+   "kq-go-nogo",
+   "decision1"
+  ],
+  [
+   "niche-data",
+   "kq-beachhead",
+   "decision2"
+  ],
+  [
+   "niche-data",
+   "kq-bao-cao",
+   "render 8 phase"
+  ],
+  [
+   "niche-data",
+   "snapshots",
+   "đóng băng theo ngày"
+  ],
+  [
+   "snapshots",
+   "kq-tin-hieu",
+   "diff 2 snapshot"
+  ]
+ ]
+}

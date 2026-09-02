@@ -1,0 +1,123 @@
+{
+ "_ghi_chu": "SO DO VAN HANH plannery (02/09) — tu kiem ke code that (server CAS _rev, engine compute_schedule, workcal).",
+ "nut": [
+  {
+   "ma": "leader",
+   "ten": "Leader / SEO / Manager",
+   "cot": 0,
+   "loai": "nguoi"
+  },
+  {
+   "ma": "ui",
+   "ten": "UI PlannerY",
+   "cot": 1,
+   "ghi_chu": "rail ngách"
+  },
+  {
+   "ma": "server",
+   "ten": "Server /api/plan",
+   "cot": 1,
+   "ghi_chu": "CAS _rev + LOCK + ghi nguyên tử"
+  },
+  {
+   "ma": "engine",
+   "ten": "Engine xếp lịch",
+   "cot": 1,
+   "ghi_chu": "compute_schedule tất định"
+  },
+  {
+   "ma": "plan-json",
+   "ten": "plan.json (nguồn chân lý)",
+   "cot": 2,
+   "loai": "kho"
+  },
+  {
+   "ma": "backups",
+   "ten": "backups/ giữ 40 bản",
+   "cot": 2,
+   "loai": "kho"
+  },
+  {
+   "ma": "nen-ns",
+   "ten": "Hồ sơ NS (iam.db)",
+   "cot": 3,
+   "loai": "ngoai",
+   "ghi_chu": "nối theo planner_id"
+  },
+  {
+   "ma": "nen-danh-ba",
+   "ten": "Danh bạ kênh/ngách",
+   "cot": 3,
+   "loai": "ngoai"
+  },
+  {
+   "ma": "kq-lich",
+   "ten": "Lịch bàn giao từng tập + giờ",
+   "cot": 4,
+   "loai": "ket_qua"
+  },
+  {
+   "ma": "kq-canh-bao",
+   "ten": "Cảnh báo trễ / nghẽn / dưới chuẩn",
+   "cot": 4,
+   "loai": "ket_qua"
+  },
+  {
+   "ma": "kq-phan-cong",
+   "ten": "Phân công người ↔ tập ↔ khâu",
+   "cot": 4,
+   "loai": "ket_qua"
+  }
+ ],
+ "canh": [
+  [
+   "leader",
+   "ui"
+  ],
+  [
+   "ui",
+   "server",
+   "POST /api/plan + _rev"
+  ],
+  [
+   "server",
+   "nen-ns",
+   "đọc hồ sơ"
+  ],
+  [
+   "server",
+   "nen-danh-ba",
+   "đọc kênh"
+  ],
+  [
+   "server",
+   "engine",
+   "compute_schedule"
+  ],
+  [
+   "server",
+   "plan-json",
+   "ghi nguyên tử sau CAS"
+  ],
+  [
+   "server",
+   "backups",
+   "giữ 40 bản"
+  ],
+  [
+   "engine",
+   "kq-lich",
+   "handoff + giờ"
+  ],
+  [
+   "engine",
+   "kq-canh-bao",
+   "4 loại warning"
+  ],
+  [
+   "engine",
+   "kq-phan-cong",
+   "segment theo người"
+  ]
+ ]
+}

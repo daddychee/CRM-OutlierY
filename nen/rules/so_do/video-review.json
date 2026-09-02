@@ -1,0 +1,142 @@
+{
+ "_ghi_chu": "SO DO VAN HANH video-review (02/09) — tu kiem ke code that (nap_nas/kho_video/don_nas/main).",
+ "nut": [
+  {
+   "ma": "nhan-su",
+   "ten": "Nhân sự dựng",
+   "cot": 0,
+   "loai": "nguoi"
+  },
+  {
+   "ma": "leader",
+   "ten": "Leader / Manager",
+   "cot": 0,
+   "loai": "nguoi",
+   "ghi_chu": "duyệt 3 nấc"
+  },
+  {
+   "ma": "lien-ket",
+   "ten": "Liên kết file NAS",
+   "cot": 1,
+   "ghi_chu": "ghi sổ, KHÔNG chép"
+  },
+  {
+   "ma": "xem-review",
+   "ten": "Xem + bình luận",
+   "cot": 1,
+   "ghi_chu": "mốc giây + canvas 0..1"
+  },
+  {
+   "ma": "duyet",
+   "ten": "Duyệt / gỡ / dọn",
+   "cot": 1
+  },
+  {
+   "ma": "so-sqlite",
+   "ten": "Sổ video + bình luận",
+   "cot": 2,
+   "loai": "kho"
+  },
+  {
+   "ma": "nhat-ky-xoa",
+   "ten": "Nhật ký xóa (CSV chỉ-thêm)",
+   "cot": 2,
+   "loai": "kho"
+  },
+  {
+   "ma": "nas",
+   "ten": "NAS (CHỈ ĐỌC)",
+   "cot": 3,
+   "loai": "ngoai"
+  },
+  {
+   "ma": "ffmpeg",
+   "ten": "ffprobe / ffmpeg",
+   "cot": 3,
+   "loai": "ngoai",
+   "ghi_chu": "thiếu thì IM LẶNG"
+  },
+  {
+   "ma": "kq-approved",
+   "ten": "Bản dựng ĐÃ DUYỆT",
+   "cot": 4,
+   "loai": "ket_qua"
+  },
+  {
+   "ma": "kq-feedback",
+   "ten": "Feedback có mốc + hình vẽ",
+   "cot": 4,
+   "loai": "ket_qua"
+  },
+  {
+   "ma": "kq-awaiting",
+   "ten": "Hàng chờ Awaiting review",
+   "cot": 4,
+   "loai": "ket_qua",
+   "ghi_chu": "chưa AI KHÁC xem"
+  }
+ ],
+ "canh": [
+  [
+   "nhan-su",
+   "lien-ket",
+   "chọn file NAS"
+  ],
+  [
+   "lien-ket",
+   "nas",
+   "đọc cây + vân tay"
+  ],
+  [
+   "lien-ket",
+   "ffmpeg",
+   "codec + quét hỏng"
+  ],
+  [
+   "lien-ket",
+   "so-sqlite",
+   "ghi VR-xxxx"
+  ],
+  [
+   "leader",
+   "xem-review"
+  ],
+  [
+   "xem-review",
+   "nas",
+   "206 khúc 8MB"
+  ],
+  [
+   "xem-review",
+   "so-sqlite",
+   "bình luận + ve_json"
+  ],
+  [
+   "leader",
+   "duyet"
+  ],
+  [
+   "duyet",
+   "so-sqlite",
+   "đổi trạng thái"
+  ],
+  [
+   "duyet",
+   "nhat-ky-xoa",
+   "ghi TRƯỚC khi xóa"
+  ],
+  [
+   "so-sqlite",
+   "kq-approved"
+  ],
+  [
+   "so-sqlite",
+   "kq-feedback"
+  ],
+  [
+   "so-sqlite",
+   "kq-awaiting",
+   "so_khac = 0"
+  ]
+ ]
+}
