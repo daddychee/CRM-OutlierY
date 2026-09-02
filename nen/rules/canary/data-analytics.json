@@ -18,18 +18,18 @@
     "dien-giai",
     "zai"
    ],
-   "mo_ta": "Tầng diễn giải LLM còn sống — chết thì engine vẫn ra phán quyết nhưng mất phần giải thích. XANH GIẢ đã sửa 02/09: `!= loi` không bao giờ sai vì hàm kiểm của app chỉ hạ 'canh_bao' ở nhánh hỏng (soi code thật) — canary vĩnh viễn xanh kể cả khi tính năng đã chết. Đổi sang `== ok`.",
+   "mo_ta": "Tầng diễn giải LLM còn sống — chết thì engine vẫn ra phán quyết nhưng mất phần giải thích. Két tra theo APP × VIỆC-TRONG-HỢP-ĐỒNG: việc ở đây tên `dien_giai`, không phải 'writer'. Hai lỗi đã sửa: XANH GIẢ 02/09 (`!= loi` không bao giờ sai vì hàm kiểm của app chỉ hạ 'canh_bao' ở nhánh hỏng → đổi sang `== ok`) và BÁO ĐỘNG GIẢ 02/09 (health hỏi tên việc 'writer' đã bỏ từ 18/08 nên luôn nhận provider rỗng, kêu thiếu két suốt trong khi tính năng vẫn chạy).",
    "so_do": {
     "buoc": [
      {
       "ten": "Cấu hình LLM từ két"
      },
      {
-      "ten": "Kiểm provider"
+      "ten": "Kiểm việc dien_giai"
      }
     ],
     "kiem": [
-     "provider khai đủ, không lỗi"
+     "khóa cấp đủ cho việc dien_giai, không lỗi"
     ]
    }
   },
