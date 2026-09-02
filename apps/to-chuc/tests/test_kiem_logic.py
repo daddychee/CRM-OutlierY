@@ -104,3 +104,28 @@ def test_kiem_chay_lap_khong_ban_so_that():
         if Path(cham_cong._thu_muc_chot()).is_dir() else set()
     assert ket == [True, True, True], f"chạy lặp ra kết quả khác nhau: {ket}"
     assert sau == truoc, f"phép kiểm ghi bẩn sổ chốt thật: {sau - truoc}"
+
+
+def test_kiem_khong_ghi_ban_so_luong_va_xep_loai():
+    """Cùng họ lỗi CHAM_CONG_CHOT_DIR: `luong_khong_tu_tru` trỏ 'TO_CHUC_DB'
+    (biến KHÔNG tồn tại) thay vì LUONG_DIR / KPI_DANH_GIA_DIR → ghi bẩn sổ lương
+    cơ bản và sổ xếp loại THẬT. Hậu quả: bảng lương thật mọc 2 người ma 'a'/'b'
+    lương 10tr, và xếp loại B khống cho kỳ đó.
+
+    Ghim: chạy lặp ra cùng kết quả VÀ hai sổ thật không mọc file nào."""
+    from pathlib import Path
+
+    from src import kpi_danh_gia, luong
+    def _chup():
+        ra = set()
+        for d in (Path(luong._duong("luong-co-ban.json")).parent,
+                  Path(kpi_danh_gia._thu_muc())):
+            if d.is_dir():
+                ra |= set(d.glob("*.json"))
+        return ra
+
+    truoc = _chup()
+    ket = [_kiem("luong-khong-tu-tru")["cung_luong_du_khac_ngay_cong"]
+           for _ in range(2)]
+    assert ket == [True, True], f"chạy lặp ra kết quả khác nhau: {ket}"
+    assert _chup() == truoc, f"phép kiểm ghi bẩn sổ thật: {_chup() - truoc}"

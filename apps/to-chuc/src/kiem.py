@@ -45,7 +45,10 @@ def luong_khong_tu_tru() -> dict:
 
     Kiểm: hai người CÙNG lương cơ bản + CÙNG xếp loại nhưng số ngày công KHÁC
     hẳn nhau (5 vs 22) → thực nhận phải BẰNG NHAU."""
-    with _kho_tam("CHAM_CONG_DIR", "TO_CHUC_DB"):
+    # PHẢI trỏ ĐÚNG TÊN env của TỪNG module (LUONG_DIR / KPI_DANH_GIA_DIR),
+    # không phải một biến gộp tưởng tượng — trỏ sai là ghi bẩn sổ lương và sổ
+    # xếp loại THẬT (dính đúng vậy 02/09, cùng họ với bẫy CHAM_CONG_CHOT_DIR).
+    with _kho_tam("CHAM_CONG_DIR", "LUONG_DIR", "KPI_DANH_GIA_DIR"):
         from src import kpi_danh_gia
         ky = "2026-08"
         ds = [{"ten": "a", "ma": "NS-901", "ho_ten": "A", "bo_phan": "VH"},
