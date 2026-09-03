@@ -19,7 +19,7 @@ def he(tmp_path, monkeypatch):
     from nen.common import danh_ba
     db = danh_ba.ket_noi()
     ng = danh_ba.them_ngach(db, "Life In")
-    ma = danh_ba.them_kenh(db, "Outland", ng)          # sinh mã K-OUTLAND
+    ma = danh_ba.them_kenh(db, "Outland", ng)          # mã dạng số (03/09)
     danh_ba.them_bi_danh(db, ma, "outland kr")
     danh_ba.them_kenh(db, "Space", ng)
     db.close()
@@ -41,9 +41,9 @@ def test_router_khong_khop_hoi_lai_khong_doan(he):
 def test_router_khop_bi_danh_khong_dau(he, monkeypatch):
     goi = {}
     monkeypatch.setattr(cau_noi, "bao_cao_kenh",
-                        lambda kenh, user, conn=None: goi.update(ma=kenh["ma"]) or {"loai": "x"})
+                        lambda kenh, user, conn=None: goi.update(ma=kenh["ma"], ten=kenh["ten_chuan"]) or {"loai": "x"})
     cau_noi.hoi_so_lieu("tuan roi kenh OUTLAND KR the nao?", KD_L2, he)
-    assert goi["ma"] == "K-OUTLAND"
+    assert goi["ten"] == "Outland"      # 03/09: ma la day so -> so theo TEN
 
 
 def test_router_nhieu_kenh_hoi_lai(he):
@@ -119,9 +119,9 @@ def test_router_ranh_gioi_tu_va_uu_tien_ten_dai_nhat(he, monkeypatch):
     db.close()
     goi = {}
     monkeypatch.setattr(cau_noi, "bao_cao_kenh",
-                        lambda kenh, user, conn=None: goi.update(ma=kenh["ma"]) or {"loai": "x"})
+                        lambda kenh, user, conn=None: goi.update(ma=kenh["ma"], ten=kenh["ten_chuan"]) or {"loai": "x"})
     cau_noi.hoi_so_lieu("kênh life in dạo này thế nào", KD_L2, he)
-    assert goi["ma"] == "K-LIFE-IN"
+    assert goi["ten"] == "Life In"      # uu tien ten DAI NHAT, khong phai "Life"
     # ranh giới từ: "lifetime" KHÔNG khớp kênh "Life" (hết substring trần)
     kq = cau_noi.hoi_so_lieu("lifetime value là gì", KD_L2, he)
     assert kq["loai"] == "khong_khop"

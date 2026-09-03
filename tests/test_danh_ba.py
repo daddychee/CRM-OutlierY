@@ -44,11 +44,16 @@ def test_chuan_hoa_rong():
 
 # ---------- sinh mã + niche-trước-kênh ----------
 
-def test_sinh_ma_tu_ten_va_chong_trung(db):
+def test_sinh_ma_la_day_so_khong_theo_ten(db):
+    """03/09 Owner: "đặt code thì đặt là một dãy số, tránh gây hiểu nhầm" —
+    mã sinh theo tên (N-LIFE-IN) trông y như tên nên đổi tên mà mã đứng yên thì
+    tưởng hỏng. Mã giờ là số tăng dần, KHÔNG dính chữ nào của tên."""
+    import re
     ng = danh_ba.them_ngach(db, "Life In")
-    assert ng == "N-LIFE-IN"
+    assert re.fullmatch(r"N-\d{3,}", ng), ng
+    assert "LIFE" not in ng
     ke1 = danh_ba.them_kenh(db, "Outland", ng)
-    assert ke1 == "K-OUTLAND"
+    assert re.fullmatch(r"K-\d{3,}", ke1), ke1
     danh_ba.them_bi_danh(db, ke1, "outland cũ")
     # tên trùng alias người khác giữ → chặn; tên khác sinh mã nối -2 khi đụng mã
     with pytest.raises(ValueError):
@@ -57,7 +62,7 @@ def test_sinh_ma_tu_ten_va_chong_trung(db):
 
 def test_kenh_bat_buoc_co_ngach_truoc(db):
     with pytest.raises(Exception):        # FK: ngách chưa tồn tại → chặn từ cửa
-        danh_ba.them_kenh(db, "Mồ côi", "N-KHONG-CO")
+        danh_ba.them_kenh(db, "Mồ côi", "N-KHONG-CO")   # mã ngách không tồn tại
 
 
 def test_channel_id_unique_nhung_nhieu_null_duoc(db):
@@ -72,13 +77,13 @@ def test_channel_id_unique_nhung_nhieu_null_duoc(db):
 # ---------- tra cứu (chữ ký cũ) ----------
 
 def test_tra_theo_ten_chuan(db, tmp_path):
-    _seed(db)
-    assert danh_ba.tra_thuc_the("outland")["ma"] == "K-OUTLAND"
+    _tt, _ng, ke = _seed(db)
+    assert danh_ba.tra_thuc_the("outland")["ma"] == ke
 
 
 def test_tra_theo_bi_danh_khong_phan_biet_hoa(db):
-    _seed(db)
-    assert danh_ba.tra_thuc_the("OUTLAND KR")["ma"] == "K-OUTLAND"
+    _tt, _ng, ke = _seed(db)
+    assert danh_ba.tra_thuc_the("OUTLAND KR")["ma"] == ke
 
 
 def test_tra_khong_khop_tra_none_khong_doan(db):
@@ -87,10 +92,10 @@ def test_tra_khong_khop_tra_none_khong_doan(db):
 
 
 def test_liet_ke_theo_loai(db):
-    _seed(db)
-    assert [t["ma"] for t in danh_ba.liet_ke("kenh")] == ["K-OUTLAND"]
-    assert [t["ma"] for t in danh_ba.liet_ke("ngach")] == ["N-LIFE-IN"]
-    assert [t["ma"] for t in danh_ba.liet_ke("thi_truong")] == ["TT-US"]
+    tt, ng, ke = _seed(db)
+    assert [t["ma"] for t in danh_ba.liet_ke("kenh")] == [ke]
+    assert [t["ma"] for t in danh_ba.liet_ke("ngach")] == [ng]
+    assert [t["ma"] for t in danh_ba.liet_ke("thi_truong")] == [tt]
 
 
 # ---------- liên kết app (thay cột cứng CSV) ----------
@@ -144,7 +149,7 @@ def test_sua_truong_van_hanh_khong_doi_ma(db):
     danh_ba.sua_thuc_the(db, "kenh", ke, ten_chuan="Outland US", phu_trach="NS-001",
                          ma="K-HACK")                    # 'ma' bị lọc bỏ — bất biến
     t = danh_ba.liet_ke("kenh")[0]
-    assert t["ma"] == "K-OUTLAND" and t["ten_chuan"] == "Outland US"
+    assert t["ma"] == ke and t["ten_chuan"] == "Outland US"
     assert t["phu_trach"] == "NS-001"
 
 
@@ -168,9 +173,9 @@ def test_cache_moi_khi_ghi_thi_thay_ngay(db):
 
 
 def test_xuat_csv_du_cot_ngay_tao(db):
-    _seed(db)
+    _tt, _ng, ke = _seed(db)
     ra = danh_ba.xuat_csv()
-    assert "K-OUTLAND" in ra and "ten_chuan" in ra and "tao_luc" in ra
+    assert ke in ra and "ten_chuan" in ra and "tao_luc" in ra
 
 
 # ---------- thị trường CỦA NGÁCH (002 — Owner chốt 18/08/2026) ----------

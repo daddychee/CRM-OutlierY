@@ -1997,6 +1997,8 @@ def _render_channels(request, user, bao="", loi=""):
         "nhan_tt_kenh": danh_ba.NHAN_TRANG_THAI_KENH,
         "ten_ngach": {n["ma"]: n["ten_chuan"] for n in ngach},
         "ten_tt": {m["ma"]: m["ten_chuan"] for m in tt},
+        # 03/09: ma la day so nen "clone of K-014" vo nghia — tra ten kenh goc
+        "ten_kenh": {k["ma"]: k["ten_chuan"] for k in ds_kenh},
         "loc_ngach": loc_ngach, "loc_tt": loc_tt, "bao": bao, "loi": loi})
 
 

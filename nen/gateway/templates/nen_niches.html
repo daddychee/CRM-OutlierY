@@ -49,9 +49,11 @@
 
 <h2>Markets</h2>
 <table>
-  <tr><th>Code</th><th>Market</th><th>Language</th><th>Channels</th><th>Created</th><th></th></tr>
+  <tr><th>Market</th><th>Code</th><th>Language</th><th>Channels</th><th>Created</th><th></th></tr>
   {% for m in ds_tt %}
-  <tr><td><b>{{ m.ma }}</b></td><td>{{ m.ten_chuan }}</td><td>{{ m.ngon_ngu or '—' }}</td>
+  <tr><td><b>{{ m.ten_chuan }}</b></td>
+      <td class="phu" title="Mã bất biến — đổi tên không đổi mã"><code>{{ m.ma }}</code></td>
+      <td>{{ m.ngon_ngu or '—' }}</td>
       <td>{{ so_kenh_tt.get(m.ma, 0) }}</td>
       <td class="phu">{{ m.tao_luc[:10] }}</td>
       <td><button type="button" class="phu" style="padding:2px 9px" data-mo="md-market"
@@ -161,7 +163,8 @@
       } else {
         var g = document.getElementById('f-market');
         g.action = ma ? '/general/markets/update' : '/general/markets/create';
-        document.getElementById('md-market-tieu').textContent = ma ? ('Edit ' + ma) : 'New market';
+        document.getElementById('md-market-tieu').textContent = ma
+          ? ('Edit ' + (b.dataset.ten || ma) + '  ·  ' + ma) : 'New market';
         document.getElementById('f-market-ma').value = ma;
         document.getElementById('f-market-ma').disabled = !ma;
         document.getElementById('f-market-ten').value = b.dataset.ten || '';

@@ -44,14 +44,14 @@
     <svg class="ic" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 11l5 5 5-5"/><path d="M5 21h14"/></svg> Export CSV</a>
 </form>
 <table id="bang-kenh">
-  <tr><th>Code</th><th>Name</th><th>YouTube ID</th><th>Niche</th><th>Market</th><th>Type</th>
+  <tr><th>Name</th><th>Code</th><th>YouTube ID</th><th>Niche</th><th>Market</th><th>Type</th>
       <th>Lifecycle</th><th>Owner (People)</th><th>Created</th></tr>
   {% for k in ds_kenh %}
   <tr class="mo-duoc" data-mo-chi-tiet="{{ k.ma }}"
       data-tim="{{ (k.ma ~ ' ' ~ k.ten_chuan ~ ' ' ~ (k.channel_id or '') ~ ' ' ~ k.bi_danh) | lower }}"
       data-market="{{ k.thi_truong_ma or '' }}">
-    <td><b>{{ k.ma }}</b></td>
-    <td>{{ k.ten_chuan }}{% if k.kenh_goc_ma %} <span class="badge warn">clone of {{ k.kenh_goc_ma }}</span>{% endif %}</td>
+    <td><b>{{ k.ten_chuan }}</b>{% if k.kenh_goc_ma %} <span class="badge warn">clone of {{ ten_kenh.get(k.kenh_goc_ma, k.kenh_goc_ma) }}</span>{% endif %}</td>
+    <td class="phu" title="Mã bất biến — đổi tên không đổi mã"><code>{{ k.ma }}</code></td>
     <td>{% if k.channel_id %}<span class="chip-o">{{ k.channel_id }}</span>{% else %}<span class="phu">—</span>{% endif %}</td>
     <td>{{ ten_ngach.get(k.ngach_ma, k.ngach_ma) }}</td>
     <td>{{ ten_tt.get(k.thi_truong_ma, '—') }}</td>

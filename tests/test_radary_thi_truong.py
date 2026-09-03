@@ -37,8 +37,9 @@ def test_loopback_thi_truong_tra_danh_muc_va_chan_ngoai(seed_tt):
     ds = r.json()
     # thứ tự đế: ORDER BY tao_luc, ma — cùng giây tạo thì mã quyết, nên so theo mã
     assert sorted(t["ma"] for t in ds) == sorted(seed_tt)
-    assert {t["ma"]: (t["ten"], t["ngon_ngu"]) for t in ds} == \
-        {"TT-US": ("US", "English"), "TT-SPAIN": ("Spain", "Spanish")}
+    # 03/09: ma la day so nen so theo TEN (thu Owner thay), khong ghim ma
+    assert sorted((t["ten"], t["ngon_ngu"]) for t in ds) == sorted(
+        [("US", "English"), ("Spain", "Spanish")])
     # máy LAN gọi thẳng bị chặn — chỉ app phụ cùng máy đọc được
     assert _goi(("192.168.1.50", 50000)).status_code == 403
 

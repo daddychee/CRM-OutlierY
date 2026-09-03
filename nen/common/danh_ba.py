@@ -201,17 +201,24 @@ _BANG = {"kenh": "K", "ngach": "N", "thi_truong": "TT"}
 
 
 def sinh_ma(conn: sqlite3.Connection, loai: str, ten: str) -> str:
-    """Mã máy cấp từ tên: K-OUTLAND-FRANCE… — BẤT BIẾN sau khi lưu, đọc được
-    bằng mắt; trùng thì nối -2/-3 (khuôn chống ghi đè kho tài liệu hệ cũ)."""
-    goc = re.sub(r"[^A-Z0-9]+", "-", chuan_hoa_ten(ten).upper()).strip("-")[:16] or "X"
+    """Mã máy cấp DẠNG SỐ: N-001, K-014, TT-003 — BẤT BIẾN sau khi lưu.
+
+    03/09 Owner: "đặt code thì đặt là một dãy số, tránh gây hiểu nhầm". Mã cũ
+    sinh TỪ TÊN (What If → N-WHAT-IF) trông y như tên, nên đổi tên mà mã đứng
+    yên thì tưởng đổi hỏng. Mã số không ai nhầm với tên.
+
+    Số chạy tăng theo số LỚN NHẤT đang có, KHÔNG lấp chỗ trống: mã đã xóa vẫn
+    còn trong nhật ký + liên kết app, cấp lại là hai thực thể chung một mã.
+    Mã CŨ dạng chữ giữ nguyên — chúng nối sang RadarY/Niche Research/SEO.
+    `ten` giữ trong chữ ký cho tương thích caller, không còn dùng để sinh mã."""
     bang = "thi_truong" if loai == "thi_truong" else loai
-    ma = f"{_BANG[loai]}-{goc}"
-    ung = ma
-    i = 2
-    while conn.execute(f"SELECT 1 FROM {bang} WHERE ma=?", (ung,)).fetchone():
-        ung = f"{ma}-{i}"
-        i += 1
-    return ung
+    tien_to = _BANG[loai]
+    lon_nhat = 0
+    for (ma_cu,) in conn.execute(f"SELECT ma FROM {bang}"):
+        m = re.fullmatch(rf"{re.escape(tien_to)}-(\d+)", ma_cu or "")
+        if m:
+            lon_nhat = max(lon_nhat, int(m.group(1)))
+    return f"{tien_to}-{lon_nhat + 1:03d}"
 
 
 def _kiem_bi_danh_ranh(conn: sqlite3.Connection, ten: str, ma_bo_qua: str = "") -> None:

@@ -66,6 +66,10 @@
 
 - 18/08/2026 — Mở sổ. User chốt 3 quyết định (mục trên). Khảo sát: 8 workspace,
   schema chưa có trục thị trường; đế có TT-US / TT-KOREA / TT-SPAIN.
+  **03/09:** mã MỚI sinh dạng DÃY SỐ (`TT-006`, `N-001`) chứ không lấy theo tên —
+  mã giống tên làm Owner tưởng đổi tên hỏng. Mã cũ dạng chữ giữ nguyên (là khoá
+  nối sang RadarY/Niche Research), nên hệ sẽ lẫn 2 kiểu mã. Bảng nào tra theo MÃ
+  CHỮ phải có đường lùi — xem `mapping.vung_ngon_ngu` (mã → tên → ngôn ngữ).
 - 18/08/2026 — **THI CÔNG XONG TRỌN THIẾT KẾ** (1 commit): gateway
   /api/danh-ba/thi-truong + thi_truong_v3.py + cột workspaces.market (migration
   nhẹ idempotent) + 4 route (GET /api/thi-truong · POST workspaces bắt buộc
