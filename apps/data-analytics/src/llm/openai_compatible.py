@@ -59,7 +59,7 @@ class OpenAICompatibleProvider(LLMProvider):
         except Exception as e:
             self._ghi_so((_t.perf_counter() - _t0) * 1000, False, str(e))
             raise
-        self._ghi_so((_t.perf_counter() - _t0) * 1000, True)
+        self._ghi_so((_t.perf_counter() - _t0) * 1000, True, resp=resp)
         return resp.choices[0].message.content or ""
 
     def generate_stream(self, system_prompt: str, user_prompt: str):

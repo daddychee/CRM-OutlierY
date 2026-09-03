@@ -1,0 +1,5 @@
+model,gia_vao_usd_1m,gia_ra_usd_1m,nha,nguon,ngay_cap_nhat
+glm-5,0.6,2.2,z.ai,rendery/glm_client.py PRICE_* (đã dùng thật từ 30/08),2026-09-03
+glm-5.2,0.6,2.2,z.ai,cùng bảng giá dòng glm-5,2026-09-03
+glm-5.3,0.6,2.2,z.ai,cùng bảng giá dòng glm-5,2026-09-03
+glm-4.5-air,0.2,1.1,z.ai,giá niêm yết bản air — CHƯA đối chiếu hoá đơn,2026-09-03

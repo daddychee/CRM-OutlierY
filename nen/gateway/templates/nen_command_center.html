@@ -310,6 +310,9 @@ main{max-width:1340px}
 
     <div class="panel" style="margin-top:8px"><div class="ph">Các API khác — nhịp gọi trong ngày (sổ gọi)<span class="mut" style="font-size:10px;letter-spacing:0;text-transform:none">mỗi dịch vụ một thước riêng · vạch đỏ = lỗi</span></div><div class="pb" id="nhipKhac"></div></div>
 
+    <div class="sec" style="margin-top:12px"><h2>Chi phí LLM theo app</h2><small>token đo TỪ RESPONSE nhà cung cấp · tiền chốt lúc gọi theo <code>rules/gia_llm.csv</code> — đổi giá không làm hoá đơn cũ nhảy số</small></div>
+    <div class="panel"><div class="ph">Token &amp; chi phí<span class="mut" style="font-size:10px;letter-spacing:0;text-transform:none" id="cp-ky">tháng này</span></div><div class="pb" id="chiPhiApp"></div></div>
+
     <div class="g" style="grid-template-columns:1.1fr 1.3fr;margin-top:8px">
       <div class="panel"><div class="ph">Khóa theo két · cấp cho app · việc</div><div class="pb" id="qbars2"></div></div>
       <div class="panel"><div class="ph">LLM theo app · vai (cấu hình đọc thật từ két)</div><div class="pb"><table class="tb" id="q-llm"></table><div class="note">usage calls/token là P2</div></div></div>
@@ -1230,6 +1233,57 @@ function renderQuota(){
          <div></div><svg height="14" viewBox="0 0 ${W} 14" preserveAspectRatio="none" style="width:100%;display:block">${truc}</svg><div></div>
        </div>` : "")
     + `<div class="note" style="margin-top:4px">MỘT CỘT = MỘT LẦN CALL, xếp theo thứ tự thời gian (mốc giờ ghi dưới cột — khoảng cách ngang KHÔNG tỉ lệ thời gian) · cao = thời gian gọi, dịch vụ không đo ms thì cột đều · <span style="color:var(--err)">đỏ = call lỗi</span> · rê chuột xem giờ, model/khóa, thời gian · mỗi dòng thang riêng, KHÔNG so cao thấp giữa các dòng</div>`;
+  })();
+
+  /* CHI PHÍ LLM THEO APP (Owner 03/09: "hiện số token đã tiêu tốn của từng API
+     để tính chi phí sử dụng cho từng app").
+
+     BA VAN CHỐNG BỊA SỐ TIỀN — tiền là số người ta đối chiếu hoá đơn, sai im
+     lặng ở đây tệ hơn không có tính năng:
+     1. Call CHƯA ĐO token không thành "0 token". Nếu có call chưa đo thì nói
+        thẳng "đo được N/M call", để không ai đọc tổng như thể đã đủ.
+     2. Model chưa khai giá → nêu ĐÍCH DANH + chỉ đường thêm dòng vào CSV, KHÔNG
+        đoán giá cho đủ bảng.
+     3. Tiền chốt lúc gọi (kèm tỉ giá lúc đó) — bảng chỉ hiển thị, không tính lại. */
+  (function(){
+    const el=$("chiPhiApp"); if(!el) return;
+    const cp = D.chi_phi_thang || {}, ky = $("cp-ky");
+    if (ky) ky.textContent = "tháng này (từ ngày 1)";
+    const ds = Object.entries(cp).filter(([,v])=>v && v.calls);
+    if (!ds.length){
+      el.innerHTML='<div class="note">chưa có call LLM nào ghi sổ tháng này</div>';
+      return;
+    }
+    const so=n=>(n||0).toLocaleString("vi-VN");
+    const usd=n=>"$"+(n||0).toFixed(n>=1?2:4);
+    let tUsd=0, tVnd=0, tTv=0, tTr=0, thieu=new Set(), chuaDo=0, tongCall=0;
+    const hang = ds.sort((a,b)=>b[1].usd-a[1].usd).map(([app,v])=>{
+      tUsd+=v.usd; tVnd+=v.vnd; tTv+=v.token_vao; tTr+=v.token_ra;
+      tongCall+=v.calls; chuaDo+=(v.calls-v.calls_co_token);
+      (v.thieu_gia||[]).forEach(m=>thieu.add(m));
+      const mo = Object.entries(v.theo_model||{})
+        .sort((a,b)=>b[1].usd-a[1].usd)
+        .map(([m,x])=>`${esc(m)} ${usd(x.usd)}`).join(" · ");
+      const phu = v.calls_co_token < v.calls
+        ? `<span style="color:var(--warn)">đo được ${v.calls_co_token}/${v.calls} call</span>`
+        : `${so(v.calls)} call`;
+      return `<tr><td><b>${esc(app)}</b><div class="mut" style="font-size:10px">${mo||"—"}</div></td>
+        <td class="r">${phu}</td>
+        <td class="r">${so(v.token_vao)}</td><td class="r">${so(v.token_ra)}</td>
+        <td class="r"><b>${usd(v.usd)}</b></td>
+        <td class="r">${v.vnd?so(v.vnd)+"đ":"—"}</td></tr>`;
+    }).join("");
+    el.innerHTML = `<table class="tb">
+      <tr><th>App · model</th><th class="r">call</th><th class="r">token vào</th>
+          <th class="r">token ra</th><th class="r">USD</th><th class="r">VNĐ</th></tr>
+      ${hang}
+      <tr style="border-top:2px solid var(--line)"><td><b>TỔNG</b></td><td class="r">${so(tongCall)}</td>
+        <td class="r"><b>${so(tTv)}</b></td><td class="r"><b>${so(tTr)}</b></td>
+        <td class="r"><b style="color:var(--accent)">${usd(tUsd)}</b></td>
+        <td class="r"><b>${tVnd?so(tVnd)+"đ":"—"}</b></td></tr></table>`
+      + (chuaDo ? `<div class="note" style="color:var(--warn);margin-top:6px">⚠ ${chuaDo}/${tongCall} call chưa đo được token (app chưa gửi usage) — tiền thật CAO HƠN con số trên</div>` : "")
+      + (thieu.size ? `<div class="note" style="color:var(--warn);margin-top:4px">⚠ chưa khai giá: ${[...thieu].map(esc).join(", ")} — thêm dòng vào rules/gia_llm.csv để tính đủ</div>` : "")
+      + `<div class="note" style="margin-top:4px">token lấy TỪ RESPONSE nhà cung cấp (không ước lượng) · tiền + tỉ giá chốt LÚC GỌI nên đổi giá không làm hoá đơn cũ nhảy số</div>`;
   })();
 }
 

@@ -419,6 +419,11 @@ def _gate_nen(request: Request, quyen: str | None = None,
 TIMEOUT_SUC_KHOE = 10.0
 
 
+def _hom_nay():
+    from datetime import date
+    return date.today()
+
+
 async def _do_dich_vu() -> list[dict]:
     """Sức khỏe từng dịch vụ: mọi app trong hợp đồng + Qdrant kho vector.
 
@@ -607,6 +612,13 @@ async def api_giam_sat_tong_hop(request: Request):
         "su_co": await run_in_threadpool(giam_sat.doc_su_co),
         "ket": await run_in_threadpool(_ket_tom_tat),
         "so_goi": await run_in_threadpool(so_goi.tom_tat_hom_nay),
+        # CHI PHÍ LLM per app (03/09): hôm nay để thấy ngay, THÁNG NÀY để tính
+        # tiền — chi phí chỉ có nghĩa khi cộng theo kỳ, xem mỗi hôm nay thì
+        # không biết tháng này đã tiêu bao nhiêu.
+        "chi_phi_hom_nay": await run_in_threadpool(so_goi.chi_phi_theo_app),
+        "chi_phi_thang": await run_in_threadpool(
+            so_goi.chi_phi_theo_app, _hom_nay().replace(day=1).isoformat(),
+            _hom_nay().isoformat()),
         "apify_credit": await run_in_threadpool(_apify_credit),
         "so_do": await run_in_threadpool(so_do.tat_ca),
     })
@@ -1731,7 +1743,9 @@ async def api_so_goi(request: Request):
         so_goi.ghi, b["app"], b["dich_vu"], duoi=str(b.get("duoi", ""))[-4:],
         viec=b.get("viec", ""), model=b.get("model", ""),
         units=b.get("units", 0) or 0, ms=b.get("ms"),
-        ok=bool(b.get("ok", True)), ma_loi=str(b.get("ma_loi", ""))[:200])
+        ok=bool(b.get("ok", True)), ma_loi=str(b.get("ma_loi", ""))[:200],
+        # token: giữ NGUYÊN None khi app chưa đo — 0 giả làm hoá đơn rẻ hơn thật
+        token_vao=b.get("token_vao"), token_ra=b.get("token_ra"))
     return JSONResponse({"ok": True})
 
 

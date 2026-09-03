@@ -217,3 +217,72 @@ def test_moi_call_co_tran_va_dem_phan_bi_cat(monkeypatch):
     assert len(tt["serp"]["moi_call"]) == 5
     assert tt["serp"]["moi_call_cat"] == 3
     assert tt["serp"]["calls"] == 8, "tổng calls vẫn phải đếm đủ, không bị trần cắt"
+
+
+def test_chi_phi_theo_app_ba_van_chong_bia_so_tien(monkeypatch, tmp_path):
+    """Owner 03/09: "hiện số token đã tiêu tốn của từng API để tính chi phí cho
+    từng app". Tiền là số người ta ĐỐI CHIẾU HOÁ ĐƠN — sai kiểu im lặng ở đây
+    tệ hơn không có tính năng. Ba van:
+
+    1. Call CHƯA ĐO token không được thành "0 token" — 0 giả làm hoá đơn rẻ hơn
+       thật. calls_co_token/calls cho biết đang phủ bao nhiêu phần.
+    2. Model chưa khai giá → vào `thieu_gia`, KHÔNG đoán giá.
+    3. usd chốt LÚC GHI (kèm tỉ giá lúc đó) nên tổng tháng trước không nhảy số
+       khi giá/tỉ giá hôm nay đổi."""
+    so_goi.ghi("app-x", "llm", model="glm-5", token_vao=1_000_000, token_ra=1_000_000)
+    so_goi.ghi("app-x", "llm", model="glm-5")                      # chưa đo token
+    so_goi.ghi("app-x", "llm", model="model-chua-khai", token_vao=1000, token_ra=1000)
+    so_goi.ghi("app-x", "youtube", duoi="k1", units=100)           # không phải LLM
+    cp = so_goi.chi_phi_theo_app()["app-x"]
+
+    assert cp["calls"] == 3, "chỉ đếm call LLM, không lẫn YouTube"
+    assert cp["calls_co_token"] == 2, "call chưa đo token KHÔNG được tính là đã đo"
+    # 1M vào × $0.6 + 1M ra × $2.2 = $2.8 — model chưa khai giá KHÔNG cộng thêm
+    assert abs(cp["usd"] - 2.8) < 1e-6, cp["usd"]
+    assert cp["thieu_gia"] == ["model-chua-khai"], cp["thieu_gia"]
+    assert cp["token_vao"] == 1_001_000 and cp["token_ra"] == 1_001_000
+
+
+def test_usd_chot_luc_ghi_khong_tinh_lai_khi_gia_doi(monkeypatch, tmp_path):
+    """Đổi bảng giá KHÔNG được làm số tiền đã ghi nhảy — nếu không, hoá đơn
+    tháng trước tự đổi mỗi lần nhà cung cấp tăng giá."""
+    so_goi.ghi("app-y", "llm", model="glm-5", token_vao=1_000_000, token_ra=0)
+    truoc = so_goi.chi_phi_theo_app()["app-y"]["usd"]
+
+    gia_moi = tmp_path / "gia.csv"
+    gia_moi.write_text("model,gia_vao_usd_1m,gia_ra_usd_1m\nglm-5,99,99\n",
+                       encoding="utf-8")
+    monkeypatch.setenv("GIA_LLM", str(gia_moi))
+    so_goi._gia_cache.clear()
+    assert so_goi.tinh_usd("glm-5", 1_000_000, 0) == 99, "bảng giá mới phải có hiệu lực"
+    assert so_goi.chi_phi_theo_app()["app-y"]["usd"] == truoc, (
+        "số tiền ĐÃ GHI bị tính lại theo giá mới — hoá đơn cũ sẽ nhảy số")
+
+
+def test_model_chua_khai_gia_tra_None_khong_doan(monkeypatch):
+    assert so_goi.tinh_usd("model-hoan-toan-la", 1000, 1000) is None
+
+
+def test_self_test_cua_app_khong_duoc_ghi_so_that():
+    """LỖI TỰ BẮT 03/09: nối token vào sổ xong, self-test của seo-optimize
+    (model giả "m", token 1-10) và test của content-ultimate ghi 52 DÒNG RÁC
+    vào sổ THẬT — làm bảng chi phí hiện app "44/44 call đo được mà $0.0000".
+
+    Cùng họ bẫy phép-kiểm-ghi-bẩn-sổ đã dính hai lần trong tuần. Ghim: hai hàm
+    gửi sổ của app phải im lặng khi đang pytest/self-test."""
+    import os
+
+    from pathlib import Path
+    goc = Path(__file__).resolve().parents[1]
+
+    seo = (goc / "apps" / "seo-optimize" / "seo" / "common.py").read_text(encoding="utf-8")
+    assert "PYTEST_CURRENT_TEST" in seo and "SEO_SELFTEST" in seo, (
+        "_ghi_so_goi_llm của seo-optimize thiếu chặn self-test")
+
+    cu = (goc / "apps" / "content-ultimate" / "src" / "voiceprofile"
+          / "usage.py").read_text(encoding="utf-8")
+    assert "PYTEST_CURRENT_TEST" in cu, (
+        "_ghi_so_goi_nen của content-ultimate thiếu chặn pytest")
+
+    # chính test này đang chạy dưới pytest → biến phải có mặt, tức chặn hiệu lực
+    assert os.environ.get("PYTEST_CURRENT_TEST"), "pytest phải đặt biến này"

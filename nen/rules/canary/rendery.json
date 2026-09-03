@@ -9,7 +9,7 @@
         "hang-doi",
         "align"
       ],
-      "mo_ta": "Sổ hàng đợi hỏng thì nộp tập không vào, nhân sự chờ mãi không biết. Deep health tự khai module hang-doi (đếm jobs theo status).",
+      "mo_ta": "Sổ hàng đợi hỏng thì nộp tập không vào, nhân sự chờ mãi không biết. Deep health khai module hang-doi = SỔ CÓ ĐỌC ĐƯỢC KHÔNG (hạ tầng). Job của người dùng hỏng là chuyện KHÁC — module 'viec-hong' lo, xem kịch bản viec-hong-nang-trang-thai. Gộp hai thứ thì GLM hết tiền cũng kéo module hạ tầng sang đỏ (03/09).",
       "method": "GET",
       "duong": "/api/suc-khoe",
       "cho": [
@@ -30,6 +30,41 @@
         ],
         "kiem": [
           "sổ hàng đợi đọc được"
+        ]
+      }
+    },
+    {
+      "ma": "viec-hong-nang-trang-thai",
+      "ten": "Job hỏng phải nâng trạng thái, không im lặng",
+      "loai": "bat_bien",
+      "canh": [
+        "hang-doi",
+        "giam-sat"
+      ],
+      "mo_ta": "03/09 Owner hỏi 'sao rendery lỗi mà app không báo': job dựng chết vì GLM hết tiền, health vẫn xanh vì hàm đọc ra `failed` rồi trả 'ok' cứng — 4/7 job hỏng mà tab giám sát im suốt. Xét job MỚI (24h): còn job chạy được → cảnh báo; hỏng HẾT → lỗi (hệ đứt, không phải một job xấu).",
+      "method": "GET",
+      "duong": "/api/suc-khoe",
+      "cho": [
+        [
+          "mo_dun.ten=viec-hong.trang_thai",
+          "!=",
+          null
+        ]
+      ],
+      "so_do": {
+        "buoc": [
+          {
+            "ten": "Đếm job hỏng 24h"
+          },
+          {
+            "ten": "Còn job nào xong?"
+          },
+          {
+            "ten": "ok / cảnh báo / lỗi"
+          }
+        ],
+        "kiem": [
+          "job hỏng KHÔNG bị nuốt thành 'ok'"
         ]
       }
     },

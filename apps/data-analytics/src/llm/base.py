@@ -11,14 +11,29 @@ from collections.abc import Iterator
 class LLMProvider(ABC):
     APP_SO_GOI = "data-analytics"   # bản sao — hằng app riêng
 
-    def _ghi_so(self, ms: float, ok: bool, ma_loi: str = "") -> None:
+    def _ghi_so(self, ms: float, ok: bool, ma_loi: str = "", resp=None) -> None:
         """SỔ GỌI nền (01/09): 1 dòng mỗi call LLM THẬT (mock không ghi) —
-        Command Center đếm calls/lỗi per app·vai. Sổ chết không hỏng call."""
+        Command Center đếm calls/lỗi per app·vai. Sổ chết không hỏng call.
+
+        TOKEN (03/09, Owner: "tính chi phí sử dụng cho từng app"): truyền `resp`
+        thì lấy usage TỪ CHÍNH BODY nhà cung cấp trả về — không ước lượng, không
+        đếm chữ. Nhà nào không trả usage → giữ None = "chưa đo", khác hẳn 0.
+        Đặt ở base nên MỌI provider (và cả bản sao ở data-analytics) hưởng chung.
+        """
+        tv = tr = None
+        u = getattr(resp, "usage", None) if resp is not None else None
+        if u is not None:
+            # OpenAI/GLM: prompt_tokens/completion_tokens · Anthropic: input/output_tokens
+            tv = getattr(u, "prompt_tokens", None)
+            tr = getattr(u, "completion_tokens", None)
+            if tv is None and tr is None:
+                tv = getattr(u, "input_tokens", None)
+                tr = getattr(u, "output_tokens", None)
         try:
             from nen.common import so_goi
             so_goi.ghi(self.APP_SO_GOI, "llm", viec=getattr(self, "vai", ""),
                        model=getattr(self, "model", ""), ms=ms, ok=ok,
-                       ma_loi=ma_loi[:120])
+                       ma_loi=ma_loi[:120], token_vao=tv, token_ra=tr)
         except Exception:  # noqa: BLE001
             pass
 

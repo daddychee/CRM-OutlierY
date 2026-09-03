@@ -40,19 +40,111 @@ def _goc() -> Path:
     return Path(os.environ.get("SO_GOI_DIR", ROOT / "data" / "logs" / "so-goi"))
 
 
+def _duong_gia() -> Path:
+    return Path(os.environ.get("GIA_LLM", ROOT / "nen" / "rules" / "gia_llm.csv"))
+
+
+_gia_cache: dict = {}
+
+
+def bang_gia() -> dict[str, tuple[float, float]]:
+    """{model: (usd_vao_1M, usd_ra_1M)} từ rules/gia_llm.csv — LUẬT NGOÀI CODE.
+
+    Đổi giá hay thêm model mới = sửa file CSV, không đụng code. Cache theo mtime
+    + size (bài học 03/09: mtime trên Windows thô, sửa rồi đọc lại ngay là trúng
+    khoá cũ). File hỏng/thiếu → bảng rỗng, mọi usd = None; KHÔNG bịa giá.
+    """
+    p = _duong_gia()
+    try:
+        st = p.stat()
+    except OSError:
+        return {}
+    khoa = (str(p), st.st_mtime, st.st_size)
+    if _gia_cache.get("khoa") == khoa:
+        return _gia_cache["ban"]
+    ban: dict[str, tuple[float, float]] = {}
+    try:
+        import csv
+        with open(p, encoding="utf-8-sig", newline="") as f:
+            for r in csv.DictReader(f):
+                m = (r.get("model") or "").strip()
+                if not m:
+                    continue
+                try:
+                    ban[m] = (float(r["gia_vao_usd_1m"]), float(r["gia_ra_usd_1m"]))
+                except (KeyError, TypeError, ValueError):
+                    continue      # dòng hỏng bỏ qua, không giết cả bảng
+    except OSError:
+        return {}
+    _gia_cache.update(khoa=khoa, ban=ban)
+    return ban
+
+
+def tinh_usd(model: str, token_vao: int, token_ra: int) -> float | None:
+    """Chi phí USD của MỘT call. Model chưa khai giá → None (không đoán)."""
+    gia = bang_gia().get((model or "").strip())
+    if not gia:
+        return None
+    return token_vao / 1e6 * gia[0] + token_ra / 1e6 * gia[1]
+
+
+def _ty_gia_usd() -> float | None:
+    """Tỉ giá USD gần nhất từ sổ của app to-chuc (nhan-su/ty-gia/<năm>.jsonl).
+
+    Nền KHÔNG import chéo app (Luật 4) → đọc thẳng file theo cùng quy ước
+    đường dẫn. Chưa có sổ → None, UI chỉ hiện USD (không quy đổi bừa).
+    """
+    d = Path(os.environ.get("TY_GIA_DIR", ROOT / "nhan-su" / "ty-gia"))
+    gia = None
+    try:
+        for nam in sorted(d.glob("*.jsonl"), reverse=True)[:2]:
+            for ln in nam.read_text(encoding="utf-8").splitlines():
+                try:
+                    r = json.loads(ln)
+                except ValueError:
+                    continue
+                if r.get("tien_te") == "USD" and r.get("gia"):
+                    gia = float(r["gia"])       # dòng sau đè dòng trước = mới nhất
+            if gia:
+                return gia
+    except (OSError, TypeError, ValueError):
+        return None
+    return gia
+
+
 def ghi(app: str, dich_vu: str, duoi: str = "", viec: str = "", model: str = "",
         units: float = 0, ms: float | None = None, ok: bool = True,
-        ma_loi: str = "") -> None:
+        ma_loi: str = "", token_vao: int | None = None,
+        token_ra: int | None = None) -> None:
+    """Ghi MỘT dòng sổ. token_vao/token_ra chỉ có nghĩa với dịch vụ LLM.
+
+    CHI PHÍ TÍNH NGAY LÚC GHI, không tính lại lúc đọc (Owner chốt 03/09): giá
+    nhà cung cấp và tỉ giá đều đổi theo thời gian, tính lại sau là hoá đơn tháng
+    trước tự nhảy số. Chốt `usd` + `ty_gia` vào dòng sổ = con số bất biến, đối
+    chiếu hoá đơn được. Model chưa có trong bảng giá → usd = None (KHÔNG đoán
+    giá; UI hiện "—" kèm lời nhắc thêm dòng vào rules/gia_llm.csv).
+    """
     gio = datetime.now()
     duong = _goc() / f"{gio:%Y}" / f"{gio:%m}"
     duong.mkdir(parents=True, exist_ok=True)
-    dong = json.dumps({"luc": gio.isoformat(timespec="seconds"), "app": app,
-                       "dich_vu": dich_vu, "duoi": duoi, "viec": viec,
-                       "model": model, "units": units,
-                       "ms": round(ms) if ms is not None else None,
-                       "ok": ok, "ma_loi": ma_loi}, ensure_ascii=False)
+    ban = {"luc": gio.isoformat(timespec="seconds"), "app": app,
+           "dich_vu": dich_vu, "duoi": duoi, "viec": viec,
+           "model": model, "units": units,
+           "ms": round(ms) if ms is not None else None,
+           "ok": ok, "ma_loi": ma_loi}
+    # Dòng KHÔNG có token giữ nguyên hình dạng cũ — sổ cũ đọc được, mọi chỗ
+    # đang parse không phải sửa (7 app đang ghi sổ, chỉ vài app có token).
+    if token_vao is not None or token_ra is not None:
+        tv, tr = int(token_vao or 0), int(token_ra or 0)
+        ban["token_vao"], ban["token_ra"] = tv, tr
+        usd = tinh_usd(model, tv, tr)
+        if usd is not None:
+            ban["usd"] = round(usd, 6)
+            tg = _ty_gia_usd()
+            if tg:
+                ban["ty_gia"] = tg
     with open(duong / f"{gio:%Y-%m-%d}.log", "a", encoding="utf-8") as f:
-        f.write(dong + "\n")
+        f.write(json.dumps(ban, ensure_ascii=False) + "\n")
 
 
 def _dong_hom_nay() -> list[dict]:
@@ -124,6 +216,80 @@ def doc(ngay: str = "", api: str = "", khoa_duoi: str = "",
         if tran and len(ra) >= tran:
             break
     return ra if (tran and tran > 0) else ra[::-1]
+
+
+def chi_phi_theo_app(tu_ngay: str = "", den_ngay: str = "") -> dict:
+    """CHI PHÍ LLM theo APP trong khoảng ngày (mặc định: hôm nay).
+
+    Owner 03/09: "hiện số token đã tiêu tốn của từng API, để tính chi phí sử
+    dụng cho từng app". Trả:
+      {app: {calls, calls_co_token, token_vao, token_ra, usd, vnd,
+             theo_model: {model: {...}}, thieu_gia: [model…]}}
+
+    BA VAN CHỐNG BỊA SỐ TIỀN:
+    1. Chỉ cộng dòng CÓ token. Call chưa ghi token không thành "0 token" — 0 giả
+       làm hoá đơn trông rẻ hơn thật. `calls_co_token / calls` cho biết đang phủ
+       bao nhiêu phần.
+    2. `usd` chốt LÚC GHI, không tính lại lúc đọc — giá và tỉ giá đều đổi theo
+       thời gian, tính lại là hoá đơn tháng trước tự nhảy số.
+    3. Model chưa khai giá → vào `thieu_gia`, KHÔNG đoán giá. UI phải nói rõ
+       "chưa tính được phần này" thay vì cộng thiếu trong im lặng.
+    """
+    tu = (tu_ngay or "").strip() or date.today().isoformat()
+    den = (den_ngay or "").strip() or tu
+    ket: dict = {}
+    goc = _goc()
+    if not goc.is_dir():
+        return ket
+    for f in sorted(goc.glob("*/*/*.log")):
+        ngay = f.stem
+        if not (tu <= ngay <= den):
+            continue
+        try:
+            tho = f.read_text(encoding="utf-8").splitlines()
+        except OSError:
+            continue
+        for ln in tho:
+            try:
+                d = json.loads(ln)
+            except ValueError:
+                continue
+            if d.get("dich_vu") != "llm":
+                continue
+            a = ket.setdefault(d.get("app") or "?", {
+                "calls": 0, "calls_co_token": 0, "token_vao": 0, "token_ra": 0,
+                "usd": 0.0, "vnd": 0.0, "theo_model": {}, "thieu_gia": []})
+            a["calls"] += 1
+            co_tk = d.get("token_vao") is not None or d.get("token_ra") is not None
+            if not co_tk:
+                continue
+            tv, tr = int(d.get("token_vao") or 0), int(d.get("token_ra") or 0)
+            usd = d.get("usd")
+            a["calls_co_token"] += 1
+            a["token_vao"] += tv
+            a["token_ra"] += tr
+            m = d.get("model") or "?"
+            mm = a["theo_model"].setdefault(m, {
+                "calls": 0, "token_vao": 0, "token_ra": 0, "usd": 0.0})
+            mm["calls"] += 1
+            mm["token_vao"] += tv
+            mm["token_ra"] += tr
+            if usd is None:
+                if m not in a["thieu_gia"]:
+                    a["thieu_gia"].append(m)
+                continue
+            a["usd"] += float(usd)
+            mm["usd"] += float(usd)
+            # VNĐ theo tỉ giá CHỐT LÚC GỌI (mỗi dòng mang tỉ giá của chính nó),
+            # nên tổng tháng không đổi khi tỉ giá hôm nay đổi.
+            if d.get("ty_gia"):
+                a["vnd"] += float(usd) * float(d["ty_gia"])
+    for a in ket.values():
+        a["usd"] = round(a["usd"], 6)
+        a["vnd"] = round(a["vnd"])
+        for mm in a["theo_model"].values():
+            mm["usd"] = round(mm["usd"], 6)
+    return ket
 
 
 def luot_hom_nay() -> dict[str, int]:
@@ -221,11 +387,25 @@ def tom_tat_hom_nay() -> dict:
         dv = ket.setdefault(d.get("dich_vu", "?"), {
             "calls": 0, "loi": 0, "tong_units": 0, "theo_duoi": {},
             "theo_viec": {}, "theo_gio": {}, "theo_gio_calls": {},
-            "theo_gio_loi": {}})
+            "theo_gio_loi": {}, "token_vao": 0, "token_ra": 0, "usd": 0.0,
+            "calls_co_token": 0, "model_chua_gia": []})
         dv["calls"] += 1
         if not d.get("ok", True):
             dv["loi"] += 1
         dv["tong_units"] += d.get("units", 0) or 0
+        # TOKEN + CHI PHÍ (03/09): chỉ cộng dòng THẬT SỰ có token — call chưa ghi
+        # token không được coi là "0 token", vì 0 giả làm chi phí trông rẻ hơn
+        # thật. `calls_co_token` cho UI nói rõ đang phủ bao nhiêu phần.
+        if d.get("token_vao") is not None or d.get("token_ra") is not None:
+            dv["token_vao"] += int(d.get("token_vao") or 0)
+            dv["token_ra"] += int(d.get("token_ra") or 0)
+            dv["calls_co_token"] += 1
+            if d.get("usd") is not None:
+                dv["usd"] += float(d.get("usd") or 0)
+            elif d.get("model") and d["model"] not in dv["model_chua_gia"]:
+                # model có token mà không tính được tiền → nêu ĐÍCH DANH để Owner
+                # thêm một dòng vào rules/gia_llm.csv, không im lặng tính thiếu.
+                dv["model_chua_gia"].append(d["model"])
         gio_call = (d.get("luc") or "")[11:13]
         if gio_call:
             dv["theo_gio"][gio_call] = dv["theo_gio"].get(gio_call, 0) + (d.get("units", 0) or 0)
