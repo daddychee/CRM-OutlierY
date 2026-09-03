@@ -259,3 +259,21 @@ def test_nhan_vong_doi_hien_tu_nguon_chung(he):
     # bộ lọc liệt kê đủ mọi nấc (kể cả nấc ẩn Retired) bằng nhãn, không phải mã thô
     for ma in danh_ba.TRANG_THAI_KENH_HOP_LE:
         assert danh_ba.NHAN_TRANG_THAI_KENH[ma] in r.text
+
+
+def test_doi_ten_ngach_thi_TEN_MOI_dung_truoc_ma_cu(he):
+    """Owner 03/09: tao ngach 'What If' roi doi ten 'SCI-FI' -> tuong "ten khong
+    doi duoc" vi bang hien MA in dam o cot DAU (N-WHAT-IF), ten that nam cot sau.
+    Ma phai giu (noi sang RadarY/Niche Research) nhung khong duoc gia lam ten."""
+    c = _login("quanly", "mk-ql-6")
+    c.post("/general/niches/create", data={"ten_chuan": "What If"})
+    r = c.post("/general/niches/update",
+               data={"ma": "N-WHAT-IF", "ten_chuan": "SCI-FI", "trang_thai": "khai_thac"})
+    assert r.status_code == 200
+    assert "N-WHAT-IF" in r.text, "ma phai GIU nguyen"
+    assert "SCI-FI" in r.text, "ten moi phai hien"
+    # ten dung TRUOC ma trong cung mot hang -> mat doc ten truoc
+    hang = [d for d in r.text.split("<tr") if "SCI-FI" in d and "N-WHAT-IF" in d][0]
+    assert hang.index("SCI-FI") < hang.index("N-WHAT-IF"), "ten phai dung TRUOC ma"
+    # tieu de bang: cot Name truoc cot Code
+    assert r.text.index("<th>Name</th>") < r.text.index("<th>Code</th>")

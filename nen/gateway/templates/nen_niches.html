@@ -24,11 +24,12 @@
 <table id="bang-niche">
   {# Cột Markets: thị trường CỦA TỪNG ngách — user chọn trong modal, ngách mới
      mặc định 0 (Owner chốt 18/08: hết cảnh mọi niche "có sẵn" cả danh mục). #}
-  <tr><th>Code</th><th>Name</th><th>Markets</th><th>Channels</th><th>Niche Research</th><th>Aliases</th>
+  <tr><th>Name</th><th>Code</th><th>Markets</th><th>Channels</th><th>Niche Research</th><th>Aliases</th>
       <th>Status</th><th>Created</th><th></th></tr>
   {% for n in ds_ngach %}
   <tr data-tim="{{ (n.ma ~ ' ' ~ n.ten_chuan ~ ' ' ~ n.bi_danh) | lower }}" data-tt="{{ n.trang_thai }}">
-    <td><b>{{ n.ma }}</b></td><td>{{ n.ten_chuan }}</td>
+    <td><b>{{ n.ten_chuan }}</b></td>
+    <td class="phu" title="Mã bất biến — đổi tên không đổi mã, vì mã nối sang RadarY / Niche Research"><code>{{ n.ma }}</code></td>
     <td>{% for t in n.thi_truong_cua %}<span class="chip-o">{{ ten_tt.get(t, t) }}</span>{% else %}<span class="badge">none chosen</span>{% endfor %}</td>
     <td>{% for k in n.kenh_con %}<a class="chip-o" href="/general/channels?ngach={{ n.ma }}">{{ k }}</a>{% else %}<span class="badge">0 channels</span>{% endfor %}</td>
     <td>{% if n.lien_ket.get('niche-research') %}<span class="chip-o">{{ n.lien_ket['niche-research'] }}</span>{% else %}<span class="badge">not linked</span>{% endif %}</td>
@@ -140,7 +141,8 @@
       if (id === 'md-niche') {
         var f = document.getElementById('f-niche');
         f.action = ma ? '/general/niches/update' : '/general/niches/create';
-        document.getElementById('md-niche-tieu').textContent = ma ? ('Edit ' + ma) : 'New niche';
+        document.getElementById('md-niche-tieu').textContent = ma
+          ? ('Edit ' + (b.dataset.ten || ma) + '  ·  ' + ma) : 'New niche';
         document.getElementById('f-niche-ma').value = ma;
         document.getElementById('f-niche-ma').disabled = !ma;   // create không gửi field ma
         document.getElementById('f-niche-ten').value = b.dataset.ten || '';
