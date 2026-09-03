@@ -129,3 +129,37 @@ def test_kiem_khong_ghi_ban_so_luong_va_xep_loai():
            for _ in range(2)]
     assert ket == [True, True], f"chạy lặp ra kết quả khác nhau: {ket}"
     assert _chup() == truoc, f"phép kiểm ghi bẩn sổ thật: {_chup() - truoc}"
+
+
+def test_MOI_phep_kiem_khong_ghi_ban_bat_ky_so_nao(tmp_path, monkeypatch):
+    """Lưới CHUNG thay vì bắt từng hàm (03/09).
+
+    Hai lần trước tôi vá lẻ: chot_cong_chi_them quên CHAM_CONG_CHOT_DIR, rồi
+    luong_khong_tu_tru trỏ biến gộp không tồn tại. Cách vá đó không chặn được
+    hàm THỨ BA quên env — nên test này quét MỌI mã trong CAC_MA: chạy hết một
+    lượt, sổ thật không được đổi một byte, không file nào mọc ra.
+
+    Thêm store mới mà quên trỏ env sang thư mục tạm là test đỏ ngay."""
+    import os
+
+    goc = tmp_path / "nhan-su"
+    goc.mkdir()
+    # trỏ MỌI env kho của app sang thư mục tạm rồi chụp trạng thái
+    for b in ("CHAM_CONG_DIR", "CHAM_CONG_CHOT_DIR", "LUONG_DIR",
+              "KPI_DANH_GIA_DIR", "TY_GIA_DIR", "CHUNG_TU_DIR", "VAULT_DIR"):
+        d = goc / b.lower()
+        d.mkdir(exist_ok=True)
+        monkeypatch.setenv(b, str(d))
+
+    def chup():
+        return {str(p): p.stat().st_size for p in goc.rglob("*") if p.is_file()}
+
+    from src import kiem
+    truoc = chup()
+    for ma in kiem.CAC_MA:
+        _kiem(ma)
+    sau = chup()
+
+    assert sau == truoc, (
+        f"phép kiểm {sorted(set(sau) ^ set(truoc)) or 'nào đó'} ghi vào sổ — "
+        "cửa kiểm TUYỆT ĐỐI chỉ đọc; thiếu env nào thì thêm vào _kho_tam")
