@@ -113,3 +113,28 @@ def test_phat_ghi_nhat_ky_va_goi_ntfy(tmp_path, monkeypatch):
     assert goi == ["🔴 X không trả lời"]
     logs = list(tmp_path.rglob("*.log"))
     assert logs and "không trả lời" in logs[0].read_text(encoding="utf-8")
+
+
+def test_health_timeout_noi_THAT_ly_do_khong_bia_ten_module():
+    """Sự cố 03/09 (Owner báo): sổ sự cố đầy cặp "AI Agent — module lỗi:
+    suc-khoe: không đọc được" / "đã hồi phục", lặp đều mỗi ~10 phút.
+
+    Bệnh THẬT là health chậm quá trần 10s — ai-agent bật rerank, đo được
+    15,4–22,9s mỗi lần canary search (embedding 0,09s + Qdrant 0,06s; rerank
+    chiếm 99%). Cứ 10 phút cache canary hết hạn là một lượt vượt trần.
+
+    Nhưng cảnh báo lại nói "module suc-khoe không đọc được" — một module KHÔNG
+    HỀ TỒN TẠI, do gateway chỉ đặt muc='loi' rồi để so_sanh dựng chuỗi mặc định.
+    Người đọc đi tìm nhầm chỗ. Giờ gateway ghi rõ loại lỗi vào mo_dun.
+
+    Ghim: khi có mo_dun thật thì cảnh báo dùng nó, không rơi về chuỗi bịa."""
+    tt = {}
+    ok = _app("AI Agent", muc="ok")
+    het_gio = _app("AI Agent", muc="loi", mo_dun=[
+        {"ten": "health", "trang_thai": "loi", "chi_tiet": "quá 10s không trả lời"}])
+    tt, _ = giam_sat.so_sanh(tt, [ok], [])
+    tt, bao = giam_sat.so_sanh(tt, [het_gio], [])
+    assert len(bao) == 1
+    assert "quá 10s không trả lời" in bao[0], bao[0]
+    assert "không đọc được" not in bao[0], (
+        "vẫn rơi về chuỗi bịa — người đọc sẽ đi tìm module `suc-khoe` không tồn tại")

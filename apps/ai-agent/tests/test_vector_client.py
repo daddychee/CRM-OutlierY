@@ -50,14 +50,32 @@ def test_search_loc_ket_hop_hieu_luc(client):
     assert all(c["document_metadata"]["effective_status"] == "Còn hiệu lực" for c in hits)
 
 
-def test_rerank_cau_hinh_mac_dinh_bat(monkeypatch):
-    """Rerank mặc định BẬT theo CODE. Xóa biến env trước khi tạo client — test default
-    trong code thật sự, không phụ thuộc .env của máy đang chạy (user có thể đang tắt)."""
+def test_rerank_cau_hinh_mac_dinh_TAT(monkeypatch):
+    """Rerank mặc định TẮT theo CODE (đổi từ BẬT ngày 03/09).
+
+    ĐO THẬT trên kho 157 point / 19 tài liệu, 5 câu hỏi thật: BẬT 15,4–22,9s vs
+    TẮT 0,12–0,25s — chậm hơn ~100 lần, mà 2/4 câu ra kết quả Y HỆT. Hệ quả khi
+    bật: mỗi câu hỏi của nhân viên chờ ~20s, VÀ cứ 10 phút (cache canary hết hạn)
+    health vượt trần 10s của vòng giám sát → sổ sự cố đầy cảnh báo giả.
+
+    Đặt trong CODE chứ không chỉ .env vì .env bị gitignore, không theo repo sang
+    máy khác — đúng bài học 19/07 đã áp cho HYBRID_SEARCH. Bật lại khi kho lên
+    hàng trăm–nghìn chunk, và ĐO LẠI trước khi tin.
+
+    Xóa biến env trước khi tạo client — test default trong CODE, không phụ thuộc
+    .env của máy đang chạy."""
     monkeypatch.delenv("RERANK_SEARCH", raising=False)
     monkeypatch.delenv("RERANK_LAY_RONG", raising=False)
     c = QdrantClientWrapper(mock=True)
-    assert c.rerank_search is True
+    assert c.rerank_search is False
     assert c.rerank_lay_rong == 20
+
+
+def test_rerank_bat_lai_duoc_bang_env(monkeypatch):
+    """Tắt là MẶC ĐỊNH, không phải gỡ tính năng — kho lớn bật lại bằng 1 dòng
+    .env, không sửa code."""
+    monkeypatch.setenv("RERANK_SEARCH", "true")
+    assert QdrantClientWrapper(mock=True).rerank_search is True
 
 
 def test_mock_khong_rerank_giu_nguyen_duong_cu(client):

@@ -414,6 +414,11 @@ def _gate_nen(request: Request, quyen: str | None = None,
     return Response("You do not have access to this page.", status_code=403)
 
 
+# Trần chờ deep health. Chậm hơn liveness vì health SÂU có việc thật (đọc kho,
+# canary search). Quá trần → ghi rõ "quá Ns không trả lời", KHÔNG bịa tên module.
+TIMEOUT_SUC_KHOE = 10.0
+
+
 async def _do_dich_vu() -> list[dict]:
     """Sức khỏe từng dịch vụ: mọi app trong hợp đồng + Qdrant kho vector.
 
@@ -438,12 +443,21 @@ async def _do_dich_vu() -> list[dict]:
                 # 10': canary search lượt đầu sau cache vượt 3s → báo lỗi oan).
                 r2 = await client.get(
                     f"http://127.0.0.1:{muc_sk['cong']}{muc_sk['suc_khoe']}",
-                    timeout=10.0)
+                    timeout=TIMEOUT_SUC_KHOE)
                 b = r2.json() if r2.status_code == 200 else {}
                 ket["muc"] = b.get("trang_thai") or "loi"
                 ket["mo_dun"] = b.get("mo_dun") or []
-            except (httpx.HTTPError, ValueError):
+            except (httpx.HTTPError, ValueError) as e:
                 ket["muc"] = "loi"
+                # NÓI THẬT LÝ DO (03/09). Trước: chỉ đặt muc='loi' rồi để
+                # giam_sat.so_sanh bịa ra "suc-khoe: không đọc được" — người đọc
+                # sổ sự cố đi tìm module tên `suc-khoe` không hề tồn tại, trong
+                # khi bệnh thật là health CHẬM quá 10s (rerank ~20s/câu).
+                # Ghi đúng loại lỗi thì lần sau nhìn là biết đi sửa cái gì.
+                ket["mo_dun"] = [{"ten": "health", "trang_thai": "loi",
+                                  "chi_tiet": (f"quá {TIMEOUT_SUC_KHOE:g}s không trả lời"
+                                               if isinstance(e, httpx.TimeoutException)
+                                               else f"gọi hỏng: {type(e).__name__}")}]
         return ket
 
     qdrant = os.getenv("QDRANT_URL", "http://127.0.0.1:6343").rstrip("/")
@@ -1386,7 +1400,8 @@ def _render_api_keys(request: Request, user: dict, bao: str = "",
     # loại nào cần nhóm theo nhà — thêm loại có nhà mới chỉ cần thêm một mục ở đây.
     nha_por_loai = {"llm": (ket.NHA_LLM, ket.NHA_LLM_INFO),
                     "generate": (ket.NHA_GEN, ket.NHA_GEN_INFO),
-                    "serp": (ket.NHA_SERP, ket.NHA_SERP_INFO)}
+                    "serp": (ket.NHA_SERP, ket.NHA_SERP_INFO),
+                    "stock": (ket.NHA_STOCK, ket.NHA_STOCK_INFO)}
     # Show-more SERVER-SIDE (18/08): JS ẩn/hiện cũ Owner báo không tác dụng trên
     # trình duyệt thật mà không tái hiện được — đổi sang server tự cắt danh sách
     # (>5 dòng render 5 + LINK GET thật), kiểm được 100% bằng TestClient.
@@ -2435,6 +2450,7 @@ _ALIAS: dict[str, tuple[str, str]] = {
     "/giao-viec": ("tasky", "giao-viec"),
     "/muc-tieu": ("tasky", "muc-tieu"),
     "/bao-cao-tuan": ("tasky", "bao-cao-tuan"),
+    "/thumby": ("thumby", "thumby"),
     "/nas": ("to-chuc", "nas"),
     "/kpi": ("to-chuc", "kpi"),
     "/vault": ("to-chuc", "vault"),
@@ -2592,7 +2608,7 @@ for _duong, (_slug, _dd) in _ALIAS.items():
 # Phục vụ CÙNG trang khung như /open/<slug> tại URL đẹp; /open/<slug> giữ nguyên
 # cho bookmark. Thêm app khung mới = thêm slug vào tuple này.
 _ALIAS_KHUNG = ("radary", "content-ultimate", "niche-research", "seo-optimize",
-                "plannery")
+                "plannery", "rendery")
 
 
 def _lam_alias_khung(slug: str):

@@ -211,8 +211,19 @@ class QdrantClientWrapper:
             # repo sang máy khác): hybrid là hành vi chuẩn của app ở mọi nơi
             hybrid = os.getenv("HYBRID_SEARCH", "true").strip().lower() == "true"
         self.hybrid = hybrid
-        # Rerank: mặc định BẬT; tắt qua RERANK_SEARCH=false để quay lại hành vi cũ
-        self.rerank_search = os.getenv("RERANK_SEARCH", "true").strip().lower() == "true"
+        # Rerank: mặc định TẮT trong CODE (đổi từ "true" ngày 03/09).
+        # ĐO THẬT trên kho hiện tại (157 point / 19 tài liệu), 5 câu hỏi thật:
+        #   BẬT  15,4–22,9s   ·   TẮT  0,12–0,25s   → chậm hơn ~100 lần
+        #   embedding 0,09s + Qdrant 0,06s; rerank chiếm 99% thời gian.
+        #   Kết quả: 2/4 câu RA Y HỆT, 2 câu khác thành phần nhưng không có cơ sở
+        #   nói bản nào đúng hơn ở quy mô kho này.
+        # Hệ quả khi bật: mỗi câu hỏi của nhân viên chờ ~20s, VÀ cứ 10 phút
+        # (lúc cache canary hết hạn) health vượt timeout 10s của vòng giám sát →
+        # sổ sự cố đầy cặp "module lỗi / đã hồi phục" giả (Owner báo 03/09).
+        # Đặt trong CODE chứ không chỉ .env vì .env bị gitignore, không theo repo
+        # sang máy khác — đúng bài học 19/07 đã áp cho HYBRID_SEARCH.
+        # Bật lại khi kho lên hàng trăm–nghìn chunk: RERANK_SEARCH=true, và ĐO LẠI.
+        self.rerank_search = os.getenv("RERANK_SEARCH", "false").strip().lower() == "true"
         self.rerank_lay_rong = int(os.getenv("RERANK_LAY_RONG", "20"))
         # Ngưỡng cosine dense cho cờ bị-chặn-quyền (đo thật 19/07, scripts/do_nguong_bi_chan.py):
         # bị-chặn-thật 0.826-0.862 vs lọt-top-k-tình-cờ 0.776-0.803 → 0.81 dưới sàn nhóm thật.
