@@ -18,7 +18,7 @@ from __future__ import annotations
 
 import json
 import os
-from datetime import datetime
+from datetime import date, datetime
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -71,6 +71,71 @@ def _dong_hom_nay() -> list[dict]:
         except ValueError:
             continue
     return ket
+
+
+TRAN_DOC = 2000       # trần dòng trả cho trang log — xem mục "vì sao" trong doc()
+
+
+def doc(ngay: str = "", api: str = "", khoa_duoi: str = "",
+        app: str = "", tran: int = TRAN_DOC) -> list[dict]:
+    """Đọc sổ MỘT ngày (mặc định hôm nay) + lọc, mới nhất trước — TRẢ THEO KHUÔN
+    quota_log CŨ (api/khoa_duoi/luot/quota_tieu) để trang API Keys và Export CSV
+    không phải sửa.
+
+    Vì sao có hàm dịch schema này: hệ từng có HAI sổ song song. quota_log (khuôn
+    P4) chưa app nào ghi — data/logs/quota/ rỗng vĩnh viễn — nên tab Quota log và
+    cột "lượt gọi hôm nay" luôn trắng, trong khi so_goi đã ghi thật (02/09: 29.446
+    youtube + 132 llm + 58 serp). Dịch ở ĐÂY thay vì sửa template/export để chỗ
+    đọc chỉ có một khuôn, và ngày nào bỏ hẳn quota_log thì xóa đúng hàm này.
+    """
+    ngay = (ngay or "").strip() or date.today().isoformat()
+    f = _goc() / ngay[:4] / ngay[5:7] / f"{ngay}.log"
+    if not f.is_file():
+        return []
+    try:
+        tho = f.read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return []
+    # TRẦN: sổ thật một ngày lên tới ~31k dòng (radary quét YouTube liên tục) —
+    # trả hết thì trang log dựng 31k hàng HTML và nghẹt. Đọc từ CUỐI file ngược
+    # lên: mới nhất trước là thứ người ta cần khi soi lỗi, và cắt sớm thì không
+    # phải parse cả file. Lọc hẹp (một API / một khóa) gần như không chạm trần.
+    if tran and tran > 0:
+        tho = tho[::-1]
+    ra = []
+    for ln in tho:
+        try:
+            d = json.loads(ln)
+        except ValueError:
+            continue          # sổ là append thô — một dòng hỏng không vỡ trang
+        if api and d.get("dich_vu") != api:
+            continue
+        if khoa_duoi and d.get("duoi") != khoa_duoi:
+            continue
+        if app and d.get("app") != app:
+            continue
+        # `viec` rỗng thì lấy model làm nhãn (LLM ghi model, chưa ghi viec) —
+        # cùng lệ với tom_tat_hom_nay để hai bảng không nói khác nhau.
+        ra.append({"luc": d.get("luc", ""), "api": d.get("dich_vu", ""),
+                   "khoa_duoi": d.get("duoi", ""), "app": d.get("app", ""),
+                   "viec": d.get("viec") or d.get("model", ""),
+                   "luot": 1, "quota_tieu": int(d.get("units") or 0),
+                   "ok": bool(d.get("ok", True)), "ma_loi": d.get("ma_loi", "")})
+        if tran and len(ra) >= tran:
+            break
+    return ra if (tran and tran > 0) else ra[::-1]
+
+
+def luot_hom_nay() -> dict[str, int]:
+    """Tổng SỐ CALL hôm nay theo đuôi khóa — cột 'lượt gọi hôm nay' tab Add API.
+    Khác quota_log cũ ở chỗ đếm call thật; khóa chưa gọi lần nào không có mặt
+    (trang tự hiện '—', KHÔNG bịa số 0 trông như đã đo)."""
+    tong: dict[str, int] = {}
+    for d in _dong_hom_nay():
+        duoi = d.get("duoi") or ""
+        if duoi:
+            tong[duoi] = tong.get(duoi, 0) + 1
+    return tong
 
 
 def kiem_vet(app: str) -> dict:

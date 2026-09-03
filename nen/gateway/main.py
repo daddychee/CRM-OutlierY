@@ -1326,7 +1326,12 @@ def nen_pq_uy_quyen(request: Request, ten: str = Form(...), bat: str = Form("0")
 # từ viec_api trong HỢP ĐỒNG, quota log JSON-lines P4. Thay trang "AI Models"
 # tự chế (chưa từng được Owner duyệt) — GET cũ redirect, POST llm cũ giữ làm
 # backend fallback.
-from nen.common import quota_log  # noqa: E402
+# Trang này đọc SỔ GỌI (nen/common/so_goi) — sổ có dữ liệu thật. `quota_log` là
+# khuôn P4 cũ chưa app nào ghi (data/logs/quota/ rỗng vĩnh viễn) nên tab Quota
+# log và cột "lượt gọi hôm nay" trắng suốt, trong khi so_goi đã ghi 29.446
+# youtube + 132 llm + 58 serp riêng ngày 02/09. so_goi.doc() trả ĐÚNG khuôn cũ
+# nên template + Export CSV không đổi một dòng.
+from nen.common import so_goi as _so_goi_ket  # noqa: E402
 
 
 def _viec_api_cua() -> dict[str, dict]:
@@ -1368,7 +1373,7 @@ def _render_api_keys(request: Request, user: dict, bao: str = "",
     ngay = q.get("ngay", "")
     loc = {"api": q.get("loc_api", ""), "khoa": q.get("loc_khoa", ""),
            "app": q.get("loc_app", "")}
-    log_rows = quota_log.doc(ngay, loc["api"], loc["khoa"], loc["app"]) \
+    log_rows = _so_goi_ket.doc(ngay, loc["api"], loc["khoa"], loc["app"]) \
         if tab == "log" else []
     from datetime import date as _date
     # Quota log chỉ ghi ĐUÔI (khuôn P4 cũ, không đổi schema log) — tra 'dau' để
@@ -1417,7 +1422,7 @@ def _render_api_keys(request: Request, user: dict, bao: str = "",
         "user": user, "trang": "api-keys", "tab": tab, "bao": bao, "loi": loi,
         "keys": keys, "theo_loai": theo_loai, "dang_dung": dang_dung,
         "dau_theo_duoi": dau_theo_duoi,
-        "luot": quota_log.luot_hom_nay(), "cap_phat": cap_phat,
+        "luot": _so_goi_ket.luot_hom_nay(), "cap_phat": cap_phat,
         "viec_api": viec_api, "app_chon": app_chon,
         "nha_llm": ket.NHA_LLM, "nha_info": ket.NHA_LLM_INFO,
         "nha_por_loai": nha_por_loai,
@@ -1575,8 +1580,9 @@ def nen_api_keys_export(request: Request):
     if isinstance(user, Response):
         return user
     q = request.query_params
-    rows = quota_log.doc(q.get("ngay", ""), q.get("loc_api", ""),
-                         q.get("loc_khoa", ""), q.get("loc_app", ""))
+    # tran=0: file tải về lấy TRỌN ngày (trần 2000 chỉ để trang log không nghẹt)
+    rows = _so_goi_ket.doc(q.get("ngay", ""), q.get("loc_api", ""),
+                           q.get("loc_khoa", ""), q.get("loc_app", ""), tran=0)
     import csv as _csv
     import io as _io
     dem = _io.StringIO()

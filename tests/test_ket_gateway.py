@@ -21,6 +21,10 @@ def he(tmp_path, monkeypatch):
     monkeypatch.setenv("KET_DB", str(tmp_path / "ket.db"))
     monkeypatch.setenv("KET_KEY", str(tmp_path / "ket.key"))
     monkeypatch.setenv("LOGS_DIR", str(tmp_path / "logs"))   # quota log về tmp
+    # SỔ GỌI đọc biến RIÊNG — thiếu dòng này thì test ghi vào sổ THẬT (đã dính
+    # 03/09: 28 dòng rác lọt vào số liệu quota Owner đang xem). conftest ROOT
+    # cũng chặn, đây là lớp hai để fixture tự đứng được.
+    monkeypatch.setenv("SO_GOI_DIR", str(tmp_path / "so-goi"))
     monkeypatch.setattr(bcrypt, "gensalt", lambda rounds=12: _gensalt_goc(4))
     conn = iam.ket_noi()
     ow = iam.claims_cua(iam.tao_tai_khoan(
@@ -253,10 +257,13 @@ def test_tab2_luoi_7_cot_va_nut_save_dinh_mep_phai(client):
 def test_tab3_quota_log_5_dong_show_more_server_side(client):
     """Cùng LUẬT cho bảng Quota log (mã 'log'): 7 dòng log → collapsed 5 +
     Show more (2); expanded đủ + Show less; URL giữ nguyên bộ lọc."""
-    from nen.common import quota_log
+    # Ghi vào SỔ GỌI — sổ mà trang thật sự đọc. Trước 03/09 test ghi vào
+    # quota_log (khuôn P4) và vẫn xanh, trong khi trang thật TRẮNG suốt vì
+    # data/logs/quota/ chưa app nào ghi: test xanh mà tính năng chết.
+    from nen.common import so_goi
     _login(client, "owner-test", "mk-test")
     for i in range(7):
-        quota_log.ghi("youtube", "9999", "radary", f"viec-log-{i}")
+        so_goi.ghi("radary", "youtube", duoi="9999", viec=f"viec-log-{i}")
 
     trang = client.get("/general/api-keys?tab=log").text
     assert trang.count("viec-log-") == 5
