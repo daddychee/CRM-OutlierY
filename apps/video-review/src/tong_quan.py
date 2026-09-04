@@ -87,3 +87,25 @@ def cac_the(kich_ban_theo_tap: dict[str, dict] | None = None,
     if chi_dang_lam:
         ra = [t for t in ra if dang_san_xuat(t)]
     return ra
+
+
+def cac_tap_da_dang() -> list[dict]:
+    """Tab PUBLISH REVIEW — tập ĐÃ ĐĂNG, mới nhất trước. Chia hai nhóm để leader
+    biết việc: tập chưa hậu kiểm (còn việc) và tập đã có kết luận (để tra lại).
+    KHÔNG bịa: tập chưa đủ số liệu thì nói chưa có số liệu, không đoán chỉ số."""
+    from src import hau_kiem, kho_video
+    ra = []
+    for tap in kho_video.cac_tap():
+        full = tap.get("full")
+        if not full:
+            continue
+        gc = hau_kiem.lay_giu_chan(tap["ma"])
+        ra.append({
+            "ma": tap["ma"], "ten": full.get("ten", ""), "video_ma": full.get("ma", ""),
+            "yt_id": full.get("yt_id", ""), "dang_luc": full.get("dang_luc", ""),
+            "da_hau_kiem": gc is not None,
+            "hook_30": gc["hook_30"] if gc else None,
+            "avd_giay": gc["avd_giay"] if gc else None,
+            "giu_tb": gc["giu_tb"] if gc else None,
+        })
+    return ra

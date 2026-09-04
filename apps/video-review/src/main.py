@@ -166,9 +166,35 @@ async def api_kiem(ma: str, request: Request):
     return ham()
 
 
-@app.get("/")
-async def goc():
-    return RedirectResponse("/tong-quan", status_code=303)
+def _dem_topnav() -> dict:
+    """Con số trên navigator + trang chủ. Đọc sổ, không đoán."""
+    the = tong_quan.cac_the(kich_ban.chot_theo_tap(), chi_dang_lam=True)
+    cho_kb = [b for b in kich_ban.cac_ban() if kich_ban.moc_chot(b["run"]) is None]
+    # 'chờ review' = Awaiting review đúng nghĩa (chưa AI KHÁC người đăng bình
+    # luận) — tái dùng so_khac, một nguồn sự thật với trang danh sách. Đếm mọi
+    # bản chưa Approved sẽ ra 31 thay vì 6: bản đang có người review dở dang
+    # KHÔNG phải việc đang chờ ai nhặt.
+    cho_review = sum(1 for v in kho_video.danh_sach_video()
+                     if v["loai"] != "full" and v["trang_thai"] == "dang_duyet"
+                     and v["so_khac"] == 0)
+    return {"so_tap": len(the), "so_kich_ban": len(cho_kb), "so_cho": cho_review,
+            "so_dang": len(tong_quan.cac_tap_da_dang())}
+
+
+@app.get("/", response_class=HTMLResponse)
+async def trang_nha(request: Request, user: dict = Depends(khu_cua_toi)):
+    """TRANG CHỦ dạng khối — cùng khuôn trang chủ Content Ultimate: bốn thẻ
+    ứng bốn tab, mỗi thẻ kèm con số việc đang chờ ở đó."""
+    return templates.TemplateResponse(request, "nha.html",
+                                      {"user": user, **_dem_topnav()})
+
+
+@app.get("/publish", response_class=HTMLResponse)
+async def trang_publish(request: Request, user: dict = Depends(khu_cua_toi)):
+    """PUBLISH REVIEW — tập đã đăng, tách hai nhóm: chờ hậu kiểm (còn việc) và
+    đã có kết luận (tra lại). Bấm một tập mở màn hậu kiểm sẵn có."""
+    return templates.TemplateResponse(request, "publish.html", {
+        "ds": tong_quan.cac_tap_da_dang(), "user": user, **_dem_topnav()})
 
 
 @app.get("/tong-quan", response_class=HTMLResponse)
@@ -179,7 +205,7 @@ async def trang_tong_quan(request: Request, user: dict = Depends(khu_cua_toi)):
     cho_xu_ly = [b for b in kich_ban.cac_ban() if kich_ban.moc_chot(b["run"]) is None]
     return templates.TemplateResponse(request, "tong_quan.html", {
         "the": tong_quan.cac_the(kich_ban.chot_theo_tap(), chi_dang_lam=True),
-        "kich_ban": cho_xu_ly, "user": user})
+        "kich_ban": cho_xu_ly, "user": user, **_dem_topnav()})
 
 
 # ---------- trang danh sách + upload ----------
@@ -512,7 +538,7 @@ async def trang_kich_ban(request: Request, run: str = "",
         ban["ma_tap"] = moc["ma_tap"] if moc else ""
         ban["da_chot"] = moc is not None
     return templates.TemplateResponse(request, "kich_ban.html", {
-        "ds": ds, "ban": ban, "user": user})
+        "ds": ds, "ban": ban, "user": user, **_dem_topnav()})
 
 
 @app.get("/api-vr/note-kich-ban/{run}")

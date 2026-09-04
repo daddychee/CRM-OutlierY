@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}Publish Review — ReviewY{% endblock %}
+{% block tab_hien %}dang{% endblock %}
+{% block wave %}{{ ds|length }} tập đã đăng{% endblock %}
+
+{% block style_them %}
+  .ctx{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+  .ctx h2{font-size:18px;margin:0;letter-spacing:-.01em}
+  .ctx .phu{font-size:12.5px;color:var(--muted)}
+  .nhom{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);
+    font-weight:700;margin:22px 0 10px}
+  .nhom:first-child{margin-top:0}
+  .tap-luoi{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
+  .tap-the{border:1px solid var(--line);border-radius:12px;background:var(--sidebar);
+    padding:14px 16px 12px;display:flex;flex-direction:column;gap:10px;color:inherit;
+    text-decoration:none}
+  .tap-the:hover{border-color:var(--th-31425e)}
+  .tap-dau{display:flex;align-items:baseline;gap:8px}
+  .tap-dau b{font-size:16px}
+  .tap-dau span{font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;
+    white-space:nowrap}
+  .so-hang{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .so-o .nhan{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);
+    font-weight:600}
+  .so-o .gia{font-size:19px;font-weight:700;letter-spacing:-.02em;margin-top:1px}
+  .viec-ke{border-top:1px solid var(--line);padding-top:9px;font-size:12.5px;
+    font-weight:600;color:var(--ink)}
+  .viec-ke.mo{color:var(--muted);font-weight:400}
+  .trong-lon{border:1px dashed var(--line);border-radius:12px;padding:26px;text-align:center;
+    color:var(--muted);font-size:13.5px}
+{% endblock %}
+
+{% block noi_dung %}
+<div class="ctx"><h2>Tập đã đăng</h2>
+  <span class="phu">hậu kiểm bản full — số liệu YouTube đọc từ ảnh chụp Studio</span></div>
+
+{% if not ds %}
+<div class="trong-lon">Chưa có tập nào đăng. Gắn bản full cho một tập ở
+  <a href="/tong-quan">Overview</a> — bấm thẻ tập rồi điền mã video bản full.</div>
+{% else %}
+
+{% set chua = ds | rejectattr('da_hau_kiem') | list %}
+{% set roi = ds | selectattr('da_hau_kiem') | list %}
+
+{% if chua %}
+<div class="nhom">Chờ hậu kiểm — {{ chua|length }} tập</div>
+<div class="tap-luoi">
+  {% for t in chua %}
+  <a class="tap-the" href="/hau-kiem/{{ t.ma }}">
+    <div class="tap-dau"><b>{{ t.ma }}</b><span>{{ t.ten }}</span></div>
+    <div class="viec-ke">→ dán ảnh đồ thị giữ chân từ Studio</div>
+  </a>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% if roi %}
+<div class="nhom">Đã có kết luận — {{ roi|length }} tập</div>
+<div class="tap-luoi">
+  {% for t in roi %}
+  <a class="tap-the" href="/hau-kiem/{{ t.ma }}">
+    <div class="tap-dau"><b>{{ t.ma }}</b><span>{{ t.ten }}</span></div>
+    <div class="so-hang">
+      <div class="so-o"><div class="nhan">Giữ 0:30</div>
+        <div class="gia">{{ t.hook_30 | round(0) | int }}%</div></div>
+      <div class="so-o"><div class="nhan">Xem TB</div>
+        <div class="gia">{{ (t.avd_giay // 60) | int }}:{{ '%02d' % (t.avd_giay % 60) }}</div></div>
+      <div class="so-o"><div class="nhan">Giữ chân</div>
+        <div class="gia">{{ t.giu_tb | round(1) }}%</div></div>
+    </div>
+    <div class="viec-ke mo">→ mở để xem chỗ tụt và kết luận cho tập sau</div>
+  </a>
+  {% endfor %}
+</div>
+{% endif %}
+{% endif %}
+{% endblock %}

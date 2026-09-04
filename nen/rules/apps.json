@@ -349,6 +349,11 @@
         }
       ],
       "giao_dien": "khung",
+      "muc_con": [
+        {"ten": "Outline Board", "duong": "outline"},
+        {"ten": "Author Extract", "duong": "author"},
+        {"ten": "Writing", "duong": "write"}
+      ],
       "viec_api": [
         {
           "ma": "viet_kich_ban",
@@ -388,9 +393,15 @@
         "/kich-ban"
       ],
       "giao_dien": "khung",
+      "muc_con": [
+        {"ten": "Overview", "duong": "tong-quan"},
+        {"ten": "Writing Review", "duong": "kich-ban"},
+        {"ten": "Editing Review", "duong": "danh-sach"},
+        {"ten": "Publish Review", "duong": "publish"}
+      ],
       "health": "/health",
       "suc_khoe": "/api/suc-khoe",
-      "phien_ban": "0.3.0",
+      "phien_ban": "0.4.0",
       "chay": {
         "kieu": "uvicorn",
         "app_dir": "apps/video-review",

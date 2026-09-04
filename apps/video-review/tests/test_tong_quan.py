@@ -77,9 +77,17 @@ def client():
         yield c
 
 
-def test_goc_chuyen_ve_overview(client):
-    r = client.get("/", headers=_h(), follow_redirects=False)
-    assert r.status_code == 303 and r.headers["location"] == "/tong-quan"
+def test_trang_chu_la_khoi_bon_the(client):
+    """Trang chủ dạng khối như Content Ultimate — 4 thẻ ứng 4 tab."""
+    r = client.get("/", headers=_h())
+    assert r.status_code == 200
+    for duong in ["/tong-quan", "/kich-ban", "/danh-sach", "/publish"]:
+        assert f'href="{duong}"' in r.text
+
+
+def test_trang_publish_liet_ke_tap_da_dang(client):
+    r = client.get("/publish", headers=_h())
+    assert r.status_code == 200 and "Tập đã đăng" in r.text
 
 
 def test_overview_can_claims(client):
@@ -107,3 +115,25 @@ def test_popup_tra_ve_than_khong_vo(client):
     r = client.get("/tap/LI900?popup=1", headers=_h())
     assert r.status_code == 200
     assert "hai-khoi" in r.text and "topnav" not in r.text
+
+
+def test_dem_cho_review_chi_dem_ban_chua_ai_xem(client):
+    """Con số trên tab Editing = Awaiting review (chưa AI KHÁC người đăng bình
+    luận), KHÔNG phải mọi bản chưa Approved — bản đang review dở không phải
+    việc đang chờ ai nhặt (đo thật 04/09: 6 chứ không phải 31)."""
+    from src.main import _dem_topnav
+    kho = __import__("src.kho_video", fromlist=["x"])
+    goc = kho.nas_dir() / "xuat"
+    goc.mkdir(parents=True, exist_ok=True)
+    f = goc / "LI901.mp4"
+    f.write_bytes(b"y" * 64)
+    rel = f.relative_to(kho.nas_dir().resolve()).as_posix()
+    r = client.post("/api-vr/nas-lien-ket", data={"duong": rel, "ten": "ban dung"},
+                    headers=_h(ten="hieu"))
+    ma = r.json()["ma"]
+    truoc = _dem_topnav()["so_cho"]
+    # người KHÁC bình luận -> hết là 'đang chờ ai nhặt'
+    client.post("/api-vr/binh-luan",
+                json={"video_ma": ma, "noi_dung": "sua hook", "ts_giay": 1.0},
+                headers=_h(ten="lan"))
+    assert _dem_topnav()["so_cho"] == truoc - 1

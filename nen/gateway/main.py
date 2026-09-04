@@ -2594,7 +2594,8 @@ def mo_app_khung(request: Request, slug: str):
     from nen.common.sidebar import KHONG_LAP_TOOLS
     # Đồng nhất URL 18/08: mọi nút Tools = /<slug> (native qua _ALIAS, khung qua
     # _ALIAS_KHUNG) — một nút một URL ở MỌI sidebar, khớp nen/common/sidebar.py.
-    ds_tools = [{"slug": a["slug"], "ten": a["ten"], "href": f"/{a['slug']}"}
+    ds_tools = [{"slug": a["slug"], "ten": a["ten"], "href": f"/{a['slug']}",
+                 "muc_con": a.get("muc_con") or []}
                 for a in doc_hop_dong()
                 if a["slug"] in duoc and a["slug"] not in KHONG_LAP_TOOLS]
     from datetime import datetime as _dt

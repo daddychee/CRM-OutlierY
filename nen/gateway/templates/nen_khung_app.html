@@ -98,15 +98,18 @@
       {# niche-research GỘP vào Data Analytics 18/08 (chốt Owner) — engine ẩn khỏi menu,
          vẫn proxy được qua URL trực tiếp; trang gộp = /niche của data-analytics #}
       {% for a in ds_tools if a.slug not in ('niche', 'niche-research') %}
-      {% if a.slug == 'content-ultimate' %}
+      {% if a.muc_con %}
       {# bấm tên app = MỞ APP (vá 18/08 — details từng nuốt click); đứng trong app
-         mới xổ dòng con, mỗi dòng mở khung kèm ?duong= cho iframe #}
+         mới xổ dòng con, mỗi dòng mở khung kèm ?duong= cho iframe.
+         Mục con khai trong hợp đồng app (apps.json "muc_con") — thêm app có menu
+         con KHÔNG phải sửa template này. #}
       <a class="nav-item{% if a.slug == app.slug %} active{% endif %}" href="{{ a.href }}">{% include "_icon_app_khung.html" %} {{ a.ten }}
         <svg class="ic mui-nhom{% if a.slug == app.slug %} mo{% endif %}" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></a>
       {% if a.slug == app.slug %}
-      <a class="nav-item nav-con{% if request.query_params.get('duong') == 'outline' %} active{% endif %}" href="/content-ultimate?duong=outline">Outline Board</a>
-      <a class="nav-item nav-con{% if request.query_params.get('duong') == 'author' %} active{% endif %}" href="/content-ultimate?duong=author">Author Extract</a>
-      <a class="nav-item nav-con{% if request.query_params.get('duong') == 'write' %} active{% endif %}" href="/content-ultimate?duong=write">Writing</a>
+      {% for m in a.muc_con %}
+      <a class="nav-item nav-con{% if request.query_params.get('duong', a.muc_con[0].duong) == m.duong %} active{% endif %}"
+         href="/{{ a.slug }}?duong={{ m.duong }}">{{ m.ten }}</a>
+      {% endfor %}
       {% endif %}
       {% else %}
       <a class="nav-item{% if a.slug == app.slug %} active{% endif %}" href="{{ a.href }}">{% include "_icon_app_khung.html" %} {{ a.ten }}</a>
