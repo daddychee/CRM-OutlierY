@@ -35,7 +35,8 @@ from fastapi import (BackgroundTasks, Depends, FastAPI, Form, Header, HTTPExcept
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from fastapi.templating import Jinja2Templates
 
-from src import do_thi, don_nas, hau_kiem, kho_video, nap_nas, nhan_xet
+from src import (do_thi, don_nas, hau_kiem, kho_video, nap_nas, nhan_xet,
+                 tong_quan)
 
 _APP_DIR = Path(__file__).resolve().parents[1]
 PHIEN_BAN = "0.3.0"
@@ -167,7 +168,16 @@ async def api_kiem(ma: str, request: Request):
 
 @app.get("/")
 async def goc():
-    return RedirectResponse("/danh-sach", status_code=303)
+    return RedirectResponse("/tong-quan", status_code=303)
+
+
+@app.get("/tong-quan", response_class=HTMLResponse)
+async def trang_tong_quan(request: Request, user: dict = Depends(khu_cua_toi)):
+    """OVERVIEW — sàn chung Content ↔ Editor (mockup vòng 6): mỗi tập một thẻ
+    ba trạm + việc kế tiếp; bấm thẻ mở popup bàn giao dựng (nạp /tap/<ma>?popup=1).
+    Hàng chờ kịch bản nằm ở sidebar phải — rỗng tới khi nối kho Content Ultimate."""
+    return templates.TemplateResponse(request, "tong_quan.html", {
+        "the": tong_quan.cac_the(), "kich_ban": [], "user": user})
 
 
 # ---------- trang danh sách + upload ----------
@@ -466,7 +476,8 @@ async def trang_tap(request: Request, ma_tap: str, user: dict = Depends(khu_cua_
     tap = kho_video.mot_tap(ma_tap)
     if tap is None:
         raise HTTPException(404, "Không có tập này.")
-    return templates.TemplateResponse(request, "tap.html", {
+    ten_mau = "tap_than.html" if request.query_params.get("popup") else "tap.html"
+    return templates.TemplateResponse(request, ten_mau, {
         "tap": tap, "user": user, "giu_chan": hau_kiem.lay_giu_chan(ma_tap)})
 
 

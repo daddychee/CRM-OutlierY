@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+{% block title %}Overview — ReviewY{% endblock %}
+{% block tab_hien %}tong{% endblock %}
+{% block wave %}{{ the|length }} tập đang sản xuất{% endblock %}
+
+{% block style_them %}
+  /* Thẻ tập — mockup vòng 6 màn Overview: nhìn lướt biết việc kế thuộc về ai */
+  .tap-luoi{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
+  .tap-the{border:1px solid var(--line);border-radius:12px;background:var(--sidebar);
+    padding:14px 16px 12px;cursor:pointer;display:flex;flex-direction:column;gap:10px;
+    text-align:left;width:100%;font-family:inherit;color:inherit}
+  .tap-the:hover{border-color:var(--th-31425e)}
+  .tap-dau{display:flex;align-items:baseline;gap:8px}
+  .tap-dau b{font-size:16px;letter-spacing:.01em}
+  .tap-dau span{font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;
+    white-space:nowrap}
+  .tien{display:flex;gap:4px}
+  .tien i{height:5px;flex:1;border-radius:3px;background:var(--th-182233)}
+  .tien i.xong{background:var(--accent)}
+  .tien i.dang{background:var(--th-16263f);outline:1px solid var(--accent);outline-offset:-1px}
+  .tram-ds{display:flex;flex-direction:column;gap:5px;font-size:12.5px}
+  .tram-ds div{display:grid;grid-template-columns:58px 1fr;gap:8px}
+  .tram-ds i{font-style:normal;font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;
+    color:var(--muted);font-weight:600;padding-top:1px}
+  .tram-ds span{color:var(--th-c2cbd9)}
+  .tram-ds span.mo{color:var(--muted)}
+  .viec-ke{border-top:1px solid var(--line);padding-top:9px;font-size:12.5px;color:var(--ink);
+    font-weight:600}
+  .ctx{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+  .ctx h2{font-size:18px;margin:0;letter-spacing:-.01em}
+  .ctx .phu{font-size:12.5px;color:var(--muted)}
+  .side-panel .o{padding:13px 15px;border-bottom:1px solid var(--line)}
+  .side-panel .o:last-child{border-bottom:0}
+  .side-dau{padding:11px 15px;border-bottom:1px solid var(--line);display:flex;
+    align-items:baseline;gap:9px}
+  .side-dau b{font-size:13px}
+  .side-dau span{font-size:11.5px;color:var(--muted)}
+  .kb-ten{display:flex;align-items:baseline;gap:8px}
+  .kb-ten b{font-weight:600}
+  .kb-ten span{font-size:12px;color:var(--muted)}
+  .kb-so{font-size:12.5px;margin-top:3px}
+  .cham{display:inline-block;width:6px;height:6px;border-radius:50%;margin:0 4px;
+    background:var(--th-31425e);vertical-align:1px}
+  .cham.can{background:var(--th-d97c6c)}
+  .ghi-chan{font-size:11.5px;color:var(--muted);padding:9px 15px;border-top:1px solid var(--line);
+    line-height:1.5}
+  .trong-lon{border:1px dashed var(--line);border-radius:12px;padding:26px;text-align:center;
+    color:var(--muted);font-size:13.5px}
+  /* Popup bàn giao dựng — đóng bằng dấu nhân / bấm nền / Esc (lệ modal của hệ) */
+  .phu-nen{position:fixed;inset:0;background:rgba(9,12,18,.55);display:none;
+    align-items:flex-start;justify-content:center;padding:6vh 20px;z-index:70}
+  .phu-nen.mo{display:flex}
+  .phu-hop{background:var(--sidebar);border:1px solid var(--line);border-radius:14px;
+    width:100%;max-width:880px;max-height:86vh;display:flex;flex-direction:column;
+    overflow:hidden;box-shadow:0 14px 38px rgba(0,0,0,.38)}
+  .phu-dau{display:flex;align-items:baseline;gap:10px;padding:14px 18px;
+    border-bottom:1px solid var(--line);flex:none}
+  .phu-dau h3{margin:0;font-size:16px}
+  .phu-dong{margin-left:auto;font-size:16px;color:var(--muted);line-height:1}
+  .phu-than{overflow-y:auto;min-height:0;padding:4px 0}
+{% endblock %}
+
+{% block noi_dung %}
+<div class="cols">
+  <div>
+    <div class="ctx"><h2>Tập đang sản xuất</h2>
+      <span class="phu">{{ the|length }} tập · bấm một thẻ để mở bàn giao dựng</span></div>
+    {% if the %}
+    <div class="tap-luoi">
+      {% for t in the %}
+      <button type="button" class="tap-the" data-tap="{{ t.ma }}">
+        <div class="tap-dau"><b>{{ t.ma }}</b><span>{{ t.ten }}</span></div>
+        <div class="tien">
+          {% for k in ['writing', 'editing', 'publish'] %}
+          <i class="{% if t.tram[k].thanh != 'trong' %}{{ t.tram[k].thanh }}{% endif %}"></i>
+          {% endfor %}
+        </div>
+        <div class="tram-ds">
+          <div><i>Writing</i><span class="{% if t.tram.writing.ma == 'ngoai_tool' %}mo{% endif %}">{{ t.tram.writing.chu }}</span></div>
+          <div><i>Editing</i><span class="{% if t.tram.editing.ma in ['chua_co', 'xong'] %}mo{% endif %}">{{ t.tram.editing.chu }}</span></div>
+          <div><i>Publish</i><span class="{% if t.tram.publish.ma == 'chua_dang' %}mo{% endif %}">{{ t.tram.publish.chu }}</span></div>
+        </div>
+        {% if t.viec_ke %}<div class="viec-ke">{{ t.viec_ke }}</div>{% endif %}
+      </button>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="trong-lon">Chưa có tập nào trong sổ. Thêm bản dựng từ NAS ở tab
+      <a href="/danh-sach">Editing Review</a> — video được gán mã tập sẽ hiện ở đây.</div>
+    {% endif %}
+  </div>
+
+  <aside class="side-panel">
+    <div class="side-dau"><b>Kịch bản chờ xử lý</b><span>quét từ Content Ultimate</span></div>
+    {% for k in kich_ban %}
+    <div class="o">
+      <div class="kb-ten"><b>{{ k.run }}</b><span>{{ k.nguoi }}</span></div>
+      <div class="kb-so">{{ k.ky_tu }} / {{ k.muc_tieu }} ký tự
+        {% if not k.du_dieu_kien %}<span class="cham can"></span>{{ k.thieu }}{% endif %}</div>
+      {% if k.du_dieu_kien %}
+      <div style="margin-top:7px"><a href="/kich-ban?run={{ k.run }}">Gán tập và mở review</a></div>
+      {% else %}
+      <div style="margin-top:5px;font-size:12px;color:var(--muted)">chưa đủ điều kiện duyệt</div>
+      {% endif %}
+    </div>
+    {% else %}
+    <div class="o" style="color:var(--muted);font-size:13px">Chưa nối kho kịch bản của
+      Content Ultimate — mọi tập hiện là "viết ngoài tool".</div>
+    {% endfor %}
+    <div class="ghi-chan">Không tin cờ "done" trần của Content Ultimate — bản thiếu chương
+      hoặc hụt độ dài vẫn hiện, ghi rõ thiếu gì, không cho vào duyệt. Mã tập theo lịch
+      PlannerY — nối tự động làm sau.</div>
+  </aside>
+</div>
+
+<div class="phu-nen" id="phu-nen">
+  <div class="phu-hop">
+    <div class="phu-dau"><h3 id="phu-ten">Bàn giao dựng</h3>
+      <button type="button" class="phu-dong" id="phu-dong" aria-label="Dong">&#10005;</button></div>
+    <div class="phu-than" id="phu-than"></div>
+  </div>
+</div>
+{% endblock %}
+
+{% block script %}
+<script>
+(function () {
+  "use strict";
+  var nen = document.getElementById('phu-nen');
+  var than = document.getElementById('phu-than');
+  var ten = document.getElementById('phu-ten');
+  function dong() { nen.classList.remove('mo'); }
+  function mo(ma) {
+    ten.textContent = 'Tap ' + ma;
+    than.innerHTML = '<div style="padding:22px 18px;color:var(--muted)">Dang tai...</div>';
+    nen.classList.add('mo');
+    fetch('/tap/' + encodeURIComponent(ma) + '?popup=1', { credentials: 'same-origin' })
+      .then(function (r) { return r.ok ? r.text() : Promise.reject(r.status); })
+      .then(function (t) {
+        than.innerHTML = t;
+        // innerHTML KHÔNG chạy <script> — chạy tay các khối script của thân tập
+        // (form gắn bản full). Nếu thân không có script thì bỏ qua, không lỗi.
+        than.querySelectorAll('script').forEach(function (cu_sc) {
+          var sc = document.createElement('script');
+          sc.textContent = cu_sc.textContent;
+          document.body.appendChild(sc).remove();
+        });
+      })
+      .catch(function () {
+        than.innerHTML = '<div style="padding:22px 18px;color:var(--muted)">'
+          + 'Khong mo duoc tap nay. <a href="/tap/' + encodeURIComponent(ma)
+          + '">Mo trang rieng</a></div>';
+      });
+  }
+  document.querySelectorAll('.tap-the').forEach(function (b) {
+    b.addEventListener('click', function () { mo(b.dataset.tap); });
+  });
+  document.getElementById('phu-dong').addEventListener('click', dong);
+  nen.addEventListener('click', function (e) { if (e.target === nen) dong(); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') dong(); });
+})();
+</script>
+{% endblock %}
