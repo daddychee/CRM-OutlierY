@@ -49,6 +49,34 @@ def test_open_radary_khung_du_sidebar_va_iframe(client):
     assert "<title>RadarY — AI AGENT OUTLIERY</title>" in b
 
 
+def test_reviewy_sidebar_xo_4_muc_con(client):
+    """ReviewY là app KHUNG có menu con khai trong hợp đồng (apps.json muc_con):
+    đứng trong app thì sidebar xổ đủ 4 mục, mục đang xem sáng. Mục con khai bằng
+    DỮ LIỆU nên thêm app có menu con không phải sửa template — test này ghim
+    luôn cơ chế đó, không riêng ReviewY."""
+    _login(client)
+    r = client.get("/video-review")
+    assert r.status_code == 200
+    b = r.text
+    assert 'ReviewY' in b                       # tên mới, không còn "Video Review"
+    for ten, duong in [("Overview", "tong-quan"), ("Writing Review", "kich-ban"),
+                       ("Editing Review", "danh-sach"), ("Publish Review", "publish")]:
+        assert f'href="/video-review?duong={duong}"' in b and ten in b
+    # không đứng trong app thì KHÔNG xổ mục con (đỡ rối sidebar)
+    r2 = client.get("/radary")
+    assert 'href="/video-review?duong=tong-quan"' not in r2.text
+
+
+def test_muc_con_khai_bang_du_lieu_khong_hardcode():
+    """Content Ultimate cũng chuyển sang cùng cơ chế — giữ NGUYÊN đường cũ
+    /outline /author /write nên hành vi app đó không đổi."""
+    from nen.common.hop_dong import doc_hop_dong
+    cu = {a["slug"]: a.get("muc_con") or [] for a in doc_hop_dong()}
+    assert [m["duong"] for m in cu["content-ultimate"]] == ["outline", "author", "write"]
+    assert [m["duong"] for m in cu["video-review"]] == [
+        "tong-quan", "kich-ban", "danh-sach", "publish"]
+
+
 def test_open_khoi_quan_ly_nam_gon_trong_popup(client):
     """Owner phê 17/08 'không đưa khối dưới sidebar ra ngoài': HR/Finance/General/
     Profile/Log out phải nằm GỌN TRONG popup sb-mgmt ghim đáy (y cấu trúc base.html
