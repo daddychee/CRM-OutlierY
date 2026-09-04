@@ -88,6 +88,35 @@
   .bl-item .nut-bl:hover{background:var(--th-182233);color:var(--ink)}
   .co-ve{font-size:11.5px;color:var(--accent)}
   .bl-trong{color:var(--muted);font-size:13px;text-align:center;padding:14px 0}
+  /* Thẻ MÁY: cùng khuôn bl-item, khác viền trái + nhãn. Nằm CHUNG danh sách với
+     note người, xếp xen kẽ theo mốc thời gian (user chốt 27/08). */
+  .bl-item.may{border-left:3px solid var(--th-d97c6c);background:var(--th-141c2b)}
+  .bl-item.may.nhe{border-left-color:var(--muted)}
+  .bl-item.may.da-doc{opacity:.55}
+  .nhan-may{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;
+    color:var(--th-d97c6c);text-transform:uppercase;letter-spacing:.04em}
+  .bl-item.may.nhe .nhan-may{color:var(--muted)}
+  .nhan-may svg{width:11px;height:11px;stroke:currentColor;fill:none;stroke-width:1.9}
+  .bl-item .benh{font-weight:700;font-size:13.5px;display:block;margin:5px 0 3px}
+  .bl-item .so-lieu{font-size:11.5px;color:var(--muted);border-top:1px dashed var(--line);
+    padding-top:5px;margin-top:5px}
+  .bl-item .nen-lam{font-size:12.5px;background:var(--th-182233);border-radius:7px;
+    padding:6px 9px;margin-top:6px}
+  .bl-item .trich{background:var(--th-182233);border-left:2px solid var(--chip-line);
+    border-radius:7px;padding:6px 9px;margin-top:6px;font-size:12.3px}
+  .bl-item .trich i{display:block;font-style:normal;font-size:10.5px;color:var(--muted);margin-bottom:2px}
+  /* chấm MÁY trên thanh mốc — khác màu chấm người */
+  .moc-cham.may{background:var(--th-d97c6c);box-shadow:0 0 0 1px var(--th-d97c6c)}
+  .moc-cham.may.nhe{background:var(--muted);box-shadow:0 0 0 1px var(--muted)}
+  .moc-chu{display:flex;align-items:center;gap:13px;font-size:11px;color:var(--muted);
+    padding:6px 2px 0;flex-wrap:wrap}
+  .moc-chu span{display:inline-flex;align-items:center;gap:5px}
+  .moc-chu b{width:8px;height:8px;border-radius:50%;display:inline-block}
+  .moc-chu b.nguoi{background:var(--accent)}
+  .moc-chu b.maynang{background:var(--th-d97c6c)}
+  .moc-chu b.maynhe{background:var(--muted)}
+  .nut-dg{width:100%}
+  .dg-chay{font-size:12.5px;color:var(--muted);text-align:center;padding:6px 0}
   /* Khoảng chừa cuối danh sách: không có nó thì mấy bình luận CUỐI không bao giờ
      cuộn lên ngang video được (đụng đáy vùng cuộn) — chính lỗi user báo 25/08. */
   .bl-dem{flex:none}
@@ -157,6 +186,11 @@
       <canvas id="lop-ve"></canvas>
     </div>
     <div class="moc-bar" id="moc-bar" title="Comment markers — click a dot to jump"></div>
+    <div class="moc-chu" id="moc-chu" hidden>
+      <span><b class="nguoi"></b><span id="dem-nguoi">0</span> note của người</span>
+      <span><b class="maynang"></b><span id="dem-may-nang">0</span> máy · nặng</span>
+      <span><b class="maynhe"></b><span id="dem-may-nhe">0</span> máy · nhẹ</span>
+    </div>
     <p id="loi-phat" style="display:none;color:var(--th-d97c6c);font-size:13px">
       This browser can’t play the file (codec). Re-export as mp4 (H.264) onto the NAS and add that file.</p>
     <div style="margin-top:8px;display:flex;align-items:center;gap:9px;flex-wrap:wrap">
@@ -196,6 +230,8 @@
         <button class="nut nho" type="button" id="nut-gui">Send</button>
       </div>
     </div>
+    <button class="nut nho phu nut-dg" type="button" id="nut-dg">Nhờ AI đánh giá</button>
+  <div class="dg-chay" id="dg-chay" hidden>Đang đo mạch dựng… video dài mất vài phút</div>
     <div class="bl-ds" id="bl-ds"></div>
   </div>
 </div>
@@ -211,6 +247,7 @@
   var TOI = {{ user.ten | tojson }};
   var CO_DUYET = {{ user.co_duyet | tojson }};
   var BL = {{ cac_bl | tojson }};
+  var NX = {{ cac_nx | tojson }};
 
   var vid = document.getElementById("vid");
   var wrap = document.getElementById("vid-wrap");
@@ -273,6 +310,39 @@
 
   // Quét thử file trên NAS: reviewer nào thấy video chết giữa chừng thì bấm cái
   // này là biết ngay file đứt hay máy mình, khỏi đoán.
+  var nutDg = document.getElementById("nut-dg");
+  var dgChay = document.getElementById("dg-chay");
+  if (nutDg) nutDg.addEventListener("click", function () {
+    nutDg.disabled = true; dgChay.hidden = false;
+    fetch("/api-vr/danh-gia/" + VIDEO_MA, { method: "POST" })
+      .then(function (r) { if (!r.ok) throw 0; return r.json(); })
+      .then(function (du) { theoDoiDg(du.task_id); })
+      .catch(function () {
+        nutDg.disabled = false; dgChay.hidden = true;
+        dgChay.textContent = "Không gọi được đánh giá.";
+      });
+  });
+
+  function theoDoiDg(tid) {
+    var lap = setInterval(function () {
+      fetch("/api-vr/danh-gia/" + tid)
+        .then(function (r) { if (!r.ok) throw 0; return r.json(); })
+        .then(function (tt) {
+          if (tt.trang_thai === "xong") {
+            clearInterval(lap); nutDg.disabled = false; dgChay.hidden = true;
+            napLaiNx();
+          } else if (tt.trang_thai === "loi") {
+            clearInterval(lap); nutDg.disabled = false;
+            dgChay.textContent = "Không đo được: " + (tt.loi || "lỗi không rõ");
+          }
+        })
+        .catch(function () {
+          clearInterval(lap); nutDg.disabled = false;
+          dgChay.textContent = "Mất dấu tác vụ đánh giá.";
+        });
+    }, 2000);
+  }
+
   var nutQuet = document.getElementById("nut-quet");
   var quetKq = document.getElementById("quet-kq");
   if (nutQuet) nutQuet.addEventListener("click", function () {
@@ -365,6 +435,17 @@
   function renderMoc() {
     mocBar.querySelectorAll(".moc-cham").forEach(function (c) { c.remove(); });
     if (!vid.duration) return;
+    // chấm MÁY vẽ trước để chấm người nằm trên khi trùng mốc
+    NX.forEach(function (n) {
+      if (n.ts_giay == null) return;
+      var c = document.createElement("button");
+      c.type = "button";
+      c.className = "moc-cham may" + (n.muc === "nang" ? "" : " nhe");
+      c.style.left = Math.min(100, n.ts_giay / vid.duration * 100) + "%";
+      c.title = "Máy: " + n.benh;
+      c.addEventListener("click", function (e) { e.stopPropagation(); nhayToiNx(n); });
+      mocBar.appendChild(c);
+    });
     BL.forEach(function (b) {
       if (b.ts_giay == null) return;
       var c = document.createElement("button");
@@ -422,6 +503,15 @@
     el._hetNhay = setTimeout(function () { el.classList.remove("nhay"); }, 1900);
   }
 
+  function nhayToiNx(n) {
+    if (n.ts_giay != null) { vid.currentTime = n.ts_giay; vid.pause(); }
+    var el = dsEl.querySelector('[data-nx="' + n.id + '"]');
+    if (el) { cuonNgangVideo(el); el.classList.remove("nhay"); void el.offsetWidth;
+              el.classList.add("nhay");
+              clearTimeout(el._hetNhay);
+              el._hetNhay = setTimeout(function () { el.classList.remove("nhay"); }, 1900); }
+  }
+
   function nhayToi(b) {
     noiBatBL(b.id);
     if (b.ts_giay != null) { vid.currentTime = b.ts_giay; vid.pause(); }
@@ -435,15 +525,76 @@
   }
 
   // ===== danh sách bình luận =====
+  function veTheMay(n) {
+    var d = document.createElement("div");
+    d.className = "bl-item may" + (n.muc === "nang" ? "" : " nhe") + (n.da_doc ? " da-doc" : "");
+    d.dataset.nx = n.id;
+    var dau = document.createElement("div");
+    if (n.ts_giay != null) {
+      var m = document.createElement("span"); m.className = "moc";
+      m.textContent = mmss(n.ts_giay); dau.appendChild(m);
+    }
+    var nhan = document.createElement("span");
+    nhan.className = "nhan-may";
+    nhan.innerHTML = '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/>'
+      + '<path d="M12 3v3M12 18v3M3 12h3M18 12h3"/></svg>';
+    nhan.appendChild(document.createTextNode(n.muc === "nang" ? "Máy" : "Máy · nhẹ"));
+    dau.appendChild(nhan);
+    d.appendChild(dau);
+    var b = document.createElement("span"); b.className = "benh"; b.textContent = n.benh;
+    d.appendChild(b);
+    if (n.loi) { var p = document.createElement("p"); p.textContent = n.loi; d.appendChild(p); }
+    if (n.trich_kb) {
+      var t = document.createElement("div"); t.className = "trich";
+      var i = document.createElement("i"); i.textContent = "Kịch bản đoạn này";
+      t.appendChild(i); t.appendChild(document.createTextNode(n.trich_kb));
+      d.appendChild(t);
+    }
+    if (n.so_lieu) {
+      var sl = document.createElement("div"); sl.className = "so-lieu";
+      sl.textContent = n.so_lieu; d.appendChild(sl);
+    }
+    if (n.nen_lam) {
+      var nl = document.createElement("div"); nl.className = "nen-lam";
+      var bb = document.createElement("b"); bb.textContent = "Nên làm: ";
+      nl.appendChild(bb); nl.appendChild(document.createTextNode(n.nen_lam));
+      d.appendChild(nl);
+    }
+    var day = document.createElement("div"); day.className = "nut-day";
+    var doc = document.createElement("button"); doc.className = "nut-bl";
+    doc.textContent = n.da_doc ? "Đã đọc" : "✓ Đã đọc";
+    doc.disabled = !!n.da_doc;
+    doc.addEventListener("click", function (e) {
+      e.stopPropagation();
+      fetch("/api-vr/nhan-xet/" + n.id + "/da-doc", { method: "POST" }).then(napLaiNx);
+    });
+    day.appendChild(doc);
+    d.appendChild(day);
+    d.addEventListener("click", function () { nhayToiNx(n); });
+    return d;
+  }
+
   function renderDS() {
     dsEl.textContent = "";
     demEl = null;                      // phần chừa cũ vừa bị xóa cùng danh sách
-    if (!BL.length) {
+    if (!BL.length && !NX.length) {
       var t = document.createElement("div");
       t.className = "bl-trong"; t.textContent = "No notes yet — be the first.";
       dsEl.appendChild(t); return;
     }
-    BL.forEach(function (b) {
+    // Trộn note NGƯỜI và nhận xét MÁY vào MỘT danh sách, xếp theo mốc thời gian
+    // (user chốt 27/08: mọi bình luận nằm chung một cột, không đẻ cột riêng).
+    var gop = BL.map(function (b) { return { loai: "nguoi", ts: b.ts_giay, du: b }; })
+      .concat(NX.map(function (n) { return { loai: "may", ts: n.ts_giay, du: n }; }));
+    gop.sort(function (x, y) {
+      if (x.ts == null && y.ts == null) return 0;
+      if (x.ts == null) return 1;              // không mốc → xuống cuối
+      if (y.ts == null) return -1;
+      return x.ts - y.ts;
+    });
+    gop.forEach(function (muc) {
+      if (muc.loai === "may") { dsEl.appendChild(veTheMay(muc.du)); return; }
+      var b = muc.du;
       var d = document.createElement("div");
       d.className = "bl-item" + (b.trang_thai === "da_giai" ? " da-giai" : "");
       var dau = document.createElement("div");
@@ -483,10 +634,26 @@
       d.addEventListener("click", function () { nhayToi(b); });
       dsEl.appendChild(d);
     });
+    capNhatDemMoc();
     demEl = document.createElement("div");
     demEl.className = "bl-dem";
     dsEl.appendChild(demEl);
     capNhatDem();
+  }
+
+  function capNhatDemMoc() {
+    var chu = document.getElementById("moc-chu");
+    if (!chu) return;
+    var nang = NX.filter(function (n) { return n.muc === "nang"; }).length;
+    document.getElementById("dem-nguoi").textContent = BL.length;
+    document.getElementById("dem-may-nang").textContent = nang;
+    document.getElementById("dem-may-nhe").textContent = NX.length - nang;
+    chu.hidden = NX.length === 0;
+  }
+
+  function napLaiNx() {
+    fetch("/api-vr/nhan-xet/" + VIDEO_MA).then(function (r) { return r.json(); })
+      .then(function (du) { NX = du; renderDS(); renderMoc(); });
   }
 
   function napLai() {

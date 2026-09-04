@@ -30,12 +30,12 @@ import re
 from pathlib import Path
 from urllib.parse import unquote
 
-from fastapi import (Depends, FastAPI, Form, Header, HTTPException, Request,
-                     UploadFile)
+from fastapi import (BackgroundTasks, Depends, FastAPI, Form, Header, HTTPException,
+                     Request, UploadFile)
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from fastapi.templating import Jinja2Templates
 
-from src import don_nas, kho_video, nap_nas
+from src import don_nas, kho_video, nap_nas, nhan_xet
 
 _APP_DIR = Path(__file__).resolve().parents[1]
 PHIEN_BAN = "0.3.0"
@@ -240,6 +240,7 @@ def _video_song(ma: str) -> dict:
 async def xem(request: Request, ma: str, user: dict = Depends(khu_cua_toi)):
     video = _video_song(ma)
     _, pd_nguon = kho_video.phu_de_tim(video)
+    cac_nx = nhan_xet.ds_nhan_xet(ma)
     tt_file = kho_video.tinh_trang_file(video)
     canh_codec = kho_video.canh_bao_codec(
         kho_video.bao_dam_codec(video) if tt_file["co"] else "")
@@ -250,6 +251,7 @@ async def xem(request: Request, ma: str, user: dict = Depends(khu_cua_toi)):
         "tt_file": tt_file, "canh_codec": canh_codec,
         "unc_thu_muc": don_nas.duong_unc(video["duong"].rsplit("/", 1)[0])
                        if video["nguon"] == "nas" else "",
+        "cac_nx": cac_nx, "so_do": nhan_xet.so_do_cua(video),
         "cac_bl": kho_video.ds_binh_luan(ma)})   # nhúng vào JS qua |tojson (script-safe)
 
 
@@ -454,6 +456,51 @@ async def api_nas_xoa_feedback(duong: str = Form(...), ma_tap: str = Form(...),
         raise HTTPException(403, str(e))
     except (FileNotFoundError, OSError):
         raise HTTPException(404, "Không thấy khối Feedback này trên NAS.")
+
+
+# ---------- nhận xét của MÁY (xem src/nhan_xet.py) ----------
+
+@app.post("/api-vr/danh-gia/{ma}")
+async def api_danh_gia(ma: str, bg: BackgroundTasks, user: dict = Depends(khu_cua_toi)):
+    """Đo mạch dựng rồi sinh nhận xét. Chạy NỀN vì video dài mất vài phút."""
+    _video_song(ma)
+    tid = nhan_xet.tao_tac_vu(ma, user["ten"])
+    bg.add_task(nhan_xet.chay_danh_gia, tid)      # hàm SYNC → threadpool
+    return {"task_id": tid}
+
+
+@app.get("/api-vr/danh-gia/{tid}")
+async def api_danh_gia_trang_thai(tid: str, user: dict = Depends(lay_user)):
+    tt = nhan_xet.trang_thai(tid, user["ten"])
+    if tt is None:
+        raise HTTPException(404, "Không có tác vụ này.")
+    return tt
+
+
+@app.get("/api-vr/nhan-xet/{ma}")
+async def api_ds_nhan_xet(ma: str, user: dict = Depends(lay_user)):
+    _video_song(ma)
+    return nhan_xet.ds_nhan_xet(ma)
+
+
+@app.post("/api-vr/nhan-xet/{nx_id}/da-doc")
+async def api_nx_da_doc(nx_id: int, user: dict = Depends(khu_cua_toi)):
+    try:
+        nhan_xet.danh_dau_da_doc(nx_id)
+    except KeyError:
+        raise HTTPException(404, "Không có nhận xét này.")
+    return {"ok": True}
+
+
+@app.post("/api-vr/nhan-xet/{nx_id}/phan")
+async def api_nx_phan(nx_id: int, phan: str = Form(...),
+                      user: dict = Depends(khu_cua_toi)):
+    """Người sửa phán quyết của máy — giữ cả phán gốc để sau đối chiếu."""
+    try:
+        nhan_xet.sua_phan(nx_id, phan)
+    except KeyError:
+        raise HTTPException(404, "Không có nhận xét này.")
+    return {"ok": True}
 
 
 # ---------- API bình luận + trạng thái ----------

@@ -1,0 +1,1 @@
+ALTER TABLE video ADD COLUMN so_do_nhip TEXT NOT NULL DEFAULT '';
