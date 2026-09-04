@@ -386,3 +386,23 @@ Quy ước từ 16/08/2026 (user chốt): mỗi mạch việc lớn có MỘT s�
   Kèm `tools/scripts/soi-egress.ps1` (audit chỉ-đọc kết nối ra ngoài, Owner chạy
   tay). CÒN TREO: rotate 2 key YouTube lộ GitHub (nợ 18/08); nối van vào 3 app
   tự đủ (content/seo/niche); firewall default-deny = phương án nâng cao có proxy.
+- 05/09/2026 — **PHÒNG THỦ API ĐỢT 2 — NỐI VAN 3 APP LỒNG + RESTART CẢ CỤM** (sổ
+  `docs/phong-thu-api-ngoai.md` đã cập nhật bảng phủ 5 app; repo cha 85e37f8 +
+  content 790f4a3 + seo 9a2c1f2 + niche 785235f). Gateway thêm
+  `GET /api/phong-thu/tran-llm` (loopback, khuôn api-khoa) — trần chi/ngày giữ
+  luật MỘT chỗ ở nền, app tự đủ hỏi trước mỗi call, fail-open khi gateway chết.
+  3 app lồng mỗi app một bản sao `phong_thu_v3.py` (lệ khoa_v3, 3 bản
+  byte-identical): content nối oe/llm (init + đổi nhà + complete) +
+  voiceprofile/llm (2 transport); seo nối `_post` (secret+trần) + `_openai_compat`
+  (host — KHÔNG kiểm ở _post vì test stub URL giả http://x); niche nối call() +
+  _openai_compatible_call. Cổng gộp (mwapi/*_BASE_URL) Owner khai → tự tin cậy,
+  chỉ ép https. HAI BẪY TEST mới trả: (a) van gọi urlopen tra động là GỌI KÉ stub
+  urllib toàn cục của test app — kiem_tran phải BIND SỚM `_urlopen` lúc import;
+  (b) van host đặt ở hàm nhận-URL-từ-test (như _post seo) là chặn oan bộ test —
+  đặt ở nơi URL THẬT được dựng. Suite: nền cụm 51 · content 800 · seo 749 ·
+  niche 22, đều xanh. RESTART SỐNG lúc ~01:20: dừng THEO CỔNG 6 dịch vụ
+  (9000/9101/9102/9112/9113/9115) → start-all.ps1 → 6/6 cổng nghe, health 5 app
+  200 ok, tran-llm trả chan=false, /login 200. Trần vẫn mặc định TẮT — Owner bật
+  bằng LLM_TRAN_USD_NGAY/_CALL_NGAY trong .env, ăn ngay không cần restart app
+  (app hỏi gateway mỗi call; gateway đọc env lúc gọi). CÒN TREO: rotate 2 key
+  YouTube lộ GitHub (nợ 18/08); seo/imagegen.py chưa qua van (ponytail trong sổ).
