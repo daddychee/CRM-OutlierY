@@ -30,9 +30,20 @@
     đoán từ tên file — `script.md` và `script-nepal-2.md` đều là run nepal-2,
     đoán theo tên file thì đẻ run ma và hiện 2 dòng cho 1 run.
   • **Editing Review** giữ nguyên màn xem hiện có, đúng phạm vi user chốt.
-    **CHƯA làm**: tab Publish còn dùng chung `/tong-quan?loc=dang`; ghi
-    `script.txt` ra NAS sau khi chốt; nối mã tập từ PlannerY; hàng chờ kịch bản
-    chỉ hiện bản CHƯA chốt.
+  • **Tab Publish** (`/publish`): tập ĐÃ ĐĂNG chia hai nhóm — chờ hậu kiểm (còn
+    việc) và đã có kết luận (kèm 3 số giữ chân); bấm mở màn hậu kiểm sẵn có.
+  • **Trang chủ khối** (`/`, `nha.html`): cùng khuôn trang chủ Content Ultimate
+    — 4 thẻ icon + số thứ tự accent ứng 4 tab, mỗi thẻ kèm con số việc đang chờ.
+  • **Sidebar mục con** khai trong HỢP ĐỒNG (`apps.json` → `muc_con`), template
+    gateway đọc chung; Content Ultimate chuyển sang cùng cơ chế (giữ nguyên
+    đường `/outline /author /write`). Thêm app có menu con = thêm dòng JSON,
+    KHÔNG sửa template.
+  • **BÀI HỌC số đếm**: "chờ review" trên tab Editing phải là **Awaiting review**
+    đúng nghĩa (chưa AI KHÁC người đăng bình luận — tái dùng `so_khac`, một
+    nguồn sự thật với trang danh sách). Đếm mọi bản chưa Approved ra 31 thay vì
+    6: bản đang review dở dang KHÔNG phải việc đang chờ ai nhặt.
+    **CHƯA làm**: ghi `script.txt` ra NAS sau khi chốt; nối mã tập từ PlannerY;
+    kho link tham khảo trong popup bàn giao.
 
 - 18/08/2026 — **DỰNG APP MỚI v0.1** (app V3 đầu tiên KHÔNG di trú từ hệ cũ —
   viết mới theo khuôn to-chuc): upload bản dựng → bình luận gắn mốc thời gian
