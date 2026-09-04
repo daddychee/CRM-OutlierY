@@ -96,17 +96,32 @@ chính van (sổ hỏng, env rác) → bỏ qua van đó, KHÔNG giết call th�
   đọc điều khoản trước khi cho đọc dữ liệu nhóm nhân sự).
 - **LUẬT**: mạch chạm dữ liệu người → chỉ đi qua provider đã duyệt trong sổ này.
 
-## Điểm nối hiện tại (05/09)
+## Điểm nối hiện tại (05/09 — đợt 2 nối xong 3 app tự đủ)
 
-Van chạy tại MỘT điểm-ra `src/llm/` (base.py gọi `phong_thu`), phủ:
-
-| App | Đường LLM | Van host | Van secret+trần | Ghi sổ stream |
+| App | Điểm-ra | Van host | Van secret | Van trần |
 |---|---|---|---|---|
-| ai-agent | src/llm (writer/critics/đa chiều/extract) | ✓ | ✓ | ✓ |
-| data-analytics | src/llm (bản sao, APP_SO_GOI riêng) | ✓ | ✓ | ✓ |
-| content-ultimate / seo-optimize / niche-research | client LLM riêng của app | CHƯA | CHƯA | app tự ghi so_goi qua loopback |
+| ai-agent | src/llm/base.py → nen.common.phong_thu | ✓ | ✓ | ✓ (trong tiến trình) |
+| data-analytics | src/llm (bản sao, APP_SO_GOI riêng) | ✓ | ✓ | ✓ (trong tiến trình) |
+| content-ultimate | oe/llm.py (init+đổi nhà+complete) + voiceprofile/llm.py (2 transport) | ✓ | ✓ | ✓ (hỏi gateway) |
+| seo-optimize | seo/llm.py `_post` (chỗ duy nhất mọi provider ra mạng) | ✓ | ✓ | ✓ (hỏi gateway) |
+| niche-research | scripts/llm_provider.py (call + _openai_compatible_call) | ✓ | ✓ | ✓ (hỏi gateway) |
 
-- [ ] Nối dần van vào 3 app tự đủ (mỗi app một đợt, đúng khuôn 6 bước APPS.md).
+Cơ chế cho app TỰ ĐỦ (repo lồng, không import được `nen`):
+
+- Mỗi app một **bản sao stdlib-thuần `phong_thu_v3.py`** (cùng lệ bản sao khoa_v3;
+  content: `src/contentultimate/`, seo: `seo/`, niche: `scripts/` — 3 bản
+  byte-identical, sửa là sửa cả 3).
+- **Van trần hỏi gateway**: `GET /api/phong-thu/tran-llm` (loopback-only, khuôn
+  api-khoa) — gateway giữ luật + sổ MỘT chỗ, trả `{chan, ly_do}`; app **fail-open**
+  khi gateway chết (lõi không phụ thuộc thêm dịch vụ).
+- **`tin_cay` cho cổng gộp**: base URL Owner chủ đích cấu hình (biến `*_BASE_URL`
+  trong env — mwapi/custom — hoặc base từ KÉT/.env-theo-work truyền qua tham số
+  `tin_cay`) được nhận host; giá trị van khi đó là **ép https** + chặn URL cứng
+  sai trong code + host lạ khi thiếu cấu hình. `ponytail:` chống-sửa-lén .env
+  nằm ngoài threat model của van này.
+- Ghi sổ: 3 app này vốn đã POST so_goi qua loopback (kể cả stream) — không đổi.
+- `ponytail:` `seo/imagegen.py` (Gemini ảnh) chưa qua van — điểm-ra riêng ngoài
+  `_post`, nối khi đụng tới mạch ảnh.
 
 ## Cấu hình .env (mẫu ở .env.example)
 

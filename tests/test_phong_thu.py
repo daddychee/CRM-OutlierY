@@ -133,3 +133,35 @@ def test_khong_an_nham_so_thuong():
     # năm / số thập phân / view count không phải SĐT
     ra = phong_thu.che_pii("Nam 2026 co 84123 video, ti le 0.81 va 100 view.")
     assert ra == "Nam 2026 co 84123 video, ti le 0.81 va 100 view."
+
+
+# ---- endpoint gateway /api/phong-thu/tran-llm (app tự đủ hỏi trước mỗi call) ----
+
+def _goi_tran(client_addr):
+    import asyncio
+
+    import httpx
+
+    from nen.gateway.main import app as gateway_app
+
+    async def goi():
+        transport = httpx.ASGITransport(app=gateway_app, client=client_addr)
+        async with httpx.AsyncClient(transport=transport, base_url="http://t") as c:
+            return await c.get("/api/phong-thu/tran-llm")
+    return asyncio.run(goi())
+
+
+def test_endpoint_tran_llm_loopback(tmp_path, monkeypatch):
+    monkeypatch.delenv("LLM_TRAN_USD_NGAY", raising=False)
+    monkeypatch.delenv("LLM_TRAN_CALL_NGAY", raising=False)
+    r = _goi_tran(("127.0.0.1", 50000))
+    assert r.status_code == 200 and r.json() == {"chan": False}
+
+    monkeypatch.setenv("LLM_TRAN_CALL_NGAY", "1")
+    _ghi_so_gia(tmp_path, monkeypatch, [{"dich_vu": "llm"}])
+    r = _goi_tran(("127.0.0.1", 50000))
+    assert r.json()["chan"] is True and "LLM_TRAN_CALL_NGAY" in r.json()["ly_do"]
+
+
+def test_endpoint_tran_llm_chan_khong_loopback():
+    assert _goi_tran(("192.168.1.50", 50000)).status_code == 403

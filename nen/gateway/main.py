@@ -2213,6 +2213,22 @@ def api_cau_hinh_api_khoa(request: Request, app_slug: str):
         conn.close()
 
 
+@app.get("/api/phong-thu/tran-llm")
+def api_phong_thu_tran_llm(request: Request):
+    """App phụ hỏi TRƯỚC mỗi call LLM: trần chi/ngày cả hệ đã chạm chưa (05/09,
+    spec docs/phong-thu-api-ngoai.md — LLM_TRAN_USD_NGAY/_CALL_NGAY trong .env,
+    sổ gọi nền là nguồn số). App tự đủ không import được nen nên gateway giữ luật
+    MỘT chỗ; app fail-open khi gateway chết. CHỈ loopback (khuôn api-khoa)."""
+    if request.client and request.client.host not in ("127.0.0.1", "::1"):
+        return JSONResponse({"loi": "chi loopback"}, status_code=403)
+    from nen.common import phong_thu
+    try:
+        phong_thu.kiem_tran()
+    except phong_thu.LoiPhongThu as e:
+        return {"chan": True, "ly_do": str(e)}
+    return {"chan": False}
+
+
 @app.get("/api/danh-ba/thi-truong")
 def api_danh_ba_thi_truong(request: Request):
     """App phụ (bind loopback) đọc DANH MỤC THỊ TRƯỜNG từ danh bạ — trục phân
