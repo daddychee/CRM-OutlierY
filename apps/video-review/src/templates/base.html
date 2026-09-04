@@ -45,6 +45,10 @@
   .brand em{color:var(--accent);font-style:normal}
   .wave{font-size:13px;color:var(--muted)}
   .wave b{color:var(--ink);font-weight:600}
+  .save-state{margin-left:auto;font-family:var(--mono);font-size:11.5px;color:var(--th-5aaa78);
+    display:flex;gap:6px;align-items:center}
+  .save-state::before{content:"";width:7px;height:7px;border-radius:50%;
+    background:var(--th-5aaa78)}
   .whoami{position:fixed;top:0;right:0;z-index:60;display:flex;gap:9px;align-items:center;
     font-size:12px;color:var(--muted);background:var(--sidebar);border:1px solid var(--line);
     border-top:0;border-right:0;border-radius:0 0 0 10px;padding:5px 14px 6px}
@@ -80,7 +84,9 @@
   {% if sb_level_chu %}<span class="adm">{{ sb_level_chu }}</span>{% endif %}</div>
 {% endif %}
 <div class="app">
-  {% block tab_hien %}{% endblock %}
+  {# tab_hien: trang con khai tab đang mở. Bọc trong comment Jinja để giá trị
+     KHÔNG in ra màn — self.tab_hien() bên dưới vẫn đọc được. #}
+  {# {% block tab_hien %}{% endblock %} #}
   <nav class="topnav">
     {% set tab_hien = self.tab_hien() | trim %}
     <a class="newbtn{% if tab_hien == 'tong' %} here{% endif %}" href="/tong-quan">Overview</a>
@@ -94,6 +100,7 @@
       <div class="brand">REVIEW<em>Y</em></div>
     </div>
     <div class="wave">{% block wave %}{% endblock %}</div>
+    <div class="save-state">{% block trang_thai_luu %}sổ đã lưu{% endblock %}</div>
   </header>
   {% block noi_dung %}{% endblock %}
 </div>

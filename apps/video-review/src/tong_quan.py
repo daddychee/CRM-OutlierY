@@ -59,7 +59,14 @@ def _viec_ke(w: tuple, e: tuple, p: tuple) -> str:
     return ""
 
 
-def cac_the(kich_ban_theo_tap: dict[str, dict] | None = None) -> list[dict]:
+def dang_san_xuat(the: dict) -> bool:
+    """Tập CÒN VIỆC: chưa đăng, hoặc đã đăng mà chưa hậu kiểm. Tập đã hậu kiểm
+    xong là việc đã đóng — vẫn tra được ở tab Publish, không chiếm chỗ Overview."""
+    return the["tram"]["publish"]["ma"] != "hau_kiem_xong"
+
+
+def cac_the(kich_ban_theo_tap: dict[str, dict] | None = None,
+            chi_dang_lam: bool = False) -> list[dict]:
     """Danh sách thẻ tập cho màn Overview. `kich_ban_theo_tap` do tầng kịch bản
     cấp (chưa nối thì mọi tập là 'viết ngoài tool' — đúng sự thật hiện nay)."""
     kb = kich_ban_theo_tap or {}
@@ -77,4 +84,6 @@ def cac_the(kich_ban_theo_tap: dict[str, dict] | None = None) -> list[dict]:
                      "publish": {"ma": p[0], "chu": p[1], "thanh": p[2]}},
             "viec_ke": _viec_ke(w, e, p),
         })
+    if chi_dang_lam:
+        ra = [t for t in ra if dang_san_xuat(t)]
     return ra

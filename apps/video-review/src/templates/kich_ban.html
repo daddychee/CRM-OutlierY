@@ -1,0 +1,206 @@
+{% extends "base.html" %}
+{% block title %}Writing Review — ReviewY{% endblock %}
+{% block tab_hien %}viet{% endblock %}
+{% block wave %}{% if ban %}{% if ban.ma_tap %}tập <b>{{ ban.ma_tap }}</b> · {% endif %}{{ ban.run }} · {{ ban.ky_tu }} / {{ ban.muc_tieu }} ký tự{% endif %}{% endblock %}
+
+{% block style_them %}
+  /* Writing Review — mockup vòng 6: tab chương kiểu gập + tờ giấy + panel note.
+     Mỗi chương LÀM VIỆC RIÊNG: đổi tab là đổi cả văn bản lẫn note của chương đó. */
+  .ctx{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:10px}
+  .ctx h2{font-size:18px;margin:0;letter-spacing:-.01em}
+  .ctx .phu{font-size:12.5px;color:var(--muted)}
+  .ctx .phai{margin-left:auto;display:flex;gap:8px;align-items:center}
+  .nav-chuong{display:flex;gap:2px;flex-wrap:wrap;margin-bottom:-1px;position:relative;z-index:1}
+  .nav-chuong button{font-size:12.5px;font-weight:600;color:var(--muted);
+    border:1px solid transparent;border-bottom:none;border-radius:7px 7px 0 0;padding:7px 14px}
+  .nav-chuong button.chon{background:var(--sidebar);border-color:var(--line);color:var(--ink);
+    position:relative}
+  .nav-chuong button.chon::after{content:"";position:absolute;left:0;right:0;bottom:-1px;
+    height:1px;background:var(--sidebar)}
+  .nav-chuong button b{font-family:var(--mono);font-size:10.5px;color:var(--muted);
+    margin-left:5px;font-weight:400}
+  .kb-luoi{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:18px;align-items:start}
+  @media (max-width:1100px){.kb-luoi{grid-template-columns:1fr}}
+  .to-giay{background:var(--sidebar);border:1px solid var(--line);position:relative;
+    border-radius:0 12px 12px 12px;padding:26px 36px 34px;max-height:70vh;overflow-y:auto}
+  .kb-van{font-size:15.5px;line-height:1.85;max-width:62ch;margin:0 auto;
+    color:var(--th-c2cbd9)}
+  .chuong{display:none}
+  .chuong.mo{display:block}
+  .chuong-dau{display:flex;align-items:baseline;gap:10px;margin-bottom:16px}
+  .chuong-dau .stt{font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.08em}
+  .chuong-dau b{font-size:15px;color:var(--ink)}
+  .chuong-dau .do-dai{margin-left:auto;font-size:11.5px;color:var(--muted);white-space:nowrap}
+  .kb-doan{margin-bottom:16px;white-space:pre-wrap}
+  .kb-rong{color:var(--muted);font-style:italic}
+  .pnl{border:1px solid var(--line);border-radius:12px;background:var(--sidebar);
+    display:flex;flex-direction:column;overflow:hidden}
+  .pnl-o{padding:13px 15px;border-bottom:1px solid var(--line)}
+  .pnl-o:last-child{border-bottom:0}
+  .pnl textarea{width:100%;min-height:48px;border:1px solid var(--line);border-radius:8px;
+    background:transparent;color:var(--ink);font:inherit;font-size:13px;padding:8px 10px;
+    resize:vertical}
+  .pnl .hang{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:12px;
+    color:var(--muted)}
+  .the{padding:13px 15px;border-bottom:1px solid var(--line);font-size:12.8px;line-height:1.55}
+  .the:last-child{border-bottom:0}
+  .the .dong1{display:flex;align-items:baseline;gap:8px;font-size:11.5px;color:var(--muted)}
+  .the .neo{font-weight:600;color:var(--accent)}
+  .the p{margin:0 0 4px;color:var(--th-c2cbd9)}
+  .cuon{max-height:430px;overflow-y:auto}
+  .trong-lon{border:1px dashed var(--line);border-radius:12px;padding:26px;text-align:center;
+    color:var(--muted);font-size:13.5px}
+  .canh{border:1px solid var(--line);border-radius:10px;padding:10px 13px;font-size:12.5px;
+    color:var(--muted);margin-bottom:12px}
+  .cham{display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:6px;
+    background:var(--th-d97c6c);vertical-align:1px}
+{% endblock %}
+
+{% block noi_dung %}
+{% if not ban %}
+<div class="trong-lon">
+  {% if ds %}Chọn một bản kịch bản:
+    {% for b in ds %}<a href="/kich-ban?run={{ b.run }}">{{ b.run }}</a>{% if not loop.last %} · {% endif %}{% endfor %}
+  {% else %}Kho Content Ultimate chưa có kịch bản nào.
+    Kịch bản viết xong ở đó sẽ tự hiện tại đây.{% endif %}
+</div>
+{% else %}
+<div class="ctx">
+  <h2>{% if ban.ma_tap %}{{ ban.ma_tap }} — {% endif %}{{ ban.run }}</h2>
+  <span class="phu">{{ ban.ky_tu }} / {{ ban.muc_tieu }} ký tự · {{ ban.so_chuong }} chương
+    {% if ban.nguoi %}· {{ ban.nguoi }}{% endif %}</span>
+  <span class="phai">
+    <a class="nut phu nho" href="/tong-quan">Tất cả kịch bản</a>
+    {% if user.co_duyet and ban.du_dieu_kien %}
+    <button class="nut nho" type="button" id="nut-chot">Approve — cho phép dựng</button>
+    {% endif %}
+  </span>
+</div>
+
+{% if not ban.du_dieu_kien %}
+<div class="canh"><span class="cham"></span>Chưa đủ điều kiện duyệt: {{ ban.thieu }}.
+  Bản vẫn mở để đọc, nhưng nút Approve chỉ bật khi kịch bản đủ chương và đủ độ dài —
+  cờ "done" của Content Ultimate không đủ để tin.</div>
+{% endif %}
+
+<div class="nav-chuong" id="nav-chuong">
+  {% for c in ban.chuong %}
+  <button type="button" class="{% if loop.first %}chon{% endif %}" data-c="ch-{{ loop.index0 }}">
+    {% if c.khoa == 'Hook' %}Hook{% else %}{{ c.khoa|replace('Chapter ', 'C') }}{% if c.ten %} · {{ c.ten }}{% endif %}{% endif %}
+    {% if c.rong %}<b>!</b>{% endif %}</button>
+  {% endfor %}
+</div>
+
+<div class="kb-luoi">
+  <div class="to-giay" id="to-giay">
+    <div class="kb-van">
+      {% for c in ban.chuong %}
+      <div class="chuong{% if loop.first %} mo{% endif %}" id="ch-{{ loop.index0 }}">
+        <div class="chuong-dau">
+          <span class="stt">{% if c.khoa == 'Hook' %}HOOK{% else %}{{ c.khoa|replace('Chapter ', 'C') }}{% endif %}</span>
+          {% if c.ten %}<b>{{ c.ten }}</b>{% endif %}
+          <span class="do-dai">{{ c.ky_tu }} ký tự</span>
+        </div>
+        {% if c.rong %}
+        <div class="kb-doan kb-rong">Chương này chưa có nội dung ({{ c.ky_tu }} ký tự) —
+          quay lại Content Ultimate viết tiếp rồi mở lại.</div>
+        {% else %}
+        <div class="kb-doan">{{ c.van }}</div>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="pnl">
+    <div class="pnl-o">
+      <textarea id="o-note" placeholder="Note cho chương này…"></textarea>
+      <div class="hang">gắn vào <b style="color:var(--ink)" id="gan-neo">{{ ban.chuong[0].khoa if ban.chuong }}</b>
+        <button class="nut phu nho" type="button" style="margin-left:auto" id="nut-ai">Nhờ AI đánh giá</button>
+        <button class="nut nho" type="button" id="nut-gui">Send</button></div>
+    </div>
+    <div class="cuon" id="ds-note">
+      <div class="the" style="color:var(--muted)">Chưa có note nào cho chương này.</div>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block script %}
+<script>
+(function () {
+  "use strict";
+  var RUN = {{ (ban.run if ban else "") | tojson }};
+  var KHOA = {{ (ban.chuong | map(attribute='khoa') | list if ban else []) | tojson }};
+  var navNut = document.querySelectorAll('#nav-chuong button');
+  var dsNote = document.getElementById('ds-note');
+  var chuongHien = KHOA.length ? KHOA[0] : '';
+
+  function veNote(ds) {
+    if (!ds.length) {
+      dsNote.innerHTML = '<div class="the" style="color:var(--muted)">'
+        + 'Chua co note nao cho chuong nay.</div>';
+      return;
+    }
+    dsNote.innerHTML = ds.map(function (n) {
+      var dau = n.la_may ? ('May &middot; ' + (n.muc || '')) : (n.nguoi + ' &middot; ' + n.tao_luc.slice(5, 16));
+      return '<div class="the"><div class="dong1"><span class="neo">' + n.chuong
+        + '</span><span>' + dau + '</span></div><p></p></div>';
+    }).join('');
+    // Nội dung note là chữ người dùng gõ — set qua textContent, không nhét vào HTML.
+    dsNote.querySelectorAll('.the p').forEach(function (p, i) { p.textContent = ds[i].noi_dung; });
+  }
+
+  function napNote() {
+    if (!RUN) return;
+    fetch('/api-vr/note-kich-ban/' + encodeURIComponent(RUN)
+          + '?chuong=' + encodeURIComponent(chuongHien), { credentials: 'same-origin' })
+      .then(function (r) { return r.ok ? r.json() : { ds: [] }; })
+      .then(function (j) { veNote(j.ds || []); })
+      .catch(function () { });
+  }
+
+  navNut.forEach(function (b, i) {
+    b.addEventListener('click', function () {
+      navNut.forEach(function (x) { x.classList.remove('chon'); });
+      b.classList.add('chon');
+      document.querySelectorAll('.chuong').forEach(function (c) {
+        c.classList.toggle('mo', c.id === b.dataset.c);
+      });
+      document.getElementById('to-giay').scrollTop = 0;
+      chuongHien = KHOA[i] || '';
+      document.getElementById('gan-neo').textContent = chuongHien;
+      document.getElementById('o-note').placeholder = 'Note cho ' + chuongHien + '...';
+      napNote();
+    });
+  });
+
+  var oNote = document.getElementById('o-note');
+  var nutGui = document.getElementById('nut-gui');
+  if (nutGui) nutGui.addEventListener('click', function () {
+    var chu = oNote.value.trim();
+    if (!chu) return;
+    var fd = new FormData();
+    fd.append('run', RUN); fd.append('chuong', chuongHien); fd.append('noi_dung', chu);
+    nutGui.disabled = true;
+    fetch('/api-vr/note-kich-ban', { method: 'POST', body: fd, credentials: 'same-origin' })
+      .then(function () { oNote.value = ''; napNote(); })
+      .finally(function () { nutGui.disabled = false; });
+  });
+
+  var nutChot = document.getElementById('nut-chot');
+  var buoc = 0;
+  if (nutChot) nutChot.addEventListener('click', function () {
+    buoc += 1;
+    if (buoc === 1) { nutChot.textContent = 'Chot kich ban nay?'; return; }
+    var fd = new FormData();
+    fd.append('run', RUN);
+    fetch('/api-vr/chot-kich-ban', { method: 'POST', body: fd, credentials: 'same-origin' })
+      .then(function (r) { if (r.ok) location.reload(); });
+  });
+
+  napNote();
+})();
+</script>
+{% endblock %}

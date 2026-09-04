@@ -39,6 +39,13 @@ def test_publish_da_dang_chua_hau_kiem():
     assert ma == "da_dang" and "chưa hậu kiểm" in chu
 
 
+def test_loc_tap_dang_san_xuat():
+    """Tập hậu kiểm xong = việc đã đóng, không chiếm chỗ Overview."""
+    xong = {"tram": {"publish": {"ma": "hau_kiem_xong"}}}
+    dang = {"tram": {"publish": {"ma": "da_dang"}}}
+    assert not tong_quan.dang_san_xuat(xong) and tong_quan.dang_san_xuat(dang)
+
+
 @pytest.mark.parametrize("w,e,p,mong", [
     ("cho_duyet", "chua_co", "chua_dang", "→ leader: duyệt kịch bản"),
     ("da_chot", "dang", "chua_dang", "→ leader: duyệt bản dựng đang chờ"),

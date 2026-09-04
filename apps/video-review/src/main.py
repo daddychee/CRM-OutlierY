@@ -35,8 +35,8 @@ from fastapi import (BackgroundTasks, Depends, FastAPI, Form, Header, HTTPExcept
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from fastapi.templating import Jinja2Templates
 
-from src import (do_thi, don_nas, hau_kiem, kho_video, nap_nas, nhan_xet,
-                 tong_quan)
+from src import (do_thi, don_nas, hau_kiem, kich_ban, kho_video, nap_nas,
+                 nhan_xet, tong_quan)
 
 _APP_DIR = Path(__file__).resolve().parents[1]
 PHIEN_BAN = "0.3.0"
@@ -176,8 +176,10 @@ async def trang_tong_quan(request: Request, user: dict = Depends(khu_cua_toi)):
     """OVERVIEW — sàn chung Content ↔ Editor (mockup vòng 6): mỗi tập một thẻ
     ba trạm + việc kế tiếp; bấm thẻ mở popup bàn giao dựng (nạp /tap/<ma>?popup=1).
     Hàng chờ kịch bản nằm ở sidebar phải — rỗng tới khi nối kho Content Ultimate."""
+    cho_xu_ly = [b for b in kich_ban.cac_ban() if kich_ban.moc_chot(b["run"]) is None]
     return templates.TemplateResponse(request, "tong_quan.html", {
-        "the": tong_quan.cac_the(), "kich_ban": [], "user": user})
+        "the": tong_quan.cac_the(kich_ban.chot_theo_tap(), chi_dang_lam=True),
+        "kich_ban": cho_xu_ly, "user": user})
 
 
 # ---------- trang danh sách + upload ----------
@@ -496,6 +498,51 @@ async def trang_hau_kiem(request: Request, ma_tap: str, user: dict = Depends(khu
         "cac_nx": nhan_xet.ds_nhan_xet(full["ma"]),
         "ket_luan_viec": (hau_kiem.chan_doan_tap(ma_tap).get("ket_luan", {}).get("viec", [])
                           if gc else [])})
+
+
+@app.get("/kich-ban", response_class=HTMLResponse)
+async def trang_kich_ban(request: Request, run: str = "",
+                         user: dict = Depends(khu_cua_toi)):
+    """WRITING REVIEW — đọc kịch bản từ kho Content Ultimate (CHỈ ĐỌC), mỗi chương
+    một không gian làm việc riêng: đổi tab là đổi cả văn bản lẫn note của chương."""
+    ds = kich_ban.cac_ban()
+    ban = kich_ban.mot_ban(run) if run else (ds[0] if ds else None)
+    if ban is not None:
+        moc = kich_ban.moc_chot(ban["run"])
+        ban["ma_tap"] = moc["ma_tap"] if moc else ""
+        ban["da_chot"] = moc is not None
+    return templates.TemplateResponse(request, "kich_ban.html", {
+        "ds": ds, "ban": ban, "user": user})
+
+
+@app.get("/api-vr/note-kich-ban/{run}")
+async def api_note_kich_ban(run: str, chuong: str = "",
+                            user: dict = Depends(khu_cua_toi)):
+    return {"ds": kich_ban.cac_note(run, chuong or None)}
+
+
+@app.post("/api-vr/note-kich-ban")
+async def api_them_note_kich_ban(run: str = Form(...), chuong: str = Form(""),
+                                 noi_dung: str = Form(...),
+                                 user: dict = Depends(khu_cua_toi)):
+    chu = (noi_dung or "").strip()
+    if not chu:
+        raise HTTPException(422, "Note rỗng.")
+    return {"id": kich_ban.them_note(run, chuong, user["ten"], chu)}
+
+
+@app.post("/api-vr/chot-kich-ban")
+async def api_chot_kich_ban(run: str = Form(...), ma_tap: str = Form(""),
+                            user: dict = Depends(yeu_cau_duyet)):
+    """Chốt = cho phép dựng. CHẶN bản chưa đủ điều kiện — cờ 'done' của Content
+    Ultimate không đủ để tin (ca thật nepal-2: done mà thiếu chương)."""
+    ban = kich_ban.mot_ban(run)
+    if ban is None:
+        raise HTTPException(404, "Không có bản kịch bản này.")
+    if not ban["du_dieu_kien"]:
+        raise HTTPException(422, f"Kịch bản chưa đủ điều kiện duyệt: {ban['thieu']}.")
+    kich_ban.chot(run, user["ten"], ma_tap)
+    return {"ok": True}
 
 
 @app.post("/api-vr/gan-tap")
