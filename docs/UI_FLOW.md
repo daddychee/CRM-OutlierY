@@ -170,3 +170,53 @@ API, stream, đường sâu /nas/...) vẫn /app/<slug>/... — hợp đồng ap
 viet_lai_duong_dan — vd href="/nas" giữ nguyên, /nas/cai-dat vẫn viết lại).
 Bảng alias = `_ALIAS` trong nen/gateway/main.py — thêm trang mới có nút sidebar
 là THÊM dòng alias ở đó.
+
+
+## 10. Thứ tự nhóm Tools — MỘT NGUỒN cho MỌI sidebar (Owner 30/08/2026)
+
+Thứ tự hiển thị theo **FLOW LÀM VIỆC**, không theo thứ tự trong `apps.json`
+(file đó là HỢP ĐỒNG app — thứ tự trong đó không mang nghĩa trình bày):
+
+> RadarY → Tasky → PlannerY → Content Ultimate → RenderY → ReviewY →
+> SEO Optimize → ThumbY → Data Analytics
+
+(nghiên cứu → giao việc → lên lịch → viết → dựng → duyệt → SEO → thumbnail →
+đo số liệu). Data Analytics luôn render RIÊNG sau vòng lặp nên tự ở cuối.
+
+**Nơi khai**: `THU_TU_TOOLS` trong `nen/common/sidebar.py`. Đổi thứ tự = sửa MỘT
+dòng ở đó. App chưa khai tên rơi xuống CUỐI (giữ thứ tự hợp đồng) — thêm app
+mới không vỡ sidebar, chỉ là nó đứng cuối cho tới khi Owner chốt chỗ.
+
+**HAI nơi dựng danh sách Tools** (không gộp được — hai tiến trình khác nhau):
+
+| Đường | Nơi | Dùng cho |
+|---|---|---|
+| App native | `sb_apps_tu_claims` (đọc claims `X-Remote-Apps`) | trang chủ, Library, Gap… |
+| Khung app | `mo_app_khung` trong `nen/gateway/main.py` (tự truy IAM) | `/open/<slug>` |
+
+Cả hai PHẢI gọi `sap_thu_tu_tools()`. **BẪY ĐÃ DÍNH 30/08**: gateway chép logic
+lọc nhưng quên sắp → bấm vào một app là sidebar nhảy thứ tự so với trang chủ.
+Test ghim: `tests/test_khung_app.py::test_thu_tu_tools_giong_nhau_moi_sidebar`
+(soát cả việc gateway có gọi hàm chung hay không, không đợi nhìn bằng mắt).
+
+**Icon cũng nằm ở HAI file** vì cùng lý do: `apps/ai-agent/src/templates/_icon_app.html`
+và `nen/gateway/templates/_icon_app_khung.html`. Thêm app mới phải sửa **cả hai**,
+không thì app đó ra icon ô vuông ở nửa hệ (từng dính với slug V3: `plannery`,
+`content-ultimate`, `video-review`… — file icon còn giữ slug hệ cũ `planner`,
+`content`). Test ghim: `test_icon_app_hai_ban_sao_khop_nhau`.
+
+## 11. Màn hình chào trang chủ (Owner 30/08/2026)
+
+Chat rỗng thì giữa trang hiện lời chào + **lưới app** (cùng nguồn `sb_apps` với
+sidebar nên tự lọc quyền). Ẩn/hiện **thuần CSS** qua `:has(#chat:empty)` — không
+đụng một byte khối script chat đóng băng; mở cuộc cũ hay hỏi lượt đầu là tự biến
+mất, bấm New chat là tự hiện lại. Nhãn một dòng mỗi app = global Jinja `viec_app`
+(`apps/ai-agent/src/main.py`).
+
+Ô lưới **bằng nhau tuyệt đối**: `grid-auto-rows:1fr` (mọi hàng cùng chiều cao) +
+`repeat(N, minmax(0,1fr))` — `1fr` trần là `minmax(auto,1fr)` nên cột KHÔNG co
+dưới kích thước nội dung, từng làm 4 cột lệch 178..194px theo độ dài tên.
+
+**BẪY JINJA (dính lại 30/08)**: `{#` liền nhau trong CSS là MỞ COMMENT Jinja, nuốt
+sạch tới `#}` kế tiếp. `@media(max-width:760px){#chao{...}` từng thổi bay cả khối
+sidebar mà trang vẫn trả 200 — luôn xuống dòng sau `{` khi selector bắt đầu bằng `#`.

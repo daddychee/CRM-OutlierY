@@ -21,7 +21,22 @@ KHONG_LAP_TOOLS = {"ai-agent", "data-analytics", "to-chuc", "app-mau", "niche-re
 # apps.json là HỢP ĐỒNG (thứ tự trong đó không mang nghĩa trình bày) nên thứ tự
 # nằm ở đây. App chưa khai tên trong bảng này rơi xuống CUỐI, giữ thứ tự hợp đồng.
 THU_TU_TOOLS = ["radary", "tasky", "plannery", "content-ultimate",
-                "rendery", "video-review", "seo-optimize"]
+                "rendery", "video-review", "seo-optimize", "thumby"]
+
+
+def sap_thu_tu_tools(ds):
+    """Sap danh sach Tools theo THU_TU_TOOLS — MỘT NGUỒN cho MỌI sidebar.
+
+    Có HAI nơi dựng danh sách Tools: hàm dưới (app native đọc claims) và gateway
+    (nen/gateway/main.py, khung app /app/<slug> tự truy IAM). Trước 30/08 gateway
+    chép logic mà QUÊN sắp xếp → bấm vào app là thứ tự sidebar nhảy loạn so với
+    trang chủ. Cả hai gọi hàm này để không lệch nữa.
+
+    `sorted` ổn định: app chưa khai tên rơi xuống CUỐI, giữ nguyên thứ tự hợp đồng.
+    """
+    cuoi = len(THU_TU_TOOLS)
+    return sorted(ds, key=lambda a: THU_TU_TOOLS.index(a["slug"])
+                  if a["slug"] in THU_TU_TOOLS else cuoi)
 
 
 def sb_apps_tu_claims(apps_vao) -> list[dict]:
@@ -35,12 +50,10 @@ def sb_apps_tu_claims(apps_vao) -> list[dict]:
     gateway, sidebar tự khớp."""
     try:
         from nen.common.hop_dong import doc_hop_dong
-        ds = [{"slug": a["slug"], "ten": a["ten"], "href": f"/{a['slug']}"}
-              for a in doc_hop_dong()
-              if a["slug"] in apps_vao and a["slug"] not in KHONG_LAP_TOOLS]
-        cuoi = len(THU_TU_TOOLS)
-        return sorted(ds, key=lambda a: THU_TU_TOOLS.index(a["slug"])
-                      if a["slug"] in THU_TU_TOOLS else cuoi)
+        return sap_thu_tu_tools(
+            [{"slug": a["slug"], "ten": a["ten"], "href": f"/{a['slug']}"}
+             for a in doc_hop_dong()
+             if a["slug"] in apps_vao and a["slug"] not in KHONG_LAP_TOOLS])
     except Exception:
         return []
 

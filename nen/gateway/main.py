@@ -2591,13 +2591,16 @@ def mo_app_khung(request: Request, slug: str):
         co_general = any(_duoc_trang_gen(user, hd, conn) for hd in _BIEN_NAV_GEN)
     finally:
         conn.close()
-    from nen.common.sidebar import KHONG_LAP_TOOLS
+    from nen.common.sidebar import KHONG_LAP_TOOLS, sap_thu_tu_tools
     # Đồng nhất URL 18/08: mọi nút Tools = /<slug> (native qua _ALIAS, khung qua
     # _ALIAS_KHUNG) — một nút một URL ở MỌI sidebar, khớp nen/common/sidebar.py.
-    ds_tools = [{"slug": a["slug"], "ten": a["ten"], "href": f"/{a['slug']}",
-                 "muc_con": a.get("muc_con") or []}
-                for a in doc_hop_dong()
-                if a["slug"] in duoc and a["slug"] not in KHONG_LAP_TOOLS]
+    # SẮP THỨ TỰ qua HÀM CHUNG (30/08): trước đó chỗ này chép logic lọc nhưng
+    # quên sắp — bấm vào một app là sidebar khung nhảy thứ tự so với trang chủ.
+    ds_tools = sap_thu_tu_tools(
+        [{"slug": a["slug"], "ten": a["ten"], "href": f"/{a['slug']}",
+          "muc_con": a.get("muc_con") or []}
+         for a in doc_hop_dong()
+         if a["slug"] in duoc and a["slug"] not in KHONG_LAP_TOOLS])
     from datetime import datetime as _dt
     return templates.TemplateResponse(request, "nen_khung_app.html", {
         "user": user, "app": muc, "ds_tools": ds_tools,

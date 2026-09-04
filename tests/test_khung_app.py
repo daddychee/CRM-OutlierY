@@ -120,6 +120,59 @@ def test_sidebar_href_khung_vs_native():
                   "content-ultimate": "/content-ultimate"}
 
 
+def test_thu_tu_tools_giong_nhau_moi_sidebar():
+    """Owner 30/08: "bấm vào app thì sidebar nhảy thứ tự". Có HAI nơi dựng danh
+    sách Tools — sb_apps_tu_claims (app native) và gateway (khung /app/<slug>) —
+    gateway từng chép logic lọc mà quên sắp xếp. Ghim: cả hai ra CÙNG thứ tự,
+    và gateway thật sự gọi hàm sắp chung (không chép lại lần nữa)."""
+    import inspect
+    from nen.common.sidebar import THU_TU_TOOLS, sap_thu_tu_tools
+    import nen.gateway.main as gw
+
+    # xáo trộn đầu vào — thứ tự ra phải theo THU_TU_TOOLS, không theo thứ tự vào
+    xao = [{"slug": s} for s in reversed(THU_TU_TOOLS)]
+    assert [a["slug"] for a in sap_thu_tu_tools(xao)] == THU_TU_TOOLS
+
+    # app chưa khai tên → xuống CUỐI, giữ nguyên thứ tự hợp đồng giữa chúng
+    ds = sap_thu_tu_tools([{"slug": "la-2"}, {"slug": "seo-optimize"},
+                           {"slug": "la-1"}, {"slug": "radary"}])
+    assert [a["slug"] for a in ds] == ["radary", "seo-optimize", "la-2", "la-1"]
+
+    # sidebar app native đi qua cùng hàm — giao với hợp đồng giữ đúng thứ tự
+    duoc = ["seo-optimize", "radary", "content-ultimate", "tasky"]
+    ra = [a["slug"] for a in sb_apps_tu_claims(duoc)]
+    assert ra == [s for s in THU_TU_TOOLS if s in duoc]
+
+    # gateway PHẢI gọi hàm sắp chung (bắt tại nguồn, không đợi nhìn bằng mắt)
+    assert "sap_thu_tu_tools(" in inspect.getsource(gw.mo_app_khung)
+
+
+def test_icon_app_hai_ban_sao_khop_nhau():
+    """Icon sidebar nằm ở HAI file (app và gateway là hai tiến trình, không include
+    chéo template được). Thêm app mới mà chỉ sửa một file thì app đó ra icon ô
+    vuông ở nửa hệ — từng dính với slug V3 (plannery/content-ultimate…). Ghim: hai
+    file phủ CÙNG tập slug, và mọi app trong THỨ TỰ Tools đều có icon riêng."""
+    import re
+    from pathlib import Path
+    from nen.common.sidebar import THU_TU_TOOLS
+
+    goc = Path("apps/ai-agent/src/templates/_icon_app.html")
+    sao = Path("nen/gateway/templates/_icon_app_khung.html")
+
+    def slugs(f):
+        t = f.read_text(encoding="utf-8")
+        ra = set()
+        # cắt tới " -%}" bằng lookahead — [^-] bỏ sót slug có gạch (content-ultimate…)
+        for m in re.findall(r"a\.slug (?:==|in) (.+?)(?= -%\})", t):
+            ra |= set(re.findall(r"'([a-z0-9-]+)'", m))
+        return ra
+
+    sg, ss = slugs(goc), slugs(sao)
+    assert sg and sg == ss, f"hai file icon lệch slug: chỉ gốc {sg - ss}, chỉ sao {ss - sg}"
+    thieu = [s for s in THU_TU_TOOLS if s not in sg]
+    assert not thieu, f"app trong THỨ TỰ Tools chưa có icon riêng: {thieu}"
+
+
 def test_proxy_cat_header_khung_va_wiring(client, monkeypatch):
     """_bo_vi_khung: cắt XFO + CSP-có-frame-ancestors (CSP thường giữ); proxy_app
     truyền khung=True đúng app khai, native False — bắt tại chỗ nối chuyen_tiep."""
