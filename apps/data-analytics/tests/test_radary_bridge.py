@@ -12,8 +12,9 @@ CLAIMS_L3 = {"X-Remote-User": "leader", "X-Remote-Level": "3"}
 
 
 class _Resp:
-    def __init__(self, data):
+    def __init__(self, data, status_code=200):
         self._d = data
+        self.status_code = status_code
 
     def raise_for_status(self):
         pass
@@ -42,6 +43,26 @@ def test_kenh_cua_pool_chi_active_dung_khuon(monkeypatch):
     dong = radary_bridge.kenh_cua_pool({"ten": "t", "level": 3}, 1)
     assert dong == ["Kenh A | https://www.youtube.com/channel/UCa",
                     "UCb | https://www.youtube.com/channel/UCb"]
+
+
+def test_pool_403_404_dich_tieng_viet(monkeypatch):
+    """User 19/08 thấy '403 Client Error ... 127.0.0.1:9111' — lỗi phải DỊCH,
+    không lộ URL nội bộ."""
+    class _R:
+        def __init__(self, code):
+            self.status_code = code
+
+        def raise_for_status(self):
+            raise AssertionError("khong duoc toi day")
+
+    monkeypatch.setattr(radary_bridge.requests, "get", lambda url, **kw: _R(403))
+    with pytest.raises(radary_bridge.LoiPool) as e1:
+        radary_bridge.kenh_cua_pool({"ten": "t", "level": 3}, 34)
+    assert "quyền" in str(e1.value) and "127.0.0.1" not in str(e1.value)
+    monkeypatch.setattr(radary_bridge.requests, "get", lambda url, **kw: _R(404))
+    with pytest.raises(radary_bridge.LoiPool) as e2:
+        radary_bridge.kenh_cua_pool({"ten": "t", "level": 3}, 34)
+    assert "không còn" in str(e2.value)
 
 
 @pytest.fixture()
@@ -84,6 +105,22 @@ def test_tao_report_tu_pool_ws(client, monkeypatch):
                     data={"ngach_ma": "N-TEST", "thi_truong_ma": "TT-ES", "pool_ws": "7"})
     assert r.status_code == 200 and r.json()["them_kenh"] == 2
     assert "UCa" in goi["pool"] and "UCb" in goi["pool"]
+
+
+def test_service_403_dich_thay_vi_xi_loi_tho(client, monkeypatch):
+    """Service là nguồn sự thật quyền 'Tạo nghiên cứu' (KD L3+) — 403 phải dịch."""
+    from src import radary_bridge as rb
+    monkeypatch.setattr(rb, "kenh_cua_pool", lambda user, ws: ["A | https://x/UCa"])
+
+    def _post(url, **kw):
+        raise niche_run.requests.HTTPError(
+            "403 Client Error: Forbidden for url: http://127.0.0.1:9113/api/run")
+    monkeypatch.setattr(niche_run.requests, "post", _post)
+    r = client.post("/niche/tao-report", headers=CLAIMS_L3,
+                    data={"ngach_ma": "N-TEST", "thi_truong_ma": "TT-ES", "pool_ws": "7"})
+    assert r.status_code == 403
+    d = r.json()["detail"]
+    assert "Tạo nghiên cứu" in d and "127.0.0.1" not in d
 
 
 def test_tao_report_pool_ws_radary_chet_502(client, monkeypatch):

@@ -335,6 +335,8 @@ def tao_report_niche(user: dict = Depends(_lay_user), ngach_ma: str = Form(...),
         from src import radary_bridge
         try:
             dong_pool = radary_bridge.kenh_cua_pool(user, pool_ws)
+        except radary_bridge.LoiPool as e:      # đã dịch — in thẳng, không lộ URL
+            raise HTTPException(403, str(e))
         except Exception as e:
             raise HTTPException(502, f"Không đọc được pool RadarY: {e}")
         if not dong_pool:
@@ -363,6 +365,12 @@ def tao_report_niche(user: dict = Depends(_lay_user), ngach_ma: str = Form(...),
         kq = niche_run.chay_moi(project, noi_dung, user, skip_comments=skip_comments,
                                 force=force, deepdive=deepdive, llm=llm)
     except Exception as e:
+        # Service là NGUỒN SỰ THẬT quyền của nó (Tạo nghiên cứu = Kinh doanh L3+) —
+        # dịch 403 sang tiếng Việt thay vì xì lỗi thô + URL nội bộ (user 19/08).
+        if "403" in str(e):
+            raise HTTPException(
+                403, "Tài khoản của bạn chưa có quyền Tạo nghiên cứu (cần Kinh doanh, "
+                     "Leader trở lên) — nhờ Owner cấp ở General › Permissions.")
         raise HTTPException(502, f"Niche service không phản hồi: {e}")
     return {"project": project, "them_kenh": len(dong_moi), **kq}
 

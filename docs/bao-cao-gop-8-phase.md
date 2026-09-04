@@ -587,3 +587,22 @@ Chạy bù Space_SPAIN: writer (glm, KÉT) + build + snapshot 2026-08-19 → das
 Space/Spain: PHÁN QUYẾT VÀO CÓ ĐIỀU KIỆN · 60/100, Read report + Audience Canvas
 đủ. Suite 114 pass. (Bẫy phụ: chuỗi lệnh nền qua `&` trong git-bash bị cắt khi lệnh
 cha kết thúc — chạy đồng bộ hoặc dùng thread trong app.)
+
+## 19/08 (tiếp 6) — LỖI 403 KHI TẠO RESEARCH (user báo: "Không đọc được pool RadarY: 403")
+
+HAI lỗ cùng họ "gate của app khác chặn oan luồng research":
+1. GỐC: `GET /api/workspaces/{ws}/channels` của RadarY đòi vai **leader** (gate
+   23/07 dựng để bảo vệ THAO TÁC Data Pool). Người tạo research chỉ cần L3 OUTLIERY
+   và có thể là **viewer** bên RadarY → 403 ngay bước đọc pool. Vá đúng tầng: GET
+   hạ xuống `viewer` (POST/DELETE giữ leader) — ws_for_user vẫn kiểm membership +
+   phạm vi niche nên không lộ pool ngoài quyền; viewer vốn đã thấy kênh trên board.
+   Đo sống: pool 34 từ 403 → 200.
+2. Lộ tiếp: `/api/run` của niche-research 403 với người ngoài Kinh doanh — đây là
+   HÀNH VI ĐÚNG (luật `tao` = KD L3+, tốn quota), nhưng UI xì lỗi thô kèm URL nội
+   bộ. Cả 2 nhánh giờ DỊCH tiếng Việt (LoiPool + nhánh "403" ở tao_report):
+   "chưa đủ quyền đọc pool này trong RadarY…" / "chưa có quyền Tạo nghiên cứu (cần
+   Kinh doanh, Leader trở lên) — nhờ Owner cấp ở General › Permissions". Không còn
+   127.0.0.1:9111 trên màn hình người dùng (test ghim cả 3 ca 403/404/dịch).
+Nghiệm thu sống: ca thiếu quyền → thông điệp Việt; ca đủ quyền (KD/manager) →
+research SeniorHealth_US khởi động thật, cộng dồn 75 kênh từ pool RadarY.
+Suite DA 150 pass; radary 273 pass / 2 fail BASELINE (module mapping, đã stash-kiểm).

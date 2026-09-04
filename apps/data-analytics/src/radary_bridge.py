@@ -33,11 +33,22 @@ def ds_pool(user: dict, ngach_ma: str, tt_ma: str) -> list[dict]:
             if w.get("ngach") == ngach_ma and w.get("market") == tt_ma]
 
 
+class LoiPool(Exception):
+    """Lỗi đọc pool đã DỊCH sang tiếng Việt — UI in thẳng, không lộ URL nội bộ
+    (user 19/08 thấy '403 Client Error ... http://127.0.0.1:9111/...')."""
+
+
 def kenh_cua_pool(user: dict, ws_id: int) -> list[str]:
     """Dòng competitors từ kênh ACTIVE của pool: 'Title | URL kênh' — đúng khuôn
     competitors.txt pipeline vẫn ăn (kênh tắt active trong RadarY không đưa vào)."""
     r = requests.get(f"{_api()}/api/workspaces/{ws_id}/channels",
                      headers=_headers(user), timeout=15)
+    if r.status_code == 403:
+        raise LoiPool("Tài khoản của bạn chưa đủ quyền đọc pool này trong RadarY — "
+                      "nhờ Owner mở quyền RadarY (hoặc chọn pool khác).")
+    if r.status_code == 404:
+        raise LoiPool("Pool này không còn trong RadarY (đã xóa hoặc ngoài phạm vi "
+                      "niche của bạn) — chọn lại pool.")
     r.raise_for_status()
     return [f"{(k.get('title') or k['yt_id']).strip()} | "
             f"https://www.youtube.com/channel/{k['yt_id']}"
