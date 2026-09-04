@@ -392,6 +392,62 @@ def tap_da_duyet(ma_tap_can_tim: str) -> bool:
                for v in danh_sach_video())
 
 
+LOAI_VIDEO = ("duyet", "full")
+
+
+def gan_tap(ma: str, ma_tap: str, loai: str = "duyet") -> None:
+    if loai not in LOAI_VIDEO:
+        raise ValueError(f"Loại lạ: {loai}")
+    conn = ket_noi()
+    try:
+        cur = conn.execute("UPDATE video SET ma_tap=?, loai=? WHERE ma=?",
+                           (ma_tap.upper(), loai, ma))
+        if cur.rowcount == 0:
+            raise KeyError(ma)
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def gan_youtube(ma: str, yt_id: str, dang_luc: str = "") -> None:
+    conn = ket_noi()
+    try:
+        cur = conn.execute("UPDATE video SET yt_id=?, dang_luc=? WHERE ma=?",
+                           (yt_id.strip(), dang_luc.strip(), ma))
+        if cur.rowcount == 0:
+            raise KeyError(ma)
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def cac_tap() -> list[dict]:
+    """Mọi tập có trong sổ, mỗi tập gom bản duyệt + bản full."""
+    nhom: dict[str, dict] = {}
+    for v in danh_sach_video():
+        ma = v["ma_tap"] or ma_tap(v)
+        g = nhom.setdefault(ma, {"ma": ma, "duyet": [], "full": None, "moi_id": 0})
+        if v["loai"] == "full":
+            g["full"] = v
+        else:
+            g["duyet"].append(v)
+        g["moi_id"] = max(g["moi_id"], v["id"])
+    ra = sorted(nhom.values(), key=lambda g: -g["moi_id"])
+    for g in ra:
+        g["so_duyet"] = len(g["duyet"])
+        g["xong_duyet"] = bool(g["duyet"]) and all(
+            v["trang_thai"] == "da_duyet" for v in g["duyet"])
+    return ra
+
+
+def mot_tap(ma_tap_can: str) -> dict | None:
+    ma_tap_can = (ma_tap_can or "").upper()
+    for g in cac_tap():
+        if g["ma"] == ma_tap_can:
+            return g
+    return None
+
+
 def cac_duong_nas_dang_dung() -> set[str]:
     """Đường NAS đã có bản ghi CÒN SỐNG — để danh sách NAS đánh dấu 'đã trong app'."""
     conn = ket_noi()
