@@ -39,7 +39,7 @@ from src import (do_thi, don_nas, hau_kiem, kich_ban, kho_video, nap_nas,
                  nhan_xet, tong_quan)
 
 _APP_DIR = Path(__file__).resolve().parents[1]
-PHIEN_BAN = "0.3.0"
+PHIEN_BAN = "0.4.0"
 app = FastAPI(title="Video Review v3")
 from nen.common.sidebar import ctx_sidebar  # noqa: E402 — cờ sidebar UI_FLOW.md mục 2
 templates = Jinja2Templates(directory=str(_APP_DIR / "src" / "templates"),

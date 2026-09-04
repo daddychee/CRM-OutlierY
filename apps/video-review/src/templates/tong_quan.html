@@ -57,7 +57,11 @@
     border-bottom:1px solid var(--line);flex:none}
   .phu-dau h3{margin:0;font-size:16px}
   .phu-dong{margin-left:auto;font-size:16px;color:var(--muted);line-height:1}
-  .phu-than{overflow-y:auto;min-height:0;padding:4px 0}
+  .phu-than{overflow-y:auto;min-height:0;padding:14px 18px 18px}
+  /* CSS thân tập cho popup — cùng một file với trang tập riêng, không drift */
+{% include "_tap_style.html" %}
+  /* trong popup: thân tập xếp MỘT cột cho vừa bề ngang hộp */
+  .phu-than .hai-khoi{grid-template-columns:1fr}
 {% endblock %}
 
 {% block noi_dung %}
