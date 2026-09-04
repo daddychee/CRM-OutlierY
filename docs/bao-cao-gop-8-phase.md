@@ -606,3 +606,20 @@ HAI lỗ cùng họ "gate của app khác chặn oan luồng research":
 Nghiệm thu sống: ca thiếu quyền → thông điệp Việt; ca đủ quyền (KD/manager) →
 research SeniorHealth_US khởi động thật, cộng dồn 75 kênh từ pool RadarY.
 Suite DA 150 pass; radary 273 pass / 2 fail BASELINE (module mapping, đã stash-kiểm).
+
+## 19/08 (tiếp 7) — writer TÁCH 2 LƯỢT (JSON cụt ở 8192 token)
+
+User: "OLD NEWBIE không hiện báo cáo". TRUY: cơ chế tự-đóng-gói 19/08 CHẠY ĐÚNG —
+ảnh chụp đúng lúc "đang đóng gói", HTML + snapshot ra lúc 23:13, dashboard hiện
+PHÁN QUYẾT VÀO · 66/100. NHƯNG writer bị bỏ qua: gọi tay ra lỗi cũ
+"missing ['phuong_an','tong_hop']" — một lời gọi gộp cả canvas + positioning CỤT
+JSON ngay ở 8192 token (canvas VN 3 cột × 6 hàng ngốn gần hết ngân sách), tức ES
+chạy được 18/08 chỉ là MAY (digest ngắn hơn).
+VÁ BỀN (không đua trần token): tách LÀM HAI LƯỢT nhẹ — lượt A (tq + canvas), lượt
+B (phương án + anti + winning_format + tổng hợp), mỗi lượt validate riêng; lượt B
+hỏng vẫn GHI phần lượt A (slot còn lại giữ nhãn chờ) thay vì mất trắng. Chi phí
+2 lời gọi/run thay 1.
+Nghiệm thu OldNewbie_US: đủ 6 khối (canvas 6 hàng · 3 phương án · anti 5 · WF 6),
+headline "Ngách 'historical aftermath' — cạnh tranh phân mảnh, RPM cao, ngõ vào
+OPEN cho tân binh biết đóng gói"; build + snapshot lại; dashboard đủ Canvas +
+Phương án A "What Happened To [X]". Suite DA 150 pass.
