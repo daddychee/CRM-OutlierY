@@ -146,3 +146,16 @@ def test_ma_tap_gom_dung_ban_cua_cung_tap():
     # không nhận ra thì lùi về tên thư mục, cuối cùng mới chịu thua
     assert goi("ban dung cuoi.mp4", "Life In/US/LI073/") == "LI073"
     assert goi("ban dung cuoi.mp4", "Life In/US/ky-yeu/") == ""
+
+
+def test_thu_muc_thang_ten_file_khi_hai_cai_lech_nhau():
+    """Đo thật 27/08 trên 30 bản ghi: tên file do người gõ nên sai được, thư mục
+    do người tạo có chủ đích nên tin hơn.
+      LI104/feedback/LI0104_1_HIEU.mp4  → LI104 (không phải LI0104, thừa số 0)
+      LI083/Feedback/LI083.2.mp4        → LI083 (tên hiển thị ghi nhầm LI091.2)
+    """
+    goi = lambda tf, d: kho_video.ma_tap({"ten_file": tf, "duong": d, "ten": tf})
+    assert goi("LI0104_1_HIEU.mp4", "Life In/US/LI104/feedback/LI0104_1_HIEU.mp4") == "LI104"
+    assert goi("LI083.2.mp4", "Life In/US/LI083/Feedback/LI083.2.mp4") == "LI083"
+    # thư mục không mang mã thì vẫn lùi về tên file như cũ
+    assert goi("LI049_Round 3.mp4", "Life In/US/New folder/LI049_Round 3.mp4") == "LI049"

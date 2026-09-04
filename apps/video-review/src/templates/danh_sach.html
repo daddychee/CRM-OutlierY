@@ -109,7 +109,8 @@
 {% for tap in cac_tap %}
 <details class="tap" data-tap="{{ tap.ma }}"{% if tap.mo %} open{% endif %}>
   <summary>
-    <span class="tap-ma">{{ tap.ma }}</span>
+    <a class="tap-ma" href="/tap/{{ tap.ma }}" style="color:inherit"
+       onclick="event.stopPropagation()">{{ tap.ma }}</a>
     <span class="chip {{ tap.hien_thi }}">{{ NHAN_HIEN_THI.get(tap.hien_thi, tap.hien_thi) }}</span>
     <span class="tap-ten">{{ tap.ten_moi }}</span>
     {%- if tap.canh %}<span class="canh mat">needs attention</span>{% endif %}

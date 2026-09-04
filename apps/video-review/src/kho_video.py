@@ -471,7 +471,10 @@ def ma_tap(video: dict) -> str:
     # phải NHẢY QUA thư mục 'Feedback', nếu không cả kho gom vào một nhóm 'Feedback'.
     phan = [x for x in (video.get("duong") or "").split("/")[:-1]
             if x.strip().lower() not in TEN_THU_MUC_FEEDBACK]
-    for nguon in [ten] + phan[::-1] + [video.get("ten") or ""]:
+    # THƯ MỤC THẮNG TÊN FILE (đo thật 27/08 trên 30 bản ghi): tên file do người gõ
+    # nên sai được — 'LI0104_1_HIEU.mp4' nằm trong LI104, 'LI091.2' thật ra là
+    # LI083/Feedback/LI083.2.mp4. Thư mục là do người tạo có chủ đích, tin hơn.
+    for nguon in phan[::-1] + [ten, video.get("ten") or ""]:
         for m in _RE_TAP.finditer(nguon):
             # bỏ qua chính MÃ CỦA APP (file đời cũ tên '2026-08-19_VR-0003_li083.mp4')
             # — mã tập phải là mã của team, không phải số thứ tự trong sổ
