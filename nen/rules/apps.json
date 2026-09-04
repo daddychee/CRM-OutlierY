@@ -374,15 +374,20 @@
     },
     {
       "slug": "video-review",
-      "ten": "Video Review",
+      "ten": "ReviewY",
       "mo_ta": "Feedback video kiểu Frame.io: chọn bản dựng có sẵn trên NAS (không upload, không chép) → bình luận gắn mốc thời gian + vẽ chú thích trên khung hình → trạng thái duyệt (In review / Changes requested / Approved).",
       "cong": 9114,
       "tien_to": [
         "/api-vr",
         "/danh-sach",
         "/media",
-        "/xem"
+        "/xem",
+        "/tap",
+        "/hau-kiem",
+        "/tong-quan",
+        "/kich-ban"
       ],
+      "giao_dien": "khung",
       "health": "/health",
       "suc_khoe": "/api/suc-khoe",
       "phien_ban": "0.3.0",

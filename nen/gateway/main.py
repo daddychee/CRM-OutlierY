@@ -2460,7 +2460,6 @@ _ALIAS: dict[str, tuple[str, str]] = {
     "/data-analytics": ("data-analytics", "chan-doan"),
     # Đồng nhất URL 18/08 (Owner bắt "cùng nút sidebar mà URL khác họ"): mọi nút
     # Tools = /<slug>. App native thêm alias ở đây; app KHUNG xem _ALIAS_KHUNG cuối file.
-    "/video-review": ("video-review", "danh-sach"),
     "/tasky": ("tasky", "tasky"),
     "/task": ("tasky", "task"),          # mục Task (board) — thêm 26/08
     "/giao-viec": ("tasky", "giao-viec"),
@@ -2624,7 +2623,7 @@ for _duong, (_slug, _dd) in _ALIAS.items():
 # Phục vụ CÙNG trang khung như /open/<slug> tại URL đẹp; /open/<slug> giữ nguyên
 # cho bookmark. Thêm app khung mới = thêm slug vào tuple này.
 _ALIAS_KHUNG = ("radary", "content-ultimate", "niche-research", "seo-optimize",
-                "plannery", "rendery")
+                "plannery", "rendery", "video-review")
 
 
 def _lam_alias_khung(slug: str):
