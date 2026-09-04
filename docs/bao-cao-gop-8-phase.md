@@ -623,3 +623,19 @@ Nghiệm thu OldNewbie_US: đủ 6 khối (canvas 6 hàng · 3 phương án · a
 headline "Ngách 'historical aftermath' — cạnh tranh phân mảnh, RPM cao, ngõ vào
 OPEN cho tân binh biết đóng gói"; build + snapshot lại; dashboard đủ Canvas +
 Phương án A "What Happened To [X]". Suite DA 150 pass.
+
+## 19/08 (tiếp 8) — LƯỢT C: diễn giải LLM cho 5 phase còn trơ số
+
+User: "báo cáo cần được bổ sung diễn giải LLM". Đếm trên bản thật: chỉ 4 chỗ có
+tầng NGHĨA (tổng quan · canvas P1 · positioning P3 · winning format P4 · tổng hợp
+P8) — P0/P2/P5/P6/P7 hoàn toàn TRƠ SỐ. Thêm LƯỢT C vào writer (SCHEMA_C): mỗi
+phase 2-4 câu ĐỌC BẢNG SỐ CÙNG TRANG hộ người dùng (pool đủ/mỏng · HHI nói gì,
+còn khe nào · RPM band nghĩa gì với kênh mới + cảnh báo heuristic · newcomer rate
++ tuổi kênh thắng → vào được không · trend + chỉ số theo dõi tuần), luật neo số
+giữ nguyên; lượt C hỏng thì 5 phase giữ nguyên tầng SỐ (không nhãn chờ ồn ào).
+Builder thêm khoi_phase() chèn cuối 5 section. Đo thật OldNewbie_US: khối DIỄN
+GIẢI 5 → 10; nội dung neo đúng số ("HHI chỉ 0.0355 … beachhead 'happened' chỉ tập
+trung 28 kênh", "newcomer_rate 0.306 + young_months 24 → cửa vào OPEN").
+BACKFILL cả 5 dự án đang có (OldNewbie_US · LifeIn_ES · Space_SPAIN · Space_US ·
+SeniorHealth_US) — build + snapshot lại; SeniorHealth 8 khối vì run đó không có
+deepdive/DNA. Chi phí writer: 3 lời gọi/run. Suite DA 150 pass.
