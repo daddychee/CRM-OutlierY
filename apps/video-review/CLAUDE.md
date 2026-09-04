@@ -2,6 +2,38 @@
 
 ## Mốc
 
+- 04/09/2026 — **ĐỔI TÊN ReviewY + VỎ CONTENT ULTIMATE + 2 TAB MỚI** (3 commit,
+  120 → 144 test). User duyệt mockup vòng 6 (`docs/mockup/reviewy-v6.html`) sau
+  6 vòng; bảng đối chiếu mockup ↔ app: `docs/mockup/reviewy-doi-chieu.html`.
+  • **VỎ**: app chuyển `giao_dien: "khung"` (gateway bọc sidebar OUTLIERY quanh
+    iframe), `base.html` viết lại theo `board.html` của Content Ultimate —
+    topnav 4 pill canh trái + header eyebrow/brand REVIEWY + whoami góc phải +
+    lưới `.cols` main/sidebar 380px. Trang con chỉ đổi block `topbar_ten` →
+    `tab_hien`, KHÔNG sửa logic. **BẪY**: `{% block tab_hien %}` in thẳng giá
+    trị ra màn — phải bọc trong comment Jinja `{# ... #}`, `self.tab_hien()`
+    vẫn đọc được.
+  • **Tab Overview** (`/tong-quan`, `src/tong_quan.py`): mỗi tập MỘT THẺ — 3
+    trạm Writing/Editing/Publish + thanh tiến trình + VIỆC KẾ TIẾP đang chờ ai;
+    bấm thẻ mở popup bàn giao dựng nạp `/tap/<ma>?popup=1`. `tap_than.html` là
+    MỘT nguồn dùng chung cho trang riêng và popup (sửa một chỗ, hai nơi đổi).
+    `innerHTML` KHÔNG chạy `<script>` → Overview chạy tay khối script của thân.
+    Thẻ chỉ hiện tập CÒN VIỆC (hậu kiểm xong = việc đã đóng).
+  • **Tab Writing Review** (`/kich-ban`, `src/kich_ban.py` + migration 008):
+    cầu CHỈ ĐỌC vào kho Content Ultimate (`progress.json` sections +
+    `outline.txt` tên chương + `admin/history.jsonl`). Mỗi chương làm việc
+    riêng: đổi tab chương là đổi cả văn bản lẫn note. Note lưu ở sổ ReviewY
+    theo (run, chương) — kho CU không bị ghi ngược một byte.
+  • **BÀI HỌC** (ghi để đừng vấp lại): (a) **KHÔNG tin cờ "done"** của Content
+    Ultimate — đo thật 04/09: nepal-2 `status=done` mà Chapter 3 chỉ 19 ký tự,
+    tổng 12.347/22.000; bản thiếu vẫn hiện nhưng chặn Approve **ở server**,
+    không chỉ ẩn nút. (b) **Tên run lấy từ dòng `Title:` của outline**, KHÔNG
+    đoán từ tên file — `script.md` và `script-nepal-2.md` đều là run nepal-2,
+    đoán theo tên file thì đẻ run ma và hiện 2 dòng cho 1 run.
+  • **Editing Review** giữ nguyên màn xem hiện có, đúng phạm vi user chốt.
+    **CHƯA làm**: tab Publish còn dùng chung `/tong-quan?loc=dang`; ghi
+    `script.txt` ra NAS sau khi chốt; nối mã tập từ PlannerY; hàng chờ kịch bản
+    chỉ hiện bản CHƯA chốt.
+
 - 18/08/2026 — **DỰNG APP MỚI v0.1** (app V3 đầu tiên KHÔNG di trú từ hệ cũ —
   viết mới theo khuôn to-chuc): upload bản dựng → bình luận gắn mốc thời gian
   (bấm là tua) + vẽ chú thích canvas trên khung hình (tọa độ 0..1) → trạng thái
