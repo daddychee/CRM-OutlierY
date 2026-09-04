@@ -175,7 +175,10 @@ def backfill_dau_khoa(conn: sqlite3.Connection) -> int:
 # apify: nen chay scraper thue (Owner 22/08) — dung lay du lieu Reddit DUNG NGHIA
 # (upvote / so binh luan / thoi gian), thu ma SERP khong co vi SERP chi doc trang
 # ket qua Google. Token duy nhat cho moi actor, tinh tien theo credit.
-LOAI_API = ("youtube", "llm", "generate", "transcript", "serp", "apify")
+# stock (30/08): kho ảnh/video miễn phí cho RenderY dựng B-roll. Nhiều nhà như llm
+# nên khai NHA_STOCK + NHA_STOCK_INFO; nhiều khóa/nhà để nhân hạn mức (Pexels ~200
+# query/giờ/khóa) — chế độ xoay_vòng dùng được như YouTube.
+LOAI_API = ("youtube", "llm", "generate", "transcript", "serp", "apify", "stock")
 NHA_LLM = ("claude", "glm", "gemini", "chatgpt", "deepseek")
 # provider/base_url suy từ NHÀ khi khóa không mang override riêng (migration giữ
 # nguyên giá trị cũ per-khóa nên hệ đang chạy resolve ra ĐÚNG như trước).
@@ -201,11 +204,19 @@ NHA_SERP_INFO = {
 }
 # generate KHÔNG đi qua factory LLM (không provider/base_url — chỉ nhãn hiển thị).
 NHA_GEN_INFO = {"veo": {"ten": "VEO (Google Flow)"}, "seedream": {"ten": "Seedream"}}
+NHA_STOCK = ("pexels", "pixabay")
+# Kho ảnh/video miễn phí, dùng thương mại được. base_url để app gọi đúng nơi;
+# endpoint/tham số từng nhà do app lo (mỗi nhà một kiểu trả kết quả).
+NHA_STOCK_INFO = {
+    "pexels": {"ten": "Pexels", "base_url": "https://api.pexels.com/videos"},
+    "pixabay": {"ten": "Pixabay", "base_url": "https://pixabay.com/api/videos/"},
+}
 TEN_LOAI_API = {"youtube": "YouTube Data API v3", "llm": "LLM",
                 "generate": "Generate Video/Image API",
                 "transcript": "YouTube Transcript",
                 "serp": "Search Results API (SERP)",
-                "apify": "Apify (scraper thuê)"}
+                "apify": "Apify (scraper thuê)",
+                "stock": "Stock ảnh/video (B-roll)"}
 # Model gợi ý cho dropdown (mockup K2-K3) — gợi ý thôi, giá trị hiện hành luôn giữ.
 # glm-5.3 thêm 22/08 (đo endpoint /models của z.ai: glm-4.5 · glm-4.5-air · glm-4.6
 # · glm-4.7 · glm-5 · glm-5-turbo · glm-5.1 · glm-5.2 · glm-5.3) — bản cũ GIỮ để
@@ -219,7 +230,11 @@ MODEL_GOI_Y = {
     "veo": ["veo-3.1", "veo-3"],
     "seedream": ["seedream-3.0"],
 }
-CHE_DO_CAP = ("mot_khoa", "xoay_vong", "du_phong")
+# gop (30/08 — RenderY): DÙNG SONG SONG, hỏi MỌI khóa rồi gộp kết quả. Khác
+# xoay_vong (luân phiên, mỗi lượt một khóa) và du_phong (chính hỏng mới tới phụ).
+# Hợp khi các khóa là NGUỒN KHÁC NHAU bổ sung cho nhau — vd Pexels + Pixabay: hỏi
+# cả hai cho nhiều ứng viên hơn, không phải để nhân hạn mức.
+CHE_DO_CAP = ("mot_khoa", "xoay_vong", "du_phong", "gop")
 # Giá trị tường minh "dùng model của khóa" — phân biệt với rỗng = không đổi.
 MODEL_THEO_KHOA = "__theo_khoa__"
 
@@ -236,7 +251,9 @@ def them_api_key(conn: sqlite3.Connection, loai: str, khoa: str,
         raise ValueError("Nhà Generate phải là: " + " / ".join(NHA_GEN))
     if loai == "serp" and nha not in NHA_SERP:
         raise ValueError("Nhà SERP phải là: " + " / ".join(NHA_SERP))
-    if loai not in ("llm", "generate", "serp"):
+    if loai == "stock" and nha not in NHA_STOCK:
+        raise ValueError("Nhà Stock phải là: " + " / ".join(NHA_STOCK))
+    if loai not in ("llm", "generate", "serp", "stock"):
         nha = ""
     if not khoa.strip():
         raise ValueError("Thiếu khóa.")
@@ -324,7 +341,7 @@ def luu_cap_phat_viec(conn: sqlite3.Connection, app_slug: str, viec: str,
                       khoa_ids: list[str], che_do: str = "",
                       model: str = "") -> dict:
     """Lưu cấp phát MỘT việc: nhiều khóa cùng loại (K5 vòng 4). Chế độ chuẩn hóa:
-    ≤1 khóa = mot_khoa; >1 chọn xoay_vong/du_phong (mặc định xoay_vong).
+    ≤1 khóa = mot_khoa; >1 chọn xoay_vong/du_phong/gop (mặc định xoay_vong).
     Chỉ giữ id khóa còn sống (khóa đã thu hồi tự rơi); DEDUP giữ thứ tự (Owner
     18/08 — cùng khóa không bao giờ nằm 2 lần trong MỘT việc; cùng khóa ở 2
     việc KHÁC nhau vẫn hợp lệ, vd GLM chung 2 việc)."""
@@ -336,8 +353,9 @@ def luu_cap_phat_viec(conn: sqlite3.Connection, app_slug: str, viec: str,
     if len(khoa_ids) <= 1:
         muc["che_do"] = "mot_khoa"
     else:
-        muc["che_do"] = che_do if che_do in ("xoay_vong", "du_phong") \
-            else muc.get("che_do") if muc.get("che_do") in ("xoay_vong", "du_phong") \
+        _hop_le = ("xoay_vong", "du_phong", "gop")
+        muc["che_do"] = che_do if che_do in _hop_le \
+            else muc.get("che_do") if muc.get("che_do") in _hop_le \
             else "xoay_vong"
     # model RỖNG = "không đổi" (form + khóa / ✕ gỡ khóa không mang field model —
     # rỗng mà xóa thì mỗi lần thêm khóa lại mất override). Muốn TRẢ VỀ model của

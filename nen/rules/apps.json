@@ -776,7 +776,9 @@
       "ten": "RenderY",
       "mo_ta": "Dựng video: nhân sự đặt kịch bản + voice theo chương lên NAS, máy chủ chạy nền (2 việc song song), xong giao draft CapCut + footage phân theo chương ở 'Compose Timeline'.",
       "cong": 9118,
-      "tien_to": ["/api"],
+      "tien_to": [
+        "/api"
+      ],
       "health": "/health",
       "suc_khoe": "/api/suc-khoe",
       "phien_ban": "0.1.0",
@@ -815,6 +817,12 @@
           "ten": "Tìm B-roll kho ảnh/video",
           "loai": "stock",
           "ghi_chu": "Pexels + Pixabay (khoá free, dùng thương mại được). Nhiều khoá = nhân hạn mức (~200 query/giờ/khoá). Envato/Vecteezy đăng nhập bằng trình duyệt, KHÔNG dùng khoá API."
+        },
+        {
+          "ma": "gen_canh",
+          "ten": "Sinh cảnh AI (ảnh + video)",
+          "loai": "generate",
+          "ghi_chu": "V2: beat không tìm nổi footage → Seedream sinh ẢNH ($0.03) cho editor duyệt, chốt rồi mới Seedance i2v ($0.03/giây) sinh video. Key BytePlus ModelArk dùng chung cho cả hai model."
         }
       ]
     },

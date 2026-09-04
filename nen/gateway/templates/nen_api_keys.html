@@ -155,6 +155,9 @@
           <option value="serp:serper">SERP — Serper.dev</option>
           <option value="serp:searchapi">SERP — SearchAPI.io</option>
           <option value="apify">Apify (scraper thuê)</option>
+          {# Stock B-roll (30/08 — RenderY): kho ảnh/video free, dùng thương mại được #}
+          <option value="stock:pexels">Stock — Pexels</option>
+          <option value="stock:pixabay">Stock — Pixabay</option>
         </select></div>
         <div><label>Key (never shown again)</label><input name="khoa" type="password" required></div>
         <div><label>Default model</label><input name="model" autocomplete="off"></div>
@@ -265,9 +268,12 @@
         <input type="hidden" name="app_slug" value="{{ app_chon }}">
         <input type="hidden" name="viec" value="{{ v.ma }}">
         {% if ids | length > 1 %}
+        {# gop (30/08): hỏi MỌI khóa rồi gộp kết quả — cho nguồn KHÁC NHAU bổ sung
+           nhau (Pexels + Pixabay), khác rotate (luân phiên) và failover (dự phòng). #}
         <select name="che_do">
-          <option value="xoay_vong"{% if muc.get('che_do') != 'du_phong' %} selected{% endif %}>rotate</option>
+          <option value="xoay_vong"{% if muc.get('che_do') not in ('du_phong', 'gop') %} selected{% endif %}>rotate</option>
           <option value="du_phong"{% if muc.get('che_do') == 'du_phong' %} selected{% endif %}>failover</option>
+          <option value="gop"{% if muc.get('che_do') == 'gop' %} selected{% endif %}>combine (dùng cùng lúc)</option>
         </select>
         {% endif %}
         {# Dropdown thay ô gõ tay (Owner 22/08): model phải CHỌN từ gợi ý theo
