@@ -76,6 +76,10 @@ Owner chốt: bỏ SpeakY (không đưa vào V3) · cutover · phương án đi�
       — ra về tự Shut down, sáng bấm nút nguồn (app tự lên nhờ OUTLIERY-V3 at-startup).
       Đã gỡ tác vụ OUTLIERY-BatMay + tắt hibernate (lấy lại 17GB); OUTLIERY-TatMay giữ
       làm LƯỚI AN TOÀN 20:00 = shutdown thật, đếm ngược 120s, hủy bằng `shutdown /a`.
+- [ ] **Bật máy 9:00 (Owner chốt 24/08)**: dùng **BIOS RTC Alarm** — phần mềm KHÔNG
+      bật được máy đã shutdown (đo 24/08: hibernate tắt, wake_from_any_S3 rỗng, NIC
+      Realtek không hỗ trợ WOL). Hướng dẫn click-by-click + nghiệm thu + phương án
+      dự phòng: sổ `docs/dien-bat-tat-may.md`. CHỜ Owner vào BIOS đặt.
 - [ ] Nghiệm thu 1 vòng restart máy thật (OUTLIERY-V3 at-startup đã test bằng Start-Task,
       chưa test boot lạnh thật).
 - [ ] Sau 2–4 tuần: gỡ khối :8000 trong Caddyfile khi hết truy cập.
