@@ -41,6 +41,9 @@ Quy ước từ 16/08/2026 (user chốt): mỗi mạch việc lớn có MỘT s�
 - **Model LLM (app nào gọi model nào, đổi model, thinking/reasoning)**:
   [docs/model-llm.md](docs/model-llm.md) — luật resolve model từ két, công tắc
   suy luận theo đời model GLM (đo thật), cách đổi + phải restart gì.
+- **Phòng thủ API bên thứ 3 (allowlist host, van secret, trần chi/ngày, che PII)**:
+  [docs/phong-thu-api-ngoai.md](docs/phong-thu-api-ngoai.md) — 6 lớp, luật bắt
+  buộc, checklist đã-có/còn-thiếu; van code ở `nen/common/phong_thu.py`.
 
 ## Trạng thái (cập nhật mỗi mốc)
 
@@ -369,3 +372,17 @@ Quy ước từ 16/08/2026 (user chốt): mỗi mạch việc lớn có MỘT s�
   nền nổ 10%). Chụp màn đặt cạnh mockup, sửa 4 lệch. Bug tự tìm: 2 test cache
   radary rò `db.connect()` → Windows khóa file, fixture sau không dọn được DB.
   KẾ TIẾP: lan cửa kiểm sang 10 app còn lại; đóng dần 9 logic `chua_kiem`.
+- 05/09/2026 — **LỚP PHÒNG THỦ API BÊN THỨ 3** (sổ mới `docs/phong-thu-api-ngoai.md`
+  — spec 6 lớp + checklist): module `nen/common/phong_thu.py` 4 van tại điểm-ra
+  LLM (`src/llm` ai-agent + data-analytics, 2 bản đồng bộ): ① allowlist host
+  BASE_URL (https bắt buộc, loopback miễn, thêm host qua LLM_HOST_CHO_PHEP) chặn
+  từ lúc dựng client; ② secret trong env lọt nguyên văn vào prompt → chặn call;
+  ③ trần LLM/ngày LLM_TRAN_USD_NGAY + LLM_TRAN_CALL_NGAY đọc sổ gọi (mặc định
+  TẮT — hành vi hệ không đổi tới khi Owner bật .env); ④ che_pii helper (email/SĐT
+  + tên→mã NS) chờ mạch nhân sự-vào-LLM. Vi phạm → LoiPhongThu nổi; lỗi nội bộ
+  van / thiếu nen (bản lite) → van tự tắt không giết call. VÁ KÈM: đường STREAM
+  + adapter anthropic trước nay KHÔNG ghi sổ gọi (Command Center + trần mù đường
+  tiêu chính) — giờ mọi call thật 1 dòng sổ, token stream giữ None chưa đo.
+  Kèm `tools/scripts/soi-egress.ps1` (audit chỉ-đọc kết nối ra ngoài, Owner chạy
+  tay). CÒN TREO: rotate 2 key YouTube lộ GitHub (nợ 18/08); nối van vào 3 app
+  tự đủ (content/seo/niche); firewall default-deny = phương án nâng cao có proxy.

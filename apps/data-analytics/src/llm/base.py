@@ -8,6 +8,18 @@ from abc import ABC, abstractmethod
 from collections.abc import Iterator
 
 
+def kiem_host_diem_ra(base_url) -> None:
+    """VAN PHÒNG THỦ (05/09, spec docs/phong-thu-api-ngoai.md): BASE_URL phải là
+    https + host trong allowlist — .env bị sửa/gõ nhầm trỏ prompt + key sang
+    server lạ là chặn NGAY lúc dựng client. Thiếu nen (bản đóng gói chạy độc
+    lập) → van tự tắt, hành vi cũ không đổi."""
+    try:
+        from nen.common import phong_thu
+    except ImportError:
+        return
+    phong_thu.kiem_host(base_url)
+
+
 class LLMProvider(ABC):
     APP_SO_GOI = "data-analytics"   # bản sao — hằng app riêng
 
@@ -36,6 +48,16 @@ class LLMProvider(ABC):
                        ma_loi=ma_loi[:120], token_vao=tv, token_ra=tr)
         except Exception:  # noqa: BLE001
             pass
+
+    def _kiem_truoc_goi(self, system_prompt: str, user_prompt: str) -> None:
+        """VAN PHÒNG THỦ trước MỌI call thật (05/09): secret lọt prompt / vượt
+        trần LLM ngày → LoiPhongThu NỔI LÊN chặn call (không lặng lẽ); mock
+        không qua đây. Thiếu nen (bản chạy độc lập) → van tự tắt."""
+        try:
+            from nen.common import phong_thu
+        except ImportError:
+            return
+        phong_thu.kiem_truoc_goi(system_prompt, user_prompt)
 
     @abstractmethod
     def generate(self, system_prompt: str, user_prompt: str) -> str:

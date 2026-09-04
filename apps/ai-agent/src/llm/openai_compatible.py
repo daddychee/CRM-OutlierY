@@ -10,7 +10,7 @@ Khi tắt mock, điền base_url theo nhà (ví dụ cho vai CRITIC):
 
 import os
 
-from src.llm.base import LLMProvider
+from src.llm.base import LLMProvider, kiem_host_diem_ra
 
 
 def lay_llm_timeout() -> float:
@@ -37,6 +37,7 @@ class OpenAICompatibleProvider(LLMProvider):
         if not mock:
             if not api_key or not model:
                 raise ValueError("Provider openai_compatible thiếu API_KEY hoặc MODEL trong .env")
+            kiem_host_diem_ra(base_url)   # van phòng thủ: host lạ chết từ cửa (05/09)
             from openai import OpenAI  # import tại chỗ — chế độ mock không đụng tới thư viện
 
             self.client = OpenAI(api_key=api_key, base_url=base_url or None,
@@ -46,6 +47,7 @@ class OpenAICompatibleProvider(LLMProvider):
         if self.mock:
             return (f"[MOCK {self.model or 'openai-compatible'}] Trả lời mô phỏng — "
                     f"đặt *_MOCK_MODE=false trong .env để gọi model thật.")
+        self._kiem_truoc_goi(system_prompt, user_prompt)
         import time as _t
         _t0 = _t.perf_counter()
         try:
@@ -68,15 +70,27 @@ class OpenAICompatibleProvider(LLMProvider):
             for tu in self.generate(system_prompt, user_prompt).split():
                 yield tu + " "  # mock cũng chảy thành nhiều mẩu để test được luồng
             return
-        resp = self.client.chat.completions.create(
-            model=self.model,
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt},
-            ],
-            stream=True,
-        )
-        for chunk in resp:
-            mau = chunk.choices[0].delta.content if chunk.choices else None
-            if mau:  # bỏ mẩu rỗng/None (một số nhà gửi chunk không có nội dung)
-                yield mau
+        self._kiem_truoc_goi(system_prompt, user_prompt)
+        # GHI SỔ cả đường stream (05/09): trước đây stream — đường tiêu CHÍNH của
+        # hỏi–đáp — không ghi dòng nào → trần/ngày + Command Center mù. Token
+        # stream chưa đo (cần stream_options include_usage, GLM chưa chắc hỗ trợ)
+        # → giữ None = "chưa đo", trần CALL vẫn đếm đủ.
+        import time as _t
+        _t0 = _t.perf_counter()
+        try:
+            resp = self.client.chat.completions.create(
+                model=self.model,
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt},
+                ],
+                stream=True,
+            )
+            for chunk in resp:
+                mau = chunk.choices[0].delta.content if chunk.choices else None
+                if mau:  # bỏ mẩu rỗng/None (một số nhà gửi chunk không có nội dung)
+                    yield mau
+        except Exception as e:
+            self._ghi_so((_t.perf_counter() - _t0) * 1000, False, str(e))
+            raise
+        self._ghi_so((_t.perf_counter() - _t0) * 1000, True)

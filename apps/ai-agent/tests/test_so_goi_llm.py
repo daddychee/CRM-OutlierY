@@ -23,3 +23,27 @@ def test_ghi_so_nuot_loi(monkeypatch, tmp_path):
     monkeypatch.setenv("SO_GOI_DIR", "Z:/khong-ton-tai/x")
     p = get_provider("writer")
     p._ghi_so(1, True)  # không raise là đạt
+
+
+def test_stream_that_cung_ghi_so(tmp_path, monkeypatch):
+    """Vá 05/09: đường stream (đường tiêu CHÍNH của hỏi–đáp) trước đây không ghi
+    dòng nào → trần/ngày + Command Center mù. Giờ call thật qua stream = 1 dòng
+    sổ (token None = chưa đo, KHÔNG phải 0 giả)."""
+    from types import SimpleNamespace
+    monkeypatch.setenv("SO_GOI_DIR", str(tmp_path / "sg"))
+    monkeypatch.setenv("WRITER_PROVIDER", "openai_compatible")
+    monkeypatch.setenv("WRITER_MODEL", "glm-4.5-air")
+
+    def create(**kw):
+        assert kw.get("stream") is True
+        chunk = SimpleNamespace(choices=[SimpleNamespace(delta=SimpleNamespace(content="abc"))])
+        return iter([chunk])
+
+    p = get_provider("writer")   # mock — rồi thay client giả để đi nhánh thật
+    p.mock = False
+    p.client = SimpleNamespace(chat=SimpleNamespace(completions=SimpleNamespace(create=create)))
+    assert "".join(p.generate_stream("s", "u")) == "abc"
+    f = next((tmp_path / "sg").rglob("*.log"))
+    nd = f.read_text(encoding="utf-8")
+    assert '"dich_vu": "llm"' in nd and '"viec": "writer"' in nd
+    assert '"token_vao"' not in nd, "stream chưa đo token — không được ghi 0 giả"
