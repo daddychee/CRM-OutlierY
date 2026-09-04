@@ -186,7 +186,8 @@ async def trang_nha(request: Request, user: dict = Depends(khu_cua_toi)):
     """TRANG CHỦ dạng khối — cùng khuôn trang chủ Content Ultimate: bốn thẻ
     ứng bốn tab, mỗi thẻ kèm con số việc đang chờ ở đó."""
     return templates.TemplateResponse(request, "nha.html",
-                                      {"user": user, **_dem_topnav()})
+                                      {"user": user, "trang_cong": True,
+                                       **_dem_topnav()})
 
 
 @app.get("/publish", response_class=HTMLResponse)

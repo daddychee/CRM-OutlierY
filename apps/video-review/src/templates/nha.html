@@ -1,67 +1,59 @@
 {% extends "base.html" %}
 {% block title %}ReviewY{% endblock %}
 {% block tab_hien %}nha{% endblock %}
-{% block wave %}{{ so_tap }} tập đang sản xuất{% if so_cho %} · {{ so_cho }} bản chờ duyệt{% endif %}{% endblock %}
 
 {% block style_them %}
-  /* Trang chủ dạng khối — cùng khuôn trang chủ Content Ultimate (thẻ 3 cột,
-     số thứ tự accent, một dòng flow mô tả đường đi của công việc). */
-  .nha{max-width:1100px}
-  .flow{color:var(--muted);font-size:13px;margin:0 0 24px}
+  /* TRANG CHỦ — chép ĐÚNG số liệu trang chủ Content Ultimate (server.py HOME):
+     .wrap 1100px padding 60px 28px · eyebrow 11px letter-spacing .16em ·
+     h1 30px · flow 13px margin-bottom 28px · thẻ padding 20px 22px, h2 17px,
+     p 12.5px. Trang này KHÔNG có topnav/header — như CU, nó là trang cổng. */
+  .wrap{max-width:1100px;margin:0 auto;padding:60px 28px}
+  .eyebrow{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+  .wrap h1{font-size:30px;margin:4px 0 6px;font-weight:700}
+  .wrap h1 em{color:var(--accent);font-style:normal}
+  .flow{color:var(--muted);font-size:13px;margin:0 0 28px}
   .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
   @media (max-width:980px){.cards{grid-template-columns:1fr 1fr}}
   @media (max-width:640px){.cards{grid-template-columns:1fr}}
   a.card{display:block;background:var(--sidebar);border:1px solid var(--line);
     border-radius:12px;padding:20px 22px;color:inherit;text-decoration:none;transition:.12s}
   a.card:hover{border-color:var(--accent);background:var(--th-182233)}
-  .card h2{margin:0 0 6px;font-size:17px;display:flex;align-items:center;gap:9px}
-  .card h2 .stt{color:var(--accent)}
-  .card h2 svg{width:19px;height:19px;stroke:var(--accent);stroke-width:1.7;fill:none;
-    stroke-linecap:round;stroke-linejoin:round;flex:none}
+  .card h2{margin:0 0 6px;font-size:17px}
+  .card h2 span{color:var(--accent)}
   .card p{margin:0;font-size:12.5px;color:var(--muted)}
-  .card .dem{display:inline-block;margin-top:9px;font-size:11.5px;font-weight:600;
+  .card .dem{display:inline-block;margin-top:10px;font-size:11.5px;font-weight:600;
     color:var(--accent);background:var(--th-16263f);border-radius:999px;padding:2px 9px}
   .card .dem.im{color:var(--muted);background:var(--th-182233);
     border:1px solid var(--line);font-weight:400}
 {% endblock %}
 
 {% block noi_dung %}
-<div class="nha">
-<p class="flow">① Overview (sàn chung — tập nào đang chờ ai) → ② Writing Review
-  (kịch bản từ Content Ultimate → chốt cho dựng) → ③ Editing Review (bản 10 phút
-  → note gắn mốc thời gian) → ④ Publish Review (bản đã đăng → hậu kiểm giữ chân).</p>
-<div class="cards">
-  <a class="card" href="/tong-quan">
-    <h2><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
-      <span class="stt">①</span> Overview</h2>
-    <p>Mỗi tập một thẻ: ba trạm Writing / Editing / Publish và việc kế tiếp đang chờ ai.
-      Bấm thẻ mở bàn giao dựng — script, voice, job, link tham khảo trong một chỗ.</p>
-    {% if so_tap %}<span class="dem">{{ so_tap }} tập đang sản xuất</span>{% endif %}
-  </a>
-  <a class="card" href="/kich-ban">
-    <h2><svg viewBox="0 0 24 24"><path d="M4 4.5A1.5 1.5 0 0 1 5.5 3H15l5 5v12.5a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 20.5z"/><path d="M14.5 3v5.5H20"/><path d="M8 13h8M8 17h5"/></svg>
-      <span class="stt">②</span> Writing Review</h2>
-    <p>Kịch bản chảy sang từ Content Ultimate. Đọc theo từng chương, note gắn vào chương,
-      chốt xong mới cho dựng — bản thiếu chương hoặc hụt độ dài không chốt được.</p>
-    {% if so_kich_ban %}<span class="dem">{{ so_kich_ban }} bản chờ duyệt</span>
-    {% else %}<span class="dem im">chưa có bản nào chờ</span>{% endif %}
-  </a>
-  <a class="card" href="/danh-sach">
-    <h2><svg viewBox="0 0 24 24"><rect x="2.5" y="5" width="19" height="14" rx="2"/><path d="M10 9.5l5 2.5-5 2.5z"/></svg>
-      <span class="stt">③</span> Editing Review</h2>
-    <p>Bản dựng 10 phút trên NAS. Bình luận gắn mốc thời gian (bấm là tua tới đúng giây),
-      vẽ chú thích lên khung hình, phân tích mạch dựng và nhờ AI đánh giá.</p>
-    {% if so_cho %}<span class="dem">{{ so_cho }} bản chờ review</span>
-    {% else %}<span class="dem im">không còn bản nào chờ</span>{% endif %}
-  </a>
-  <a class="card" href="/publish">
-    <h2><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 8c2.5 6 5 8.5 10 9.5"/><path d="M7 8h4M7 8v4"/></svg>
-      <span class="stt">④</span> Publish Review</h2>
-    <p>Bản full đã đăng: đồ thị giữ chân đọc từ ảnh Studio đặt song song trình phát,
-      mỗi chỗ tụt một chẩn đoán đối chiếu kịch bản, kết luận rút cho tập sau.</p>
-    {% if so_dang %}<span class="dem">{{ so_dang }} tập đã đăng</span>
-    {% else %}<span class="dem im">chưa tập nào đăng</span>{% endif %}
-  </a>
-</div>
+<div class="wrap">
+  <div class="eyebrow">Sàn chung Content và Editor</div>
+  <h1>Review<em>Y</em></h1>
+  <p class="flow">① Overview (tập nào đang chờ ai) → ② Writing Review (kịch bản → chốt
+    cho dựng) → ③ Editing Review (bản 10 phút → note gắn mốc) · ④ Publish Review
+    (đã đăng → hậu kiểm).</p>
+  <div class="cards">
+    <a class="card" href="/tong-quan"><h2><span>①</span> Overview</h2>
+      <p>Mỗi tập một thẻ: ba trạm và việc kế tiếp đang chờ ai → bấm thẻ mở bàn giao dựng
+        (script, voice, job, link tham khảo).</p>
+      {% if so_tap %}<span class="dem">{{ so_tap }} tập đang sản xuất</span>{% endif %}</a>
+    <a class="card" href="/kich-ban"><h2><span>②</span> Writing Review</h2>
+      <p>Kịch bản từ Content Ultimate → đọc theo từng chương, note gắn vào chương →
+        chốt cho dựng (bản thiếu chương không chốt được).</p>
+      {% if so_kich_ban %}<span class="dem">{{ so_kich_ban }} bản chờ duyệt</span>
+      {% else %}<span class="dem im">chưa có bản nào chờ</span>{% endif %}</a>
+    <a class="card" href="/danh-sach"><h2><span>③</span> Editing Review</h2>
+      <p>Bản dựng 10 phút trên NAS → bình luận gắn mốc thời gian, vẽ chú thích lên khung
+        hình, phân tích mạch dựng và nhờ AI đánh giá.</p>
+      {% if so_cho %}<span class="dem">{{ so_cho }} bản chờ review</span>
+      {% else %}<span class="dem im">không còn bản nào chờ</span>{% endif %}</a>
+    <a class="card" href="/publish"><h2><span>④</span> Publish Review</h2>
+      <p>Bản full đã đăng → đồ thị giữ chân song song trình phát, mỗi chỗ tụt một chẩn
+        đoán đối chiếu kịch bản → kết luận cho tập sau.</p>
+      {% if so_dang %}<span class="dem">{{ so_dang }} tập đã đăng</span>
+      {% else %}<span class="dem im">chưa tập nào đăng</span>{% endif %}</a>
+  </div>
 </div>
 {% endblock %}
