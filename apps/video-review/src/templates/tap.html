@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% block title %}Tập {{ tap.ma }} — Video Review{% endblock %}
+{% block topbar_ten %}Video Review{% endblock %}
+
+{% block style_them %}
+  .tap-dau{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+  .tap-dau h2{font-size:20px;margin:0}
+  .tap-dau .duong{font-size:12px;color:var(--muted)}
+  .hai-khoi{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start}
+  @media (max-width:900px){.hai-khoi{grid-template-columns:1fr}}
+  .khoi{border:1px solid var(--line);border-radius:13px;background:var(--sidebar);overflow:hidden}
+  .khoi-dau{padding:11px 14px;border-bottom:1px solid var(--line);display:flex;
+    align-items:center;gap:9px;font-size:13px;font-weight:600}
+  .khoi-dau .vai{font-size:11px;color:var(--muted);margin-left:auto;font-weight:400}
+  .ban{display:flex;align-items:center;gap:10px;padding:10px 14px;font-size:13px;
+    border-bottom:1px solid var(--line)}
+  .ban:last-child{border-bottom:0}
+  .ban a{color:var(--ink);text-decoration:none;font-weight:600}
+  .ban a:hover{color:var(--accent)}
+  .ban .meta{font-size:11.5px;color:var(--muted)}
+  .ban .di{margin-left:auto}
+  .khoi-chan{padding:11px 14px;border-top:1px solid var(--line);font-size:12px;color:var(--muted)}
+  .trong{padding:16px 14px;font-size:12.5px;color:var(--muted);text-align:center}
+  .so-hang{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:12px 14px}
+  .so-o{border:1px solid var(--line);border-radius:10px;padding:9px 11px}
+  .so-o .nhan{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600}
+  .so-o .gia{font-size:20px;font-weight:700;margin-top:2px}
+  form.gan{display:flex;flex-direction:column;gap:8px;padding:12px 14px}
+  form.gan input,form.gan select{padding:7px 10px;border:1px solid var(--chip-line);border-radius:8px;
+    background:var(--th-182233);color:var(--ink);font:inherit;font-size:12.5px}
+  form.gan .hang{display:flex;gap:8px;flex-wrap:wrap}
+  form.gan .hang input{flex:1;min-width:90px}
+  .loi{color:var(--th-d97c6c);font-size:12px;display:none}
+{% endblock %}
+
+{% block noi_dung %}
+<div class="tap-dau">
+  <h2>Tập {{ tap.ma }}</h2>
+  {% if tap.xong_duyet %}<span class="chip da_duyet">Duyệt xong</span>{% endif %}
+  {% if tap.full %}<span class="chip dang_duyet">Đã đăng</span>{% endif %}
+  <a class="nut nho phu" href="/danh-sach" style="text-decoration:none;margin-left:auto">← Tất cả video</a>
+</div>
+
+<div class="hai-khoi">
+  <div class="khoi">
+    <div class="khoi-dau">Bản duyệt — 10 phút<span class="vai">luồng 1 · editor ↔ leader</span></div>
+    {% for v in tap.duyet %}
+    <div class="ban">
+      <a href="/xem/{{ v.ma }}">{{ v.ten }}</a>
+      <span class="meta">{{ v.tao_luc[:10] }} · {{ v.nguoi_tao }}</span>
+      <span class="chip {{ v.trang_thai }} di">{{ NHAN_TRANG_THAI.get(v.trang_thai, v.trang_thai) }}</span>
+    </div>
+    {% else %}
+    <div class="trong">Chưa có bản duyệt nào của tập này.</div>
+    {% endfor %}
+    <div class="khoi-chan">Note của vòng duyệt tra lại được ở từng bản, nhưng
+      <b>không gióng sang bản full</b> — hai video khác thời lượng.</div>
+  </div>
+
+  <div class="khoi">
+    <div class="khoi-dau">Bản full — đã đăng<span class="vai">luồng 2 · hậu kiểm</span></div>
+    {% if tap.full %}
+    <div class="ban">
+      <a href="/hau-kiem/{{ tap.ma }}">{{ tap.full.ten }}</a>
+      <span class="meta">{{ (tap.full.kich_thuoc / 1073741824) | round(1) }}GB</span>
+      {% if tap.full.yt_id %}<a class="di nut nho phu" style="text-decoration:none"
+        href="https://youtu.be/{{ tap.full.yt_id }}" target="_blank" rel="noopener">YouTube</a>{% endif %}
+    </div>
+    {% if giu_chan %}
+    <div class="so-hang">
+      <div class="so-o"><div class="nhan">Giữ ở 0:30</div><div class="gia">{{ giu_chan.hook_30 | round(0) | int }}%</div></div>
+      <div class="so-o"><div class="nhan">Xem TB</div><div class="gia">{{ (giu_chan.avd_giay // 60) | int }}:{{ '%02d' % (giu_chan.avd_giay % 60) }}</div></div>
+      <div class="so-o"><div class="nhan">Giữ chân TB</div><div class="gia">{{ giu_chan.giu_tb | round(1) }}%</div></div>
+    </div>
+    <div class="khoi-chan">Đường cong đọc từ ảnh <b>{{ giu_chan.nguon_anh }}</b>
+      · lệch neo {{ giu_chan.lech_neo | round(1) }} điểm ·
+      <a href="/hau-kiem/{{ tap.ma }}" style="color:var(--accent)">mở hậu kiểm</a></div>
+    {% else %}
+    <div class="trong">Chưa có số liệu giữ chân — mở hậu kiểm để dán ảnh đồ thị.</div>
+    {% endif %}
+    {% else %}
+    <div class="trong">Tập này chưa có bản full.</div>
+    <form class="gan" id="form-full">
+      <div class="hang">
+        <input name="ma" placeholder="Mã video bản full (VR-00xx)" required>
+        <input name="yt" placeholder="Link YouTube">
+      </div>
+      <button class="nut nho" type="submit">Gắn bản full cho tập {{ tap.ma }}</button>
+      <span class="loi" id="loi-full"></span>
+    </form>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block script %}
+<script>
+(function () {
+  "use strict";
+  var f = document.getElementById("form-full");
+  if (!f) return;
+  var loi = document.getElementById("loi-full");
+  f.addEventListener("submit", function (e) {
+    e.preventDefault();
+    var ma = f.ma.value.trim(), yt = f.yt.value.trim();
+    if (!ma) return;
+    var fd = new FormData();
+    fd.append("ma", ma); fd.append("ma_tap", {{ tap.ma | tojson }}); fd.append("loai", "full");
+    fetch("/api-vr/gan-tap", { method: "POST", body: fd })
+      .then(function (r) { if (!r.ok) return r.json().then(function (j) { throw j; }); })
+      .then(function () {
+        if (!yt) return;
+        var f2 = new FormData(); f2.append("ma", ma); f2.append("yt", yt);
+        return fetch("/api-vr/gan-youtube", { method: "POST", body: f2 });
+      })
+      .then(function () { location.reload(); })
+      .catch(function (j) {
+        loi.textContent = (j && j.detail) || "Không gắn được bản full.";
+        loi.style.display = "block";
+      });
+  });
+})();
+</script>
+{% endblock %}

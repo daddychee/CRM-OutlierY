@@ -1,0 +1,310 @@
+{% extends "base.html" %}
+{% block title %}Hậu kiểm {{ tap.ma }} — Video Review{% endblock %}
+{% block topbar_ten %}Video Review{% endblock %}
+
+{% block style_them %}
+  .vr-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+  .vr-head h2{font-size:17px;margin:0}
+  .vr-head h2 span{color:var(--muted);font-size:12.5px;font-weight:400}
+  .vr-grid{display:grid;grid-template-columns:minmax(0,1fr) 370px;gap:18px;align-items:start}
+  @media (max-width:1100px){.vr-grid{grid-template-columns:1fr}}
+  .vid-wrap{position:relative;background:#000;border-radius:12px 12px 0 0;overflow:hidden;
+    border:1px solid var(--line);border-bottom:0}
+  .vid-wrap video{width:100%;max-height:58vh;display:block}
+  .ret{position:relative;height:120px;border:1px solid var(--line);border-radius:0 0 12px 12px;
+    background:var(--sidebar);overflow:hidden;cursor:crosshair}
+  .ret svg{position:absolute;inset:0;width:100%;height:100%}
+  .ret .tut{position:absolute;top:0;bottom:0;background:rgba(217,124,108,.16)}
+  .ret .avd{position:absolute;top:0;bottom:0;width:1.5px;background:var(--th-d97c6c)}
+  .ret .avd b{position:absolute;bottom:5px;left:5px;font-size:10px;color:var(--th-d97c6c);white-space:nowrap}
+  .ret .ct{position:absolute;top:0;bottom:0;width:2px;background:var(--ink)}
+  .ret .bong{position:absolute;top:6px;background:var(--ink);color:var(--bg);font-size:10.5px;
+    font-weight:700;border-radius:5px;padding:2px 7px;white-space:nowrap;transform:translateX(-50%)}
+  .ret .luoi{position:absolute;left:0;right:0;border-top:1px dashed var(--line)}
+  .ret .nhan{position:absolute;font-size:9.5px;color:var(--muted)}
+  .truc{display:flex;justify-content:space-between;font-size:10.5px;color:var(--muted);padding:5px 4px 0}
+  .bl-panel{background:var(--sidebar);border:1px solid var(--line);border-radius:14px;padding:14px;
+    display:flex;flex-direction:column;gap:12px;max-height:calc(100dvh - 170px);overflow:hidden}
+  .bl-ds{overflow-y:auto;display:flex;flex-direction:column;gap:8px}
+  .bl-item{border:1px solid var(--line);border-left:3px solid var(--th-d97c6c);border-radius:11px;
+    padding:9px 12px;font-size:13px;background:var(--th-141c2b);cursor:pointer}
+  .bl-item.vua{border-left-color:#d6a64a}
+  .bl-item.nhe{border-left-color:var(--muted)}
+  .moc{color:var(--accent);font-weight:600;font-size:12px;background:var(--th-16263f);
+    border-radius:6px;padding:1px 7px;margin-right:6px}
+  .benh{font-weight:700;font-size:13.5px;display:block;margin:5px 0 3px}
+  .so-lieu{font-size:11.5px;color:var(--muted);border-top:1px dashed var(--line);padding-top:5px;margin-top:5px}
+  .trich{background:var(--th-182233);border-left:2px solid var(--chip-line);border-radius:7px;
+    padding:6px 9px;margin-top:6px;font-size:12.3px}
+  .trich i{display:block;font-style:normal;font-size:10.5px;color:var(--muted);margin-bottom:2px}
+  .phan-hang{display:flex;gap:4px;margin-top:6px;flex-wrap:wrap;align-items:center}
+  .phan-hang button{font:inherit;font-size:11px;font-weight:600;border:1px solid var(--chip-line);
+    background:var(--th-182233);color:var(--muted);border-radius:6px;padding:3px 9px;cursor:pointer}
+  .phan-hang button.chon{background:var(--accent);border-color:transparent;color:#fff}
+  .phan-hang button.nguoi{background:rgba(90,170,120,.16);border-color:transparent;color:#5aaa78}
+  .phan-hang .da-sua{font-size:10.5px;color:#5aaa78;font-weight:600}
+  .tom{padding:9px 11px;background:var(--th-182233);border:1px solid var(--line);border-radius:10px;font-size:12.5px}
+  .tom b{font-size:13.5px}
+  .viec{font-size:12.5px;display:flex;flex-direction:column;gap:5px;padding:9px 11px;
+    background:var(--th-182233);border-radius:10px}
+  .nhap{display:flex;flex-direction:column;gap:8px}
+  .nhap input{padding:7px 10px;border:1px solid var(--chip-line);border-radius:8px;
+    background:var(--th-182233);color:var(--ink);font:inherit;font-size:12.5px}
+  .nhap .hang{display:flex;gap:6px}
+  .nhap .hang input{flex:1;min-width:0}
+  .loi{color:var(--th-d97c6c);font-size:12px;display:none}
+{% endblock %}
+
+{% block noi_dung %}
+<div class="vr-head">
+  <h2>{{ video.ten }} <span>{{ tap.ma }} · bản full · {{ video.tao_luc[:10] }}</span></h2>
+  {% if video.yt_id %}
+  <a class="nut nho phu" href="https://youtu.be/{{ video.yt_id }}" target="_blank"
+     rel="noopener" style="text-decoration:none">Mở trên YouTube</a>
+  {% endif %}
+  <a class="nut nho phu" href="/tap/{{ tap.ma }}" style="text-decoration:none">← Tập {{ tap.ma }}</a>
+</div>
+
+<div class="vr-grid">
+  <div>
+    <div class="vid-wrap">
+      <video id="vid" src="/media/{{ video.ma }}" controls preload="metadata"></video>
+    </div>
+    {% if cong %}
+    <div class="ret" id="ret">
+      <div class="luoi" style="top:12%"></div><div class="luoi" style="top:45%"></div>
+      <div class="luoi" style="top:78%"></div>
+      <span class="nhan" style="left:6px;top:5px">100%</span>
+      <span class="nhan" style="left:6px;bottom:4px">0%</span>
+      <div class="ct" id="ct" style="left:0"></div>
+      <div class="bong" id="bong" style="left:0">0:00</div>
+    </div>
+    <div class="truc" id="truc"></div>
+    {% else %}
+    <div class="ret" style="display:flex;align-items:center;justify-content:center;color:var(--muted);
+         font-size:12.5px;cursor:default">Chưa có đường cong giữ chân — nhập ở cột bên phải.</div>
+    {% endif %}
+  </div>
+
+  <div class="bl-panel">
+    {% if giu_chan %}
+    <div class="tom"><b>{{ giu_chan.hook_30 | round(0) | int }}%</b> ở 0:30 ·
+      xem TB <b>{{ (giu_chan.avd_giay // 60) | int }}:{{ '%02d' % (giu_chan.avd_giay % 60) }}</b> ·
+      giữ chân <b>{{ giu_chan.giu_tb | round(1) }}%</b>
+      <div style="color:var(--muted);font-size:11.5px;margin-top:4px">
+        Đường cong đọc từ ảnh — dùng để tìm chỗ tụt, không phải số chính thức.</div>
+    </div>
+    <button class="nut nho" type="button" id="nut-hk">Chẩn đoán lại</button>
+    {% else %}
+    <form class="nhap" id="form-gc">
+      <div style="font-size:12.5px;font-weight:600">Nhập số liệu từ YouTube Studio</div>
+      <div class="hang">
+        <input name="hook_30" type="number" step="0.1" placeholder="Giữ ở 0:30 (%)" required>
+        <input name="giu_tb" type="number" step="0.1" placeholder="Giữ chân TB (%)" required>
+      </div>
+      <input name="avd" placeholder="Thời lượng xem TB (vd 4:19)" required>
+      <input name="anh" type="file" accept="image/*" required>
+      <button class="nut nho" type="submit">Đọc đồ thị + chẩn đoán</button>
+      <span class="loi" id="loi-gc"></span>
+    </form>
+    {% endif %}
+
+    {% if ket_luan_viec %}
+    <div class="viec">{% for v in ket_luan_viec %}<div>• {{ v }}</div>{% endfor %}</div>
+    {% endif %}
+    <div class="bl-ds" id="bl-ds"></div>
+  </div>
+</div>
+{% endblock %}
+
+{% block script %}
+<script>
+(function () {
+  "use strict";
+  var VIDEO_MA = {{ video.ma | tojson }};
+  var MA_TAP = {{ tap.ma | tojson }};
+  var CONG = {{ cong | tojson }};
+  var NX = {{ cac_nx | tojson }};
+  var TONG = {{ thoi_luong | tojson }};
+  var AVD = {{ (giu_chan.avd_giay if giu_chan else 0) | tojson }};
+  var vid = document.getElementById("vid");
+  var ret = document.getElementById("ret");
+  var dsEl = document.getElementById("bl-ds");
+
+  function mmss(s) {
+    s = Math.max(0, s || 0);
+    return Math.floor(s / 60) + ":" + String(Math.floor(s % 60)).padStart(2, "0");
+  }
+  function giaTri(pt) {
+    if (!CONG.length) return 0;
+    var i = Math.max(0, Math.min(CONG.length - 1, pt / 100 * (CONG.length - 1)));
+    var lo = Math.floor(i), hi = Math.min(lo + 1, CONG.length - 1), t = i - lo;
+    return CONG[lo] * (1 - t) + CONG[hi] * t;
+  }
+
+  // ===== đồ thị vẽ bằng SVG, cùng trục thời gian với video =====
+  if (ret && CONG.length) {
+    var svgNS = "http://www.w3.org/2000/svg";
+    var svg = document.createElementNS(svgNS, "svg");
+    svg.setAttribute("viewBox", "0 0 100 40");
+    svg.setAttribute("preserveAspectRatio", "none");
+    var pl = document.createElementNS(svgNS, "polyline");
+    pl.setAttribute("fill", "none");
+    pl.setAttribute("stroke", "var(--accent)");
+    pl.setAttribute("stroke-width", "1.4");
+    pl.setAttribute("vector-effect", "non-scaling-stroke");
+    pl.setAttribute("points", CONG.map(function (v, i) {
+      return (i / (CONG.length - 1) * 100) + "," + (40 - v / 100 * 39);
+    }).join(" "));
+    svg.appendChild(pl);
+    ret.insertBefore(svg, ret.firstChild);
+
+    NX.forEach(function (n) {                    // tô vùng tụt máy đã tìm ra
+      if (n.ts_giay == null || !TONG) return;
+      var v = document.createElement("div");
+      v.className = "tut";
+      v.style.left = (n.ts_giay / TONG * 100) + "%";
+      v.style.width = Math.max(0.6, ((n.ts_het || n.ts_giay) - n.ts_giay) / TONG * 100) + "%";
+      ret.appendChild(v);
+    });
+    if (AVD && TONG) {
+      var a = document.createElement("div");
+      a.className = "avd";
+      a.style.left = (AVD / TONG * 100) + "%";
+      a.innerHTML = "<b>" + mmss(AVD) + " — xem TB</b>";
+      ret.appendChild(a);
+    }
+    var truc = document.getElementById("truc");
+    if (truc) for (var k = 0; k <= 4; k++) {
+      var sp = document.createElement("span");
+      sp.textContent = mmss(TONG * k / 4);
+      truc.appendChild(sp);
+    }
+  }
+
+  var ct = document.getElementById("ct"), bong = document.getElementById("bong");
+  function dat(pt) {
+    if (!ct) return;
+    pt = Math.max(0, Math.min(100, pt));
+    ct.style.left = pt + "%"; bong.style.left = pt + "%";
+    bong.textContent = mmss(TONG * pt / 100) + " · còn " + giaTri(pt).toFixed(1) + "%";
+  }
+  // video chạy tới đâu, con trỏ đồ thị tới đó
+  if (vid) vid.addEventListener("timeupdate", function () {
+    if (TONG) dat(vid.currentTime / TONG * 100);
+  });
+  // bấm/rê trên đồ thị thì video tua tới đúng chỗ
+  if (ret) ["click", "mousemove"].forEach(function (ten) {
+    ret.addEventListener(ten, function (e) {
+      if (ten === "mousemove" && e.buttons === 0) return;
+      var r = ret.getBoundingClientRect();
+      var pt = (e.clientX - r.left) / r.width * 100;
+      dat(pt);
+      if (vid && TONG) vid.currentTime = TONG * pt / 100;
+    });
+  });
+
+  // ===== chẩn đoán: cùng cột, mỗi chỗ tụt một thẻ có LỜI =====
+  var PHAN = ["Làm lại", "Cắt ngắn", "Bỏ hẳn", "Giữ", "Bỏ qua"];
+
+  function veThe(n) {
+    var d = document.createElement("div");
+    d.className = "bl-item " + (n.muc || "nhe");
+    var dau = document.createElement("div");
+    if (n.ts_giay != null) {
+      var m = document.createElement("span"); m.className = "moc";
+      m.textContent = mmss(n.ts_giay); dau.appendChild(m);
+    }
+    d.appendChild(dau);
+    var b = document.createElement("span"); b.className = "benh"; b.textContent = n.benh;
+    d.appendChild(b);
+    if (n.loi) { var p = document.createElement("p"); p.textContent = n.loi; d.appendChild(p); }
+    if (n.trich_kb) {
+      var t = document.createElement("div"); t.className = "trich";
+      var i = document.createElement("i"); i.textContent = "Kịch bản đoạn này";
+      t.appendChild(i); t.appendChild(document.createTextNode(n.trich_kb));
+      d.appendChild(t);
+    }
+    if (n.so_lieu) {
+      var sl = document.createElement("div"); sl.className = "so-lieu";
+      sl.textContent = n.so_lieu; d.appendChild(sl);
+    }
+    var hang = document.createElement("div"); hang.className = "phan-hang";
+    PHAN.forEach(function (ten) {
+      if (ten !== n.phan && ten !== n.phan_nguoi && PHAN.indexOf(ten) > 2) return;
+      var nut = document.createElement("button");
+      nut.type = "button"; nut.textContent = ten;
+      if (n.phan_nguoi === ten) nut.className = "nguoi";
+      else if (!n.phan_nguoi && n.phan === ten) nut.className = "chon";
+      nut.addEventListener("click", function (e) {
+        e.stopPropagation();
+        var fd = new FormData(); fd.append("phan", ten);
+        fetch("/api-vr/nhan-xet/" + n.id + "/phan", { method: "POST", body: fd })
+          .then(napLai);
+      });
+      hang.appendChild(nut);
+    });
+    if (n.phan_nguoi && n.phan_nguoi !== n.phan) {
+      var s = document.createElement("span"); s.className = "da-sua";
+      s.textContent = "anh sửa (máy phán: " + n.phan + ")";
+      hang.appendChild(s);
+    }
+    d.appendChild(hang);
+    d.addEventListener("click", function () {
+      if (n.ts_giay != null && vid) { vid.currentTime = n.ts_giay; vid.pause(); }
+    });
+    return d;
+  }
+
+  function render() {
+    dsEl.textContent = "";
+    if (!NX.length) {
+      var t = document.createElement("div");
+      t.style.cssText = "color:var(--muted);font-size:12.5px;text-align:center;padding:14px 0";
+      t.textContent = "Chưa có chẩn đoán — nhập số liệu rồi bấm chẩn đoán.";
+      dsEl.appendChild(t); return;
+    }
+    NX.forEach(function (n) { dsEl.appendChild(veThe(n)); });
+  }
+  function napLai() {
+    fetch("/api-vr/nhan-xet/" + VIDEO_MA).then(function (r) { return r.json(); })
+      .then(function (du) { NX = du; render(); });
+  }
+  render();
+
+  var nutHk = document.getElementById("nut-hk");
+  if (nutHk) nutHk.addEventListener("click", function () {
+    nutHk.disabled = true; nutHk.textContent = "Đang chẩn đoán…";
+    fetch("/api-vr/hau-kiem/" + MA_TAP, { method: "POST" })
+      .then(function (r) { if (!r.ok) throw 0; return r.json(); })
+      .then(function () { location.reload(); })
+      .catch(function () { nutHk.disabled = false; nutHk.textContent = "Chẩn đoán lại"; });
+  });
+
+  var fGc = document.getElementById("form-gc");
+  if (fGc) fGc.addEventListener("submit", function (e) {
+    e.preventDefault();
+    var loi = document.getElementById("loi-gc");
+    var av = fGc.avd.value.trim().split(":");
+    var giay = av.length === 2 ? (+av[0]) * 60 + (+av[1]) : parseFloat(av[0]);
+    if (!(giay > 0)) { loi.textContent = "Thời lượng xem TB ghi kiểu 4:19."; loi.style.display = "block"; return; }
+    var fd = new FormData();
+    fd.append("hook_30", fGc.hook_30.value);
+    fd.append("giu_tb", fGc.giu_tb.value);
+    fd.append("avd_giay", giay);
+    fd.append("anh", fGc.anh.files[0]);
+    loi.style.display = "none";
+    fGc.querySelector("button").disabled = true;
+    fetch("/api-vr/giu-chan/" + MA_TAP, { method: "POST", body: fd })
+      .then(function (r) { if (!r.ok) return r.json().then(function (j) { throw j; }); return r.json(); })
+      .then(function () { return fetch("/api-vr/hau-kiem/" + MA_TAP, { method: "POST" }); })
+      .then(function () { location.reload(); })
+      .catch(function (j) {
+        fGc.querySelector("button").disabled = false;
+        loi.textContent = (j && j.detail) || "Không đọc được ảnh đồ thị.";
+        loi.style.display = "block";
+      });
+  });
+})();
+</script>
+{% endblock %}

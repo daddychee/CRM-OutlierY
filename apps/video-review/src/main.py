@@ -35,7 +35,7 @@ from fastapi import (BackgroundTasks, Depends, FastAPI, Form, Header, HTTPExcept
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from fastapi.templating import Jinja2Templates
 
-from src import don_nas, kho_video, nap_nas, nhan_xet
+from src import do_thi, don_nas, hau_kiem, kho_video, nap_nas, nhan_xet
 
 _APP_DIR = Path(__file__).resolve().parents[1]
 PHIEN_BAN = "0.3.0"
@@ -456,6 +456,105 @@ async def api_nas_xoa_feedback(duong: str = Form(...), ma_tap: str = Form(...),
         raise HTTPException(403, str(e))
     except (FileNotFoundError, OSError):
         raise HTTPException(404, "Không thấy khối Feedback này trên NAS.")
+
+
+# ---------- luồng 2: hậu kiểm sau khi đăng (xem src/hau_kiem.py) ----------
+
+@app.get("/tap/{ma_tap}", response_class=HTMLResponse)
+async def trang_tap(request: Request, ma_tap: str, user: dict = Depends(khu_cua_toi)):
+    """Thư mục tập — đối tượng cuối cùng: bản duyệt 10 phút + bản full đã đăng."""
+    tap = kho_video.mot_tap(ma_tap)
+    if tap is None:
+        raise HTTPException(404, "Không có tập này.")
+    return templates.TemplateResponse(request, "tap.html", {
+        "tap": tap, "user": user, "giu_chan": hau_kiem.lay_giu_chan(ma_tap)})
+
+
+@app.get("/hau-kiem/{ma_tap}", response_class=HTMLResponse)
+async def trang_hau_kiem(request: Request, ma_tap: str, user: dict = Depends(khu_cua_toi)):
+    """Luồng 2 — cùng khung 2 cột: trái video + đồ thị, phải chẩn đoán."""
+    tap = kho_video.mot_tap(ma_tap)
+    if tap is None or tap.get("full") is None:
+        raise HTTPException(404, "Tập này chưa có bản full.")
+    full = tap["full"]
+    gc = hau_kiem.lay_giu_chan(ma_tap)
+    return templates.TemplateResponse(request, "hau_kiem.html", {
+        "tap": tap, "video": full, "user": user, "giu_chan": gc,
+        "cong": gc["cong"] if gc else [],
+        "thoi_luong": hau_kiem._thoi_luong_full(full),
+        "cac_nx": nhan_xet.ds_nhan_xet(full["ma"]),
+        "ket_luan_viec": (hau_kiem.chan_doan_tap(ma_tap).get("ket_luan", {}).get("viec", [])
+                          if gc else [])})
+
+
+@app.post("/api-vr/gan-tap")
+async def api_gan_tap(ma: str = Form(...), ma_tap: str = Form(...),
+                      loai: str = Form("duyet"), user: dict = Depends(khu_cua_toi)):
+    try:
+        kho_video.gan_tap(ma, ma_tap, loai)
+    except KeyError:
+        raise HTTPException(404, "Không có video này.")
+    except ValueError as e:
+        raise HTTPException(422, str(e))
+    return {"ok": True}
+
+
+@app.post("/api-vr/gan-youtube")
+async def api_gan_youtube(ma: str = Form(...), yt: str = Form(...),
+                          dang_luc: str = Form(""), user: dict = Depends(khu_cua_toi)):
+    yt_id = yt.strip().rsplit("/", 1)[-1].split("?v=")[-1].split("&")[0]
+    try:
+        kho_video.gan_youtube(ma, yt_id, dang_luc)
+    except KeyError:
+        raise HTTPException(404, "Không có video này.")
+    return {"ok": True, "yt_id": yt_id}
+
+
+@app.post("/api-vr/giu-chan/{ma_tap}")
+async def api_giu_chan(ma_tap: str, anh: UploadFile, hook_30: float = Form(...),
+                       avd_giay: float = Form(...), giu_tb: float = Form(...),
+                       user: dict = Depends(khu_cua_toi)):
+    """Dán ảnh đồ thị Studio + 3 số đọc trên màn hình. Ảnh đọc lệch số thật quá
+    ngưỡng thì TỪ CHỐI, đòi chụp lại — thà không có còn hơn có số sai."""
+    import tempfile
+    from starlette.concurrency import run_in_threadpool
+    tap = kho_video.mot_tap(ma_tap)
+    if tap is None or tap.get("full") is None:
+        raise HTTPException(404, "Tập này chưa có bản full để gắn số liệu.")
+    full = tap["full"]
+    thoi_luong = hau_kiem._thoi_luong_full(full)
+    if thoi_luong <= 0:
+        raise HTTPException(422, "Chưa biết thời lượng bản full — chạy đánh giá trước.")
+    du = await anh.read()
+    if len(du) > 8 * 1024 * 1024:
+        raise HTTPException(413, "Ảnh quá 8MB.")
+    with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as f:
+        f.write(du)
+        tam = Path(f.name)
+    try:
+        cong = await run_in_threadpool(do_thi.doc_duong_cong, tam)
+    finally:
+        tam.unlink(missing_ok=True)
+    if cong is None:
+        raise HTTPException(422, "Không tìm thấy đường cong trong ảnh — chụp lại "
+                                 "phần biểu đồ giữ chân cho rõ, đừng cắt cúp.")
+    neo = do_thi.neo_bang_so_that(cong, hook_30, thoi_luong)
+    if not neo["dat"]:
+        raise HTTPException(422, f"Ảnh không khớp số anh nhập: {neo['ly_do']}. "
+                                 f"Chụp lại rõ hơn hoặc kiểm lại 3 số.")
+    hau_kiem.luu_giu_chan(ma_tap, full["ma"], hook_30, avd_giay, giu_tb,
+                          neo["cong"], anh.filename or "", neo.get("lech"), user["ten"])
+    return {"ok": True, "so_diem": len(neo["cong"]), "lech_neo": round(neo.get("lech", 0), 2)}
+
+
+@app.post("/api-vr/hau-kiem/{ma_tap}")
+async def api_hau_kiem(ma_tap: str, user: dict = Depends(khu_cua_toi)):
+    """Sinh chẩn đoán cho tập: chỗ tụt + mạch dựng + trích kịch bản."""
+    kq = hau_kiem.chan_doan_tap(ma_tap)
+    if not kq.get("co"):
+        raise HTTPException(404, "Chưa đủ dữ liệu — cần bản full và số liệu giữ chân.")
+    nhan_xet.luu_nhan_xet(kq["video"]["ma"], kq["cac_tut"])
+    return {"ok": True, "so": len(kq["cac_tut"]), "ket_luan": kq["ket_luan"]}
 
 
 # ---------- nhận xét của MÁY (xem src/nhan_xet.py) ----------
