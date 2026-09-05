@@ -22,6 +22,8 @@ from pathlib import Path
 from fastapi import APIRouter, Depends, Form, Header, HTTPException, Request
 from fastapi.responses import FileResponse, HTMLResponse
 
+from nen.common import xac_thuc_app
+
 from src import niche_bridge
 
 _APP_DIR = Path(__file__).resolve().parents[1]
@@ -32,8 +34,14 @@ router = APIRouter()
 
 # Claims như main.lay_user — chép tại chỗ để router không import ngược main
 # (`ponytail:` gộp về src/claims.py chung khi có mảnh thứ ba cần).
-def _lay_user(x_remote_user: str = Header(""), x_remote_level: str = Header("0"),
+def _lay_user(request: Request,
+              x_remote_user: str = Header(""), x_remote_level: str = Header("0"),
               x_remote_role: str = Header("")) -> dict:
+    # SIẾT 05/09/2026: BẢN SAO THỨ HAI của cửa danh tính (main.lay_user là bản
+    # thứ nhất) — rà bảo mật 05/09 bắt được cả hai đều tin header vô điều kiện.
+    # Phải vá CẢ HAI, sót một bản là lỗ vẫn mở.
+    if not xac_thuc_app.duoc_tin(request, "DA_TRUST_PROXY"):
+        raise HTTPException(401, "Thiếu danh tính — vào qua cổng OUTLIERY.")
     if not x_remote_user:
         raise HTTPException(401, "Thiếu danh tính — vào qua cổng OUTLIERY.")
     try:

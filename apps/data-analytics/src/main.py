@@ -26,6 +26,8 @@ from fastapi import (BackgroundTasks, Depends, FastAPI, File, Form, Header,
 from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
+from nen.common import xac_thuc_app
+
 _APP_DIR = Path(__file__).resolve().parents[1]          # apps/data-analytics
 ROOT = _APP_DIR.parents[1]                               # D:\AI AGENT OUTLIERY
 # Luật 6: db/ (bản ghi lịch sử) vs kho/ (file gốc tích lũy). Đặt TRƯỚC khi import
@@ -65,10 +67,14 @@ async def _startup():
 
 # ---------- claims (thay auth hệ cũ) ----------
 
-def lay_user(x_remote_user: str = Header(""), x_remote_level: str = Header("0"),
+def lay_user(request: Request,
+             x_remote_user: str = Header(""), x_remote_level: str = Header("0"),
              x_remote_role: str = Header("")) -> dict:
     """User = claims gateway tiêm (an toàn vì app bind 127.0.0.1 — chỉ gateway tới
     được; header giả từ trình duyệt đã bị gateway vứt)."""
+    if not xac_thuc_app.duoc_tin(request, "DA_TRUST_PROXY"):
+        # SIẾT 05/09/2026 (sổ docs/bao-mat-internet.md): app nay con TU DUNG LAI X-Remote-* gui sang RadarY/niche (radary_bridge, niche_run) nen thung o day la CA CUM thung.
+        raise HTTPException(401, "Thiếu danh tính — vào qua cổng OUTLIERY.")
     if not x_remote_user:
         raise HTTPException(401, "Thiếu danh tính — vào qua cổng OUTLIERY.")
     try:
