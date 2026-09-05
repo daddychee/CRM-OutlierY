@@ -152,50 +152,110 @@ def tao_vault(master: str, ai: str) -> list[str]:
 _TT_KHOA = threading.Lock()
 _DEK: bytes | None = None
 _HET_HAN = 0.0
+_AI_MO: str = ""          # SIẾT 05/09 — xem docstring _dek_dang_mo
 
 
-def _dek_dang_mo() -> bytes | None:
-    """DEK nếu vault đang mở và chưa quá hạn; mỗi lần dùng GIA HẠN đồng hồ tự khóa."""
-    global _DEK, _HET_HAN
+def _dek_dang_mo(ai: str | None = None) -> bytes | None:
+    """DEK nếu vault đang mở, chưa quá hạn, VÀ do CHÍNH `ai` mở.
+
+    SIẾT 05/09/2026 (sổ docs/bao-mat-internet.md mục A3): trước đây hàm này chỉ
+    hỏi "vault có đang mở không", KHÔNG hỏi AI mở. Hệ cho phép NHIỀU Owner, nên
+    Owner A mở két là trong 600 giây Owner B (hoặc ai chiếm được phiên của một
+    Owner bất kỳ) đọc sạch mọi mật khẩu MÀ KHÔNG CẦN biết mật khẩu chủ — cửa thứ
+    hai bị vô hiệu, vault chỉ còn MỘT cửa là phiên đăng nhập.
+
+    `ai=None` chỉ dùng cho câu hỏi "két có đang mở không" ở tầng hiển thị; mọi
+    đường CHẠM DỮ LIỆU đều phải truyền `ai`.
+    """
+    global _DEK, _HET_HAN, _AI_MO
     with _TT_KHOA:
         if _DEK is None or monotonic() > _HET_HAN:
-            _DEK = None
+            _DEK, _AI_MO = None, ""
             return None
+        if ai is not None and ai != _AI_MO:
+            return None                      # đúng người mới được dùng
         _HET_HAN = monotonic() + TU_KHOA_GIAY
         return _DEK
 
 
-def dang_mo() -> bool:
-    return _dek_dang_mo() is not None
+def dang_mo(ai: str | None = None) -> bool:
+    return _dek_dang_mo(ai) is not None
 
 
 def khoa(ai: str = "") -> None:
-    global _DEK, _HET_HAN
+    global _DEK, _HET_HAN, _AI_MO
     with _TT_KHOA:
-        _DEK, _HET_HAN = None, 0.0
+        _DEK, _HET_HAN, _AI_MO = None, 0.0, ""
     if ai:
         ghi_audit(ai, "khoa_vault")
 
 
+# ── CHỐNG DÒ MẬT KHẨU CHỦ (SIẾT 05/09/2026, sổ bao-mat-internet.md mục A4) ─────
+# Trước đây `mo_bang_master` cho thử VÔ HẠN; rào cản duy nhất là scrypt (~150ms).
+# Trên Internet, script song song sẽ dò được mật khẩu chủ yếu. Tệ hơn: scrypt
+# maxmem 128MB × nhiều request = DoS cạn RAM, và `_kiem_safekey` chạy scrypt cho
+# TỪNG bản ghi trong sổ (10 lần/request) = đòn bẩy DoS ~1.5s CPU.
+#
+# Bộ đếm THEO TỪNG NGƯỜI (không phải toàn cục) để một người gõ sai không khóa lây
+# người khác. Khóa TĂNG DẦN: mỗi lần vượt ngưỡng, thời gian chờ nhân đôi.
+SO_LAN_SAI_TOI_DA = int(os.getenv("VAULT_SO_LAN_SAI", "5"))
+KHOA_TAM_GIAY = int(os.getenv("VAULT_KHOA_TAM", "300"))
+
+_SAI: dict[str, list] = {}          # ai -> [so_lan, thoi_diem_het_khoa]
+
+
+def so_lan_sai(ai: str) -> int:
+    return _SAI.get(ai, [0, 0.0])[0]
+
+
+def xoa_bo_dem_sai(ai: str | None = None) -> None:
+    """Xóa bộ đếm — dùng khi mở đúng, và trong test."""
+    if ai is None:
+        _SAI.clear()
+    else:
+        _SAI.pop(ai, None)
+
+
+def _kiem_khoa_tam(ai: str) -> None:
+    """Đang bị khóa tạm → PermissionError TRƯỚC khi chạy scrypt (chặn cả DoS)."""
+    so, het = _SAI.get(ai, [0, 0.0])
+    if so >= SO_LAN_SAI_TOI_DA and monotonic() < het:
+        con = int(het - monotonic())
+        ghi_audit(ai, "mo_vault_BI_KHOA_TAM")
+        raise PermissionError(
+            f"Sai mật khẩu chủ quá nhiều lần — thử lại sau {con} giây.")
+
+
+def _ghi_lan_sai(ai: str) -> None:
+    so, _ = _SAI.get(ai, [0, 0.0])
+    so += 1
+    # tăng dần: 5 lần đầu chờ KHOA_TAM_GIAY, mỗi bội số tiếp theo nhân đôi
+    boi = max(0, so - SO_LAN_SAI_TOI_DA) // max(1, SO_LAN_SAI_TOI_DA)
+    _SAI[ai] = [so, monotonic() + KHOA_TAM_GIAY * (2 ** boi)]
+
+
 def mo_bang_master(master: str, ai: str) -> bool:
-    global _DEK, _HET_HAN
+    global _DEK, _HET_HAN, _AI_MO
+    _kiem_khoa_tam(ai)                 # SIẾT 05/09 — chặn TRƯỚC khi tốn scrypt
     goi = _doc_goi()
     try:
         dek = _mo_boc(_kdf(master, _un64(goi["salt_master"])), goi["boc_master"])
     except InvalidTag:
+        _ghi_lan_sai(ai)
         ghi_audit(ai, "mo_vault_SAI_mat_khau")
         return False
+    xoa_bo_dem_sai(ai)                 # mở đúng → xóa bộ đếm
     with _TT_KHOA:
-        _DEK, _HET_HAN = dek, monotonic() + TU_KHOA_GIAY
+        _DEK, _HET_HAN, _AI_MO = dek, monotonic() + TU_KHOA_GIAY, ai
     ghi_audit(ai, "mo_vault")
     return True
 
 
 # ================= MỤC TRONG VAULT =================
 
-def doc_muc() -> list[dict] | None:
-    """Danh sách mục khi vault ĐANG MỞ; khóa/quá hạn → None (route tự xử)."""
-    dek = _dek_dang_mo()
+def doc_muc(ai: str | None = None) -> list[dict] | None:
+    """Danh sách mục khi CHÍNH `ai` đang mở vault; khác người/khóa/quá hạn → None."""
+    dek = _dek_dang_mo(ai)
     if dek is None:
         return None
     return json.loads(_mo_boc(dek, _doc_goi()["du_lieu"]))
@@ -209,9 +269,9 @@ def _ghi_muc(muc: list[dict], dek: bytes) -> None:
 
 def them_hoac_sua_muc(ai: str, id: str, nhom: str, ten: str, tai_khoan: str,
                       mat_khau: str, ghi_chu: str) -> str:
-    dek = _dek_dang_mo()
+    dek = _dek_dang_mo(ai)
     if dek is None:
-        raise PermissionError("Vault đang khóa.")
+        raise PermissionError("Vault đang khóa (hoặc do người khác mở).")
     if nhom not in NHOM_HOP_LE:
         raise ValueError(f"Nhóm '{nhom}' không hợp lệ.")
     if not ten.strip():
@@ -237,9 +297,9 @@ def them_hoac_sua_muc(ai: str, id: str, nhom: str, ten: str, tai_khoan: str,
 
 
 def xoa_muc(ai: str, id: str) -> None:
-    dek = _dek_dang_mo()
+    dek = _dek_dang_mo(ai)
     if dek is None:
-        raise PermissionError("Vault đang khóa.")
+        raise PermissionError("Vault đang khóa (hoặc do người khác mở).")
     muc = json.loads(_mo_boc(dek, _doc_goi()["du_lieu"]))
     con = [m for m in muc if m["id"] != id]
     if len(con) == len(muc):
@@ -251,9 +311,9 @@ def xoa_muc(ai: str, id: str) -> None:
 
 def xem_mat_khau(ai: str, id: str) -> str:
     """Lộ mật khẩu MỘT mục — mỗi lần lộ là MỘT dòng audit (đo được ai xem gì)."""
-    dek = _dek_dang_mo()
+    dek = _dek_dang_mo(ai)
     if dek is None:
-        raise PermissionError("Vault đang khóa.")
+        raise PermissionError("Vault đang khóa (hoặc do người khác mở).")
     muc = json.loads(_mo_boc(dek, _doc_goi()["du_lieu"]))
     m = next((x for x in muc if x["id"] == id), None)
     if m is None:

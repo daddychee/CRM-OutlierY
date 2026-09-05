@@ -1374,11 +1374,11 @@ def vault_trang(request: Request, user: dict = Depends(yeu_cau_owner)):
     if not vault.da_tao():
         return templates.TemplateResponse(request, "vault.html",
                                           _ctx_vault(request, user, trang_thai="chua_tao"))
-    if not vault.dang_mo():
+    if not vault.dang_mo(user["ten"]):   # SIẾT 05/09: két của CHÍNH người này
         return templates.TemplateResponse(request, "vault.html",
                                           _ctx_vault(request, user, trang_thai="khoa"))
     return templates.TemplateResponse(request, "vault.html", _ctx_vault(
-        request, user, trang_thai="mo", muc=vault.doc_muc() or [], audit=_doc_audit_moi(),
+        request, user, trang_thai="mo", muc=vault.doc_muc(user["ten"]) or [], audit=_doc_audit_moi(),
         safekey_bang=vault.trang_thai_safekey()))
 
 
@@ -1400,9 +1400,18 @@ def vault_tao(request: Request, master: str = Form(...), master2: str = Form(...
 
 @app.post("/vault/mo", response_class=HTMLResponse)
 def vault_mo(request: Request, master: str = Form(...), user: dict = Depends(yeu_cau_owner)):
-    if not vault.mo_bang_master(master, user["ten"]):
+    try:
+        ok = vault.mo_bang_master(master, user["ten"])
+    except PermissionError as e:
+        # SIẾT 05/09: đang bị khóa tạm do sai quá nhiều lần — hiện thông báo có
+        # thời gian chờ, KHÔNG để lỗi 500 lọt ra ngoài.
         return templates.TemplateResponse(request, "vault.html", _ctx_vault(
-            request, user, trang_thai="khoa", loi="Mật khẩu chủ không đúng."))
+            request, user, trang_thai="khoa", loi=str(e)))
+    if not ok:
+        con = vault.SO_LAN_SAI_TOI_DA - vault.so_lan_sai(user["ten"])
+        them = f" Còn {con} lần trước khi khóa tạm." if 0 < con <= 3 else ""
+        return templates.TemplateResponse(request, "vault.html", _ctx_vault(
+            request, user, trang_thai="khoa", loi="Mật khẩu chủ không đúng." + them))
     return RedirectResponse("/vault", status_code=303)
 
 

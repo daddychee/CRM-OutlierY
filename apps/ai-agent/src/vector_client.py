@@ -535,7 +535,21 @@ class QdrantClientWrapper:
         filter server-side lẫn luật xem client-side.
         """
         user = _user_hieu_luc(user)
-        ap_quyen = bool(user and user.get("bo_phan")) and user.get("level", 0) < 5
+        # SIẾT 05/09/2026 (sổ docs/bao-mat-internet.md mục A2): công thức cũ là
+        #     ap_quyen = bool(user and user.get("bo_phan")) and level < 5
+        # nên NGƯỜI ĐÃ ĐĂNG NHẬP mà bộ phận RỖNG lọt vào "chế độ mở" → KHÔNG lọc
+        # quyền gì cả → đọc TOÀN BỘ kho mọi bộ phận, gồm tài liệu Mật.
+        # Cột bo_phan cho phép rỗng (migration 001 DEFAULT '') và tao_tai_khoan
+        # không kiểm rỗng, nên chỉ cần Owner bỏ trống ô bộ phận là nổ.
+        # (Kiểm dữ liệu thật 05/09: 20 tài khoản, 0 cái rỗng → chưa bị khai thác.)
+        #
+        # Tách BẠCH hai ca vốn bị gộp làm một:
+        #   user None      = chế độ mở nội bộ (script, job nền) → GIỮ, không lọc.
+        #   user có tên    = người thật → LUÔN lọc, kể cả bộ phận rỗng.
+        # Bộ phận rỗng khi đó chỉ còn thấy tài liệu "Công khai nội bộ" — đúng luật
+        # _duoc_xem, vì `department == ""` không khớp bộ phận nào.
+        co_danh_tinh = bool(user and (user.get("ten") or user.get("bo_phan")))
+        ap_quyen = co_danh_tinh and user.get("level", 0) < 5
 
         if self.mock:
             hits = _MOCK_CHUNKS

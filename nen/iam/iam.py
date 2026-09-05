@@ -169,12 +169,22 @@ def _yeu_cau_quan_tai_khoan(conn: sqlite3.Connection, ai_lam: dict) -> None:
 
 def tao_tai_khoan(conn: sqlite3.Connection, ai_lam: dict | None, ten: str,
                   mat_khau: str, bo_phan: str, level: int,
-                  nguoi_ma: str | None = None, phai_doi_mk: bool = True) -> dict:
+                  nguoi_ma: str | None = None, phai_doi_mk: bool = True,
+                  _cho_bo_phan_rong: bool = False) -> dict:
     """Tạo tài khoản. Sổ RỖNG: cho phép tự khởi tạo nhưng user đầu PHẢI là Owner
     (kế thừa luật hệ cũ — không bao giờ có hệ không Owner)."""
     ten = ten.strip()
     if not re.fullmatch(r"[a-z0-9._-]{2,32}", ten):
         raise LoiIam("Tên đăng nhập chỉ gồm a-z 0-9 . _ - (2–32 ký tự).")
+    if not (bo_phan or "").strip() and not _cho_bo_phan_rong:
+        # SIẾT 05/09/2026 (sổ docs/bao-mat-internet.md mục A2): tài khoản bộ phận
+        # RỖNG từng lọt vào "chế độ mở" của RBAC tài liệu → đọc toàn bộ kho. Bản vá
+        # ở vector_client bịt hậu quả; chặn ở đây bịt NGUỒN. Bộ phận rỗng cũng là
+        # trạng thái vô nghĩa về nghiệp vụ.
+        raise LoiIam("Phải chọn bộ phận — không được để trống.")
+    # `_cho_bo_phan_rong` CHỈ dành cho TEST dựng lại trạng thái di sản (tài khoản
+    # cũ tạo trước luật này) để chứng minh hàm quyền không nổ với dữ liệu lệch.
+    # TUYỆT ĐỐI không dùng từ route/UI — đó là đường tạo lại đúng lỗ vừa bịt.
     if not (1 <= int(level) <= 5):
         raise LoiIam("Level phải trong thang 1–5.")
     if len(mat_khau) < 6:

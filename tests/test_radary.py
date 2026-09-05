@@ -48,7 +48,7 @@ def test_luat_va_vai_radary_theo_thuong_quy(conn):
         (("", 2), (True, False, False, "viewer")),                     # user "trắng" không nổ
     ]
     for i, ((bp, lv), (vao, them, toan, vai)) in enumerate(ca):
-        iam.tao_tai_khoan(conn, ow, f"u{i}", "123456", bp, lv)
+        iam.tao_tai_khoan(conn, ow, f"u{i}", "123456", bp, lv, _cho_bo_phan_rong=True)
         u = iam.claims_cua(iam.lay_tai_khoan(conn, f"u{i}"))
         assert iam.co_quyen(u, "vao", "radary", conn) == vao, (bp, lv)
         assert iam.co_quyen(u, "them_video", "radary", conn) == them, (bp, lv)

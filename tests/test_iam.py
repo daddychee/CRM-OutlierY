@@ -307,7 +307,10 @@ def test_nhap_users_txt_giu_hash_va_level(conn, tmp_path):
 # ---------- Permissions v2 (DE.md mục 14 — acting, hành động app, vai admin) ----------
 
 def _nv(conn, ow, ten="nv", bo_phan="Kinh doanh", level=2):
-    iam.tao_tai_khoan(conn, ow, ten, "123456", bo_phan, level)
+    # _cho_bo_phan_rong: dựng lại trạng thái DI SẢN (tài khoản tạo trước luật
+    # "cấm bộ phận rỗng" 05/09) để chứng minh hàm quyền không nổ với dữ liệu lệch.
+    iam.tao_tai_khoan(conn, ow, ten, "123456", bo_phan, level,
+                      _cho_bo_phan_rong=True)
     return iam.claims_cua(iam.lay_tai_khoan(conn, ten))
 
 
