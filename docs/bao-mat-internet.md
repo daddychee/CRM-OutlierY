@@ -508,6 +508,41 @@ hệ quy chiếu.*
 **Tương thích ngược:** 20 tài khoản hiện có (hash bcrypt, không đọc lại được) vẫn
 đăng nhập bình thường; chuẩn mới chỉ áp cho mật khẩu ĐẶT MỚI.
 
+### GĐ 5 — CẮT LIÊN KẾT MẬT KHẨU APP ↔ WINDOWS — **HOÃN TỚI CUỐI TUẦN**
+
+**Owner chốt 05/09: PHƯƠNG ÁN A, nhưng CHỈ LÀM khi mọi người đã nghỉ cuối tuần và
+không còn job nào đang chạy.** Đo hiện trạng 05/09 cho thấy vì sao phải hoãn:
+
+| Chỉ số | Thực tế lúc 05/09 |
+|---|---|
+| Tài khoản Windows do đồng bộ tạo | **21** |
+| Đang mở phiên SMB | **9 người** (một người mở 623 file, một người 146 file) |
+| `NAS_DONG_BO` | **đang BẬT thật** (start-all.ps1:103) |
+
+→ Đây là tính năng đang chạy sản xuất, không phải code nằm im.
+
+**PHƯƠNG ÁN A đã chốt** — NAS có mật khẩu RIÊNG, Owner cấp một lần, không liên
+quan mật khẩu web. Lý do: hiện mật khẩu OUTLIERY CHÍNH LÀ mật khẩu tài khoản
+Windows (`nas_sync.py:83` Set-LocalUser) → ra Internet, ai dò được mật khẩu web
+của một nhân viên là có luôn tài khoản Windows trên máy chủ.
+
+**THỨ TỰ THI CÔNG (khi làm)** — quan trọng, đừng đảo:
+1. Tắt `NAS_DONG_BO` → mật khẩu Windows hiện tại GIỮ NGUYÊN, **không ai mất quyền**.
+2. Owner cấp mật khẩu NAS mới cho 21 người (dần cũng được).
+3. Xong hết mới đổi mật khẩu web — lúc đó không còn ảnh hưởng NAS.
+
+(Phương án B "bỏ hẳn tài khoản Windows, NAS đi qua web" đã cân nhắc và GÁC: đúng
+về lý thuyết nhưng đổi thói quen cả công ty giữa lúc đang siết bảo mật là quá
+nhiều rủi ro cùng lúc.)
+
+### VIỆC TAY CẦN OWNER CHẠY (classifier chặn agent tự chạy)
+
+    Remove-SmbShare -Name Users -Force
+
+Share `Users` phơi thư mục người dùng của máy chủ với quyền **Everyone / Full**
+(đo 05/09) — món treo từ 04/08. Đã kiểm: KHÔNG ai đang mở file nào từ đó, gỡ
+không gián đoạn ai. **Owner đã đồng ý gỡ 05/09.**
+
 ### CẦN LÀM KHI RESTART CỤM (chưa làm — Owner chọn thời điểm)
 4 app mới cần cờ trong Arguments của tác vụ nền, **thiếu là app trả 401 toàn bộ**:
 `AA_TRUST_PROXY=1` (ai-agent) · `TC_TRUST_PROXY=1` (to-chuc) ·
