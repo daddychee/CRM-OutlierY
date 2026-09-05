@@ -44,6 +44,8 @@ from fastapi.responses import (FileResponse, HTMLResponse, RedirectResponse,
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
+from nen.common import xac_thuc_app
+
 _APP_DIR = Path(__file__).resolve().parents[1]          # apps/to-chuc
 ROOT = _APP_DIR.parents[1]                               # D:\AI AGENT OUTLIERY
 # Luật 6: dữ liệu tách khỏi code. Đặt TRƯỚC khi import các module (chúng đọc env
@@ -122,13 +124,19 @@ templates.env.filters["gio_chu"] = gio_chu
 
 # ---------- claims (thay auth hệ cũ) ----------
 
-def lay_user(x_remote_user: str = Header(""), x_remote_level: str = Header("0"),
+def lay_user(request: Request,
+             x_remote_user: str = Header(""), x_remote_level: str = Header("0"),
              x_remote_role: str = Header(""), x_remote_dept: str = Header("")) -> dict:
     """User = claims gateway tiêm (an toàn vì app bind 127.0.0.1 — chỉ gateway tới
     được; header giả từ trình duyệt đã bị gateway vứt). Dept được proxy quote()
     (header phải ASCII) → unquote lại để RBAC so đúng CHUỖI GỐC tiếng Việt.
     ĐIỂM HỨNG CHẤM CÔNG (như auth.lay_user cổng 8000 cũ): mọi request có danh
     tính đều ghi hiện diện — bọc kín, chấm công hỏng không được chặn request."""
+    if not xac_thuc_app.duoc_tin(request, "TC_TRUST_PROXY"):
+        # SIẾT 05/09/2026 (sổ docs/bao-mat-internet.md muc A1): trước đây chỉ cần
+        # header CÓ MẶT là tin → cổng 9103 lộ ra là curl thành Owner, đọc vault +
+        # lương + hồ sơ nhân sự. Nay đòi CẢ TC_TRUST_PROXY=1 LẪN client loopback.
+        raise HTTPException(401, "Thiếu danh tính — vào qua cổng OUTLIERY.")
     if not x_remote_user:
         raise HTTPException(401, "Thiếu danh tính — vào qua cổng OUTLIERY.")
     try:

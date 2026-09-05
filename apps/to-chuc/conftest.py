@@ -63,3 +63,30 @@ def _cach_ly_du_lieu(tmp_path, monkeypatch):
     vault.khoa()
     yield
     vault.khoa()
+
+
+# ── SIẾT BẢO MẬT 05/09/2026 ────────────────────────────────────────────────────
+# `lay_user` giờ đòi ĐỦ CẢ HAI: TC_TRUST_PROXY=1 VÀ client loopback
+# (nen/common/xac_thuc_app.py). TestClient mặc định báo host='testclient' nên mọi
+# test cũ sẽ nhận 401 — hai fixture dưới cho test chạy ĐÚNG như hệ thật (gateway
+# gọi app qua 127.0.0.1). TUYỆT ĐỐI không nới bản vá để test xanh.
+
+@pytest.fixture(autouse=True)
+def _bat_trust_proxy_tc(monkeypatch):
+    """Như Arguments của tác vụ nền thật."""
+    monkeypatch.setenv("TC_TRUST_PROXY", "1")
+
+
+@pytest.fixture(autouse=True)
+def _testclient_loopback_tc(monkeypatch):
+    """TestClient khai 127.0.0.1, NHƯNG tôn trọng test tự khai địa chỉ khác
+    (ca kiểm 'gọi từ LAN thì bị chặn' phải giữ nguyên tác dụng)."""
+    from starlette.testclient import _TestClientTransport
+    goc = _TestClientTransport.handle_request
+
+    def handle(self, request):
+        if getattr(self, "client", None) in (None, ("testclient", 50000)):
+            self.client = ("127.0.0.1", 50000)
+        return goc(self, request)
+
+    monkeypatch.setattr(_TestClientTransport, "handle_request", handle)

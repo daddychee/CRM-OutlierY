@@ -151,7 +151,12 @@ def test_lay_user_unquote_dept():
     """Gateway quote() bộ phận tiếng Việt vào header (HTTP header chỉ ASCII) —
     app PHẢI unquote lại để RBAC so đúng CHUỖI GỐC."""
     from src.main import lay_user
-    u = lay_user(x_remote_user="nv", x_remote_level="3", x_remote_role="leader",
+
+    class _R:            # Request giả: chỉ cần .client (siết bảo mật 05/09)
+        class client:
+            host = "127.0.0.1"
+
+    u = lay_user(_R(), x_remote_user="nv", x_remote_level="3", x_remote_role="leader",
                  x_remote_dept="V%E1%BA%ADn%20h%C3%A0nh%20-%20S%E1%BA%A3n%20xu%E1%BA%A5t")
     assert u == {"ten": "nv", "level": 3, "vai": "leader",
                  "bo_phan": "Vận hành - Sản xuất"}
