@@ -350,3 +350,14 @@ quy trình 1-2-3 trên dữ liệu mới nhất — vì vậy làm thành TÍNH 
   Old Investigate/OLD Newbie/Health — ngach rỗng) vẫn quét như cũ tới khi user
   xử lý. Data Pool hiện ghi chú 🕐 hàng chờ trên pool gốc. Test ghim
   _hang_cho 3 ca; suite 18 pass; restart 9111.
+
+- 05/09/2026 — **KIỂM LẠI THEO USER: OLD Newbie ĐÃ nối ngách (N-OLD-NEWBIE) và
+  đã chia xong** (US 72 · Spain 1 · gốc sạch 0) — dòng "4 pool chưa nối" 19/08
+  hết hiệu lực (Investigation/HEALTHY EATING/COOKING/WHAT IF/LIVING IN/SENIOR
+  HEALTH... cũng đã vào cấu trúc ngách×thị trường, có cả thị trường TT-DEU
+  mới). Nhân kiểm phát hiện: tiến trình 9111 chạy từ 22:38 04/09 với
+  scheduler CHẾT LẶNG (đúng sự cố sổ ghi 05/09 — bản vá nhịp tim +
+  BaseException đã nằm trên đĩa nhưng tiến trình cũ chưa mang) → restart ăn
+  bản vá, quét sống lại. Ghi chú nhỏ: đế đổi tên ngách N-WHAT-IF thành
+  "SCI-FI" nhưng pool vẫn tên "WHAT IF" — tên pool không tự chảy theo khi đế
+  RENAME (chỉ đồng nhất lúc nhận gốc); muốn khớp thì đổi tay/đợt sau.
