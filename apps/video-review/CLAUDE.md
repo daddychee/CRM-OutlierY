@@ -2,6 +2,30 @@
 
 ## Mốc
 
+- 05/09/2026 — **SỰ CỐ 404 KHI BẤM MỤC SIDEBAR + 2 BÀI HỌC VẬN HÀNH.**
+  Owner bấm "Publish Review" → khung iframe hiện `{"detail":"Not Found"}`.
+  • **GỐC**: hợp đồng `apps.json` thiếu `tien_to` `/publish`. Mục con sidebar đi
+    QUA PROXY nên đường của nó BẮT BUỘC nằm trong `tien_to` — không khai thì
+    gateway không chuyển tiếp. Đúng họ bệnh 03/08 của Content Ultimate (mất
+    `/manage` `/settings`). Đã vá + dựng **LƯỚI**: `tests/test_khung_app.py::
+    test_moi_muc_con_phai_nam_trong_tien_to` quét MỌI app, app nào khai menu con
+    mà quên tiền tố là đỏ ngay.
+  • **BÀI HỌC 1 — sửa `apps.json` PHẢI restart gateway.** Hợp đồng đọc sống theo
+    mtime, NHƯNG `_ALIAS_KHUNG` nạp MỘT LẦN lúc khởi động. Đo thật: gateway lên
+    15:38, hợp đồng sửa 15:53 → vẫn 404. Không có đường tắt.
+  • **BÀI HỌC 2 — KHÔNG khởi động app thủ công trên hệ thật.** `start-all.ps1`
+    mang cả chục biến (VR_TRUST_PROXY, VR_NAS_DIR, ffmpeg, token nội bộ); lệnh
+    tay thiếu biến tạo ra bản "gần giống" rất khó phát hiện, và tệ hơn: bản tay
+    GIỮ CỔNG khiến bản start-all bật lên bind không được → restart mấy lần vẫn
+    không ăn. Muốn kiểm mắt thì dùng CỔNG THỬ riêng (9214), hệ thật chỉ restart
+    qua script.
+  • **Đo bằng curl từ 05/09 sẽ luôn 401** — gate mới đòi cờ tin-cậy + loopback +
+    token nội bộ (`X-Noi-Bo`). Cả 3 app V3 đều vậy, KHÔNG phải lỗi; muốn đo thì
+    đi qua gateway hoặc kèm `token_noi_bo.lay_hoac_sinh()`.
+  • Kèm vá `start-all.ps1`: đường log ghép thiếu dấu phân cách (`'logs' + tên`
+    → `logsvideo-review.out.log` ở GỐC repo). Đúng lúc cần log để chẩn đoán thì
+    thư mục `logs` trống — đã sửa, file cũ ở gốc xóa tay sau.
+
 - 04/09/2026 — **ĐỔI TÊN ReviewY + VỎ CONTENT ULTIMATE + 2 TAB MỚI** (3 commit,
   120 → 144 test). User duyệt mockup vòng 6 (`docs/mockup/reviewy-v6.html`) sau
   6 vòng; bảng đối chiếu mockup ↔ app: `docs/mockup/reviewy-doi-chieu.html`.
