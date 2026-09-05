@@ -23,6 +23,7 @@ import calendar
 import csv
 import json
 import os
+import re
 import threading
 from datetime import date, datetime
 from pathlib import Path
@@ -140,6 +141,20 @@ def di_muon_thang(ky: str) -> dict[str, dict]:
 
 
 # ---------- lương cơ bản (HR đặt) ----------
+
+# SIẾT 05/09/2026 (sổ docs/bao-mat-internet.md mục T2/T3): `ky`/`thang` từ URL
+# ghép thẳng vào đường dẫn. Tái hiện thật: `%2f` bị Starlette chặn nhưng `%5c`
+# (dấu backslash) thì KHÔNG — `..%5c..%5csecret` cho ra đường `secret.json` ngoài
+# thư mục lương, đọc được file JSON bất kỳ, nội dung render ra trang phiếu.
+# BÀI HỌC: chặn `..` mà chỉ nghĩ tới `/` là chưa đủ trên Windows.
+# Vá ở HÀM LÕI (không chỉ ở route) để route thêm sau tự được bảo vệ.
+KHUON_KY = re.compile(r"^\d{4}-\d{2}$")
+
+
+def ky_hop_le(ky) -> bool:
+    """Kỳ chỉ được là YYYY-MM. Sai khuôn → False, caller trả None/404."""
+    return bool(KHUON_KY.match((ky or "").strip()))
+
 
 def _duong(ten_tep: str) -> Path:
     return Path(os.getenv("LUONG_DIR", "nhan-su/luong")) / ten_tep
@@ -266,6 +281,8 @@ def bang_luong(ky: str, ds_nguoi: list[dict]) -> dict:
 
 
 def doc_bang_luong(ky: str) -> dict | None:
+    if not ky_hop_le(ky):          # SIẾT 05/09 — xem KHUON_KY
+        return None
     p = _duong(f"bang-luong/{ky}.json")
     return _doc_json(p, None) if p.is_file() else None
 

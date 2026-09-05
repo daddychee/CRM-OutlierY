@@ -17,6 +17,27 @@ from urllib.parse import parse_qs, urlparse
 from src.trich_doan import de_xuat_trich
 
 
+# SIẾT 05/09/2026 (sổ docs/bao-mat-internet.md mục T1): id này thành `doc_code`
+# rồi thành TÊN FILE ghi ra đĩa (`kho/ngan/YT-<id>_YouTube.md`, đường dẫn CỐ ĐỊNH
+# + os.replace nên GHI ĐÈ IM LẶNG). Tái hiện thật trước khi vá:
+#   watch?v=../../../../evil  →  kho/03_KinhDoanh/YT-../../../../evil_YouTube.md
+# tức thoát khỏi kho, nội dung do người gửi kiểm soát.
+# Lọc NGAY TẠI NGUỒN: id YouTube thật chỉ gồm [0-9A-Za-z_-], dài 5–20 (chuẩn hiện
+# tại là 11). Không khớp → None, caller từ chối; KHÔNG cố "làm sạch" rồi dùng tiếp.
+#
+# ĐỘ DÀI 1–40 (không phải 5–20): thứ thực sự chặn traversal là BỘ KÝ TỰ CHO PHÉP
+# — `/`, `\` và `.` đều không nằm trong đó nên id không thể mang đường dẫn. Siết
+# thêm độ dài tối thiểu chỉ đổi lấy rủi ro phá dữ liệu thật/test (id ngắn kiểu
+# "abc" vẫn hợp lệ về mặt hệ thống) mà gần như không thêm an toàn.
+_ID_HOP_LE = re.compile(r"^[0-9A-Za-z_-]{1,40}$")
+
+
+def _id_sach(raw: str) -> str | None:
+    """Id hợp lệ → chính nó; sai khuôn → None (không đoán, không sửa hộ)."""
+    raw = (raw or "").strip()
+    return raw if _ID_HOP_LE.match(raw) else None
+
+
 def video_id_tu_url(url: str) -> str:
     """Lấy video id từ URL YouTube (watch?v= / youtu.be/ / shorts/ / embed/). Đã là id trần → giữ nguyên."""
     url = url.strip()
@@ -24,10 +45,10 @@ def video_id_tu_url(url: str) -> str:
     if p.query:
         v = parse_qs(p.query).get("v")
         if v:
-            return v[0]
+            return _id_sach(v[0])
     if p.netloc and p.path:          # youtu.be/ID, /shorts/ID, /embed/ID → id là path cuối
-        return p.path.rstrip("/").split("/")[-1]
-    return url                       # id trần
+        return _id_sach(p.path.rstrip("/").split("/")[-1])
+    return _id_sach(url)             # id trần
 
 
 def ghep_transcript(segments: list[dict]) -> str:
@@ -118,6 +139,8 @@ def transcript_tu_url(url: str, ngon_ngu=("vi", "en")) -> tuple[str, str]:
     (YouTube) với LỖI MODEL (writer) — từng bị gộp làm một nên báo nhầm 'không lấy được
     phụ đề' khi thật ra Z.ai hết tiền (kiểm chứng 25/07)."""
     vid = video_id_tu_url(url)
+    if not vid:           # SIẾT 05/09: id sai khuôn → dừng sớm, thông điệp rõ
+        raise ValueError("Link YouTube không hợp lệ — không lấy được video id.")
     return vid, ghep_transcript(lay_transcript(vid, ngon_ngu))
 
 

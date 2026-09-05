@@ -35,6 +35,9 @@ def _thu_muc() -> Path:
 
 
 def _duong(thang: str) -> Path:
+    # SIẾT 05/09 (mục T3): hàm lõi TỰ bảo vệ, không dựa vào kỷ luật caller.
+    if not re.fullmatch(r"\d{4}-\d{2}", (thang or "").strip()):
+        raise ValueError(f"Tháng sai khuôn YYYY-MM: {thang!r}")
     return _thu_muc() / f"{thang}.json"
 
 

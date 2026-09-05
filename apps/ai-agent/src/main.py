@@ -695,6 +695,8 @@ def nguon_youtube_duyet(url: str = Form(...), nguon_ten: str = Form(...),
         raise HTTPException(422, "Chưa chọn đoạn nào để nạp")
 
     video_id = video_id_tu_url(url)
+    if not video_id:      # SIẾT 05/09: id sai khuôn → None (nap_youtube._id_sach)
+        raise HTTPException(422, "Link YouTube không hợp lệ.")
     kq = nap_doan_video(video_id, url, nguon_ten.strip(), doan, department, access_level,
                         min_level, client, nguoi_nhap=user["ten"])
     logging.info("NẠP NGUỒN YOUTUBE: owner=%s nguon=%s doc=%s so_doan=%d luc=%s", user["ten"],
@@ -952,6 +954,8 @@ def nguon_tron_goi_duyet(url: str = Form(...), nguon_ten: str = Form(...),
         raise HTTPException(422, "Chưa giữ luận điểm nào — bản phân tích rỗng")
 
     video_id = video_id_tu_url(url)
+    if not video_id:      # SIẾT 05/09: id sai khuôn → None (nap_youtube._id_sach)
+        raise HTTPException(422, "Link YouTube không hợp lệ.")
     # Transcript lấy từ NHÁP trên đĩa (không bắt trình duyệt gửi lại) → thành phụ lục
     nhap_luu = _doc_nhap_pt(nhap_id.strip()) if nhap_id.strip() else None
     van_ban = ((nhap_luu or {}).get("ket_qua") or {}).get("van_ban_goc", "")
@@ -982,7 +986,10 @@ def _ma_goc_phan_tich(chuoi: str) -> str:
     """Ô nhận CẢ mã tài liệu LẪN link video. Link → quy về mã YT-<video_id>."""
     chuoi = chuoi.strip()
     if "youtube.com" in chuoi or "youtu.be" in chuoi:
-        return f"YT-{video_id_tu_url(chuoi)}"
+        # SIẾT 05/09: id sai khuôn → None; trả chuỗi gốc để tra catalog trượt
+        # (404 lặng lẽ) thay vì dựng mã "YT-None" rồi ghi file theo mã đó.
+        vid = video_id_tu_url(chuoi)
+        return f"YT-{vid}" if vid else chuoi
     return chuoi
 
 
