@@ -1168,3 +1168,30 @@ cả Pro — thuế thinking mới là biến chi phí lớn, không phải đơ
 Nhắc từ bảng 23/08: trong họ GLM, 5.3 bám neo giọng gần hoàn hảo (lệch nhịp 0,01
 vs 1,11 của 5.2) — nhưng số đó đo khi thinking auto; 5.3-effort-low chưa đo lại.
 CHỜ OWNER: cấp key Gemini mới (+ Claude nếu muốn) để đo viết thật 3 nhà cùng thước.
+
+### 15.16 ĐỢT UX TỪ GÓP Ý TEAM + MỔ RUN PAKISTAN (05/09; suite 810 pass)
+
+Team góp ý 7 điểm; mổ run Pakistan (LI102) xác nhận 2 bệnh khung: briefing dán
+18 ý nhưng khung chỉ 8 chương → model NHỒI ý không liên quan chung chương
+("Skin Cream + Transgender Rights"), ý ẩm thực RỚT (van Phủ-brief bắt MISSING
+nhưng nằm chìm trong bảng van). Content tầng viết OK (10 phần, 5-6 đoạn/phần,
+nhịp 13-21 từ/câu). Đã làm:
+1. AUTOSAVE nháp briefing/research theo run (localStorage, xóa khi bấm sinh) —
+   hết cảnh "bấm nhầm mất hết ý đã chọn".
+2. Ô GÓP Ý CẤP KHUNG + nút "Sinh lại KHUNG (giữ thẻ khóa)" đầu vùng điều chỉnh
+   — "nhóm chương 1-2-3 quanh câu hỏi A" giờ là một câu lệnh, engine nối vào
+   prompt lượt A (EDITOR'S STRUCTURAL NOTES).
+3. BANNER ĐỎ khi khung bỏ sót ý brief + nút "Sinh lại, phủ các ý này" (tự điền
+   góp ý khung từ danh sách MISSING).
+4. Luật prompt lượt A: ONE TOPIC PER CHAPTER — cấm ghép ý không liên quan; brief
+   nhiều ý hơn khung → ưu tiên theo spine + bỏ ý có khai báo (MISSING), cấm đẻ
+   chương không ai yêu cầu.
+5. KÉO-THẢ sắp xếp thẻ (act "chuyen"; thẻ khóa vẫn kéo được — vị trí do người
+   xếp) — giữ nút Lên/Xuống.
+6. Nút "GỘP THẺ DƯỚI" trên chapter đang mở (act "gop"): hợp nhất tất định
+   pillar/budget/nhãn, LLM viết lại brief MỘT MẠCH; làm trên bản sao — LLM lỗi
+   không mất thẻ. Tách-1-thẻ-làm-2 chưa làm (đợt sau nếu team cần).
+PHẢN BIỆN GIỮ NGUYÊN (không code): hook ~2000 ký tự là chủ đích Owner 31/08 —
+núm chỉnh là dòng Budget của HOOK trong outline (sửa được trước khi viết);
+"không chia đoạn" không tái hiện trên bài mới (đã vá 31/08); Google-Translate
+reset là bản chất DOM động, đã giảm tối đa.
