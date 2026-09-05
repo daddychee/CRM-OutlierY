@@ -47,6 +47,11 @@ if not SESSION_SECRET:
     SESSION_SECRET = secrets.token_hex(32)      # dev/test: tự sinh như cũ
 COOKIE_TEN = "outliery_v2_phien"
 PHIEN_TTL = 30 * 24 * 3600  # 30 ngày, như hệ cũ
+# SIẾT 05/09 (mục N3): cờ `secure` cho cookie phiên — trình duyệt chỉ gửi cookie
+# qua HTTPS. KHÔNG bật cứng được ngay: hệ đang chạy HTTP trên LAN (cổng 9000), bật
+# là trình duyệt TỪ CHỐI LƯU cookie → không ai đăng nhập được.
+# Bật CÙNG LÚC với HTTPS thật: đặt COOKIE_SECURE=1 trong start-all.ps1.
+COOKIE_SECURE = os.environ.get("COOKIE_SECURE", "").strip() == "1"
 
 app = FastAPI(title="OUTLIERY Gateway v2")
 templates = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
@@ -254,7 +259,8 @@ def login_gui(request: Request, ten: str = Form(""), mat_khau: str = Form("")):
     chan_do.ghi_thanh_cong(ten, ip)
     resp = RedirectResponse("/", status_code=303)
     resp.set_cookie(COOKIE_TEN, _ky.dumps(claims["ten"]), max_age=PHIEN_TTL,
-                    httponly=True, samesite="lax", domain=_mien_cookie(request))
+                    httponly=True, samesite="lax", secure=COOKIE_SECURE,
+                    domain=_mien_cookie(request))
     return resp
 
 
