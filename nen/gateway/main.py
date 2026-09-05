@@ -121,6 +121,21 @@ _CSRF_MIEN_TRU = ("/login", "/logout", "/khoi-phuc", "/app/", "/static/", "/api/
 _GHI = {"POST", "PUT", "PATCH", "DELETE"}
 
 
+def _csrf_tu_body(body: bytes, content_type: str) -> str | None:
+    """Tách token `_csrf` từ RAW body form-urlencoded, KHÔNG gọi request.form()
+    (gọi form() trong middleware nuốt body — sự cố 05/09). multipart thì để None
+    (các form nền đều urlencoded; multipart chỉ ở upload, đã miễn trừ hoặc gửi
+    token qua header)."""
+    if "application/x-www-form-urlencoded" not in (content_type or ""):
+        return None
+    try:
+        from urllib.parse import parse_qs
+        vals = parse_qs(body.decode("utf-8", "replace")).get(csrf.TEN_TRUONG)
+        return vals[0] if vals else None
+    except Exception:
+        return None
+
+
 @app.middleware("http")
 async def _chan_csrf(request: Request, call_next):
     if request.method in _GHI and not request.url.path.startswith(_CSRF_MIEN_TRU):
@@ -134,11 +149,18 @@ async def _chan_csrf(request: Request, call_next):
         if ten:                       # chỉ kiểm khi CÓ phiên (xem docstring)
             token = request.headers.get(csrf.TEN_HEADER)
             if not token:
-                try:
-                    form = await request.form()
-                    token = form.get(csrf.TEN_TRUONG)
-                except Exception:
-                    token = None
+                # SỰ CỐ 05/09: TRƯỚC đây gọi `await request.form()` ở đây để lấy
+                # token trong field — nhưng đọc form trong middleware TIÊU THỤ luồng
+                # body → route phía sau nhận form RỖNG → 422 "Field required" (user
+                # báo: không add được API key). Đã tái hiện thật (POST add → 422).
+                # SỬA: đọc RAW body một lần, tách token, rồi GẮN BODY LẠI qua
+                # `request._receive` để route đọc NGUYÊN VẸN.
+                body = await request.body()
+                token = _csrf_tu_body(body, request.headers.get("content-type", ""))
+
+                async def _receive():
+                    return {"type": "http.request", "body": body, "more_body": False}
+                request._receive = _receive
             if not csrf.kiem_token(token, ten):
                 return JSONResponse(
                     {"loi": "Phiên làm việc đã cũ hoặc yêu cầu không hợp lệ. "
