@@ -32,7 +32,7 @@ from urllib.parse import unquote
 
 from fastapi import (BackgroundTasks, Depends, FastAPI, Form, Header, HTTPException,
                      Request, UploadFile)
-from fastapi.responses import HTMLResponse, RedirectResponse, Response
+from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse, Response
 from fastapi.templating import Jinja2Templates
 
 from nen.common import xac_thuc_app
@@ -372,12 +372,15 @@ async def media(ma: str, user: dict = Depends(lay_user), range: str = Header("")
 
     m = _RANGE_RE.match((range or "").strip())
     if not m:
-        # Không Range (nút tải về / curl): trả trọn file. Trình duyệt phát video
-        # luôn gửi Range nên đường nóng vẫn là 206 từng khúc phía dưới.
-        return Response(duong.read_bytes(), media_type=video["mime"],
-                        headers={"Accept-Ranges": "bytes",
-                                 "Content-Disposition":
-                                     f'inline; filename="{video["ten_file"]}"'})
+        # Không Range (nút tải về / curl): STREAM theo khúc.
+        # SIẾT 05/09/2026 (sổ docs/bao-mat-internet.md mục G1): trước đây dùng
+        # `duong.read_bytes()` — nạp TRỌN file 2-10GB vào RAM. Vài request song
+        # song không gửi Range là OOM, chết cả tiến trình (kéo theo mọi người).
+        # FileResponse của Starlette tự đọc theo khúc, RAM phẳng bất kể file to.
+        return FileResponse(str(duong), media_type=video["mime"],
+                            headers={"Accept-Ranges": "bytes",
+                                     "Content-Disposition":
+                                         f'inline; filename="{video["ten_file"]}"'})
     dau = int(m.group(1))
     if dau >= size:
         raise HTTPException(416, "Range ngoài file.")
