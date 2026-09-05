@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import logging
 import os
+from nen.common import token_noi_bo
 import tempfile
 import uuid
 from datetime import datetime
@@ -112,6 +113,7 @@ def _hoi_ket_writer() -> dict:
     viec = next(iter(dien_giai.ANH_XA_VAI))       # "dien_giai"
     with httpx.Client(timeout=3) as c:
         return c.get(f"{goc}/api/cau-hinh/llm/{viec}",
+                     headers=token_noi_bo.header(),
                      params={"app": "data-analytics"}).json()
 
 

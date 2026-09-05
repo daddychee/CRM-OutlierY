@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import logging
 import os
+from nen.common import token_noi_bo
 import time
 
 import httpx
@@ -80,6 +81,7 @@ def nap_cau_hinh_llm() -> None:
         with httpx.Client(timeout=3) as c:
             for vai_gateway, env_prefix in ANH_XA_VAI.items():
                 ch = c.get(f"{GATEWAY_URL}/api/cau-hinh/llm/{vai_gateway}",
+                           headers=token_noi_bo.header(),
                            params={"app": "data-analytics"}).json()
                 if not ch.get("provider"):
                     continue

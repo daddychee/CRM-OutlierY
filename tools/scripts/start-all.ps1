@@ -30,6 +30,14 @@ $env:PYTHONUTF8 = '1'
 # chap chon khi co nhieu worker). Dev/test khong dat bien nay nen van tu sinh.
 $env:OUTLIERY_MOI_TRUONG = 'that'
 
+# SIET BAO MAT 05/09 (GD6): TOKEN NOI BO cho 2 route phat API key cua gateway
+# (/api/cau-hinh/llm, /api/cau-hinh/api-khoa). Kiem IP loopback MOT MINH khong du
+# vi MOI SSRF trong he deu phat request TU loopback.
+# Sinh MOI moi lan khoi dong cum — ca gateway lan 7 app deu nhan cung bien nay
+# (start-all dat bien o tien trinh cha, cac tac vu con ke thua).
+$env:OUTLIERY_TOKEN_NOI_BO = [Guid]::NewGuid().ToString('N') + [Guid]::NewGuid().ToString('N')
+
+
 # SIET BAO MAT 05/09/2026 (so docs/bao-mat-internet.md, GD1): 4 app V3 truoc day
 # tin header X-Remote-* VO DIEU KIEN — co app lo ra la curl -H "X-Remote-Level: 5"
 # thanh Owner. Nay chung doi DU CA HAI: co duoi day VA client loopback.

@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import logging
 import os
+from nen.common import token_noi_bo
 
 import httpx
 
@@ -24,7 +25,8 @@ def nap_cau_hinh_llm() -> bool:
                 # app=ai-agent TƯỜNG MINH (dù trùng mặc định gateway) — chống
                 # lệch ngầm khi có app thứ 3 dùng chung tên vai (bug 18/08).
                 ch = c.get(f"{GATEWAY_URL}/api/cau-hinh/llm/{vai}",
-                           params={"app": "ai-agent"}).json()
+                           params={"app": "ai-agent"},
+                           headers=token_noi_bo.header()).json()
                 if not ch.get("provider"):
                     continue
                 v = vai.upper()

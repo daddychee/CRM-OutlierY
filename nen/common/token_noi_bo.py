@@ -48,3 +48,13 @@ def khop(token: str | None) -> bool:
     if not that:
         return True
     return hmac.compare_digest(that, (token or "").strip())
+
+def header() -> dict:
+    """Header để app phụ gửi kèm khi gọi 2 route phát khóa của gateway.
+
+    Chưa đặt biến môi trường → trả dict RỖNG (giai đoạn chuyển, xem docstring
+    module). Nhờ vậy có thể sửa hết caller TRƯỚC, đặt biến SAU — không có khoảnh
+    khắc nào cụm mất khóa.
+    """
+    t = os.getenv(TEN_BIEN, "").strip()
+    return {TEN_HEADER: t} if t else {}
