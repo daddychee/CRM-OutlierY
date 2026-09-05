@@ -111,6 +111,7 @@
   <a href="/finance?tab=ngach&ky_luong={{ ky_luong or thang }}" class="{% if tab == 'ngach' %}active{% endif %}">Ngách</a>
   <a href="/finance?tab=payroll" class="{% if tab == 'payroll' %}active{% endif %}">Lương</a>
   <a href="/finance?tab=subs" class="{% if tab == 'subs' %}active{% endif %}">Thuê bao</a>
+  <a href="/finance?tab=assets" class="{% if tab == 'assets' %}active{% endif %}">Tài sản</a>
   <a href="/finance?tab=auto&thang={{ thang }}" class="{% if tab == 'auto' %}active{% endif %}">Tự động</a>
   <a href="/finance?tab=categories&thang={{ thang }}" class="{% if tab == 'categories' %}active{% endif %}">Danh mục</a>
 </div>
@@ -873,7 +874,7 @@ function tinhQuyVnd() {
     Đến hạn, chưa ghi</h3>
   {% for d in den_han %}
   <div class="cho">
-    <span class="ten">{{ d.ten }} <span class="thieu">{{ d.phi | tien }} {{ d.tien_te }}</span>
+    <span class="ten">{{ d.ten }} <span class="thieu">{{ d.phi | theo_te(d.tien_te) }} {{ d.tien_te }}</span>
       {% if d.qua_han %}<span class="badge do">quá hạn</span>{% endif %}
       {% if d.trang_thai == 'sap_bo' %}<span class="badge">sắp bỏ</span>{% endif %}</span>
     <span class="tk">{{ d.ngay_gia_han }}</span>
@@ -968,6 +969,166 @@ function tinhQuyVnd() {
 </div>
 
 {# ══════════════ DANH MỤC ══════════════ #}
+{% elif tab == 'assets' %}
+{% set ts = tai_san %}
+<div class="stat-row">
+  <div class="stat"><div class="n">{{ ts.so_vat_ly }}</div><div class="t">Tài sản vật lý</div></div>
+  <div class="stat"><div class="n">{{ ts.so_tai_san_so }}</div><div class="t">Tài sản số</div></div>
+  <div class="stat"><div class="n">{{ ts.nguyen_gia_vat_ly | vnd }}</div><div class="t">Nguyên giá vật lý</div></div>
+  <div class="stat"><div class="n {% if ts.canh_bao %}am{% endif %}">{{ ts.canh_bao | length }}</div><div class="t">Cần xử lý</div></div>
+</div>
+
+{% if ts.canh_bao %}
+<div class="khoi">
+  <h3><svg class="ic" viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
+    Cần xử lý</h3>
+  {% for c in ts.canh_bao %}
+  <div class="cho">
+    <span class="dau gap"></span>
+    <span class="ten"><b>{{ c.ten }}</b> <span class="tk thieu">{{ c.ma }}</span> — {{ c.ly_do }}</span>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<div class="khoi">
+  <h3><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+    Danh mục tài sản</h3>
+
+  <details class="mo">
+    <summary>+ Khai tài sản</summary>
+    <form method="post" action="/finance/tai-san">
+      <div class="form-luoi">
+        <div><label>Loại</label><select name="loai" id="ts-loai" required class="o" onchange="locNhomTS()">
+          <option value="vat_ly">Vật lý</option>
+          <option value="so">Số</option>
+        </select></div>
+        <div><label>Nhóm</label><select name="nhom" id="ts-nhom" required class="o">
+          {% for ma, ten in nhom_ts.items() %}
+          <option value="{{ ma }}" data-vl="{{ 1 if ma in nhom_vat_ly else 0 }}">{{ ten }}</option>
+          {% endfor %}
+        </select></div>
+        <div><label>Tên tài sản</label><input type="text" name="ten" required class="o"></div>
+        <div><label>Mã định danh</label><input type="text" name="ma_dinh_danh" class="o"
+             placeholder="serial / IMEI / ID kênh"></div>
+        <div><label>Ngày mua</label><input type="date" name="ngay_mua" class="o"></div>
+        <div><label>Nguyên giá</label><input type="number" name="nguyen_gia" min="0" step="1000" class="o"></div>
+        <div><label>Tiền tệ</label><select name="tien_te" class="o"><option>VND</option><option>USD</option></select></div>
+        <div><label>Nơi để</label><input type="text" name="noi_de" class="o" placeholder="Văn phòng / Kho"></div>
+        <div><label>Tình trạng</label><select name="tinh_trang" class="o">
+          <option value="dang_dung">đang dùng</option>
+          <option value="dang_sua">đang sửa</option>
+          <option value="hong">hỏng</option>
+          <option value="da_thanh_ly">đã thanh lý</option>
+        </select></div>
+        <div><label>Gắn kênh</label><select name="kenh_ma" class="o">
+          <option value="">— không gắn —</option>
+          {% for k in ds_kenh %}<option value="{{ k.ma }}">{{ k.ma }}</option>{% endfor %}
+        </select></div>
+        <div><label>Mã mục trong Vault</label><input type="text" name="vault_id" class="o"
+             placeholder="chỉ mã — không nhập mật khẩu"></div>
+        <div><label>Ghi chú</label><input type="text" name="ghi_chu" class="o"></div>
+      </div>
+      <div style="margin-top:10px"><button type="submit" class="nut">Lưu tài sản</button></div>
+    </form>
+  </details>
+
+  <div class="bang-cuon">
+  <table class="bang">
+    <tr><th>Tài sản</th><th>Loại</th><th>Nhóm</th><th>Mã định danh</th>
+      <th class="so">Nguyên giá</th><th>Ai đang giữ</th><th>Nơi để</th>
+      <th>Đăng nhập</th><th>Tình trạng</th><th></th></tr>
+    {% for d in ts.dong %}
+    <tr {% if d.tinh_trang == 'da_thanh_ly' %}style="opacity:.55"{% endif %}>
+      <td><b>{{ d.ten }}</b> <span class="tk thieu">{{ d.ma }}</span>
+        {% if d.kenh_ma %}<div><span class="badge">{{ d.kenh_ma }}</span></div>{% endif %}</td>
+      <td>{% if d.loai == 'vat_ly' %}<span class="badge">vật lý</span>
+          {% else %}<span class="badge ok">số</span>{% endif %}</td>
+      <td>{{ nhom_ts.get(d.nhom, d.nhom) }}</td>
+      <td class="tk">{{ d.ma_dinh_danh or '—' }}</td>
+      <td class="so">{% if d.nguyen_gia %}{{ d.nguyen_gia | theo_te(d.tien_te) }}{% else %}<span class="thieu">—</span>{% endif %}</td>
+      <td>{% if d.nguoi_giu %}{{ d.ho_ten_giu }}
+        {% elif d.loai == 'vat_ly' %}<span class="badge">ở kho</span>
+        {% else %}<span class="thieu">—</span>{% endif %}</td>
+      <td class="thieu">{{ d.noi_de or '—' }}</td>
+      <td>{% if d.vault_id and la_owner %}<a href="/vault" class="duong">Vault</a>
+        {% elif d.vault_id %}<span class="badge">có trong két</span>
+        {% elif d.loai == 'so' %}<span class="badge do">chưa cất két</span>
+        {% else %}<span class="thieu">—</span>{% endif %}</td>
+      <td>{% if d.tinh_trang == 'dang_dung' %}<span class="badge ok">đang dùng</span>
+        {% elif d.tinh_trang == 'dang_sua' %}<span class="badge">đang sửa</span>
+        {% elif d.tinh_trang == 'hong' %}<span class="badge do">hỏng</span>
+        {% else %}<span class="badge">đã thanh lý</span>{% endif %}</td>
+      <td style="white-space:nowrap">
+        <a class="nut phu" style="padding:2px 9px;font-size:.76rem;text-decoration:none"
+           href="/finance/tai-san/{{ d.ma }}/lich-su">Lịch sử</a></td></tr>
+    {% else %}
+    <tr><td colspan="10" class="thieu">Chưa khai tài sản nào.</td></tr>
+    {% endfor %}
+  </table>
+  </div>
+  <div class="canh">Tài sản số chỉ giữ <b>mã trỏ sang Vault</b> — sổ này không có cột mật khẩu. Ai cần đăng nhập thì sang két.</div>
+</div>
+
+<div class="hai-cot">
+  <div class="khoi">
+    <h3><svg class="ic" viewBox="0 0 24 24"><path d="M16 3h5v5"/><path d="M21 3l-7 7"/><path d="M8 21H3v-5"/><path d="M3 21l7-7"/></svg>
+      Bàn giao / thu hồi</h3>
+    <form method="post" action="/finance/tai-san/ban-giao">
+      <div class="form-luoi" style="margin-top:0">
+        <div><label>Tài sản</label><select name="ma" required class="o">
+          {% for d in ts.dong %}{% if d.tinh_trang != 'da_thanh_ly' %}
+          <option value="{{ d.ma }}">{{ d.ten }}{% if d.nguoi_giu %} (đang: {{ d.ho_ten_giu }}){% endif %}</option>
+          {% endif %}{% endfor %}
+        </select></div>
+        <div><label>Giao cho</label><select name="nguoi_giu" class="o">
+          <option value="">— thu hồi về kho —</option>
+          {% for n in ds_nguoi_ts %}<option value="{{ n.ten }}">{{ n.ho_ten or n.ten }}</option>{% endfor %}
+        </select></div>
+        <div><label>Ngày</label><input type="date" name="ngay" value="{{ hom_nay }}" class="o"></div>
+        <div><label>Ghi chú</label><input type="text" name="ghi_chu" class="o"></div>
+      </div>
+      <div style="margin-top:10px"><button type="submit" class="nut">Ghi bàn giao</button></div>
+    </form>
+    <div class="canh">Mỗi lượt bàn giao là một dòng mới — lịch sử ai từng giữ vẫn còn nguyên.</div>
+  </div>
+
+  <div class="khoi">
+    <h3><svg class="ic" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M15.5 4.6a3.5 3.5 0 0 1 0 6.8"/></svg>
+      Ai đang giữ gì</h3>
+    <div class="bang-cuon">
+    <table class="bang">
+      <tr><th>Người</th><th class="so">Số tài sản</th></tr>
+      {% for n in ts.theo_nguoi %}
+      <tr><td>{{ n.ten }} <span class="tk thieu">{{ n.tai_khoan }}</span></td>
+        <td class="so">{{ n.so_tai_san }}</td></tr>
+      {% else %}
+      <tr><td colspan="2" class="thieu">Chưa bàn giao tài sản cho ai.</td></tr>
+      {% endfor %}
+      <tfoot><tr><td>Đang ở kho</td><td class="so">{{ ts.dang_o_kho }}</td></tr></tfoot>
+    </table>
+    </div>
+  </div>
+</div>
+
+<script>
+function locNhomTS() {
+  /* Nhóm phải khớp loại — lõi cũng chặn, đây chỉ là đỡ cho người dùng. */
+  var vl = document.getElementById('ts-loai').value === 'vat_ly';
+  var o = document.getElementById('ts-nhom').options, dau = -1;
+  for (var i = 0; i < o.length; i++) {
+    var hop = (o[i].getAttribute('data-vl') === '1') === vl;
+    o[i].hidden = !hop;
+    o[i].disabled = !hop;
+    if (hop && dau < 0) dau = i;
+  }
+  if (o[document.getElementById('ts-nhom').selectedIndex].disabled && dau >= 0) {
+    document.getElementById('ts-nhom').selectedIndex = dau;
+  }
+}
+locNhomTS();
+</script>
+
 {% elif tab == 'auto' %}
 <div class="khoi">
   <h3><svg class="ic" viewBox="0 0 24 24"><path d="M12 3v4M12 17v4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M3 12h4M17 12h4"/><circle cx="12" cy="12" r="3"/></svg>

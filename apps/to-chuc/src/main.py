@@ -66,7 +66,7 @@ os.environ.setdefault("SO_THU_CHI_DIR", str(ROOT / "data" / "to-chuc" / "db" / "
 os.environ.setdefault("MUC_TIEU_PATH", str(ROOT / "data" / "to-chuc" / "db" / "muc-tieu.json"))
 
 from src import (chi_phi_ngach, don_vi_kinh_te, kpi_danh_gia, lich_tai_chinh,
-                 luong, tai_chinh, tu_dong, vault)           # noqa: E402
+                 luong, tai_chinh, tai_san, tu_dong, vault)           # noqa: E402
 from src.cham_cong import doc_ngay as cc_doc_ngay        # noqa: E402
 from src.cham_cong import (bang_cong_thang, chot_ky, doc_chot, ghi_nhan,  # noqa: E402
                            gio_chu, tong_gio)
@@ -490,7 +490,7 @@ def finance_trang(request: Request, tab: str = "ledger", thang: str = "",
     """Finance Hub — 4 tab theo mockup finance-hub.html: Ledger (sổ chỉ-thêm +
     đảo) · Goals (mục tiêu) · Categories (rules CSV + tổng) · Channel P&L."""
     if tab not in ("ledger", "goals", "categories", "pnl", "wallets", "subs",
-                   "payroll", "dashboard", "ngach", "auto"):
+                   "payroll", "dashboard", "ngach", "auto", "assets"):
         tab = "ledger"
     thang = _thang_hop_le(thang)
 
@@ -522,6 +522,7 @@ def finance_trang(request: Request, tab: str = "ledger", thang: str = "",
         "doi_chieu": (tai_chinh.doi_chieu_vi(thang, {}) if tab == "wallets" else None),
         "da_chot_ky": tai_chinh.doc_chot_ky(thang),
         "tien_api": tu_dong.tien_api_thang(thang) if tab == "auto" else None,
+        **(_du_lieu_tai_san() if tab == "assets" else {}),
         "luat_goi_y": tu_dong.doc_luat_goi_y() if tab in ("auto", "ledger") else None,
         "don_gia_api": tu_dong.doc_don_gia() if tab == "auto" else None,
         "danh_muc_vi": tai_chinh.doc_danh_muc_vi(),
@@ -633,6 +634,14 @@ def _ky_truoc(thang: str) -> str:
     """Kỳ mà lịch tài chính đang nói tới: các mốc của kỳ N rơi vào tháng N+1."""
     nam, th = int(thang[:4]), int(thang[5:7])
     return f"{nam - 1:04d}-12" if th == 1 else f"{nam:04d}-{th - 1:02d}"
+
+
+def _du_lieu_tai_san() -> dict:
+    """Tab Tài sản. Danh sách người lấy từ IAM để biết ai đã nghỉ mà còn giữ đồ."""
+    ds_nguoi, _ = _ds_nguoi_iam()
+    return {"tai_san": tai_san.tong_hop(ds_nguoi or []),
+            "nhom_ts": tai_san.NHOM, "nhom_vat_ly": tai_san.NHOM_VAT_LY,
+            "ds_nguoi_ts": ds_nguoi or []}
 
 
 def _bieu_do_kem_ngach(thang: str) -> dict:
@@ -870,6 +879,54 @@ async def finance_chot_ky(request: Request, user: dict = Depends(yeu_cau_finance
         raise HTTPException(422, str(e))
     nhat_ky.ghi("to-chuc", user["ten"], "chot_ky", f"{ky} {len(ban['doi_chieu'])} ví")
     return RedirectResponse(f"/finance?tab=wallets&thang={ky}", status_code=303)
+
+
+@app.post("/finance/tai-san")
+def finance_tai_san(loai: str = Form(...), ten: str = Form(...), nhom: str = Form(...),
+                    ma: str = Form(""), ma_dinh_danh: str = Form(""),
+                    ngay_mua: str = Form(""), nguyen_gia: str = Form("0"),
+                    tien_te: str = Form("VND"), noi_de: str = Form(""),
+                    vault_id: str = Form(""), tinh_trang: str = Form("dang_dung"),
+                    kenh_ma: str = Form(""), ghi_chu: str = Form(""),
+                    user: dict = Depends(yeu_cau_finance)):
+    """Khai/sửa tài sản. KHÔNG có tham số mật khẩu — tài sản số chỉ mang vault_id."""
+    try:
+        d = tai_san.luu_tai_san(
+            user["ten"], loai, ten, nhom, ma=ma, ma_dinh_danh=ma_dinh_danh,
+            ngay_mua=ngay_mua, nguyen_gia=nguyen_gia or 0, tien_te=tien_te,
+            noi_de=noi_de, vault_id=vault_id, tinh_trang=tinh_trang,
+            kenh_ma=kenh_ma, ghi_chu=ghi_chu)
+    except ValueError as e:
+        raise HTTPException(422, str(e))
+    nhat_ky.ghi("to-chuc", user["ten"], "tai_san", f"{d['ma']} {d['ten']}")
+    return RedirectResponse("/finance?tab=assets", status_code=303)
+
+
+@app.post("/finance/tai-san/ban-giao")
+def finance_ban_giao(ma: str = Form(...), nguoi_giu: str = Form(""),
+                     ngay: str = Form(""), ghi_chu: str = Form(""),
+                     user: dict = Depends(yeu_cau_finance)):
+    """Bàn giao / thu hồi. Sổ chỉ-thêm: mỗi lượt một dòng, lịch sử giữ nguyên."""
+    try:
+        tai_san.ban_giao(user["ten"], ma, nguoi_giu, ngay, ghi_chu)
+    except ValueError as e:
+        raise HTTPException(422, str(e))
+    nhat_ky.ghi("to-chuc", user["ten"], "ban_giao",
+                f"{ma} → {nguoi_giu or 'kho'}")
+    return RedirectResponse("/finance?tab=assets", status_code=303)
+
+
+@app.get("/finance/tai-san/{ma}/lich-su", response_class=HTMLResponse)
+def finance_ls_ban_giao(request: Request, ma: str,
+                        user: dict = Depends(yeu_cau_finance)):
+    d = tai_san.tim_tai_san(ma)
+    if d is None:
+        raise HTTPException(404, "Không có tài sản này.")
+    ds_nguoi, _ = _ds_nguoi_iam()
+    ten_cua = {n["ten"]: n.get("ho_ten") or n["ten"] for n in (ds_nguoi or [])}
+    return templates.TemplateResponse(request, "ls_ban_giao.html", {
+        "user": user, "ts": d, "ls": tai_san.lich_su_ban_giao(ma),
+        "ten_cua": ten_cua})
 
 
 @app.post("/finance/doi-soat")

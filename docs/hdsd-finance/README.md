@@ -17,7 +17,7 @@
 
 Không có quyền thì gõ thẳng đường dẫn cũng không vào được — cổng chặn ở máy chủ.
 
-## Mười tab, mỗi tab một việc
+## Mười một tab, mỗi tab một việc
 
 | Tab | Việc | Hướng dẫn |
 |---|---|---|
@@ -29,6 +29,7 @@ Không có quyền thì gõ thẳng đường dẫn cũng không vào được �
 | Ngách | Ngách nào ngốn người, ngách nào ngốn tiền | [06-ngach.md](06-ngach.md) |
 | Lương | Bảng lương từ chấm công, phiếu lương cho từng người | [07-luong.md](07-luong.md) |
 | Thuê bao | Dịch vụ trả phí, ngày gia hạn, cắt cái gì thì tiết kiệm | [08-thue-bao.md](08-thue-bao.md) |
+| Tài sản | Kiểm kê vật lý & số, bàn giao, mật khẩu ở Vault | [11-tai-san.md](11-tai-san.md) |
 | Tự động | Đối soát AdSense, tiền API, luật gợi ý | [09-tu-dong.md](09-tu-dong.md) |
 | Danh mục | Bảng mã khoản thu chi | [10-danh-muc.md](10-danh-muc.md) |
 
@@ -64,6 +65,9 @@ một loại chi phí mới hay đổi hệ số lương **không cần lập tr
 | `apps/to-chuc/rules/gio_lam_viec.csv` | Giờ vào chuẩn, dung sai, ngưỡng nhắc đi muộn |
 | `apps/to-chuc/rules/ngay_nghi_le.csv` | Ngày lễ — **cần điền cho 2026–2027** |
 | `apps/to-chuc/rules/luat_goi_y.csv` | Luật gợi ý phân loại bút toán |
+
+Riêng danh mục nhóm tài sản nằm trong code (`src/tai_san.py`, hằng `NHOM`) vì nó
+gắn với luật "nhóm phải khớp loại" — thêm nhóm mới cần sửa một dòng.
 
 Sửa xong lưu lại là hệ đọc ngay ở lần tải trang kế tiếp, không cần khởi động lại.
 

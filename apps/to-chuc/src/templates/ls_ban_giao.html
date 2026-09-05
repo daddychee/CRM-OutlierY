@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Lịch sử bàn giao — OUTLIERY{% endblock %}
+{% block topbar_ten %}<svg class="ic" viewBox="0 0 24 24"><path d="M12 2v20"/><path d="M17 5.5H9.5a3 3 0 0 0 0 6h5a3 3 0 0 1 0 6H6.5"/></svg> Finance{% endblock %}
+
+{% block style_them %}
+  .noi-dung{max-width:none;margin:0}
+  .hub-wrap{margin:.9rem 0 2.5rem;padding:0 26px}
+  .khoi{border:1px solid var(--line);border-radius:14px;padding:14px 16px;background:var(--chip)}
+  .khoi h3{font-size:1rem;margin:.1rem 0 .7rem;font-weight:600}
+  .khoi h3 .phu{font-weight:400;color:var(--muted);font-size:.8rem}
+  table.bang{width:100%;border-collapse:collapse;font-size:.88rem}
+  .bang th,.bang td{text-align:left;padding:.45rem .55rem;border-bottom:1px solid var(--line);vertical-align:top}
+  .bang th{color:var(--muted);font-size:.75rem;font-weight:600;white-space:nowrap}
+  .badge{display:inline-block;font-size:.72rem;padding:1px 8px;border-radius:999px;border:1px solid var(--chip-line);color:var(--muted)}
+  .thieu{color:var(--muted)}
+  .tk{font-family:var(--mono,monospace);font-size:.82rem}
+{% endblock %}
+
+{% block noi_dung %}
+<div class="hub-wrap">
+<div class="khoi">
+  <h3>Lịch sử bàn giao <span class="phu">{{ ts.ten }} · <span class="tk">{{ ts.ma }}</span>{% if ts.ma_dinh_danh %} · {{ ts.ma_dinh_danh }}{% endif %}</span></h3>
+  <table class="bang">
+    <tr><th>Ngày</th><th>Người giữ</th><th>Ghi chú</th><th>Người ghi</th></tr>
+    {% for d in ls %}
+    <tr><td>{{ d.ngay }}</td>
+      <td>{% if d.nguoi_giu %}{{ ten_cua.get(d.nguoi_giu, d.nguoi_giu) }}
+          <span class="thieu tk">{{ d.nguoi_giu }}</span>
+        {% else %}<span class="badge">thu hồi về kho</span>{% endif %}</td>
+      <td class="thieu">{{ d.ghi_chu }}</td>
+      <td class="tk">{{ d.nguoi_lam }}</td></tr>
+    {% else %}
+    <tr><td colspan="4" class="thieu">Chưa bàn giao lần nào — tài sản đang ở kho.</td></tr>
+    {% endfor %}
+  </table>
+  <div style="margin-top:12px"><a class="nut phu" style="text-decoration:none" href="/finance?tab=assets">← Về danh sách tài sản</a></div>
+</div>
+</div>
+{% endblock %}
