@@ -1715,7 +1715,7 @@ async def api_nhip_viec(ma: str, request: Request):
     from starlette.concurrency import run_in_threadpool
 
     from nen.common import nhip_viec
-    if request.client and request.client.host not in ("127.0.0.1", "::1"):
+    if not request.client or request.client.host not in ("127.0.0.1", "::1"):
         return Response("Không tìm thấy", status_code=404)
     if not await run_in_threadpool(nhip_viec.ghi_nhip, ma):
         return Response("Không tìm thấy", status_code=404)
@@ -1731,7 +1731,7 @@ async def api_so_goi(request: Request):
     from starlette.concurrency import run_in_threadpool
 
     from nen.common import so_goi
-    if request.client and request.client.host not in ("127.0.0.1", "::1"):
+    if not request.client or request.client.host not in ("127.0.0.1", "::1"):
         return Response("Không tìm thấy", status_code=404)
     try:
         b = await request.json()
@@ -1757,7 +1757,7 @@ async def api_vet_so_goi(slug: str, request: Request):
     from starlette.concurrency import run_in_threadpool
 
     from nen.common import so_goi
-    if request.client and request.client.host not in ("127.0.0.1", "::1"):
+    if not request.client or request.client.host not in ("127.0.0.1", "::1"):
         return Response("Không tìm thấy", status_code=404)
     return JSONResponse(await run_in_threadpool(so_goi.kiem_vet, slug))
 
@@ -2171,7 +2171,7 @@ def api_cau_hinh_llm(request: Request, vai: str, app: str = "ai-agent"):
 
     ponytail: trần bảo vệ = mọi tiến trình local đọc được (cùng trust model
     X-Remote-User hiện tại); nâng cấp khi tách nhiều máy: token nội bộ."""
-    if request.client and request.client.host not in ("127.0.0.1", "::1"):
+    if not request.client or request.client.host not in ("127.0.0.1", "::1"):
         return JSONResponse({"loi": "chi loopback"}, status_code=403)
     conn = ket.ket_noi()
     try:
@@ -2186,7 +2186,7 @@ def api_cau_hinh_api_khoa(request: Request, app_slug: str):
     Keys — làm gọn RadarY 16/08: nguồn khóa duy nhất, bảng nội bộ app nghỉ).
     Trả {viec: {khoa: [{id, key, loai, nha}], che_do, model}} — key plaintext cho
     app DÙNG, TUYỆT ĐỐI không log giá trị. CHỈ phục vụ loopback (khuôn llm/{vai})."""
-    if request.client and request.client.host not in ("127.0.0.1", "::1"):
+    if not request.client or request.client.host not in ("127.0.0.1", "::1"):
         return JSONResponse({"loi": "chi loopback"}, status_code=403)
     conn = ket.ket_noi()
     try:
@@ -2219,7 +2219,7 @@ def api_phong_thu_tran_llm(request: Request):
     spec docs/phong-thu-api-ngoai.md — LLM_TRAN_USD_NGAY/_CALL_NGAY trong .env,
     sổ gọi nền là nguồn số). App tự đủ không import được nen nên gateway giữ luật
     MỘT chỗ; app fail-open khi gateway chết. CHỈ loopback (khuôn api-khoa)."""
-    if request.client and request.client.host not in ("127.0.0.1", "::1"):
+    if not request.client or request.client.host not in ("127.0.0.1", "::1"):
         return JSONResponse({"loi": "chi loopback"}, status_code=403)
     from nen.common import phong_thu
     try:
@@ -2234,7 +2234,7 @@ def api_danh_ba_thi_truong(request: Request):
     """App phụ (bind loopback) đọc DANH MỤC THỊ TRƯỜNG từ danh bạ — trục phân
     loại của đế, app không tự đẻ sổ (DE.md luật 2; RadarY pool-theo-thị-trường
     18/08 — docs/RADARY_THI_TRUONG.md). CHỈ loopback (khuôn api-khoa)."""
-    if request.client and request.client.host not in ("127.0.0.1", "::1"):
+    if not request.client or request.client.host not in ("127.0.0.1", "::1"):
         return JSONResponse({"loi": "chi loopback"}, status_code=403)
     return [{"ma": t["ma"], "ten": t.get("ten_chuan", ""),
              "ngon_ngu": t.get("ngon_ngu", "")}
@@ -2246,7 +2246,7 @@ def api_danh_ba_ngach(request: Request):
     """App phụ (bind loopback) đọc NGÁCH + tập thị trường CỦA TỪNG NGÁCH (user
     chọn ở General › Niches — ngach_thi_truong 18/08). RadarY dựng tab nhỏ Pool
     theo thị trường của ngách từ đây (docs/RADARY_THI_TRUONG.md)."""
-    if request.client and request.client.host not in ("127.0.0.1", "::1"):
+    if not request.client or request.client.host not in ("127.0.0.1", "::1"):
         return JSONResponse({"loi": "chi loopback"}, status_code=403)
     return [{"ma": t["ma"], "ten": t.get("ten_chuan", ""),
              "thi_truong": t.get("thi_truong_cua", [])}
@@ -2259,7 +2259,7 @@ def api_danh_ba_kenh(request: Request):
     tiêu thụ đầu tiên (ô kênh của nó là dropdown từ đây, hết gõ tên tự do:
     DE.md luật 2). Trả cả kênh khai tử kèm `trang_thai` để app đang trỏ kênh đó
     vẫn hiện đúng tên, việc ẩn khỏi ô chọn là luật của app."""
-    if request.client and request.client.host not in ("127.0.0.1", "::1"):
+    if not request.client or request.client.host not in ("127.0.0.1", "::1"):
         return JSONResponse({"loi": "chi loopback"}, status_code=403)
     ten_ngach = {t["ma"]: t.get("ten_chuan", "") for t in danh_ba.liet_ke("ngach")}
     return [{"ma": t["ma"], "ten": t.get("ten_chuan", ""),
@@ -2283,7 +2283,7 @@ def api_nhan_su_danh_sach(request: Request):
     (đo 25/08: NS-013 đã nghỉ vẫn ở trong plan.json) — lọc là luật của app.
     KHÔNG trả cccd/địa chỉ/ngày sinh/sđt: cửa này là danh sách vận hành, dữ liệu
     nhạy cảm chỉ đi qua đường riêng có vết từng lượt xem."""
-    if request.client and request.client.host not in ("127.0.0.1", "::1"):
+    if not request.client or request.client.host not in ("127.0.0.1", "::1"):
         return JSONResponse({"loi": "chi loopback"}, status_code=403)
     conn = iam.ket_noi()
     try:

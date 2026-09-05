@@ -380,7 +380,7 @@ async def api_kiem(ma: str, request: Request):
     logic nghiệp vụ, CHỈ-ĐỌC 0 quota (không gọi LLM); canary nền so kỳ vọng.
     Chỉ loopback — cùng khuôn /api/so-goi của nền."""
     from src import kiem
-    if request.client and request.client.host not in ("127.0.0.1", "::1"):
+    if not request.client or request.client.host not in ("127.0.0.1", "::1"):
         raise HTTPException(404)
     ham = kiem.CAC_MA.get(ma)
     if ham is None:
