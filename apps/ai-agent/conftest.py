@@ -38,3 +38,28 @@ def kho_tam(tmp_path, monkeypatch):
     youtube_cookies.txt...) đều treo dưới KHO_TAI_LIEU nên cách ly 2 env là đủ."""
     monkeypatch.setenv("KHO_TAI_LIEU", str(tmp_path / "kho-tai-lieu"))
     monkeypatch.setenv("LICH_SU_DIR", str(tmp_path / "lich-su"))
+
+
+# ── SIẾT BẢO MẬT 05/09/2026 ────────────────────────────────────────────────────
+# lay_user đòi ĐỦ CẢ HAI: AA_TRUST_PROXY=1 VÀ client loopback
+# (nen/common/xac_thuc_app.py). TestClient mặc định báo host='testclient' nên test
+# cũ sẽ nhận 401 — 2 fixture dưới cho test chạy ĐÚNG như hệ thật.
+# TUYỆT ĐỐI không nới bản vá để test xanh.
+
+@pytest.fixture(autouse=True)
+def _bat_trust_proxy_bm(monkeypatch):
+    monkeypatch.setenv("AA_TRUST_PROXY", "1")
+
+
+@pytest.fixture(autouse=True)
+def _testclient_loopback_bm(monkeypatch):
+    """Tôn trọng test tự khai địa chỉ (ca 'gọi từ LAN bị chặn' giữ tác dụng)."""
+    from starlette.testclient import _TestClientTransport
+    goc = _TestClientTransport.handle_request
+
+    def handle(self, request):
+        if getattr(self, "client", None) in (None, ("testclient", 50000)):
+            self.client = ("127.0.0.1", 50000)
+        return goc(self, request)
+
+    monkeypatch.setattr(_TestClientTransport, "handle_request", handle)

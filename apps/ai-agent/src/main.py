@@ -49,6 +49,8 @@ from fastapi.staticfiles import StaticFiles                                   # 
 from fastapi.templating import Jinja2Templates                                # noqa: E402
 from pypdf import PdfReader                                                   # noqa: E402
 
+from nen.common import xac_thuc_app
+
 from src import cau_hinh_llm                                                  # noqa: E402
 from src.kho_thieu import (cap_nhat_nhom_da_giai, ghi_cau_kho_thieu, ghi_co_tay,  # noqa: E402
                            loc_bang_cho, tao_nhom, xoa_cau_cho, xoa_nhom)
@@ -120,13 +122,17 @@ def ten_level(level: int) -> str:
     return BAC_LEVEL.get(level, f"Level {level}")
 
 
-def lay_user(x_remote_user: str = Header(""), x_remote_level: str = Header("0"),
+def lay_user(request: Request,
+             x_remote_user: str = Header(""), x_remote_level: str = Header("0"),
              x_remote_role: str = Header(""), x_remote_dept: str = Header("")) -> dict:
     """User = claims gateway tiêm (an toàn vì app bind 127.0.0.1 — chỉ gateway tới được;
     header giả từ trình duyệt đã bị gateway vứt). X-Remote-Dept đi URL-encoded (header
     không chở được UTF-8 thô 'Vận hành - Sản xuất') → unquote về chuỗi gốc có dấu.
     Dict giữ ĐÚNG khuôn hệ cũ {"ten","bo_phan","level"} (+vai) — vector_client._duoc_xem
     và lich_su.loc_theo_quyen đọc 2 khóa bo_phan/level, không đổi tên trường."""
+    if not xac_thuc_app.duoc_tin(request, "AA_TRUST_PROXY"):
+        # SIẾT 05/09/2026 (sổ docs/bao-mat-internet.md): truoc day chi can header CO MAT la tin -> co 9101 lo ra la doc duoc ca kho tai lieu.
+        raise HTTPException(401, "Thiếu danh tính — vào qua cổng OUTLIERY.")
     if not x_remote_user:
         raise HTTPException(401, "Thiếu danh tính — vào qua cổng OUTLIERY.")
     try:
