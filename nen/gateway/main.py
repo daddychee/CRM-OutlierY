@@ -23,6 +23,7 @@ from itsdangerous import BadSignature, URLSafeTimedSerializer
 
 from nen.common import nas_sync
 from nen.common.hop_dong import doc_hop_dong, tim_app
+from nen.common import token_noi_bo
 from nen.common.proxy import chuyen_tiep
 from nen.iam import iam
 from nen.ket_cau_hinh import ket
@@ -2173,6 +2174,9 @@ def api_cau_hinh_llm(request: Request, vai: str, app: str = "ai-agent"):
     X-Remote-User hiện tại); nâng cấp khi tách nhiều máy: token nội bộ."""
     if not request.client or request.client.host not in ("127.0.0.1", "::1"):
         return JSONResponse({"loi": "chi loopback"}, status_code=403)
+    # LỚP 2 (05/09): kiểm IP không đủ — MỌI SSRF trong hệ đều phát từ loopback.
+    if not token_noi_bo.khop(request.headers.get(token_noi_bo.TEN_HEADER)):
+        return JSONResponse({"loi": "thieu token noi bo"}, status_code=403)
     conn = ket.ket_noi()
     try:
         return ket.cau_hinh_llm(conn, app, vai)
@@ -2188,6 +2192,9 @@ def api_cau_hinh_api_khoa(request: Request, app_slug: str):
     app DÙNG, TUYỆT ĐỐI không log giá trị. CHỈ phục vụ loopback (khuôn llm/{vai})."""
     if not request.client or request.client.host not in ("127.0.0.1", "::1"):
         return JSONResponse({"loi": "chi loopback"}, status_code=403)
+    # LỚP 2 (05/09): route này trả API KEY PLAINTEXT — kiểm IP một mình là quá mỏng.
+    if not token_noi_bo.khop(request.headers.get(token_noi_bo.TEN_HEADER)):
+        return JSONResponse({"loi": "thieu token noi bo"}, status_code=403)
     conn = ket.ket_noi()
     try:
         ra = {}

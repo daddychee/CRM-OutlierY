@@ -25,6 +25,15 @@ $env:PYTHONUTF8 = '1'
 # 'API hoan toan du'; pool da chia thi truong, so lieu da dong bo tu V2).
 # ntfy pool goc 1+2 da TAT tren V3 (ke thua V2 bat) — khong push trung topic;
 # pool thi truong moi mac dinh tat, Owner bat sau khi subscribe topic moi.
+# SIET BAO MAT 05/09/2026 (so docs/bao-mat-internet.md, GD1): 4 app V3 truoc day
+# tin header X-Remote-* VO DIEU KIEN — co app lo ra la curl -H "X-Remote-Level: 5"
+# thanh Owner. Nay chung doi DU CA HAI: co duoi day VA client loopback.
+# THIEU CO NAY = APP TRA 401 TOAN BO. Dung go khi chua doc so.
+$env:AA_TRUST_PROXY = '1'      # ai-agent
+$env:TC_TRUST_PROXY = '1'      # to-chuc (vault + luong + nhan su)
+$env:DA_TRUST_PROXY = '1'      # data-analytics
+$env:VR_TRUST_PROXY = '1'      # video-review
+
 $env:RADARY_DATA_DIR = (Join-Path $root 'data/radary')
 $env:RADARY_SCHEDULER = '1'
 $env:RADARY_TRUST_PROXY = '1'
