@@ -460,7 +460,36 @@ siết thành bắt buộc** — ĐỪNG QUÊN mục này.
 `AA_TRUST_PROXY=1` (ai-agent) · `TC_TRUST_PROXY=1` (to-chuc) ·
 `DA_TRUST_PROXY=1` (data-analytics) · `VR_TRUST_PROXY=1` (video-review).
 
-### GĐ 2-7 — chưa bắt đầu
+### GĐ 2 — VÁ LỖ NGHIÊM TRỌNG (đang làm, 05/09)
+
+| Commit | Lỗ | Kết quả |
+|---|---|---|
+| `daba943` (content-ultimate) | **G2** ghi file tùy ý = RCE gián tiếp | 804 pass, 4 test mới |
+| `51d4b06` (plannery) | **G4** `/api/state` rò toàn bộ nhân sự | 57 pass, kiểm sống 401/200 |
+| `2f3882d` (niche) | **G3-C1/C2** traversal + rò khóa YouTube | 25 pass, 3 test mới |
+| `9cf6ace` | **T1** video_id + **T2/T3** ky/thang — vá ở HÀM LÕI | 347 + 202 pass |
+| `11e0816` | **G1** video-review stream /media (hết OOM) | 149 pass |
+
+**BÀI HỌC TEST quan trọng (đã ghi vào chính test):** bản test đầu cho lỗ `ky` XANH
+NGAY TỪ ĐẦU — nhưng xanh vì **file không tồn tại**, không phải vì bị chặn; đường
+dẫn thật vẫn thoát ra ngoài (soi tận mắt `normpath` mới thấy). **Test xanh ngay từ
+đầu là dấu hiệu TEST SAI, không phải code đúng.** Phải đo TRỰC TIẾP cái cần chặn.
+
+**Quyết định kỹ thuật:** `video_id` chặn theo **BỘ KÝ TỰ** `[0-9A-Za-z_-]` (dài
+1–40), KHÔNG siết 5–20. Bộ ký tự mới là thứ chặn traversal (`/`, `\`, `.` đều
+ngoài bộ); siết thêm độ dài chỉ đổi lấy rủi ro phá dữ liệu thật mà không thêm an
+toàn — dữ liệu thật có id ngắn kiểu "abc".
+
+### CÒN LẠI GĐ 2 — CẦN OWNER QUYẾT
+**13 route niche-research không có gate quyền** (mục G3-C3). Cơ chế quyền của app
+ĐÃ CÓ và làm đúng (`_get_role`, 4 vai admin/manager/leader/seo) — chỉ là 13 route
+không gọi nó. Đề xuất mức quyền:
+- **Đọc (10 route)** `/api/projects` `/api/status` `/api/docs` `/api/mdtext`
+  `/api/report` `/api/dashboard` `/api/watch` `/api/signals` `/api/timeseries`
+  `/api/log` `/api/download` → **seo trở lên** (mọi người đã đăng nhập).
+- **Ghi (1 route)** `POST /api/upload/{name}` → **leader trở lên** (nút Upload
+  hiện chỉ ẩn ở UI `web/app.js:301`, server không kiểm).
+
 
 ## 6. Nhật ký quyết định
 
