@@ -58,3 +58,33 @@ def header() -> dict:
     """
     t = os.getenv(TEN_BIEN, "").strip()
     return {TEN_HEADER: t} if t else {}
+
+def _duong_file() -> str:
+    """File giữ token — mọi tiến trình (gateway + 7 app) đọc CÙNG một giá trị.
+
+    SỰ CỐ 05/09: token sinh động `[Guid]::NewGuid()` trong start-all → mỗi lần
+    restart LẺ một app, app đó có token MỚI lệch với gateway → 403 khi xin khóa +
+    401 danh tính (cả cụm loạn). Token nội bộ phải ỔN ĐỊNH như SESSION_SECRET.
+    """
+    import os as _os
+    goc = _os.environ.get("OUTLIERY_ROOT") or _os.getcwd()
+    return _os.path.join(goc, "data", "nen", "token_noi_bo.txt")
+
+
+def lay_hoac_sinh() -> str:
+    """Đọc token từ file; chưa có thì sinh + lưu (ghi nguyên tử). Trả token để
+    start-all bơm vào env cho cả cụm. Ổn định qua mọi lần restart."""
+    import os as _os
+    p = _duong_file()
+    if _os.path.isfile(p):
+        t = open(p, encoding="utf-8").read().strip()
+        if t:
+            return t
+    _os.makedirs(_os.path.dirname(p), exist_ok=True)
+    t = secrets.token_urlsafe(48)
+    tam = p + ".tmp"
+    with open(tam, "w", encoding="utf-8") as f:
+        f.write(t)
+    _os.replace(tam, p)
+    return t
+
