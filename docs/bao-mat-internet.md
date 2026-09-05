@@ -455,6 +455,30 @@ Tương thích ngược có chủ đích: chưa đặt `OUTLIERY_TOKEN_NOI_BO` �
 (guard loopback đã fail-closed vẫn giữ); **GĐ6 đặt token trong start-all.ps1 rồi
 siết thành bắt buộc** — ĐỪNG QUÊN mục này.
 
+### GĐ 3 — RBAC & VAULT ✅ XONG (05/09)
+
+| Commit | Việc | Test |
+|---|---|---|
+| `6624351` (niche) | 12 route thêm gate (đọc=seo, ghi=leader) | 25 pass + kiểm sống 3 vai |
+| `fb3e08a` | RBAC fail-closed + IAM cấm bộ phận rỗng + vault theo người mở + khóa tạm | 367 + 210 pass |
+| (kèm) | Lưới chặn mìn dịch-vai-chuỗi-con | 2 test |
+
+**Owner chốt 05/09:** niche-research GIỮ NGUYÊN mức cũ — L2 Kinh doanh (vai `seo`)
+vẫn đọc được báo cáo; chỉ đường GHI mới cần leader.
+
+**BẪY ĐÃ MẮC VÀ SỬA (đáng nhớ):** guard đầu tiên viết
+`if TRUST_PROXY == "1" and _vai_tu_sso(request) is None: 401` — nhưng `_vai_tu_sso`
+trả `"seo"` cho MỌI request loopback KỂ CẢ không có `X-Remote-User` → cửa đăng nhập
+VÔ HIỆU. Chỉ lộ ra khi **đo sống bằng uvicorn thật** (TestClient không phải loopback
+nên cho kết quả ngược). → Kiểm ĐÚNG THỨ CẦN KIỂM: sự CÓ MẶT của danh tính.
+
+**PHÁT HIỆN khi rà mìn dịch-vai:** ba mã khớp chuỗi con — `tao_pool`, `them_video`
+(radary) và `vai_xoa`. Kiểm ra: hai mã đầu nâng lên leader là **ĐÚNG Ý ĐỒ** (mô tả
+trong luật ghi rõ "vai leader"), còn `vai_xoa` **đã được `hanh_dong_cua_app` lọc**
+vì không có khóa `nhan`. → KHÔNG có mìn nào đang nổ, nên **KHÔNG đổi cách dịch vai**
+(đổi là rủi ro thật cho hành vi đang đúng); thay vào đó dựng LƯỚI TEST chặn mã mới
+vô tình được nâng vai.
+
 ### CẦN LÀM KHI RESTART CỤM (chưa làm — Owner chọn thời điểm)
 4 app mới cần cờ trong Arguments của tác vụ nền, **thiếu là app trả 401 toàn bộ**:
 `AA_TRUST_PROXY=1` (ai-agent) · `TC_TRUST_PROXY=1` (to-chuc) ·
