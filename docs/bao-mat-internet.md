@@ -612,6 +612,42 @@ start-all.ps1 → cả gateway lẫn 7 app cùng có token → route phát khóa
 danh tính siết chặt. Code app đã sẵn sàng (9 caller đã gửi token, proxy đã tiêm).
 
 
+### GĐ 7 — PENTEST + KHÁC PHỤC SỰ CỐ (05/09) ✅ pentest đạt
+
+**Pentest trên bản sao cô lập 9500 (code mới, KHÔNG đụng hệ 9000):**
+- Gateway 5/5 đòn bị chặn: route phát khóa không/sai token 403 · brute-force login
+  khóa sau 9 lần · CSRF thiếu token 403 · giả header X-Remote 403.
+- Tầng app (hàm thật, tách tiến trình tránh xung đột package `src`): T1 video_id ·
+  T2 ky=%5c · A2 RBAC bộ phận rỗng · A3 vault người khác · A4 vault khóa tạm ·
+  A2 IAM cấm bộ phận rỗng · N8 mật khẩu yếu — ĐỀU CHẶN.
+
+**LỖ MỚI phát hiện khi tự tấn công (không có trong báo cáo rà soát):** cờ
+TRUST_PROXY bật + curl loopback + header giả = 200 (giả được Owner qua SSRF cùng
+máy). CẢ 7 APP đều dính (cùng trust model "loopback là tin"). Đã vá:
+`xac_thuc_app.duoc_tin` đòi THÊM token nội bộ khi cụm cấp token; proxy tiêm token +
+cấm client gửi X-Noi-Bo. Kiểm chứng: SSRF loopback không token 401, gateway thật
+có token 200. Helper dùng chung → 4 app V3 bảo vệ đồng loạt.
+
+**HAI SỰ CỐ TỰ GÂY khi làm GĐ7 (đã khắc phục, chi tiết mục sự cố ở trên):**
+1. o_csrf trong 9 template + gateway code cũ → Jinja auto-reload → 500 toàn hệ.
+2. CSRF middleware gọi request.form() nuốt body → 422 không add được API key.
+Cả hai đã sửa + restart gateway + nghiệm thu hệ thật (Owner xác nhận add key OK).
+
+### ⚠️ TRẠNG THÁI VẬN HÀNH QUAN TRỌNG (05/09 cuối ngày)
+
+**MỌI BẢN VÁ GĐ1-6 ĐÃ COMMIT NHƯNG APP PHỤ CHƯA CÓ HIỆU LỰC** — 7 app phụ vẫn
+chạy code từ 01:19 sáng (PID cũ), CHỈ gateway đã restart (có bản vá + template).
+Đo thật cuối ngày: to-chuc/video-review vẫn nhận header giả từ loopback (code cũ).
+
+**Vì sao chưa nguy hiểm NGAY:** app bind loopback, chỉ gateway 9000 mở ra LAN. Kẻ
+tấn công phải ở TRÊN máy chủ hoặc khai thác SSRF. Rủi ro cao CHỈ khi ra Internet.
+
+**PHẢI LÀM: restart TOÀN BỘ cụm một lần có kiểm soát** (cùng đợt cuối tuần với GĐ5)
+để: (a) app phụ nạp bản vá GĐ1-3; (b) bỏ comment OUTLIERY_TOKEN_NOI_BO trong
+start-all.ps1 để bật token đồng bộ cả cụm. Code app đã sẵn (9 caller gửi token,
+proxy tiêm token). KHÔNG bật token khi chỉ restart gateway — app cũ sẽ 403 mất khóa.
+
+
 ## 6. Nhật ký quyết định
 
 - **05/09/2026** — Mở sổ. Chốt tách Đích A / Đích B. Chốt dùng VPN làm giải pháp
