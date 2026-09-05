@@ -648,6 +648,27 @@ start-all.ps1 để bật token đồng bộ cả cụm. Code app đã sẵn (9 
 proxy tiêm token). KHÔNG bật token khi chỉ restart gateway — app cũ sẽ 403 mất khóa.
 
 
+### ✅ RESTART CẢ CỤM XONG (05/09 ~15:35) — BẢN VÁ ĐÃ CÓ HIỆU LỰC THẬT
+
+Owner chốt restart luôn (nhiều app cần nạp bản vá). Đã restart toàn bộ cụm:
+- Dừng app phụ theo CỔNG (không theo tên — bài học 21/08), rồi start-all bật lại.
+- Bật lại OUTLIERY_TOKEN_NOI_BO đồng bộ cả cụm.
+
+**SỰ CỐ khi restart (tự gây, đã sửa):** seo-optimize CHẾT lúc khởi động —
+`from nen.common import token_noi_bo` trong khi seo là REPO RIÊNG chạy từ thư mục
+app, không thấy `nen`. Sửa: seo + radary dùng `_header_noi_bo()` tự đọc env
+(giống niche/content). Đây là lần thứ 3 tôi vấp "repo con không import nen.common".
+
+**NGHIỆM THU HỆ THẬT (lần đầu bản vá thật sự chạy):**
+- 12/12 app phụ + gateway sống.
+- App phụ lấy được khóa (radary gọi YouTube ok=True) → token đồng bộ đúng.
+- Route phát khóa không token → 403 (token nội bộ ĐÃ bật cứng).
+- Giả header Owner vào to-chuc → 401 (GĐ1 xác thực GIỜ CÓ HIỆU LỰC).
+- Owner xác nhận thêm API key OK.
+
+**TRẠNG THÁI: GĐ 1-4 + 6 (phần code) đã chạy thật trên hệ và nghiệm thu đạt.**
+Còn lại: GĐ5 (cuối tuần) + HTTPS (chờ tên miền) + việc tay Remove-SmbShare Users.
+
 ## 6. Nhật ký quyết định
 
 - **05/09/2026** — Mở sổ. Chốt tách Đích A / Đích B. Chốt dùng VPN làm giải pháp
