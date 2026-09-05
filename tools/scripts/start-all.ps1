@@ -230,8 +230,8 @@ foreach ($dv in $dichVu) {
     # cua moi app bay di mat — su co scheduler chet lang le (24 pool ngung quet 20 tieng)
     # va loi sinh bao cao niche deu KHONG de lai vet nao de doc. Log la thu dau tien
     # can den luc su co, khong phai thu them cho vui.
-    $logOut = Join-Path $root ('logs' + $dv.Ten + '.out.log')
-    $logErr = Join-Path $root ('logs' + $dv.Ten + '.err.log')
+    $logOut = Join-Path $root ('logs\' + $dv.Ten + '.out.log')
+    $logErr = Join-Path $root ('logs\' + $dv.Ten + '.err.log')
     foreach ($lg in @($logOut, $logErr)) {          # cat bot khi qua 20MB, giu 1 doi
         if ((Test-Path $lg) -and ((Get-Item $lg).Length -gt 20MB)) {
             Move-Item -Force $lg ($lg + '.1')
