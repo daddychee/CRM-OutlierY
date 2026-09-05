@@ -67,6 +67,22 @@ def test_reviewy_sidebar_xo_4_muc_con(client):
     assert 'href="/video-review?duong=tong-quan"' not in r2.text
 
 
+def test_moi_muc_con_phai_nam_trong_tien_to():
+    """LƯỚI CHỐNG LỖI 'thiếu tiền tố nào hỏng phần đó' (đã dính 2 lần: Content
+    03/08 mất /manage /settings, ReviewY 05/09 mất /publish → sidebar bấm ra
+    404 Not Found). Mục con sidebar đi qua proxy nên đường của nó BẮT BUỘC nằm
+    trong tien_to — nếu không, gateway không biết viết lại và app không nhận."""
+    from nen.common.hop_dong import doc_hop_dong
+    thieu = []
+    for a in doc_hop_dong():
+        tien_to = a.get("tien_to") or []
+        for m in a.get("muc_con") or []:
+            duong = "/" + m["duong"].lstrip("/")
+            if not any(duong == t or duong.startswith(t + "/") for t in tien_to):
+                thieu.append(f"{a['slug']}: muc con {duong} khong co trong tien_to")
+    assert not thieu, "; ".join(thieu)
+
+
 def test_muc_con_khai_bang_du_lieu_khong_hardcode():
     """Content Ultimate cũng chuyển sang cùng cơ chế — giữ NGUYÊN đường cũ
     /outline /author /write nên hành vi app đó không đổi."""

@@ -390,7 +390,8 @@
         "/tap",
         "/hau-kiem",
         "/tong-quan",
-        "/kich-ban"
+        "/kich-ban",
+        "/publish"
       ],
       "giao_dien": "khung",
       "muc_con": [
@@ -833,6 +834,12 @@
           "ten": "Tìm B-roll kho ảnh/video",
           "loai": "stock",
           "ghi_chu": "Pexels + Pixabay (khoá free, dùng thương mại được). Nhiều khoá = nhân hạn mức (~200 query/giờ/khoá). Envato/Vecteezy đăng nhập bằng trình duyệt, KHÔNG dùng khoá API."
+        },
+        {
+          "ma": "tim_tu_lieu",
+          "ten": "Tìm tư liệu thật (entity)",
+          "loai": "serp",
+          "ghi_chu": "Serper.dev (Google Images) cho beat entity — người/sự kiện/vật có thật mà kho stock không có. 2.500 query free khi đăng ký, tool có cache nên tìm rồi không tốn lượt lại."
         },
         {
           "ma": "gen_canh",
