@@ -53,7 +53,8 @@ _HEADER_CAM = {"host", "connection", "keep-alive", "transfer-encoding", "upgrade
                "content-length", "accept-encoding",
                "x-remote-user", "x-remote-role", "x-remote-level", "x-remote-dept",
                "x-remote-apps", "x-remote-name", "x-remote-actions", "x-role-code",
-               "x-forwarded-for"}
+               "x-forwarded-for",
+               "x-noi-bo"}   # SIẾT 05/09 GĐ7: chỉ gateway đặt token, client cấm gửi
 
 _LOAI_CHU = ("text/html", "text/css", "application/javascript", "text/javascript",
              "application/json", "text/plain")
@@ -128,6 +129,11 @@ async def chuyen_tiep(request: Request, cong: int, goc: str, duong_dan: str,
     if request.headers.get("host"):
         headers["X-Forwarded-Host"] = request.headers["host"]
     headers["X-Forwarded-Proto"] = request.url.scheme
+    # SIẾT 05/09 GĐ7: gateway tự chứng minh danh tính bằng token nội bộ. App phụ
+    # (xac_thuc_app.duoc_tin) đòi token này kèm X-Remote-* khi cụm đã cấp token —
+    # để một app bị SSRF gọi loopback KHÔNG giả được gateway.
+    from nen.common import token_noi_bo
+    headers.update(token_noi_bo.header())
     headers["X-Remote-User"] = ten_cho_header(ten_user)
     if vai:
         headers["X-Remote-Role"] = vai

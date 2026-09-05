@@ -579,6 +579,39 @@ không gọi nó. Đề xuất mức quyền:
   hiện chỉ ẩn ở UI `web/app.js:301`, server không kiểm).
 
 
+### SỰ CỐ 05/09 (GĐ7) — 500 TOÀN HỆ + APP MẤT KHÓA, đã khắc phục
+
+**Chuỗi nhân quả (tôi gây ra):**
+1. GĐ4 thêm `{{ o_csrf(request) }}` vào 9 template. Gateway thật đang chạy từ
+   01:19 sáng (code cũ chưa có Jinja global `o_csrf`). Jinja AUTO-RELOAD nạp
+   template mới trên đĩa → gọi hàm chưa tồn tại → **500 mọi trang có form, gồm
+   /login → cả hệ không đăng nhập được.** (Đúng bẫy memory "sửa template trên hệ
+   đang chạy" — tôi đã vấp.)
+2. Owner cho restart gateway. Nhưng `start-all.ps1` (GĐ6) đặt
+   `OUTLIERY_TOKEN_NOI_BO` → gateway mới ĐÒI token ở route phát khóa, trong khi
+   7 app phụ vẫn chạy code 01:19 (chưa gửi token) → **app phụ 403 khi xin khóa
+   LLM/YouTube = hỏng hỏi-đáp/chẩn-đoán/radary scan.**
+
+**Khắc phục:**
+- Tạm VÔ HIỆU dòng đặt token trong start-all.ps1 (comment lại) → restart gateway
+  lần 2 → token về chế độ tương thích ngược (chưa đặt biến = bỏ qua) → app cũ lấy
+  được khóa. Login 200, route phát khóa 200 với app cũ.
+
+**BÀI HỌC (đã có trong memory nhưng tôi vẫn vấp — phải kỷ luật hơn):**
+- (a) Đổi template + code phải đi CÙNG một lần restart có kiểm soát. Không bao giờ
+  để commit đổi template mà không restart ngay, vì Jinja auto-reload nạp template
+  mới lên code cũ = 500 tức thì.
+- (b) Bật token nội bộ (hay bất kỳ siết giao thức gateway↔app nào) CHỈ được làm
+  khi CẢ CỤM restart cùng lúc — app phụ phải có code gửi token TRƯỚC. Đây đúng là
+  nguyên tắc "sửa caller trước, đặt biến sau" tôi tự ghi ở GĐ1 mà lại vi phạm vì
+  start-all đặt biến cùng lúc khởi động.
+
+**CÒN LẠI (bật token nội bộ đúng cách):** khi Owner restart TOÀN BỘ cụm cùng lúc
+(vd cuối tuần cùng đợt GĐ5), bỏ comment dòng OUTLIERY_TOKEN_NOI_BO trong
+start-all.ps1 → cả gateway lẫn 7 app cùng có token → route phát khóa + header
+danh tính siết chặt. Code app đã sẵn sàng (9 caller đã gửi token, proxy đã tiêm).
+
+
 ## 6. Nhật ký quyết định
 
 - **05/09/2026** — Mở sổ. Chốt tách Đích A / Đích B. Chốt dùng VPN làm giải pháp

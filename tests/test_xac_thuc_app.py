@@ -69,3 +69,33 @@ def test_moi_app_mot_co_rieng(monkeypatch):
     monkeypatch.delenv("DA_TRUST_PROXY", raising=False)
     assert xac_thuc_app.duoc_tin(_Req("127.0.0.1"), "VR_TRUST_PROXY") is True
     assert xac_thuc_app.duoc_tin(_Req("127.0.0.1"), "DA_TRUST_PROXY") is False
+
+
+# ── GĐ7 (phát hiện khi tự tấn công 05/09): loopback + token nội bộ ─────────────
+def test_co_token_bat_thi_doi_token_dung(monkeypatch):
+    """Khi cụm đã cấp OUTLIERY_TOKEN_NOI_BO, header danh tính PHẢI kèm token —
+    chống một app bị SSRF gọi loopback giả gateway. Đo thật GĐ7: cờ bật + loopback
+    + header giả (không token) = 200 (giả được Owner) TRƯỚC bản vá này."""
+    monkeypatch.setenv("VR_TRUST_PROXY", "1")
+    monkeypatch.setenv("OUTLIERY_TOKEN_NOI_BO", "bi-mat-cum")
+
+    class _R:
+        def __init__(self, tok):
+            self.client = type("C", (), {"host": "127.0.0.1"})()
+            self.headers = {"X-Noi-Bo": tok} if tok else {}
+
+    assert xac_thuc_app.duoc_tin(_R("bi-mat-cum"), "VR_TRUST_PROXY") is True
+    assert xac_thuc_app.duoc_tin(_R("sai"), "VR_TRUST_PROXY") is False
+    assert xac_thuc_app.duoc_tin(_R(None), "VR_TRUST_PROXY") is False
+
+
+def test_chua_cap_token_thi_giu_hanh_vi_cu(monkeypatch):
+    """Tương thích ngược: chưa đặt token → chỉ cần loopback (guard vẫn đứng)."""
+    monkeypatch.setenv("VR_TRUST_PROXY", "1")
+    monkeypatch.delenv("OUTLIERY_TOKEN_NOI_BO", raising=False)
+
+    class _R:
+        client = type("C", (), {"host": "127.0.0.1"})()
+        headers = {}
+
+    assert xac_thuc_app.duoc_tin(_R(), "VR_TRUST_PROXY") is True

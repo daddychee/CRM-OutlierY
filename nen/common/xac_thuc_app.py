@@ -43,7 +43,24 @@ def duoc_tin(request, ten_co: str) -> bool:
     client = getattr(request, "client", None)
     if client is None:                      # fail-CLOSED (bẫy gateway 05/09)
         return False
-    return getattr(client, "host", None) in LOOPBACK
+    if getattr(client, "host", None) not in LOOPBACK:
+        return False
+    # SIẾT 05/09 GĐ7 (phát hiện khi tự tấn công): loopback MỘT MÌNH chưa đủ —
+    # gateway VÀ mọi app phụ đều ở loopback, nên một app bị SSRF có thể gọi
+    # `127.0.0.1:<cổng app khác>` kèm header X-Remote-* giả và được tin. Đo thật:
+    # cờ bật + curl loopback + header giả = 200 (giả được Owner).
+    # Nếu cụm đã cấp OUTLIERY_TOKEN_NOI_BO thì header danh tính PHẢI kèm token đó —
+    # cùng bí mật gateway dùng cho route phát khóa. Chưa cấp token → giữ hành vi cũ
+    # (tương thích ngược, guard loopback vẫn đứng) để không phá lúc chuyển giao.
+    from nen.common import token_noi_bo
+    if token_noi_bo.dang_bat():
+        tok = None
+        headers = getattr(request, "headers", None)
+        if headers is not None:
+            tok = headers.get(token_noi_bo.TEN_HEADER)
+        if not token_noi_bo.khop(tok):
+            return False
+    return True
 
 
 def ip_goi(request) -> str:
