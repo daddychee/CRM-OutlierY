@@ -910,6 +910,55 @@
    ],
    "chua_kiem": true,
    "ghi_chua": "Gateway chết → DỪNG với thông điệp rõ, không âm thầm rơi về api_keys nội bộ (chống 2 nguồn khóa lệch nhau). Cần cửa kiểm gọi khoa_v3.lay_khoa với GATEWAY_URL cổng chết → phải NÉM lỗi, không trả rỗng"
+  },
+  {
+   "ma": "scheduler-song",
+   "ten": "Scheduler còn quét",
+   "loai": "goi",
+   "canh": [
+    "board"
+   ],
+   "mo_ta": "Sự cố 05/09: luồng scheduler chết lặng lẽ, 24 pool ngừng quét 20 tiếng, Owner là người phát hiện. Engine vẫn khỏe (quét tay 4,6s), job vẫn đến hạn. Đo dấu vết TRÊN ĐĨA (cycles) chứ không tin biến trong bộ nhớ — app restart là mất.",
+   "method": "GET",
+   "duong": "/api/kiem/scheduler",
+   "cho": [
+    [
+     "so_pool_treo",
+     "==",
+     0
+    ]
+   ],
+   "lay_chang": [
+    [
+     "pool đang tracking",
+     "so_pool_tracking"
+    ],
+    [
+     "pool treo",
+     "so_pool_treo"
+    ],
+    [
+     "giờ im lặng ít nhất",
+     "gio_im_lang"
+    ]
+   ],
+   "so_do": {
+    "buoc": [
+     {
+      "ten": "Pool có ngách × thị trường"
+     },
+     {
+      "ten": "Lần quét gần nhất (cycles)"
+     },
+     {
+      "ten": "So ngưỡng 3 giờ"
+     }
+    ],
+    "kiem": [
+     "mọi pool tracking đều quét trong 3 giờ gần nhất",
+     "pool gốc (hàng chờ) không tính — cố ý không tracking"
+    ]
+   }
   }
  ]
 }

@@ -227,8 +227,20 @@ foreach ($dv in $dichVu) {
     if (-not (Test-Path $dv.Exe)) {
         Write-Host ("[!] {0}: thieu {1} - bo qua" -f $dv.Ten, $dv.Exe); continue
     }
+    # 05/09: GHI LOG RA FILE. Truoc day Start-Process khong redirect nen stdout/stderr
+    # cua moi app bay di mat — su co scheduler chet lang le (24 pool ngung quet 20 tieng)
+    # va loi sinh bao cao niche deu KHONG de lai vet nao de doc. Log la thu dau tien
+    # can den luc su co, khong phai thu them cho vui.
+    $logOut = Join-Path $root ('logs' + $dv.Ten + '.out.log')
+    $logErr = Join-Path $root ('logs' + $dv.Ten + '.err.log')
+    foreach ($lg in @($logOut, $logErr)) {          # cat bot khi qua 20MB, giu 1 doi
+        if ((Test-Path $lg) -and ((Get-Item $lg).Length -gt 20MB)) {
+            Move-Item -Force $lg ($lg + '.1')
+        }
+    }
     $p = Start-Process -FilePath $dv.Exe -ArgumentList $dv.Args `
-        -WorkingDirectory $dv.Wd -WindowStyle Hidden -PassThru
+        -WorkingDirectory $dv.Wd -WindowStyle Hidden -PassThru `
+        -RedirectStandardOutput $logOut -RedirectStandardError $logErr
     $p.Id | Out-File -FilePath (Join-Path $pidDir ($dv.Ten + '.pid')) -Encoding ascii
     Write-Host ("[+] {0} da bat (PID {1}, cong {2})" -f $dv.Ten, $p.Id, $dv.Cong)
 }
