@@ -35,6 +35,8 @@ from fastapi import (BackgroundTasks, Depends, FastAPI, Form, Header, HTTPExcept
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from fastapi.templating import Jinja2Templates
 
+from nen.common import xac_thuc_app
+
 from src import (do_thi, don_nas, hau_kiem, kich_ban, kho_video, nap_nas,
                  nhan_xet, tong_quan)
 
@@ -74,10 +76,21 @@ def _khoi_tao():
 
 # ---------- claims (khuôn to-chuc) ----------
 
-def lay_user(x_remote_user: str = Header(""), x_remote_level: str = Header("0"),
+def lay_user(request: Request,
+             x_remote_user: str = Header(""), x_remote_level: str = Header("0"),
              x_remote_role: str = Header(""), x_remote_dept: str = Header("")) -> dict:
-    """User = claims gateway tiêm (an toàn vì app bind 127.0.0.1 — chỉ gateway tới
-    được; header giả từ trình duyệt đã bị gateway vứt trước khi tới đây)."""
+    """User = claims gateway tiêm.
+
+    SIẾT 05/09/2026 (rà bảo mật, sổ `docs/bao-mat-internet.md` mục G1): TRƯỚC đây
+    chỉ cần header CÓ MẶT là tin — cổng 9114 lộ ra thì
+    `curl -H "X-Remote-Level: 5" -H "X-Remote-Actions: xoa"` thành Owner và XÓA
+    VĨNH VIỄN file gốc trên NAS (NAS không có Recycle Bin).
+
+    Giờ đòi ĐỦ CẢ HAI qua `xac_thuc_app.duoc_tin`: `VR_TRUST_PROXY=1` (khai trong
+    Arguments tác vụ nền) VÀ client là loopback. Thiếu bất kỳ điều nào → 401.
+    Khuôn dùng chung với 3 app V3 còn lại, chép từ seo-optimize."""
+    if not xac_thuc_app.duoc_tin(request, "VR_TRUST_PROXY"):
+        raise HTTPException(401, "Thiếu danh tính — vào qua cổng OUTLIERY.")
     if not x_remote_user:
         raise HTTPException(401, "Thiếu danh tính — vào qua cổng OUTLIERY.")
     try:
