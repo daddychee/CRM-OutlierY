@@ -23,7 +23,7 @@ import os
 import re
 import threading
 import uuid
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, time, timedelta
 from pathlib import Path
 
 # Trạng thái việc — tập HỮU HẠN, code không được sinh giá trị ngoài tập này.
@@ -206,36 +206,90 @@ def duoc_xac_nhan(viec: dict, user: dict) -> bool:
 # ---------- thao tác ----------
 
 def _han_hop_le(han: str) -> str:
-    """Hạn chót dạng YYYY-MM-DD, rỗng = không đặt hạn. Sai định dạng → nói thẳng,
-    KHÔNG âm thầm bỏ qua (người giao tưởng đã đặt hạn mà thật ra không)."""
-    han = (han or "").strip()
+    """Hạn chót: NGÀY (YYYY-MM-DD) hoặc NGÀY-GIỜ (YYYY-MM-DDTHH:MM). Rỗng = không
+    đặt hạn. Sai định dạng → nói thẳng, KHÔNG âm thầm bỏ qua (người giao tưởng đã
+    đặt hạn mà thật ra không).
+
+    Owner 31/08 cho đặt cả giờ. Vẫn nhận hạn CHỈ NGÀY: việc cũ trong sổ tuần giữ
+    nguyên dạng đó, và nhiều việc thật sự chỉ cần hạn theo ngày.
+    """
+    han = (han or "").strip().replace(" ", "T")
     if not han:
         return ""
     try:
+        if "T" in han:
+            return datetime.fromisoformat(han).strftime("%Y-%m-%dT%H:%M")
         return date.fromisoformat(han).isoformat()
     except ValueError:
-        raise ValueError("Hạn chót phải dạng ngày (YYYY-MM-DD).")
+        raise ValueError("Hạn chót phải dạng ngày (YYYY-MM-DD) "
+                         "hoặc ngày-giờ (YYYY-MM-DDTHH:MM).")
 
 
-def tinh_han(viec: dict, hom_nay: date | None = None) -> dict:
+def co_gio(han: str) -> bool:
+    """Hạn này có kèm giờ không — UI cần biết để hiện '17:00' hay chỉ '31/08'."""
+    return "T" in (han or "")
+
+
+def _han_thanh_luc(han: str) -> datetime | None:
+    """Đổi hạn thành MỐC THỜI GIAN để so. Hạn chỉ có ngày = hết ngày hôm đó
+    (23:59), không phải 00:00 — đặt hạn 31/08 mà 9 giờ sáng đã báo quá hạn thì vô
+    lý."""
+    if not han:
+        return None
+    try:
+        if co_gio(han):
+            return datetime.fromisoformat(han)
+        return datetime.combine(date.fromisoformat(han), time(23, 59))
+    except ValueError:
+        return None
+
+
+def han_chu(han: str, kem_gio: bool = True) -> str:
+    """Hạn viết cho người đọc: '31/08' hoặc '31/08 17:30'. Template gọi cái này
+    thay vì cắt chuỗi (han[8:] hỏng ngay khi hạn có giờ)."""
+    luc = _han_thanh_luc(han)
+    if luc is None:
+        return ""
+    chu = f"{luc.day:02d}/{luc.month:02d}"
+    return chu + (f" {luc.hour:02d}:{luc.minute:02d}" if kem_gio and co_gio(han) else "")
+
+
+def tinh_han(viec: dict, bay_gio: datetime | date | None = None) -> dict:
     """Nhãn hạn cho UI + mức cấp thiết. Việc đã ngã ngũ (xác nhận/hủy/từ chối/dời)
-    thì KHÔNG còn hạn để lo — không dọa người ta bằng việc đã xong."""
+    thì KHÔNG còn hạn để lo — không dọa người ta bằng việc đã xong.
+
+    Hạn có giờ thì đếm theo GIỜ khi còn trong hôm nay ("còn 3 giờ", "quá hạn 2
+    giờ"); xa hơn vẫn đếm theo ngày cho dễ đọc.
+    """
     if not viec.get("han") or viec["trang_thai"] not in (CHO_NHAN, CHO_PHOI_HOP,
                                                          DANG_LAM, BAO_XONG):
         return {"chu": "", "muc": "", "con": None}
-    hom_nay = hom_nay or date.today()
-    try:
-        con = (date.fromisoformat(viec["han"]) - hom_nay).days
-    except ValueError:
+    luc = _han_thanh_luc(viec["han"])
+    if luc is None:
         return {"chu": "", "muc": "", "con": None}
-    if con < 0:
-        return {"chu": f"Quá hạn {-con} ngày", "muc": "cap", "con": con}
+    if bay_gio is None:
+        bay_gio = datetime.now()
+    elif isinstance(bay_gio, date) and not isinstance(bay_gio, datetime):
+        bay_gio = datetime.combine(bay_gio, datetime.now().time())
+    con = (luc.date() - bay_gio.date()).days          # còn mấy NGÀY (theo lịch)
+    gio_con = (luc - bay_gio).total_seconds() / 3600  # còn mấy GIỜ (thật)
+
+    if con < 0 or (co_gio(viec["han"]) and gio_con < 0):
+        if co_gio(viec["han"]) and -1 <= con <= 0:
+            return {"chu": f"Quá hạn {max(1, round(-gio_con))} giờ", "muc": "cap",
+                    "con": con}
+        return {"chu": f"Quá hạn {max(1, -con)} ngày", "muc": "cap", "con": con}
     if con == 0:
+        if co_gio(viec["han"]):
+            return {"chu": (f"Còn {round(gio_con)} giờ" if gio_con >= 1
+                            else f"Còn {max(1, round(gio_con * 60))} phút"),
+                    "muc": "cap", "con": 0}
         return {"chu": "Hạn hôm nay", "muc": "cap", "con": 0}
     if con == 1:
-        return {"chu": "Hạn ngày mai", "muc": "luu_y", "con": 1}
-    ngay = date.fromisoformat(viec["han"])
-    return {"chu": f"Hạn {ngay.day:02d}/{ngay.month:02d}",
+        return {"chu": "Hạn ngày mai" + (f" {viec['han'][11:16]}" if co_gio(viec["han"]) else ""),
+                "muc": "luu_y", "con": 1}
+    return {"chu": f"Hạn {luc.day:02d}/{luc.month:02d}"
+                   + (f" {luc.hour:02d}:{luc.minute:02d}" if co_gio(viec["han"]) else ""),
             "muc": "luu_y" if con <= 3 else "", "con": con}
 
 

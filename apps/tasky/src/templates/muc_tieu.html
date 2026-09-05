@@ -82,7 +82,8 @@
   <div class="hang">
     <input id="t-ten" placeholder="Goal… (ví dụ: Tăng AVD kênh Life In US)">
     <input id="t-kq" placeholder="Kết quả cần đạt (AVD ≥ 45%)" style="max-width:230px">
-    <input id="t-han" type="date" title="Hạn (không bắt buộc)" style="flex:0 0 auto">
+    <input id="t-han" type="date" title="Hạn Goal — theo NGÀY (việc con mới cần giờ)"
+      style="flex:0 0 auto">
     <button class="nut chinh" id="t-luu">Tạo</button>
   </div>
   <div class="loi" id="t-loi" hidden></div>
@@ -187,7 +188,7 @@
   <div class="kq">Kết quả cần đạt: {{ g.ket_qua_can_dat }}</div>
   <div class="thanh"><i style="width:{{ g.tien_do.phan_tram or 0 }}%"></i></div>
   <div class="day"><b>{{ g.tien_do.xong }}/{{ g.tien_do.tong }}</b> việc
-    {%- if g.han %} · hạn {{ g.han[8:] }}/{{ g.han[5:7] }}{% endif %}
+    {%- if g.han %} · hạn {{ g.han|han_chu }}{% endif %}
     <span style="flex:1"></span>
     {% if g.trang_thai != 'dang_chay' %}
       <span class="the tt ok">{{ {'dat':'Đạt','mot_phan':'Một phần','khong_dat':'Không đạt'}[g.trang_thai] }}</span>
@@ -209,7 +210,7 @@
   <div class="nguoi">{{ ten_hien.get(g.nguoi_tao, g.nguoi_tao) }}</div>
   <div class="tt"><i style="width:{{ g.tien_do.phan_tram or 0 }}%"></i></div>
   <div class="so">{{ g.tien_do.xong }}/{{ g.tien_do.tong }}</div>
-  <div class="han">{% if g.han %}{{ g.han[8:] }}/{{ g.han[5:7] }}{% else %}—{% endif %}</div>
+  <div class="han">{% if g.han %}{{ g.han|han_chu }}{% else %}—{% endif %}</div>
   <div class="cot-chip">
     {% if g.trang_thai != 'dang_chay' %}
       <span class="the tt ok">{{ {'dat':'Đạt','mot_phan':'Một phần','khong_dat':'Không đạt'}[g.trang_thai] }}</span>
@@ -260,7 +261,8 @@
         <div class="kq" style="display:flex;align-items:center;gap:6px;margin-top:4px">
           <span style="flex:0 0 auto">Kết quả cần đạt:</span>
           <input class="o-tai-cho kq" name="ket_qua" value="{{ g.ket_qua_can_dat }}">
-          <input class="o-tai-cho han" type="date" name="han" value="{{ g.han }}">
+          {# Hạn GOAL theo ngày: mục tiêu là mốc dài hạn, giờ giấc thuộc về việc con #}
+          <input class="o-tai-cho han" type="date" name="han" value="{{ g.han[:10] }}">
           <button type="submit" style="display:none">Lưu</button>
           <span class="goi-sua">Enter để lưu</span>
         </div>
@@ -288,7 +290,7 @@
 
   <div class="mt-modal-noi">
     <div class="hang-the" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
-      {% if g.han %}<span class="the">Hạn {{ g.han[8:] }}/{{ g.han[5:7] }}
+      {% if g.han %}<span class="the">Hạn {{ g.han|han_chu }}
         {%- if g.con_han is not none %} · {% if g.con_han < 0 %}trễ {{ -g.con_han }} ngày
         {%- elif g.con_han == 0 %}hôm nay{% else %}còn {{ g.con_han }} ngày{% endif %}{% endif %}</span>{% endif %}
       <span class="the">{{ ten_hien.get(g.nguoi_tao, g.nguoi_tao) }} đặt</span>
@@ -370,7 +372,7 @@
           title="{{ hn.chu or 'Hạn ' ~ v.han }}">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
             stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5V12l3 2"/></svg>
-          {{ v.han[8:] }}/{{ v.han[5:7] }}</span>
+          {{ v.han|han_chu }}</span>
         {% endif %}
         {% for c in v|chip if c.chu not in ('Gần đến hạn', 'Quá deadline') %}
         <span class="bg {{ c.muc or 'im' }}">{{ c.chu }}</span>{% endfor %}
@@ -449,7 +451,7 @@
         <div class="than-buoc">
           <div class="nhan-buoc">Hạn và mức ưu tiên (không bắt buộc)</div>
           <div class="hang">
-            <input data-che-han type="date" style="flex:0 0 auto">
+            <input data-che-han type="datetime-local" style="flex:0 0 auto">
             <button type="button" class="nut-gap" data-che-gap aria-pressed="false">
               <svg viewBox="0 0 24 24"><path d="M13 2L4.5 13H11l-1 9 8.5-11H12l1-9z"/></svg>
               Đánh dấu GẤP</button>

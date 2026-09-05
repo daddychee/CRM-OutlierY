@@ -289,7 +289,7 @@
   </div>
   <div class="hang" style="margin:0">
     <input data-nv-kq placeholder="Kết quả cần đạt (bắt buộc — ví dụ: AVD ≥ 45%)">
-    <input data-nv-han type="date" style="flex:0 0 auto">
+    <input data-nv-han type="datetime-local" style="flex:0 0 auto">
     <button class="nut chinh" data-nv-dung>Dựng thành Goal</button>
   </div>
   <div class="loi" data-nv-loi hidden></div>
@@ -315,7 +315,7 @@
   <div class="hang" style="margin:0">
     <input id="viec-moi" placeholder="Thêm việc bạn tự nhận…">
     <input id="loai-moi" list="ds-loai" placeholder="Loại việc (gõ mới cũng được)" style="max-width:200px;flex:0 0 auto">
-    <input id="han-moi" type="date" title="Hạn chót (không bắt buộc)" style="flex:0 0 auto">
+    <input id="han-moi" type="datetime-local" title="Hạn chót (không bắt buộc)" style="flex:0 0 auto">
     <datalist id="ds-loai">{% for l in loai_viec %}<option value="{{ l }}">{% endfor %}</datalist>
     <button class="nut chinh" id="them-viec">Thêm việc</button>
   </div>

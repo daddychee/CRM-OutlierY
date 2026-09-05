@@ -62,6 +62,7 @@ def _khong_dau(chu: str) -> str:
 
 templates.env.filters["han"] = tuan_lo.tinh_han   # {{ v|han }} → {chu, muc, con}
 templates.env.filters["chip"] = tuan_lo.the_trang_thai
+templates.env.filters["han_chu"] = tuan_lo.han_chu    # {{ v.han|han_chu }} → 31/08 17:30
 
 
 def _viet_tat(ho_ten: str) -> str:
