@@ -35,10 +35,9 @@ $env:OUTLIERY_MOI_TRUONG = 'that'
 # vi MOI SSRF trong he deu phat request TU loopback.
 # Sinh MOI moi lan khoi dong cum — ca gateway lan 7 app deu nhan cung bien nay
 # (start-all dat bien o tien trinh cha, cac tac vu con ke thua).
-# TAM VO HIEU 05/09 (su co GD7): token noi bo CHI bat khi CA CUM restart cung luc
-# (app phu phai co code gui token TRUOC). Bat rieng gateway lam app cu bi 403 khi
-# xin khoa. Bo dau # dong duoi KHI restart toan bo cum (start-all tat het roi bat lai).
-# $env:OUTLIERY_TOKEN_NOI_BO = [Guid]::NewGuid().ToString('N') + [Guid]::NewGuid().ToString('N')
+# Token noi bo (GD6): BAT lai 05/09 vi restart CA CUM cung luc — app phu nap code
+# moi (9 caller da gui token, proxy tiem token). Sinh moi moi lan khoi dong cum.
+$env:OUTLIERY_TOKEN_NOI_BO = [Guid]::NewGuid().ToString('N') + [Guid]::NewGuid().ToString('N')
 
 
 # SIET BAO MAT 05/09/2026 (so docs/bao-mat-internet.md, GD1): 4 app V3 truoc day
