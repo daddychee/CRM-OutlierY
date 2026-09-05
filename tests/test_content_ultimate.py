@@ -23,7 +23,7 @@ def conn(tmp_path, monkeypatch):
 
 def _owner(conn):
     return iam.claims_cua(iam.tao_tai_khoan(
-        conn, None, "owner", "mk-owner", "Ban quản trị", 5, phai_doi_mk=False))
+        conn, None, "owner", "MatKhau123", "Ban quản trị", 5, phai_doi_mk=False))
 
 
 def test_hop_dong_content_ultimate():
@@ -49,7 +49,7 @@ def test_luat_khong_khai_xoa_va_ma_tran_vao(conn):
         (("Kinh doanh", 4), (True, True, "leader")),                # L4 bỏ rào bộ phận (luật engine)
     ]
     for i, ((bp, lv), (vao, sua, _)) in enumerate(ca):
-        iam.tao_tai_khoan(conn, ow, f"u{i}", "123456", bp, lv)
+        iam.tao_tai_khoan(conn, ow, f"u{i}", "MatKhau123", bp, lv)
         u = iam.claims_cua(iam.lay_tai_khoan(conn, f"u{i}"))
         assert iam.co_quyen(u, "vao", "content-ultimate", conn) == vao, (bp, lv)
         assert iam.co_quyen(u, "sua", "content-ultimate", conn) == sua, (bp, lv)
@@ -63,7 +63,7 @@ def test_luat_khong_khai_xoa_va_ma_tran_vao(conn):
 
 def test_tick_sua_phat_leader_khong_len_admin(conn):
     ow = _owner(conn)
-    iam.tao_tai_khoan(conn, ow, "nv", "123456", "Vận hành - Sản xuất", 2)
+    iam.tao_tai_khoan(conn, ow, "nv", "MatKhau123", "Vận hành - Sản xuất", 2)
     nv = iam.claims_cua(iam.lay_tai_khoan(conn, "nv"))
     assert iam.vai_cho_app(nv, "content-ultimate", conn) == "viewer"
     iam.gan_override(conn, ow, "nv", "content-ultimate", "sua", True, "trực nhật ký thay leader")

@@ -20,14 +20,14 @@ def client(tmp_path, monkeypatch):
     monkeypatch.setattr(bcrypt, "gensalt", lambda rounds=12: _gensalt_goc(4))
     conn = iam.ket_noi()
     ow = iam.claims_cua(iam.tao_tai_khoan(
-        conn, None, "owner-test", "mk-test", "Ban quản trị", 5, phai_doi_mk=False))
-    iam.tao_tai_khoan(conn, ow, "nhanvien", "mk-nv-6", "Kinh doanh", 2,
+        conn, None, "owner-test", "MatKhau123", "Ban quản trị", 5, phai_doi_mk=False))
+    iam.tao_tai_khoan(conn, ow, "nhanvien", "MatKhau123", "Kinh doanh", 2,
                       phai_doi_mk=False)
     conn.close()
     return TestClient(gateway_app, follow_redirects=False)
 
 
-def _login(client, ten="owner-test", mk="mk-test"):
+def _login(client, ten="owner-test", mk="MatKhau123"):
     return client.post("/login", data={"ten": ten, "mat_khau": mk})
 
 
@@ -97,7 +97,7 @@ def test_open_khoi_quan_ly_nam_gon_trong_popup(client):
 
 def test_open_gate_y_het_cua_vao_app(client):
     # content-ultimate: chỉ VH L2+ — nhanvien KD bị chặn y luật proxy
-    _login(client, "nhanvien", "mk-nv-6")
+    _login(client, "nhanvien", "MatKhau123")
     assert client.get("/open/content-ultimate").status_code == 403
     assert client.get("/open/radary").status_code == 200         # radary mọi bộ phận L1
     _login(client)

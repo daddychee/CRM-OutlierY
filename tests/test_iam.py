@@ -24,7 +24,7 @@ def conn(tmp_path, monkeypatch):
 
 
 def _owner(conn):
-    tk = iam.tao_tai_khoan(conn, None, "owner", "mk-owner", "Ban quản trị", 5,
+    tk = iam.tao_tai_khoan(conn, None, "owner", "MatKhau123", "Ban quản trị", 5,
                            phai_doi_mk=False)
     return iam.claims_cua(tk)
 
@@ -41,29 +41,29 @@ def test_migrate_ghi_phien_ban(conn):
 
 def test_user_dau_tien_phai_owner(conn):
     with pytest.raises(iam.LoiIam):
-        iam.tao_tai_khoan(conn, None, "nhanvien", "123456", "Kinh doanh", 2)
+        iam.tao_tai_khoan(conn, None, "nhanvien", "MatKhau123", "Kinh doanh", 2)
     _owner(conn)  # level 5 thì được
 
 
 def test_xac_thuc_dung_sai(conn):
     _owner(conn)
-    assert iam.xac_thuc(conn, "owner", "mk-owner")["level"] == 5
+    assert iam.xac_thuc(conn, "owner", "MatKhau123")["level"] == 5
     assert iam.xac_thuc(conn, "owner", "sai") is None
     assert iam.xac_thuc(conn, "khong-co", "mk") is None
 
 
 def test_tai_khoan_khoa_khong_dang_nhap_duoc(conn):
     ow = _owner(conn)
-    iam.tao_tai_khoan(conn, ow, "nv", "123456", "Kinh doanh", 2)
+    iam.tao_tai_khoan(conn, ow, "nv", "MatKhau123", "Kinh doanh", 2)
     iam.sua_tai_khoan(conn, ow, "nv", khoa=True)
-    assert iam.xac_thuc(conn, "nv", "123456") is None
+    assert iam.xac_thuc(conn, "nv", "MatKhau123") is None
 
 
 # ---------- hai giỏ quyền ----------
 
 def test_gio_owner_tuyet_doi_chi_level5(conn):
     ow = _owner(conn)
-    iam.tao_tai_khoan(conn, ow, "admin", "123456", "Kinh doanh", 4)
+    iam.tao_tai_khoan(conn, ow, "admin", "MatKhau123", "Kinh doanh", 4)
     iam.sua_tai_khoan(conn, ow, "admin", admin_uy_quyen=True)
     admin = iam.claims_cua(iam.lay_tai_khoan(conn, "admin"))
     assert iam.co_quyen(ow, "vault", conn=conn)
@@ -72,8 +72,8 @@ def test_gio_owner_tuyet_doi_chi_level5(conn):
 
 def test_gio_uy_quyen_owner_va_admin(conn):
     ow = _owner(conn)
-    iam.tao_tai_khoan(conn, ow, "admin", "123456", "Kinh doanh", 4)
-    iam.tao_tai_khoan(conn, ow, "quanly4", "123456", "Kinh doanh", 4)
+    iam.tao_tai_khoan(conn, ow, "admin", "MatKhau123", "Kinh doanh", 4)
+    iam.tao_tai_khoan(conn, ow, "quanly4", "MatKhau123", "Kinh doanh", 4)
     iam.sua_tai_khoan(conn, ow, "admin", admin_uy_quyen=True)
     admin = iam.claims_cua(iam.lay_tai_khoan(conn, "admin"))
     l4_thuong = iam.claims_cua(iam.lay_tai_khoan(conn, "quanly4"))
@@ -83,14 +83,14 @@ def test_gio_uy_quyen_owner_va_admin(conn):
 
 def test_tick_owner_tuyet_doi_bi_chan(conn):
     ow = _owner(conn)
-    iam.tao_tai_khoan(conn, ow, "nv", "123456", "Kinh doanh", 2)
+    iam.tao_tai_khoan(conn, ow, "nv", "MatKhau123", "Kinh doanh", 2)
     with pytest.raises(iam.LoiIam):
         iam.gan_override(conn, ow, "nv", "*", "vault", True)
 
 
 def test_tick_le_thang_luat_mac_dinh(conn):
     ow = _owner(conn)
-    iam.tao_tai_khoan(conn, ow, "nv", "123456", "Kinh doanh", 2)
+    iam.tao_tai_khoan(conn, ow, "nv", "MatKhau123", "Kinh doanh", 2)
     nv = iam.claims_cua(iam.lay_tai_khoan(conn, "nv"))
     assert not iam.co_quyen(nv, "nap_tai_lieu", conn=conn)          # mặc định: không
     iam.gan_override(conn, ow, "nv", "*", "nap_tai_lieu", True, "ly do test")
@@ -101,7 +101,7 @@ def test_tick_le_thang_luat_mac_dinh(conn):
 
 def test_vao_app_theo_min_level(conn):
     ow = _owner(conn)
-    iam.tao_tai_khoan(conn, ow, "nv", "123456", "Kinh doanh", 2)
+    iam.tao_tai_khoan(conn, ow, "nv", "MatKhau123", "Kinh doanh", 2)
     nv = iam.claims_cua(iam.lay_tai_khoan(conn, "nv"))
     assert iam.co_quyen(nv, "vao", "app-mau", conn)   # min_level 1
     assert iam.vai_cho_app(nv, "app-mau") == "viewer"
@@ -112,7 +112,7 @@ def test_vao_app_theo_min_level(conn):
 
 def test_luat_sat_1_khong_tu_nang_quyen(conn):
     ow = _owner(conn)
-    iam.tao_tai_khoan(conn, ow, "admin", "123456", "Kinh doanh", 4)
+    iam.tao_tai_khoan(conn, ow, "admin", "MatKhau123", "Kinh doanh", 4)
     iam.sua_tai_khoan(conn, ow, "admin", admin_uy_quyen=True)
     admin = iam.claims_cua(iam.lay_tai_khoan(conn, "admin"))
     with pytest.raises(iam.LoiIam):
@@ -121,7 +121,7 @@ def test_luat_sat_1_khong_tu_nang_quyen(conn):
 
 def test_luat_sat_2_khong_dung_owner(conn):
     ow = _owner(conn)
-    iam.tao_tai_khoan(conn, ow, "admin", "123456", "Kinh doanh", 4)
+    iam.tao_tai_khoan(conn, ow, "admin", "MatKhau123", "Kinh doanh", 4)
     iam.sua_tai_khoan(conn, ow, "admin", admin_uy_quyen=True)
     admin = iam.claims_cua(iam.lay_tai_khoan(conn, "admin"))
     with pytest.raises(iam.LoiIam):
@@ -134,7 +134,7 @@ def test_luat_sat_2_khong_dung_owner(conn):
 
 def test_luat_sat_3_moi_thao_tac_co_vet(conn):
     ow = _owner(conn)
-    iam.tao_tai_khoan(conn, ow, "nv", "123456", "Kinh doanh", 2)
+    iam.tao_tai_khoan(conn, ow, "nv", "MatKhau123", "Kinh doanh", 2)
     iam.sua_tai_khoan(conn, ow, "nv", level=3)
     iam.xoa_tai_khoan(conn, ow, "nv")
     hanh_dong = [r["hanh_dong"] for r in iam.doc_nhat_ky(conn)]
@@ -145,9 +145,9 @@ def test_luat_sat_3_moi_thao_tac_co_vet(conn):
 
 def test_chi_owner_duoc_bat_admin_uy_quyen(conn):
     ow = _owner(conn)
-    iam.tao_tai_khoan(conn, ow, "admin", "123456", "Kinh doanh", 4)
+    iam.tao_tai_khoan(conn, ow, "admin", "MatKhau123", "Kinh doanh", 4)
     iam.sua_tai_khoan(conn, ow, "admin", admin_uy_quyen=True)
-    iam.tao_tai_khoan(conn, ow, "nv", "123456", "Kinh doanh", 2)
+    iam.tao_tai_khoan(conn, ow, "nv", "MatKhau123", "Kinh doanh", 2)
     admin = iam.claims_cua(iam.lay_tai_khoan(conn, "admin"))
     with pytest.raises(iam.LoiIam):
         iam.sua_tai_khoan(conn, admin, "nv", admin_uy_quyen=True)
@@ -163,10 +163,10 @@ def test_owner_khong_tu_xoa_minh(conn):
 
 def test_tu_doi_mat_khau_minh_luon_duoc(conn):
     ow = _owner(conn)
-    iam.tao_tai_khoan(conn, ow, "nv", "123456", "Kinh doanh", 2, phai_doi_mk=True)
+    iam.tao_tai_khoan(conn, ow, "nv", "MatKhau123", "Kinh doanh", 2, phai_doi_mk=True)
     nv = iam.claims_cua(iam.lay_tai_khoan(conn, "nv"))
-    iam.doi_mat_khau(conn, nv, "nv", "mk-moi-6")      # tự đổi: không cần quyền gì
-    assert iam.xac_thuc(conn, "nv", "mk-moi-6")
+    iam.doi_mat_khau(conn, nv, "nv", "MatKhau123")      # tự đổi: không cần quyền gì
+    assert iam.xac_thuc(conn, "nv", "MatKhau123")
     assert iam.lay_tai_khoan(conn, "nv")["phai_doi_mk"] == 0
 
 
@@ -181,7 +181,7 @@ def test_tao_nguoi_ma_tu_sinh(conn):
 
 def test_nhan_vien_khong_tao_duoc_nguoi(conn):
     ow = _owner(conn)
-    iam.tao_tai_khoan(conn, ow, "nv", "123456", "Kinh doanh", 2)
+    iam.tao_tai_khoan(conn, ow, "nv", "MatKhau123", "Kinh doanh", 2)
     nv = iam.claims_cua(iam.lay_tai_khoan(conn, "nv"))
     with pytest.raises(iam.LoiIam):
         iam.tao_nguoi(conn, nv, "Ai Đó", "Kinh doanh")
@@ -281,7 +281,7 @@ def test_sua_nguoi_kiem_cap_sau_gop_va_grandfather(conn):
 def test_sua_nguoi_can_quyen_nhan_su(conn):
     ow = _owner(conn)
     ns = iam.tao_nguoi(conn, ow, "Người Sửa", "Kinh doanh")
-    iam.tao_tai_khoan(conn, ow, "nv", "123456", "Kinh doanh", 2)
+    iam.tao_tai_khoan(conn, ow, "nv", "MatKhau123", "Kinh doanh", 2)
     nv = iam.claims_cua(iam.lay_tai_khoan(conn, "nv"))
     with pytest.raises(iam.LoiIam):
         iam.sua_nguoi(conn, nv, ns["ma"], trang_thai="nghi")     # nhân viên thường: chặn
@@ -290,7 +290,7 @@ def test_sua_nguoi_can_quyen_nhan_su(conn):
 # ---------- migration users.txt hệ cũ ----------
 
 def test_nhap_users_txt_giu_hash_va_level(conn, tmp_path):
-    h = bcrypt.hashpw(b"mk-cu", bcrypt.gensalt(rounds=4)).decode()
+    h = bcrypt.hashpw(b"MatKhau123", bcrypt.gensalt(rounds=4)).decode()
     f = tmp_path / "users.txt"
     f.write_text(
         "# comment\n"
@@ -298,7 +298,7 @@ def test_nhap_users_txt_giu_hash_va_level(conn, tmp_path):
         f"nv-cu:{h}:Kinh doanh:2:1\n", encoding="utf-8")
     n, b = nhap(str(f))
     assert (n, b) == (2, 0)
-    assert iam.xac_thuc(conn, "sep", "mk-cu")["level"] == 5   # hash GIỮ NGUYÊN
+    assert iam.xac_thuc(conn, "sep", "MatKhau123")["level"] == 5   # hash GIỮ NGUYÊN
     assert iam.lay_tai_khoan(conn, "nv-cu")["phai_doi_mk"] == 1
     n2, b2 = nhap(str(f))                                     # idempotent
     assert (n2, b2) == (0, 2)
@@ -309,7 +309,7 @@ def test_nhap_users_txt_giu_hash_va_level(conn, tmp_path):
 def _nv(conn, ow, ten="nv", bo_phan="Kinh doanh", level=2):
     # _cho_bo_phan_rong: dựng lại trạng thái DI SẢN (tài khoản tạo trước luật
     # "cấm bộ phận rỗng" 05/09) để chứng minh hàm quyền không nổ với dữ liệu lệch.
-    iam.tao_tai_khoan(conn, ow, ten, "123456", bo_phan, level,
+    iam.tao_tai_khoan(conn, ow, ten, "MatKhau123", bo_phan, level,
                       _cho_bo_phan_rong=True)
     return iam.claims_cua(iam.lay_tai_khoan(conn, ten))
 
@@ -373,7 +373,7 @@ def test_acting_doi_mac_dinh_override_van_thang(conn):
 
 def test_acting_khong_ap_len_owner_va_ly_do_bat_buoc(conn):
     ow = _owner(conn)
-    iam.tao_tai_khoan(conn, ow, "sep2", "123456", "Ban quản trị", 5)
+    iam.tao_tai_khoan(conn, ow, "sep2", "MatKhau123", "Ban quản trị", 5)
     nv = _nv(conn, ow, "nv", "Kinh doanh", 2)
     with pytest.raises(iam.LoiIam):
         iam.dat_cap_truy_cap(conn, ow, "sep2", 2)               # L5 không hạ được

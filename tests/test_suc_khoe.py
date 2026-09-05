@@ -178,12 +178,12 @@ def owner_client(tmp_path, monkeypatch):
     monkeypatch.setenv("IAM_DB", str(tmp_path / "iam.db"))
     monkeypatch.setattr(bcrypt, "gensalt", lambda rounds=12: _gensalt_goc(4))
     conn = iam.ket_noi()
-    iam.tao_tai_khoan(conn, None, "owner-test", "mk-test", "Ban quản trị", 5,
+    iam.tao_tai_khoan(conn, None, "owner-test", "MatKhau123", "Ban quản trị", 5,
                       phai_doi_mk=False)
     conn.close()
     from nen.gateway.main import app as gateway_app
     client = TestClient(gateway_app, follow_redirects=False)
-    client.post("/login", data={"ten": "owner-test", "mat_khau": "mk-test"})
+    client.post("/login", data={"ten": "owner-test", "mat_khau": "MatKhau123"})
     return client
 
 

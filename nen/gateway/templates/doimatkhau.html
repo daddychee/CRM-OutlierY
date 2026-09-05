@@ -25,7 +25,7 @@
 </style>
 </head>
 <body>
-<form class="the" method="post" action="/doi-mat-khau">
+<form class="the" method="post" action="/doi-mat-khau">{{ o_csrf(request) }}
   <h1>Change password</h1>
   <p class="phu">Tài khoản <b>{{ user.ten }}</b>{% if user.phai_doi_mk %} — bạn phải
   đổi mật khẩu trước khi dùng hệ (mật khẩu hiện tại do quản trị cấp tạm){% endif %}.</p>

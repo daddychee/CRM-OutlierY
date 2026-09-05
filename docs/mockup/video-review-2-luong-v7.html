@@ -1,0 +1,513 @@
+<title>Mốc người và mốc máy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap">
+<style>
+  :root{
+    --void:#ffffff; --panel:#ffffff; --sunk:#f5f5f5; --line:#e6e6e6; --line2:#d9d9d9;
+    --ink:#16181c; --ink2:#3a3f47; --slate:#6c6c72; --accent:#2c6fc4; --accent2:#1b5fb2;
+    --tint:#e8f0fb; --ok:#2e7d4f; --ok-bg:rgba(90,170,120,.14);
+    --warn:#8a6413; --warn-bg:rgba(214,166,74,.16); --bad:#b14a3c; --bad-bg:rgba(217,124,108,.13);
+    --shadow:0 1px 2px rgba(9,12,18,.06),0 8px 24px rgba(9,12,18,.06);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --void:#090c12; --panel:#121826; --sunk:#182233; --line:#243149; --line2:#31425e;
+      --ink:#e8edf4; --ink2:#c2cbd9; --slate:#8b96a8; --accent:#4c8fe0; --accent2:#6ba4e8;
+      --tint:#16263f; --ok:#5aaa78; --ok-bg:rgba(90,170,120,.16);
+      --warn:#d6a64a; --warn-bg:rgba(214,166,74,.16); --bad:#d97c6c; --bad-bg:rgba(217,124,108,.16);
+      --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="dark"]{
+    --void:#090c12; --panel:#121826; --sunk:#182233; --line:#243149; --line2:#31425e;
+    --ink:#e8edf4; --ink2:#c2cbd9; --slate:#8b96a8; --accent:#4c8fe0; --accent2:#6ba4e8;
+    --tint:#16263f; --ok:#5aaa78; --ok-bg:rgba(90,170,120,.16);
+    --warn:#d6a64a; --warn-bg:rgba(214,166,74,.16); --bad:#d97c6c; --bad-bg:rgba(217,124,108,.16);
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.35);
+  }
+  *{box-sizing:border-box}
+  body{background:var(--void);color:var(--ink);font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+    font-size:14px;line-height:1.55;margin:0;padding:34px 22px 70px}
+  .wrap{max-width:1080px;margin:0 auto;display:flex;flex-direction:column;gap:30px}
+  .eyebrow{font-family:"Space Grotesk",Inter,sans-serif;font-weight:700;letter-spacing:.14em;
+    text-transform:uppercase;font-size:11.5px;color:var(--slate)}
+  h1{font-size:27px;line-height:1.2;margin:6px 0 0;text-wrap:balance;letter-spacing:-.015em}
+  h2{font-size:17px;margin:0;letter-spacing:-.01em}
+  p{margin:0;max-width:68ch;color:var(--ink2)}
+  .lead{font-size:15px}
+  .man{border:1px solid var(--line);border-radius:14px;background:var(--panel);box-shadow:var(--shadow);overflow:hidden}
+  .man-nhan{display:flex;align-items:baseline;gap:10px;padding:12px 16px;border-bottom:1px solid var(--line);
+    background:var(--sunk)}
+  .man-nhan b{font-size:13px}
+  .man-nhan span{font-size:12.5px;color:var(--slate)}
+  .man-than{padding:0}
+  .chu{font-size:12.5px;color:var(--slate);max-width:68ch}
+  code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px;
+    background:var(--sunk);border:1px solid var(--line);border-radius:6px;padding:1px 6px}
+</style>
+<style>
+  /* khung app: rail trái + topbar, chép hình dáng thật của OUTLIERY */
+  .app{display:grid;grid-template-columns:186px 1fr;min-height:0}
+  .rail{background:var(--sunk);border-right:1px solid var(--line);padding:12px 10px;display:flex;
+    flex-direction:column;gap:2px}
+  .wordmark{font-family:"Space Grotesk",Inter,sans-serif;font-weight:700;letter-spacing:.02em;
+    font-size:14px;display:flex;align-items:center;gap:8px;padding:4px 8px 12px}
+  .wordmark svg{width:16px;height:16px}
+  .rail a{color:var(--slate);text-decoration:none;font-size:13px;padding:6px 9px;border-radius:8px;
+    display:flex;align-items:center;gap:9px}
+  .rail a.chon{background:var(--tint);color:var(--accent);font-weight:600}
+  .rail svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.6;
+    stroke-linecap:round;stroke-linejoin:round;flex:none}
+  .noi-dung{padding:16px 18px 20px;display:flex;flex-direction:column;gap:14px;min-width:0}
+  /* HAI LUỒNG: tab lớn ngay đầu app */
+  .luong{display:flex;gap:4px;border-bottom:1px solid var(--line);margin:-4px -18px 0;padding:0 18px}
+  .luong button{background:none;border:0;border-bottom:2px solid transparent;color:var(--slate);
+    font:inherit;font-size:14px;font-weight:600;padding:9px 12px 11px;cursor:pointer;display:flex;
+    align-items:center;gap:8px}
+  .luong button.chon{color:var(--ink);border-bottom-color:var(--accent)}
+  .luong .dem{font-size:11.5px;font-weight:600;background:var(--sunk);border:1px solid var(--line);
+    border-radius:999px;padding:0 7px;color:var(--slate)}
+  .luong button.chon .dem{background:var(--tint);border-color:transparent;color:var(--accent)}
+  .luong-mo-ta{font-size:12.5px;color:var(--slate);margin-top:-6px}
+  /* thành phần chung */
+  .chip{display:inline-flex;align-items:center;font-size:11.5px;font-weight:600;border-radius:999px;
+    padding:2px 9px;white-space:nowrap}
+  .chip.cho{background:var(--tint);color:var(--accent)}
+  .chip.dang{background:var(--sunk);color:var(--slate);border:1px solid var(--line)}
+  .chip.duyet{background:var(--ok-bg);color:var(--ok)}
+  .chip.canh{background:var(--warn-bg);color:var(--warn)}
+  .chip.te{background:var(--bad-bg);color:var(--bad)}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--slate);
+    font-weight:600;padding:7px 10px;border-bottom:1px solid var(--line)}
+  td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
+  tr:last-child td{border-bottom:0}
+  .num{font-variant-numeric:tabular-nums}
+  .tap-ma{font-weight:700;letter-spacing:.01em}
+  .nho{font-size:12px;color:var(--slate)}
+  .nut{font:inherit;font-size:12.5px;font-weight:600;border-radius:8px;padding:5px 11px;cursor:pointer;
+    border:1px solid var(--line2);background:var(--panel);color:var(--ink)}
+  .nut.chinh{background:var(--accent);border-color:transparent;color:#fff}
+</style>
+<style>
+  /* thanh đo hai phần: Hook (30 giây đầu) và Sustain (giữ tới cuối) */
+  .do{display:flex;align-items:center;gap:8px}
+  .do-thanh{width:76px;height:6px;border-radius:3px;background:var(--sunk);overflow:hidden;flex:none}
+  .do-thanh i{display:block;height:100%;background:var(--accent)}
+  .do-thanh.te i{background:var(--bad)}
+  .do-thanh.tot i{background:var(--ok)}
+  .lech{font-size:11.5px;font-weight:600}
+  .lech.tot{color:var(--ok)} .lech.te{color:var(--bad)}
+  /* màn chi tiết sau đăng */
+  .so-hang{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  .so-o{border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:var(--panel)}
+  .so-o .nhan{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--slate);font-weight:600}
+  .so-o .gia{font-size:26px;font-weight:700;letter-spacing:-.02em;margin-top:2px;font-variant-numeric:tabular-nums}
+  .so-o .duoi{font-size:12px;color:var(--slate);margin-top:2px}
+  .hai-cot{display:grid;grid-template-columns:1.15fr .85fr;gap:14px}
+  @media (max-width:820px){.hai-cot,.so-hang{grid-template-columns:1fr}.app{grid-template-columns:1fr}
+    .rail{flex-direction:row;overflow-x:auto;border-right:0;border-bottom:1px solid var(--line)}}
+  .khung-vid{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--sunk)}
+  .vid-anh{aspect-ratio:16/9;background:
+    linear-gradient(160deg,var(--line2) 0%,var(--sunk) 55%,var(--line) 100%);position:relative}
+  .vid-anh span{position:absolute;left:10px;bottom:8px;font-size:11.5px;color:var(--slate);
+    background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:1px 7px}
+  .mocbar{position:relative;height:26px;background:var(--sunk);border-top:1px solid var(--line)}
+  .mocbar i{position:absolute;top:0;bottom:0;width:2px;background:var(--accent);opacity:.75}
+  .mocbar .vung{position:absolute;top:0;bottom:0;background:var(--tint)}
+  .mocbar .nhan30{position:absolute;left:calc(3% + 6px);top:5px;font-size:11px;color:var(--accent);font-weight:600}
+  .loi{display:flex;flex-direction:column;gap:9px}
+  .loi-dong{display:grid;grid-template-columns:52px 1fr;gap:10px;align-items:start;font-size:12.8px}
+  .loi-dong b{font-variant-numeric:tabular-nums;color:var(--accent);font-weight:600}
+  .bang-chung{border:1px solid var(--line);border-radius:12px;background:var(--panel);overflow:hidden}
+  .bang-chung h3{margin:0;font-size:12.5px;padding:10px 13px;border-bottom:1px solid var(--line);
+    background:var(--sunk);letter-spacing:.02em}
+  .bang-chung ul{margin:0;padding:11px 13px 13px 28px;display:flex;flex-direction:column;gap:7px;font-size:12.8px}
+  .bang-chung li::marker{color:var(--slate)}
+  .ai{border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:12px;padding:13px 15px;
+    background:var(--panel);display:flex;flex-direction:column;gap:9px}
+  .ai h3{margin:0;font-size:13px}
+  .ai p{font-size:13px;margin:0}
+  .ai .neo{color:var(--accent);font-weight:600;font-variant-numeric:tabular-nums}
+  .viec{display:flex;flex-direction:column;gap:6px;font-size:12.8px}
+  .viec div{display:flex;gap:8px;align-items:flex-start}
+  .viec i{width:5px;height:5px;border-radius:50%;background:var(--accent);margin-top:7px;flex:none}
+  .canh-ro{border:1px solid var(--line);border-radius:10px;padding:9px 12px;background:var(--sunk);
+    font-size:12.5px;color:var(--slate)}
+</style>
+<style>
+  /* ======= CHÉP ĐÚNG UI THẬT ĐANG CHẠY (src/templates/xem.html) ======= */
+  .vr-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+  .vr-head h2{font-size:17px;margin:0}
+  .vr-head h2 span{color:var(--slate);font-size:12.5px;font-weight:400}
+  .nut{font:inherit;font-size:12.5px;font-weight:600;border-radius:8px;padding:5px 11px;cursor:pointer;
+    border:1px solid var(--line2);background:var(--panel);color:var(--ink)}
+  .nut.nho{font-size:12px;padding:4px 10px}
+  .nut.chinh{background:var(--accent);border-color:transparent;color:#fff}
+  .nut.phu{color:var(--ink2)}
+  .nut.nguy{color:var(--bad);border-color:var(--bad)}
+  .chip{display:inline-flex;align-items:center;font-size:11.5px;font-weight:600;border-radius:999px;padding:2px 10px}
+  .chip.dang_duyet{background:var(--tint);color:var(--accent)}
+  .chip.da_duyet{background:var(--ok-bg);color:var(--ok)}
+  .vr-grid{display:grid;grid-template-columns:1.35fr .85fr;gap:14px;align-items:start}
+  @media (max-width:900px){.vr-grid{grid-template-columns:1fr}}
+  .vid-wrap{border-radius:10px;overflow:hidden;background:#000;aspect-ratio:16/9;position:relative;
+    display:flex;align-items:flex-end}
+  .vid-wrap .thanh{height:34px;width:100%;background:linear-gradient(transparent,rgba(0,0,0,.6));
+    display:flex;align-items:center;gap:9px;padding:0 10px;color:#e8edf4;font-size:11.5px}
+  .vid-wrap .tien{flex:1;height:3px;background:rgba(255,255,255,.3);border-radius:2px;position:relative}
+  .vid-wrap .tien i{position:absolute;left:0;top:0;bottom:0;width:22%;background:#fff;border-radius:2px}
+  .moc-bar{position:relative;height:16px;background:var(--sunk);border:1px solid var(--line);
+    border-radius:8px;margin-top:8px}
+  .moc-bar i{position:absolute;top:4px;width:7px;height:7px;border-radius:50%;background:var(--accent)}
+  .bl-panel{background:var(--sunk);border:1px solid var(--line);border-radius:14px;padding:14px;
+    display:flex;flex-direction:column;gap:12px}
+  .bl-soan textarea{width:100%;min-height:56px;padding:9px 12px;border:1px solid var(--line2);
+    border-radius:9px;background:var(--panel);color:var(--ink);font:inherit;font-size:13px;resize:vertical}
+  .bl-hang{display:flex;align-items:center;gap:10px;margin-top:8px;font-size:12.5px;color:var(--slate)}
+  .bl-ds{display:flex;flex-direction:column;gap:8px;max-height:330px;overflow-y:auto}
+  .bl-item{border:1px solid var(--line);border-radius:11px;padding:9px 12px;font-size:13px;background:var(--panel)}
+  .bl-item .moc{color:var(--accent);font-weight:600;font-size:12px;background:var(--tint);
+    border-radius:6px;padding:1px 7px;margin-right:6px}
+  .bl-item .ai{font-weight:600;font-size:12.5px}
+  .bl-item .luc{float:right;color:var(--slate);font-size:11.5px}
+  .bl-item p{margin:5px 0 6px;white-space:pre-wrap}
+  .bl-item .nut-day{display:flex;gap:8px;font-size:12px;color:var(--slate)}
+</style>
+<style>
+  /* chấm MÁY trên thanh mốc — khác màu, khác hình với chấm người */
+  .moc-bar i.may{background:var(--slate);border:1.5px solid var(--panel);
+    box-shadow:0 0 0 1px var(--slate)}
+  .moc-bar i.may.nang{background:var(--bad);box-shadow:0 0 0 1px var(--bad)}
+  .moc-bar i.may.vua{background:var(--warn);box-shadow:0 0 0 1px var(--warn)}
+  .moc-chu{display:flex;align-items:center;gap:14px;font-size:11px;color:var(--slate);
+    padding:6px 2px 0;flex-wrap:wrap}
+  .moc-chu span{display:inline-flex;align-items:center;gap:5px}
+  .moc-chu b{width:8px;height:8px;border-radius:50%;display:inline-block}
+  .moc-chu b.nguoi{background:var(--accent)}
+  .moc-chu b.may{background:var(--slate);box-shadow:0 0 0 1px var(--slate)}
+  .moc-chu b.maynang{background:var(--bad);box-shadow:0 0 0 1px var(--bad)}
+  .moi{position:relative;outline:1.5px dashed var(--accent);outline-offset:3px;border-radius:10px}
+  .moi::after{content:"MỚI";position:absolute;top:-9px;right:8px;background:var(--accent);color:#fff;
+    font-size:9.5px;font-weight:700;letter-spacing:.06em;border-radius:4px;padding:1px 6px}
+  /* ===== chẩn đoán bằng LỜI — mỗi phát hiện là một thẻ ===== */
+  .cd{display:flex;flex-direction:column;gap:9px}
+  .cd-the{border:1px solid var(--line);border-left:3px solid var(--slate);border-radius:10px;
+    background:var(--panel);padding:10px 12px;display:flex;flex-direction:column;gap:6px}
+  .cd-the.nang{border-left-color:var(--bad)}
+  .cd-the.vua{border-left-color:var(--warn)}
+  .cd-the.ok{border-left-color:var(--ok)}
+  .cd-dau{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .cd-benh{font-size:13.5px;font-weight:700;letter-spacing:-.01em}
+  .cd-moc{font-size:11.5px;font-weight:600;color:var(--accent);background:var(--tint);
+    border-radius:6px;padding:1px 8px;cursor:pointer;font-variant-numeric:tabular-nums}
+  .cd-muc{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;
+    border-radius:5px;padding:1px 7px;margin-left:auto}
+  .cd-muc.nang{background:var(--bad-bg);color:var(--bad)}
+  .cd-muc.vua{background:var(--warn-bg);color:var(--warn)}
+  .cd-muc.ok{background:var(--ok-bg);color:var(--ok)}
+  .cd-loi{font-size:13px;line-height:1.5}
+  .cd-so{font-size:11.5px;color:var(--slate);border-top:1px dashed var(--line);padding-top:6px;
+    display:flex;flex-wrap:wrap;gap:4px 14px}
+  .cd-so b{color:var(--ink2);font-variant-numeric:tabular-nums}
+  .cd-lam{font-size:12.5px;background:var(--sunk);border-radius:8px;padding:7px 10px}
+  .cd-lam b{color:var(--accent)}
+  .tom{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;padding:10px 12px;
+    background:var(--sunk);border:1px solid var(--line);border-radius:10px;font-size:13px}
+  .tom .lon{font-size:14.5px;font-weight:700}
+</style>
+<div class="wrap">
+<header>
+  <div class="eyebrow">OUTLIERY · Video Review · mockup vòng 6</div>
+  <h1>Mốc của người và mốc của máy, chung một thanh</h1>
+  <p class="lead" style="margin-top:10px">Mỗi phát hiện là <b>một câu bệnh</b> (chậm · nhanh · thừa ·
+    đều đều) chứ không phải dòng số. Và phát hiện của máy <b>nằm ngay trên thanh mốc cùng với note của
+    người</b> — khác màu để phân biệt: xanh là người, xám/đỏ là máy.</p>
+</header>
+<section class="man">
+  <div class="man-nhan"><b>Luồng 1</b><span>Đúng khung 2 cột hiện có — cột phải thêm 1 khối chẩn đoán</span></div>
+  <div class="man-than"><div style="padding:16px 18px 20px">
+    <div class="vr-head">
+      <h2>LI088.3 <span>VR-0019 · thanhtran · 2026-08-26 · bản 10 phút của tập LI088</span></h2>
+      <span class="chip dang_duyet">In review</span>
+      <button class="nut nho chinh">Approve</button>
+      <button class="nut nho nguy">Remove</button>
+      <button class="nut nho phu">+ Subtitles</button>
+      <a class="nut nho phu" href="#" style="text-decoration:none">← Tập LI088</a>
+    </div>
+
+    <div class="vr-grid">
+      <div>
+        <div class="vid-wrap"><div class="thanh"><span>▶</span><span>0:22 / 10:00</span>
+          <span class="tien"><i style="width:3.7%"></i></span><span>⚙</span></div></div>
+        <div class="moc-bar">
+          <i style="left:2%"></i><i style="left:4%"></i><i style="left:9%"></i>
+          <i style="left:27%"></i><i style="left:49%"></i>
+          <i class="may nang" style="left:0.6%" title="Máy: mở đầu chậm — hook chưa nổ"></i>
+          <i class="may nang" style="left:1.8%" title="Máy: cảnh drone giữ 9,2 giây"></i>
+          <i class="may" style="left:62%" title="Máy: nhịp tụt còn 4,9 cắt/phút"></i>
+        </div>
+        <div class="moc-chu">
+          <span><b class="nguoi"></b>Note của người (4)</span>
+          <span><b class="maynang"></b>Máy — nặng (2)</span>
+          <span><b class="may"></b>Máy — nhẹ (1)</span>
+          <span style="margin-left:auto">bấm chấm để tua tới</span>
+        </div>
+
+        <div class="moi" style="margin-top:16px">
+          <div class="tom">
+            <span class="lon">Mạch dựng: <b style="color:var(--bad)">mở đầu quá chậm</b></span>
+            <span style="color:var(--slate)">2 vấn đề nặng · 1 nhẹ · phần thân đạt chuẩn</span>
+            <button class="nut nho phu" style="margin-left:auto">Xem số liệu thô</button>
+          </div>
+
+          <div class="cd" style="margin-top:10px">
+            <div class="cd-the nang">
+              <div class="cd-dau"><span class="cd-benh">Mở đầu chậm — hook chưa nổ</span>
+                <span class="cd-moc">00:00–00:30</span><span class="cd-muc nang">nặng</span></div>
+              <div class="cd-loi">Ba mươi giây đầu đang <b>chậm gấp hơn hai lần</b> so với cách kênh mình
+                thường mở. Mỗi hình giữ trung bình 2,4 giây trong khi các tập giữ chân tốt chỉ giữ
+                khoảng 1 giây — người xem chưa kịp thấy gì hấp dẫn thì đã trôi mất 30 giây.</div>
+              <div class="cd-so">Hình giữ trung bình <b>2,4s</b> · chuẩn <b>1,0s</b> &nbsp;·&nbsp;
+                Hình chớp dưới 2 giây <b>38%</b> · chuẩn <b>70%</b></div>
+              <div class="cd-lam"><b>Nên làm:</b> cắt vụn 30 giây đầu — mỗi hình chỉ giữ khoảng 1 giây,
+                và ít nhất 7 trong 10 hình phải dưới 2 giây.</div>
+            </div>
+
+            <div class="cd-the nang">
+              <div class="cd-dau"><span class="cd-benh">Một cảnh bị giữ quá lâu</span>
+                <span class="cd-moc">00:06–00:15</span><span class="cd-muc nang">nặng</span></div>
+              <div class="cd-loi">Cảnh drone toàn cảnh <b>giữ liền 9,2 giây không cắt</b> — dài gấp gần
+                bốn lần một hình bình thường của kênh. Đây cũng chính là chỗ dài nhất trong cả bản dựng.</div>
+              <div class="cd-so">Cảnh dài nhất <b>9,2s</b> · hình dài thứ nhì <b>5,1s</b> ·
+                trung bình toàn bản <b>3,8s</b></div>
+              <div class="cd-lam"><b>Nên làm:</b> cắt cảnh này còn 2–3 giây, hoặc chèn 2 hình khác vào giữa.</div>
+            </div>
+
+            <div class="cd-the vua">
+              <div class="cd-dau"><span class="cd-benh">Nhịp hơi đều — thiếu tương phản</span>
+                <span class="cd-moc">cả bản</span><span class="cd-muc vua">nhẹ</span></div>
+              <div class="cd-loi">Các hình dài gần bằng nhau nên mạch <b>đều đều, không có lúc dồn dập
+                lúc thong thả</b>. Không phải lỗi, nhưng xem lâu dễ chán.</div>
+              <div class="cd-so">Độ chênh lệch độ dài hình <b>1,9s</b> · sàn cảnh báo <b>1,55s</b></div>
+              <div class="cd-lam"><b>Nếu muốn chỉnh:</b> gom vài đoạn cắt nhanh liên tiếp rồi để một hình
+                thở dài, thay vì rải đều.</div>
+            </div>
+
+            <div class="cd-the ok">
+              <div class="cd-dau"><span class="cd-benh">Phần thân đạt chuẩn</span>
+                <span class="cd-moc">00:30–10:00</span><span class="cd-muc ok">đạt</span></div>
+              <div class="cd-loi">Từ phút thứ nhất trở đi nhịp cắt bám sát cách kênh vẫn làm —
+                không cần đụng vào.</div>
+              <div class="cd-so">9,1 cắt/phút · khung chấp nhận <b>5,4–21,6</b> &nbsp;·&nbsp;
+                hình giữ trung bình <b>3,8s</b> · chuẩn <b>4,2s</b> &nbsp;·&nbsp;
+                số đo tin cậy (2 thước lệch <b>9%</b>)</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bl-panel">
+        <div class="bl-soan">
+          <textarea placeholder="Leave a note... (it lands at the current timestamp)"></textarea>
+          <div class="bl-hang"><input type="checkbox" checked> at <b style="color:var(--ink)">00:22</b>
+            <button class="nut nho phu">✎ Draw</button>
+            <button class="nut nho chinh" style="margin-left:auto">Send</button></div>
+        </div>
+        <div class="moi"><button class="nut" style="width:100%">Nhờ AI đánh giá</button></div>
+        <div class="bl-ds">
+          <div class="bl-item may">
+            <div><span class="ai"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/></svg>AI đánh giá</span>
+              <span class="luc">vừa xong</span></div>
+            <p>Anh đã bắt cảnh drone ở <span class="moc">00:22</span>. Nhưng vấn đề rộng hơn một cảnh:
+              <b>cả 30 giây đầu</b> đều thiếu hình chớp, nên cắt riêng cảnh đó vẫn chưa đủ nhanh.</p>
+            <p><span class="moc">06:10</span>Có một quãng gần 2 phút nhịp chậm hẳn lại — anh chưa ghi
+              note nào ở đây, có thể do chưa xem tới.</p>
+            <div class="nut-day">✓ Đã đọc &nbsp; Bỏ qua</div>
+          </div>
+          <div class="bl-item"><div><span class="moc">00:07</span><span class="ai">bot</span>
+            <span class="luc">08-26 09:14</span></div><p>Nhạc nền to hơn voice, kéo xuống −4 dB</p>
+            <div class="nut-day">✓ Resolve &nbsp; Delete</div></div>
+          <div class="bl-item"><div><span class="moc">00:22</span><span class="ai">bot</span>
+            <span class="luc">08-26 09:16</span></div><p>Cảnh drone giữ 6 giây — cắt còn 3</p>
+            <div class="nut-day">✓ Resolve &nbsp; Delete</div></div>
+        </div>
+      </div>
+    </div>
+    <p class="chu" style="margin-top:14px">Khối chẩn đoán nằm <b>dưới video ở cột trái</b>, cột phải vẫn
+      nguyên panel note. Mỗi thẻ: tên bệnh · mốc bấm được để tua tới · lời giải thích · số liệu làm bằng
+      chứng · việc nên làm. Nút "Xem số liệu thô" mở bảng số cũ cho ai muốn.
+      Trên thanh mốc: <b>chấm xanh là note người, chấm đỏ/xám là chỗ máy phát hiện</b> — cùng một dòng
+      thời gian nên nhìn là biết chỗ nào cả hai cùng chỉ ra, chỗ nào chỉ mình máy thấy.</p>
+  </div></div>
+</section>
+<style>
+  .ret{position:relative;height:118px;border:1px solid var(--line);border-top:0;
+    border-radius:0 0 10px 10px;background:var(--panel);overflow:hidden;cursor:crosshair}
+  .ret svg{position:absolute;inset:0;width:100%;height:100%}
+  .ret .tut{position:absolute;top:0;bottom:0;background:var(--bad-bg)}
+  .ret .tut.chon{background:rgba(217,124,108,.3)}
+  .ret .avd{position:absolute;top:0;bottom:0;width:1.5px;background:var(--bad);opacity:.8}
+  .ret .avd b{position:absolute;bottom:5px;left:5px;font-size:10px;color:var(--bad);white-space:nowrap}
+  .ret .contro{position:absolute;top:0;bottom:0;width:2px;background:var(--ink);opacity:.9}
+  .ret .bong{position:absolute;top:6px;background:var(--ink);color:var(--void);font-size:10.5px;
+    font-weight:700;border-radius:5px;padding:2px 7px;white-space:nowrap;transform:translateX(-50%)}
+  .ret .luoi{position:absolute;left:0;right:0;border-top:1px dashed var(--line)}
+  .ret .nhan{position:absolute;font-size:9.5px;color:var(--slate)}
+  .vid-wrap.dbo{border-radius:10px 10px 0 0}
+  .truc{display:flex;justify-content:space-between;font-size:10.5px;color:var(--slate);padding:5px 4px 0}
+  .kb{background:var(--sunk);border-radius:8px;padding:8px 10px;font-size:12.5px;line-height:1.5;
+    border-left:2px solid var(--line2)}
+  .kb i{color:var(--slate);font-style:normal;font-size:11px;display:block;margin-bottom:2px}
+  .doi{display:flex;gap:4px;margin-top:3px}
+  .doi button{font:inherit;font-size:11px;font-weight:600;border:1px solid var(--line2);
+    background:var(--panel);color:var(--slate);border-radius:6px;padding:3px 9px;cursor:pointer}
+  .doi button.chon{background:var(--accent);border-color:transparent;color:#fff}
+  .doi button.nguoi{background:var(--ok-bg);border-color:transparent;color:var(--ok)}
+</style>
+<section class="man">
+  <div class="man-nhan"><b>Luồng 2</b><span>Cùng khung 2 cột — trái: video + đồ thị · phải: chẩn đoán từng điểm tụt</span></div>
+  <div class="man-than"><div style="padding:16px 18px 20px">
+    <div class="vr-head">
+      <h2>LI088_full <span>31:11 · đăng 26/08 · 7 ngày · bản full của tập LI088</span></h2>
+      <span class="chip da_duyet">Đã đăng</span>
+      <a class="nut nho phu" href="#" style="text-decoration:none">Mở trên YouTube</a>
+      <a class="nut nho phu" href="#" style="text-decoration:none">← Tập LI088</a>
+    </div>
+    <div class="vr-grid">
+      <div>
+        <div class="vid-wrap dbo"><div class="thanh"><span>▶</span>
+          <span id="dh">0:12 / 31:11</span><span class="tien"><i id="tien" style="width:0.6%"></i></span><span>⚙</span></div></div>
+        <div class="moc-bar" id="moc2" style="border-radius:0;border-top:0;margin-top:0">
+          <i class="may nang" style="left:1.2%" title="Máy: rơi mất 26 điểm — mở đầu"></i>
+          <i class="may vua" style="left:24%" title="Máy: đoạn số liệu, mất 9 điểm"></i>
+          <i class="may" style="left:58%" title="Máy: chuyển ý đột ngột, mẫu mỏng"></i>
+        </div>
+        <div class="ret" id="ret">
+          <div class="luoi" style="top:12%"></div><div class="luoi" style="top:45%"></div><div class="luoi" style="top:78%"></div>
+          <span class="nhan" style="left:6px;top:5px">100%</span>
+          <span class="nhan" style="left:6px;top:41%">50%</span>
+          <span class="nhan" style="left:6px;bottom:4px">0%</span>
+          <div class="tut chon" style="left:1%;width:4%"></div>
+          <div class="tut" style="left:23%;width:5%"></div>
+          <div class="tut" style="left:57%;width:4%"></div>
+          <div class="avd" style="left:13.9%"><b>4:19 — xem TB</b></div>
+          <svg viewBox="0 0 100 40" preserveAspectRatio="none">
+            <polyline fill="none" stroke="var(--accent)" stroke-width="1.4" vector-effect="non-scaling-stroke"
+              points="0,1 1,3 2,8 3,13 4,15 6,17 8,18.5 10,19.5 12,20.5 14,21.5 16,22.5 18,23.5 20,24.5 22,25.5 24,28 26,29.5 28,30.2 30,30.8 33,31.5 36,32 39,32.5 42,33 45,33.4 48,33.8 51,34.1 54,34.4 57,34.7 59,36 61,36.4 64,36.7 67,37 70,37.2 74,37.5 78,37.7 82,37.9 86,38.1 90,38.3 95,38.5 100,38.7"/>
+          </svg>
+          <div class="contro" id="ct" style="left:0.6%"></div>
+          <div class="bong" id="bong" style="left:0.6%">0:12 · còn 94%</div>
+        </div>
+        <div class="truc"><span>0:00</span><span>7:48</span><span>15:36</span><span>23:24</span><span>31:11</span></div>
+        <div class="moc-chu">
+          <span><b class="maynang"></b>Máy — chỗ tụt nặng</span>
+          <span><b style="background:var(--warn);box-shadow:0 0 0 1px var(--warn)"></b>Máy — tụt vừa</span>
+          <span><b class="may"></b>Máy — mẫu mỏng, chưa kết luận</span>
+          <span style="margin-left:auto">bấm chấm để tua tới</span>
+        </div>
+        <div class="tom" style="margin-top:12px">
+          <span class="lon">Kết luận: <b style="color:var(--bad)">mất người ngay mở đầu</b></span>
+          <span style="color:var(--slate)">59% ở 0:30 · xem TB 4:19 / 31:11 · giữ chân 13,9%</span>
+        </div>
+        <div class="cd-lam" style="margin-top:10px"><b>Tập sau:</b> độ dài mục tiêu 10–12 phút ·
+          mở đầu cắt vụn dưới 1 giây mỗi hình · bỏ kiểu đoạn đọc số liệu dài.</div>
+      </div>
+      <div class="bl-panel">
+        <div style="font-size:12.5px;font-weight:600;display:flex;align-items:center;gap:8px">
+          Ba chỗ tụt sâu nhất
+          <span style="font-weight:400;color:var(--slate);font-size:11.5px">bấm mốc để tua tới</span>
+        </div>
+        <div class="cd">
+          <div class="cd-the nang">
+            <div class="cd-dau"><span class="cd-benh">Rơi mất một phần tư khán giả</span>
+              <span class="cd-moc">0:12–0:48</span><span class="cd-muc nang">−26 điểm</span></div>
+            <div class="cd-loi">Chỗ tụt sâu nhất cả video, <b>bằng hai chỗ còn lại cộng lại nhân đôi</b>.
+              Trong 36 giây này người xem thấy một cảnh drone toàn cảnh giữ liền 9 giây, và mãi tới giây
+              thứ 6 mới nghe thấy tiếng người nói.</div>
+            <div class="kb"><i>Kịch bản đoạn này</i>“Indonesia — quốc gia hơn mười bảy nghìn hòn đảo,
+              nơi mà… <b>[im 4 giây, hình drone]</b> …có những điều bạn sẽ không tin là thật.”</div>
+            <div class="cd-so">Cảnh dài nhất <b>9,2s</b> · lời thoại vào ở <b>0:06</b> ·
+              hình chớp dưới 2s chỉ <b>22%</b> (chuẩn 70%)</div>
+            <div class="cd-lam"><b>Máy phán:</b> làm lại mở đầu — vào thẳng lời, cắt vụn hình.
+              <div class="doi"><button class="chon">Làm lại</button><button>Giữ</button></div></div>
+          </div>
+          <div class="cd-the vua">
+            <div class="cd-dau"><span class="cd-benh">Đoạn số liệu làm người xem bỏ đi</span>
+              <span class="cd-moc">7:10–8:45</span><span class="cd-muc vua">−9 điểm</span></div>
+            <div class="cd-loi">Chín mươi lăm giây liền chỉ đọc số dân, không đổi chủ đề, hình cũng ít cắt.
+              Người xem đã ở lại tới phút thứ 7 rồi mới rời — nghĩa là <b>họ chán chứ không phải không
+              quan tâm chủ đề</b>.</div>
+            <div class="kb"><i>Kịch bản đoạn này</i>“…dân số 273 triệu người, đứng thứ tư thế giới,
+              mật độ 141 người trên mỗi ki-lô-mét vuông, trong đó đảo Java chiếm 56%…”</div>
+            <div class="cd-so">Nhịp cắt <b>5,1/phút</b> — dưới nửa chuẩn · <b>4</b> khoảng lặng trên 3 giây</div>
+            <div class="cd-lam"><b>Máy phán:</b> cắt ngắn còn một nửa.
+              <div class="doi"><button>Cắt ngắn</button><button class="nguoi">Bỏ hẳn</button></div>
+              <span style="font-size:10.5px;color:var(--ok);font-weight:600">anh đã sửa thành: bỏ hẳn</span></div>
+          </div>
+          <div class="cd-the">
+            <div class="cd-dau"><span class="cd-benh">Chuyển ý đột ngột</span>
+              <span class="cd-moc">17:50–19:05</span><span class="cd-muc">−7 điểm</span></div>
+            <div class="cd-loi">Có tụt, nhưng tới đây <b>chỉ còn 3,4% khán giả</b> — quá ít để kết luận
+              chắc chắn. App không phán khi mẫu mỏng.</div>
+            <div class="kb"><i>Kịch bản đoạn này</i>“Điều thứ chín. Ở Indonesia, người ta…” —
+              không có câu dẫn nối từ ý trước.</div>
+            <div class="cd-lam"><b>Máy phán:</b> chưa đủ cơ sở.
+              <div class="doi"><button class="chon">Bỏ qua</button><button>Xem lại</button></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p class="chu" style="margin-top:14px">Cùng khung 2 cột như luồng 1: trái là video + đồ thị dính liền
+      nhau, phải là chẩn đoán. Vừa xem đoạn phim vừa đọc được vấn đề của chính đoạn đó. Mỗi điểm tụt kèm
+      <b>trích kịch bản</b> để biết lúc ấy đang nói gì — không phải đọc số khô khan.</p>
+  </div></div>
+</section>
+</div>
+<script>
+(function(){
+  var ret=document.getElementById("ret"), ct=document.getElementById("ct"),
+      bong=document.getElementById("bong"), dh=document.getElementById("dh"),
+      tien=document.getElementById("tien");
+  if(!ret) return;
+  var TONG=1871;
+  var diem=[[0,99],[1,97],[2,80],[3,68],[4,63],[6,58],[8,54],[10,51],[12,49],[14,46],[16,44],
+            [18,41],[20,39],[22,36],[24,30],[26,26],[28,25],[30,23],[33,21],[36,20],[39,19],
+            [42,18],[45,17],[48,16],[51,15],[54,14],[57,13],[59,10],[61,9],[64,8],[67,7.5],
+            [70,7],[74,6.5],[78,6],[82,5.5],[86,5],[90,4.5],[95,4],[100,3.5]];
+  function tra(pt){
+    for(var i=1;i<diem.length;i++){
+      if(diem[i][0]>=pt){
+        var a=diem[i-1],b=diem[i],t=(pt-a[0])/((b[0]-a[0])||1);
+        return a[1]+(b[1]-a[1])*t;
+      }
+    }
+    return diem[diem.length-1][1];
+  }
+  function mmss(s){return Math.floor(s/60)+":"+String(Math.floor(s%60)).padStart(2,"0");}
+  function dat(pt){
+    pt=Math.max(0,Math.min(100,pt));
+    ct.style.left=pt+"%"; bong.style.left=pt+"%"; tien.style.width=pt+"%";
+    var g=TONG*pt/100;
+    bong.textContent=mmss(g)+" · còn "+tra(pt).toFixed(1)+"%";
+    dh.textContent=mmss(g)+" / 31:11";
+  }
+  function chuot(e){var r=ret.getBoundingClientRect();dat((e.clientX-r.left)/r.width*100);}
+  ret.addEventListener("mousemove",chuot);
+  ret.addEventListener("click",chuot);
+  var moc2=document.getElementById("moc2");
+  if(moc2){
+    moc2.querySelectorAll("i").forEach(function(ch){
+      ch.style.cursor="pointer";
+      ch.addEventListener("click",function(){ dat(parseFloat(ch.style.left)); });
+    });
+  }
+  document.querySelectorAll(".cd-moc").forEach(function(el){
+    el.addEventListener("click",function(){
+      var m=el.textContent.trim().split("–")[0].split(":");
+      if(m.length===2) dat(((+m[0])*60 + (+m[1]))/TONG*100);
+    });
+  });
+})();
+</script>

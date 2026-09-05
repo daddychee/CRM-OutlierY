@@ -1,0 +1,325 @@
+<title>Trạm kịch bản</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap">
+<style>
+  :root{
+    --void:#ffffff; --panel:#ffffff; --sunk:#f5f5f5; --line:#e6e6e6; --line2:#d9d9d9;
+    --ink:#16181c; --ink2:#3a3f47; --slate:#6c6c72; --accent:#2c6fc4; --accent2:#1b5fb2;
+    --tint:#e8f0fb; --ok:#2e7d4f; --ok-bg:rgba(90,170,120,.14);
+    --warn:#8a6413; --warn-bg:rgba(214,166,74,.16); --bad:#b14a3c; --bad-bg:rgba(217,124,108,.13);
+    --shadow:0 1px 2px rgba(9,12,18,.06),0 8px 24px rgba(9,12,18,.06);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --void:#090c12; --panel:#121826; --sunk:#182233; --line:#243149; --line2:#31425e;
+      --ink:#e8edf4; --ink2:#c2cbd9; --slate:#8b96a8; --accent:#4c8fe0; --accent2:#6ba4e8;
+      --tint:#16263f; --ok:#5aaa78; --ok-bg:rgba(90,170,120,.16);
+      --warn:#d6a64a; --warn-bg:rgba(214,166,74,.16); --bad:#d97c6c; --bad-bg:rgba(217,124,108,.16);
+      --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="dark"]{
+    --void:#090c12; --panel:#121826; --sunk:#182233; --line:#243149; --line2:#31425e;
+    --ink:#e8edf4; --ink2:#c2cbd9; --slate:#8b96a8; --accent:#4c8fe0; --accent2:#6ba4e8;
+    --tint:#16263f; --ok:#5aaa78; --ok-bg:rgba(90,170,120,.16);
+    --warn:#d6a64a; --warn-bg:rgba(214,166,74,.16); --bad:#d97c6c; --bad-bg:rgba(217,124,108,.16);
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.35);
+  }
+  *{box-sizing:border-box}
+  body{background:var(--void);color:var(--ink);font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+    font-size:14px;line-height:1.55;margin:0;padding:34px 22px 70px}
+  .wrap{max-width:1080px;margin:0 auto;display:flex;flex-direction:column;gap:30px}
+  .eyebrow{font-family:"Space Grotesk",Inter,sans-serif;font-weight:700;letter-spacing:.14em;
+    text-transform:uppercase;font-size:11.5px;color:var(--slate)}
+  h1{font-size:27px;line-height:1.2;margin:6px 0 0;text-wrap:balance;letter-spacing:-.015em}
+  h2{font-size:17px;margin:0;letter-spacing:-.01em}
+  p{margin:0;max-width:68ch;color:var(--ink2)}
+  .lead{font-size:15px}
+  .man{border:1px solid var(--line);border-radius:14px;background:var(--panel);box-shadow:var(--shadow);overflow:hidden}
+  .man-nhan{display:flex;align-items:baseline;gap:10px;padding:12px 16px;border-bottom:1px solid var(--line);
+    background:var(--sunk)}
+  .man-nhan b{font-size:13px}
+  .man-nhan span{font-size:12.5px;color:var(--slate)}
+  .man-than{padding:0}
+  .chu{font-size:12.5px;color:var(--slate);max-width:68ch}
+  code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px;
+    background:var(--sunk);border:1px solid var(--line);border-radius:6px;padding:1px 6px}
+</style>
+<style>
+  /* khung app: rail trái + topbar, chép hình dáng thật của OUTLIERY */
+  .app{display:grid;grid-template-columns:186px 1fr;min-height:0}
+  .rail{background:var(--sunk);border-right:1px solid var(--line);padding:12px 10px;display:flex;
+    flex-direction:column;gap:2px}
+  .wordmark{font-family:"Space Grotesk",Inter,sans-serif;font-weight:700;letter-spacing:.02em;
+    font-size:14px;display:flex;align-items:center;gap:8px;padding:4px 8px 12px}
+  .wordmark svg{width:16px;height:16px}
+  .rail a{color:var(--slate);text-decoration:none;font-size:13px;padding:6px 9px;border-radius:8px;
+    display:flex;align-items:center;gap:9px}
+  .rail a.chon{background:var(--tint);color:var(--accent);font-weight:600}
+  .rail svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.6;
+    stroke-linecap:round;stroke-linejoin:round;flex:none}
+  .noi-dung{padding:16px 18px 20px;display:flex;flex-direction:column;gap:14px;min-width:0}
+  /* HAI LUỒNG: tab lớn ngay đầu app */
+  .luong{display:flex;gap:4px;border-bottom:1px solid var(--line);margin:-4px -18px 0;padding:0 18px}
+  .luong button{background:none;border:0;border-bottom:2px solid transparent;color:var(--slate);
+    font:inherit;font-size:14px;font-weight:600;padding:9px 12px 11px;cursor:pointer;display:flex;
+    align-items:center;gap:8px}
+  .luong button.chon{color:var(--ink);border-bottom-color:var(--accent)}
+  .luong .dem{font-size:11.5px;font-weight:600;background:var(--sunk);border:1px solid var(--line);
+    border-radius:999px;padding:0 7px;color:var(--slate)}
+  .luong button.chon .dem{background:var(--tint);border-color:transparent;color:var(--accent)}
+  .luong-mo-ta{font-size:12.5px;color:var(--slate);margin-top:-6px}
+  /* thành phần chung */
+  .chip{display:inline-flex;align-items:center;font-size:11.5px;font-weight:600;border-radius:999px;
+    padding:2px 9px;white-space:nowrap}
+  .chip.cho{background:var(--tint);color:var(--accent)}
+  .chip.dang{background:var(--sunk);color:var(--slate);border:1px solid var(--line)}
+  .chip.duyet{background:var(--ok-bg);color:var(--ok)}
+  .chip.canh{background:var(--warn-bg);color:var(--warn)}
+  .chip.te{background:var(--bad-bg);color:var(--bad)}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--slate);
+    font-weight:600;padding:7px 10px;border-bottom:1px solid var(--line)}
+  td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
+  tr:last-child td{border-bottom:0}
+  .num{font-variant-numeric:tabular-nums}
+  .tap-ma{font-weight:700;letter-spacing:.01em}
+  .nho{font-size:12px;color:var(--slate)}
+  .nut{font:inherit;font-size:12.5px;font-weight:600;border-radius:8px;padding:5px 11px;cursor:pointer;
+    border:1px solid var(--line2);background:var(--panel);color:var(--ink)}
+  .nut.chinh{background:var(--accent);border-color:transparent;color:#fff}
+</style>
+<style>
+  /* thanh đo hai phần: Hook (30 giây đầu) và Sustain (giữ tới cuối) */
+  .do{display:flex;align-items:center;gap:8px}
+  .do-thanh{width:76px;height:6px;border-radius:3px;background:var(--sunk);overflow:hidden;flex:none}
+  .do-thanh i{display:block;height:100%;background:var(--accent)}
+  .do-thanh.te i{background:var(--bad)}
+  .do-thanh.tot i{background:var(--ok)}
+  .lech{font-size:11.5px;font-weight:600}
+  .lech.tot{color:var(--ok)} .lech.te{color:var(--bad)}
+  /* màn chi tiết sau đăng */
+  .so-hang{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  .so-o{border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:var(--panel)}
+  .so-o .nhan{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--slate);font-weight:600}
+  .so-o .gia{font-size:26px;font-weight:700;letter-spacing:-.02em;margin-top:2px;font-variant-numeric:tabular-nums}
+  .so-o .duoi{font-size:12px;color:var(--slate);margin-top:2px}
+  .hai-cot{display:grid;grid-template-columns:1.15fr .85fr;gap:14px}
+  @media (max-width:820px){.hai-cot,.so-hang{grid-template-columns:1fr}.app{grid-template-columns:1fr}
+    .rail{flex-direction:row;overflow-x:auto;border-right:0;border-bottom:1px solid var(--line)}}
+  .khung-vid{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--sunk)}
+  .vid-anh{aspect-ratio:16/9;background:
+    linear-gradient(160deg,var(--line2) 0%,var(--sunk) 55%,var(--line) 100%);position:relative}
+  .vid-anh span{position:absolute;left:10px;bottom:8px;font-size:11.5px;color:var(--slate);
+    background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:1px 7px}
+  .mocbar{position:relative;height:26px;background:var(--sunk);border-top:1px solid var(--line)}
+  .mocbar i{position:absolute;top:0;bottom:0;width:2px;background:var(--accent);opacity:.75}
+  .mocbar .vung{position:absolute;top:0;bottom:0;background:var(--tint)}
+  .mocbar .nhan30{position:absolute;left:calc(3% + 6px);top:5px;font-size:11px;color:var(--accent);font-weight:600}
+  .loi{display:flex;flex-direction:column;gap:9px}
+  .loi-dong{display:grid;grid-template-columns:52px 1fr;gap:10px;align-items:start;font-size:12.8px}
+  .loi-dong b{font-variant-numeric:tabular-nums;color:var(--accent);font-weight:600}
+  .bang-chung{border:1px solid var(--line);border-radius:12px;background:var(--panel);overflow:hidden}
+  .bang-chung h3{margin:0;font-size:12.5px;padding:10px 13px;border-bottom:1px solid var(--line);
+    background:var(--sunk);letter-spacing:.02em}
+  .bang-chung ul{margin:0;padding:11px 13px 13px 28px;display:flex;flex-direction:column;gap:7px;font-size:12.8px}
+  .bang-chung li::marker{color:var(--slate)}
+  .ai{border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:12px;padding:13px 15px;
+    background:var(--panel);display:flex;flex-direction:column;gap:9px}
+  .ai h3{margin:0;font-size:13px}
+  .ai p{font-size:13px;margin:0}
+  .ai .neo{color:var(--accent);font-weight:600;font-variant-numeric:tabular-nums}
+  .viec{display:flex;flex-direction:column;gap:6px;font-size:12.8px}
+  .viec div{display:flex;gap:8px;align-items:flex-start}
+  .viec i{width:5px;height:5px;border-radius:50%;background:var(--accent);margin-top:7px;flex:none}
+  .canh-ro{border:1px solid var(--line);border-radius:10px;padding:9px 12px;background:var(--sunk);
+    font-size:12.5px;color:var(--slate)}
+</style>
+<style>
+  /* KỶ LUẬT MÀU: accent chỉ 3 chỗ mỗi màn (nút chính · trạng thái đang chọn ·
+     link). Sắc đỏ DUY NHẤT một chấm 6px cho mức "nặng". Còn lại: mực + xám + kẻ. */
+  .man-than{padding:18px 20px 22px}
+  .dau-trang{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:18px}
+  .dau-trang h2{font-size:19px;margin:0;letter-spacing:-.01em}
+  .dau-trang .phu{font-size:12.5px;color:var(--slate)}
+  .dau-trang .phai{margin-left:auto;display:flex;gap:8px;align-items:center}
+  .nut{font:inherit;font-size:12.5px;font-weight:600;border-radius:8px;padding:6px 14px;
+    cursor:pointer;border:1px solid var(--line2);background:transparent;color:var(--ink)}
+  .nut.chinh{background:var(--accent);border-color:transparent;color:#fff}
+  .nut.chu{border:0;background:none;color:var(--slate);padding:6px 6px}
+  /* trạm: stepper dọc, trạm ĐANG LÀM là chính, hai trạm kia lùi về nền */
+  .tram{border:1px solid var(--line);border-radius:12px;background:var(--panel)}
+  .tram-hang{display:grid;grid-template-columns:30px 1fr auto;gap:12px;align-items:baseline;
+    padding:15px 18px;border-bottom:1px solid var(--line)}
+  .tram-hang:last-child{border-bottom:0}
+  .tram-so{font-size:12px;font-weight:700;color:var(--slate);font-variant-numeric:tabular-nums}
+  .tram-hang.dang .tram-so{color:var(--accent)}
+  .tram-ten{font-size:14.5px;font-weight:700}
+  .tram-hang:not(.dang) .tram-ten{font-weight:600;color:var(--ink2)}
+  .tram-mo{font-size:12.5px;color:var(--slate);margin-top:3px;line-height:1.55;max-width:62ch}
+  .tram-tt{font-size:12.5px;color:var(--slate);white-space:nowrap}
+  .tram-tt b{color:var(--ink);font-weight:600}
+  .cham{display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:6px;
+    vertical-align:1px;background:var(--line2)}
+  .cham.can{background:var(--bad)}
+  .ghi{font-size:12.5px;color:var(--slate);margin-top:14px;max-width:70ch;line-height:1.6}
+</style>
+<div class="wrap">
+<header>
+  <div class="eyebrow">OUTLIERY · mockup kịch bản vòng 2</div>
+  <h1>Trạm kịch bản, vẽ lại cho có chính phụ</h1>
+  <p class="lead" style="margin-top:10px">Flow giữ nguyên vòng 1. Sửa phần nhìn: mỗi màn một
+    thứ là CHÍNH, mọi thứ khác lùi lại; accent đúng ba chỗ; sắc đỏ chỉ còn một chấm 6px ở mức
+    "nặng" — không viền màu, không nền màu, không huy hiệu.</p>
+</header>
+
+<section class="man">
+  <div class="man-nhan"><b>Màn 1</b><span>Trang tập — trạm đang làm là chính, hai trạm kia im lặng</span></div>
+  <div class="man-than">
+    <div class="dau-trang">
+      <h2>LI106</h2><span class="phu">Georgia · đang sản xuất</span>
+      <span class="phai"><button class="nut chu">Tất cả tập</button></span>
+    </div>
+    <div class="tram">
+      <div class="tram-hang dang">
+        <span class="tram-so">01</span>
+        <div>
+          <div class="tram-ten">Kịch bản</div>
+          <div class="tram-mo">Bản v2 từ Content Ultimate, 04/09 · 8.640 từ.
+            Leader duyệt xong mới dựng.</div>
+        </div>
+        <span class="tram-tt"><b>Chờ duyệt</b> · <a href="#" style="color:var(--accent)">mở review</a></span>
+      </div>
+      <div class="tram-hang">
+        <span class="tram-so">02</span>
+        <div>
+          <div class="tram-ten">Bản dựng</div>
+          <div class="tram-mo">Chưa có bản nào. Kịch bản chưa duyệt — theo quy trình thì chưa dựng;
+            bản lên sớm vẫn nhận, kèm một dòng nhắc.</div>
+        </div>
+        <span class="tram-tt">—</span>
+      </div>
+      <div class="tram-hang">
+        <span class="tram-so">03</span>
+        <div>
+          <div class="tram-ten">Sau khi đăng</div>
+          <div class="tram-mo">Mở khi tập đã đăng. Kết quả quay lại nuôi trạm 01 và 02 của tập sau.</div>
+        </div>
+        <span class="tram-tt">—</span>
+      </div>
+    </div>
+    <p class="ghi">Một khối duy nhất, ba hàng. Trạm đang làm nhận đủ: số accent, tên đậm, trạng thái
+      đậm, đường link. Hai trạm chưa tới lượt chỉ còn chữ xám — không hộp riêng, không màu riêng.</p>
+  </div>
+</section>
+<style>
+  /* màn 2: KỊCH BẢN là chính (cột lớn, chữ lớn) — panel phải là phụ (hẹp, chữ nhỏ) */
+  .kb-luoi{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:22px;align-items:start}
+  @media (max-width:1000px){.kb-luoi{grid-template-columns:1fr}}
+  .kb-van{font-size:14.5px;line-height:1.75;max-width:66ch}
+  .kb-van h4{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--slate);
+    margin:26px 0 10px;font-weight:700}
+  .kb-van h4:first-child{margin-top:0}
+  .kb-doan{position:relative;padding-left:40px;margin-bottom:12px}
+  .kb-doan .so{position:absolute;left:0;top:3px;font-size:11px;color:var(--slate);
+    font-variant-numeric:tabular-nums;cursor:pointer}
+  .kb-doan.chon{background:var(--tint);border-radius:8px;padding:8px 10px 8px 40px;margin-left:-10px}
+  .kb-doan.chon .so{left:10px;top:11px;color:var(--accent);font-weight:700}
+  .moc-60{border-top:1px solid var(--line);margin:14px 0 10px;position:relative}
+  .moc-60 span{position:absolute;top:-8px;left:0;background:var(--void);padding-right:8px;
+    font-size:10.5px;letter-spacing:.07em;color:var(--slate);font-weight:600}
+  /* panel phải: phẳng, ngăn bằng kẻ, không hộp lồng hộp */
+  .pnl{border:1px solid var(--line);border-radius:12px;background:var(--panel)}
+  .pnl-o{padding:13px 15px;border-bottom:1px solid var(--line)}
+  .pnl-o:last-child{border-bottom:0}
+  .pnl textarea{width:100%;min-height:48px;border:1px solid var(--line);border-radius:8px;
+    background:transparent;color:var(--ink);font:inherit;font-size:13px;padding:8px 10px;resize:vertical}
+  .pnl .hang{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:12px;color:var(--slate)}
+  .tomtat{font-size:12.5px;color:var(--slate)}
+  .tomtat b{color:var(--ink)}
+  .the{padding:13px 15px;border-bottom:1px solid var(--line);font-size:12.8px;line-height:1.55}
+  .the:last-child{border-bottom:0}
+  .the .dong1{display:flex;align-items:baseline;gap:8px;font-size:11.5px;color:var(--slate)}
+  .the .neo{font-variant-numeric:tabular-nums;font-weight:600;color:var(--accent);cursor:pointer}
+  .the .benh{font-size:13.5px;font-weight:700;margin:3px 0 4px;color:var(--ink)}
+  .the p{margin:0 0 4px;color:var(--ink2)}
+  .the .bang{font-size:11.5px;color:var(--slate)}
+  .the .lam{margin-top:5px}
+  .the .lam b{font-weight:700}
+  .the.nguoi .benh{display:none}
+  .cuon{max-height:430px;overflow-y:auto}
+</style>
+<section class="man">
+  <div class="man-nhan"><b>Màn 2</b><span>Review kịch bản — văn bản là chính, mọi thứ khác nhường chỗ</span></div>
+  <div class="man-than">
+    <div class="dau-trang">
+      <h2>LI106 — Georgia</h2>
+      <span class="phu">kịch bản v2 · 8.640 từ ≈ 60 phút @ giọng chuẩn kênh · chờ duyệt</span>
+      <span class="phai">
+        <button class="nut chu">Tập LI106</button>
+        <button class="nut chinh">Approve — cho phép dựng</button>
+      </span>
+    </div>
+    <div class="kb-luoi">
+      <div class="kb-van">
+        <h4>Hook</h4>
+        <div class="kb-doan chon"><span class="so">¶1</span>In Georgia, a stranger will refuse your
+          money, pour you wine from an 8,000-year-old recipe — and then tell you, with a straight
+          face, that their alphabet was invented to write love letters…</div>
+        <div class="kb-doan"><span class="so">¶2</span>This is the only country on Earth where the
+          word for "guest" and the word for "gift" grew from the same root…</div>
+        <div class="moc-60"><span>HẾT ≈ 60 GIÂY ĐẦU · ƯỚC THEO 140 TỪ/PHÚT</span></div>
+        <h4>Chương 1 — Vì sao rẻ mà không nghèo</h4>
+        <div class="kb-doan"><span class="so">¶3</span>Let's start with the number that makes expats
+          book one-way tickets: a full dinner for two in old Tbilisi…</div>
+        <div class="kb-doan"><span class="so">¶4</span>But cheap is not the story. The story is what
+          cheap buys you here…</div>
+        <h4>Chương 2 — Phụ nữ và quy tắc ngầm</h4>
+        <div class="kb-doan"><span class="so">¶5</span>Here is where the story gets complicated,
+          and where most travel videos stop telling the truth…</div>
+      </div>
+
+      <div class="pnl">
+        <div class="pnl-o">
+          <textarea placeholder="Note cho đoạn ¶1…"></textarea>
+          <div class="hang">gắn vào <b style="color:var(--ink)">¶1</b>
+            <button class="nut chu" style="margin-left:auto">Nhờ AI đánh giá</button>
+            <button class="nut chinh" style="padding:5px 12px">Send</button></div>
+        </div>
+        <div class="pnl-o tomtat">Máy đo: <b>mở đầu loãng</b> · 1 nặng · 1 vừa · 1 đạt
+          · <a href="#" style="color:var(--accent)">số liệu thô</a></div>
+        <div class="cuon">
+          <div class="the">
+            <div class="dong1"><span class="neo">¶1–¶2</span><span><span class="cham can"></span>Máy · nặng</span></div>
+            <div class="benh">Mở đầu loãng — phút đầu thiếu lời</div>
+            <p>Phút đầu chỉ có ~82 từ. Các tập giữ chân tốt của kênh mở bằng ~126 từ — dày hơn
+              một nửa. Người xem quyết định ở lại trong chính phút này.</p>
+            <div class="bang">82 từ · tập tốt 126 · tập kém 78 — thí nghiệm 21 tập</div>
+            <p class="lam"><b>Nên làm:</b> thêm 1–2 câu vào hook ngay ở outline — chưa tốn tiền voice.</p>
+          </div>
+          <div class="the nguoi">
+            <div class="dong1"><span class="neo">¶1</span><span>bot · 10:22</span></div>
+            <p>Câu "love letters" đắt — giữ nguyên, đừng cho AI viết lại đoạn này.</p>
+          </div>
+          <div class="the">
+            <div class="dong1"><span class="neo">cả bài</span><span><span class="cham"></span>Máy · vừa</span></div>
+            <div class="benh">Ít câu hỏi kéo người xem</div>
+            <p>0,8 câu hỏi mỗi phút — tập tốt hỏi ~1,5 lần. Kịch bản đang kể một chiều.</p>
+            <div class="bang">0,8/phút · tập tốt 1,49 · tập kém 1,16</div>
+          </div>
+          <div class="the">
+            <div class="dong1"><span class="neo">cả bài</span><span><span class="cham"></span>Máy · đạt</span></div>
+            <div class="benh">Mật độ lời cả bài đạt</div>
+            <div class="bang">141 từ/phút ước tính · tập tốt 143 · tập kém 116</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p class="ghi">Chính: văn bản kịch bản — cột lớn, chữ 14,5px, giãn dòng rộng, tối đa 66 ký tự
+      một dòng. Phụ: panel 340px chữ 12,8px. Accent đúng ba chỗ: nút Approve, đoạn đang chọn, neo ¶.
+      Mức độ nói bằng chữ "nặng / vừa / đạt", chấm đỏ 6px là màu duy nhất còn lại.
+      Mốc 60 giây là một đường kẻ chìm trong văn bản, không phải khung màu.</p>
+  </div>
+</section>
+</div>

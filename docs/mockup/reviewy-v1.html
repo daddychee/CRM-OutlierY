@@ -1,0 +1,345 @@
+<title>ReviewY Workspace</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap">
+<style>
+  :root{
+    --void:#ffffff; --panel:#ffffff; --sunk:#f5f5f5; --line:#e6e6e6; --line2:#d9d9d9;
+    --ink:#16181c; --ink2:#3a3f47; --slate:#6c6c72; --accent:#2c6fc4; --accent2:#1b5fb2;
+    --tint:#e8f0fb; --ok:#2e7d4f; --ok-bg:rgba(90,170,120,.14);
+    --warn:#8a6413; --warn-bg:rgba(214,166,74,.16); --bad:#b14a3c; --bad-bg:rgba(217,124,108,.13);
+    --shadow:0 1px 2px rgba(9,12,18,.06),0 8px 24px rgba(9,12,18,.06);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --void:#090c12; --panel:#121826; --sunk:#182233; --line:#243149; --line2:#31425e;
+      --ink:#e8edf4; --ink2:#c2cbd9; --slate:#8b96a8; --accent:#4c8fe0; --accent2:#6ba4e8;
+      --tint:#16263f; --ok:#5aaa78; --ok-bg:rgba(90,170,120,.16);
+      --warn:#d6a64a; --warn-bg:rgba(214,166,74,.16); --bad:#d97c6c; --bad-bg:rgba(217,124,108,.16);
+      --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="dark"]{
+    --void:#090c12; --panel:#121826; --sunk:#182233; --line:#243149; --line2:#31425e;
+    --ink:#e8edf4; --ink2:#c2cbd9; --slate:#8b96a8; --accent:#4c8fe0; --accent2:#6ba4e8;
+    --tint:#16263f; --ok:#5aaa78; --ok-bg:rgba(90,170,120,.16);
+    --warn:#d6a64a; --warn-bg:rgba(214,166,74,.16); --bad:#d97c6c; --bad-bg:rgba(217,124,108,.16);
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.35);
+  }
+  *{box-sizing:border-box}
+  body{background:var(--void);color:var(--ink);font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+    font-size:14px;line-height:1.55;margin:0;padding:34px 22px 70px}
+  .wrap{max-width:1080px;margin:0 auto;display:flex;flex-direction:column;gap:30px}
+  .eyebrow{font-family:"Space Grotesk",Inter,sans-serif;font-weight:700;letter-spacing:.14em;
+    text-transform:uppercase;font-size:11.5px;color:var(--slate)}
+  h1{font-size:27px;line-height:1.2;margin:6px 0 0;text-wrap:balance;letter-spacing:-.015em}
+  h2{font-size:17px;margin:0;letter-spacing:-.01em}
+  p{margin:0;max-width:68ch;color:var(--ink2)}
+  .lead{font-size:15px}
+  .man{border:1px solid var(--line);border-radius:14px;background:var(--panel);box-shadow:var(--shadow);overflow:hidden}
+  .man-nhan{display:flex;align-items:baseline;gap:10px;padding:12px 16px;border-bottom:1px solid var(--line);
+    background:var(--sunk)}
+  .man-nhan b{font-size:13px}
+  .man-nhan span{font-size:12.5px;color:var(--slate)}
+  .man-than{padding:0}
+  .chu{font-size:12.5px;color:var(--slate);max-width:68ch}
+  code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px;
+    background:var(--sunk);border:1px solid var(--line);border-radius:6px;padding:1px 6px}
+</style>
+<style>
+  /* khung app: rail trái + topbar, chép hình dáng thật của OUTLIERY */
+  .app{display:grid;grid-template-columns:186px 1fr;min-height:0}
+  .rail{background:var(--sunk);border-right:1px solid var(--line);padding:12px 10px;display:flex;
+    flex-direction:column;gap:2px}
+  .wordmark{font-family:"Space Grotesk",Inter,sans-serif;font-weight:700;letter-spacing:.02em;
+    font-size:14px;display:flex;align-items:center;gap:8px;padding:4px 8px 12px}
+  .wordmark svg{width:16px;height:16px}
+  .rail a{color:var(--slate);text-decoration:none;font-size:13px;padding:6px 9px;border-radius:8px;
+    display:flex;align-items:center;gap:9px}
+  .rail a.chon{background:var(--tint);color:var(--accent);font-weight:600}
+  .rail svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.6;
+    stroke-linecap:round;stroke-linejoin:round;flex:none}
+  .noi-dung{padding:16px 18px 20px;display:flex;flex-direction:column;gap:14px;min-width:0}
+  /* HAI LUỒNG: tab lớn ngay đầu app */
+  .luong{display:flex;gap:4px;border-bottom:1px solid var(--line);margin:-4px -18px 0;padding:0 18px}
+  .luong button{background:none;border:0;border-bottom:2px solid transparent;color:var(--slate);
+    font:inherit;font-size:14px;font-weight:600;padding:9px 12px 11px;cursor:pointer;display:flex;
+    align-items:center;gap:8px}
+  .luong button.chon{color:var(--ink);border-bottom-color:var(--accent)}
+  .luong .dem{font-size:11.5px;font-weight:600;background:var(--sunk);border:1px solid var(--line);
+    border-radius:999px;padding:0 7px;color:var(--slate)}
+  .luong button.chon .dem{background:var(--tint);border-color:transparent;color:var(--accent)}
+  .luong-mo-ta{font-size:12.5px;color:var(--slate);margin-top:-6px}
+  /* thành phần chung */
+  .chip{display:inline-flex;align-items:center;font-size:11.5px;font-weight:600;border-radius:999px;
+    padding:2px 9px;white-space:nowrap}
+  .chip.cho{background:var(--tint);color:var(--accent)}
+  .chip.dang{background:var(--sunk);color:var(--slate);border:1px solid var(--line)}
+  .chip.duyet{background:var(--ok-bg);color:var(--ok)}
+  .chip.canh{background:var(--warn-bg);color:var(--warn)}
+  .chip.te{background:var(--bad-bg);color:var(--bad)}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--slate);
+    font-weight:600;padding:7px 10px;border-bottom:1px solid var(--line)}
+  td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
+  tr:last-child td{border-bottom:0}
+  .num{font-variant-numeric:tabular-nums}
+  .tap-ma{font-weight:700;letter-spacing:.01em}
+  .nho{font-size:12px;color:var(--slate)}
+  .nut{font:inherit;font-size:12.5px;font-weight:600;border-radius:8px;padding:5px 11px;cursor:pointer;
+    border:1px solid var(--line2);background:var(--panel);color:var(--ink)}
+  .nut.chinh{background:var(--accent);border-color:transparent;color:#fff}
+</style>
+<style>
+  /* thanh đo hai phần: Hook (30 giây đầu) và Sustain (giữ tới cuối) */
+  .do{display:flex;align-items:center;gap:8px}
+  .do-thanh{width:76px;height:6px;border-radius:3px;background:var(--sunk);overflow:hidden;flex:none}
+  .do-thanh i{display:block;height:100%;background:var(--accent)}
+  .do-thanh.te i{background:var(--bad)}
+  .do-thanh.tot i{background:var(--ok)}
+  .lech{font-size:11.5px;font-weight:600}
+  .lech.tot{color:var(--ok)} .lech.te{color:var(--bad)}
+  /* màn chi tiết sau đăng */
+  .so-hang{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  .so-o{border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:var(--panel)}
+  .so-o .nhan{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--slate);font-weight:600}
+  .so-o .gia{font-size:26px;font-weight:700;letter-spacing:-.02em;margin-top:2px;font-variant-numeric:tabular-nums}
+  .so-o .duoi{font-size:12px;color:var(--slate);margin-top:2px}
+  .hai-cot{display:grid;grid-template-columns:1.15fr .85fr;gap:14px}
+  @media (max-width:820px){.hai-cot,.so-hang{grid-template-columns:1fr}.app{grid-template-columns:1fr}
+    .rail{flex-direction:row;overflow-x:auto;border-right:0;border-bottom:1px solid var(--line)}}
+  .khung-vid{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--sunk)}
+  .vid-anh{aspect-ratio:16/9;background:
+    linear-gradient(160deg,var(--line2) 0%,var(--sunk) 55%,var(--line) 100%);position:relative}
+  .vid-anh span{position:absolute;left:10px;bottom:8px;font-size:11.5px;color:var(--slate);
+    background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:1px 7px}
+  .mocbar{position:relative;height:26px;background:var(--sunk);border-top:1px solid var(--line)}
+  .mocbar i{position:absolute;top:0;bottom:0;width:2px;background:var(--accent);opacity:.75}
+  .mocbar .vung{position:absolute;top:0;bottom:0;background:var(--tint)}
+  .mocbar .nhan30{position:absolute;left:calc(3% + 6px);top:5px;font-size:11px;color:var(--accent);font-weight:600}
+  .loi{display:flex;flex-direction:column;gap:9px}
+  .loi-dong{display:grid;grid-template-columns:52px 1fr;gap:10px;align-items:start;font-size:12.8px}
+  .loi-dong b{font-variant-numeric:tabular-nums;color:var(--accent);font-weight:600}
+  .bang-chung{border:1px solid var(--line);border-radius:12px;background:var(--panel);overflow:hidden}
+  .bang-chung h3{margin:0;font-size:12.5px;padding:10px 13px;border-bottom:1px solid var(--line);
+    background:var(--sunk);letter-spacing:.02em}
+  .bang-chung ul{margin:0;padding:11px 13px 13px 28px;display:flex;flex-direction:column;gap:7px;font-size:12.8px}
+  .bang-chung li::marker{color:var(--slate)}
+  .ai{border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:12px;padding:13px 15px;
+    background:var(--panel);display:flex;flex-direction:column;gap:9px}
+  .ai h3{margin:0;font-size:13px}
+  .ai p{font-size:13px;margin:0}
+  .ai .neo{color:var(--accent);font-weight:600;font-variant-numeric:tabular-nums}
+  .viec{display:flex;flex-direction:column;gap:6px;font-size:12.8px}
+  .viec div{display:flex;gap:8px;align-items:flex-start}
+  .viec i{width:5px;height:5px;border-radius:50%;background:var(--accent);margin-top:7px;flex:none}
+  .canh-ro{border:1px solid var(--line);border-radius:10px;padding:9px 12px;background:var(--sunk);
+    font-size:12.5px;color:var(--slate)}
+</style>
+<style>
+  /* KỶ LUẬT MÀU: accent chỉ 3 chỗ mỗi màn (nút chính · trạng thái đang chọn ·
+     link). Sắc đỏ DUY NHẤT một chấm 6px cho mức "nặng". Còn lại: mực + xám + kẻ. */
+  .man-than{padding:18px 20px 22px}
+  .dau-trang{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:18px}
+  .dau-trang h2{font-size:19px;margin:0;letter-spacing:-.01em}
+  .dau-trang .phu{font-size:12.5px;color:var(--slate)}
+  .dau-trang .phai{margin-left:auto;display:flex;gap:8px;align-items:center}
+  .nut{font:inherit;font-size:12.5px;font-weight:600;border-radius:8px;padding:6px 14px;
+    cursor:pointer;border:1px solid var(--line2);background:transparent;color:var(--ink)}
+  .nut.chinh{background:var(--accent);border-color:transparent;color:#fff}
+  .nut.chu{border:0;background:none;color:var(--slate);padding:6px 6px}
+  /* trạm: stepper dọc, trạm ĐANG LÀM là chính, hai trạm kia lùi về nền */
+  .tram{border:1px solid var(--line);border-radius:12px;background:var(--panel)}
+  .tram-hang{display:grid;grid-template-columns:30px 1fr auto;gap:12px;align-items:baseline;
+    padding:15px 18px;border-bottom:1px solid var(--line)}
+  .tram-hang:last-child{border-bottom:0}
+  .tram-so{font-size:12px;font-weight:700;color:var(--slate);font-variant-numeric:tabular-nums}
+  .tram-hang.dang .tram-so{color:var(--accent)}
+  .tram-ten{font-size:14.5px;font-weight:700}
+  .tram-hang:not(.dang) .tram-ten{font-weight:600;color:var(--ink2)}
+  .tram-mo{font-size:12.5px;color:var(--slate);margin-top:3px;line-height:1.55;max-width:62ch}
+  .tram-tt{font-size:12.5px;color:var(--slate);white-space:nowrap}
+  .tram-tt b{color:var(--ink);font-weight:600}
+  .cham{display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:6px;
+    vertical-align:1px;background:var(--line2)}
+  .cham.can{background:var(--bad)}
+  .ghi{font-size:12.5px;color:var(--slate);margin-top:14px;max-width:70ch;line-height:1.6}
+</style>
+<style>
+  /* bảng — một kiểu duy nhất cho cả mockup, kẻ mảnh, không nền màu */
+  table.bg{width:100%;border-collapse:collapse;font-size:12.8px}
+  .bg th{text-align:left;font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;
+    color:var(--slate);font-weight:600;padding:8px 10px;border-bottom:1px solid var(--line)}
+  .bg td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:baseline}
+  .bg tr:last-child td{border-bottom:0}
+  .bg .chinh{font-weight:600}
+  .bg .mo{color:var(--slate);font-size:12px}
+  .bg a{color:var(--accent);text-decoration:none}
+  .num{font-variant-numeric:tabular-nums}
+  .tick{color:var(--slate)}
+  .tick.co{color:var(--ink);font-weight:600}
+  .khoi{border:1px solid var(--line);border-radius:12px;background:var(--panel);overflow:hidden;
+    margin-bottom:16px}
+  .khoi-dau{padding:12px 16px;border-bottom:1px solid var(--line);display:flex;
+    align-items:baseline;gap:10px}
+  .khoi-dau b{font-size:13.5px}
+  .khoi-dau span{font-size:12px;color:var(--slate)}
+  .khoi-chan{padding:10px 16px;border-top:1px solid var(--line);font-size:11.5px;
+    color:var(--slate);line-height:1.55}
+</style>
+<div class="wrap">
+<header>
+  <div class="eyebrow">OUTLIERY · ReviewY · mockup workspace vòng 1</div>
+  <h1>ReviewY — bàn làm việc chung của Content và Editor</h1>
+  <p class="lead" style="margin-top:10px">Hai màn mới: <b>Home</b> (hàng chờ kịch bản từ Content
+    Ultimate + tình hình mọi tập) và <b>Trang tập</b> sau khi kịch bản chốt — nơi editor lấy
+    script, thả voice, theo dõi job dựng và kho link tham khảo. Màn trạm kịch bản giữ nguyên
+    thiết kế vòng 2 đã duyệt.</p>
+</header>
+
+<section class="man">
+  <div class="man-nhan"><b>Màn 1</b><span>Home — việc cần xử lý đứng trên, tình hình đứng dưới</span></div>
+  <div class="man-than">
+    <div class="khoi">
+      <div class="khoi-dau"><b>Kịch bản chờ xử lý</b><span>quét từ Content Ultimate · 2 bản</span></div>
+      <table class="bg">
+        <thead><tr><th>Run</th><th>Người viết · giọng</th><th>Độ dài</th><th>Chương</th><th></th></tr></thead>
+        <tbody>
+          <tr>
+            <td class="chinh">georgia-1<div class="mo">viết xong 05/09 09:41</div></td>
+            <td>ngocht · Carl Sagan</td>
+            <td class="num">21.874 / 22.000</td>
+            <td class="num">Hook + 5 + End</td>
+            <td><a href="#">Gán tập & mở review</a></td>
+          </tr>
+          <tr>
+            <td class="chinh">nepal-2<div class="mo">viết xong 02/09 16:49</div></td>
+            <td>ngocht · Carl Sagan</td>
+            <td class="num">8.861 / 22.000 <span class="cham can" style="margin-left:5px"></span></td>
+            <td class="num">Hook + 2 <span class="mo">· thiếu 3 chương</span></td>
+            <td><span class="mo">chưa đủ điều kiện duyệt</span></td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="khoi-chan">Không tin cờ "done" trần của Content Ultimate — bản thiếu chương hoặc
+        hụt độ dài vẫn hiện nhưng ghi rõ thiếu gì, không cho vào duyệt. Vì Content Ultimate chưa có
+        ô mã tập, việc <b>gán run ↔ tập</b> làm tại đây; khi tool bên content thêm ô đó thì tự khớp.</div>
+    </div>
+
+    <div class="khoi">
+      <div class="khoi-dau"><b>Tập đang sản xuất</b><span>13 tập</span></div>
+      <table class="bg">
+        <thead><tr><th>Tập</th><th>① Kịch bản</th><th>② Bản dựng</th><th>③ Sau khi đăng</th></tr></thead>
+        <tbody>
+          <tr><td class="chinh"><a href="#">LI106</a></td>
+            <td class="tick co">Đã chốt · v2</td>
+            <td>voice 3/6 chương · job đang dựng</td>
+            <td class="mo">—</td></tr>
+          <tr><td class="chinh"><a href="#">LI105</a></td>
+            <td class="mo">viết ngoài tool</td>
+            <td class="tick co">2 bản · 1 chờ duyệt</td>
+            <td class="mo">—</td></tr>
+          <tr><td class="chinh"><a href="#">LI088</a></td>
+            <td class="mo">viết ngoài tool</td>
+            <td>3 bản · Approved</td>
+            <td class="tick co">đã đăng · chờ đủ 7 ngày</td></tr>
+          <tr><td class="chinh"><a href="#">LI083</a></td>
+            <td class="mo">viết ngoài tool</td>
+            <td>3 bản · Approved</td>
+            <td class="tick co">hậu kiểm xong · 3 việc rút ra</td></tr>
+        </tbody>
+      </table>
+      <div class="khoi-chan">Mỗi tập một dòng, ba cột đúng ba trạm. Tập cũ viết ngoài tool ghi rõ
+        "viết ngoài tool" — không bịa trạng thái cho quá khứ.</div>
+    </div>
+  </div>
+</section>
+<section class="man">
+  <div class="man-nhan"><b>Màn 2</b><span>Trang tập sau khi kịch bản chốt — khu bàn giao là chính</span></div>
+  <div class="man-than">
+    <div class="dau-trang">
+      <h2>LI106</h2><span class="phu">Georgia · kịch bản chốt 05/09 · đang dựng</span>
+      <span class="phai"><button class="nut chu">Tất cả tập</button></span>
+    </div>
+
+    <div class="tram" style="margin-bottom:16px">
+      <div class="tram-hang">
+        <span class="tram-so">01</span>
+        <div>
+          <div class="tram-ten">Kịch bản</div>
+          <div class="tram-mo">Đã chốt v2 · leader duyệt 05/09 10:12 · ReviewY đã chia 6 chương
+            ghi ra NAS. Kịch bản nguồn <b>chưa đổi</b> từ lúc chốt (kiểm bằng hash mỗi giờ).</div>
+        </div>
+        <span class="tram-tt"><b>Đã chốt</b> · <a href="#" style="color:var(--accent)">xem review</a></span>
+      </div>
+      <div class="tram-hang dang">
+        <span class="tram-so">02</span>
+        <div>
+          <div class="tram-ten">Bản dựng</div>
+          <div class="tram-mo">Editor gen voice từng chương rồi nộp RenderY. Bản 10 phút lên
+            Feedback như thường lệ.</div>
+        </div>
+        <span class="tram-tt"><b>Voice 3/6 · job đang chạy</b></span>
+      </div>
+      <div class="tram-hang">
+        <span class="tram-so">03</span>
+        <div>
+          <div class="tram-ten">Sau khi đăng</div>
+          <div class="tram-mo">Mở khi tập đã đăng.</div>
+        </div>
+        <span class="tram-tt">—</span>
+      </div>
+    </div>
+
+    <div class="khoi">
+      <div class="khoi-dau"><b>Bàn giao dựng</b>
+        <span>script do ReviewY ghi tự động · voice do editor thả vào chương</span>
+        <span style="margin-left:auto;font-size:11.5px"><a href="#" style="color:var(--accent)">Copy đường thư mục NAS</a></span></div>
+      <table class="bg">
+        <thead><tr><th>Chương</th><th>Script</th><th>Voice</th><th>Job RenderY</th><th></th></tr></thead>
+        <tbody>
+          <tr><td class="chinh">H — Hook</td><td class="tick co">✓ 05/09 10:12</td>
+            <td class="tick co">✓ voice.mp3 · 1:02</td>
+            <td>xong · <a href="#">Compose Timeline</a></td><td></td></tr>
+          <tr><td class="chinh">C1 — Rẻ mà không nghèo</td><td class="tick co">✓</td>
+            <td class="tick co">✓ · 4:18</td>
+            <td>đang dựng · source <span class="mo num">(64%)</span></td><td></td></tr>
+          <tr><td class="chinh">C2 — Phụ nữ & quy tắc ngầm</td><td class="tick co">✓</td>
+            <td class="tick co">✓ · 5:07</td><td class="mo">chờ hàng đợi</td><td></td></tr>
+          <tr><td class="chinh">C3 — Rượu vang 8.000 năm</td><td class="tick co">✓</td>
+            <td class="mo">— chưa có</td><td class="mo">—</td>
+            <td><a href="#">Copy script</a></td></tr>
+          <tr><td class="chinh">C4 — Núi và biên giới</td><td class="tick co">✓</td>
+            <td class="mo">—</td><td class="mo">—</td><td><a href="#">Copy script</a></td></tr>
+          <tr><td class="chinh">E — Ending</td><td class="tick co">✓</td>
+            <td class="mo">—</td><td class="mo">—</td><td><a href="#">Copy script</a></td></tr>
+        </tbody>
+      </table>
+      <div class="khoi-chan">Script ghi sẵn đúng khuôn <span class="num">H / C1… / E</span> +
+        <span class="num">script.txt</span> — editor không còn chép tay, không còn
+        "New Text Document.txt". Voice: ReviewY chỉ NHÌN thư mục NAS và tự cập nhật, editor
+        làm việc bằng Explorer như quen. Trạng thái job đọc từ API RenderY sẵn có.</div>
+    </div>
+
+    <div class="khoi">
+      <div class="khoi-dau"><b>Link tham khảo</b><span>7 · một nguồn cho cả content lẫn editor</span>
+        <span style="margin-left:auto;font-size:11.5px"><a href="#" style="color:var(--accent)">+ Thêm link</a></span></div>
+      <table class="bg">
+        <thead><tr><th>Video</th><th>Nguồn</th><th>Views</th><th></th></tr></thead>
+        <tbody>
+          <tr><td class="chinh">Life in GEORGIA! Land of Wine…<div class="mo">Hidden Globe · 28:41</div></td>
+            <td class="mo">content · chọn pillar</td><td class="num">1,2M</td><td><a href="#">Copy link</a></td></tr>
+          <tr><td class="chinh">GEORGIA 2026: The Caucasus…<div class="mo">Real Life Nations · 31:02</div></td>
+            <td class="mo">content · chọn pillar</td><td class="num">840K</td><td><a href="#">Copy link</a></td></tr>
+          <tr><td class="chinh">Tbilisi street food tour 4K<div class="mo">editor thêm 05/09</div></td>
+            <td class="mo">editor · dựng</td><td class="num">2,1M</td><td><a href="#">Copy link</a></td></tr>
+        </tbody>
+      </table>
+      <div class="khoi-chan">5 link content dán lúc chọn pillar tự chảy về đây từ run
+        <span class="num">georgia-1</span> — editor không phải đi tìm lại. Nút gửi thẳng sang
+        RenderY (máy tự tải + cắt clip) sẽ mở khi RenderY nhận trường refs — <b>bản update tuần
+        sau</b>; trước mắt editor copy link dùng tay như quen.</div>
+    </div>
+  </div>
+</section>
+</div>

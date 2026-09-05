@@ -20,7 +20,7 @@ def moi_truong(tmp_path, monkeypatch):
     nguon = tmp_path / "agent-app"
     (nguon / "nhan-su").mkdir(parents=True)
     (nguon / "kho-tai-lieu").mkdir()
-    hash_giang = bcrypt.hashpw(b"mk-giang", bcrypt.gensalt()).decode()
+    hash_giang = bcrypt.hashpw(b"MatKhau123", bcrypt.gensalt()).decode()
     (nguon / "users.txt").write_text(
         f"thanh:{bcrypt.hashpw(b'mk-thanh', bcrypt.gensalt()).decode()}:Ban quản trị:5\n"
         f"huonggiangsss:{hash_giang}:Kinh doanh:4\n"
@@ -63,7 +63,7 @@ def test_chay_nhap_du_va_idempotent(moi_truong):
     assert rp["da_ghi"]
     conn = iam.ket_noi()
     # hash giữ nguyên → đăng nhập bằng mật khẩu cũ; thanh không hồ sơ → nguoi_ma NULL
-    assert iam.xac_thuc(conn, "huonggiangsss", "mk-giang")["level"] == 4
+    assert iam.xac_thuc(conn, "huonggiangsss", "MatKhau123")["level"] == 4
     assert iam.lay_tai_khoan(conn, "thanh")["nguoi_ma"] is None
     assert iam.lay_tai_khoan(conn, "Tungtb")["phai_doi_mk"] == 1
     giang = dict(conn.execute("SELECT * FROM nguoi WHERE ma='NS-001'").fetchone())

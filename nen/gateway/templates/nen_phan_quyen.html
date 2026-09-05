@@ -37,7 +37,7 @@
     <span class="uu-tien">Priority: OVERRIDE &gt; ACTING LEVEL &gt; default</span>
   </form>
   {% if chon %}
-  <form class="dong" method="post" action="/general/permissions/delegate" style="margin-top:8px">
+  <form class="dong" method="post" action="/general/permissions/delegate" style="margin-top:8px">{{ o_csrf(request) }}
     <input type="hidden" name="ten" value="{{ ten_chon }}">
     <span class="phu">Delegated admin:</span>
     <select name="bat">
@@ -63,7 +63,7 @@
 
 <h2>Acting level</h2>
 <div class="khoi">
-  <form class="toolbar" method="post" action="/general/permissions/acting" style="margin-bottom:0">
+  <form class="toolbar" method="post" action="/general/permissions/acting" style="margin-bottom:0">{{ o_csrf(request) }}
     <input type="hidden" name="ten" value="{{ ten_chon }}">
     <span>{{ ten_chon }} accesses as level:</span>
     <select name="cap">
@@ -83,7 +83,7 @@
 </div>
 
 <h2>Per-app exceptions — real app actions, override beats default</h2>
-<form method="post" action="/general/permissions/save">
+<form method="post" action="/general/permissions/save">{{ o_csrf(request) }}
   <input type="hidden" name="ten" value="{{ ten_chon }}">
   {% for k in khoi_p4 %}
   <details class="app"{% if k.so_le %} open{% endif %}>
@@ -140,7 +140,7 @@
     <td class="phu">{{ r.ly_do or '—' }}</td>
     <td class="phu">{{ (r.luc or '')[:10] or '—' }}{% if r.ai_gan %} · {{ r.ai_gan }}{% endif %}</td>
     <td>
-      <form class="dong" method="post" action="/general/permissions/grant">
+      <form class="dong" method="post" action="/general/permissions/grant">{{ o_csrf(request) }}
         <input type="hidden" name="ten" value="{{ r.ten_tai_khoan }}">
         <input type="hidden" name="app_slug" value="{{ r.app_slug }}">
         <input type="hidden" name="hanh_dong" value="{{ r.hanh_dong }}">

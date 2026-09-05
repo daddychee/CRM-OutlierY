@@ -26,7 +26,7 @@
 </style>
 </head>
 <body>
-<form class="the" method="post" action="/login">
+<form class="the" method="post" action="/login">{{ o_csrf(request) }}
   <h1>AI AGENT <span style="color:var(--accent)">OUTLIERY</span></h1>
   <p class="phu">Bản nền mới — chạy song song hệ chính</p>
   <label for="ten">Username</label>

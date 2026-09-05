@@ -1,0 +1,697 @@
+<title>ReviewY vòng 4</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap">
+<style>
+  :root{
+    --void:#ffffff; --panel:#ffffff; --sunk:#f5f5f5; --line:#e6e6e6; --line2:#d9d9d9;
+    --ink:#16181c; --ink2:#3a3f47; --slate:#6c6c72; --accent:#2c6fc4; --accent2:#1b5fb2;
+    --tint:#e8f0fb; --ok:#2e7d4f; --ok-bg:rgba(90,170,120,.14);
+    --warn:#8a6413; --warn-bg:rgba(214,166,74,.16); --bad:#b14a3c; --bad-bg:rgba(217,124,108,.13);
+    --shadow:0 1px 2px rgba(9,12,18,.06),0 8px 24px rgba(9,12,18,.06);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --void:#090c12; --panel:#121826; --sunk:#182233; --line:#243149; --line2:#31425e;
+      --ink:#e8edf4; --ink2:#c2cbd9; --slate:#8b96a8; --accent:#4c8fe0; --accent2:#6ba4e8;
+      --tint:#16263f; --ok:#5aaa78; --ok-bg:rgba(90,170,120,.16);
+      --warn:#d6a64a; --warn-bg:rgba(214,166,74,.16); --bad:#d97c6c; --bad-bg:rgba(217,124,108,.16);
+      --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="dark"]{
+    --void:#090c12; --panel:#121826; --sunk:#182233; --line:#243149; --line2:#31425e;
+    --ink:#e8edf4; --ink2:#c2cbd9; --slate:#8b96a8; --accent:#4c8fe0; --accent2:#6ba4e8;
+    --tint:#16263f; --ok:#5aaa78; --ok-bg:rgba(90,170,120,.16);
+    --warn:#d6a64a; --warn-bg:rgba(214,166,74,.16); --bad:#d97c6c; --bad-bg:rgba(217,124,108,.16);
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.35);
+  }
+  *{box-sizing:border-box}
+  body{background:var(--void);color:var(--ink);font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+    font-size:14px;line-height:1.55;margin:0;padding:34px 22px 70px}
+  .wrap{max-width:1080px;margin:0 auto;display:flex;flex-direction:column;gap:30px}
+  .eyebrow{font-family:"Space Grotesk",Inter,sans-serif;font-weight:700;letter-spacing:.14em;
+    text-transform:uppercase;font-size:11.5px;color:var(--slate)}
+  h1{font-size:27px;line-height:1.2;margin:6px 0 0;text-wrap:balance;letter-spacing:-.015em}
+  h2{font-size:17px;margin:0;letter-spacing:-.01em}
+  p{margin:0;max-width:68ch;color:var(--ink2)}
+  .lead{font-size:15px}
+  .man{border:1px solid var(--line);border-radius:14px;background:var(--panel);box-shadow:var(--shadow);overflow:hidden}
+  .man-nhan{display:flex;align-items:baseline;gap:10px;padding:12px 16px;border-bottom:1px solid var(--line);
+    background:var(--sunk)}
+  .man-nhan b{font-size:13px}
+  .man-nhan span{font-size:12.5px;color:var(--slate)}
+  .man-than{padding:0}
+  .chu{font-size:12.5px;color:var(--slate);max-width:68ch}
+  code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px;
+    background:var(--sunk);border:1px solid var(--line);border-radius:6px;padding:1px 6px}
+</style><style>
+  /* ===== VỎ ỨNG DỤNG: không cuộn trang, mỗi tab một màn đầy ===== */
+  html,body{height:100%}
+  body{padding:0;overflow:hidden;display:flex;flex-direction:column}
+  .topbar{display:flex;align-items:center;gap:22px;padding:0 22px;height:52px;flex:none;
+    border-bottom:1px solid var(--line);background:var(--panel)}
+  .logo{font-family:"Space Grotesk",Inter,sans-serif;font-weight:700;font-size:15px;
+    letter-spacing:.02em}
+  .tabs{display:flex;gap:2px;height:100%}
+  .tab{font:inherit;font-size:13.5px;font-weight:600;color:var(--slate);background:none;
+    border:0;border-bottom:2px solid transparent;padding:0 16px;cursor:pointer;height:100%}
+  .tab.chon{color:var(--ink);border-bottom-color:var(--accent)}
+  .tab .dem{font-size:11px;color:var(--slate);margin-left:5px;font-variant-numeric:tabular-nums}
+  .topbar .cuoi{margin-left:auto;font-size:12px;color:var(--slate)}
+  .pane{flex:1;min-height:0;display:none;padding:20px 22px}
+  .pane.mo{display:flex;flex-direction:column;gap:14px}
+  /* thanh ngữ cảnh tập trong 3 tab review */
+  .ctx{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;flex:none}
+  .ctx h2{font-size:18px;margin:0;letter-spacing:-.01em}
+  .ctx .phu{font-size:12.5px;color:var(--slate)}
+  .ctx .phai{margin-left:auto;display:flex;gap:8px;align-items:center}
+  .nut{font:inherit;font-size:12.5px;font-weight:600;border-radius:8px;padding:6px 14px;
+    cursor:pointer;border:1px solid var(--line2);background:transparent;color:var(--ink)}
+  .nut.chinh{background:var(--accent);border-color:transparent;color:#fff}
+  .nut.chu{border:0;background:none;color:var(--slate);padding:6px 6px}
+  .nut:disabled{opacity:.45;cursor:default}
+  /* khối + bảng dùng chung, kỷ luật vòng 2 */
+  .khoi{border:1px solid var(--line);border-radius:12px;background:var(--panel);
+    display:flex;flex-direction:column;min-height:0}
+  .khoi-dau{padding:11px 15px;border-bottom:1px solid var(--line);display:flex;
+    align-items:baseline;gap:10px;flex:none}
+  .khoi-dau b{font-size:13px}
+  .khoi-dau span{font-size:11.5px;color:var(--slate)}
+  .khoi-dau .phai{margin-left:auto;font-size:11.5px}
+  .cuon{overflow-y:auto;min-height:0}
+  table.bg{width:100%;border-collapse:collapse;font-size:12.8px}
+  .bg th{text-align:left;font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;
+    color:var(--slate);font-weight:600;padding:8px 12px;border-bottom:1px solid var(--line);
+    position:sticky;top:0;background:var(--panel)}
+  .bg td{padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:baseline}
+  .bg tr:last-child td{border-bottom:0}
+  .bg .chinh{font-weight:600}
+  .bg .mo{color:var(--slate);font-size:12px}
+  .bg a{color:var(--accent);text-decoration:none;cursor:pointer}
+  .num{font-variant-numeric:tabular-nums}
+  .cham{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--line2);
+    margin-right:6px;vertical-align:1px}
+  .cham.can{background:var(--bad)}
+  .ghi-chan{font-size:11.5px;color:var(--slate);padding:9px 15px;border-top:1px solid var(--line);
+    flex:none;line-height:1.5}
+</style>
+<style>
+  /* Writing Review — chép nguyên màn 2 kich-ban-v2, đặt vừa một màn */
+  #p-viet .ctx,#p-viet .kb-luoi{width:100%;max-width:1150px;margin-left:auto;margin-right:auto}
+  .kb-luoi{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:20px;flex:1;min-height:0}
+  .kb-trai{overflow-y:auto;min-height:0;padding-right:6px}
+  .kb-van{font-size:14.5px;line-height:1.75;max-width:66ch}
+  .kb-van h4{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--slate);
+    margin:26px 0 10px;font-weight:700}
+  .kb-van h4:first-child{margin-top:0}
+  .kb-doan{position:relative;padding-left:40px;margin-bottom:12px;color:var(--ink2)}
+  .kb-doan .so{position:absolute;left:0;top:3px;font-size:11px;color:var(--slate);
+    font-variant-numeric:tabular-nums;cursor:pointer}
+  .kb-doan.chon{background:var(--tint);border-radius:8px;padding:8px 10px 8px 40px;margin-left:-10px;
+    color:var(--ink)}
+  .kb-doan.chon .so{left:10px;top:11px;color:var(--accent);font-weight:700}
+  .moc-60{border-top:1px solid var(--line);margin:14px 0 10px;position:relative}
+  .moc-60 span{position:absolute;top:-8px;left:0;background:var(--void);padding-right:8px;
+    font-size:10.5px;letter-spacing:.07em;color:var(--slate);font-weight:600}
+  .pnl{border:1px solid var(--line);border-radius:12px;background:var(--panel);display:flex;
+    flex-direction:column;min-height:0;overflow:hidden}
+  .pnl-o{padding:13px 15px;border-bottom:1px solid var(--line);flex:none}
+  .pnl textarea{width:100%;min-height:48px;border:1px solid var(--line);border-radius:8px;
+    background:transparent;color:var(--ink);font:inherit;font-size:13px;padding:8px 10px;resize:vertical}
+  .pnl .hang{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:12px;color:var(--slate)}
+  .tomtat{font-size:12.5px;color:var(--slate)}
+  .tomtat b{color:var(--ink)}
+  .pnl .cuon{flex:1}
+  .the{padding:13px 15px;border-bottom:1px solid var(--line);font-size:12.8px;line-height:1.55}
+  .the:last-child{border-bottom:0}
+  .the .dong1{display:flex;align-items:baseline;gap:8px;font-size:11.5px;color:var(--slate)}
+  .the .neo{font-variant-numeric:tabular-nums;font-weight:600;color:var(--accent);cursor:pointer}
+  .the .benh{font-size:13.5px;font-weight:700;margin:3px 0 4px;color:var(--ink)}
+  .the p{margin:0 0 4px;color:var(--ink2)}
+  .the .bang{font-size:11.5px;color:var(--slate)}
+  .the .lam{margin-top:5px}
+  .the.nguoi .benh{display:none}
+  /* chip trạng thái — đúng chip app thật */
+  .chip{display:inline-flex;align-items:center;font-size:11.5px;font-weight:600;border-radius:999px;
+    padding:2px 9px;white-space:nowrap}
+  .chip.cho{background:var(--tint);color:var(--accent)}
+  .chip.dang{background:var(--sunk);color:var(--slate);border:1px solid var(--line)}
+  .chip.duyet{background:var(--ok-bg);color:var(--ok)}
+  /* Editing / Publish: lưới hai cột đầy màn */
+  .hai{display:grid;grid-template-columns:1.12fr .88fr;gap:14px;flex:1;min-height:0}
+  .cot{display:flex;flex-direction:column;gap:14px;min-height:0;overflow-y:auto}
+  .khung-vid{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--sunk);flex:none}
+  .vid-anh{aspect-ratio:16/9;max-height:300px;min-height:200px;background:linear-gradient(160deg,var(--line2) 0%,var(--sunk) 55%,var(--line) 100%);
+    position:relative}
+  .vid-anh span{position:absolute;left:10px;bottom:8px;font-size:11.5px;color:var(--slate);
+    background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:1px 7px}
+  .dothi{padding:10px 12px 12px;border-top:1px solid var(--line);background:var(--panel)}
+  .dothi svg{display:block;width:100%;height:110px}
+  .dothi .nhan{font-size:11px;color:var(--slate);display:flex;justify-content:space-between;margin-top:4px}
+  .gan-o{display:none;padding:10px 12px;border-bottom:1px solid var(--line);background:var(--sunk);
+    font-size:12.8px;align-items:center;gap:10px}
+  .gan-o.mo{display:flex}
+  .gan-o input{font:inherit;font-size:12.8px;width:88px;padding:5px 9px;border:1px solid var(--line2);
+    border-radius:7px;background:var(--panel);color:var(--ink)}
+</style>
+<style>
+  /* LUẬT KHUNG APP: nội dung mọi tab nằm trong 1240px giữa màn, không tràn viền */
+  .pane{align-items:center}
+  .pane > *{width:100%;max-width:1240px}
+  #p-viet .ctx,#p-viet .kb-luoi{max-width:1150px}
+  /* Overview: tập là CHÍNH — dòng bấm được */
+  .bg tr.dong-tap{cursor:pointer}
+  .bg tr.dong-tap:hover td{background:var(--sunk)}
+  /* popup bàn giao dựng — modal đúng lệ app: ✕ / bấm nền / Esc */
+  .phu-nen{position:fixed;inset:0;background:rgba(9,12,18,.55);display:none;
+    align-items:flex-start;justify-content:center;padding:6vh 20px;z-index:50}
+  .phu-nen.mo{display:flex}
+  .phu-hop{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    box-shadow:var(--shadow);width:100%;max-width:880px;max-height:86vh;display:flex;
+    flex-direction:column;overflow:hidden}
+  .phu-dau{display:flex;align-items:baseline;gap:10px;padding:14px 18px;
+    border-bottom:1px solid var(--line);flex:none}
+  .phu-dau h3{margin:0;font-size:16px;letter-spacing:-.01em}
+  .phu-dau .phu{font-size:12.5px;color:var(--slate)}
+  .phu-dong{margin-left:auto;font:inherit;font-size:16px;background:none;border:0;
+    color:var(--slate);cursor:pointer;padding:0 2px;line-height:1}
+  .phu-than{overflow-y:auto;min-height:0}
+  .phu-muc{padding:0;border-bottom:1px solid var(--line)}
+  .phu-muc:last-child{border-bottom:0}
+  .phu-muc-dau{display:flex;align-items:baseline;gap:10px;padding:11px 18px 7px}
+  .phu-muc-dau b{font-size:13px}
+  .phu-muc-dau span{font-size:11.5px;color:var(--slate)}
+  .phu-muc-dau a{margin-left:auto;font-size:12px;color:var(--accent);cursor:pointer;text-decoration:none}
+  .phu-muc .bg td{padding:8px 18px}
+  .phu-muc .bg th{padding:6px 18px}
+  /* Writing: nút Hook / chương từ cấu trúc Content Ultimate */
+  .nav-chuong{display:flex;gap:6px;flex-wrap:wrap;flex:none;margin-bottom:2px}
+  .nav-chuong button{font:inherit;font-size:12px;font-weight:600;color:var(--slate);
+    background:var(--panel);border:1px solid var(--line);border-radius:999px;
+    padding:4px 12px;cursor:pointer}
+  .nav-chuong button.chon{color:var(--accent);background:var(--tint);border-color:transparent}
+  /* Editing: chép màn xem thật của app — video trái, panel bình luận 370px phải */
+  .vr-grid{display:grid;grid-template-columns:minmax(0,1fr) 370px;gap:18px;
+    align-items:start;flex:1;min-height:0}
+  .vid-wrap{background:#000;border-radius:12px;overflow:hidden;border:1px solid var(--line);
+    aspect-ratio:16/9;max-height:52vh;position:relative}
+  .vid-wrap span{position:absolute;left:10px;bottom:8px;font-size:11.5px;color:var(--slate);
+    background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:1px 7px}
+  .moc-bar{position:relative;height:22px;background:var(--sunk);border:1px solid var(--line);
+    border-radius:7px;margin-top:8px}
+  .moc-bar i{position:absolute;top:6px;width:8px;height:8px;border-radius:50%;
+    background:var(--accent);cursor:pointer}
+  .moc-bar i.nang{background:var(--bad)}
+  .moc-bar i.nhe{background:var(--line2)}
+  .moc-chu{display:flex;gap:16px;font-size:11.5px;color:var(--slate);margin-top:7px}
+  .moc-chu b{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;
+    vertical-align:-1px;background:var(--accent)}
+  .moc-chu b.maynang{background:var(--bad)}
+  .moc-chu b.maynhe{background:var(--line2)}
+  .bl-panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    display:flex;flex-direction:column;min-height:0;max-height:100%;overflow:hidden}
+  .bl-soan{padding:13px 15px;border-bottom:1px solid var(--line);flex:none}
+  .bl-soan textarea{width:100%;min-height:46px;border:1px solid var(--line);border-radius:8px;
+    background:transparent;color:var(--ink);font:inherit;font-size:13px;padding:8px 10px;resize:vertical}
+  .bl-hang{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:12px;
+    color:var(--slate);flex-wrap:wrap}
+  .mau{width:14px;height:14px;border-radius:50%;border:2px solid transparent;cursor:pointer;padding:0}
+  .mau.chon{border-color:var(--ink)}
+</style>
+<style>
+  /* Overview vòng 4: mỗi tập một THẺ — nhìn lướt biết việc kế thuộc về ai */
+  .tap-luoi{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
+  .tap-the{border:1px solid var(--line);border-radius:12px;background:var(--panel);
+    padding:14px 16px 12px;cursor:pointer;display:flex;flex-direction:column;gap:10px}
+  .tap-the:hover{border-color:var(--line2);box-shadow:var(--shadow)}
+  .tap-dau{display:flex;align-items:baseline;gap:8px}
+  .tap-dau b{font-size:16px;letter-spacing:.01em}
+  .tap-dau span{font-size:12px;color:var(--slate)}
+  .tien{display:flex;gap:4px}
+  .tien i{height:5px;flex:1;border-radius:3px;background:var(--sunk)}
+  .tien i.xong{background:var(--accent)}
+  .tien i.dang{background:var(--tint);outline:1px solid var(--accent);outline-offset:-1px}
+  .tram-ds{display:flex;flex-direction:column;gap:5px;font-size:12.5px}
+  .tram-ds div{display:grid;grid-template-columns:58px 1fr;gap:8px}
+  .tram-ds i{font-style:normal;font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;
+    color:var(--slate);font-weight:600;padding-top:1px}
+  .tram-ds span{color:var(--ink2)}
+  .tram-ds span.mo{color:var(--slate)}
+  .viec-ke{border-top:1px solid var(--line);padding-top:9px;font-size:12.5px;color:var(--ink);
+    font-weight:600}
+  .viec-ke em{font-style:normal;color:var(--slate);font-weight:400}
+  /* Writing vòng 4: kịch bản là TỜ GIẤY — panel đọc rộng rãi, chương có đầu mục */
+  .to-giay{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    overflow-y:auto;min-height:0;padding:26px 36px 34px}
+  .to-giay .kb-van{font-size:15.5px;line-height:1.85;max-width:62ch}
+  .to-giay .kb-doan{margin-bottom:16px}
+  .chuong-dau{display:flex;align-items:baseline;gap:10px;margin:34px 0 16px;
+    padding-top:22px;border-top:1px solid var(--line)}
+  .chuong-dau:first-child{margin-top:0;padding-top:0;border-top:0}
+  .chuong-dau b{font-size:15px;letter-spacing:-.01em}
+  .chuong-dau .stt{font-size:11px;font-weight:700;color:var(--slate);letter-spacing:.08em}
+  .to-giay .moc-60 span{background:var(--panel)}
+  .chuong-dau .do-dai{margin-left:auto;font-size:11.5px;color:var(--slate);
+    font-variant-numeric:tabular-nums;white-space:nowrap}
+</style>
+<div class="topbar">
+  <span class="logo">ReviewY</span>
+  <nav class="tabs">
+    <button class="tab chon" data-t="tong">Overview</button>
+    <button class="tab" data-t="viet">Writing Review<span class="dem">1</span></button>
+    <button class="tab" data-t="dung">Editing Review<span class="dem">1</span></button>
+    <button class="tab" data-t="dang">Publish Review<span class="dem">1</span></button>
+  </nav>
+  <span class="cuoi">mockup vòng 4 · dữ liệu minh họa</span>
+</div>
+
+<!-- ============ TAB 1 · OVERVIEW — sàn chung hai team ============ -->
+<div class="pane mo" id="p-tong">
+  <div class="ctx"><h2>Tập đang sản xuất</h2>
+    <span class="phu">13 tập · bấm một thẻ để mở bàn giao dựng</span></div>
+  <div class="tap-luoi">
+    <div class="tap-the dong-tap" data-tap="LI106">
+      <div class="tap-dau"><b>LI106</b><span>Georgia</span></div>
+      <div class="tien"><i class="xong"></i><i class="dang"></i><i></i></div>
+      <div class="tram-ds">
+        <div><i>Writing</i><span>Đã chốt v2 · 04/09</span></div>
+        <div><i>Editing</i><span>voice 3/6 chương · job đang dựng</span></div>
+        <div><i>Publish</i><span class="mo">—</span></div>
+      </div>
+      <div class="viec-ke">→ editor: thả voice C3, C4, E <em>· vào chương trên NAS</em></div>
+    </div>
+    <div class="tap-the dong-tap" data-tap="LI105">
+      <div class="tap-dau"><b>LI105</b></div>
+      <div class="tien"><i class="xong"></i><i class="dang"></i><i></i></div>
+      <div class="tram-ds">
+        <div><i>Writing</i><span class="mo">viết ngoài tool</span></div>
+        <div><i>Editing</i><span>2 bản · LI105.2 chờ duyệt</span></div>
+        <div><i>Publish</i><span class="mo">—</span></div>
+      </div>
+      <div class="viec-ke">→ leader: duyệt bản LI105.2 <em>· lên từ 03/09</em></div>
+    </div>
+    <div class="tap-the dong-tap" data-tap="LI088">
+      <div class="tap-dau"><b>LI088</b></div>
+      <div class="tien"><i class="xong"></i><i class="xong"></i><i class="dang"></i></div>
+      <div class="tram-ds">
+        <div><i>Writing</i><span class="mo">viết ngoài tool</span></div>
+        <div><i>Editing</i><span class="mo">3 bản · Approved</span></div>
+        <div><i>Publish</i><span>đã đăng 01/09</span></div>
+      </div>
+      <div class="viec-ke">→ chờ đủ 7 ngày dữ liệu <em>· còn 3 ngày là hậu kiểm được</em></div>
+    </div>
+    <div class="tap-the dong-tap" data-tap="LI083">
+      <div class="tap-dau"><b>LI083</b><span>Wine &amp; Shadows</span></div>
+      <div class="tien"><i class="xong"></i><i class="xong"></i><i class="xong"></i></div>
+      <div class="tram-ds">
+        <div><i>Writing</i><span class="mo">viết ngoài tool</span></div>
+        <div><i>Editing</i><span class="mo">3 bản · Approved</span></div>
+        <div><i>Publish</i><span>hậu kiểm xong · 3 việc rút ra</span></div>
+      </div>
+      <div class="viec-ke">→ content + editor: áp 3 việc vào tập sau <em>· xem tab Publish</em></div>
+    </div>
+  </div>
+
+  <div class="khoi" style="flex:none">
+    <div class="khoi-dau"><b>Kịch bản chờ xử lý</b><span>quét từ Content Ultimate · 2 bản</span></div>
+    <table class="bg">
+      <tr>
+        <td><span class="chinh">georgia-1</span> <span class="mo">ngocht · Carl Sagan · xong 03/09</span></td>
+        <td class="num">21.874 / 22.000 · Hook + 5 + End</td>
+        <td style="text-align:right"><a id="nut-gan">Gán tập &amp; mở review</a></td>
+      </tr>
+      <tr>
+        <td><span class="chinh">nepal-2</span> <span class="mo">ngocht · Carl Sagan · xong 02/09</span></td>
+        <td class="num">8.861 / 22.000 <span class="cham can" style="margin:0 0 0 4px"></span> · thiếu 3 chương</td>
+        <td style="text-align:right"><span class="mo">chưa đủ điều kiện duyệt</span></td>
+      </tr>
+    </table>
+    <div class="gan-o" id="gan-o">
+      Gán run <b>georgia-1</b> vào tập
+      <input value="LI106" id="gan-ma">
+      <span class="mo">mã tập theo lịch PlannerY — nối tự động làm sau</span>
+      <button class="nut chinh" id="gan-ok" style="margin-left:auto">Xác nhận &amp; mở review</button>
+    </div>
+  </div>
+</div>
+
+<!-- popup bàn giao dựng của một tập -->
+<div class="phu-nen" id="phu-nen">
+  <div class="phu-hop">
+    <div class="phu-dau">
+      <h3 id="phu-ten">LI106 — Georgia</h3>
+      <span class="phu">kịch bản chốt 04/09 · đang dựng</span>
+      <button class="phu-dong" id="phu-dong" aria-label="Đóng">✕</button>
+    </div>
+    <div class="phu-than">
+      <div class="phu-muc">
+        <div class="phu-muc-dau"><b>Bàn giao dựng</b>
+          <span>script do ReviewY ghi tự động · voice editor thả vào chương trên NAS</span>
+          <a data-copy>Copy đường thư mục NAS</a></div>
+        <table class="bg">
+          <tr><th>Chương</th><th>Script</th><th>Voice</th><th>Job RenderY</th><th></th></tr>
+          <tr><td class="chinh">H — Hook</td><td>✓ <span class="mo num">04/09 10:12</span></td>
+            <td>✓ <span class="mo num">1:02</span></td><td>xong · <a>Compose Timeline</a></td><td></td></tr>
+          <tr><td class="chinh">C1 — Rẻ mà không nghèo</td><td>✓</td><td>✓ <span class="mo num">4:18</span></td>
+            <td>đang dựng · source <span class="mo num">(64%)</span></td><td></td></tr>
+          <tr><td class="chinh">C2 — Phụ nữ &amp; quy tắc ngầm</td><td>✓</td><td>✓ <span class="mo num">5:07</span></td>
+            <td><span class="mo">chờ hàng đợi</span></td><td></td></tr>
+          <tr><td class="chinh">C3 — Rượu vang 8.000 năm</td><td>✓</td><td><span class="mo">— chưa có</span></td>
+            <td><span class="mo">—</span></td><td style="text-align:right"><a data-copy>Copy script</a></td></tr>
+          <tr><td class="chinh">C4 — Núi và biên giới</td><td>✓</td><td><span class="mo">—</span></td>
+            <td><span class="mo">—</span></td><td style="text-align:right"><a data-copy>Copy script</a></td></tr>
+          <tr><td class="chinh">E — Ending</td><td>✓</td><td><span class="mo">—</span></td>
+            <td><span class="mo">—</span></td><td style="text-align:right"><a data-copy>Copy script</a></td></tr>
+        </table>
+      </div>
+      <div class="phu-muc">
+        <div class="phu-muc-dau"><b>Bản 10 phút</b><span>lên Feedback như thường lệ</span>
+          <a class="nhay" data-t="dung">mở Editing Review</a></div>
+        <table class="bg">
+          <tr><td><span class="chinh">LI106.1</span> <span class="mo">hieuvn · 04/09 15:20 · 10:02</span></td>
+            <td style="text-align:right"><span class="chip cho">Awaiting review</span></td></tr>
+        </table>
+      </div>
+      <div class="phu-muc">
+        <div class="phu-muc-dau"><b>Link tham khảo</b><span>7 · một nguồn cho cả content lẫn editor</span>
+          <a>+ Thêm link</a></div>
+        <table class="bg">
+          <tr><td><span class="chinh">Life in GEORGIA! Land of Wine…</span>
+            <span class="mo">Hidden Globe · 28:41 · content dán lúc chọn pillar</span></td>
+            <td class="num" style="text-align:right">1,2M</td>
+            <td style="text-align:right"><a data-copy>Copy link</a></td></tr>
+          <tr><td><span class="chinh">Tbilisi street food tour</span>
+            <span class="mo">editor thêm 04/09 — footage chương C1</span></td>
+            <td class="num" style="text-align:right">310K</td>
+            <td style="text-align:right"><a data-copy>Copy link</a></td></tr>
+        </table>
+      </div>
+      <div class="ghi-chan" style="border:0">Nút gửi link thẳng sang RenderY mở khi RenderY nhận trường
+        refs — bản update tuần sau. Đóng popup: ✕, bấm nền, hoặc Esc.</div>
+    </div>
+  </div>
+</div>
+<!-- ============ TAB 2 · WRITING REVIEW ============ -->
+<div class="pane" id="p-viet">
+  <div class="ctx">
+    <h2>LI106 — Georgia</h2>
+    <span class="phu" id="w-tt">kịch bản v2 · 21.874 ký tự ≈ 26 phút @ 140 từ/phút · chờ duyệt</span>
+    <span class="phai">
+      <button class="nut chu">Tất cả kịch bản chờ</button>
+      <button class="nut chinh" id="w-approve">Approve — cho phép dựng</button>
+    </span>
+  </div>
+  <div class="nav-chuong" id="nav-chuong" style="max-width:1150px">
+    <button class="chon" data-c="ch-hook">Hook</button>
+    <button data-c="ch-c1">C1 · Rẻ mà không nghèo</button>
+    <button data-c="ch-c2">C2 · Phụ nữ &amp; quy tắc ngầm</button>
+    <button data-c="ch-c3">C3 · Rượu vang 8.000 năm</button>
+    <button data-c="ch-c4">C4 · Núi và biên giới</button>
+    <button data-c="ch-e">Ending</button>
+  </div>
+  <div class="kb-luoi">
+    <div class="kb-trai to-giay" id="kb-trai"><div class="kb-van">
+      <div class="chuong-dau" id="ch-hook"><span class="stt">HOOK</span><span class="do-dai">168 từ ≈ 1:12</span></div>
+      <div class="kb-doan chon"><span class="so">¶1</span>In Georgia, a stranger will refuse your
+        money, pour you wine from an 8,000-year-old recipe — and then tell you, with a straight
+        face, that their alphabet was invented to write love letters…</div>
+      <div class="kb-doan"><span class="so">¶2</span>This is the only country on Earth where the
+        word for "guest" and the word for "gift" grew from the same root…</div>
+      <div class="moc-60"><span>HẾT ≈ 60 GIÂY ĐẦU · ƯỚC THEO 140 TỪ/PHÚT</span></div>
+      <div class="chuong-dau" id="ch-c1"><span class="stt">C1</span><b>Rẻ mà không nghèo</b><span class="do-dai">1.204 từ ≈ 8:36</span></div>
+      <div class="kb-doan"><span class="so">¶3</span>Let's start with the number that makes expats
+        book one-way tickets: a full dinner for two in old Tbilisi…</div>
+      <div class="kb-doan"><span class="so">¶4</span>But cheap is not the story. The story is what
+        cheap buys you here…</div>
+      <div class="chuong-dau" id="ch-c2"><span class="stt">C2</span><b>Phụ nữ &amp; quy tắc ngầm</b><span class="do-dai">986 từ ≈ 7:02</span></div>
+      <div class="kb-doan"><span class="so">¶5</span>Here is where the story gets complicated,
+        and where most travel videos stop telling the truth…</div>
+      <div class="chuong-dau" id="ch-c3"><span class="stt">C3</span><b>Rượu vang 8.000 năm</b><span class="do-dai">1.011 từ ≈ 7:13</span></div>
+      <div class="kb-doan"><span class="so">¶6</span>Georgians did not invent wine the way France
+        invented wine. They invented it the way fire was invented…</div>
+      <div class="chuong-dau" id="ch-c4"><span class="stt">C4</span><b>Núi và biên giới</b><span class="do-dai">742 từ ≈ 5:18</span></div>
+      <div class="kb-doan"><span class="so">¶7</span>Two hours north of the capital, the road simply
+        stops negotiating with the landscape…</div>
+      <div class="chuong-dau" id="ch-e"><span class="stt">ENDING</span><span class="do-dai">201 từ ≈ 1:26</span></div>
+      <div class="kb-doan"><span class="so">¶8</span>So is Georgia the last honest country in
+        Europe? Stay to the end and decide for yourself…</div>
+    </div></div>
+    <div class="pnl">
+      <div class="pnl-o">
+        <textarea placeholder="Note cho đoạn ¶1…"></textarea>
+        <div class="hang">gắn vào <b style="color:var(--ink)">¶1</b>
+          <button class="nut chu" style="margin-left:auto">Nhờ AI đánh giá</button>
+          <button class="nut chinh" style="padding:5px 12px">Send</button></div>
+      </div>
+      <div class="pnl-o tomtat">Máy đo: <b>mở đầu loãng</b> · 1 nặng · 1 vừa · 1 đạt
+        · <a href="#" style="color:var(--accent);text-decoration:none">số liệu thô</a></div>
+      <div class="cuon">
+        <div class="the">
+          <div class="dong1"><span class="neo">¶1–¶2</span><span><span class="cham can"></span>Máy · nặng</span></div>
+          <div class="benh">Mở đầu loãng — phút đầu thiếu lời</div>
+          <p>Phút đầu chỉ có ~82 từ. Các tập giữ chân tốt của kênh mở bằng ~126 từ — dày hơn
+            một nửa. Người xem quyết định ở lại trong chính phút này.</p>
+          <div class="bang">82 từ · tập tốt 126 · tập kém 78 — thí nghiệm 21 tập</div>
+          <p class="lam"><b>Nên làm:</b> thêm 1–2 câu vào hook ngay ở outline — chưa tốn tiền voice.</p>
+        </div>
+        <div class="the nguoi">
+          <div class="dong1"><span class="neo">¶1</span><span>bot · 10:22</span></div>
+          <p>Câu "love letters" đắt — giữ nguyên, đừng cho AI viết lại đoạn này.</p>
+        </div>
+        <div class="the">
+          <div class="dong1"><span class="neo">cả bài</span><span><span class="cham"></span>Máy · vừa</span></div>
+          <div class="benh">Ít câu hỏi kéo người xem</div>
+          <p>0,8 câu hỏi mỗi phút — tập tốt hỏi ~1,5 lần. Kịch bản đang kể một chiều.</p>
+          <div class="bang">0,8/phút · tập tốt 1,49 · tập kém 1,16</div>
+        </div>
+        <div class="the">
+          <div class="dong1"><span class="neo">cả bài</span><span><span class="cham"></span>Máy · đạt</span></div>
+          <div class="benh">Mật độ lời cả bài đạt</div>
+          <div class="bang">141 từ/phút ước tính · tập tốt 143 · tập kém 116</div>
+        </div>
+      </div>
+      <div class="ghi-chan" id="w-chot" hidden>Đã chốt v2 · 6 chương ghi ra
+        <code style="font-size:11px">LI106/RenderY/…/script.txt</code> · kiểm hash mỗi giờ.</div>
+    </div>
+  </div>
+</div>
+<!-- ============ TAB 3 · EDITING REVIEW — đúng màn xem hiện có ============ -->
+<div class="pane" id="p-dung">
+  <div class="ctx">
+    <h2>LI106.1</h2>
+    <span class="phu">hieuvn · 04/09 15:20 · 10:02</span>
+    <span class="chip cho">Awaiting review</span>
+    <span class="phai">
+      <button class="nut">Request changes</button>
+      <button class="nut chinh">Approve</button>
+      <button class="nut chu">← Tất cả bản dựng</button>
+    </span>
+  </div>
+  <div class="vr-grid">
+    <div>
+      <div class="vid-wrap"><span>LI106.1.mp4 trên NAS · 02:41 / 10:02</span></div>
+      <div class="moc-bar">
+        <i style="left:6%" title="0:36 bot"></i>
+        <i class="nang" style="left:23%" title="2:18 máy · nặng"></i>
+        <i style="left:41%" title="4:07 bot"></i>
+        <i class="nhe" style="left:64%" title="6:25 máy · nhẹ"></i>
+        <i style="left:87%" title="8:44 bot"></i>
+      </div>
+      <div class="moc-chu">
+        <span><b></b>3 note của người</span>
+        <span><b class="maynang"></b>1 máy · nặng</span>
+        <span><b class="maynhe"></b>1 máy · nhẹ</span>
+      </div>
+      <div style="display:flex;gap:9px;align-items:center;margin-top:8px">
+        <button class="nut" style="font-size:12px">Check this file</button>
+        <span class="mo" style="font-size:12px">Folder on the NAS — dọn dẹp sau khi review xong</span>
+      </div>
+    </div>
+    <div class="bl-panel">
+      <div class="bl-soan">
+        <textarea placeholder="Leave a note… (it lands at the current timestamp)"></textarea>
+        <div class="bl-hang">
+          <label><input type="checkbox" checked> at <b style="color:var(--ink)">02:41</b></label>
+          <button class="nut chu" style="padding:3px 7px">✎ Draw</button>
+          <button class="mau chon" style="background:#ff5f56" type="button"></button>
+          <button class="mau" style="background:#f5c451" type="button"></button>
+          <button class="mau" style="background:#4c8fe0" type="button"></button>
+          <span style="flex:1"></span>
+          <button class="nut chinh" style="padding:5px 12px">Send</button>
+        </div>
+      </div>
+      <div class="bl-soan" style="padding:9px 15px">
+        <button class="nut chu" style="padding:2px 0">Nhờ AI đánh giá</button>
+        <span class="mo" style="font-size:11.5px">· chạy sau khi người đã feedback</span>
+      </div>
+      <div class="cuon">
+        <div class="the">
+          <div class="dong1"><span class="neo">2:18</span><span><span class="cham can"></span>Máy · nặng</span></div>
+          <div class="benh">28 giây không đổi cảnh</div>
+          <p>Đoạn 2:02–2:30 giữ nguyên một khung hình trong khi lời thoại đang cao trào.
+            Nhịp kênh này đổi cảnh mỗi 4,2 giây.</p>
+          <div class="bang">28s · trung vị kênh 4,2s — hồ sơ nhịp life-in</div>
+        </div>
+        <div class="the nguoi">
+          <div class="dong1"><span class="neo">0:36</span><span>bot · 15:41</span></div>
+          <p>Chỗ này chữ trên màn che mất bản đồ — hạ xuống 1/3 dưới.</p>
+        </div>
+        <div class="the nguoi">
+          <div class="dong1"><span class="neo">4:07</span><span>bot · 15:44 · có hình vẽ</span></div>
+          <p>Vùng khoanh đỏ: footage lặp lại của C1, thay bằng clip chợ.</p>
+        </div>
+        <div class="the">
+          <div class="dong1"><span class="neo">6:25</span><span><span class="cham" style="background:var(--line2)"></span>Máy · nhẹ</span></div>
+          <div class="benh">Hook 30 giây đầu hơi thưa lời</div>
+          <div class="bang">104 từ / 30s · tập tốt 126</div>
+        </div>
+        <div class="the nguoi">
+          <div class="dong1"><span class="neo">8:44</span><span>bot · 15:47</span></div>
+          <p>Nhạc nền đè lời — hạ 3dB từ 8:30 tới hết chương.</p>
+        </div>
+      </div>
+      <div class="ghi-chan">Comment người + thẻ máy chung MỘT cột, xếp theo timestamp. Bấm chấm trên
+        thanh mốc là tua tới đúng giây — đúng màn đang chạy thật, không thêm gì khác.</div>
+    </div>
+  </div>
+</div>
+<!-- ============ TAB 4 · PUBLISH REVIEW ============ -->
+<div class="pane" id="p-dang">
+  <div class="ctx">
+    <h2>LI083 — Wine &amp; Shadows</h2>
+    <span class="phu">đăng 21/08 · bản full 31:24 — KHÁC bản 10 phút đã duyệt · neo 3 số tay: khớp</span>
+    <span class="phai"><button class="nut chu">Tất cả tập đã đăng</button></span>
+  </div>
+  <div class="hai">
+    <div class="cot">
+      <div class="khung-vid">
+        <div class="vid-anh"><span>bản full trên NAS · 07:10 / 31:24</span></div>
+        <div class="dothi">
+          <svg viewBox="0 0 400 110" preserveAspectRatio="none" aria-label="Đồ thị giữ chân">
+            <polyline fill="none" stroke="var(--line2)" stroke-width="1"
+              points="0,104 400,104"></polyline>
+            <polyline fill="none" stroke="var(--accent)" stroke-width="2"
+              points="0,6 8,30 16,44 30,52 60,58 90,62 91,74 120,78 150,80 180,82 200,84 205,95 240,97 280,99 330,100 400,102"></polyline>
+            <line x1="16" y1="0" x2="16" y2="110" stroke="var(--accent)" stroke-width="1.5" opacity=".7"></line>
+            <line x1="91" y1="0" x2="91" y2="110" stroke="var(--accent)" stroke-width="1.5" opacity=".7"></line>
+            <line x1="205" y1="0" x2="205" y2="110" stroke="var(--accent)" stroke-width="1.5" opacity=".7"></line>
+          </svg>
+          <div class="nhan"><span>0:00 · 100%</span><span>đồ thị đọc từ ảnh Studio, neo bằng 3 số nhập tay</span><span>31:24 · 4,1%</span></div>
+        </div>
+      </div>
+      <div class="khoi" style="flex:none">
+        <div class="khoi-dau"><b>Kết luận cho tập sau</b><span>3 việc · rút từ các chỗ tụt bên phải</span></div>
+        <table class="bg">
+          <tr><td>Hook nói thẳng chủ đề trong 15 giây đầu — 0:31 mất 9,8% vì vòng vo</td></tr>
+          <tr><td>Chương 2 cắt còn một nửa — 7:10 là đoạn liệt kê giá, người xem bỏ hàng loạt</td></tr>
+          <tr><td>Độ dài mục tiêu ~24 phút — sau phút 24 chỉ còn 6% khán giả, phần đuôi đang phí công dựng</td></tr>
+        </table>
+      </div>
+    </div>
+    <div class="cot">
+      <div class="khoi" style="flex:none">
+        <div class="khoi-dau"><b>Chỗ tụt</b><span>máy phán trước · người sửa được từng thẻ</span></div>
+        <div class="the">
+          <div class="dong1"><span class="neo">0:31</span><span><span class="cham can"></span>tụt 9,8% trong 20 giây · nặng</span></div>
+          <div class="benh">Hook chưa vào chủ đề đã mất người</div>
+          <p>Tới 0:31 kịch bản vẫn đang tả cảnh chưa nói video này về gì. Kịch bản đoạn này:
+            <i>"The morning fog rolls over the Caucasus…"</i> — 43 từ tả cảnh liền nhau.</p>
+          <p class="lam" data-phan><b>Máy phán:</b> lỗi kịch bản — hook vòng vo.
+            <a data-doi>Sửa phán quyết</a></p>
+        </div>
+        <div class="the">
+          <div class="dong1"><span class="neo">7:10</span><span><span class="cham can"></span>tụt 6,2% · nặng</span></div>
+          <div class="benh">Đoạn liệt kê giá — người xem bỏ hàng loạt</div>
+          <p>Kịch bản đọc 6 mức giá liền trong 40 giây, không có chuyện. Đây là điểm tụt sâu nhất
+            ngoài hook.</p>
+          <p class="lam" data-phan><b>Máy phán:</b> lỗi kịch bản — nên kể 1 giá + 1 câu chuyện.
+            <a data-doi>Sửa phán quyết</a></p>
+        </div>
+        <div class="the">
+          <div class="dong1"><span class="neo">17:05</span><span><span class="cham"></span>tụt 3,1% · vừa</span></div>
+          <div class="benh">Tụt sau điểm AVD — ít đổi được kết quả</div>
+          <p>Chỗ này nằm sau thời điểm người xem trung bình đã rời đi. Ghi nhận, không ưu tiên sửa.</p>
+          <p class="lam" data-phan><b>Máy phán:</b> không ưu tiên. <a data-doi>Sửa phán quyết</a></p>
+        </div>
+      </div>
+      <div class="ghi-chan" style="border:0;padding:0 4px">Không OAuth vào hạ tầng: đồ thị lấy từ ảnh
+        chụp Studio, neo bằng 3 số nhập tay — lệch quá 3 điểm phần trăm là từ chối ảnh, thà không có
+        còn hơn số sai. Bản full và bản 10 phút là hai file khác nhau — không bao giờ chiếu timestamp
+        giữa hai bản; mã tập là khóa nối duy nhất.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var tabs = document.querySelectorAll('.tab');
+  function moTab(t){
+    tabs.forEach(function(b){ b.classList.toggle('chon', b.dataset.t === t); });
+    document.querySelectorAll('.pane').forEach(function(p){
+      p.classList.toggle('mo', p.id === 'p-' + t);
+    });
+    dongPhu();
+  }
+  tabs.forEach(function(b){ b.addEventListener('click', function(){ moTab(b.dataset.t); }); });
+  document.querySelectorAll('.nhay').forEach(function(a){
+    a.addEventListener('click', function(){ moTab(a.dataset.t); });
+  });
+  // popup bàn giao dựng: mở khi bấm dòng tập, đóng bằng ✕ / nền / Esc
+  var nen = document.getElementById('phu-nen');
+  function dongPhu(){ nen.classList.remove('mo'); }
+  document.querySelectorAll('.dong-tap').forEach(function(tr){
+    tr.addEventListener('click', function(){
+      document.getElementById('phu-ten').textContent =
+        tr.dataset.tap + (tr.dataset.tap === 'LI106' ? ' — Georgia' : '');
+      nen.classList.add('mo');
+    });
+  });
+  document.getElementById('phu-dong').addEventListener('click', dongPhu);
+  nen.addEventListener('click', function(e){ if (e.target === nen) dongPhu(); });
+  document.addEventListener('keydown', function(e){ if (e.key === 'Escape') dongPhu(); });
+  // Overview: gán run vào tập rồi mở review
+  var nutGan = document.getElementById('nut-gan');
+  nutGan.style.color = 'var(--accent)'; nutGan.style.cursor = 'pointer';
+  nutGan.addEventListener('click', function(){
+    document.getElementById('gan-o').classList.add('mo');
+  });
+  document.getElementById('gan-ok').addEventListener('click', function(){ moTab('viet'); });
+  // Writing: nút chương cuộn tới đúng mục, tự sáng theo vị trí
+  var navNut = document.querySelectorAll('#nav-chuong button');
+  navNut.forEach(function(b){
+    b.addEventListener('click', function(){
+      navNut.forEach(function(x){ x.classList.remove('chon'); });
+      b.classList.add('chon');
+      document.getElementById(b.dataset.c).scrollIntoView({behavior:'smooth', block:'start'});
+    });
+  });
+  // Writing: Approve hai bước
+  var ap = document.getElementById('w-approve'), apBuoc = 0;
+  ap.addEventListener('click', function(){
+    apBuoc++;
+    if (apBuoc === 1){ ap.textContent = 'Chốt v2 & ghi 6 chương ra NAS?'; return; }
+    ap.textContent = 'Đã chốt'; ap.disabled = true;
+    document.getElementById('w-tt').textContent =
+      'kịch bản v2 · 21.874 ký tự ≈ 26 phút @ 140 từ/phút · ĐÃ CHỐT — bàn giao dựng nằm ở Overview';
+    document.getElementById('w-chot').hidden = false;
+  });
+  // Copy: nháy chữ, mockup không copy thật
+  document.querySelectorAll('[data-copy]').forEach(function(a){
+    a.style.color = 'var(--accent)'; a.style.cursor = 'pointer';
+    a.addEventListener('click', function(e){
+      e.stopPropagation();
+      var cu = a.textContent; a.textContent = 'Đã copy';
+      setTimeout(function(){ a.textContent = cu; }, 900);
+    });
+  });
+  // Publish: người sửa phán quyết của máy
+  document.querySelectorAll('[data-doi]').forEach(function(a){
+    a.style.color = 'var(--accent)'; a.style.cursor = 'pointer';
+    a.addEventListener('click', function(){
+      var p = a.closest('[data-phan]');
+      p.innerHTML = '<b>Người sửa:</b> giữ nguyên cảnh — lỗi nằm ở dựng, không phải kịch bản. <span style="color:var(--slate)">bot · vừa sửa</span>';
+    });
+  });
+})();
+</script>

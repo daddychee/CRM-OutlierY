@@ -25,6 +25,11 @@ $env:PYTHONUTF8 = '1'
 # 'API hoan toan du'; pool da chia thi truong, so lieu da dong bo tu V2).
 # ntfy pool goc 1+2 da TAT tren V3 (ke thua V2 bat) — khong push trung topic;
 # pool thi truong moi mac dinh tat, Owner bat sau khi subscribe topic moi.
+# SIET BAO MAT 05/09/2026: danh dau day la CHAY THAT -> gateway se DUNG HAN neu
+# thieu SESSION_SECRET (thay vi tu sinh khoa moi moi lan khoi dong, gay dang nhap
+# chap chon khi co nhieu worker). Dev/test khong dat bien nay nen van tu sinh.
+$env:OUTLIERY_MOI_TRUONG = 'that'
+
 # SIET BAO MAT 05/09/2026 (so docs/bao-mat-internet.md, GD1): 4 app V3 truoc day
 # tin header X-Remote-* VO DIEU KIEN — co app lo ra la curl -H "X-Remote-Level: 5"
 # thanh Owner. Nay chung doi DU CA HAI: co duoi day VA client loopback.

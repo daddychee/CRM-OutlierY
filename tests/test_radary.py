@@ -22,7 +22,7 @@ def conn(tmp_path, monkeypatch):
 
 def _owner(conn):
     return iam.claims_cua(iam.tao_tai_khoan(
-        conn, None, "owner", "mk-owner", "Ban quản trị", 5, phai_doi_mk=False))
+        conn, None, "owner", "MatKhau123", "Ban quản trị", 5, phai_doi_mk=False))
 
 
 def test_hop_dong_radary():
@@ -48,7 +48,7 @@ def test_luat_va_vai_radary_theo_thuong_quy(conn):
         (("", 2), (True, False, False, "viewer")),                     # user "trắng" không nổ
     ]
     for i, ((bp, lv), (vao, them, toan, vai)) in enumerate(ca):
-        iam.tao_tai_khoan(conn, ow, f"u{i}", "123456", bp, lv, _cho_bo_phan_rong=True)
+        iam.tao_tai_khoan(conn, ow, f"u{i}", "MatKhau123", bp, lv, _cho_bo_phan_rong=True)
         u = iam.claims_cua(iam.lay_tai_khoan(conn, f"u{i}"))
         assert iam.co_quyen(u, "vao", "radary", conn) == vao, (bp, lv)
         assert iam.co_quyen(u, "them_video", "radary", conn) == them, (bp, lv)
@@ -73,7 +73,7 @@ def test_sidebar_tu_an_app_da_di_tru():
 
 def test_tick_toan_quyen_phat_manager_khong_len_admin(conn):
     ow = _owner(conn)
-    iam.tao_tai_khoan(conn, ow, "nv", "123456", "Kinh doanh", 2)
+    iam.tao_tai_khoan(conn, ow, "nv", "MatKhau123", "Kinh doanh", 2)
     nv = iam.claims_cua(iam.lay_tai_khoan(conn, "nv"))
     assert iam.vai_cho_app(nv, "radary", conn) == "viewer"
     iam.gan_override(conn, ow, "nv", "radary", "toan_quyen", True, "trực thay Manager")

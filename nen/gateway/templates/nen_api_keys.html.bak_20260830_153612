@@ -1,0 +1,372 @@
+{% extends "nen_base.html" %}
+{% block tieu_de %}API Keys{% endblock %}
+{% block noi_dung %}
+{# Bám mockup ĐÃ DUYỆT docs/mockup-de/api-keys.html (K1-K8) + chuẩn UI A1
+   (toolbar · chip-o · badge · modal chống-bay-dữ-liệu · steps). Route, tên field,
+   gate GIỮ NGUYÊN 100% — chỉ đổi lớp trình bày. Khối khóa hiển thị THEO MỌI LOẠI
+   trong ten_loai (bản cũ hardcode 4 loại — khóa transcript bị vô hình). #}
+{# Owner chốt 17/08 (ảnh chip xếp lưới "không có giá trị gì cả"): Assigned keys
+   (tab 2) đổi từ chip-wrap sang MỘT KHÓA MỘT DÒNG, tối đa 5 dòng + Show more.
+   18/08: Show more đổi sang SERVER-SIDE — server cắt danh sách trước khi gửi
+   HTML, Show more/less là LINK GET thật với ?mo_rong= (JS ẩn/hiện cũ Owner báo
+   không tác dụng trên trình duyệt thật, không tái hiện được). Chuỗi hiển thị
+   khóa dau···duoi qua macro khoa_ngan (đủ nhận diện hơn chỉ-đuôi). #}
+<style>
+  table.gon th, table.gon td{padding:5px 11px}
+  /* Owner chốt 24/08/2026: MỌI khối khóa dùng CHUNG một lưới 6 cột cố định
+     (khối không có Model vẫn giữ ô trống) → các bảng thẳng một trục dọc thay vì
+     mỗi bảng tự co theo nội dung. Bỏ cột Usage + Added cùng đợt. */
+  table.luoi-khoa{table-layout:fixed;width:100%}
+  table.luoi-khoa td{overflow:hidden;text-overflow:ellipsis}
+  /* Tab 2 cùng luật lưới (Owner 24/08): cột 1-2 trước bị bóp làm chữ vỡ 3-4 dòng
+     trong khi Mode/Model/Configured thừa chỗ; cột hành động co theo nội dung nên
+     nút Save mỗi hàng một vị trí. Lưới cố định + form căn PHẢI → Save thẳng cột
+     kể cả hàng không có dropdown. */
+  table.luoi-app{table-layout:fixed;width:100%}
+  table.luoi-app td{vertical-align:top}
+  /* form.dong của base là inline-flex (co theo nội dung) nên justify-content vô
+     hiệu — phải cho nó chiếm trọn ô thì Save mới dính mép phải ở MỌI hàng, kể cả
+     hàng không có dropdown nào. */
+  table.luoi-app td form.dong{display:flex;width:100%;flex-wrap:wrap;
+    justify-content:flex-end;gap:6px}
+  table.luoi-app td form.dong select{flex:1 1 100px;min-width:0;max-width:100%}
+  .khoa-list{display:flex;flex-direction:column;gap:4px}
+  .khoa-list form.khoa-dong{display:flex;justify-content:space-between;align-items:center;gap:8px}
+  .khoa-dong .chip-o{flex:1;text-align:left}
+  /* dropdown "+ key" (kho khóa dự phòng) cùng cỡ với dòng chip — Owner phê:
+     box to hơn các chip khác */
+  .khoa-list form.dong{display:flex;gap:6px;align-items:center}
+  .khoa-list form.dong select{flex:1 1 auto;min-width:0}
+  .khoa-list form.dong select, .khoa-list form.dong button{font-size:.8rem;padding:2px 7px}
+  /* link mở/gọn danh sách phải TRÔNG NHƯ NÚT (Owner 18/08 — anchor chữ trần
+     không ai nhận ra bấm được); luật docs/UI.md đi kèm luật 5-dòng. */
+  a.nut-mo{display:inline-block;border:1px solid var(--vien);border-radius:8px;
+    padding:3px 10px;font-size:.8rem;color:var(--accent);text-decoration:none;
+    cursor:pointer;background:var(--the)}
+  a.nut-mo:hover{background:var(--nen)}
+</style>
+
+{% macro khoa_ngan(dau, duoi) %}{{ dau }}···{{ duoi }}{% endmacro %}
+{# ve_fields: MỌI form POST mang vị trí đang đứng (tab/app/mo_rong) để handler
+   redirect về ĐÚNG chỗ — Owner phê lần 4 "ấn vào quay về đầu trang". ve_mo_rong
+   ở MỌI tab (từ 18/08 tab 1 + 3 cũng có khối mở rộng, không riêng tab 2). #}
+{% macro ve_fields() %}<input type="hidden" name="ve_tab" value="{{ tab }}">{% if tab == 'app' %}<input type="hidden" name="ve_app" value="{{ app_chon }}">{% endif %}<input type="hidden" name="ve_mo_rong" value="{{ mo_rong | sort | join(',') }}">{% endmacro %}
+{# Luật trang API (Owner 18/08 — docs/UI.md): MỌI danh sách mặc định 5 dòng,
+   Show more/less server-side. Macro link dùng chung cho hàng cuối bảng. #}
+{% macro hang_mo_rong(ma, tong, cot=6) %}{% if not (ma in mo_rong or tong <= 5) %}<tr><td colspan="{{ cot }}"><a class="nut-mo" href="{{ url_mo_rong[ma].mo }}">Show more ({{ tong - 5 }})</a></td></tr>{% elif ma in mo_rong and tong > 5 %}<tr><td colspan="{{ cot }}"><a class="nut-mo" href="{{ url_mo_rong[ma].gon }}">Show less</a></td></tr>{% endif %}{% endmacro %}
+
+<div class="toolbar" style="margin-top:2px">
+  <span class="steps">
+    <a class="s {% if tab == 'api' %}on{% endif %}" href="/general/api-keys?tab=api">1 · Add API</a>
+    <a class="s {% if tab == 'app' %}on{% endif %}" href="/general/api-keys?tab=app">2 · Per-app config</a>
+    <a class="s {% if tab == 'log' %}on{% endif %}" href="/general/api-keys?tab=log">3 · Quota log</a>
+  </span>
+  <span class="day"></span>
+  {% if tab == 'api' %}
+  <span class="badge">{{ keys | length }} key{{ 's' if keys | length != 1 }}</span>
+  <button type="button" data-mo="md-key">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> Add API key</button>
+  {% endif %}
+</div>
+
+{% if tab == 'api' %}
+{% for loai, ten in ten_loai.items() %}
+{% set ma_khoi = 'loai:' ~ loai %}
+{% set tong = theo_loai[loai] | length %}
+{% set day_du = ma_khoi in mo_rong or tong <= 5 %}
+<h2>{{ ten }} <span class="badge {% if theo_loai[loai] %}ok{% endif %}">{{ tong }} key{{ 's' if tong != 1 }}</span></h2>
+<table class="gon luoi-khoa">
+  <colgroup><col style="width:22%"><col style="width:22%"><col style="width:22%">
+    <col style="width:12%"><col style="width:11%"><col style="width:11%"></colgroup>
+  {# Model CHỈ có nghĩa với loại llm/generate (= nha_por_loai) — Owner phê lần 4:
+     transcript/youtube hiện ô model là "tự bịa"; ô vẫn GIỮ CHỖ để lưới không lệch. #}
+  <tr>{% if loai in nha_por_loai %}<th>Provider</th>{% else %}<th>#</th>{% endif %}
+    <th>Key (tail)</th><th>{% if loai in nha_por_loai %}Model{% endif %}</th>
+    <th>Calls today</th><th>Status</th><th></th></tr>
+  {% if loai in nha_por_loai %}
+    {% set nha_tuple, nha_info_cuc = nha_por_loai[loai] %}
+    {% set dem = namespace(n=0) %}
+    {% for nha in nha_tuple %}
+      {% for k in theo_loai[loai] if k.nha == nha %}
+      {% if day_du or dem.n < 5 %}
+      {% set dem.n = dem.n + 1 %}
+      <tr><td>{{ nha_info_cuc[nha].ten }}</td>
+        <td><span class="chip-o">{{ khoa_ngan(k.dau, k.duoi) }}</span></td>
+        <td>
+          <form class="dong" method="post" action="/general/api-keys/model">
+            {{ ve_fields() }}
+            <input type="hidden" name="id" value="{{ k.id }}">
+            <select name="model" onchange="this.form.submit()">
+              <option value="{{ k.model }}" selected>{{ k.model or '—' }}</option>
+              {% for m in model_goi_y.get(nha, []) if m != k.model %}
+              <option value="{{ m }}">{{ m }}</option>
+              {% endfor %}
+            </select>
+          </form></td>
+        <td>{{ luot.get(k.duoi, 0) }}</td>
+        <td>{% if k.id in dang_dung %}<span class="badge ok">in use</span>{% else %}<span class="badge">spare</span>{% endif %}</td>
+        <td>
+          <button type="button" class="nguy" style="padding:3px 10px"
+                  data-thu-hoi="{{ k.id }}" data-khoa="{{ khoa_ngan(k.dau, k.duoi) }}">Revoke</button></td></tr>
+      {% endif %}
+      {% endfor %}
+      {% if theo_loai[loai] | selectattr('nha', 'equalto', nha) | list | length == 0 %}
+      <tr><td>{{ nha_info_cuc[nha].ten }}</td><td><span class="badge">no key yet</span></td>
+        <td>—</td><td>—</td><td>—</td><td></td></tr>
+      {% endif %}
+    {% endfor %}
+  {% else %}
+    {% for k in (theo_loai[loai] if day_du else theo_loai[loai][:5]) %}
+    <tr><td>{{ loop.index }}</td>
+      <td><span class="chip-o">{{ khoa_ngan(k.dau, k.duoi) }}</span></td>
+      <td></td>
+      <td>{{ luot.get(k.duoi, 0) }}</td>
+      <td>{% if k.id in dang_dung %}<span class="badge ok">in use</span>{% else %}<span class="badge">spare</span>{% endif %}</td>
+      <td>
+        <button type="button" class="nguy" style="padding:3px 10px"
+                data-thu-hoi="{{ k.id }}" data-khoa="{{ khoa_ngan(k.dau, k.duoi) }}">Revoke</button></td></tr>
+    {% else %}
+    <tr><td colspan="6" class="phu">No key yet.</td></tr>
+    {% endfor %}
+  {% endif %}
+  {{ hang_mo_rong(ma_khoi, tong) }}
+</table>
+{% endfor %}
+
+{# ===== MODAL Add API key (field y nguyên POST /general/api-keys/add) ===== #}
+<div class="modal-bg" id="md-key">
+  <div class="modal">
+    <h3>Add API key
+      <button type="button" class="dong-x" data-dong="md-key" aria-label="Close">✕</button></h3>
+    <form method="post" action="/general/api-keys/add">
+      {{ ve_fields() }}
+      <div class="form-grid">
+        <div><label>API type</label><select name="loai_chon">
+          <option value="youtube">YouTube Data v3</option>
+          <option value="llm:claude">LLM — Claude</option>
+          <option value="llm:glm">LLM — GLM</option>
+          <option value="llm:gemini">LLM — Gemini</option>
+          <option value="llm:chatgpt">LLM — ChatGPT</option>
+          <option value="llm:deepseek">LLM — Deepseek</option>
+          <option value="generate:veo">Generate — VEO</option>
+          <option value="generate:seedream">Generate — Seedream</option>
+          <option value="transcript">YouTube Transcript</option>
+          <option value="serp:serpapi">SERP — SerpAPI</option>
+          <option value="serp:serper">SERP — Serper.dev</option>
+          <option value="serp:searchapi">SERP — SearchAPI.io</option>
+          <option value="apify">Apify (scraper thuê)</option>
+        </select></div>
+        <div><label>Key (never shown again)</label><input name="khoa" type="password" required></div>
+        <div><label>Default model</label><input name="model" autocomplete="off"></div>
+      </div>
+      <div style="margin-top:14px"><button>Save key</button>
+        <button type="button" class="phu" data-dong="md-key">Cancel</button></div>
+    </form>
+  </div>
+</div>
+
+{# ===== MODAL Revoke dùng chung (Owner phê lần 4: ô inline "tail" bé xíu không
+   ai nhận ra phải gõ trước — giờ nút Revoke mở modal xác nhận; route + field
+   server GIỮ NGUYÊN, JS chỉ đổ id + chuỗi khóa vào). ===== #}
+<div class="modal-bg" id="md-revoke">
+  <div class="modal">
+    <h3>Revoke key <span class="chip-o" id="rv-khoa"></span>
+      <button type="button" class="dong-x" data-dong="md-revoke" aria-label="Close">✕</button></h3>
+    <form method="post" action="/general/api-keys/revoke">
+      {{ ve_fields() }}
+      <input type="hidden" name="id" id="rv-id" value="">
+      <div class="form-grid">
+        <div><label>Type the 4-char tail to confirm</label>
+          <input name="go_lai" id="rv-go-lai" autocomplete="off" required></div>
+      </div>
+      <div style="margin-top:14px"><button class="nguy">Revoke</button>
+        <button type="button" class="phu" data-dong="md-revoke">Cancel</button></div>
+    </form>
+  </div>
+</div>
+
+{% elif tab == 'app' %}
+<h2>Per-app configuration</h2>
+{% if viec_api %}
+<form class="toolbar" method="get" action="/general/api-keys">
+  <input type="hidden" name="tab" value="app">
+  <select name="app" onchange="this.form.submit()">
+    {% for slug, muc in viec_api.items() %}
+    <option value="{{ slug }}"{% if slug == app_chon %} selected{% endif %}>{{ slug }} ({{ muc.ten }})</option>
+    {% endfor %}
+  </select>
+</form>
+{% set cap_app = cap_phat.get(app_chon, {}) %}
+<table class="gon luoi-app">
+  <colgroup><col style="width:16%"><col style="width:11%"><col style="width:24%">
+    <col style="width:9%"><col style="width:11%"><col style="width:8%">
+    <col style="width:21%"></colgroup>
+  <tr><th>App task (from contract)</th><th>API type</th><th>Assigned keys</th>
+    <th>Mode</th><th>Model</th><th>Configured</th><th></th></tr>
+  {% for v in viec_api[app_chon].viec %}
+  {% set muc = cap_app.get(v.ma, {}) %}
+  {% set ids = muc.get('khoa', []) %}
+  <tr><td>{{ v.ten }}</td><td>{{ ten_loai.get(v.loai, v.loai) }}</td>
+    <td>
+      <div class="khoa-list">
+      {% set day_du = v.ma in mo_rong or ids | length <= 5 %}
+      {% for kid in (ids if day_du else ids[:5]) %}
+        {% for k in keys if k.id == kid %}
+        <form class="khoa-dong" method="post" action="/general/api-keys/cap-phat">
+          {{ ve_fields() }}
+          <input type="hidden" name="app_slug" value="{{ app_chon }}">
+          <input type="hidden" name="viec" value="{{ v.ma }}">
+          <input type="hidden" name="go" value="{{ kid }}">
+          <span class="chip-o">{% if k.nha %}{{ k.nha }} {% endif %}{{ khoa_ngan(k.dau, k.duoi) }}</span>
+          <button class="phu" style="padding:1px 7px" title="Remove">✕</button>
+        </form>
+        {% endfor %}
+      {% endfor %}
+      {% if not day_du %}
+      <a class="nut-mo" href="{{ url_mo_rong[v.ma].mo }}">Show more ({{ ids | length - 5 }})</a>
+      {% elif v.ma in mo_rong and ids | length > 5 %}
+      <a class="nut-mo" href="{{ url_mo_rong[v.ma].gon }}">Show less</a>
+      {% endif %}
+      {% set con_lai = keys | selectattr('loai', 'equalto', v.loai) | rejectattr('id', 'in', ids) | list %}
+      {% if con_lai %}
+      <form class="dong" method="post" action="/general/api-keys/cap-phat">
+        {{ ve_fields() }}
+        <input type="hidden" name="app_slug" value="{{ app_chon }}">
+        <input type="hidden" name="viec" value="{{ v.ma }}">
+        <select name="them">
+          {# nhãn đầu (disabled) — Owner phê: phải nói rõ đây là KHO KHÓA DỰ
+             PHÒNG chưa gán; chưa chọn gì mà bấm + thì server nhận them rỗng =
+             không đổi gì (an toàn) #}
+          <option value="" disabled selected>— spare keys ({{ con_lai | length }}) —</option>
+          {% for k in con_lai %}
+          <option value="{{ k.id }}">{% if k.nha %}{{ k.nha }} {% endif %}{{ khoa_ngan(k.dau, k.duoi) }}</option>
+          {% endfor %}
+        </select>
+        <button class="phu">
+          <svg class="ic" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> key</button>
+      </form>
+      {% elif not ids %}<span class="badge bad">no key of this type — add in tab 1</span>{% endif %}
+      </div>
+    </td>
+    <td>{% if ids | length > 1 %}<span class="badge warn">{{ {'xoay_vong': 'rotate', 'du_phong': 'failover'}.get(muc.get('che_do'), 'rotate') }} · {{ ids | length }} keys</span>
+        {% elif ids %}<span class="badge">single key</span>{% else %}—{% endif %}</td>
+    {# Model CHỈ có nghĩa với llm/generate — Owner phê lần 4: task transcript
+       hiện ô model (kèm gợi ý GLM từ autocomplete trình duyệt) là "tự bịa". #}
+    {% set khoa_dau = (keys | selectattr('id', 'equalto', ids[0]) | list | first) if ids else none %}
+    <td>{% if v.loai in ('llm', 'generate') %}
+          {% if muc.get('model') %}{{ muc.get('model') }}
+          {% elif khoa_dau and khoa_dau.model %}<span class="phu">{{ khoa_dau.model }} (theo khóa)</span>
+          {% else %}—{% endif %}
+        {% else %}—{% endif %}</td>
+    <td class="phu">{{ muc.get('ngay') or '—' }}</td>
+    <td>
+      <form class="dong" method="post" action="/general/api-keys/cap-phat">
+        {{ ve_fields() }}
+        <input type="hidden" name="app_slug" value="{{ app_chon }}">
+        <input type="hidden" name="viec" value="{{ v.ma }}">
+        {% if ids | length > 1 %}
+        <select name="che_do">
+          <option value="xoay_vong"{% if muc.get('che_do') != 'du_phong' %} selected{% endif %}>rotate</option>
+          <option value="du_phong"{% if muc.get('che_do') == 'du_phong' %} selected{% endif %}>failover</option>
+        </select>
+        {% endif %}
+        {# Dropdown thay ô gõ tay (Owner 22/08): model phải CHỌN từ gợi ý theo
+           nhà của khóa đầu — gõ tay là nguồn sai chính tả id model. Giá trị hiện
+           hành luôn còn trong danh sách kể cả khi không nằm trong gợi ý. #}
+        {% if v.loai in ('llm', 'generate') %}
+        {% set goi_y = model_goi_y.get(khoa_dau.nha, []) if khoa_dau else [] %}
+        <select name="model">
+          <option value="{{ model_theo_khoa }}">— theo khóa{% if khoa_dau and khoa_dau.model %} ({{ khoa_dau.model }}){% endif %} —</option>
+          {% if muc.get('model') and muc.get('model') not in goi_y %}
+          <option value="{{ muc.get('model') }}" selected>{{ muc.get('model') }}</option>
+          {% endif %}
+          {% for m in goi_y %}
+          <option value="{{ m }}"{% if muc.get('model') == m %} selected{% endif %}>{{ m }}</option>
+          {% endfor %}
+        </select>
+        {% endif %}
+        <button style="padding:3px 12px">Save</button>
+      </form></td></tr>
+  {% endfor %}
+</table>
+{% else %}
+<p class="phu">No app declares viec_api in its contract yet.</p>
+{% endif %}
+
+{% elif tab == 'log' %}
+<h2>Quota log</h2>
+<form class="toolbar" method="get" action="/general/api-keys">
+  <input type="hidden" name="tab" value="log">
+  <input type="date" name="ngay" value="{{ ngay }}">
+  <select name="loc_api">
+    <option value="">API: All</option>
+    {% for lo, ten in ten_loai.items() %}
+    <option value="{{ lo }}"{% if loc.api == lo %} selected{% endif %}>{{ ten }}</option>
+    {% endfor %}
+  </select>
+  <select name="loc_khoa">
+    <option value="">Key: All</option>
+    {% for k in keys %}
+    <option value="{{ k.duoi }}"{% if loc.khoa == k.duoi %} selected{% endif %}>{{ khoa_ngan(k.dau, k.duoi) }}</option>
+    {% endfor %}
+  </select>
+  <input name="loc_app" size="12" placeholder="App" value="{{ loc.app }}">
+  <button class="phu">Filter</button>
+  <span class="day"></span>
+  <a class="chip-o" style="padding:6px 11px" href="/general/api-keys/export?ngay={{ ngay }}&loc_api={{ loc.api }}&loc_khoa={{ loc.khoa }}&loc_app={{ loc.app }}">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 11l5 5 5-5"/><path d="M5 21h14"/></svg> Export CSV</a>
+</form>
+{% set day_du_log = 'log' in mo_rong or log_rows | length <= 5 %}
+<table class="gon">
+  <tr><th>Time</th><th>API</th><th>Key</th><th>App</th><th>Task</th>
+    <th>Calls</th><th>Quota used</th></tr>
+  {% for d in (log_rows if day_du_log else log_rows[:5]) %}
+  <tr><td class="phu">{{ d.luc }}</td><td>{{ ten_loai.get(d.api, d.api) }}</td>
+    <td><span class="chip-o">{{ khoa_ngan(dau_theo_duoi.get(d.khoa_duoi, ''), d.khoa_duoi) }}</span></td>
+    <td>{{ d.app }}</td><td>{{ d.viec }}</td>
+    <td>{{ d.luot }}</td><td>{{ d.quota_tieu or '—' }}</td></tr>
+  {% else %}
+  <tr><td colspan="7" class="phu">No usage logged yet.</td></tr>
+  {% endfor %}
+  {{ hang_mo_rong('log', log_rows | length, 7) }}
+</table>
+{% endif %}
+
+<script>
+// JS THUẦN — modal chuẩn A1 (mousedown+click cùng trên nền mới đóng, Esc, ✕).
+(function () {
+  document.querySelectorAll('[data-mo]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      document.getElementById(b.dataset.mo).classList.add('show');
+    });
+  });
+  document.querySelectorAll('[data-dong]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      document.getElementById(b.dataset.dong).classList.remove('show');
+    });
+  });
+  document.querySelectorAll('.modal-bg').forEach(function (bg) {
+    var tuNen = false;
+    bg.addEventListener('mousedown', function (e) { tuNen = (e.target === bg); });
+    bg.addEventListener('click', function (e) { if (tuNen && e.target === bg) bg.classList.remove('show'); });
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') document.querySelectorAll('.modal-bg.show').forEach(
+      function (bg) { bg.classList.remove('show'); });
+  });
+
+  // Revoke: nút mỗi dòng mở MODAL xác nhận dùng chung — JS chỉ đổ id + chuỗi
+  // khóa vào; route/field server giữ nguyên (validate gõ lại đuôi ở server).
+  document.querySelectorAll('[data-thu-hoi]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      document.getElementById('rv-id').value = b.dataset.thuHoi;
+      document.getElementById('rv-khoa').textContent = b.dataset.khoa;
+      var o = document.getElementById('rv-go-lai');
+      o.value = '';
+      document.getElementById('md-revoke').classList.add('show');
+      o.focus();
+    });
+  });
+})();
+</script>
+{% endblock %}

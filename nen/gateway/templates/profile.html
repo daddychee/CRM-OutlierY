@@ -40,7 +40,7 @@
 
   <h2>Personal info</h2>
   <div class="khoi">
-    <form method="post" action="/profile">
+    <form method="post" action="/profile">{{ o_csrf(request) }}
       <label>Display name (shown at the bottom of the sidebar)</label>
       <input name="ten_hien_thi" value="{{ tk.ten_hien_thi or '' }}" maxlength="80"
              placeholder="e.g. Nguyễn Văn A">
@@ -58,7 +58,7 @@
 
   <h2>Change password</h2>
   <div class="khoi">
-    <form method="post" action="/profile/mat-khau">
+    <form method="post" action="/profile/mat-khau">{{ o_csrf(request) }}
       <label>Current password</label>
       <input name="mk_hien_tai" type="password" required>
       <label>New password</label>

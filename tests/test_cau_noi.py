@@ -61,8 +61,8 @@ def test_quyen_nguoi_hoi_bi_chan_noi_thang(he):
     )["loai"] != "khong_du_quyen"
 
     ow = iam.claims_cua(iam.tao_tai_khoan(
-        he, None, "owner-test", "mk-test", "Ban quản trị", 5, phai_doi_mk=False))
-    iam.tao_tai_khoan(he, ow, "vh", "mk-vh-6", "Vận hành - Sản xuất", 2,
+        he, None, "owner-test", "MatKhau123", "Ban quản trị", 5, phai_doi_mk=False))
+    iam.tao_tai_khoan(he, ow, "vh", "MatKhau123", "Vận hành - Sản xuất", 2,
                       phai_doi_mk=False)
     iam.gan_override(he, ow, "vh", "data-analytics", "vao", False, "tạm khóa bàn giao")
 

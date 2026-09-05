@@ -61,14 +61,14 @@ def test_tat_ca_vao_api_tong_hop(san, tmp_path, monkeypatch):
     monkeypatch.setenv("IAM_DB", str(tmp_path / "iam.db"))
     monkeypatch.setattr(bcrypt, "gensalt", lambda rounds=12: _goc(4))
     conn = iam.ket_noi()
-    iam.tao_tai_khoan(conn, None, "owner-test", "mk-test", "Ban quản trị", 5,
+    iam.tao_tai_khoan(conn, None, "owner-test", "MatKhau123", "Ban quản trị", 5,
                       phai_doi_mk=False)
     conn.close()
     from nen.gateway import main as gw
     monkeypatch.setattr(gw, "doc_hop_dong", lambda: [])
     monkeypatch.setattr(gw, "_apify_credit", lambda: None)
     client = TestClient(gw.app, follow_redirects=False)
-    client.post("/login", data={"ten": "owner-test", "mat_khau": "mk-test"})
+    client.post("/login", data={"ten": "owner-test", "mat_khau": "MatKhau123"})
     b = client.get("/general/api/giam-sat/tong-hop").json()
     assert "so_do" in b
     assert [n["ma"] for n in b["so_do"]["stub-app"]["nut"]][0] == "team"

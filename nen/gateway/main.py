@@ -23,7 +23,7 @@ from itsdangerous import BadSignature, URLSafeTimedSerializer
 
 from nen.common import nas_sync
 from nen.common.hop_dong import doc_hop_dong, tim_app
-from nen.common import token_noi_bo
+from nen.common import chan_do, csrf, token_noi_bo
 from nen.common.proxy import chuyen_tiep
 from nen.iam import iam
 from nen.ket_cau_hinh import ket
@@ -33,12 +33,46 @@ load_dotenv(ROOT / ".env")
 
 # Không có SESSION_SECRET trong .env → sinh tạm mỗi lần chạy (dev): restart là phải
 # đăng nhập lại. Bản thay thế THẬT bắt buộc đặt trong .env (CAI-DAT lo).
-SESSION_SECRET = os.environ.get("SESSION_SECRET") or secrets.token_hex(32)
+# SIẾT 05/09 (mục N4): thiếu SESSION_SECRET thì TRƯỚC ĐÂY tự sinh khóa mới mỗi
+# lần khởi động — app vẫn chạy nên lỗi ẩn hoàn toàn. Hệ quả khi ra Internet
+# (thường thêm worker): MỖI WORKER MỘT KHÓA → cookie worker A ký bị worker B từ
+# chối → đăng nhập chập chờn không giải thích được.
+# Chạy thật (OUTLIERY_MOI_TRUONG=that) → thiếu secret là DỪNG HẲN, không đoán.
+SESSION_SECRET = os.environ.get("SESSION_SECRET") or ""
+if not SESSION_SECRET:
+    if os.environ.get("OUTLIERY_MOI_TRUONG", "").strip().lower() == "that":
+        raise RuntimeError(
+            "Thiếu SESSION_SECRET — đặt biến môi trường này trước khi chạy thật. "
+            "Không tự sinh vì mỗi worker sẽ có một khóa khác nhau.")
+    SESSION_SECRET = secrets.token_hex(32)      # dev/test: tự sinh như cũ
 COOKIE_TEN = "outliery_v2_phien"
 PHIEN_TTL = 30 * 24 * 3600  # 30 ngày, như hệ cũ
 
 app = FastAPI(title="OUTLIERY Gateway v2")
 templates = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
+
+
+def _o_csrf(request) -> str:
+    """Ô ẩn CSRF cho form — dùng trong template: {{ o_csrf(request) }}
+
+    SIẾT 05/09/2026 (mục N1): mọi form POST phải có ô này, nếu không middleware
+    `_chan_csrf` trả 403. Đặt làm Jinja global để 31 form chỉ cần thêm một dòng,
+    không phải sửa 38 route để truyền token qua context.
+    Chưa đăng nhập → chuỗi rỗng (form /login được miễn trừ).
+    """
+    from markupsafe import Markup
+    ma = request.cookies.get(COOKIE_TEN)
+    if not ma:
+        return Markup("")
+    try:
+        ten = _ky.loads(ma, max_age=PHIEN_TTL)
+    except BadSignature:
+        return Markup("")
+    return Markup(f'<input type="hidden" name="{csrf.TEN_TRUONG}" '
+                  f'value="{csrf.sinh_token(ten)}">')
+
+
+templates.env.globals["o_csrf"] = _o_csrf
 # /static dùng chung cả hệ (font Inter/Space Grotesk, theme.js, markdown.js) —
 # bản CHUẨN ở nen/gateway/static; app nào cần bản riêng thì khai /static trong
 # tien_to như ai-agent. Thiếu mount này là DA/to-chuc mất font (đo 16/08).
@@ -67,6 +101,46 @@ app.mount("/static", StaticCache(directory=str(Path(__file__).parent / "static")
 _ky = URLSafeTimedSerializer(SESSION_SECRET, salt="phien-v2")
 
 
+# ── CSRF (SIẾT 05/09/2026, sổ docs/bao-mat-internet.md mục N1) ─────────────────
+# Middleware MỘT CHỖ thay vì sửa 38 route: mọi phương thức GHI phải mang token
+# hợp lệ (form `_csrf` hoặc header `X-CSRF-Token`). Token gắn với TÊN NGƯỜI DÙNG
+# nên token của A không dùng được cho phiên của B.
+#
+# MIỄN TRỪ có chủ đích:
+#   - /login, /khoi-phuc: chưa có phiên thì chưa có token; đây là cửa vào, được
+#     bảo vệ bằng rate-limit (cùng đợt GĐ4) chứ không phải CSRF.
+#   - /app/<slug>/… : proxy sang app phụ — app tự lo cửa của nó; chặn ở đây sẽ
+#     phá mọi thao tác của 7 app mà không thêm an toàn (chúng đã sau cùng cookie).
+#   - Request KHÔNG có phiên: không có gì để giả mạo (CSRF cần phiên nạn nhân).
+_CSRF_MIEN_TRU = ("/login", "/logout", "/khoi-phuc", "/app/", "/static/", "/api/cau-hinh/")
+_GHI = {"POST", "PUT", "PATCH", "DELETE"}
+
+
+@app.middleware("http")
+async def _chan_csrf(request: Request, call_next):
+    if request.method in _GHI and not request.url.path.startswith(_CSRF_MIEN_TRU):
+        ten = None
+        ma = request.cookies.get(COOKIE_TEN)
+        if ma:
+            try:
+                ten = _ky.loads(ma, max_age=PHIEN_TTL)
+            except BadSignature:
+                ten = None
+        if ten:                       # chỉ kiểm khi CÓ phiên (xem docstring)
+            token = request.headers.get(csrf.TEN_HEADER)
+            if not token:
+                try:
+                    form = await request.form()
+                    token = form.get(csrf.TEN_TRUONG)
+                except Exception:
+                    token = None
+            if not csrf.kiem_token(token, ten):
+                return JSONResponse(
+                    {"loi": "Phiên làm việc đã cũ hoặc yêu cầu không hợp lệ. "
+                            "Hãy tải lại trang rồi thử lại."}, status_code=403)
+    return await call_next(request)
+
+
 # ---------- session (nguồn user: iam.db, đọc SỐNG mỗi request) ----------
 
 def user_hien_tai(request: Request) -> dict | None:
@@ -77,11 +151,20 @@ def user_hien_tai(request: Request) -> dict | None:
         ten = _ky.loads(ma, max_age=PHIEN_TTL)
     except BadSignature:
         return None
+    # SIẾT 05/09 (mục N3): đối chiếu MỐC THU HỒI — cookie ký TRƯỚC mốc là chết.
+    # Trước đây đổi mật khẩu KHÔNG giết phiên cũ; cookie cắp được dùng trọn 30 ngày.
+    try:
+        _, ky_luc = _ky.loads(ma, max_age=PHIEN_TTL, return_timestamp=True)
+        ky_luc = int(ky_luc.timestamp())
+    except Exception:
+        ky_luc = None
     conn = iam.ket_noi()
     try:
         tk = iam.lay_tai_khoan(conn, ten)
         if not tk or tk["khoa"]:
             return None  # user bị xóa/khóa → phiên chết theo (đọc sống)
+        if ky_luc is not None and not iam.phien_con_hieu_luc(conn, ten, ky_luc):
+            return None  # phiên đã bị thu hồi (đổi mật khẩu / Owner reset)
         # CẤP TRUY CẬP (acting — Permissions v2) áp MỘT chỗ ngay lúc dựng claims:
         # mọi kiểm quyền phía sau (gate nền + proxy app) tự ăn level hiệu lực.
         claims = iam.hieu_luc(iam.claims_cua(tk), conn)
@@ -144,6 +227,15 @@ def login_gui(request: Request, ten: str = Form(""), mat_khau: str = Form("")):
     người login đồng thời làm cả cổng đứng (đo thật load test 16/08: trung vị
     44.6s/phiên → sửa xong đo lại phải <2s). FastAPI tự chạy route sync trong
     threadpool."""
+    # SIẾT 05/09 (mục N2): chặn TRƯỚC khi chạy bcrypt — vừa chống dò mật khẩu,
+    # vừa đóng đường DoS cạn threadpool (bcrypt sync, xem docstring route).
+    ip = request.client.host if request.client else "?"
+    if chan_do.bi_chan(ten, ip):
+        cho = chan_do.con_lai(ten, ip)
+        return templates.TemplateResponse(
+            request, "login.html",
+            {"loi": f"Sai quá nhiều lần — thử lại sau {cho} giây.",
+             "che_do_mo": False}, status_code=429)
     conn = iam.ket_noi()
     try:
         claims = iam.xac_thuc(conn, ten, mat_khau)
@@ -154,10 +246,12 @@ def login_gui(request: Request, ten: str = Form(""), mat_khau: str = Form("")):
     finally:
         conn.close()
     if not claims:
+        chan_do.ghi_that_bai(ten, ip)
         return templates.TemplateResponse(
             request, "login.html",
             {"loi": "Wrong username or password.", "che_do_mo": False},
             status_code=401)
+    chan_do.ghi_thanh_cong(ten, ip)
     resp = RedirectResponse("/", status_code=303)
     resp.set_cookie(COOKIE_TEN, _ky.dumps(claims["ten"]), max_age=PHIEN_TTL,
                     httponly=True, samesite="lax", domain=_mien_cookie(request))
@@ -2446,7 +2540,10 @@ def nen_cu(request: Request, duong: str):
     moi = _NEN_CU.get(duong, "/general")
     if request.url.query:
         moi += "?" + request.url.query
-    return RedirectResponse(moi, status_code=307 if request.method == "POST" else 303)
+    # SIẾT 05/09 (mục N1): 307 GIỮ NGUYÊN method + body → là bàn đạp biến một
+    # điều hướng thành POST thay mặt nạn nhân. Đường này chỉ để đỡ bookmark cũ,
+    # không cần chuyển tiếp dữ liệu → 303 (đổi về GET) cho cả hai phương thức.
+    return RedirectResponse(moi, status_code=303)
 
 
 # ---------- cầu nối: hỏi số liệu (P6) ----------

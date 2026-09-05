@@ -72,7 +72,7 @@
   <div class="modal">
     <h3><span id="md-niche-tieu">New niche</span>
       <button type="button" class="dong-x" data-dong="md-niche" aria-label="Close">✕</button></h3>
-    <form method="post" id="f-niche" action="/general/niches/create">
+    <form method="post" id="f-niche" action="/general/niches/create">{{ o_csrf(request) }}
       <input type="hidden" name="ma" id="f-niche-ma" disabled>
       <div class="form-grid">
         <div><label>Name</label><input name="ten_chuan" id="f-niche-ten" required></div>
@@ -96,7 +96,7 @@
     </form>
     <div id="md-niche-them" hidden>
       <h3 style="margin-top:16px">Aliases</h3>
-      <form class="dong" method="post" action="/general/niches/alias">
+      <form class="dong" method="post" action="/general/niches/alias">{{ o_csrf(request) }}
         <input type="hidden" name="ma" class="f-ma-phu">
         <input name="bi_danh" placeholder="alias" required>
         <button name="viec" value="them">Add</button>
@@ -104,7 +104,7 @@
       </form>
       {% if la_owner %}
       <h3 style="margin-top:16px">Niche Research link</h3>
-      <form class="dong" method="post" action="/general/niches/link">
+      <form class="dong" method="post" action="/general/niches/link">{{ o_csrf(request) }}
         <input type="hidden" name="ma" class="f-ma-phu">
         <input name="khoa" id="f-niche-link" placeholder="project key (empty = unlink)">
         <button>Link</button>
@@ -119,7 +119,7 @@
   <div class="modal">
     <h3><span id="md-market-tieu">New market</span>
       <button type="button" class="dong-x" data-dong="md-market" aria-label="Close">✕</button></h3>
-    <form method="post" id="f-market" action="/general/markets/create">
+    <form method="post" id="f-market" action="/general/markets/create">{{ o_csrf(request) }}
       <input type="hidden" name="ma" id="f-market-ma" disabled>
       <div class="form-grid">
         <div><label>Market</label><input name="ten" id="f-market-ten" required></div>

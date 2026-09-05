@@ -1,0 +1,12 @@
+-- SIẾT BẢO MẬT 05/09/2026 (sổ docs/bao-mat-internet.md mục N3)
+--
+-- LỖ: cookie phiên TTL 30 ngày, KHÔNG có bảng phiên nên KHÔNG thu hồi được.
+-- `user_hien_tai` chỉ kiểm tài khoản còn tồn tại + cờ khóa, nên ĐỔI MẬT KHẨU
+-- KHÔNG GIẾT PHIÊN CŨ — cookie bị đánh cắp dùng được trọn 30 ngày, cách duy
+-- nhất cắt là khóa hẳn tài khoản.
+--
+-- CÁCH LÀM NHẸ NHẤT (không dựng bảng phiên đầy đủ): mỗi tài khoản giữ một MỐC
+-- THỜI GIAN; cookie ký TRƯỚC mốc đó coi như hết hiệu lực. Đổi mật khẩu / Owner
+-- reset / user tự đăng xuất mọi nơi → đẩy mốc lên hiện tại là mọi phiên cũ chết.
+-- Đủ cho nhu cầu thu hồi, không phải migration nặng, không đổi luồng đăng nhập.
+ALTER TABLE tai_khoan ADD COLUMN phien_tu_luc TEXT NOT NULL DEFAULT '';

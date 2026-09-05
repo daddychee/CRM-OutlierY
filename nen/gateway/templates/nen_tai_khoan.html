@@ -16,7 +16,7 @@
       {% if tk.phai_doi_mk %}<span class="chip">must change pw</span>{% endif %}
     </td>
     <td>
-      <form class="dong" method="post" action="/general/accounts/update">
+      <form class="dong" method="post" action="/general/accounts/update">{{ o_csrf(request) }}
         <input type="hidden" name="ten" value="{{ tk.ten }}">
         <select name="hanh_dong">
           <option value="level">set level =</option>
@@ -40,7 +40,7 @@
 <h2>Create account <span class="phu" style="font-weight:400">
   (new users must change password at first sign-in)</span></h2>
 <div class="khoi">
-  <form class="dong" method="post" action="/general/accounts/create">
+  <form class="dong" method="post" action="/general/accounts/create">{{ o_csrf(request) }}
     <input name="ten" placeholder="username (a-z0-9._-)" required>
     <input name="mat_khau" placeholder="temporary password" required>
     <input name="bo_phan" placeholder="department" required>

@@ -14,13 +14,13 @@ def main() -> None:
     if iam.dem_tai_khoan(conn) > 0:
         print("iam.db đã có tài khoản — không ghi đè. Xóa data/nen/iam.db nếu muốn làm lại.")
         return
-    owner = iam.tao_tai_khoan(conn, None, "owner", "test123", "Ban quản trị", 5,
+    owner = iam.tao_tai_khoan(conn, None, "owner", "MatKhau123", "Ban quản trị", 5,
                               phai_doi_mk=False)
     claims_owner = iam.claims_cua(owner)
-    iam.tao_tai_khoan(conn, claims_owner, "quanly", "test123", "Kinh doanh", 4,
+    iam.tao_tai_khoan(conn, claims_owner, "quanly", "MatKhau123", "Kinh doanh", 4,
                       phai_doi_mk=False)
     iam.sua_tai_khoan(conn, claims_owner, "quanly", admin_uy_quyen=True)
-    iam.tao_tai_khoan(conn, claims_owner, "nhanvien", "test123",
+    iam.tao_tai_khoan(conn, claims_owner, "nhanvien", "MatKhau123",
                       "Vận hành - Sản xuất", 2, phai_doi_mk=False)
     print("Đã tạo trong iam.db: owner(L5) / quanly(L4, Admin ủy quyền) / "
           "nhanvien(L2) — mật khẩu: test123")

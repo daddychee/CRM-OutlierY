@@ -30,8 +30,8 @@ def iam_db(tmp_path, monkeypatch):
     monkeypatch.setattr(bcrypt, "gensalt", lambda rounds=12: _gensalt_goc(4))
     conn = iam.ket_noi()
     ow = iam.claims_cua(iam.tao_tai_khoan(
-        conn, None, "owner-test", "mk-test", "Ban quản trị", 5, phai_doi_mk=False))
-    iam.tao_tai_khoan(conn, ow, "nhanvien", "mk-nv-6", "Kinh doanh", 2,
+        conn, None, "owner-test", "MatKhau123", "Ban quản trị", 5, phai_doi_mk=False))
+    iam.tao_tai_khoan(conn, ow, "nhanvien", "MatKhau123", "Kinh doanh", 2,
                       phai_doi_mk=False)
     conn.close()
     return tmp_path / "iam.db"
@@ -42,7 +42,7 @@ def client(iam_db):
     return TestClient(gateway_app, follow_redirects=False)
 
 
-def _login(client, ten="owner-test", mk="mk-test"):
+def _login(client, ten="owner-test", mk="MatKhau123"):
     return client.post("/login", data={"ten": ten, "mat_khau": mk})
 
 
@@ -129,7 +129,7 @@ def test_dang_nhap_dung_goi_nas_dong_bo_nhom_toan_quyen(client, iam_db, monkeypa
     monkeypatch.setattr(gw.nas_sync, "dong_bo_nen",
                         lambda ten, mk, nhom: ghi.append((ten, mk, nhom)))
     _login(client)
-    assert ghi == [("owner-test", "mk-test", nas_sync.NHOM_TOAN_QUYEN)]
+    assert ghi == [("owner-test", "MatKhau123", nas_sync.NHOM_TOAN_QUYEN)]
 
 
 def test_dang_nhap_level_thap_goi_nhom_chi_them(client, iam_db, monkeypatch):
@@ -138,8 +138,8 @@ def test_dang_nhap_level_thap_goi_nhom_chi_them(client, iam_db, monkeypatch):
     ghi = []
     monkeypatch.setattr(gw.nas_sync, "dong_bo_nen",
                         lambda ten, mk, nhom: ghi.append((ten, mk, nhom)))
-    _login(client, "nhanvien", "mk-nv-6")
-    assert ghi == [("nhanvien", "mk-nv-6", nas_sync.NHOM_CHI_THEM)]
+    _login(client, "nhanvien", "MatKhau123")
+    assert ghi == [("nhanvien", "MatKhau123", nas_sync.NHOM_CHI_THEM)]
 
 
 def test_dang_nhap_sai_khong_goi_nas(client, iam_db, monkeypatch):
@@ -160,7 +160,7 @@ def test_tu_doi_mat_khau_cung_dong_bo_nas(client, iam_db, monkeypatch):
     monkeypatch.setattr(gw.nas_sync, "dong_bo_nen",
                         lambda ten, mk, nhom: ghi.append((ten, mk, nhom)))
     r = client.post("/profile/mat-khau",
-                    data={"mk_hien_tai": "mk-test", "mk_moi": "MatKhauMoi9",
+                    data={"mk_hien_tai": "MatKhau123", "mk_moi": "MatKhauMoi9",
                           "mk_lai": "MatKhauMoi9"})
     assert r.status_code == 200
     assert ghi == [("owner-test", "MatKhauMoi9", nas_sync.NHOM_TOAN_QUYEN)]
@@ -176,15 +176,15 @@ def test_api_chua_dang_nhap_tra_401_json(client):
 def test_phai_doi_mk_bi_ep_sang_trang_doi(client, iam_db):
     conn = iam.ket_noi()
     ow = iam.claims_cua(iam.lay_tai_khoan(conn, "owner-test"))
-    iam.tao_tai_khoan(conn, ow, "moi", "mk-tam-6", "Kinh doanh", 2)  # phai_doi mặc định
+    iam.tao_tai_khoan(conn, ow, "moi", "MatKhau123", "Kinh doanh", 2)  # phai_doi mặc định
     conn.close()
-    _login(client, "moi", "mk-tam-6")
+    _login(client, "moi", "MatKhau123")
     r = client.get("/")
     assert r.status_code == 303
     assert r.headers["location"] == "/doi-mat-khau"
     # đổi xong thì vào được — "/" giờ PHỤC VỤ thẳng Hỏi–đáp (UI_FLOW.md mục 9),
     # không còn bị ép về /doi-mat-khau nữa
-    client.post("/doi-mat-khau", data={"mk_moi": "mk-moi-6", "mk_lai": "mk-moi-6"})
+    client.post("/doi-mat-khau", data={"mk_moi": "MatKhau123", "mk_lai": "MatKhau123"})
     r = client.get("/")
     assert not (r.status_code == 303
                 and r.headers.get("location") == "/doi-mat-khau")
@@ -195,9 +195,9 @@ def test_phai_doi_mk_bi_ep_sang_trang_doi(client, iam_db):
 def test_quan_tri_nhan_vien_403(client):
     # GET /general/accounts đã nghỉ hưu thành redirect về hub (không gate ở
     # redirect — /hr tự gate bằng cờ); BACKEND POST vẫn phải chặn nhân viên.
-    _login(client, "nhanvien", "mk-nv-6")
+    _login(client, "nhanvien", "MatKhau123")
     r = client.post("/general/accounts/create", data={
-        "ten": "tk-lau", "mat_khau": "mk-tam-6", "bo_phan": "Kinh doanh", "level": 2})
+        "ten": "tk-lau", "mat_khau": "MatKhau123", "bo_phan": "Kinh doanh", "level": 2})
     assert r.status_code == 403
 
 
@@ -214,7 +214,7 @@ def test_general_people_accounts_get_ve_hr_hub(client):
 def test_quan_tri_owner_vao_va_tao_tai_khoan(client):
     _login(client)
     r = client.post("/general/accounts/create", data={
-        "ten": "tk-moi", "mat_khau": "mk-tam-6", "bo_phan": "Kinh doanh", "level": 2})
+        "ten": "tk-moi", "mat_khau": "MatKhau123", "bo_phan": "Kinh doanh", "level": 2})
     assert "Created account tk-moi" in r.text
     conn = iam.ket_noi()
     assert iam.lay_tai_khoan(conn, "tk-moi")["phai_doi_mk"] == 1
@@ -246,21 +246,21 @@ def test_nhan_su_hr_l3_vao_duoc(client, iam_db):
     giờ là redirect về hub → kiểm luật trên BACKEND POST."""
     conn = iam.ket_noi()
     ow = iam.claims_cua(iam.lay_tai_khoan(conn, "owner-test"))
-    iam.tao_tai_khoan(conn, ow, "hr-leader", "mk-hr-6", "Hành chính Nhân sự", 3)
-    iam.doi_mat_khau(conn, ow, "hr-leader", "mk-hr-7", ep_doi_lan_sau=False)
+    iam.tao_tai_khoan(conn, ow, "hr-leader", "MatKhau123", "Hành chính Nhân sự", 3)
+    iam.doi_mat_khau(conn, ow, "hr-leader", "MatKhau123", ep_doi_lan_sau=False)
     conn.close()
-    _login(client, "hr-leader", "mk-hr-7")
+    _login(client, "hr-leader", "MatKhau123")
     r = client.post("/general/people/create",
                     data={"ho_ten": "Người Test HR", "bo_phan": "Kinh doanh"})
     assert "Created profile" in r.text                           # HR L3 tạo được hồ sơ
     r = client.post("/general/accounts/create", data={           # nhưng KHÔNG đụng tài khoản
-        "ten": "tk-hr-lau", "mat_khau": "mk-tam-6", "bo_phan": "Kinh doanh", "level": 2})
+        "ten": "tk-hr-lau", "mat_khau": "MatKhau123", "bo_phan": "Kinh doanh", "level": 2})
     assert r.status_code == 403
     assert client.get("/general/permissions").status_code == 403   # và không vào bảng phân quyền
 
 
 def test_nhan_su_nhan_vien_thuong_403(client):
-    _login(client, "nhanvien", "mk-nv-6")
+    _login(client, "nhanvien", "MatKhau123")
     r = client.post("/general/people/create",
                     data={"ho_ten": "Người Lậu", "bo_phan": "Kinh doanh"})
     assert r.status_code == 403
@@ -302,12 +302,12 @@ def test_khu_general_cap_theo_tung_trang(client, iam_db):
     """
     conn = iam.ket_noi()
     ow = iam.claims_cua(iam.lay_tai_khoan(conn, "owner-test"))
-    iam.tao_tai_khoan(conn, ow, "director", "mk-dir-9", "Kinh doanh", 4,
+    iam.tao_tai_khoan(conn, ow, "director", "MatKhau123", "Kinh doanh", 4,
                       phai_doi_mk=False)
     iam.sua_tai_khoan(conn, ow, "director", admin_uy_quyen=True)
     conn.close()
 
-    _login(client, "director", "mk-dir-9")
+    _login(client, "director", "MatKhau123")
     for duong in ("/general/audit-log", "/general/data-backup",
                   "/general/command-center"):  # applications nghỉ hưu 01/09 → pin đường mới
         assert client.get(duong).status_code == 403, f"{duong} phải Owner-only khi chưa tick"
@@ -322,7 +322,7 @@ def test_khu_general_cap_theo_tung_trang(client, iam_db):
         "lydo__*__general_nhat_ky": "Director giám sát nhật ký"})
     assert r.status_code == 303 and "bao=Saved%201" in r.headers["location"]
 
-    _login(client, "director", "mk-dir-9")
+    _login(client, "director", "MatKhau123")
     assert client.get("/general/audit-log").status_code == 200      # mở đúng trang đã tick
     assert client.get("/general/data-backup").status_code == 403    # trang chưa tick vẫn đóng
     assert client.get("/general/command-center").status_code == 403
@@ -339,7 +339,7 @@ def test_khu_general_cap_theo_tung_trang(client, iam_db):
     assert client.post("/general/permissions/save", data={
         "ten": "nhanvien", "dat__*__general_nhat_ky": "cho",
         "lydo__*__general_nhat_ky": "xem nhật ký"}).status_code == 303
-    _login(client, "nhanvien", "mk-nv-6")
+    _login(client, "nhanvien", "MatKhau123")
     r = client.get("/general")
     assert r.status_code == 303 and r.headers["location"] == "/general/audit-log"
 
@@ -351,7 +351,7 @@ def test_doi_bo_phan_ho_so_keo_theo_tai_khoan(client, iam_db):
     conn = iam.ket_noi()
     ow = iam.claims_cua(iam.lay_tai_khoan(conn, "owner-test"))
     ns = iam.tao_nguoi(conn, ow, "Người Chuyển Phòng", "Vận hành - Sản xuất")
-    iam.tao_tai_khoan(conn, ow, "chuyenphong", "mk-cp-9", "Vận hành - Sản xuất", 2,
+    iam.tao_tai_khoan(conn, ow, "chuyenphong", "MatKhau123", "Vận hành - Sản xuất", 2,
                       nguoi_ma=ns["ma"], phai_doi_mk=False)
     u = iam.claims_cua(iam.lay_tai_khoan(conn, "chuyenphong"))
     assert not iam.co_quyen(u, "vao", "seo-optimize", conn)   # VH L2: chưa vào được SEO
@@ -375,13 +375,13 @@ def test_niches_channels_tick_mo_cho_team(client, iam_db):
     Manager L4+; ô tick THẮNG cả hai chiều: mở cho L2, hoặc chặn đúng một L4."""
     conn = iam.ket_noi()
     ow = iam.claims_cua(iam.lay_tai_khoan(conn, "owner-test"))
-    iam.tao_tai_khoan(conn, ow, "mgr4", "mk-mgr-9", "Kinh doanh", 4, phai_doi_mk=False)
+    iam.tao_tai_khoan(conn, ow, "mgr4", "MatKhau123", "Kinh doanh", 4, phai_doi_mk=False)
     conn.close()
 
-    _login(client, "nhanvien", "mk-nv-6")                    # L2: mặc định đóng
+    _login(client, "nhanvien", "MatKhau123")                    # L2: mặc định đóng
     assert client.get("/general/niches").status_code == 403
     assert client.get("/general/channels").status_code == 403
-    _login(client, "mgr4", "mk-mgr-9")                       # L4: mặc định mở (luật cũ)
+    _login(client, "mgr4", "MatKhau123")                       # L4: mặc định mở (luật cũ)
     assert client.get("/general/niches").status_code == 200
     assert client.get("/general/channels").status_code == 200
 
@@ -395,10 +395,10 @@ def test_niches_channels_tick_mo_cho_team(client, iam_db):
         "ten": "mgr4", "dat__*__general_channels": "chan",
         "lydo__*__general_channels": "tạm khóa bàn giao"}).status_code == 303
 
-    _login(client, "nhanvien", "mk-nv-6")
+    _login(client, "nhanvien", "MatKhau123")
     assert client.get("/general/niches").status_code == 200      # tick MỞ cho L2
     assert client.get("/general/channels").status_code == 200
-    _login(client, "mgr4", "mk-mgr-9")
+    _login(client, "mgr4", "MatKhau123")
     assert client.get("/general/niches").status_code == 200      # không tick → giữ L4+
     assert client.get("/general/channels").status_code == 403     # tick CHẶN thắng level
 
@@ -424,13 +424,13 @@ def test_tick_duyet_ho_so_co_hieu_luc(client, iam_db):
         "ten": "nhanvien", "dat__*__duyet_ho_so": "cho",
         "lydo__*__duyet_ho_so": "kiêm nhiệm hồ sơ"}).status_code == 303
 
-    _login(client, "nhanvien", "mk-nv-6")
+    _login(client, "nhanvien", "MatKhau123")
     r = client.post("/general/people/create",
                     data={"ho_ten": "Người Của Tick", "bo_phan": "Kinh doanh"})
     assert r.status_code == 200 and "Created profile" in r.text
     # nhưng vẫn KHÔNG được đụng tài khoản (giỏ quan_tai_khoan riêng)
     assert client.post("/general/accounts/create", data={
-        "ten": "tk-lau-2", "mat_khau": "mk-tam-6",
+        "ten": "tk-lau-2", "mat_khau": "MatKhau123",
         "bo_phan": "Kinh doanh", "level": 2}).status_code == 403
 
 
@@ -492,7 +492,7 @@ def test_proxy_tiem_x_remote_actions(client, iam_db, monkeypatch):
     assert bat["hanh_dong"] == ["nap_tai_lieu", "nguon_ngoai", "giam_sat",
                                 "duyet_qa", "quan_tri"]         # Owner đủ 5
     assert bat["vai"] == "admin"
-    _login(client, "nhanvien", "mk-nv-6")
+    _login(client, "nhanvien", "MatKhau123")
     client.get("/app/ai-agent/hoi-dap")
     assert bat["hanh_dong"] == [] and bat["vai"] == "viewer"    # KD L2: rỗng, fail-closed
 
@@ -516,10 +516,10 @@ def test_mien_quantri_ve_khu_nen(client):
 def test_cookie_mien_cha_khi_vao_bang_ten_mien(client):
     """Cookie đặt Domain=.outliery.test khi vào bằng miền → một đăng nhập chạy
     mọi miền con; vào bằng IP thì cookie host-only như cũ."""
-    r = client.post("/login", data={"ten": "owner-test", "mat_khau": "mk-test"},
+    r = client.post("/login", data={"ten": "owner-test", "mat_khau": "MatKhau123"},
                     headers={"host": "outliery.test"})
     assert "domain=.outliery.test" in (r.headers.get("set-cookie") or "").lower()
-    r2 = client.post("/login", data={"ten": "owner-test", "mat_khau": "mk-test"})
+    r2 = client.post("/login", data={"ten": "owner-test", "mat_khau": "MatKhau123"})
     assert "domain" not in (r2.headers.get("set-cookie") or "").lower()
 
 
@@ -577,18 +577,18 @@ def test_tong_quan_de_bao_dung_trang_thai(client, app_mau_server):
 def test_profile_tu_cap_nhat_va_doi_mk_can_mk_hien_tai(client):
     """UI_FLOW.md mục 8: Profile tự cập nhật display name; đổi mật khẩu PHẢI gõ
     đúng mật khẩu hiện tại (luật V1 — v2 từng thiếu bước này)."""
-    _login(client, "nhanvien", "mk-nv-6")
+    _login(client, "nhanvien", "MatKhau123")
     r = client.post("/profile", data={"ten_hien_thi": "Nguyễn Văn Test",
                                       "email": "t@x.vn", "dien_thoai": "0900"})
     assert "Profile saved" in r.text and "Nguyễn Văn Test" in r.text
     r = client.post("/profile/mat-khau", data={
-        "mk_hien_tai": "SAI-MK", "mk_moi": "mk-moi-7", "mk_lai": "mk-moi-7"})
+        "mk_hien_tai": "SAI-MK", "mk_moi": "MatKhau123", "mk_lai": "MatKhau123"})
     assert "Current password is incorrect" in r.text
     r = client.post("/profile/mat-khau", data={
-        "mk_hien_tai": "mk-nv-6", "mk_moi": "mk-moi-7", "mk_lai": "mk-moi-7"})
+        "mk_hien_tai": "MatKhau123", "mk_moi": "MatKhau123", "mk_lai": "MatKhau123"})
     assert "Password changed" in r.text
     client.get("/logout")
-    assert _login(client, "nhanvien", "mk-moi-7").status_code == 303
+    assert _login(client, "nhanvien", "MatKhau123").status_code == 303
 
 
 def test_proxy_phat_x_remote_name(client, app_mau_server, iam_db):
@@ -614,24 +614,24 @@ def test_proxy_phat_co_hr_finance(client, app_mau_server, iam_db):
     chiều cho lẫn chặn) — helper _gio_chuc_nang, KHÔNG sửa iam.co_quyen."""
     conn = iam.ket_noi()
     ow = iam.claims_cua(iam.lay_tai_khoan(conn, "owner-test"))
-    iam.tao_tai_khoan(conn, ow, "hr2", "mk-hr2-6", "Hành chính Nhân sự", 3,
+    iam.tao_tai_khoan(conn, ow, "hr2", "MatKhau123", "Hành chính Nhân sự", 3,
                       phai_doi_mk=False)
-    iam.tao_tai_khoan(conn, ow, "ketoan", "mk-kt-6", "Kế toán", 2, phai_doi_mk=False)
+    iam.tao_tai_khoan(conn, ow, "ketoan", "MatKhau123", "Kế toán", 2, phai_doi_mk=False)
     conn.close()
 
     _login(client)                                       # Owner: đủ cả hai cờ
     t = client.get("/app/app-mau/").text
     assert ",hr" in t and "finance" in t
 
-    _login(client, "hr2", "mk-hr2-6")                    # HR L3: có CẢ HAI (Owner chốt 26/08)
+    _login(client, "hr2", "MatKhau123")                    # HR L3: có CẢ HAI (Owner chốt 26/08)
     t = client.get("/app/app-mau/").text
     assert ",hr" in t and "finance" in t
 
-    _login(client, "ketoan", "mk-kt-6")                  # Kế toán L2: finance, không hr
+    _login(client, "ketoan", "MatKhau123")                  # Kế toán L2: finance, không hr
     t = client.get("/app/app-mau/").text
     assert "finance" in t and ",hr" not in t
 
-    _login(client, "nhanvien", "mk-nv-6")                # KD L2: không cờ nào
+    _login(client, "nhanvien", "MatKhau123")                # KD L2: không cờ nào
     t = client.get("/app/app-mau/").text
     assert ",hr" not in t and "finance" not in t
 
@@ -639,9 +639,9 @@ def test_proxy_phat_co_hr_finance(client, app_mau_server, iam_db):
     iam.gan_override(conn, ow, "nhanvien", "*", "ke_toan", True, "kiêm nhiệm Kế toán")
     iam.gan_override(conn, ow, "hr2", "*", "nhan_su", False, "chặn thử đè luật HR")
     conn.close()
-    _login(client, "nhanvien", "mk-nv-6")
+    _login(client, "nhanvien", "MatKhau123")
     assert "finance" in client.get("/app/app-mau/").text
-    _login(client, "hr2", "mk-hr2-6")
+    _login(client, "hr2", "MatKhau123")
     assert ",hr" not in client.get("/app/app-mau/").text
 
 
@@ -655,7 +655,7 @@ def test_post_ve_hr_303_ve_hub(client, iam_db):
     assert r.status_code == 303
     assert r.headers["location"].startswith("/hr?tab=accounts&bao=")
     r = client.post("/general/accounts/create", data={
-        "ten": "tk-hub", "mat_khau": "mk-tam-6", "bo_phan": "Kinh doanh",
+        "ten": "tk-hub", "mat_khau": "MatKhau123", "bo_phan": "Kinh doanh",
         "level": 2, "ve": "hr"})
     assert r.status_code == 303
     assert r.headers["location"].startswith("/hr?tab=accounts&bao=")
@@ -706,7 +706,7 @@ def test_people_update_sua_ho_so_va_quyen(client, iam_db):
     r = client.post("/general/people/update", data={       # trạng thái lạ → loi
         "ma": ma, "trang_thai": "xoa-han", "ve": "hr"})
     assert r.status_code == 303 and "/hr?tab=accounts&loi=" in r.headers["location"]
-    _login(client, "nhanvien", "mk-nv-6")                  # nhân viên thường bị chặn
+    _login(client, "nhanvien", "MatKhau123")                  # nhân viên thường bị chặn
     assert client.post("/general/people/update", data={
         "ma": ma, "trang_thai": "hoat_dong"}).status_code == 403
 
@@ -719,7 +719,7 @@ def test_people_terminate_go_mem_va_khoa_dang_nhap(client, iam_db):
     _login(client)
     r = client.post("/general/accounts/create-full", data={
         "ho_ten": "Người Nghỉ", "bo_phan": "Kinh doanh", "vi_tri": "SEO",
-        "username": "nguoinghi", "mat_khau": "mk-tam-6", "level": 2, "ve": "hr"})
+        "username": "nguoinghi", "mat_khau": "MatKhau123", "level": 2, "ve": "hr"})
     assert r.status_code == 303
     conn = iam.ket_noi()
     ma = next(n["ma"] for n in iam.liet_ke_nguoi(conn) if n["ho_ten"] == "Người Nghỉ")
@@ -740,13 +740,13 @@ def test_people_terminate_go_mem_va_khoa_dang_nhap(client, iam_db):
     # HR L3 (không có giỏ quan_tai_khoan): hồ sơ vẫn chuyển, đăng nhập còn mở
     conn = iam.ket_noi()
     ow = iam.claims_cua(iam.lay_tai_khoan(conn, "owner-test"))
-    iam.tao_tai_khoan(conn, ow, "hr-lead", "mk-hr-6", iam.HR_BO_PHAN, 3,
+    iam.tao_tai_khoan(conn, ow, "hr-lead", "MatKhau123", iam.HR_BO_PHAN, 3,
                       phai_doi_mk=False)
     ns2 = iam.tao_nguoi(conn, ow, "Người Nghỉ 2", "Kinh doanh", "SEO")
-    iam.tao_tai_khoan(conn, ow, "nguoinghi2", "mk-tam-6", "Kinh doanh", 2,
+    iam.tao_tai_khoan(conn, ow, "nguoinghi2", "MatKhau123", "Kinh doanh", 2,
                       nguoi_ma=ns2["ma"], phai_doi_mk=False)
     conn.close()
-    _login(client, "hr-lead", "mk-hr-6")
+    _login(client, "hr-lead", "MatKhau123")
     r = client.post("/general/people/terminate", data={"ma": ns2["ma"], "ve": "hr"})
     assert r.status_code == 303
     assert "still%20open" in r.headers["location"]          # nói thẳng, không im lặng
@@ -756,7 +756,7 @@ def test_people_terminate_go_mem_va_khoa_dang_nhap(client, iam_db):
     assert iam.lay_tai_khoan(conn, "nguoinghi2")["khoa"] == 0
     conn.close()
 
-    _login(client, "nhanvien", "mk-nv-6")
+    _login(client, "nhanvien", "MatKhau123")
     assert client.post("/general/people/terminate",
                        data={"ma": ma}).status_code == 403
 
@@ -769,7 +769,7 @@ def test_create_full_tron_goi_va_rollback(client, iam_db):
     _login(client)
     r = client.post("/general/accounts/create-full", data={
         "ho_ten": "Người Trọn Gói", "bo_phan": "Kinh doanh", "vi_tri": "SEO",
-        "username": "trongoi", "mat_khau": "mk-tam-6", "level": 2, "ve": "hr"})
+        "username": "trongoi", "mat_khau": "MatKhau123", "level": 2, "ve": "hr"})
     assert r.status_code == 303
     assert r.headers["location"].startswith("/hr?tab=accounts&bao=")
     conn = iam.ket_noi()
@@ -783,7 +783,7 @@ def test_create_full_tron_goi_va_rollback(client, iam_db):
 
     r = client.post("/general/accounts/create-full", data={    # username TRÙNG
         "ho_ten": "Người Trùng", "bo_phan": "Kinh doanh",
-        "username": "trongoi", "mat_khau": "mk-tam-6", "ve": "hr"})
+        "username": "trongoi", "mat_khau": "MatKhau123", "ve": "hr"})
     assert r.status_code == 303 and "loi=" in r.headers["location"]
     conn = iam.ket_noi()
     assert len(iam.liet_ke_nguoi(conn)) == so_nguoi            # không đẻ hồ sơ
@@ -808,10 +808,10 @@ def test_create_full_va_grant_theo_quyen(client, iam_db):
     theo hồ sơ; hồ sơ đã có tài khoản → từ chối (1 người = 1 tài khoản)."""
     conn = iam.ket_noi()
     ow = iam.claims_cua(iam.lay_tai_khoan(conn, "owner-test"))
-    iam.tao_tai_khoan(conn, ow, "hr-b", "mk-hr-6", "Hành chính Nhân sự", 3,
+    iam.tao_tai_khoan(conn, ow, "hr-b", "MatKhau123", "Hành chính Nhân sự", 3,
                       phai_doi_mk=False)
     conn.close()
-    _login(client, "hr-b", "mk-hr-6")
+    _login(client, "hr-b", "MatKhau123")
     r = client.post("/general/accounts/create-full", data={
         "ho_ten": "Hồ Sơ HR Tạo", "bo_phan": "Kinh doanh", "ve": "hr"})
     assert r.status_code == 303 and "bao=" in r.headers["location"]
@@ -821,10 +821,10 @@ def test_create_full_va_grant_theo_quyen(client, iam_db):
     conn.close()
     r = client.post("/general/accounts/create-full", data={
         "ho_ten": "HR Lấn Quyền", "bo_phan": "Kinh doanh",
-        "username": "lan-quyen", "mat_khau": "mk-tam-6", "ve": "hr"})
+        "username": "lan-quyen", "mat_khau": "MatKhau123", "ve": "hr"})
     assert r.status_code == 403
     r = client.post("/general/accounts/grant", data={
-        "ma": ma, "username": "lan-quyen", "mat_khau": "mk-tam-6", "level": 2})
+        "ma": ma, "username": "lan-quyen", "mat_khau": "MatKhau123", "level": 2})
     assert r.status_code == 403
     conn = iam.ket_noi()
     assert len(iam.liet_ke_nguoi(conn)) == so_nguoi            # 403 không đẻ gì
@@ -833,7 +833,7 @@ def test_create_full_va_grant_theo_quyen(client, iam_db):
 
     _login(client)
     r = client.post("/general/accounts/grant", data={
-        "ma": ma, "username": "cap-sau", "mat_khau": "mk-tam-6", "level": 2,
+        "ma": ma, "username": "cap-sau", "mat_khau": "MatKhau123", "level": 2,
         "ve": "hr"})
     assert r.status_code == 303
     assert r.headers["location"].startswith("/hr?tab=accounts&bao=")
@@ -842,7 +842,7 @@ def test_create_full_va_grant_theo_quyen(client, iam_db):
     conn.close()
     assert tk["nguoi_ma"] == ma and tk["bo_phan"] == "Kinh doanh"
     r = client.post("/general/accounts/grant", data={          # đã có tài khoản
-        "ma": ma, "username": "cap-nua", "mat_khau": "mk-tam-6", "ve": "hr"})
+        "ma": ma, "username": "cap-nua", "mat_khau": "MatKhau123", "ve": "hr"})
     assert r.status_code == 303 and "loi=" in r.headers["location"]
 
 
@@ -891,7 +891,7 @@ def test_people_cccd_va_tai_lieu_co_vet(client, iam_db, tmp_path, monkeypatch):
     assert any(d["hanh_dong"] == "nop_tai_lieu_ns" for d in iam.doc_nhat_ky(conn, 20))
     conn.close()
 
-    _login(client, "nhanvien", "mk-nv-6")                  # ngoài giỏ nhan_su: 403
+    _login(client, "nhanvien", "MatKhau123")                  # ngoài giỏ nhan_su: 403
     assert client.get(f"/general/people/cccd/{ma}").status_code == 403
     assert client.get(f"/general/people/tai-lieu/{ma}/{ten[0]}").status_code == 403
 
@@ -902,12 +902,12 @@ def test_proxy_phat_co_accounts(client, app_mau_server, iam_db):
     Owner/Admin ủy quyền'."""
     conn = iam.ket_noi()
     ow = iam.claims_cua(iam.lay_tai_khoan(conn, "owner-test"))
-    iam.tao_tai_khoan(conn, ow, "hr3", "mk-hr3-6", "Hành chính Nhân sự", 3,
+    iam.tao_tai_khoan(conn, ow, "hr3", "MatKhau123", "Hành chính Nhân sự", 3,
                       phai_doi_mk=False)
     conn.close()
     _login(client)
     assert "accounts" in client.get("/app/app-mau/").text
-    _login(client, "hr3", "mk-hr3-6")
+    _login(client, "hr3", "MatKhau123")
     t = client.get("/app/app-mau/").text
     assert "accounts" not in t and ",hr" in t              # HR: có hub, không tab Accounts
 

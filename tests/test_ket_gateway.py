@@ -28,8 +28,8 @@ def he(tmp_path, monkeypatch):
     monkeypatch.setattr(bcrypt, "gensalt", lambda rounds=12: _gensalt_goc(4))
     conn = iam.ket_noi()
     ow = iam.claims_cua(iam.tao_tai_khoan(
-        conn, None, "owner-test", "mk-test", "Ban quản trị", 5, phai_doi_mk=False))
-    iam.tao_tai_khoan(conn, ow, "admin", "mk-admin", "Kinh doanh", 4,
+        conn, None, "owner-test", "MatKhau123", "Ban quản trị", 5, phai_doi_mk=False))
+    iam.tao_tai_khoan(conn, ow, "admin", "MatKhau123", "Kinh doanh", 4,
                       phai_doi_mk=False)
     iam.sua_tai_khoan(conn, ow, "admin", admin_uy_quyen=True)
     conn.close()
@@ -45,7 +45,7 @@ def _login(client, ten, mk):
 
 
 def test_cai_dat_admin_uy_quyen_van_403(client):
-    _login(client, "admin", "mk-admin")
+    _login(client, "admin", "MatKhau123")
     assert client.get("/general/api-keys").status_code == 403   # giỏ Owner tuyệt đối
 
 
@@ -53,7 +53,7 @@ def test_ai_models_nghi_huu_redirect(client):
     """Trang 'AI Models' tự chế nghỉ hưu (Owner lệnh 16/08 — vi phạm quy trình
     duyệt mockup): GET redirect sang /general/api-keys; POST llm cũ GIỮ làm
     backend fallback."""
-    _login(client, "owner-test", "mk-test")
+    _login(client, "owner-test", "MatKhau123")
     r = client.get("/general/ai-models")
     assert r.status_code == 303
     assert r.headers["location"] == "/general/api-keys"
@@ -62,7 +62,7 @@ def test_ai_models_nghi_huu_redirect(client):
 def test_owner_luu_vai_llm_va_key_write_only(client):
     """Backend fallback llm.<vai>.* cũ vẫn chạy; trang API Keys MIGRATE mục cũ
     thành khóa (idempotent) và chỉ hiện ĐUÔI — không bao giờ render lại key."""
-    _login(client, "owner-test", "mk-test")
+    _login(client, "owner-test", "MatKhau123")
     assert client.get("/general/api-keys").status_code == 200
     r = client.post("/general/ai-models/llm", data={
         "vai": "writer", "provider": "openai_compatible", "model": "glm-4.5-air",
@@ -93,7 +93,7 @@ def test_trang_api_keys_them_thu_hoi_cap_phat(client):
     """Vòng đời qua UI: thêm khóa (write-only) → cấp phát cho việc trong hợp
     đồng → thu hồi (gõ lại đuôi) gỡ khỏi cấp phát; MỌI bước có vết audit
     (trả nợ 'két không vết' — DE.md 3b)."""
-    _login(client, "owner-test", "mk-test")
+    _login(client, "owner-test", "MatKhau123")
     r = client.post("/general/api-keys/add", data={
         "loai_chon": "llm:glm", "khoa": "sk-ui-kiemthu-2468", "model": "glm-4.5-air"})
     assert r.status_code == 303 and "bao=" in r.headers["location"]
@@ -135,7 +135,7 @@ def test_assigned_keys_show_more_server_side(client):
     sách trước khi gửi HTML (JS ẩn/hiện cũ không tác dụng trên trình duyệt thật,
     không tái hiện được). >5 khóa: mặc định đúng 5 dòng + LINK GET 'Show more (N)';
     ?mo_rong=<ma> render đủ + link 'Show less'; ≤5 khóa: không link nào."""
-    _login(client, "owner-test", "mk-test")
+    _login(client, "owner-test", "MatKhau123")
     conn = ket.ket_noi()
     ids = [ket.them_api_key(conn, "youtube", f"AIzaKhoaThu{i:02d}xxxxx")
            for i in range(7)]                     # 7 khóa > 5 để chạm ngưỡng
@@ -186,7 +186,7 @@ def test_tab1_moi_khoi_5_dong_show_more_server_side(client):
     + link 'Show more (15)' (mã mo_rong theo KHỐI LOẠI 'loai:youtube'); expanded
     đủ 20 + Show less; khối ≤5 không link. Badge khóa chưa dùng là 'spare'
     (Owner gọi là key dự phòng — 'idle' không truyền đạt ý)."""
-    _login(client, "owner-test", "mk-test")
+    _login(client, "owner-test", "MatKhau123")
     conn = ket.ket_noi()
     for i in range(20):
         ket.them_api_key(conn, "youtube", f"AIzaTabMot{i:02d}xxxxxx")
@@ -215,7 +215,7 @@ def test_tab1_moi_khoi_cung_luoi_6_cot(client):
     (khối không có Model vẫn giữ ô trống) → các bảng thẳng một trục; cột Usage +
     Added đã bỏ. Ghim bằng SỐ Ô mỗi hàng, không ghim mặt chữ CSS."""
     import re
-    _login(client, "owner-test", "mk-test")
+    _login(client, "owner-test", "MatKhau123")
     conn = ket.ket_noi()
     ket.them_api_key(conn, "youtube", "AIzaLuoiOK000000000000")      # khối KHÔNG có Model
     ket.them_api_key(conn, "llm", "sk-luoi-glm-0000000", nha="glm")  # khối CÓ Model
@@ -244,7 +244,7 @@ def test_tab2_luoi_7_cot_va_nut_save_dinh_mep_phai(client):
     Chrome cho save_x lệch 120px giữa hàng có/không dropdown; luật display:flex +
     width:100% là thứ chữa, ghim ở đây để đừng ai gỡ."""
     import re
-    _login(client, "owner-test", "mk-test")
+    _login(client, "owner-test", "MatKhau123")
     trang = client.get("/general/api-keys?tab=app&app=radary").text
     than = trang.split('<table class="gon luoi-app">')[1].split("</table>")[0]
     assert than.count("<col ") == 7
@@ -261,7 +261,7 @@ def test_tab3_quota_log_5_dong_show_more_server_side(client):
     # quota_log (khuôn P4) và vẫn xanh, trong khi trang thật TRẮNG suốt vì
     # data/logs/quota/ chưa app nào ghi: test xanh mà tính năng chết.
     from nen.common import so_goi
-    _login(client, "owner-test", "mk-test")
+    _login(client, "owner-test", "MatKhau123")
     for i in range(7):
         so_goi.ghi("radary", "youtube", duoi="9999", viec=f"viec-log-{i}")
 
@@ -284,7 +284,7 @@ def test_redirect_giu_vi_tri_va_modal_revoke(client):
     ve_app/ve_mo_rong từ form → redirect về ĐÚNG chỗ đang đứng, nhánh lỗi cũng
     vậy; form cũ không mang field → hành vi cũ. (b) Revoke đổi sang MODAL xác
     nhận dùng chung — ô inline 'tail' bé xíu bị bỏ hẳn."""
-    _login(client, "owner-test", "mk-test")
+    _login(client, "owner-test", "MatKhau123")
     conn = ket.ket_noi()
     kid = ket.them_api_key(conn, "llm", "sk-llm-redirect-9012", nha="glm")
     conn.close()
@@ -323,7 +323,7 @@ def test_model_chi_hien_cho_llm_generate(client):
     Từ 22/08 ô model là DROPDOWN (Owner: 'cho phép chọn model khi cấu hình per
     app') — hết gõ tay nên cũng hết cần autocomplete=off; danh sách gợi ý theo
     nhà của khóa đầu + lựa chọn '— theo khóa —' để bỏ override."""
-    _login(client, "owner-test", "mk-test")
+    _login(client, "owner-test", "MatKhau123")
     conn = ket.ket_noi()
     ket.them_api_key(conn, "transcript", "tr-abcdefgh-9999")
     kid = ket.them_api_key(conn, "llm", "sk-llm-abcdef-8888", nha="glm")
@@ -352,7 +352,7 @@ def test_model_chi_hien_cho_llm_generate(client):
 def test_api_keys_va_permissions_khong_cache(client):
     """Owner nghi cache trình duyệt khi thấy UI cũ ở 2 trang sửa liên tục —
     no-store cho mọi đường render (GET lẫn POST-lỗi trực tiếp của Permissions)."""
-    _login(client, "owner-test", "mk-test")
+    _login(client, "owner-test", "MatKhau123")
     assert client.get("/general/api-keys").headers["cache-control"] == "no-store"
     assert client.get("/general/permissions").headers["cache-control"] == "no-store"
     r = client.post("/general/permissions/grant", data={           # nhánh lỗi render trực tiếp
@@ -364,7 +364,7 @@ def test_tab1_generate_nhom_theo_nha_va_modal_2_option(client):
     """Owner chốt 17/08: VEO + Seedream lên MỘT khối 'Generate Video/Image API'
     nhóm theo nhà (giống LLM) — không còn 2 khối cố định riêng; modal Add API
     key có 2 option generate:veo/generate:seedream; nhãn Transcript đổi tên."""
-    _login(client, "owner-test", "mk-test")
+    _login(client, "owner-test", "MatKhau123")
     conn = ket.ket_noi()
     ket.them_api_key(conn, "generate", "flow-that-1234", nha="veo", model="veo-3.1")
     ket.them_api_key(conn, "generate", "seed-that-5678", nha="seedream")

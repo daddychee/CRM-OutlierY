@@ -1,0 +1,372 @@
+<title>Hai luồng Video Review</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap">
+<style>
+  :root{
+    --void:#ffffff; --panel:#ffffff; --sunk:#f5f5f5; --line:#e6e6e6; --line2:#d9d9d9;
+    --ink:#16181c; --ink2:#3a3f47; --slate:#6c6c72; --accent:#2c6fc4; --accent2:#1b5fb2;
+    --tint:#e8f0fb; --ok:#2e7d4f; --ok-bg:rgba(90,170,120,.14);
+    --warn:#8a6413; --warn-bg:rgba(214,166,74,.16); --bad:#b14a3c; --bad-bg:rgba(217,124,108,.13);
+    --shadow:0 1px 2px rgba(9,12,18,.06),0 8px 24px rgba(9,12,18,.06);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --void:#090c12; --panel:#121826; --sunk:#182233; --line:#243149; --line2:#31425e;
+      --ink:#e8edf4; --ink2:#c2cbd9; --slate:#8b96a8; --accent:#4c8fe0; --accent2:#6ba4e8;
+      --tint:#16263f; --ok:#5aaa78; --ok-bg:rgba(90,170,120,.16);
+      --warn:#d6a64a; --warn-bg:rgba(214,166,74,.16); --bad:#d97c6c; --bad-bg:rgba(217,124,108,.16);
+      --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="dark"]{
+    --void:#090c12; --panel:#121826; --sunk:#182233; --line:#243149; --line2:#31425e;
+    --ink:#e8edf4; --ink2:#c2cbd9; --slate:#8b96a8; --accent:#4c8fe0; --accent2:#6ba4e8;
+    --tint:#16263f; --ok:#5aaa78; --ok-bg:rgba(90,170,120,.16);
+    --warn:#d6a64a; --warn-bg:rgba(214,166,74,.16); --bad:#d97c6c; --bad-bg:rgba(217,124,108,.16);
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.35);
+  }
+  *{box-sizing:border-box}
+  body{background:var(--void);color:var(--ink);font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+    font-size:14px;line-height:1.55;margin:0;padding:34px 22px 70px}
+  .wrap{max-width:1080px;margin:0 auto;display:flex;flex-direction:column;gap:30px}
+  .eyebrow{font-family:"Space Grotesk",Inter,sans-serif;font-weight:700;letter-spacing:.14em;
+    text-transform:uppercase;font-size:11.5px;color:var(--slate)}
+  h1{font-size:27px;line-height:1.2;margin:6px 0 0;text-wrap:balance;letter-spacing:-.015em}
+  h2{font-size:17px;margin:0;letter-spacing:-.01em}
+  p{margin:0;max-width:68ch;color:var(--ink2)}
+  .lead{font-size:15px}
+  .man{border:1px solid var(--line);border-radius:14px;background:var(--panel);box-shadow:var(--shadow);overflow:hidden}
+  .man-nhan{display:flex;align-items:baseline;gap:10px;padding:12px 16px;border-bottom:1px solid var(--line);
+    background:var(--sunk)}
+  .man-nhan b{font-size:13px}
+  .man-nhan span{font-size:12.5px;color:var(--slate)}
+  .man-than{padding:0}
+  .chu{font-size:12.5px;color:var(--slate);max-width:68ch}
+  code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px;
+    background:var(--sunk);border:1px solid var(--line);border-radius:6px;padding:1px 6px}
+</style>
+<style>
+  /* khung app: rail trái + topbar, chép hình dáng thật của OUTLIERY */
+  .app{display:grid;grid-template-columns:186px 1fr;min-height:0}
+  .rail{background:var(--sunk);border-right:1px solid var(--line);padding:12px 10px;display:flex;
+    flex-direction:column;gap:2px}
+  .wordmark{font-family:"Space Grotesk",Inter,sans-serif;font-weight:700;letter-spacing:.02em;
+    font-size:14px;display:flex;align-items:center;gap:8px;padding:4px 8px 12px}
+  .wordmark svg{width:16px;height:16px}
+  .rail a{color:var(--slate);text-decoration:none;font-size:13px;padding:6px 9px;border-radius:8px;
+    display:flex;align-items:center;gap:9px}
+  .rail a.chon{background:var(--tint);color:var(--accent);font-weight:600}
+  .rail svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.6;
+    stroke-linecap:round;stroke-linejoin:round;flex:none}
+  .noi-dung{padding:16px 18px 20px;display:flex;flex-direction:column;gap:14px;min-width:0}
+  /* HAI LUỒNG: tab lớn ngay đầu app */
+  .luong{display:flex;gap:4px;border-bottom:1px solid var(--line);margin:-4px -18px 0;padding:0 18px}
+  .luong button{background:none;border:0;border-bottom:2px solid transparent;color:var(--slate);
+    font:inherit;font-size:14px;font-weight:600;padding:9px 12px 11px;cursor:pointer;display:flex;
+    align-items:center;gap:8px}
+  .luong button.chon{color:var(--ink);border-bottom-color:var(--accent)}
+  .luong .dem{font-size:11.5px;font-weight:600;background:var(--sunk);border:1px solid var(--line);
+    border-radius:999px;padding:0 7px;color:var(--slate)}
+  .luong button.chon .dem{background:var(--tint);border-color:transparent;color:var(--accent)}
+  .luong-mo-ta{font-size:12.5px;color:var(--slate);margin-top:-6px}
+  /* thành phần chung */
+  .chip{display:inline-flex;align-items:center;font-size:11.5px;font-weight:600;border-radius:999px;
+    padding:2px 9px;white-space:nowrap}
+  .chip.cho{background:var(--tint);color:var(--accent)}
+  .chip.dang{background:var(--sunk);color:var(--slate);border:1px solid var(--line)}
+  .chip.duyet{background:var(--ok-bg);color:var(--ok)}
+  .chip.canh{background:var(--warn-bg);color:var(--warn)}
+  .chip.te{background:var(--bad-bg);color:var(--bad)}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--slate);
+    font-weight:600;padding:7px 10px;border-bottom:1px solid var(--line)}
+  td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
+  tr:last-child td{border-bottom:0}
+  .num{font-variant-numeric:tabular-nums}
+  .tap-ma{font-weight:700;letter-spacing:.01em}
+  .nho{font-size:12px;color:var(--slate)}
+  .nut{font:inherit;font-size:12.5px;font-weight:600;border-radius:8px;padding:5px 11px;cursor:pointer;
+    border:1px solid var(--line2);background:var(--panel);color:var(--ink)}
+  .nut.chinh{background:var(--accent);border-color:transparent;color:#fff}
+</style>
+<style>
+  /* thanh đo hai phần: Hook (30 giây đầu) và Sustain (giữ tới cuối) */
+  .do{display:flex;align-items:center;gap:8px}
+  .do-thanh{width:76px;height:6px;border-radius:3px;background:var(--sunk);overflow:hidden;flex:none}
+  .do-thanh i{display:block;height:100%;background:var(--accent)}
+  .do-thanh.te i{background:var(--bad)}
+  .do-thanh.tot i{background:var(--ok)}
+  .lech{font-size:11.5px;font-weight:600}
+  .lech.tot{color:var(--ok)} .lech.te{color:var(--bad)}
+  /* màn chi tiết sau đăng */
+  .so-hang{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  .so-o{border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:var(--panel)}
+  .so-o .nhan{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--slate);font-weight:600}
+  .so-o .gia{font-size:26px;font-weight:700;letter-spacing:-.02em;margin-top:2px;font-variant-numeric:tabular-nums}
+  .so-o .duoi{font-size:12px;color:var(--slate);margin-top:2px}
+  .hai-cot{display:grid;grid-template-columns:1.15fr .85fr;gap:14px}
+  @media (max-width:820px){.hai-cot,.so-hang{grid-template-columns:1fr}.app{grid-template-columns:1fr}
+    .rail{flex-direction:row;overflow-x:auto;border-right:0;border-bottom:1px solid var(--line)}}
+  .khung-vid{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--sunk)}
+  .vid-anh{aspect-ratio:16/9;background:
+    linear-gradient(160deg,var(--line2) 0%,var(--sunk) 55%,var(--line) 100%);position:relative}
+  .vid-anh span{position:absolute;left:10px;bottom:8px;font-size:11.5px;color:var(--slate);
+    background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:1px 7px}
+  .mocbar{position:relative;height:26px;background:var(--sunk);border-top:1px solid var(--line)}
+  .mocbar i{position:absolute;top:0;bottom:0;width:2px;background:var(--accent);opacity:.75}
+  .mocbar .vung{position:absolute;top:0;bottom:0;background:var(--tint)}
+  .mocbar .nhan30{position:absolute;left:calc(3% + 6px);top:5px;font-size:11px;color:var(--accent);font-weight:600}
+  .loi{display:flex;flex-direction:column;gap:9px}
+  .loi-dong{display:grid;grid-template-columns:52px 1fr;gap:10px;align-items:start;font-size:12.8px}
+  .loi-dong b{font-variant-numeric:tabular-nums;color:var(--accent);font-weight:600}
+  .bang-chung{border:1px solid var(--line);border-radius:12px;background:var(--panel);overflow:hidden}
+  .bang-chung h3{margin:0;font-size:12.5px;padding:10px 13px;border-bottom:1px solid var(--line);
+    background:var(--sunk);letter-spacing:.02em}
+  .bang-chung ul{margin:0;padding:11px 13px 13px 28px;display:flex;flex-direction:column;gap:7px;font-size:12.8px}
+  .bang-chung li::marker{color:var(--slate)}
+  .ai{border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:12px;padding:13px 15px;
+    background:var(--panel);display:flex;flex-direction:column;gap:9px}
+  .ai h3{margin:0;font-size:13px}
+  .ai p{font-size:13px;margin:0}
+  .ai .neo{color:var(--accent);font-weight:600;font-variant-numeric:tabular-nums}
+  .viec{display:flex;flex-direction:column;gap:6px;font-size:12.8px}
+  .viec div{display:flex;gap:8px;align-items:flex-start}
+  .viec i{width:5px;height:5px;border-radius:50%;background:var(--accent);margin-top:7px;flex:none}
+  .canh-ro{border:1px solid var(--line);border-radius:10px;padding:9px 12px;background:var(--sunk);
+    font-size:12.5px;color:var(--slate)}
+</style>
+<div class="wrap">
+<header>
+  <div class="eyebrow">OUTLIERY · Video Review · mockup vòng 1</div>
+  <h1>Hai luồng, hai màn hình, một mã tập</h1>
+  <p class="lead" style="margin-top:10px">Trước khi đăng và sau khi đăng là hai nghiệp vụ khác nhau:
+    khác người dùng, khác đầu vào, khác câu hỏi cần trả lời. Nhưng chúng nói về cùng một tập,
+    nên tách bằng <b>tab</b> chứ không tách thành hai app — bấm qua lại giữa hai luồng của cùng
+    tập LI088 phải là một cú bấm.</p>
+</header>
+
+<section style="display:grid;grid-template-columns:1fr 1fr;gap:14px" class="hai-cot">
+  <div class="bang-chung">
+    <h3>Luồng 1 — Trước khi đăng</h3>
+    <ul>
+      <li><b>Ai dùng:</b> nhân sự dựng + leader duyệt</li>
+      <li><b>Đầu vào:</b> file bản dựng trên NAS</li>
+      <li><b>Câu hỏi:</b> bản này đăng được chưa?</li>
+      <li><b>Kết thúc:</b> Approved → đăng lên YouTube</li>
+      <li><b>Nhịp:</b> vài ngày, nhiều vòng sửa</li>
+    </ul>
+  </div>
+  <div class="bang-chung">
+    <h3>Luồng 2 — Sau khi đăng</h3>
+    <ul>
+      <li><b>Ai dùng:</b> leader + người ra quyết định nội dung</li>
+      <li><b>Đầu vào:</b> số liệu YouTube + chính file đó + note vòng trước</li>
+      <li><b>Câu hỏi:</b> khán giả rời ở đâu, tập sau làm khác thế nào?</li>
+      <li><b>Kết thúc:</b> bài học ghi lại, không có nút "duyệt"</li>
+      <li><b>Nhịp:</b> mở lại sau 7–28 ngày, một lần là đủ</li>
+    </ul>
+  </div>
+</section>
+<section class="man">
+  <div class="man-nhan"><b>Màn 1</b><span>Tab luồng nằm ngay đầu app — luồng 1 giữ nguyên như hiện tại</span></div>
+  <div class="man-than"><div class="app">
+    <nav class="rail">
+      <div class="wordmark">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1" y="9" width="2" height="6" fill="currentColor" stroke="none"/><rect x="5" y="6" width="2" height="9" fill="currentColor" stroke="none"/><rect x="9" y="10" width="2" height="5" fill="currentColor" stroke="none"/><rect x="13" y="1" width="2" height="14" fill="#4c8fe0" stroke="none"/></svg>
+        OUTLIERY
+      </div>
+      <a href="#"><svg viewBox="0 0 24 24"><path d="M3 12l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>Home</a>
+      <a class="chon" href="#"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m10 9 5 3-5 3z"/></svg>Video Review</a>
+      <a href="#"><svg viewBox="0 0 24 24"><path d="M4 19V5"/><path d="M4 19h16"/><path d="m8 15 4-6 3 3 4-7"/></svg>Data Analytics</a>
+      <a href="#"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg>Tasky</a>
+    </nav>
+    <div class="noi-dung">
+      <div class="luong">
+        <button class="chon">Trước khi đăng <span class="dem">6</span></button>
+        <button>Sau khi đăng <span class="dem">4</span></button>
+      </div>
+      <div class="luong-mo-ta">Bản dựng đang chờ duyệt · nguồn: <code>NAS/&lt;tập&gt;/Feedback</code></div>
+      <table>
+        <thead><tr><th>Tập</th><th>Bản mới nhất</th><th>Trạng thái</th><th>Note mở</th><th></th></tr></thead>
+        <tbody>
+          <tr><td class="tap-ma">LI088</td><td>LI088.3 <span class="nho">· 2 bản</span></td>
+            <td><span class="chip cho">Awaiting review</span></td><td class="num">0</td>
+            <td class="nho">thanhtran · 26/08</td></tr>
+          <tr><td class="tap-ma">LI086</td><td>LI086_1</td>
+            <td><span class="chip dang">In review</span></td><td class="num">9</td>
+            <td class="nho">hieuvn · 24/08</td></tr>
+          <tr><td class="tap-ma">LI073</td><td>LI073 fix lần 2 <span class="nho">· 2 bản</span></td>
+            <td><span class="chip dang">In review</span></td><td class="num">3</td>
+            <td class="nho">thanhdn · 22/08</td></tr>
+          <tr style="background:var(--ok-bg)"><td class="tap-ma">LI083</td><td>LI083.1</td>
+            <td><span class="chip duyet">Approved</span></td><td class="num">0</td>
+            <td><button class="nut chinh">Đã đăng — thêm link YouTube</button></td></tr>
+        </tbody>
+      </table>
+      <div class="canh-ro"><b>Cầu nối duy nhất giữa hai luồng:</b> tập nào Approved thì hiện nút
+        “Đã đăng — thêm link YouTube”. Dán link xong, tập đó rời luồng 1 và xuất hiện ở luồng 2,
+        mang theo toàn bộ note đã ghi.</div>
+    </div>
+  </div></div>
+</section>
+<section class="man">
+  <div class="man-nhan"><b>Màn 2</b><span>Luồng 2 — danh sách tập đã đăng, xếp theo “cần xem lại nhất”</span></div>
+  <div class="man-than"><div class="app">
+    <nav class="rail">
+      <div class="wordmark">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1" y="9" width="2" height="6" fill="currentColor" stroke="none"/><rect x="5" y="6" width="2" height="9" fill="currentColor" stroke="none"/><rect x="9" y="10" width="2" height="5" fill="currentColor" stroke="none"/><rect x="13" y="1" width="2" height="14" fill="#4c8fe0" stroke="none"/></svg>
+        OUTLIERY
+      </div>
+      <a href="#"><svg viewBox="0 0 24 24"><path d="M3 12l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>Home</a>
+      <a class="chon" href="#"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m10 9 5 3-5 3z"/></svg>Video Review</a>
+      <a href="#"><svg viewBox="0 0 24 24"><path d="M4 19V5"/><path d="M4 19h16"/><path d="m8 15 4-6 3 3 4-7"/></svg>Data Analytics</a>
+      <a href="#"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg>Tasky</a>
+    </nav>
+    <div class="noi-dung">
+      <div class="luong">
+        <button>Trước khi đăng <span class="dem">6</span></button>
+        <button class="chon">Sau khi đăng <span class="dem">4</span></button>
+      </div>
+      <div class="luong-mo-ta">Trung vị 22 tập gần nhất — <b>hook 74%</b> · <b>giữ chân 20,2%</b> · <b>AVD 6:11</b>.
+        Mỗi tập so với chính trung vị này, không so với chuẩn ngoài.</div>
+      <table>
+        <thead><tr><th>Tập</th><th>Tiêu đề đã đăng</th><th>Hook 0:30</th><th>Giữ chân TB</th><th>AVD</th><th>Trạng thái</th></tr></thead>
+        <tbody>
+          <tr>
+            <td class="tap-ma">LI079</td>
+            <td>Life in SLOVENIA! — INVISIBLE Country…<div class="nho">đăng 12/08 · 14 ngày</div></td>
+            <td><div class="do"><span class="do-thanh tot"><i style="width:78%"></i></span><b class="num">78%</b></div>
+              <span class="lech tot">+4</span></td>
+            <td><div class="do"><span class="do-thanh te"><i style="width:27%"></i></span><b class="num">13,5%</b></div>
+              <span class="lech te">−6,7</span></td>
+            <td class="num">5:01</td>
+            <td><span class="chip te">Hook tốt · rơi giữa bài</span></td>
+          </tr>
+          <tr>
+            <td class="tap-ma">LI083</td>
+            <td>Facts About Indonesia That Sound Fake…<div class="nho">đăng 19/08 · 7 ngày</div></td>
+            <td><div class="do"><span class="do-thanh te"><i style="width:59%"></i></span><b class="num">59%</b></div>
+              <span class="lech te">−15</span></td>
+            <td><div class="do"><span class="do-thanh te"><i style="width:28%"></i></span><b class="num">13,9%</b></div>
+              <span class="lech te">−6,3</span></td>
+            <td class="num">4:19</td>
+            <td><span class="chip te">Mất người ngay mở đầu</span></td>
+          </tr>
+          <tr>
+            <td class="tap-ma">LI077</td>
+            <td>Life in NORWAY! The WORLD'S MOST VISITED…<div class="nho">đăng 02/08 · 24 ngày</div></td>
+            <td><div class="do"><span class="do-thanh tot"><i style="width:77%"></i></span><b class="num">77%</b></div>
+              <span class="lech tot">+3</span></td>
+            <td><div class="do"><span class="do-thanh tot"><i style="width:65%"></i></span><b class="num">32,6%</b></div>
+              <span class="lech tot">+12,4</span></td>
+            <td class="num">8:03</td>
+            <td><span class="chip duyet">Tập mẫu để học theo</span></td>
+          </tr>
+          <tr>
+            <td class="tap-ma">LI086</td>
+            <td><span class="nho">chưa nhập số liệu</span><div class="nho">đăng 24/08 · 2 ngày</div></td>
+            <td colspan="3" class="nho">Video mới 2 ngày — số liệu chưa ổn định, nên đợi qua mốc 7 ngày</td>
+            <td><button class="nut">Nhập 3 số</button></td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="canh-ro"><b>Xếp hạng có chủ đích:</b> tập lệch xa trung vị nhất nằm trên cùng, không phải
+        tập mới nhất. Tập chưa đủ tuổi thì app nói thẳng là chưa nên kết luận thay vì hiện số non.</div>
+    </div>
+  </div></div>
+</section>
+<section class="man">
+  <div class="man-nhan"><b>Màn 3</b><span>Luồng 2 — mở một tập: máy đo, người quyết</span></div>
+  <div class="man-than"><div class="noi-dung" style="gap:16px">
+    <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap">
+      <h2>LI083 · Facts About Indonesia That Sound Fake But Are 100% Real</h2>
+      <span class="nho">đăng 19/08 · 7 ngày · <a href="#" style="color:var(--accent)">mở trên YouTube</a>
+        · <a href="#" style="color:var(--accent)">xem lại 12 note vòng duyệt</a></span>
+    </div>
+
+    <div class="so-hang">
+      <div class="so-o"><div class="nhan">Hook — còn lại ở 0:30</div><div class="gia">59%</div>
+        <div class="duoi">trung vị kênh 74% · <span class="lech te">thấp hơn 15 điểm</span></div></div>
+      <div class="so-o"><div class="nhan">Giữ chân trung bình</div><div class="gia">13,9%</div>
+        <div class="duoi">trung vị kênh 20,2% · <span class="lech te">thấp hơn 6,3 điểm</span></div></div>
+      <div class="so-o"><div class="nhan">Thời lượng xem TB</div><div class="gia">4:19</div>
+        <div class="duoi">trung vị kênh 6:11 · <span class="lech te">ngắn hơn 1:52</span></div></div>
+    </div>
+
+    <div class="hai-cot">
+      <div class="khung-vid">
+        <div class="vid-anh"><span>bản dựng gốc trên NAS · đang ở 0:00–0:30</span></div>
+        <div class="mocbar">
+          <div class="vung" style="left:0;width:3%"></div>
+          <div class="nhan30">mốc 0:30</div>
+          <i style="left:1.2%"></i><i style="left:2.1%"></i><i style="left:2.8%"></i>
+          <i style="left:14%"></i><i style="left:31%"></i><i style="left:47%"></i><i style="left:63%"></i>
+        </div>
+      </div>
+      <div class="bang-chung">
+        <h3>Máy đo được gì ở 30 giây đầu</h3>
+        <ul>
+          <li><b>4 cú cắt cảnh</b> trong 30 giây — trung vị nhóm tập giữ chân tốt: 11 cú</li>
+          <li>Cảnh mở dài <b>9,2 giây</b> không cắt (drone toàn cảnh)</li>
+          <li>Lời thoại bắt đầu ở giây <b>0:06</b> — nhóm tốt bắt đầu ở 0:01–0:02</li>
+          <li>Âm lượng 30 giây đầu <b>thấp hơn 4,1 LUFS</b> so với phần còn lại của chính video</li>
+          <li><b>2 note vòng duyệt</b> rơi vào cửa sổ này, cả hai đã đánh dấu Resolved</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="ai">
+      <h3>Máy đọc số — người quyết việc</h3>
+      <p>Tập này mất khán giả <b>trước khi kịp kể chuyện</b>: tới <span class="neo">0:30</span> chỉ còn 59%
+        trong khi trung vị kênh là 74%. Phần sau video giữ chân không tệ hơn các tập khác bao nhiêu, nên
+        vấn đề gần như nằm trọn ở mở đầu.</p>
+      <p>Ba dấu hiệu đo được đều chỉ về một hướng: mở màn <b>chậm và tĩnh</b> — cảnh drone 9,2 giây không cắt,
+        lời thoại vào muộn 6 giây, mật độ cắt bằng một phần ba nhóm tập tốt. Trong vòng duyệt,
+        <span class="neo">0:11</span> leader đã ghi <i>“mở đầu chậm, cân nhắc vào thẳng”</i> nhưng note được
+        đánh Resolved mà bản đăng vẫn giữ nguyên cảnh đó.</p>
+      <div class="viec">
+        <div><i></i><span>Tập sau: lời thoại vào trước giây thứ 2, cắt ít nhất 8 lần trong 30 giây đầu.</span></div>
+        <div><i></i><span>Cảnh drone mở màn chuyển xuống sau phút 1, đổi bằng cảnh có người.</span></div>
+        <div><i></i><span>Nâng âm lượng 30 giây đầu ngang phần còn lại — đang thấp hơn 4,1 LUFS.</span></div>
+      </div>
+      <div class="canh-ro">Chỉ nói được những gì đo được. Không có đường cong theo giây nên app
+        <b>không đoán</b> khán giả rời ở phút thứ mấy trong thân bài — muốn biết chỗ đó phải nối
+        YouTube Analytics API.</div>
+    </div>
+  </div></div>
+</section>
+<section style="display:flex;flex-direction:column;gap:12px">
+  <h2>Ba điều mockup này cố tình chốt</h2>
+  <div class="hai-cot" style="grid-template-columns:1fr 1fr">
+    <div class="bang-chung">
+      <h3>Tách bằng tab, không tách app</h3>
+      <ul>
+        <li>Cùng mã tập, cùng file trên NAS, cùng kho note — chỉ khác câu hỏi cần trả lời.</li>
+        <li>Luồng 1 <b>không đổi một byte</b>: đội dựng đang chạy quen, không đụng vào.</li>
+        <li>Cửa duy nhất nối hai luồng là nút “Đã đăng — thêm link YouTube”.</li>
+      </ul>
+    </div>
+    <div class="bang-chung">
+      <h3>Hook và Sustain là hai bệnh khác nhau</h3>
+      <ul>
+        <li>LI079 hook 78% mà giữ chân 13,5% — hỏng ở <b>thân bài</b>.</li>
+        <li>LI083 hook 59% — hỏng ở <b>mở đầu</b>.</li>
+        <li>Một cột số duy nhất sẽ trộn hai bệnh này làm một; nên bảng luôn để cạnh nhau.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="bang-chung">
+    <h3>Không có nút “duyệt” ở luồng 2</h3>
+    <ul>
+      <li>Video đã đăng rồi, không ai duyệt được nữa — kết quả của luồng 2 là <b>việc cho tập sau</b>,
+        không phải một trạng thái.</li>
+      <li>Vì vậy màn 3 kết thúc bằng danh sách việc, và những việc đó nên chảy sang Tasky thay vì
+        nằm chết trong app.</li>
+    </ul>
+  </div>
+  <p class="chu">Số liệu trong mockup lấy từ ảnh Studio anh gửi (Indonesia 4:19 · 13,9% · 59% @0:30 ·
+    Slovenia 5:01 · 13,5% · 78% · Norway 8:03 · 32,6% · 77%). Riêng phần “máy đo 30 giây đầu”
+    là số minh hoạ — chưa chạy ffmpeg trên file thật, sẽ đo thật khi dựng.</p>
+</section>
+</div>

@@ -23,14 +23,14 @@ def conn(tmp_path, monkeypatch):
 
 
 def test_tu_choi_bo_phan_rong(conn):
-    chu = iam.tao_tai_khoan(conn, None, "owner1", "matkhau123", "Ban quản trị", 5)
+    chu = iam.tao_tai_khoan(conn, None, "owner1", "MatKhau123", "Ban quản trị", 5)
     for xau in ["", "   ", None]:
         with pytest.raises(iam.LoiIam):
-            iam.tao_tai_khoan(conn, chu, "nv1", "matkhau123", xau, 1)
+            iam.tao_tai_khoan(conn, chu, "nv1", "MatKhau123", xau, 1)
 
 
 def test_bo_phan_hop_le_van_tao_duoc(conn):
-    chu = iam.tao_tai_khoan(conn, None, "owner1", "matkhau123", "Ban quản trị", 5)
-    tk = iam.tao_tai_khoan(conn, chu, "nv1", "matkhau123", "Kinh doanh", 1)
+    chu = iam.tao_tai_khoan(conn, None, "owner1", "MatKhau123", "Ban quản trị", 5)
+    tk = iam.tao_tai_khoan(conn, chu, "nv1", "MatKhau123", "Kinh doanh", 1)
     assert tk is not None
     assert iam.lay_tai_khoan(conn, "nv1")["bo_phan"] == "Kinh doanh"

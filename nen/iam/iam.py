@@ -24,7 +24,7 @@ import json
 import os
 import re
 import sqlite3
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 import bcrypt
@@ -167,6 +167,25 @@ def _yeu_cau_quan_tai_khoan(conn: sqlite3.Connection, ai_lam: dict) -> None:
         raise LoiIam("Bạn không có quyền quản tài khoản.")
 
 
+def _kiem_mat_khau(mk: str, ten: str) -> None:
+    """Chuẩn mật khẩu chung (SIẾT 05/09/2026, sổ bao-mat-internet.md mục N8).
+
+    Trước đây chỉ đòi >= 6 ký tự. Nghịch lý: `nas_sync.mat_khau_dat_chuan` ĐÃ CÓ
+    chuẩn mạnh hơn (>=8, HOA + thường + số, không chứa tên đăng nhập) nhưng chỉ
+    dùng để BÁO trạng thái NAS, không chặn đặt mật khẩu yếu ở IAM.
+    → Dùng lại chính hàm đó: mở rộng chuẩn có sẵn, và mật khẩu đạt chuẩn IAM thì
+    đồng bộ NAS cũng không bị Windows từ chối (lợi kép).
+
+    TƯƠNG THÍCH NGƯỢC: chỉ áp cho mật khẩu ĐẶT MỚI; tài khoản cũ (hash bcrypt,
+    không đọc lại được) vẫn đăng nhập bình thường tới khi tự đổi.
+    """
+    from nen.common.nas_sync import mat_khau_dat_chuan
+    if not mat_khau_dat_chuan(mk or "", ten or ""):
+        raise LoiIam(
+            "Mật khẩu phải từ 8 ký tự, có chữ HOA, chữ thường và số, "
+            "và không chứa tên đăng nhập.")
+
+
 def tao_tai_khoan(conn: sqlite3.Connection, ai_lam: dict | None, ten: str,
                   mat_khau: str, bo_phan: str, level: int,
                   nguoi_ma: str | None = None, phai_doi_mk: bool = True,
@@ -187,8 +206,7 @@ def tao_tai_khoan(conn: sqlite3.Connection, ai_lam: dict | None, ten: str,
     # TUYỆT ĐỐI không dùng từ route/UI — đó là đường tạo lại đúng lỗ vừa bịt.
     if not (1 <= int(level) <= 5):
         raise LoiIam("Level phải trong thang 1–5.")
-    if len(mat_khau) < 6:
-        raise LoiIam("Mật khẩu tối thiểu 6 ký tự.")
+    _kiem_mat_khau(mat_khau, ten)
     if lay_tai_khoan(conn, ten):
         raise LoiIam("Tên đăng nhập đã tồn tại.")
     if dem_tai_khoan(conn) == 0:
@@ -211,6 +229,50 @@ def tao_tai_khoan(conn: sqlite3.Connection, ai_lam: dict | None, ten: str,
     return lay_tai_khoan(conn, ten)
 
 
+def moc_phien(conn: sqlite3.Connection, ten: str) -> int:
+    """Mốc thu hồi phiên (epoch giây); 0 = chưa từng thu hồi.
+
+    SIẾT 05/09/2026 (sổ bao-mat-internet.md mục N3): thay cho bảng phiên đầy đủ.
+    Cookie ký TRƯỚC mốc này coi như hết hiệu lực.
+    """
+    r = conn.execute("SELECT phien_tu_luc FROM tai_khoan WHERE ten=?",
+                     (ten,)).fetchone()
+    if not r or not r[0]:
+        return 0
+    try:
+        d = datetime.fromisoformat(r[0])
+        if d.tzinfo is None:            # bản ghi cũ (nếu có) — coi là UTC
+            d = d.replace(tzinfo=timezone.utc)
+        return int(d.timestamp())
+    except (ValueError, TypeError):
+        return 0
+
+
+def _gio_utc() -> str:
+    """Mốc phiên dùng UTC TƯỜNG MINH.
+
+    BẪY ĐÃ TRÁNH (05/09): `_gio()` trả giờ ĐỊA PHƯƠNG KHÔNG múi giờ, còn cookie
+    của itsdangerous ký theo UTC. Máy chủ này đang chạy UTC nên hiện lệch 0 giây,
+    nhưng đổi múi giờ máy (hoặc chuyển sang máy khác) là mốc nhảy tới TƯƠNG LAI
+    → mọi phiên bị coi là hết hiệu lực → ĐĂNG XUẤT TOÀN BỘ NGƯỜI DÙNG.
+    So hai mốc thời gian thì cả hai phải cùng hệ quy chiếu.
+    """
+    return datetime.now(timezone.utc).isoformat(timespec="seconds")
+
+
+def thu_hoi_phien(conn: sqlite3.Connection, ten: str) -> None:
+    """Giết MỌI phiên hiện có của một người (đổi mật khẩu, Owner reset, nghi bị lộ)."""
+    with conn:
+        conn.execute("UPDATE tai_khoan SET phien_tu_luc=? WHERE ten=?",
+                     (_gio_utc(), ten))
+
+
+def phien_con_hieu_luc(conn: sqlite3.Connection, ten: str, ky_luc: int) -> bool:
+    """`ky_luc` = thời điểm cookie được ký. Chưa từng thu hồi → luôn True
+    (tương thích ngược cho tài khoản có sẵn)."""
+    return ky_luc >= moc_phien(conn, ten)
+
+
 def doi_mat_khau(conn: sqlite3.Connection, ai_lam: dict, ten_dich: str,
                  mk_moi: str, ep_doi_lan_sau: bool = False) -> None:
     """Tự đổi mật khẩu mình: luôn được. Đổi cho người khác: cần quyền quản tài
@@ -221,12 +283,14 @@ def doi_mat_khau(conn: sqlite3.Connection, ai_lam: dict, ten_dich: str,
     if ai_lam["ten"] != ten_dich:
         _yeu_cau_quan_tai_khoan(conn, ai_lam)
         _kiem_khong_dung_owner(ai_lam, tk)
-    if len(mk_moi) < 6:
-        raise LoiIam("Mật khẩu tối thiểu 6 ký tự.")
+    _kiem_mat_khau(mk_moi, ten_dich)
     h = bcrypt.hashpw(mk_moi.encode("utf-8"), bcrypt.gensalt()).decode()
     with conn:
-        conn.execute("UPDATE tai_khoan SET mk_bcrypt=?, phai_doi_mk=? WHERE ten=?",
-                     (h, int(ep_doi_lan_sau), ten_dich))
+        # SIẾT 05/09 (mục N3): đẩy mốc phiên → MỌI phiên cũ chết ngay. Trước đây
+        # đổi mật khẩu KHÔNG giết phiên cũ (cookie cắp được dùng trọn 30 ngày).
+        conn.execute("UPDATE tai_khoan SET mk_bcrypt=?, phai_doi_mk=?, "
+                     "phien_tu_luc=? WHERE ten=?",
+                     (h, int(ep_doi_lan_sau), _gio_utc(), ten_dich))
     ghi_nhat_ky(conn, ai_lam["ten"], "doi_mat_khau", ten_dich)
 
 

@@ -93,7 +93,7 @@
       <tr><td>{{ nha_info_cuc[nha].ten }}</td>
         <td><span class="chip-o">{{ khoa_ngan(k.dau, k.duoi) }}</span></td>
         <td>
-          <form class="dong" method="post" action="/general/api-keys/model">
+          <form class="dong" method="post" action="/general/api-keys/model">{{ o_csrf(request) }}
             {{ ve_fields() }}
             <input type="hidden" name="id" value="{{ k.id }}">
             <select name="model" onchange="this.form.submit()">
@@ -138,7 +138,7 @@
   <div class="modal">
     <h3>Add API key
       <button type="button" class="dong-x" data-dong="md-key" aria-label="Close">✕</button></h3>
-    <form method="post" action="/general/api-keys/add">
+    <form method="post" action="/general/api-keys/add">{{ o_csrf(request) }}
       {{ ve_fields() }}
       <div class="form-grid">
         <div><label>API type</label><select name="loai_chon">
@@ -175,7 +175,7 @@
   <div class="modal">
     <h3>Revoke key <span class="chip-o" id="rv-khoa"></span>
       <button type="button" class="dong-x" data-dong="md-revoke" aria-label="Close">✕</button></h3>
-    <form method="post" action="/general/api-keys/revoke">
+    <form method="post" action="/general/api-keys/revoke">{{ o_csrf(request) }}
       {{ ve_fields() }}
       <input type="hidden" name="id" id="rv-id" value="">
       <div class="form-grid">
@@ -215,7 +215,7 @@
       {% set day_du = v.ma in mo_rong or ids | length <= 5 %}
       {% for kid in (ids if day_du else ids[:5]) %}
         {% for k in keys if k.id == kid %}
-        <form class="khoa-dong" method="post" action="/general/api-keys/cap-phat">
+        <form class="khoa-dong" method="post" action="/general/api-keys/cap-phat">{{ o_csrf(request) }}
           {{ ve_fields() }}
           <input type="hidden" name="app_slug" value="{{ app_chon }}">
           <input type="hidden" name="viec" value="{{ v.ma }}">
@@ -232,7 +232,7 @@
       {% endif %}
       {% set con_lai = keys | selectattr('loai', 'equalto', v.loai) | rejectattr('id', 'in', ids) | list %}
       {% if con_lai %}
-      <form class="dong" method="post" action="/general/api-keys/cap-phat">
+      <form class="dong" method="post" action="/general/api-keys/cap-phat">{{ o_csrf(request) }}
         {{ ve_fields() }}
         <input type="hidden" name="app_slug" value="{{ app_chon }}">
         <input type="hidden" name="viec" value="{{ v.ma }}">
@@ -263,7 +263,7 @@
         {% else %}—{% endif %}</td>
     <td class="phu">{{ muc.get('ngay') or '—' }}</td>
     <td>
-      <form class="dong" method="post" action="/general/api-keys/cap-phat">
+      <form class="dong" method="post" action="/general/api-keys/cap-phat">{{ o_csrf(request) }}
         {{ ve_fields() }}
         <input type="hidden" name="app_slug" value="{{ app_chon }}">
         <input type="hidden" name="viec" value="{{ v.ma }}">

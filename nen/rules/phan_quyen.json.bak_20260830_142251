@@ -1,0 +1,300 @@
+﻿{
+  "_ghi_chu": "LUẬT QUYỀN NGOÀI CODE (Permissions v2 — DE.md mục 14, mockup P1-P5). Hai giỏ quản trị: gio_owner_tuyet_doi = chỉ Owner thật (level 5) — KHÔNG ủy quyền được. gio_uy_quyen = khu chức năng: Owner HOẶC tài khoản bật admin_uy_quyen (+ luật bộ phận riêng ở gateway). Mỗi app khai HÀNH ĐỘNG THẬT dạng {ma: {nhan, mo_ta, min_level, bo_phan?}} — nhan/mo_ta là metadata UI, co_quyen chỉ đọc min_level/bo_phan; 'vao' là hành động vào app. Ô tick lẻ (quyen_override, PHẢI có lý do) THẮNG cấp truy cập THẮNG luật mặc định — trừ giỏ Owner tuyệt đối. Vai X-Remote-Role dịch từ hành động dừng-tại-hit-đầu (quan_tri→admin · xoa/toan_quyen→vai_xoa · sua/tao/them→leader · còn lại viewer); app chưa khai hành động → level 5 admin / 4 manager / 3 leader / viewer. DANH PHÁP: 'owner' không còn là tên vai app.",
+  "gio_owner_tuyet_doi": [
+    "vault",
+    "ket_cau_hinh",
+    "bang_phan_quyen",
+    "xoa_cung_tai_lieu"
+  ],
+  "gio_uy_quyen": [
+    "quan_tai_khoan",
+    "duyet_ho_so",
+    "nhan_su",
+    "ke_toan"
+  ],
+  "_ghi_chu_khu_general": "TỪNG TRANG khu General là một hành động tick riêng (Owner chốt 19/08 — cấp cho Director L4). HAI MỨC MẶC ĐỊNH: 4 trang quản trị (tong_quan/nhat_ky/du_lieu/ung_dung) KHÔNG thuộc giỏ nào → co_quyen fail-closed = chỉ Owner; 2 trang danh bạ (niches/channels) giữ luật cũ L4+ và ô tick THẮNG luật đó (mở cho team dưới L4, hoặc chặn một người L4 cụ thể). Mặc định cả 6 = hành vi trước khi có ô tick. Permissions + API Keys KHÔNG có ở đây — chúng nằm ở gio_owner_tuyet_doi (Manager không bao giờ ngang Owner).",
+  "gio_khu_general": [
+    "general_tong_quan",
+    "general_niches",
+    "general_channels",
+    "general_nhat_ky",
+    "general_du_lieu",
+    "general_ung_dung"
+  ],
+  "apps": {
+    "app-mau": {
+      "vao": {
+        "min_level": 1
+      }
+    },
+    "ai-agent": {
+      "vao": {
+        "min_level": 1
+      },
+      "nap_tai_lieu": {
+        "nhan": "Nạp tài liệu",
+        "mo_ta": "Upload kho tri thức + từ khóa gợi ý",
+        "min_level": 4
+      },
+      "nguon_ngoai": {
+        "nhan": "Nguồn ngoài",
+        "mo_ta": "Nạp video/transcript → bài học kinh nghiệm",
+        "min_level": 4
+      },
+      "giam_sat": {
+        "nhan": "Giám sát",
+        "mo_ta": "Cây giám sát tri thức + lịch sử mọi người",
+        "min_level": 5
+      },
+      "duyet_qa": {
+        "nhan": "Duyệt Q&A",
+        "mo_ta": "Duyệt Q&A bổ sung vào kho",
+        "min_level": 5
+      },
+      "quan_tri": {
+        "nhan": "Quản trị",
+        "mo_ta": "Sửa/xóa tài liệu kho + cấu hình app",
+        "min_level": 5
+      }
+    },
+    "data-analytics": {
+      "_ghi_chu_vao": "LUẬT TOÀN AGENT (Owner chốt 19/08): MỌI nhân sự đều được XEM Data Analytics — gỡ rào bộ phận Kinh doanh và hạ min_level 2→1. Đọc số liệu là việc chung, không phải đặc quyền một phòng.",
+      "vao": {
+        "min_level": 1
+      },
+      "quan_tri": {
+        "nhan": "Quản trị",
+        "mo_ta": "Xóa báo cáo + sửa luật chẩn đoán",
+        "min_level": 5
+      }
+    },
+    "to-chuc": {
+      "vao": {
+        "min_level": 1
+      },
+      "kpi": {
+        "nhan": "KPI Review",
+        "mo_ta": "Bảng KPI + chốt công kỳ",
+        "min_level": 4
+      },
+      "quan_tri": {
+        "nhan": "Quản trị",
+        "mo_ta": "Cấu hình app tổ chức",
+        "min_level": 5
+      },
+      "nas_cap_cao": {
+        "nhan": "NAS: sửa/xóa file",
+        "mo_ta": "Nhóm Windows NAS-ToanQuyen (đọc/ghi/sửa/xóa) — dưới ngưỡng chỉ NAS-ChiThem (đọc + thêm file mới, không sửa/xóa). LƯU Ý ĐẶT TÊN: khoá KHÔNG được chứa 'xoa'/'toan_quyen'/'sua'/'tao'/'them' — iam.vai_cho_app() dò substring các từ đó để tự suy X-Remote-Role gửi sang app, đặt trùng là vô tình đẩy vai app lên admin/leader (đã dính thật — test_iam.py::test_vai_dich_tu_hanh_dong_va_tick_quan_tri).",
+        "min_level": 3
+      }
+    },
+    "radary": {
+      "vao": {
+        "min_level": 1
+      },
+      "them_video": {
+        "nhan": "Thêm video theo dõi",
+        "mo_ta": "Thêm video mới vào danh sách theo dõi (vai leader của RadarY)",
+        "min_level": 3,
+        "bo_phan": [
+          "Kinh doanh"
+        ]
+      },
+      "tao_pool": {
+        "nhan": "Tạo pool đối thủ",
+        "mo_ta": "Tạo pool kênh mới để hệ tự quét theo lịch (vai leader)",
+        "min_level": 3,
+        "bo_phan": [
+          "Kinh doanh"
+        ]
+      },
+      "toan_quyen": {
+        "nhan": "Toàn quyền vận hành",
+        "mo_ta": "Xóa video/kênh/pool, xóa cả niche (workspace) — KHÔNG gồm API key/thành viên/cấu hình LLM (vai manager)",
+        "min_level": 4,
+        "bo_phan": [
+          "Vận hành - Sản xuất",
+          "Kinh doanh"
+        ]
+      },
+      "quan_tri": {
+        "nhan": "Quản trị",
+        "mo_ta": "Tab Quản trị đầy đủ: API key YouTube · thành viên + lời mời · cấu hình LLM (vai owner nội bộ app)",
+        "min_level": 5
+      },
+      "vai_xoa": "manager"
+    },
+    "content-ultimate": {
+      "vao": {
+        "min_level": 2,
+        "bo_phan": [
+          "Vận hành - Sản xuất"
+        ]
+      },
+      "sua": {
+        "nhan": "Vận hành",
+        "mo_ta": "Tab Quản lý: nhật ký chạy · log lỗi · token · lịch sử team (vai leader — trần vận hành, Manager không ngang Owner)",
+        "min_level": 3,
+        "bo_phan": [
+          "Vận hành - Sản xuất"
+        ]
+      },
+      "quan_tri": {
+        "nhan": "Quản trị",
+        "mo_ta": "Tab Cài đặt: API key + cấu hình dịch vụ + thành viên (vai admin nội bộ app)",
+        "min_level": 5
+      }
+    },
+    "niche-research": {
+      "vao": {
+        "min_level": 2,
+        "bo_phan": [
+          "Kinh doanh"
+        ]
+      },
+      "tao": {
+        "nhan": "Tạo nghiên cứu",
+        "mo_ta": "Tạo dự án + chạy phân tích ngách (run/resume/watch/agent LLM — vai leader)",
+        "min_level": 3,
+        "bo_phan": [
+          "Kinh doanh"
+        ]
+      },
+      "toan_quyen": {
+        "nhan": "Toàn quyền vận hành",
+        "mo_ta": "Xóa dự án + xóa tài liệu báo cáo — KHÔNG gồm Settings/API key/users (vai manager)",
+        "min_level": 4,
+        "bo_phan": [
+          "Kinh doanh"
+        ]
+      },
+      "quan_tri": {
+        "nhan": "Quản trị",
+        "mo_ta": "Settings · API key · users/invites nội bộ app — ĐÃ ĐÓNG khi SSO (khóa ở General › API Keys, quyền ở General › Permissions)",
+        "min_level": 5
+      },
+      "vai_xoa": "manager"
+    },
+    "video-review": {
+      "vao": {
+        "min_level": 1
+      },
+      "duyet": {
+        "nhan": "Duyệt video",
+        "mo_ta": "Đổi trạng thái review (Approve / Request changes) + giải-mở-xóa bình luận của người khác",
+        "min_level": 3
+      },
+      "xoa": {
+        "nhan": "Gỡ video",
+        "mo_ta": "Gỡ video khỏi danh sách (GỠ MỀM — file giữ nguyên trong kho)",
+        "min_level": 4
+      }
+    },
+    "tasky": {
+      "vao": {
+        "min_level": 1
+      },
+      "giao_viec": {
+        "nhan": "Giao việc",
+        "mo_ta": "Giao việc tuần cho cấp dưới trong bộ phận mình + gửi yêu cầu phối hợp sang bộ phận khác (app kiểm thêm ở server: giao = level LỚN HƠN và cùng bộ phận; phối hợp = cả hai L3+, KHÁC bộ phận, chênh tối đa 1 bậc)",
+        "min_level": 3
+      },
+      "xac_nhan_ket_qua": {
+        "nhan": "Xác nhận kết quả",
+        "mo_ta": "Xác nhận việc nhân sự báo xong + đóng tuần cho bộ phận",
+        "min_level": 3
+      },
+      "bao_cao_bo_phan": {
+        "nhan": "Báo cáo bộ phận",
+        "mo_ta": "Xem khối lượng + tỉ lệ hoàn thành của người trong bộ phận mình",
+        "min_level": 3
+      },
+      "bao_cao_cong_ty": {
+        "nhan": "Báo cáo toàn công ty",
+        "mo_ta": "Xem báo cáo mọi bộ phận (Manager trở lên — giữ lệ 04/08: Manager xem ngang nhau)",
+        "min_level": 4
+      },
+      "bao_cao_nhan_su": {
+        "nhan": "Báo cáo cho nhân sự",
+        "mo_ta": "HR Leader+ xem báo cáo toàn công ty để chấm công + xếp loại KPI",
+        "min_level": 3,
+        "bo_phan": "Hành chính Nhân sự"
+      }
+    },
+    "plannery": {
+      "vao": {
+        "min_level": 1
+      },
+      "khai_kenh_video": {
+        "nhan": "Thêm kênh + video",
+        "mo_ta": "Vai seo — thêm KÊNH MỚI vào dự án có sẵn + thêm/sửa/xóa video & thời lượng kênh; KHÔNG đụng cấu hình kênh cũ/dự án/lịch. (Tên khóa cố ý tránh 'them/tao/sua' — bẫy đặt tên vai_cho_app, xem ghi chú nas_cap_cao.)",
+        "min_level": 2,
+        "bo_phan": [
+          "Kinh doanh"
+        ]
+      },
+      "sua": {
+        "nhan": "Sửa / phân lịch",
+        "mo_ta": "Vai leader — phân công người ↔ dự án, sửa lịch/cấu hình kênh, 'đang làm' + rate tuần + ngày nghỉ; hồ sơ nhân sự vẫn của HR (bên to-chuc/General).",
+        "min_level": 3
+      },
+      "toan_quyen": {
+        "nhan": "Toàn quyền vận hành",
+        "mo_ta": "Vai manager — sửa full dữ liệu kế hoạch (dự án/kênh/người/phân công) — KHÔNG gồm tài khoản nội bộ app (Manager không ngang Owner)",
+        "min_level": 4
+      },
+      "quan_tri": {
+        "nhan": "Quản trị",
+        "mo_ta": "Vai admin — toàn quyền + tài khoản/mã mời nội bộ app; cửa nội bộ ĐÃ ĐÓNG khi SSO (tài khoản quản ở General › Accounts / Permissions)",
+        "min_level": 5
+      },
+      "vai_xoa": "manager"
+    },
+    "seo-optimize": {
+      "vao": {
+        "min_level": 2,
+        "bo_phan": [
+          "Kinh doanh"
+        ]
+      },
+      "van_hanh": {
+        "nhan": "Nghiệp vụ SEO",
+        "mo_ta": "Vai seo: xem kênh trong thị trường mình, sinh metadata + xuất file (tốn token), TỰ THÊM kênh mình từ URL YouTube, nạp format đối thủ, thêm vào kho niche — không xóa gì. LƯU Ý ĐẶT TÊN: khóa cố ý tránh substring them/tao/sua/xoa/toan_quyen kẻo iam.vai_cho_app() đẩy nhầm vai (bẫy nas_cap_cao).",
+        "min_level": 2,
+        "bo_phan": [
+          "Kinh doanh"
+        ]
+      },
+      "sua": {
+        "nhan": "Thị trường được giao",
+        "mo_ta": "Vai leader: tạo/sửa thị trường, xóa format + mục kho niche, khôi phục thùng rác 24h — KHÔNG xóa kênh/thị trường, KHÔNG giao việc (Owner chốt 24/08: giao kênh là của Manager trở lên — xem hành động phan_cong)",
+        "min_level": 3,
+        "bo_phan": [
+          "Kinh doanh"
+        ]
+      },
+      "toan_quyen": {
+        "nhan": "Toàn quyền vận hành",
+        "mo_ta": "Vai manager: sửa MỌI kênh, xóa kênh/format/tập/thị trường + dọn thùng rác, xem nhật ký audit — KHÔNG gồm tài khoản/API key (Manager không ngang Owner)",
+        "min_level": 4,
+        "bo_phan": [
+          "Kinh doanh"
+        ]
+      },
+      "phan_cong": {
+        "nhan": "Giao việc (kênh)",
+        "mo_ta": "Trục B — gán người ↔ KÊNH (ai được ghi lên kênh nào). Owner chốt 24/08/2026: Manager trở lên, Leader KHÔNG. Dữ liệu ở bảng phan_cong của nền, app chỉ thi hành; người nhận phải vào được app (nền kiểm). LƯU Ý ĐẶT TÊN: khóa tránh substring them/tao/sua/xoa/toan_quyen (bẫy iam.vai_cho_app).",
+        "min_level": 4,
+        "bo_phan": [
+          "Kinh doanh"
+        ]
+      },
+      "quan_tri": {
+        "nhan": "Quản trị",
+        "mo_ta": "Tài khoản + API key nội bộ app — ĐÃ ĐÓNG khi SSO (khóa nhập ở General › API Keys, tài khoản/quyền ở General › Accounts / Permissions)",
+        "min_level": 5
+      },
+      "vai_xoa": "manager"
+    }
+  }
+}

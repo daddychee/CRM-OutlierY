@@ -20,10 +20,10 @@ def he(tmp_path, monkeypatch):
     monkeypatch.setattr(bcrypt, "gensalt", lambda rounds=12: _gensalt_goc(4))
     conn = iam.ket_noi()
     ow = iam.claims_cua(iam.tao_tai_khoan(
-        conn, None, "owner-t", "mk-test", "Ban quản trị", 5, phai_doi_mk=False))
-    iam.tao_tai_khoan(conn, ow, "quanly", "mk-ql-6", "Kinh doanh", 4,
+        conn, None, "owner-t", "MatKhau123", "Ban quản trị", 5, phai_doi_mk=False))
+    iam.tao_tai_khoan(conn, ow, "quanly", "MatKhau123", "Kinh doanh", 4,
                       phai_doi_mk=False)
-    iam.tao_tai_khoan(conn, ow, "nhanvien", "mk-nv-6", "Kinh doanh", 2,
+    iam.tao_tai_khoan(conn, ow, "nhanvien", "MatKhau123", "Kinh doanh", 2,
                       phai_doi_mk=False)
     conn.close()
 
@@ -60,13 +60,13 @@ def _tao_kenh(c, ten, **kw):
     return _ma_moi(r, "K")
 
 def test_gate_l2_khong_vao_l4_vao(he):
-    assert _login("nhanvien", "mk-nv-6").get("/general/niches").status_code == 403
-    assert _login("quanly", "mk-ql-6").get("/general/niches").status_code == 200
-    assert _login("quanly", "mk-ql-6").get("/general/channels").status_code == 200
+    assert _login("nhanvien", "MatKhau123").get("/general/niches").status_code == 403
+    assert _login("quanly", "MatKhau123").get("/general/niches").status_code == 200
+    assert _login("quanly", "MatKhau123").get("/general/channels").status_code == 200
 
 
 def test_niche_truoc_kenh_va_luong_tao(he):
-    c = _login("quanly", "mk-ql-6")
+    c = _login("quanly", "MatKhau123")
     ng = _tao_ngach(c, "Life In", trang_thai="khai_thac")
     tt = _tao_tt(c, "US", "English")
     kenh = _tao_kenh(c, "Outland", ngach_ma=ng, thi_truong_ma=tt,
@@ -84,7 +84,7 @@ def test_niche_truoc_kenh_va_luong_tao(he):
 
 
 def test_doi_vong_doi_va_audit_co_vet(he):
-    c = _login("quanly", "mk-ql-6")
+    c = _login("quanly", "MatKhau123")
     ng = _tao_ngach(c, "Space")
     kenh = _tao_kenh(c, "Astro", ngach_ma=ng)
     r = c.post("/general/channels/trang-thai",
@@ -97,13 +97,13 @@ def test_doi_vong_doi_va_audit_co_vet(he):
 
 
 def test_khai_tu_chi_owner_va_phai_go_lai_ma(he):
-    ql = _login("quanly", "mk-ql-6")
+    ql = _login("quanly", "MatKhau123")
     ng = _tao_ngach(ql, "OLD")
     kenh = _tao_kenh(ql, "Time Vault", ngach_ma=ng)
     assert ql.post("/general/channels/khai-tu",
                    data={"ma": kenh, "go_lai": kenh}
                    ).status_code == 403               # Manager không được khai tử
-    ow = _login("owner-t", "mk-test")
+    ow = _login("owner-t", "MatKhau123")
     r = ow.post("/general/channels/khai-tu", data={"ma": kenh, "go_lai": "go-sai"})
     assert "Retype" in r.text                          # gõ sai mã → chặn
     r = ow.post("/general/channels/khai-tu", data={"ma": kenh, "go_lai": kenh})
@@ -116,7 +116,7 @@ def test_post_redirect_get_giu_vi_tri(he):
     GET sạch GIỮ VỊ TRÍ (?ma= chi tiết đang mở + bộ lọc) + bao/loi — hết kẹt URL
     đường POST, F5 hết re-submit; nhánh LỖI cũng redirect."""
     c = TestClient(gateway_app, follow_redirects=False)
-    c.post("/login", data={"ten": "quanly", "mat_khau": "mk-ql-6"})
+    c.post("/login", data={"ten": "quanly", "mat_khau": "MatKhau123"})
     rn = c.post("/general/niches/create", data={"ten_chuan": "Space"})
     ng = re.search(r"N-\d{3,}", rn.headers.get("location", "") + rn.text).group()
     r = c.post("/general/channels/create",
@@ -147,20 +147,20 @@ def test_post_redirect_get_giu_vi_tri(he):
 
 
 def test_lien_ket_app_chi_owner(he):
-    ql = _login("quanly", "mk-ql-6")
+    ql = _login("quanly", "MatKhau123")
     ng = _tao_ngach(ql, "Life In")
     kenh = _tao_kenh(ql, "Outland", ngach_ma=ng)
     assert ql.post("/general/channels/link",
                    data={"ma": kenh, "app_slug": "seo-optimize",
                          "khoa": "outland-o-01"}).status_code == 403
-    ow = _login("owner-t", "mk-test")
+    ow = _login("owner-t", "MatKhau123")
     ow.post("/general/channels/link",
             data={"ma": kenh, "app_slug": "seo-optimize", "khoa": "outland-o-01"})
     assert "outland-o-01" in ow.get(f"/general/channels?ma={kenh}").text
 
 
 def test_export_csv(he):
-    c = _login("quanly", "mk-ql-6")
+    c = _login("quanly", "MatKhau123")
     ng = _tao_ngach(c, "Life In")
     r = c.get("/general/channels/export")
     assert r.status_code == 200 and ng in r.text
@@ -171,7 +171,7 @@ def test_export_csv(he):
 
 def test_modal_thay_form_details(he):
     """Mockup N1/C1: "+ New" mở MODAL (không còn <details> khai form)."""
-    c = _login("quanly", "mk-ql-6")
+    c = _login("quanly", "MatKhau123")
     for duong, md in (("/general/niches", "md-niche"), ("/general/channels", "md-kenh")):
         b = c.get(duong).text
         assert f'class="modal-bg" id="{md}"' in b          # modal có mặt
@@ -185,7 +185,7 @@ def test_modal_thay_form_details(he):
 def test_bo_loc_va_chip_kenh_trong_niche(he):
     """Lọc niche/lifecycle SERVER-side lọc đúng; chip kênh của niche đủ số;
     bảng Markets đếm đúng số kênh."""
-    c = _login("quanly", "mk-ql-6")
+    c = _login("quanly", "MatKhau123")
     n_life = _tao_ngach(c, "Life In")
     n_space = _tao_ngach(c, "Space")
     tt_us = _tao_tt(c, "US", "English")
@@ -218,7 +218,7 @@ def test_bo_loc_va_chip_kenh_trong_niche(he):
 def test_nhan_en_va_khong_ghi_chu_man_hinh(he):
     """Chuẩn UI hệ: nhãn EN, nhãn vòng đời/trạng thái dịch sang EN, không câu
     giải thích tiếng Việt trên màn hình (luật Owner mục 12.2)."""
-    c = _login("quanly", "mk-ql-6")
+    c = _login("quanly", "MatKhau123")
     ng = _tao_ngach(c, "Life In", trang_thai="khai_thac")
     kenh = _tao_kenh(c, "Outland", ngach_ma=ng, trang_thai="sandbox")
     b = c.get("/general/niches").text
@@ -229,14 +229,14 @@ def test_nhan_en_va_khong_ghi_chu_man_hinh(he):
     assert "chưa gán" not in b and "gõ lại" not in b        # hết chuỗi VN cũ trên màn
     # khối khai tử vẫn CHỈ Owner (quyền không đổi) — nhãn EN + gõ-lại-mã giữ nguyên
     assert "Retire channel" not in b
-    ow = _login("owner-t", "mk-test").get(f"/general/channels?ma={kenh}").text
+    ow = _login("owner-t", "MatKhau123").get(f"/general/channels?ma={kenh}").text
     assert "Retire channel" in ow and f'placeholder="retype {kenh}"' in ow
 
 
 def test_niche_thi_truong_user_chon_khong_mac_dinh(he):
     """Owner chốt 18/08: thị trường THUỘC TỪNG NGÁCH do user tick — ngách tạo
     không tick gì = 'none chosen', tick rồi sửa là thay cả tập."""
-    c = _login("quanly", "mk-ql-6")
+    c = _login("quanly", "MatKhau123")
     tt_us = _tao_tt(c, "US", "English")
     tt_kr = _tao_tt(c, "Korea", "Korean")
     # tạo KHÔNG tick → 0 thị trường (không còn mặc định cả danh mục)
@@ -269,7 +269,7 @@ def test_nhan_vong_doi_hien_tu_nguon_chung(he):
     THẬT SỰ tới template — thiếu thì nhãn ra rỗng mà trang vẫn 200, test status
     không bắt được."""
     from nen.common import danh_ba
-    c = _login("quanly", "mk-ql-6")
+    c = _login("quanly", "MatKhau123")
     n2 = _tao_ngach(c, "Space 2")
     _tao_kenh(c, "Astro", ngach_ma=n2, trang_thai="sandbox")
     r = c.get("/general/channels")
@@ -284,7 +284,7 @@ def test_doi_ten_ngach_thi_TEN_MOI_dung_truoc_ma_cu(he):
     """Owner 03/09: tao ngach 'What If' roi doi ten 'SCI-FI' -> tuong "ten khong
     doi duoc" vi bang hien MA in dam o cot DAU (N-WHAT-IF), ten that nam cot sau.
     Ma phai giu (noi sang RadarY/Niche Research) nhung khong duoc gia lam ten."""
-    c = _login("quanly", "mk-ql-6")
+    c = _login("quanly", "MatKhau123")
     ma = _tao_ngach(c, "What If")
     r = c.post("/general/niches/update",
                data={"ma": ma, "ten_chuan": "SCI-FI", "trang_thai": "khai_thac"})
@@ -302,7 +302,7 @@ def test_ma_moi_la_DAY_SO_khong_lay_theo_ten(he):
     """Owner 03/09: 'dat code thi dat la mot day so, tranh gay hieu nham'.
     Ma sinh tu ten (What If -> N-WHAT-IF) TRONG NHU TEN, nen doi ten ma ma dung
     yen thi tuong hong. Ma so thi khong ai nham no voi ten."""
-    c = _login("quanly", "mk-ql-6")
+    c = _login("quanly", "MatKhau123")
     r = c.post("/general/niches/create", data={"ten_chuan": "What If"})
     assert "WHAT-IF" not in r.text, "ma KHONG duoc lay theo ten nua"
     import re as _re
@@ -319,7 +319,7 @@ def test_ma_so_khong_trung_va_khong_dung_lai_so_da_xoa(he):
     KHONG duoc cap lai so cu (ma cu con nam trong audit/lien ket app)."""
     from nen.common import danh_ba
     conn = danh_ba.ket_noi() if hasattr(danh_ba, "ket_noi") else None
-    c = _login("quanly", "mk-ql-6")
+    c = _login("quanly", "MatKhau123")
     mas = []
     import re as _re
     for ten in ("Alpha", "Beta", "Gamma"):

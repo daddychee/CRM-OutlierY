@@ -27,7 +27,7 @@ def conn(tmp_path, monkeypatch):
 
 
 def _tk(conn, ai, ten, bo_phan, level):
-    return iam.claims_cua(iam.tao_tai_khoan(conn, ai, ten, "mk-" + ten + "-123", bo_phan, level,
+    return iam.claims_cua(iam.tao_tai_khoan(conn, ai, ten, "MatKhau123", bo_phan, level,
                                             phai_doi_mk=False))
 
 
@@ -183,6 +183,17 @@ def test_duong_pham_vi_va_chan_goi_tu_LAN(he):
     assert _goi(f"/api/quyen/tai-khoan/{APP}", ("192.168.1.50", 50000)).status_code == 403
 
 
+def _headers_csrf(client, ten: str) -> dict:
+    """Header CSRF cho lời gọi API JSON (siết bảo mật 05/09).
+
+    Middleware `_chan_csrf` đòi token ở MỌI phương thức ghi khi request CÓ phiên.
+    Trình duyệt thật lấy token từ ô ẩn `{{ o_csrf(request) }}` trong form; lời gọi
+    JSON gửi qua header `X-CSRF-Token`. Test phải làm y như client thật.
+    """
+    from nen.common import csrf
+    return {csrf.TEN_HEADER: csrf.sinh_token(ten)}
+
+
 def test_duong_giao_viec_xac_thuc_bang_COOKIE_khong_bang_loopback(he, monkeypatch):
     """App chuyển tiếp nguyên cookie người bấm; gateway tự biết ai và tự kiểm quyền.
 
@@ -197,16 +208,16 @@ def test_duong_giao_viec_xac_thuc_bang_COOKIE_khong_bang_loopback(he, monkeypatc
                       "nguoi": ["nv"]}).status_code == 401
 
     c = TestClient(gateway_app, follow_redirects=False)
-    c.post("/login", data={"ten": "mng", "mat_khau": "mk-mng-123"})
-    r = c.post("/api/quyen/phan-cong",
+    c.post("/login", data={"ten": "mng", "mat_khau": "MatKhau123"})
+    r = c.post("/api/quyen/phan-cong", headers=_headers_csrf(c, "mng"),
                json={"app": APP, "loai": "kenh", "ma": "cf-01", "nguoi": ["nv"]})
     assert r.status_code == 200 and r.json()["nguoi"] == ["nv"]
     assert iam.nguoi_cua(he["conn"], APP, "kenh", "cf-01") == ["nv"]
 
     # Leader đăng nhập thật vẫn bị chặn Ở NỀN (không chỉ ẩn nút bên app)
     c2 = TestClient(gateway_app, follow_redirects=False)
-    c2.post("/login", data={"ten": "ld", "mat_khau": "mk-ld-123"})
-    r2 = c2.post("/api/quyen/phan-cong",
+    c2.post("/login", data={"ten": "ld", "mat_khau": "MatKhau123"})
+    r2 = c2.post("/api/quyen/phan-cong", headers=_headers_csrf(c2, "ld"),
                  json={"app": APP, "loai": "kenh", "ma": "cf-01", "nguoi": ["ld"]})
     assert r2.status_code == 400 and "giao việc" in r2.json()["loi"]
     assert iam.nguoi_cua(he["conn"], APP, "kenh", "cf-01") == ["nv"], "bị chặn thì không đổi gì"
@@ -217,8 +228,8 @@ def test_duong_giao_viec_bao_ly_do_doc_duoc(he):
 
     from nen.gateway.main import app as gateway_app
     c = TestClient(gateway_app, follow_redirects=False)
-    c.post("/login", data={"ten": "mng", "mat_khau": "mk-mng-123"})
-    r = c.post("/api/quyen/phan-cong",
+    c.post("/login", data={"ten": "mng", "mat_khau": "MatKhau123"})
+    r = c.post("/api/quyen/phan-cong", headers=_headers_csrf(c, "mng"),
                json={"app": APP, "loai": "kenh", "ma": "cf-01", "nguoi": ["vh"]})
     assert r.status_code == 400 and "không vào được app" in r.json()["loi"]
 

@@ -20,13 +20,13 @@ def so_sach(tmp_path, monkeypatch):
     monkeypatch.setenv("DANH_BA_DB", str(tmp_path / "danh_ba.db"))
     monkeypatch.setattr(bcrypt, "gensalt", lambda rounds=12: _gensalt_goc(4))
     conn = iam.ket_noi()
-    chu = iam.claims_cua(iam.tao_tai_khoan(conn, None, "owner", "mk-owner",
+    chu = iam.claims_cua(iam.tao_tai_khoan(conn, None, "owner", "MatKhau123",
                                            "Ban quản trị", 5, phai_doi_mk=False))
     ngoc = iam.tao_nguoi(conn, chu, "Trần Hồng Ngọc", "Vận hành - Sản xuất",
                          "Content (Kịch bản)")
     duong = iam.tao_nguoi(conn, chu, "Nguyễn Tùng Dương", "Vận hành - Sản xuất",
                           "Editor (Dựng video)")
-    iam.tao_tai_khoan(conn, chu, "ngocth", "mk-ngoc", "Vận hành - Sản xuất", 2,
+    iam.tao_tai_khoan(conn, chu, "ngocth", "MatKhau123", "Vận hành - Sản xuất", 2,
                       nguoi_ma=ngoc["ma"])
     # đã thôi việc: đế vẫn phát ra kèm trạng thái để app biết mà dọn lịch
     iam.sua_nguoi(conn, chu, duong["ma"], trang_thai="nghi")

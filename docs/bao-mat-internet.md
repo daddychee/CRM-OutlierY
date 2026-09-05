@@ -479,6 +479,35 @@ vì không có khóa `nhan`. → KHÔNG có mìn nào đang nổ, nên **KHÔNG 
 (đổi là rủi ro thật cho hành vi đang đúng); thay vào đó dựng LƯỚI TEST chặn mã mới
 vô tình được nâng vai.
 
+### GĐ 4 — NỀN XÁC THỰC (đang làm, 05/09)
+
+| Việc | Cách làm | Trạng thái |
+|---|---|---|
+| **CSRF** (N1) | `nen/common/csrf.py` + **middleware MỘT CHỖ** thay vì sửa 38 route; Jinja global `o_csrf(request)` chèn vào 27 form | ✅ kiểm sống 3 ca |
+| **Rate limit login** (N2) | `nen/common/chan_do.py`, khóa theo (tên, IP), tăng dần, chặn **TRƯỚC bcrypt** (đóng luôn đường DoS cạn threadpool) | ✅ 5 test |
+| **Thu hồi phiên** (N3) | migration 008 cột `phien_tu_luc`; đổi mật khẩu đẩy mốc → mọi phiên cũ chết | ✅ 6 test |
+| **Chuẩn mật khẩu** (N8) | dùng lại `nas_sync.mat_khau_dat_chuan` (≥8, HOA+thường+số, không chứa tên) | ✅ 10 test |
+| **Fail-fast SESSION_SECRET** (N4) | `OUTLIERY_MOI_TRUONG=that` → thiếu secret là DỪNG | ✅ |
+| **Bỏ 307** ở `/nen{duong}` (bàn đạp CSRF) | đổi sang 303 | ✅ |
+
+**MIỄN TRỪ CSRF có chủ đích** (ghi để không ai gỡ nhầm): `/login`, `/logout`,
+`/khoi-phuc` (cửa vào — bảo vệ bằng rate-limit), `/app/` (proxy: app tự lo cửa,
+chặn ở đây phá 7 app mà không thêm an toàn), `/static/`, `/api/cau-hinh/`
+(loopback + token nội bộ), và **request không có phiên** (CSRF cần phiên nạn nhân).
+
+**BẪY MÚI GIỜ suýt mắc:** mốc thu hồi ban đầu dùng `_gio()` = giờ ĐỊA PHƯƠNG
+KHÔNG múi giờ, trong khi cookie itsdangerous ký theo UTC. Máy chủ này đang chạy
+UTC nên đo ra lệch **0 giây** — nhưng đổi múi giờ máy (hoặc chuyển máy khác) là
+mốc nhảy tới TƯƠNG LAI → **mọi phiên hết hiệu lực → đăng xuất toàn bộ người dùng**.
+Đã đổi sang UTC tường minh + test ghim. *So hai mốc thời gian thì cả hai phải cùng
+hệ quy chiếu.*
+
+**Ảnh hưởng test:** chuẩn mật khẩu mới làm vỡ 44 test + 106 error dùng `"123456"`
+— là DỮ LIỆU TEST, không phải lỗi logic; đã đổi sang `"MatKhau123"` ở 6 file.
+
+**Tương thích ngược:** 20 tài khoản hiện có (hash bcrypt, không đọc lại được) vẫn
+đăng nhập bình thường; chuẩn mới chỉ áp cho mật khẩu ĐẶT MỚI.
+
 ### CẦN LÀM KHI RESTART CỤM (chưa làm — Owner chọn thời điểm)
 4 app mới cần cờ trong Arguments của tác vụ nền, **thiếu là app trả 401 toàn bộ**:
 `AA_TRUST_PROXY=1` (ai-agent) · `TC_TRUST_PROXY=1` (to-chuc) ·

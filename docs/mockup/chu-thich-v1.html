@@ -1,0 +1,301 @@
+<title>Chú thích RadarY</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --bg:#f4f5f7; --panel:#ffffff; --line:#e3e6ea; --line-soft:#eef0f3;
+  --ink:#15181d; --ink-2:#5b6572; --ink-3:#8b95a3;
+  --accent:#2c6fc4; --accent-soft:#e8f0fb;
+  --bad:#c0392b; --bad-soft:#fbeceb; --bad-line:#e8b4ae;
+  --good:#1a7f4b; --good-soft:#e9f5ee;
+  --warn:#a35c00; --warn-soft:#fdf1e2;
+  --code-bg:#f0f2f5;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#090c12; --panel:#121826; --line:#243149; --line-soft:#1a2233;
+    --ink:#e8edf4; --ink-2:#8b96a8; --ink-3:#6b7789;
+    --accent:#4c8fe0; --accent-soft:rgba(76,143,224,.14);
+    --bad:#e8837a; --bad-soft:rgba(192,57,43,.15); --bad-line:rgba(232,131,122,.35);
+    --good:#5cc98d; --good-soft:rgba(26,127,75,.18);
+    --warn:#e0a460; --warn-soft:rgba(163,92,0,.16);
+    --code-bg:#0d1420;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#090c12; --panel:#121826; --line:#243149; --line-soft:#1a2233;
+  --ink:#e8edf4; --ink-2:#8b96a8; --ink-3:#6b7789;
+  --accent:#4c8fe0; --accent-soft:rgba(76,143,224,.14);
+  --bad:#e8837a; --bad-soft:rgba(192,57,43,.15); --bad-line:rgba(232,131,122,.35);
+  --good:#5cc98d; --good-soft:rgba(26,127,75,.18);
+  --warn:#e0a460; --warn-soft:rgba(163,92,0,.16);
+  --code-bg:#0d1420;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font:15px/1.6 'IBM Plex Sans',-apple-system,'Segoe UI',Roboto,sans-serif;
+  padding:34px 20px 70px}
+.wrap{max-width:1010px;margin:0 auto}
+h1{font-size:25px;font-weight:700;margin:0 0 6px;letter-spacing:-.015em;text-wrap:balance}
+.lede{color:var(--ink-2);font-size:14.5px;margin:0 0 8px;max-width:70ch}
+.meta{color:var(--ink-3);font-size:12.5px;font-family:'IBM Plex Mono',monospace;margin:0 0 32px}
+h2{font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--ink-3);margin:38px 0 12px;padding-bottom:8px;border-bottom:1px solid var(--line)}
+h2 .n{color:var(--accent);font-family:'IBM Plex Mono',monospace;margin-right:8px}
+.src{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--ink-3);margin:-6px 0 14px}
+.duo{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
+@media(max-width:820px){.duo{grid-template-columns:1fr}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;
+  padding:14px 15px;min-width:0}
+.card.old{border-color:var(--bad-line)}
+.card.new{border-color:var(--accent)}
+.tag{display:inline-block;font-size:10.5px;font-weight:600;letter-spacing:.09em;
+  text-transform:uppercase;padding:3px 8px;border-radius:5px;margin-bottom:11px;
+  font-family:'IBM Plex Mono',monospace}
+.tag.old{background:var(--bad-soft);color:var(--bad)}
+.tag.new{background:var(--accent-soft);color:var(--accent)}
+.blob{color:var(--ink-2);font-size:12.5px;line-height:1.62}
+.count{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-3);
+  margin-top:10px;padding-top:8px;border-top:1px dashed var(--line)}
+
+.ct-doc{color:var(--ink-2);font-size:12.5px}
+.ct-doc b{color:var(--ink);font-weight:600}
+.legend{display:flex;flex-wrap:wrap;gap:5px 16px;margin:9px 0 0;padding:0;list-style:none}
+.legend li{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--ink-2)}
+.dot{width:10px;height:10px;border-radius:50%;flex:none;border:1.6px solid}
+.sz{display:flex;align-items:flex-end;gap:3px;flex:none}
+.sz i{border-radius:50%;background:var(--ink-3);opacity:.55;display:block}
+.canhbao{border-left:3px solid var(--warn);background:var(--warn-soft);
+  border-radius:0 7px 7px 0;padding:9px 12px;margin:9px 0 0}
+.canhbao .hd{font-weight:600;color:var(--ink);font-size:12.5px;display:flex;
+  align-items:center;gap:7px}
+.canhbao .hd svg{flex:none}
+.canhbao .bd{color:var(--ink-2);font-size:12.5px;margin-top:3px}
+.nums{display:flex;flex-wrap:wrap;gap:4px 7px;margin-top:8px}
+.nums span{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--ink-2);
+  background:var(--panel);border:1px solid var(--line);border-radius:5px;padding:2px 7px}
+details.sau{margin-top:8px;border-top:1px solid var(--line-soft);padding-top:7px}
+details.sau summary{cursor:pointer;font-size:12px;color:var(--accent);font-weight:500;
+  list-style:none;display:flex;align-items:center;gap:5px;width:fit-content}
+details.sau summary::-webkit-details-marker{display:none}
+details.sau summary svg{transition:transform .15s}
+details.sau[open] summary svg{transform:rotate(90deg)}
+@media (prefers-reduced-motion:reduce){details.sau summary svg{transition:none}}
+details.sau .in{color:var(--ink-2);font-size:12.5px;margin-top:7px;padding-left:14px;
+  border-left:2px solid var(--line)}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:12.5px;margin:9px 0 0}
+.kv dt{color:var(--ink-3);font-family:'IBM Plex Mono',monospace;font-size:11.5px;
+  white-space:nowrap;padding-top:1px}
+.kv dd{margin:0;color:var(--ink-2)}
+.state{display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:10.5px;
+  font-weight:600;padding:2px 7px;border-radius:4px;letter-spacing:.05em}
+.state.ok{background:var(--good-soft);color:var(--good)}
+code{font-family:'IBM Plex Mono',monospace;font-size:11.5px;background:var(--code-bg);
+  padding:1px 5px;border-radius:4px}
+.why{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--accent);
+  border-radius:0 9px 9px 0;padding:12px 15px;margin-top:14px}
+.why h3{margin:0 0 7px;font-size:12.5px;font-weight:600;color:var(--ink)}
+.why ul{margin:0;padding-left:17px;color:var(--ink-2);font-size:12.5px}
+.why li{margin-bottom:3px}
+.why li:last-child{margin-bottom:0}
+.rule{background:var(--panel);border:1px solid var(--line);border-radius:10px;
+  overflow-x:auto}
+.rule table{width:100%;border-collapse:collapse;font-size:13px}
+.rule th{text-align:left;padding:9px 14px;color:var(--ink-3);font-size:10.5px;
+  letter-spacing:.09em;text-transform:uppercase;font-weight:600;
+  border-bottom:1px solid var(--line);background:var(--bg)}
+.rule td{padding:9px 14px;border-bottom:1px solid var(--line-soft);
+  color:var(--ink-2);vertical-align:top}
+.rule tr:last-child td{border-bottom:0}
+.rule td:first-child{color:var(--ink);font-weight:500;white-space:nowrap}
+.foot{margin-top:34px;padding-top:14px;border-top:1px solid var(--line);
+  color:var(--ink-3);font-size:12.5px;max-width:75ch}
+</style>
+
+<div class="wrap">
+<h1>Chú thích RadarY — bản viết lại</h1>
+<p class="lede">Ba khối chú thích nặng nhất, đặt cạnh bản hiện tại. Không cắt bớt thông tin —
+chỉ tách tầng để mắt biết đọc gì trước.</p>
+<p class="meta">mockup v1 · 02/09/2026 · chưa code</p>
+
+<h2><span class="n">01</span>Chú giải bản đồ bong bóng — tab Đang nóng</h2>
+<p class="src">apps/radary/web/app.js:2131 · 443 ký tự · 6 loại thông tin trong 1 thẻ div</p>
+
+<div class="duo">
+  <div class="card old">
+    <span class="tag old">Hiện tại</span>
+    <div class="blob">24 cụm · cỡ bong bóng = số video mới 30 ngày · <b style="color:#2e7d32">xanh</b>
+    đối tượng đang lên · <b style="color:#7e57c2">tím</b> mẫu câu đang lên ·
+    <b style="color:#c62828">đỏ</b> đang giảm · góc TRÊN-TRÁI = đang lên mà còn ít người làm
+    SO VỚI LOẠI CỦA NÓ — mỗi loại một thước riêng (mẫu câu vốn nhiều video hơn đối tượng
+    hàng chục lần, đo chung một trần là đối tượng bẹp hết về trái); ở tab Tất cả, một cặp
+    xanh + tím cùng góc này là một CẶP KẾT HỢP đáng thử. Số video thật xem ở tooltip và
+    bảng dưới. Bấm để tra cứu cụm đó.</div>
+    <div class="count">1 đoạn văn · 443 ký tự · thiếu chú giải màu xám</div>
+  </div>
+
+  <div class="card new">
+    <span class="tag new">Đề xuất</span>
+    <div class="ct-doc"><b>24 cụm.</b> Bấm một bong bóng để tra cứu cụm đó.</div>
+
+    <ul class="legend">
+      <li><span class="dot" style="background:rgba(46,125,50,.5);border-color:#2e7d32"></span>đối tượng đang lên</li>
+      <li><span class="dot" style="background:rgba(126,87,194,.5);border-color:#7e57c2"></span>mẫu câu đang lên</li>
+      <li><span class="dot" style="background:rgba(198,40,40,.5);border-color:#c62828"></span>đang giảm</li>
+      <li><span class="dot" style="background:rgba(91,107,124,.5);border-color:#5b6b7c"></span>đi ngang</li>
+      <li><span class="sz"><i style="width:6px;height:6px"></i><i style="width:10px;height:10px"></i><i style="width:14px;height:14px"></i></span>số video mới 30 ngày</li>
+    </ul>
+
+    <div class="canhbao">
+      <div class="hd"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--warn)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 2 21h20L12 2z"/><path d="M12 9v5M12 18v.01"/></svg>Góc trên-trái đáng nhìn trước</div>
+      <div class="bd">Đang lên mà còn ít người làm — so với các cụm <b>cùng loại</b>,
+      không so toàn bản đồ.</div>
+    </div>
+
+    <details class="sau">
+      <summary><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>Vì sao mỗi loại một thước riêng</summary>
+      <div class="in">Mẫu câu vốn nhiều video hơn đối tượng hàng chục lần. Đo chung một trần
+      thì đối tượng bẹp hết về trái, không đọc được gì.<br><br>
+      Ở tab <b>Tất cả</b>: một cặp xanh + tím cùng nằm góc trên-trái là một cặp kết hợp đáng thử.</div>
+    </details>
+
+    <div class="count">1 câu mở · 5 dòng chú giải · 1 cảnh báo · 1 khối đào sâu</div>
+  </div>
+</div>
+
+<div class="why">
+  <h3>Thay đổi gì</h3>
+  <ul>
+    <li><b>Chú giải màu thành danh sách</b> — mắt quét dọc, không đọc câu văn. Cỡ bong bóng vào cùng bảng.</li>
+    <li><b>Bổ sung màu xám "đi ngang"</b> — biểu đồ vẽ 5 màu (app.js:2113) nhưng chú thích cũ chỉ giải thích 4.</li>
+    <li><b>Cách đọc trục tách thành khối riêng</b> — đây là thứ quyết định người dùng nhìn đâu trước.</li>
+    <li><b>Lý do phương pháp cho vào <code>&lt;details&gt;</code></b> — cần khi thắc mắc, không cần mỗi lần mở tab.</li>
+    <li><b>Bỏ CAPS</b> — đã có phân cấp thị giác thì không cần viết hoa để nhấn.</li>
+  </ul>
+</div>
+
+<h2><span class="n">02</span>Cảnh báo khung chưa chốt — Nhịp pool</h2>
+<p class="src">apps/radary/web/app.js:736–748 · 388 + 221 ký tự · 5 loại thông tin</p>
+
+<div class="duo">
+  <div class="card old">
+    <span class="tag old">Hiện tại</span>
+    <div class="blob"><b>1 khung gần nhất chưa chốt — không vẽ lên đường</b> (tránh đọc nhầm
+    thành sụt): 2/9 · 06h–12h: <b>81K</b> views · VPH 94.1<br>
+    Lý do: video cũ chỉ được quét 1 lần/24 giờ, nên phần views của chúng chỉ được phân bổ
+    vào một khung SAU khi có lần quét kế tiếp. Các khung trong 24 giờ gần nhất vì thế còn
+    thiếu và sẽ tự đầy lên — không phải pool đang tụt.</div>
+    <div class="blob" style="margin-top:9px;padding-top:8px;border-top:1px dashed var(--line)">
+    Lịch sử tích lũy từ 18:00:00 27/7/2026 · range dài gộp theo ngày · VPH TB chỉ tính video
+    0-6 ngày tuổi · views chia đều giữa 2 lần quét (ước lượng phân bổ — YouTube không có log
+    từng view; khung giờ chính xác dựng được cho 14 ngày gần)</div>
+    <div class="count">2 đoạn · 609 ký tự · ngoặc lồng ngoặc</div>
+  </div>
+
+  <div class="card new">
+    <span class="tag new">Đề xuất</span>
+    <div class="canhbao">
+      <div class="hd"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--warn)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 2 21h20L12 2z"/><path d="M12 9v5M12 18v.01"/></svg>1 khung gần nhất chưa chốt — chưa vẽ lên đường</div>
+      <div class="bd">Khung này còn thiếu views và sẽ tự đầy lên. <b>Không phải pool đang tụt.</b></div>
+      <div class="nums"><span>2/9 · 06h–12h</span><span>81K views</span><span>VPH 94.1</span></div>
+    </div>
+
+    <details class="sau">
+      <summary><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>Vì sao khung mới nhất luôn thiếu</summary>
+      <div class="in">Video cũ chỉ được quét 1 lần mỗi 24 giờ. Views của chúng chỉ được phân bổ
+      vào một khung sau lần quét kế tiếp — nên các khung trong 24 giờ gần nhất luôn còn thiếu.</div>
+    </details>
+
+    <dl class="kv">
+      <dt>Dữ liệu từ</dt><dd>18:00 · 27/07/2026</dd>
+      <dt>Range dài</dt><dd>gộp theo ngày</dd>
+      <dt>VPH trung bình</dt><dd>chỉ tính video 0–6 ngày tuổi</dd>
+      <dt>Phân bổ views</dt><dd>chia đều giữa 2 lần quét — ước lượng, YouTube không có log từng view</dd>
+      <dt>Khung giờ chính xác</dt><dd>14 ngày gần nhất</dd>
+    </dl>
+
+    <div class="count">1 cảnh báo + số liệu · 1 khối đào sâu · 5 dòng thông số</div>
+  </div>
+</div>
+
+<div class="why">
+  <h3>Thay đổi gì</h3>
+  <ul>
+    <li><b>Kết luận lên trước</b> — "không phải pool đang tụt" là điều cần biết nhất, trước đây nằm cuối đoạn.</li>
+    <li><b>Số liệu tách thành chip</b> — không trộn vào câu văn.</li>
+    <li><b>Lý do chu kỳ quét vào <code>&lt;details&gt;</code></b> — đọc một lần là hiểu, không cần thấy mãi.</li>
+    <li><b>Dòng thông số thành bảng nhãn–giá trị</b> — 5 thông tin độc lập, không nối bằng dấu <code>·</code>.</li>
+    <li><b>Gỡ ngoặc lồng ngoặc</b> — mỗi ý một dòng riêng.</li>
+  </ul>
+</div>
+
+<h2><span class="n">03</span>Ô canary — Command Center</h2>
+<p class="src">nen/rules/canary/ai-agent.json:77 · mô tả viết như nhật ký sửa lỗi</p>
+
+<div class="duo">
+  <div class="card old">
+    <span class="tag old">Hiện tại</span>
+    <div class="blob" style="font-weight:600;color:var(--ink);margin-bottom:7px;
+      font-family:'IBM Plex Mono',monospace;font-size:11.5px;letter-spacing:.05em">
+      LOGIC: WRITER LLM CÒN SỐNG (KHÔNG CHẾT LẶNG LẼ)</div>
+    <div class="blob"><b>Logic:</b> Key hết số dư / model đổi tên → writer chết; health tự khai
+    để không phải đợi người dùng báo. XANH GIẢ đã sửa 02/09: <code>!= loi</code> không bao giờ
+    sai vì nhánh MOCK trả 'canh_bao' — canary xanh trong khi app đang chạy mock (đúng sự cố
+    31/08: writer mock trả lời MẪU trên hệ thật). Đổi sang <code>== ok</code>.</div>
+    <div class="count">Lịch sử vá lỗi + tên biến + 2 sự cố, trong ô mô tả vận hành</div>
+  </div>
+
+  <div class="card new">
+    <span class="tag new">Đề xuất</span>
+    <div class="blob" style="font-weight:600;color:var(--ink);margin-bottom:9px;
+      font-family:'IBM Plex Mono',monospace;font-size:11.5px;letter-spacing:.05em">
+      WRITER LLM CÒN SỐNG <span class="state ok">OK</span></div>
+
+    <div class="ct-doc"><b>Kiểm gì:</b> writer khai báo đủ và không lỗi.</div>
+
+    <div class="canhbao" style="border-left-color:var(--bad);background:var(--bad-soft)">
+      <div class="hd"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--bad)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16v.01"/></svg>Nếu đỏ thì làm gì</div>
+      <div class="bd">Kiểm số dư key và tên model trong Két. Writer chết thì app vẫn chạy
+      nhưng câu trả lời là bản mẫu, không phải nội dung thật.</div>
+    </div>
+
+    <details class="sau">
+      <summary><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>Lịch sử canary này</summary>
+      <div class="in"><b>02/09/2026</b> — sửa xanh giả. Điều kiện <code>!= loi</code> không bao
+      giờ sai vì nhánh mock trả <code>canh_bao</code>, nên canary vẫn xanh khi app chạy mock.
+      Đổi sang <code>== ok</code>. Liên quan sự cố 31/08: writer mock trả lời mẫu trên hệ thật.</div>
+    </details>
+
+    <div class="count">Kiểm gì · Đỏ thì làm gì · Lịch sử để riêng</div>
+  </div>
+</div>
+
+<div class="why">
+  <h3>Thay đổi gì</h3>
+  <ul>
+    <li><b>Thêm "Nếu đỏ thì làm gì"</b> — thứ người trực hệ thống cần nhất, bản cũ không có.</li>
+    <li><b>Lịch sử vá lỗi xuống <code>&lt;details&gt;</code></b> — vẫn giữ nguyên, nhưng không chắn tầm nhìn vận hành.</li>
+    <li><b>Bỏ <code>toUpperCase()</code> ở tên</b> — trạng thái đã có pill màu, không cần CAPS để nhấn.</li>
+    <li><b>Bỏ chữ "LOGIC:" thừa</b> — ô nào cũng là logic, nhãn không mang thông tin.</li>
+  </ul>
+</div>
+
+<h2><span class="n">04</span>Bộ luật rút ra từ ba khối trên</h2>
+<div class="rule">
+<table>
+<tr><th>Luật</th><th>Nghĩa</th></tr>
+<tr><td>Một khối, một việc</td><td>Số liệu · cách đọc · cảnh báo · phương pháp — mỗi thứ một khối riêng, không nối bằng dấu <code>·</code></td></tr>
+<tr><td>Kết luận lên đầu</td><td>Người dùng cần biết gì trước thì viết trước; lý do kỹ thuật xuống sau</td></tr>
+<tr><td>Chú giải là bảng</td><td>Ký hiệu → nghĩa dựng thành danh sách để mắt quét dọc, không viết thành câu</td></tr>
+<tr><td>Mỗi dòng một cảnh báo</td><td>Cấm <code>join(' · ')</code> cho mảng cảnh báo — 41 chỗ toàn hệ đang mắc</td></tr>
+<tr><td>Đào sâu vào <code>&lt;details&gt;</code></td><td>Lý do phương pháp, lịch sử, công thức — giữ đủ nhưng không chắn tầm nhìn</td></tr>
+<tr><td>Không CAPS thay phân cấp</td><td>Có cấu trúc thị giác rồi thì không cần viết hoa để nhấn</td></tr>
+<tr><td>Không ngôn ngữ máy</td><td>Trên màn vận hành: không tên biến, không ngày sự cố, không so sánh code</td></tr>
+<tr><td>Cảnh báo phải nói cách xử lý</td><td>Báo đỏ mà không nói làm gì tiếp thì người trực vẫn kẹt</td></tr>
+</table>
+</div>
+
+<p class="foot">Nếu anh duyệt hướng này, bước kế: dựng 4 component dùng chung
+(<code>Doc</code> · <code>ChuGiai</code> · <code>CanhBao</code> · <code>DaoSau</code>),
+sửa tab Trending trước — 35% khối lượng chú thích RadarY nằm ở đó.
+Test đang ghim nguyên văn chuỗi cũ (test_discovery_mapping.py:883) sẽ đổi sang ghim ý.</p>
+</div>
