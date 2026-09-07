@@ -530,7 +530,8 @@ def finance_trang(request: Request, tab: str = "ledger", thang: str = "",
         "doi_chieu": (tai_chinh.doi_chieu_vi(thang, {}) if tab == "wallets" else None),
         "da_chot_ky": tai_chinh.doc_chot_ky(thang),
         "tien_api": tu_dong.tien_api_thang(thang) if tab == "auto" else None,
-        **(_du_lieu_tai_san() if tab == "assets" else {}),
+        # tab subs giờ là KHUNG NHÌN của sổ tài sản nên cũng cần dữ liệu đó
+        **(_du_lieu_tai_san() if tab in ("assets", "subs") else {}),
         "luat_goi_y": tu_dong.doc_luat_goi_y() if tab in ("auto", "ledger") else None,
         "don_gia_api": tu_dong.doc_don_gia() if tab == "auto" else None,
         "danh_muc_vi": tai_chinh.doc_danh_muc_vi(),
@@ -538,8 +539,8 @@ def finance_trang(request: Request, tab: str = "ledger", thang: str = "",
         "kha_dung_vnd": tai_chinh.tien_kha_dung_vnd(),
         "quy_vnd": tai_chinh.quy_vnd,
         "ty_gia_usd": tai_chinh.ty_gia_ngay(date.today().isoformat(), "USD"),
-        "dich_vu": tai_chinh.doc_dich_vu(), "den_han": tai_chinh.den_han(),
-        "thue_bao_thang": tai_chinh.chi_phi_thue_bao_thang(),
+        "dich_vu": tai_chinh.doc_dich_vu(), "den_han": tai_san.den_han(),
+        "thue_bao_thang": tai_san.chi_dinh_ky_thang(),
         "tiet_kiem": tai_chinh.tiet_kiem_neu_bo(),
         "la_owner": user["level"] >= 5,
         "moc_ky": lich_tai_chinh.moc_ky(_ky_truoc(thang)),
@@ -613,6 +614,30 @@ def finance_dich_vu_trang_thai(id: str = Form(...), trang_thai: str = Form(...),
     except ValueError as e:
         raise HTTPException(422, str(e))
     nhat_ky.ghi("to-chuc", user["ten"], "dich_vu_trang_thai", f"{dv['ten']} {trang_thai}")
+    return RedirectResponse("/finance?tab=subs", status_code=303)
+
+
+@app.post("/finance/tai-san/ghi-phi")
+def finance_ghi_phi_tai_san(ma: str = Form(...), muc_tieu: str = Form(...),
+                            so_tien: str = Form(""), ngay: str = Form(""),
+                            user: dict = Depends(yeu_cau_finance)):
+    """Ghi bút toán cho một kỳ trả phí của tài sản rồi đẩy hạn. Số tiền thật có
+    thể khác phí khai — cho sửa, KHÔNG để máy tự quyết."""
+    d = tai_san.tim_tai_san(ma)
+    if d is None:
+        raise HTTPException(404, "Không có tài sản này.")
+    if not d.get("chu_ky") or not d.get("danh_muc"):
+        raise HTTPException(422, "Tài sản này không có chu kỳ trả phí.")
+    try:
+        b = tai_chinh.them_but_toan(
+            user["ten"], ngay or date.today().isoformat(), d["danh_muc"],
+            so_tien or d.get("phi") or 0, muc_tieu, d.get("kenh_ma", ""),
+            chung_tu="", ghi_chu=f"{d['ten']} — kỳ {d.get('ngay_gia_han', '')}",
+            vi=d.get("vi") or "", nguon="thue_bao")
+        tai_san.day_gia_han(ma)
+    except ValueError as e:
+        raise HTTPException(422, str(e))
+    nhat_ky.ghi("to-chuc", user["ten"], "tai_san_ghi_phi", f"{d['ten']} {b['id']}")
     return RedirectResponse("/finance?tab=subs", status_code=303)
 
 
@@ -896,14 +921,22 @@ def finance_tai_san(loai: str = Form(...), ten: str = Form(...), nhom: str = For
                     tien_te: str = Form("VND"), noi_de: str = Form(""),
                     vault_id: str = Form(""), tinh_trang: str = Form("dang_dung"),
                     kenh_ma: str = Form(""), ghi_chu: str = Form(""),
+                    tai_khoan: str = Form(""), dang_nhap_bang: str = Form(""),
+                    phi: str = Form("0"), chu_ky: str = Form(""),
+                    ngay_gia_han: str = Form(""), tu_dong_gia_han: str = Form(""),
+                    danh_muc: str = Form(""), vi: str = Form(""),
                     user: dict = Depends(yeu_cau_finance)):
-    """Khai/sửa tài sản. KHÔNG có tham số mật khẩu — tài sản số chỉ mang vault_id."""
+    """Khai/sửa tài sản. KHÔNG có tham số mật khẩu — sổ chỉ mang ID đăng nhập
+    (tai_khoan) và mã trỏ sang két (vault_id)."""
     try:
         d = tai_san.luu_tai_san(
             user["ten"], loai, ten, nhom, ma=ma, ma_dinh_danh=ma_dinh_danh,
             ngay_mua=ngay_mua, nguyen_gia=nguyen_gia or 0, tien_te=tien_te,
             noi_de=noi_de, vault_id=vault_id, tinh_trang=tinh_trang,
-            kenh_ma=kenh_ma, ghi_chu=ghi_chu)
+            kenh_ma=kenh_ma, ghi_chu=ghi_chu, tai_khoan=tai_khoan,
+            dang_nhap_bang=dang_nhap_bang, phi=phi or 0, chu_ky=chu_ky,
+            ngay_gia_han=ngay_gia_han, tu_dong_gia_han=bool(tu_dong_gia_han),
+            danh_muc=danh_muc, vi=vi)
     except ValueError as e:
         raise HTTPException(422, str(e))
     nhat_ky.ghi("to-chuc", user["ten"], "tai_san", f"{d['ma']} {d['ten']}")

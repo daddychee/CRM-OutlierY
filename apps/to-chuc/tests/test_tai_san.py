@@ -173,3 +173,120 @@ def test_route_nhom_lech_loai_thi_422():
         "loai": "so", "ten": "X", "nhom": "may_tinh"})     # nhóm vật lý cho loại số
     assert r.status_code == 422
     assert tai_san.doc_tai_san() == []
+
+
+# ══════════ GỘP THUÊ BAO + CÂY CHA–CON (Owner chốt 07/09) ══════════
+
+def _tk_email(**kw):
+    d = dict(nguoi="lanne", loai="so", ten="nuoikenh01@gmail.com", nhom="email",
+             ma_dinh_danh="nuoikenh01@gmail.com", vault_id="aa11")
+    d.update(kw)
+    return tai_san.luu_tai_san(**d)
+
+
+# ---------- chu kỳ trả phí gắn thẳng vào tài sản ----------
+
+def test_tai_san_mang_chu_ky_tra_phi():
+    """Envato vừa là tài sản số vừa phải gia hạn — MỘT bản ghi, không khai hai lần."""
+    d = tai_san.luu_tai_san("lanne", "so", "Envato", "phan_mem", vault_id="bb22",
+                            phi=16.5, tien_te="USD", chu_ky="thang",
+                            ngay_gia_han="2026-10-05", danh_muc="CHI-NGOAI",
+                            vi="payoneer")
+    assert d["chu_ky"] == "thang" and d["ngay_gia_han"] == "2026-10-05"
+    assert d["phi"] == 16.5
+
+
+def test_khong_chu_ky_thi_khong_doi_ngay_gia_han():
+    d = _vat_ly()                                  # máy tính mua đứt
+    assert d["chu_ky"] == "" and d["ngay_gia_han"] == ""
+
+
+def test_co_chu_ky_thi_bat_buoc_ngay_gia_han_va_ma_khoan():
+    with pytest.raises(ValueError):
+        tai_san.luu_tai_san("lanne", "so", "X", "phan_mem", chu_ky="thang")
+    with pytest.raises(ValueError):                # thiếu mã khoản để ghi bút toán
+        tai_san.luu_tai_san("lanne", "so", "X", "phan_mem", chu_ky="thang",
+                            ngay_gia_han="2026-10-05")
+
+
+def test_den_han_gom_moi_tai_san_co_chu_ky():
+    tai_san.luu_tai_san("lanne", "so", "Envato", "phan_mem", phi=16.5, tien_te="USD",
+                        chu_ky="thang", ngay_gia_han="2026-09-10",
+                        danh_muc="CHI-NGOAI", vi="payoneer")
+    tai_san.luu_tai_san("lanne", "so", "Proxy 911", "proxy_ip", phi=86, tien_te="USD",
+                        chu_ky="thang", ngay_gia_han="2026-09-02",
+                        danh_muc="CHI-PROXY", vi="payoneer")
+    _vat_ly()                                       # không chu kỳ → không vào danh sách
+    ds = tai_san.den_han("2026-09-05", trong_ngay=14)
+    ten = [d["ten"] for d in ds]
+    assert ten == ["Proxy 911", "Envato"]           # quá hạn trước, sắp tới sau
+    assert ds[0]["qua_han"] is True and ds[1]["qua_han"] is False
+
+
+def test_chi_thue_bao_thang_quy_ve_thang():
+    tai_san.ghi_ty_gia_test = None
+    tai_san.luu_tai_san("lanne", "so", "Gói năm", "phan_mem", phi=12_000_000,
+                        tien_te="VND", chu_ky="nam", ngay_gia_han="2027-01-01",
+                        danh_muc="CHI-NGOAI", vi="vietcombank")
+    tai_san.luu_tai_san("lanne", "so", "Gói tháng", "phan_mem", phi=500_000,
+                        tien_te="VND", chu_ky="thang", ngay_gia_han="2026-10-01",
+                        danh_muc="CHI-NGOAI", vi="vietcombank")
+    assert tai_san.chi_dinh_ky_thang() == 1_500_000.0    # 12tr/12 + 500k
+
+
+def test_day_gia_han_sau_khi_ghi():
+    d = tai_san.luu_tai_san("lanne", "so", "Envato", "phan_mem", phi=16.5,
+                            tien_te="USD", chu_ky="thang", ngay_gia_han="2026-09-10",
+                            danh_muc="CHI-NGOAI", vi="payoneer")
+    assert tai_san.day_gia_han(d["ma"])["ngay_gia_han"] == "2026-10-10"
+
+
+# ---------- cây cha–con: mất email là mất cả chùm ----------
+
+def test_tai_khoan_con_tro_ve_email_goc():
+    e = _tk_email()
+    k = tai_san.luu_tai_san("lanne", "so", "Kênh OUTLAND", "kenh_youtube",
+                            dang_nhap_bang=e["ma"], vault_id="cc33")
+    g = tai_san.luu_tai_san("lanne", "so", "GA OUTLAND", "analytics",
+                            dang_nhap_bang=e["ma"])
+    assert k["dang_nhap_bang"] == e["ma"]
+    con = tai_san.tai_khoan_con(e["ma"])
+    assert {c["ten"] for c in con} == {"Kênh OUTLAND", "GA OUTLAND"}
+    assert g["ma"] in {c["ma"] for c in con}
+
+
+def test_khong_cho_tro_vao_chinh_no_hoac_vong_lap():
+    a = _tk_email()
+    with pytest.raises(ValueError):
+        tai_san.luu_tai_san("lanne", ma=a["ma"], loai="so", ten=a["ten"],
+                            nhom="email", dang_nhap_bang=a["ma"])   # tự trỏ mình
+    b = tai_san.luu_tai_san("lanne", "so", "Kênh X", "kenh_youtube",
+                            dang_nhap_bang=a["ma"])
+    with pytest.raises(ValueError):                                  # a → b → a
+        tai_san.luu_tai_san("lanne", ma=a["ma"], loai="so", ten=a["ten"],
+                            nhom="email", dang_nhap_bang=b["ma"])
+
+
+def test_cha_khong_ton_tai_thi_chan():
+    with pytest.raises(ValueError):
+        tai_san.luu_tai_san("lanne", "so", "Kênh X", "kenh_youtube",
+                            dang_nhap_bang="TS-khong-co")
+
+
+def test_canh_bao_email_goc_chua_cat_ket_keo_theo_ca_chum():
+    """Email gốc chưa có mật khẩu trong két mà đang đỡ 3 tài khoản → nêu rõ số con."""
+    e = _tk_email(vault_id="")
+    for t in ("Kênh A", "Kênh B", "GA A"):
+        tai_san.luu_tai_san("lanne", "so", t, "kenh_youtube", dang_nhap_bang=e["ma"])
+    kq = tai_san.tong_hop(NGUOI)
+    c = next(c for c in kq["canh_bao"] if c["ma"] == e["ma"])
+    assert "3" in c["ly_do"]                    # nói rõ đang đỡ mấy tài khoản
+
+
+def test_tach_id_va_mat_khau():
+    """ID đăng nhập nằm THẲNG trên sổ (tra cứu nhanh); mật khẩu CHỈ ở Vault."""
+    d = tai_san.luu_tai_san("lanne", "so", "Kênh OUTLAND", "kenh_youtube",
+                            tai_khoan="nuoikenh01@gmail.com", vault_id="cc33")
+    assert d["tai_khoan"] == "nuoikenh01@gmail.com"   # ID: xem được ngay
+    assert "mat_khau" not in d                        # mật khẩu: không bao giờ ở đây
+    assert d["vault_id"] == "cc33"                    # chỉ mã trỏ sang két

@@ -565,31 +565,23 @@ def test_day_gia_han_sau_khi_ghi():
     assert tai_chinh.day_gia_han(nam["id"])["ngay_gia_han"] == "2028-02-02"
 
 
-def test_route_thue_bao_them_va_ghi_but_toan():
+def test_tab_thue_bao_la_khung_nhin_cua_so_tai_san():
+    """Owner chốt 07/09: Thuê bao KHÔNG còn sổ riêng — nó lọc tài sản có chu kỳ
+    trả phí. Một thứ chỉ khai một lần, ở tab Tài sản."""
+    from src import tai_san
     _seed_muc_tieu()
     _seed_ty_gia()
-    c = _client()
-    r = c.post("/finance/dich-vu", data={
-        "ten": "Z.ai quota", "nha_cung_cap": "api.z.ai", "nhom": "api",
-        "phi": "200", "tien_te": "USD", "chu_ky": "thang",
-        "ngay_gia_han": "2026-09-01", "tu_dong_gia_han": "1",
-        "trang_thai": "dang_dung", "danh_muc": "CHI-API", "vi": VI_USD},
-        follow_redirects=False)
-    assert r.status_code == 303
-    dv = tai_chinh.doc_dich_vu()[0]
-    b = c.get("/finance?tab=subs").text
-    assert "Z.ai quota" in b and "api.z.ai" in b
-    # ghi bút toán từ hàng chờ: sinh bút toán ĐÚNG dịch vụ + đẩy hạn sang kỳ sau
-    r2 = c.post("/finance/dich-vu/ghi", data={"id": dv["id"], "muc_tieu": "Vận hành chung"},
-                follow_redirects=False)
-    assert r2.status_code == 303
-    bt = tai_chinh.doc_so()[0]
-    assert bt["danh_muc"] == "CHI-API" and bt["so_tien"] == 200.0
-    assert bt["nguon"] == "thue_bao" and bt["vi"] == VI_USD
-    assert tai_chinh.doc_dich_vu()[0]["ngay_gia_han"] == "2026-10-01"
+    tai_san.luu_tai_san("lanne", "so", "Envato", "phan_mem", tai_khoan="tk@mail.com",
+                        phi=16.5, tien_te="USD", chu_ky="thang",
+                        ngay_gia_han="2026-09-10", danh_muc="CHI-NGOAI",
+                        vi=VI_USD, vault_id="bb22")
+    tai_san.luu_tai_san("lanne", "vat_ly", "MacBook", "may_tinh",
+                        nguyen_gia=45_000_000)      # mua đứt → KHÔNG hiện ở đây
+    b = _client().get("/finance?tab=subs").text
+    assert "Đang trả phí định kỳ" in b and "Envato" in b
+    assert "MacBook" not in b                        # không lặp phí thì không lọt vào
+    assert "khai và sửa ở tab" in b.replace("<b>", "").replace("</b>", "")
 
-
-# ---------- UI-final: dashboard + tab ngách ----------
 
 def test_route_dashboard_va_bieu_do():
     _seed_vai_but_toan()
@@ -867,7 +859,9 @@ def test_chi_phi_video_bang_0_hien_so_khong_phai_chua_du_du_lieu():
 
 
 def test_phi_thue_bao_vnd_hien_dong_khong_hien_do():
-    _seed_dich_vu(ten="Canva Teams", phi=1_290_000, tien_te="VND", vi=VI,
-                  danh_muc="CHI-NGOAI")
+    from src import tai_san
+    tai_san.luu_tai_san("lanne", "so", "Canva Teams", "phan_mem", phi=1_290_000,
+                        tien_te="VND", chu_ky="thang", ngay_gia_han="2026-09-05",
+                        danh_muc="CHI-NGOAI", vi=VI)
     b = _client().get("/finance?tab=subs").text
     assert "1.290.000 ₫" in b and "$1,290,000" not in b
