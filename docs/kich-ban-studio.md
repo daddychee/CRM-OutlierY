@@ -1208,3 +1208,28 @@ tự so hook GLM vs Claude cùng giọng → "GLM khô hơn" — bằng chứng 
 đầu tiên từ team ủng hộ cắm key Anthropic để A/B trong tool; (c) đổi dẫn chứng
 hook = góp ý thẻ Hook ("use X stat instead") hoặc popup sửa văn — đã có, cần
 phổ biến thao tác.
+
+### 15.18 THÍ NGHIỆM "ÉP GIỌNG LÀM GIẢM CHẤT LƯỢNG?" (07/09, Owner nghi vấn)
+Cùng chương (Pakistan C3 Lions), cùng glm-5.2 thinking-off, cùng material+fact,
+3 nhánh × 3 lượt: A neo đầy đủ (profile A003) · B bỏ neo giữ V2 · C prompt tối giản.
+
+| | từ/câu | % cụt | dash/1k | dài vs budget 2.800 | phương sai 3 lượt |
+|---|---|---|---|---|---|
+| A neo đầy đủ | 19,1-19,9 | 6-12% | 0 | hụt (1.9-2.1k) | THẤP NHẤT |
+| B bỏ neo giọng | 26-34 | 13-22% | 0-8,6 | 2.4-2.8k | vừa |
+| C tối giản | 14-16 | 10-26% | 0 | PHÌNH 3.0-3.2k | vừa |
+
+KẾT LUẬN: (1) Về KỶ LUẬT VĂN, neo đang GIÚP — bỏ neo là em-dash (dấu máy số 1)
+quay lại + câu tràng giang 26-34 từ/câu + pattern "Not X. Not Y."; tối giản thì
+phình +15% và in cả heading sai format. (2) Nghi ngờ của Owner ĐÚNG MỘT PHẦN về
+cảm nhận: nhánh neo cho văn ĐỀU + AN TOÀN, ít câu lóe; B/C có những hình ảnh táo
+bạo hơn ("a watch does not pace a patio at two in the morning"). Cái "khô" khả
+năng chính là MODEL + stack luật dày, không riêng neo — bản Claude team khen
+cũng KHÔNG neo nhưng KHÁC model, chưa tách bạch được nếu thiếu key Claude.
+(3) PHÁT HIỆN PHỤ NGHIÊM TRỌNG: nhánh neo-đầy-đủ (prompt 7,8k) RÒ FACT ngoài
+material 3/3 lượt (Bilal Mansoor Khawaja / 4.000 thú / 2.500 USD — fact thật thế
+giới nhưng CHƯA verify) trong khi prompt tối giản 3,5k = 0/3 → luật material bị
+PHA LOÃNG trong prompt dày. Đã thêm nhắc luật cuối prompt — KIỂM LẠI 2 lượt VẪN
+RÒ (chặn bằng lời không ăn, tái xác nhận bài học 23/08). VIỆC ĐỀ XUẤT: van MÁY
+sau viết — đếm số/tên riêng ngoài material, vi phạm → một vòng sửa có kiểm soát
+(cần Owner duyệt vì tốn thêm lượt gọi khi vi phạm).
