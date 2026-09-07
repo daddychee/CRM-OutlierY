@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """KÉT CẤU HÌNH — API key + model LLM của CẢ HỆ ở MỘT chỗ (mảnh ③, Phase 3).
 
 Hai ngăn tách bạch (chuẩn Vault/12-factor, hiến pháp mục 2.3):
@@ -178,8 +178,12 @@ def backfill_dau_khoa(conn: sqlite3.Connection) -> int:
 # stock (30/08): kho ảnh/video miễn phí cho RenderY dựng B-roll. Nhiều nhà như llm
 # nên khai NHA_STOCK + NHA_STOCK_INFO; nhiều khóa/nhà để nhân hạn mức (Pexels ~200
 # query/giờ/khóa) — chế độ xoay_vòng dùng được như YouTube.
-LOAI_API = ("youtube", "llm", "generate", "transcript", "serp", "apify", "stock")
-NHA_LLM = ("claude", "glm", "gemini", "chatgpt", "deepseek")
+# account (06/09 — RenderY): TÀI KHOẢN ĐĂNG NHẬP web (email|mật_khẩu, dấu | giữa)
+# cho app tự đăng nhập tải bản sạch (Envato/Epidemic không có API key). Chỉ owner
+# vào được trang này nên mật khẩu không qua tay editor.
+LOAI_API = ("youtube", "llm", "generate", "transcript", "serp", "apify", "stock",
+            "account")
+NHA_LLM = ("claude", "glm", "gemini", "chatgpt", "deepseek", "mwapi")
 # provider/base_url suy từ NHÀ khi khóa không mang override riêng (migration giữ
 # nguyên giá trị cũ per-khóa nên hệ đang chạy resolve ra ĐÚNG như trước).
 NHA_LLM_INFO = {
@@ -192,6 +196,12 @@ NHA_LLM_INFO = {
                 "base_url": "https://api.openai.com/v1"},
     "deepseek": {"ten": "Deepseek", "provider": "openai_compatible",
                  "base_url": "https://api.deepseek.com"},
+    # mwapi (07/09 — Owner chot): key reseller Claude (ruot Claude that qua AWS
+    # Bedrock/pool Kiro — xac thuc so kich-ban-studio 15.20). Ten hien thi van
+    # "Claude" theo lenh Owner; di duong OpenAI-compatible cua ho (da test song).
+    # Nha RIENG de khong giam key Anthropic chinh thong neu sau nay cam them.
+    "mwapi": {"ten": "Claude (mwapi)", "provider": "openai_compatible",
+              "base_url": "https://api.mwapi.dev/v1"},
 }
 NHA_GEN = ("veo", "seedream")
 NHA_SERP = ("serpapi", "serper", "searchapi")
@@ -205,6 +215,11 @@ NHA_SERP_INFO = {
 # generate KHÔNG đi qua factory LLM (không provider/base_url — chỉ nhãn hiển thị).
 NHA_GEN_INFO = {"veo": {"ten": "VEO (Google Flow)"}, "seedream": {"ten": "Seedream"}}
 NHA_STOCK = ("pexels", "pixabay")
+NHA_ACCOUNT = ("envato", "epidemic")
+NHA_ACCOUNT_INFO = {
+    "envato": {"ten": "Envato Elements (tài khoản)", "base_url": "https://elements.envato.com"},
+    "epidemic": {"ten": "Epidemic Sound (tài khoản)", "base_url": "https://www.epidemicsound.com"},
+}
 # Kho ảnh/video miễn phí, dùng thương mại được. base_url để app gọi đúng nơi;
 # endpoint/tham số từng nhà do app lo (mỗi nhà một kiểu trả kết quả).
 NHA_STOCK_INFO = {
@@ -216,7 +231,8 @@ TEN_LOAI_API = {"youtube": "YouTube Data API v3", "llm": "LLM",
                 "transcript": "YouTube Transcript",
                 "serp": "Search Results API (SERP)",
                 "apify": "Apify (scraper thuê)",
-                "stock": "Stock ảnh/video (B-roll)"}
+                "stock": "Stock ảnh/video (B-roll)",
+                "account": "Tài khoản đăng nhập (email|mật_khẩu)"}
 # Model gợi ý cho dropdown (mockup K2-K3) — gợi ý thôi, giá trị hiện hành luôn giữ.
 # glm-5.3 thêm 22/08 (đo endpoint /models của z.ai: glm-4.5 · glm-4.5-air · glm-4.6
 # · glm-4.7 · glm-5 · glm-5-turbo · glm-5.1 · glm-5.2 · glm-5.3) — bản cũ GIỮ để
@@ -227,6 +243,7 @@ MODEL_GOI_Y = {
     "gemini": ["gemini-2.5-pro", "gemini-2.5-flash"],
     "chatgpt": ["gpt-5", "gpt-5-mini"],
     "deepseek": ["deepseek-chat", "deepseek-reasoner"],
+    "mwapi": ["claude-sonnet-5", "claude-opus-5", "claude-opus-4-8"],
     "veo": ["veo-3.1", "veo-3"],
     "seedream": ["seedream-3.0"],
 }
@@ -240,7 +257,7 @@ MODEL_THEO_KHOA = "__theo_khoa__"
 
 
 def them_api_key(conn: sqlite3.Connection, loai: str, khoa: str,
-                 nha: str = "", model: str = "") -> str:
+                 nha: str = "", model: str = "", tai_khoan: str = "") -> str:
     """Thêm một khóa API → id tự sinh api-NNN. Bí mật vào ngăn bi_mat (Fernet,
     write-only, UI chỉ thấy đuôi 4); metadata vào cau_hinh."""
     if loai not in LOAI_API:
@@ -253,7 +270,14 @@ def them_api_key(conn: sqlite3.Connection, loai: str, khoa: str,
         raise ValueError("Nhà SERP phải là: " + " / ".join(NHA_SERP))
     if loai == "stock" and nha not in NHA_STOCK:
         raise ValueError("Nhà Stock phải là: " + " / ".join(NHA_STOCK))
-    if loai not in ("llm", "generate", "serp", "stock"):
+    if loai == "account" and nha not in NHA_ACCOUNT:
+        raise ValueError("Nhà Account phải là: " + " / ".join(NHA_ACCOUNT))
+    # account (06/09): TÀI KHOẢN + MẬT KHẨU là 2 trường riêng (Owner: không chấp
+    # nhận nhét email|mật_khẩu vào một ô) — email là metadata (hiện được trên UI),
+    # mật khẩu vào ngăn bí mật như key thường.
+    if loai == "account" and not tai_khoan.strip():
+        raise ValueError("Loại Account cần nhập Tài khoản (email) + Mật khẩu.")
+    if loai not in ("llm", "generate", "serp", "stock", "account"):
         nha = ""
     if not khoa.strip():
         raise ValueError("Thiếu khóa.")
@@ -278,6 +302,8 @@ def them_api_key(conn: sqlite3.Connection, loai: str, khoa: str,
     dat_cau_hinh(conn, f"api.{kid}.nha", nha)
     dat_cau_hinh(conn, f"api.{kid}.model", model.strip())
     dat_cau_hinh(conn, f"api.{kid}.ngay", datetime.now().strftime("%Y-%m-%d"))
+    if loai == "account":
+        dat_cau_hinh(conn, f"api.{kid}.tai_khoan", tai_khoan.strip())
     return kid
 
 
@@ -293,6 +319,7 @@ def liet_ke_api_keys(conn: sqlite3.Connection) -> list[dict]:
                    "nha": lay_cau_hinh(conn, f"api.{kid}.nha"),
                    "model": lay_cau_hinh(conn, f"api.{kid}.model"),
                    "ngay": lay_cau_hinh(conn, f"api.{kid}.ngay"),
+                   "tai_khoan": lay_cau_hinh(conn, f"api.{kid}.tai_khoan"),
                    "dau": b["dau"] if b else "", "duoi": b["duoi"] if b else ""})
     return ra
 

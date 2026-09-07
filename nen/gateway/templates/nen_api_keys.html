@@ -91,7 +91,7 @@
       {% if day_du or dem.n < 5 %}
       {% set dem.n = dem.n + 1 %}
       <tr><td>{{ nha_info_cuc[nha].ten }}</td>
-        <td><span class="chip-o">{{ khoa_ngan(k.dau, k.duoi) }}</span></td>
+        <td><span class="chip-o">{{ khoa_ngan(k.dau, k.duoi) }}</span>{% if k.tai_khoan %} <span class="phu">{{ k.tai_khoan }}</span>{% endif %}</td>
         <td>
           <form class="dong" method="post" action="/general/api-keys/model">{{ o_csrf(request) }}
             {{ ve_fields() }}
@@ -118,7 +118,7 @@
   {% else %}
     {% for k in (theo_loai[loai] if day_du else theo_loai[loai][:5]) %}
     <tr><td>{{ loop.index }}</td>
-      <td><span class="chip-o">{{ khoa_ngan(k.dau, k.duoi) }}</span></td>
+      <td><span class="chip-o">{{ khoa_ngan(k.dau, k.duoi) }}</span>{% if k.tai_khoan %} <span class="phu">{{ k.tai_khoan }}</span>{% endif %}</td>
       <td></td>
       <td>{{ luot.get(k.duoi, 0) }}</td>
       <td>{% if k.id in dang_dung %}<span class="badge ok">in use</span>{% else %}<span class="badge">spare</span>{% endif %}</td>
@@ -143,11 +143,11 @@
       <div class="form-grid">
         <div><label>API type</label><select name="loai_chon">
           <option value="youtube">YouTube Data v3</option>
-          <option value="llm:claude">LLM — Claude</option>
-          <option value="llm:glm">LLM — GLM</option>
-          <option value="llm:gemini">LLM — Gemini</option>
-          <option value="llm:chatgpt">LLM — ChatGPT</option>
-          <option value="llm:deepseek">LLM — Deepseek</option>
+          {# LLM render DONG tu ket.NHA_LLM (07/09 — truoc hardcode nen nha moi
+             mwapi khong hien; route da truyen nha_llm/nha_info tu lau) #}
+          {% for nha in nha_llm %}
+          <option value="llm:{{ nha }}">LLM — {{ nha_info[nha].ten }}</option>
+          {% endfor %}
           <option value="generate:veo">Generate — VEO</option>
           <option value="generate:seedream">Generate — Seedream</option>
           <option value="transcript">YouTube Transcript</option>
@@ -158,9 +158,28 @@
           {# Stock B-roll (30/08 — RenderY): kho ảnh/video free, dùng thương mại được #}
           <option value="stock:pexels">Stock — Pexels</option>
           <option value="stock:pixabay">Stock — Pixabay</option>
-        </select></div>
-        <div><label>Key (never shown again)</label><input name="khoa" type="password" required></div>
-        <div><label>Default model</label><input name="model" autocomplete="off"></div>
+          {# Account đăng nhập (06/09 — RenderY): email|mật_khẩu, app tự đăng nhập tải bản sạch #}
+          <option value="account:envato">Account — Envato Elements (email|mật_khẩu)</option>
+          <option value="account:epidemic">Account — Epidemic Sound (email|mật_khẩu)</option>
+        </select>
+        <script>
+        (function () {
+          var sel = document.querySelector('#md-key select[name="loai_chon"]');
+          function doi() {
+            var acc = sel.value.indexOf('account:') === 0;
+            document.getElementById('o-tk').style.display = acc ? '' : 'none';
+            document.getElementById('o-model').style.display = acc ? 'none' : '';
+            var key = document.querySelector('#o-key label');
+            key.textContent = acc ? 'Mật khẩu (không hiện lại)' : 'Key (never shown again)';
+          }
+          sel.addEventListener('change', doi); doi();
+        })();
+        </script></div>
+        <div id="o-key"><label>Key (never shown again)</label><input name="khoa" type="password" required></div>
+        {# account (06/09): 2 TRƯỜNG RIÊNG — Owner: không chấp nhận nhét email|mật_khẩu vào một ô #}
+        <div id="o-tk" style="display:none"><label>Tài khoản (email đăng nhập)</label>
+          <input name="tai_khoan" type="text" autocomplete="off"></div>
+        <div id="o-model"><label>Default model</label><input name="model" autocomplete="off"></div>
       </div>
       <div style="margin-top:14px"><button>Save key</button>
         <button type="button" class="phu" data-dong="md-key">Cancel</button></div>
