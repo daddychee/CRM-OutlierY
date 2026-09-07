@@ -64,3 +64,6 @@ apps/radary/
 apps/plannery/
 apps/niche-research/
 apps/content-ultimate/
+
+# Bản thử Finance (dữ liệu sao chép, chạy tạm trong ngày — không vào git)
+data/thu-nghiem-finance/
