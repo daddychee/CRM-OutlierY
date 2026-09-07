@@ -1261,3 +1261,15 @@ kiến trúc pool nhiều tài khoản. Extended thinking bị nuốt; max_token
 clamp. Chất lượng viết: 3 chương + hook Pakistan — 0 số lạ cả 4 bài (GLM rò
 3/3); trang so sánh 3 phương án chờ Owner chốt. Cách tự kiểm nhanh về sau: call
 có tool → nhìn tiền tố id; hỏi "who are you" → soi system đệm.
+
+### 15.21 ĐẤU NỐI MWAPI HOÀN TẤT (07/09 — đúng flow CRM, dry-run PASS trước khi code)
+Két: nhà mới `mwapi` (nhãn "Claude (mwapi)"), OpenAI-compatible, base
+api.mwapi.dev/v1, MODEL_GOI_Y 3 bản. UI Add-API-key đổi hardcode → render động
+từ ket.NHA_LLM (bug: nhà mới không hiện). App: khoa_v3 mwapi→MWAPI_API_KEY,
+PROVIDERS + 3 MODEL_CHOICES (nhãn Claude Sonnet/Opus 5/Opus 4.8, fail-closed
+theo key), tooltip ghi key trung gian. Owner tự tay: General tạo api-034 + Per-app
+gán vào viet_kich_ban (GLM giữ khóa đầu = mặc định — đúng hàng rào). Nghiệm thu
+trọn tuyến Két→gateway→app→mwapi: PASS ("TUYEN THONG"). Gateway restart 3 lần
+đúng rule (0 job, compile-check code nóng phiên song song, token nội bộ đang tắt
+nên không lệch cụm). ket.py + template chưa commit (file nóng phiên canary) —
+commit đích danh khi phiên kia đóng.
