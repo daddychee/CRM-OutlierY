@@ -1195,3 +1195,16 @@ PHẢN BIỆN GIỮ NGUYÊN (không code): hook ~2000 ký tự là chủ đích 
 núm chỉnh là dòng Budget của HOOK trong outline (sửa được trước khi viết);
 "không chia đoạn" không tái hiện trên bài mới (đã vá 31/08); Google-Translate
 reset là bản chất DOM động, đã giảm tối đa.
+
+### 15.17 FEEDBACK BÀI RAU UNG-THƯ (07/09; 2 run no-cancer + cancer-cells; 812 pass)
+Đã fix: budget model chia vượt +15..31% tổng → engine scale tỷ lệ về đúng
+total_chars khi lệch >10% + sửa budget từng thẻ trên board (click số) + dòng
+tổng-vs-mục-tiêu; brief giọng báo-cáo → luật STORYTELLING instruction (≤2 số
+đắt nhất) vào cả 2 prompt viết brief; nút ＋ nhanh trên hàng gọn pillar (kho 33
+cụm trộn nguyên-tắc + từng-loại-quả — chọn theo loại giờ 1 click/hàng).
+GHI NHẬN CHỜ OWNER: (a) bài viết TIẾNG VIỆT — niche mới? Luật brief-EN + bộ
+thước deai_en + register đang đo cho EN, mở niche Việt cần chốt riêng; (b) team
+tự so hook GLM vs Claude cùng giọng → "GLM khô hơn" — bằng chứng chất lượng
+đầu tiên từ team ủng hộ cắm key Anthropic để A/B trong tool; (c) đổi dẫn chứng
+hook = góp ý thẻ Hook ("use X stat instead") hoặc popup sửa văn — đã có, cần
+phổ biến thao tác.
