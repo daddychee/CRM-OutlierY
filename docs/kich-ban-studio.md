@@ -1246,3 +1246,18 @@ từ/câu (lượt 3 hơi vượt — theo dõi); văn CÓ cú lóe thật: "The
 (d3e4215 + e0f3725), logic viết về nguyên trạng CŨ. Luật ghi memory: test 2
 phương án → trình → Owner chốt → mới code. Việc kế của mạch giọng:
 kiểm phủ neo-dày (chon_neo) trên đường viết per-section; Claude A/B khi có key.
+
+### 15.20 KIỂM KEY MWAPI ĐẾN CÙNG (07/09 — sandbox, CHƯA đấu nối)
+Kết luận: RUỘT LÀ CLAUDE THẬT, ĐỜI MỚI — chạy trên AWS Bedrock qua pool tài
+khoản "Kiro" (trợ lý code của AWS), reseller bán lại. Bằng chứng: (1) tool_use
+id `toolu_bdrk_` = chữ ký Bedrock; (2) system đệm ~6.531 token lộ "I'm Kiro";
+(3) trắc nghiệm cutoff: biết Nobel HB 10/2025 (Machado), Google-Wiz $32B
+(3/2025), Syria 12/2024, Anthropic ra Opus 4.5 cuối 11/2025 → cutoff ≥ cuối
+2025 = thế hệ Claude mới nhất, LOẠI giả thuyết tráo model rẻ; (4) hành vi từ
+chối khai bản khi bị giấu identity — đặc trưng Claude. KHÔNG xác minh tuyệt đối
+được đúng nhãn "sonnet-5" vs một bản Claude mới khác (proxy tự đặt nhãn).
+Lỗi model giả trả "not supported by any configured account in this group" →
+kiến trúc pool nhiều tài khoản. Extended thinking bị nuốt; max_tokens bị proxy
+clamp. Chất lượng viết: 3 chương + hook Pakistan — 0 số lạ cả 4 bài (GLM rò
+3/3); trang so sánh 3 phương án chờ Owner chốt. Cách tự kiểm nhanh về sau: call
+có tool → nhìn tiền tố id; hỏi "who are you" → soi system đệm.
