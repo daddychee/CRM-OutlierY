@@ -1233,3 +1233,15 @@ PHA LOÃNG trong prompt dày. Đã thêm nhắc luật cuối prompt — KIỂM 
 RÒ (chặn bằng lời không ăn, tái xác nhận bài học 23/08). VIỆC ĐỀ XUẤT: van MÁY
 sau viết — đếm số/tên riêng ngoài material, vi phạm → một vòng sửa có kiểm soát
 (cần Owner duyệt vì tốn thêm lượt gọi khi vi phạm).
+
+### 15.19 ĐỢT GIỌNG VĂN — GIẤY PHÉP CÂU LÓE (07/09, Owner chốt hướng)
+Chẩn từ 15.18: stack luật toàn lệnh CẤM → văn đều-an-toàn, thiếu cú lóe. Biến
+thể VIVIDNESS LICENSE (mỗi phần MỘT hình ảnh/so sánh đậm, bám vật lý của
+material; cấm sáo ngữ + em-dash + tuồn số ngoài material). A/B 3 lượt vs 3 lượt
+nền, cùng chương Pakistan C3, glm-5.2: dash vẫn 0/1k, cụt 0-17%, nhịp 21-26
+từ/câu (lượt 3 hơi vượt — theo dõi); văn CÓ cú lóe thật: "They collect lions." /
+"2.500 USD/tháng — roughly what many Pakistani workers earn in a year" / kết mở
+"how many more walls are hiding something that shouldn't be there". ĐÃ SHIP vào
+build_section_prompt (chỉ khi có material — đúng ngữ cảnh đã đo). n=3, GLM dao
+động → theo dõi 2-3 bài team thật trước khi coi là chốt. Việc kế của mạch giọng:
+kiểm phủ neo-dày (chon_neo) trên đường viết per-section; Claude A/B khi có key.
