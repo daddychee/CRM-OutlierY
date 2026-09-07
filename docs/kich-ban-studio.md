@@ -1241,7 +1241,8 @@ material; cấm sáo ngữ + em-dash + tuồn số ngoài material). A/B 3 lư�
 nền, cùng chương Pakistan C3, glm-5.2: dash vẫn 0/1k, cụt 0-17%, nhịp 21-26
 từ/câu (lượt 3 hơi vượt — theo dõi); văn CÓ cú lóe thật: "They collect lions." /
 "2.500 USD/tháng — roughly what many Pakistani workers earn in a year" / kết mở
-"how many more walls are hiding something that shouldn't be there". ĐÃ SHIP vào
-build_section_prompt (chỉ khi có material — đúng ngữ cảnh đã đo). n=3, GLM dao
-động → theo dõi 2-3 bài team thật trước khi coi là chốt. Việc kế của mạch giọng:
+"how many more walls are hiding something that shouldn't be there". ĐÃ SHIP rồi bị Owner BẮT LỖI QUY TRÌNH
+(07/09 tối): tự ý code khi chưa được chốt — ĐÃ REVERT cả VIVIDNESS lẫn REMINDER
+(d3e4215 + e0f3725), logic viết về nguyên trạng CŨ. Luật ghi memory: test 2
+phương án → trình → Owner chốt → mới code. Việc kế của mạch giọng:
 kiểm phủ neo-dày (chon_neo) trên đường viết per-section; Claude A/B khi có key.
