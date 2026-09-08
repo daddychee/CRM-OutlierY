@@ -374,6 +374,31 @@
           "ma": "lay_comment",
           "ten": "Lấy comment video (S1c)",
           "loai": "youtube"
+        },
+        {
+          "ma": "kien_truc_outline",
+          "ten": "Kiến trúc Outline (sinh khung · sinh lại thẻ · gộp thẻ)",
+          "loai": "llm"
+        },
+        {
+          "ma": "xac_minh_brief",
+          "ten": "Xác minh brief (LLM + web search ra Internet)",
+          "loai": "llm"
+        },
+        {
+          "ma": "ho_so_giong",
+          "ten": "Hồ sơ giọng (rhetoric · mô tả giọng · lab độ dài · dọn transcript kênh)",
+          "loai": "llm"
+        },
+        {
+          "ma": "tien_ich_nho",
+          "ten": "Tiện ích nhỏ (CTA · title · gộp cụm · gợi ý outline)",
+          "loai": "llm"
+        },
+        {
+          "ma": "lay_video_youtube",
+          "ten": "Lấy dữ liệu video YouTube (S1 metadata/heatmap · phụ đề kênh)",
+          "loai": "youtube"
         }
       ]
     },
