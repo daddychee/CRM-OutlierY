@@ -1390,3 +1390,39 @@ chạy KHÔNG SSO (khởi động tay/mất biến môi trường) thì dropdown
 GLM và MẤT Claude. Một dòng `#` trong .env là bịt — chờ Owner.
 Ngoài ra Per-app config đang gán "Phân tích Outline" model **glm-5** trong khi
 nhà là mwapi → tên model không tồn tại bên Claude; cần Owner đổi sang model Claude.
+
+### 15.28 RÀ 3 LUẬT API CỦA OWNER TRÊN TOOL CU (08/09 — KIỂM, CHƯA CODE)
+Owner ra luật: (1) chỗ nào dùng API phải KHAI BÁO · (2) chức năng dùng API thì
+user được CHỌN API · (3) chỗ chọn API phải kèm CHỌN MODEL + NÚT BẬT/TẮT THINKING.
+Rà bằng 2 agent + kiểm dữ liệu thật. Kết quả:
+
+**Luật 1 — ~35%.** Hợp đồng khai 4 việc (viet_kich_ban · phan_tich_outline ·
+lay_transcript · lay_comment) nhưng đếm được **17 điểm gọi API ngoài**; 11 điểm
+chưa khai: xác minh brief (LLM + web_search ra Internet), rhetoric, mô tả giọng,
+lengthlab (đắt nhất: samples×4 lượt), dọn transcript kênh, sinh/chấm title, board
+Kiến trúc (sinh khung/sinh lại/gộp thẻ), sinh CTA, yt-dlp S1 (không có việc S1),
+kéo phụ đề kênh + oEmbed, fallback youtube-transcript-api.
+**GỐC RỄ (nặng nhất):** `khoa_v3.env_ket()` LÀM PHẲNG mọi việc thành MỘT dict env,
+dùng `setdefault` nên việc duyệt trước NUỐT việc sau. Mô phỏng thật: cấp Claude
+cho viet_kich_ban + GLM cho phan_tich_outline → cả hai việc đều chạy provider
+mwapi/claude-opus-5. Hạ tầng per-việc CÓ SẴN cả 3 tầng (ket.py:367 ·
+gateway main.py:2344 · khoa_v3.khoa_theo_viec) nhưng chỉ **1/17** điểm dùng đúng
+(`lay_comment`, s5_server.py:390 — khuôn mẫu đúng duy nhất). Sổ chi phí
+(usage.py:100) ghi `viec` = nhãn tự do (`kind`), không map về mã việc.
+Dữ liệu thật hiện tại: `phan_tich_outline` có **0 khóa** (nhưng model ghi glm-5),
+`viet_kich_ban` gán model **glm-5.3 trong khi nhà là mwapi** → tên model không
+tồn tại bên Claude.
+
+**Luật 2 — ~85%.** 15/18 chức năng LLM có ô chọn nhà. Thiếu 3: **Gộp cụm**
+(/oe/api/merge) và **Sinh CTA** (/oe/api/cta) — hardcode `LLM(ROOT/".env")`,
+chạy theo LLM_PROVIDER toàn cục; **Sinh/chấm title** (server nhận provider nhưng
+UI đã gỡ nút).
+
+**Luật 3 — ~50%.** Vế chọn model: ĐẠT ở mọi chỗ đã có chọn API (dropdown gộp
+`nha:model`, cùng nguồn /api/providers, chuỗi tới payload liền mạch — đã kiểm
+sống 08/09). Vế nút thinking: **0% — không có nút nào trên bất kỳ màn hình nào**;
+hiện ép cứng: voiceprofile/llm.py mặc định "off" (GLM luôn thinking:disabled) ·
+Anthropic ép `{"type":"adaptive"}` HARDCODE không tắt được · oe/llm.py mặc định
+"disabled" + reasoning_effort "low". Hai file có mặc định KHÁC NHAU cho cùng một
+khái niệm. /settings (SETTING_KEYS) không có ô nào.
+CHỜ OWNER chốt hướng sửa trước khi code.
