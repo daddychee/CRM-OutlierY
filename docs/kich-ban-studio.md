@@ -1349,3 +1349,26 @@ nạp credit transcriptapi hay chạy fallback miễn phí · key Gemini chết.
 [Không cần quyết] job writer sống qua restart (hibernate 20:00 giết job) ·
 register.py code chết (Mảnh B chưa nối tầng viết) · slug user đụng độ ·
 KT_TASKS dọn TTL · van_phu_brief cross-language (hạn chế trung thực, ghi nhận).
+
+### 15.26 TEAM BÁO 4 LỖI OUTLINE BOARD (08/09 — báo LẦN 2, "còn nguyên")
+1. **Dịch bị reset** (phiên trước kết luận "bản chất DOM, đã giảm tối đa" — SAI,
+   vá được): click hàng gọi `vePillar()` dựng lại TOÀN BỘ innerHTML → DOM đã dịch
+   của Google Translate bị xóa. VÁ (6d9c8f7): `htmlMotHang` + `moHang()` chỉ
+   `replaceWith` 2 node đổi trạng thái; handler ỦY QUYỀN bind một lần. Kiểm sống
+   bằng harness Chrome: đánh dấu DOM hàng Beta → mở hàng Alpha → Beta GIỮ nguyên
+   chữ đã dịch.
+2. **Nhóm ý không đều** (1 vs 3-4 pillar/thẻ): đo run no-cancer = 2/4/3/4/2/1/2.
+   Trần `gan_bang_chung` là 2; số 3-4 đến từ thao tác GỘP THẺ (05/09) — đúng
+   thiết kế. Phần "thẻ chỉ có 1 ý" là do argmax: pillar về beat gần nhất, beat
+   không phải gần nhất của ai thì đói. ĐỀ XUẤT (chờ Owner): sau vòng argmax, beat
+   ≤1 pillar được nhận pillar tốt nhất còn thừa vượt ngưỡng.
+3+4. **Brief dài + lặp ý**: van mới bắt được cả hai (eedf890) — `van_brief_gon`
+   (>110 từ) bắt 4/7 thẻ thật (275/217/168/120 từ); `van_lap_y` bắt đúng C1↔C2
+   (4 cụm 4-từ trùng về sunlight/vitamin D/melatonin — C1 nói trước trọn chủ đề
+   C2). A/B PROMPT trên chính run này (glm-5.3): NỀN 131 từ/brief TB, 5/7 thẻ
+   vượt trần → THỬ (+ trần 80 từ + cấm nói hộ thẻ khác + cho model thấy danh
+   sách tiêu đề) = **75 từ TB, 0 thẻ vượt**, vẫn giữ fact (aflatoxin, FDA 20 ppb),
+   kết bằng teaser thay vì nói trước chương sau. CHỜ OWNER CHỐT mới sửa prompt.
+BUG PHỤ LỘ RA KHI A/B (đã vá 8c793e2): thêm một dòng lệnh vào prompt là GLM bỏ
+tiền tố `##` → `_RE_BLOCK` trượt 100% header → TOÀN BỘ brief rỗng → rơi xuống
+đường viết-cách-ly (đắt ~7 lần). Nay `##` là tùy chọn.
