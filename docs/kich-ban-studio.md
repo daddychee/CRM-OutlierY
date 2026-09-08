@@ -1284,3 +1284,24 @@ key Owner đưa 07/09, GLM_BASE_URL override) ~1 phút, 0 số lạ, 0% câu c�
 ống vật liệu + luật fact là cải thiện lớn nhất (hết bịa số); tốc độ ×10-15.
 CHỜ: nối provider mwapi vào dropdown tầng viết (hiện phải override env tay);
 A/B Claude thêm lượt trước khi kết luận giọng.
+
+### 15.17 A/B TRÊN CHÍNH TẬP VƯỚNG MẮC — pakistan Chapter 1 (08/09)
+Owner phản biện đúng: 15.16 test trên nepal (bài đang làm dở) chứ không phải tập
+team vướng. Chạy lại trên run pakistan, hồ sơ A011 Discover Ventures, 4 bản:
+
+| | CŨ 30/08 + glm-5.3 | ngocht 07/09 (code mới) | ngocht viết lại | Claude Sonnet |
+|---|---|---|---|---|
+| Số bịa | 0 | 0 | 0 | 0 |
+| "you"/1000 (giọng kênh **12,4**) | **37,0** | 32,8 | 25,1 | 26,2 |
+| từ/câu | 11,8 | 13,8 | 19,1 | 21,0 |
+| câu cụt | 31% | 24% | 8% | 20% |
+| em-dash/1000 | **2,6** | 0 | 0 | 0 |
+| độ dài (budget 2.200) | 2.235 | 3.259 | 2.846 | 2.426 |
+
+PHÁT HIỆN MỚI (nepal không lộ ra): **bệnh lạm dụng "you" CHƯA được chữa** — mọi
+bản đều gấp 2-3 lần giọng kênh thật (baseline đo trên corpus A011 18.587 từ).
+Cải thiện xác nhận: em-dash 2,6→0, "you" 37→32,8 (cùng model glm-5.3), câu cụt
+31%→24%, số bịa 0 ở cả 4 (ống vật liệu giữ). Claude: câu dài 21,0 từ/câu, bám
+budget tốt nhất (2.426 vs 3.259 của GLM).
+VIỆC MỚI: thêm luật/van "you" theo baseline corpus vào tầng viết (bệnh nền, cả
+2 nhà đều dính) — đây là món nợ thật, không phải lỗi model.
