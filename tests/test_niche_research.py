@@ -81,11 +81,18 @@ def test_viec_api_niche_khai_dung():
     """viec_api sinh từ TÍNH NĂNG THẬT (đọc pipeline): quet_kenh (scripts 1/3/5-7
     đọc YouTube Data API bằng key AIza… từ CHÍNH file competitors.txt — thiết kế
     V2, V3 két bơm thay) · phan_tich (run_agent qua llm_provider) · lay_transcript
-    (S15 deepdive, transcriptapi.com)."""
-    a = tim_app("niche-research")
-    assert [(v["ma"], v["loai"]) for v in a["viec_api"]] == [
-        ("quet_kenh", "youtube"), ("phan_tich", "llm"),
-        ("lay_transcript", "transcript")]
+    (S15 deepdive, transcriptapi.com).
+
+    08/09 — GỘP (Owner chốt phương án B "chuẩn logic"): giao diện ngách đã nằm
+    trong Data Analytics thì khóa cũng khai dưới app CHỦ, không để app con đứng
+    riêng ở tab API Per-app. Ba việc + loại GIỮ NGUYÊN, chỉ đổi chỗ đứng.
+    """
+    assert not (tim_app("niche-research").get("viec_api") or []), \
+        "app con da gop khong duoc khai viec_api rieng"
+    a = tim_app("data-analytics")
+    co = {v["ma"]: v["loai"] for v in a["viec_api"]}
+    assert (co.get("quet_kenh"), co.get("phan_tich"), co.get("lay_transcript")) \
+        == ("youtube", "llm", "transcript"), co
     from nen.ket_cau_hinh import ket
     for v in a["viec_api"]:
         assert v["loai"] in ket.LOAI_API and v["loai"] in ket.TEN_LOAI_API

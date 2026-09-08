@@ -332,10 +332,15 @@ def test_model_chi_hien_cho_llm_generate(client):
     ket.luu_cap_phat_viec(conn, "content-ultimate", "viet_kich_ban", [kid])
     conn.close()
 
-    # tab 2: content-ultimate có cả task llm (2) + transcript + youtube trong
-    # contract → đúng 2 input model (chỉ 2 task llm), có autocomplete=off
+    # tab 2: content-ultimate có cả task llm + transcript + youtube trong hợp
+    # đồng → số ô model đúng bằng SỐ VIỆC LLM (transcript/youtube không có ô).
+    # 08/09: ghim theo HÀNH VI thay số cứng 2 — hợp đồng nở 4→9 việc (08/09,
+    # Luật 1 "chỗ nào dùng API phải khai") làm con số cũ tự vỡ dù trang vẫn đúng.
+    from nen.common.hop_dong import tim_app as _tim_app
+    so_llm = sum(1 for v in _tim_app("content-ultimate")["viec_api"]
+                 if v["loai"] == "llm")
     trang = client.get("/general/api-keys?tab=app&app=content-ultimate").text
-    assert trang.count('name="model"') == 2
+    assert trang.count('name="model"') == so_llm
     assert '<input name="model"' not in trang            # chọn, không gõ tay
     assert f'value="{ket.MODEL_THEO_KHOA}"' in trang     # bỏ override được
     for m in ket.MODEL_GOI_Y["glm"]:                     # gợi ý theo nhà của khóa

@@ -50,7 +50,8 @@ def kiem_khoa(llm: bool = False, deepdive: bool = False) -> dict:
     niche-research qua gateway loopback — đúng nguồn service sẽ dùng lúc chạy
     (khoa_v3), CHỈ trả boolean từng việc, tuyệt đối không lộ key ra response."""
     goc = os.environ.get("GATEWAY_URL", "http://127.0.0.1:9000").rstrip("/")
-    r = requests.get(f"{goc}/api/cau-hinh/api-khoa/niche-research", timeout=5,
+    # GOP 08/09: 3 viec ngach nay khai duoi slug APP CHU (data-analytics)
+    r = requests.get(f"{goc}/api/cau-hinh/api-khoa/data-analytics", timeout=5,
                      headers=token_noi_bo.header())
     r.raise_for_status()
     cap = r.json() or {}
