@@ -1372,3 +1372,21 @@ KT_TASKS dọn TTL · van_phu_brief cross-language (hạn chế trung thực, gh
 BUG PHỤ LỘ RA KHI A/B (đã vá 8c793e2): thêm một dòng lệnh vào prompt là GLM bỏ
 tiền tố `##` → `_RE_BLOCK` trượt 100% header → TOÀN BỘ brief rỗng → rơi xuống
 đường viết-cách-ly (đắt ~7 lần). Nay `##` là tùy chọn.
+
+### 15.27 OWNER CHỐT + KIỂM GỠ GLM (08/09)
+(a) THI CÔNG 2 sửa đã duyệt (8842c37, 818 test): prompt brief thêm TRẦN 80 TỪ +
+luật NO OVERLAP (kèm danh sách tiêu đề các thẻ; áp cả prompt_beat qua tham số
+`ten_the_khac` — chỉ TÊN, không kèm nội dung nên vẫn cách ly vật liệu); cân
+pillar (beat ≤1 pillar nhận pillar tốt nhất còn thừa, vẫn phải vượt ngưỡng).
+Đo run no-cancer thật: pillar 2/4/3/4/2/1/2 → **2/2/2/2/2/1/2**, hết thẻ đói.
+(b) KIỂM GỠ GLM (Owner tự gỡ trên UI Két, yêu cầu kiểm thật): két KHÔNG còn
+GLM_API_KEY (chỉ MWAPI/TRANSCRIPT/YOUTUBE + LLM_PROVIDER=mwapi, LLM_MODEL=glm-5.3
+— **tên model trong cột "Phân tích Outline" vẫn là glm-5/glm-5.3, xem mục (c)**);
+dropdown app sống chỉ còn 3 model Claude; `provider_config('glm')` ném lỗi;
+ép gọi z.ai bằng key mwapi → 401 chặn. GỠ THẬT.
+(c) LỖ DỰ PHÒNG CẦN OWNER QUYẾT: `.env` của app VẪN còn `GLM_API_KEY=...`. Chế
+độ SSO (production, CU_TRUST_PROXY=1) bỏ qua .env nên hiện an toàn; nhưng nếu app
+chạy KHÔNG SSO (khởi động tay/mất biến môi trường) thì dropdown quay lại 3 model
+GLM và MẤT Claude. Một dòng `#` trong .env là bịt — chờ Owner.
+Ngoài ra Per-app config đang gán "Phân tích Outline" model **glm-5** trong khi
+nhà là mwapi → tên model không tồn tại bên Claude; cần Owner đổi sang model Claude.
