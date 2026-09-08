@@ -1454,3 +1454,26 @@ là suy nghĩ ngầm). App này chưa có bản vá tắt-thinking như CU.
 **CẢNH BÁO CẤU HÌNH (cần Owner quyết):** cả 2 việc vẫn gán nhà **GLM/glm-5**
 trong khi Owner đã loại GLM khỏi Content Ultimate. Khóa GLM (...tiyf) còn sống.
 Nếu chủ trương bỏ GLM toàn hệ thì app này phải đổi sang mwapi/Claude.
+
+### 15.30 THI CÔNG 3 LUẬT API TRÊN DATA-ANALYTICS (08/09 — test-first, 159 pass)
+Owner: "test xanh không còn bug mới code". 9 test viết TRƯỚC (8 đỏ + 1 xanh ghim
+khuôn đúng sẵn có) → code → 159/159 xanh (150 cũ + 9 mới).
+• LUẬT 1: sổ chi phí ghi MÃ VIỆC hợp đồng (MA_VIEC_THEO_VAI: writer→dien_giai,
+  critic→phan_bien) thay vì vai nội bộ; giữ nguyên khuôn đúng sẵn có (đọc khóa
+  THEO TỪNG VIỆC) + test ghim chống thoái lui.
+• LUẬT 2: route `/api/llm-lua-chon` liệt kê model theo NHÀ THỰC SỰ CÓ KHÓA (suy
+  từ base_url, không trả key); 2 ô chọn trên form nạp report; POST /chan-doan
+  nhận chon_llm + thinking → `dien_giai.dat_lua_chon()`. VAN: chỉ đổi model khi
+  CÙNG nhà với khóa đang cấp — đổi nhà mà không có khóa thì lệnh gọi hỏng.
+• LUẬT 3: hằng số THINKING_MAC_DINH="tat" + 3 mức (tat|thap|nha) cùng thang với
+  Content Ultimate; provider gửi xuống API qua `extra_body` (tắt → thinking
+  disabled · thấp → reasoning_effort low · nhà → không đóng gì). Trước đây không
+  gửi gì nên glm-5 TỰ BẬT thinking (đo 02/09: 88% output token là suy nghĩ ngầm).
+• BÀI HỌC: lần đầu sửa nhầm `chan_doan.html` — template CHẾT từ 18/08 (mặt tiền
+  đổi sang chon_module), form Diagnose thật nằm trong `dashboard.html`. Test đã
+  sửa trỏ đúng file đang chạy; **trước khi sửa template phải kiểm route nào render nó**.
+• Kèm: sửa 2 test đỏ SẴN có từ trước (mock `.get` thiếu tham số headers sau đợt
+  thêm token nội bộ) — nền sạch 150 pass trước khi thêm việc mới.
+• Kiểm sống sau restart: 2 ô có trên /niche/kenh, script nạp từ server, API trả
+  glm → [glm-5, glm-5.2, glm-5.3], console sạch.
+CÒN CHỜ OWNER: 2 việc của app vẫn dùng GLM — nếu bỏ GLM toàn hệ thì đổi sang mwapi.
