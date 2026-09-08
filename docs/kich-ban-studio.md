@@ -1501,3 +1501,56 @@ PHƯƠNG ÁN (chờ Owner chốt, chưa code):
   B. Gộp thật slug: chuyển 3 việc sang data-analytics + sửa khoa_v3 của niche +
      kiem_khoa + di trú cấp phát trong két. Đắt, rủi ro chết pipeline, chỉ nên
      làm nếu Owner muốn khai tử service :9113.
+
+### 15.32 THI CÔNG PHƯƠNG ÁN B — GỘP THẬT SLUG (08/09, test-first, đã commit)
+Owner chốt B: *"tôi chọn B vì tôi muốn chuẩn logic. anh test từng bước xanh,
+chạy test thử sống mới đi tiếp"*. Làm 3 bước, mỗi bước xanh + kiểm sống mới sang
+bước sau.
+
+**Test-first** (`apps/data-analytics/tests/test_gop_niche.py`, commit 5155762 —
+7 test ĐỎ trước khi code): B1 hợp đồng (3 việc dưới app chủ · niche hết
+`viec_api` · giữ đúng loại khóa · tên việc ghi rõ xuất xứ) · B2 mã nguồn (2 chỗ
+xin khóa đổi slug) · B3 di trú cấp phát trong két.
+
+**B1 hợp đồng** — 3 việc chuyển sang `data-analytics`, tên thêm tiền tố
+`Ngách — ` để Owner nhìn tab API là biết xuất xứ; slug `niche-research` hết
+`viec_api` nên **tự biến khỏi dropdown** (`_viec_api_cua()` chỉ lấy app CÓ
+`viec_api` — không phải sửa gateway một dòng nào). Loại khóa giữ nguyên. Sửa
+apps.json bằng chèn văn bản tại chỗ, KHÔNG `json.dump` (bài học cũ: dump lại
+định dạng cả 951 dòng).
+
+**B1' di trú két** — `api.cap_phat` trong `ket.db`: 3 việc chuyển sang khóa
+`data-analytics`, xóa mục `niche-research`. Backup ket.db trước khi ghi.
+
+**B2 mã nguồn** — 2 chỗ xin khóa đổi sang `api-khoa/data-analytics`:
+`apps/niche-research/khoa_v3.py` (repo lồng, commit c8de6da) và
+`apps/data-analytics/src/niche_run.py`.
+
+**KIỂM SỐNG (không chỉ test)** — thứ quyết định B an toàn hay không:
+- hợp đồng: dropdown còn 6 app, `niche-research` đã biến; data-analytics liệt kê
+  đủ 5 việc.
+- render `/general/api-keys?tab=app` bằng **phiên Owner thật** (két tạm, không
+  đụng dữ liệu thật): không còn `value="niche-research"`, 3 dòng `Ngách —` hiện
+  dưới app chủ.
+- khóa thật qua gateway: service niche lấy đủ 3 việc (quet_kenh 3 khóa YouTube
+  xoay vòng · phan_tich 1 LLM · lay_transcript 1); `niche_run.kiem_khoa` trả
+  `ok=True` cả 3 loại; 3 dịch vụ 9000/9102/9113 đều khỏe.
+
+**ĐÍNH CHÍNH 15.31**: tôi đã đánh giá B *"đắt, rủi ro chết pipeline, chỉ nên làm
+nếu muốn khai tử :9113"* — **sai**. Thực tế B là 2 dòng URL + 1 lần di trú dữ
+liệu; service :9113 vẫn chạy nguyên, chỉ đổi CHỖ XIN khóa. Bài học: chỗ nối giữa
+hai app là một URL, không phải kiến trúc — đừng gán trọng số rủi ro cho việc
+mình chưa đo.
+
+**2 test cũ vỡ, cả hai đều ghim SỐ/CHỖ thay vì hành vi** (sửa để ghim hành vi):
+- `test_niche_research::test_viec_api_niche_khai_dung` ghim 3 việc nằm ở slug cũ
+  → đổi sang ghim luật mới (app con đã gộp không khai `viec_api` riêng; 3 việc +
+  đúng loại nằm dưới app chủ).
+- `test_ket_gateway::test_model_chi_hien_cho_llm_generate` ghim `count('name=
+  "model"') == 2` từ thời content-ultimate còn 4 việc → hợp đồng nở 4→9 (Luật 1,
+  15.30) làm số cứng tự vỡ dù trang vẫn đúng. Đổi sang đếm **số việc LLM của hợp
+  đồng**. Cùng họ bài học "self-test ghim hằng số tự vỡ khi đổi giá trị".
+
+**Suite**: gốc 404 pass · data-analytics 166 · niche-research 25. Ba đỏ còn lại
+của gốc là `test_so_do` thuộc mạch bảo mật GĐ4 của phiên khác — đã xác minh đỏ
+sẵn trên HEAD sạch (stash rồi chạy), không phải hồi quy của mạch này.
