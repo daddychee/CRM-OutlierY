@@ -1330,3 +1330,22 @@ PHÁT HIỆN: "you" cao KHÔNG phải bệnh chung — baseline theo TỪNG hồ
 (LeoKim 39,5 vs Discover Ventures 12,4); van "you" nếu làm phải so baseline
 của chính hồ sơ. Model hợp giọng cũng theo hồ sơ: Claude bám LeoKim tốt nhất,
 GLM bám Discover Ventures tốt hơn.
+
+### 15.25 TRẢ NỢ KỸ THUẬT + KIỂM DROPDOWN MODEL (08/09, sau khi Owner chốt "viết coi như xong")
+(a) KIỂM DROPDOWN MODEL (Owner hỏi "chọn sonnet/opus có thật sự viết bằng model đó?"):
+4 tầng bằng chứng — chuỗi mã dropdown `nhà:model` → `--provider/--model` → payload;
+chạy thật qua chính code app: 3 lựa chọn Claude + GLM đều tới đúng base_url và API
+echo đúng tên; tên model BỊA → 404 "not supported" (tham số không bị bỏ qua); dấu
+vân tay tốc độ: Sonnet ~40 tok/s vs Opus 5 ~27 vs Opus 4.8 ~28 (Opus chậm hơn ~30%
+= đúng đặc trưng dòng Opus, loại giả thuyết reseller tráo hết về một model).
+Không chứng minh tuyệt đối được nội bộ mwapi — đó là niềm tin nhà cung cấp.
+(b) TRẢ 2 NỢ audit 31/08 (commit fc88c35, 815 test): mục 10 `_budget_tu_brief`
+đọc "~1.5k" thành 15 → nhận hậu tố k; mục 6 `van_so_la` thêm phép so ĐƠN VỊ
+(nguồn "1200 meters" vs brief "1200 monks") → cảnh báo kèm ghi chú, không chặn.
+(c) Sổ: 3 mục A/B 08/09 đánh số lại 15.22-15.24 (trùng phiên song song).
+CÒN LẠI (đã rà, xếp theo giá trị): [Owner quyết] van "you" theo baseline TỪNG hồ
+sơ giọng · niche bài TIẾNG VIỆT · phương án giọng sau vụ revert VIVIDNESS ·
+nạp credit transcriptapi hay chạy fallback miễn phí · key Gemini chết.
+[Không cần quyết] job writer sống qua restart (hibernate 20:00 giết job) ·
+register.py code chết (Mảnh B chưa nối tầng viết) · slug user đụng độ ·
+KT_TASKS dọn TTL · van_phu_brief cross-language (hạn chế trung thực, ghi nhận).
