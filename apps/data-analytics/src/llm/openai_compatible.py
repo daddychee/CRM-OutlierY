@@ -31,9 +31,14 @@ def lay_llm_retry() -> int:
 
 class OpenAICompatibleProvider(LLMProvider):
     def __init__(self, model: str = "", api_key: str = "",
-                 base_url: str | None = None, mock: bool = True):
+                 base_url: str | None = None, mock: bool = True,
+                 thinking: str = ""):
         self.model = model
         self.mock = mock
+        # Luat 3 (Owner 08/09): muc suy nghi do NGUOI DUNG chon, khong de nha
+        # cung cap tu quyet ngam (z.ai bat thinking mac dinh — do that 02/09).
+        from src.llm import factory as _f
+        self.thinking = (thinking or _f.THINKING_MAC_DINH).lower()
         if not mock:
             if not api_key or not model:
                 raise ValueError("Provider openai_compatible thiếu API_KEY hoặc MODEL trong .env")
@@ -57,12 +62,27 @@ class OpenAICompatibleProvider(LLMProvider):
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_prompt},
                 ],
+                **self._them_thinking(),
             )
         except Exception as e:
             self._ghi_so((_t.perf_counter() - _t0) * 1000, False, str(e))
             raise
         self._ghi_so((_t.perf_counter() - _t0) * 1000, True, resp=resp)
         return resp.choices[0].message.content or ""
+
+    def _them_thinking(self) -> dict:
+        """Tham so suy nghi gui kem lenh goi (Luat 3).
+
+        SDK openai khong biet truong rieng cua z.ai nen di qua `extra_body`.
+        "tat"  -> thinking disabled (glm-5/5.2 nhan)
+        "thap" -> reasoning_effort low (glm-5.3 CAM tat han, chi nhan muc nay)
+        "nha"  -> khong dong gi, de nha cung cap tu quyet.
+        """
+        if self.thinking == "tat":
+            return {"extra_body": {"thinking": {"type": "disabled"}}}
+        if self.thinking == "thap":
+            return {"extra_body": {"reasoning_effort": "low"}}
+        return {}
 
     def generate_stream(self, system_prompt: str, user_prompt: str):
         """Stream từng mẩu text (chuẩn OpenAI stream=True). generate() cũ giữ nguyên."""

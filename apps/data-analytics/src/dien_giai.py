@@ -73,6 +73,67 @@ _NAP_LAI = {"ts": 0.0}
 ANH_XA_VAI = {"dien_giai": "writer", "phan_bien": "critic"}
 
 
+# Model theo tung nha (cho dropdown Luat 2) — chi liet ke, khoa van o Ket.
+MODEL_THEO_NHA = {
+    "mwapi": ["claude-sonnet-5", "claude-opus-5", "claude-opus-4-8"],
+    "glm": ["glm-5", "glm-5.2", "glm-5.3"],
+    "anthropic": ["claude-sonnet-5", "claude-opus-4-8"],
+    "openai": ["gpt-4o"],
+    "gemini": ["gemini-pro-latest", "gemini-flash-latest"],
+}
+
+
+def nha_dang_dung() -> str:
+    """Nha ung voi khoa Ket dang cap cho vai writer (dropdown chi hien model cua
+    nha NAY — doi nha ma khong co khoa thi lenh goi hong)."""
+    nap_cau_hinh_llm()
+    return _nha_cua_khoa("WRITER") or "glm"
+
+
+def dat_lua_chon(chon_llm: str = "", thinking: str = "") -> None:
+    """LUAT 2+3 (Owner chot 08/09): lua chon nha/model + muc thinking cua NGUOI
+    DUNG cho lan chay nay.
+
+    `chon_llm` dang "<nha>:<model>" lay tu /api/llm-lua-chon (rong = giu cau hinh
+    Ket). Ghi de env cua CA HAI vai roi don provider da nap de lan goi sau dung
+    cau hinh moi. KHONG dung khoa cua nha khac: chi doi model khi nha trung voi
+    nha Ket dang cap — doi nha ma khong co khoa thi lenh goi se hong.
+    """
+    global _writer, _critics
+    from src.llm import factory as _f
+    doi = False
+    if thinking and thinking in _f.THINKING_MUC:
+        for v in ("WRITER", "CRITIC"):
+            os.environ[f"{v}_THINKING"] = thinking
+        doi = True
+    if chon_llm:
+        _nha, _, _model = chon_llm.partition(":")
+        for v in ("WRITER", "CRITIC"):
+            if _model and _nha and os.environ.get(f"{v}_MODEL"):
+                # chi ap khi CUNG nha voi khoa dang co (khoa la cua nha do)
+                if _nha_cua_khoa(v) == _nha:
+                    os.environ[f"{v}_MODEL"] = _model
+                    doi = True
+    if doi:
+        _writer = None
+        _critics = None
+
+
+def _nha_cua_khoa(vai_env: str) -> str:
+    """Ten nha ung voi khoa dang nap cho vai (suy tu base_url — Ket khong gui
+    ten nha xuong app, chi gui provider ky thuat openai_compatible)."""
+    base = (os.environ.get(f"{vai_env}_BASE_URL") or "").lower()
+    if "mwapi" in base:
+        return "mwapi"
+    if "z.ai" in base or "bigmodel" in base:
+        return "glm"
+    if "openai.com" in base:
+        return "openai"
+    if "googleapis" in base:
+        return "gemini"
+    return "anthropic" if not base else ""
+
+
 def nap_cau_hinh_llm() -> None:
     """Nạp cấu hình writer/critic từ KÉT (gateway loopback) vào env đúng khuôn
     factory hệ cũ — xin theo APP data-analytics + việc trong contract (ANH_XA_VAI).

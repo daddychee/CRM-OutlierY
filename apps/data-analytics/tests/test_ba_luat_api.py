@@ -40,8 +40,11 @@ def test_luat1_van_doc_khoa_theo_tung_viec():
 # ══ LUAT 2 — USER CHON API ══════════════════════════════════════════════════════
 def test_luat2_trang_chan_doan_co_o_chon_nha_model():
     """Ra 08/09: 0 dropdown LLM trong moi template — nha/model chi Owner dat o Ket."""
-    html = _doc("src/templates/chan_doan.html")
-    assert 'id="da_llm"' in html, "thieu o chon nha/model tren trang chan doan"
+    # LUU Y: chan_doan.html la template CHET (18/08 doi mat tien sang chon_module);
+    # form Diagnose THAT nam trong dashboard.html — ghim dung file dang chay.
+    html = _doc("src/templates/dashboard.html")
+    assert 'id="da_llm"' in html, "thieu o chon nha/model tren form chan doan that"
+    assert "/api/llm-lua-chon" in html, "dropdown phai nap tu server"
 
 
 def test_luat2_route_nhan_lua_chon_nha_model():
@@ -60,8 +63,9 @@ def test_luat2_api_liet_ke_nha_model_cho_dropdown():
 
 # ══ LUAT 3 — MODEL + NUT THINKING ═══════════════════════════════════════════════
 def test_luat3_trang_chan_doan_co_nut_thinking():
-    html = _doc("src/templates/chan_doan.html")
+    html = _doc("src/templates/dashboard.html")
     assert 'id="da_llm_think"' in html, "thieu nut bat/tat thinking canh o chon model"
+    assert "chon_llm" in html and "thinking" in html, "form phai gui 2 lua chon"
 
 
 def test_luat3_lop_llm_nhan_muc_thinking():

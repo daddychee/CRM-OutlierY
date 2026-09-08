@@ -77,6 +77,19 @@
   <label class="o-ngay-wrap" for="o-ky-cuoi">to
     <input type="date" id="o-ky-cuoi">
   </label>
+  <label class="o-ngay-wrap" for="da_llm">AI model (optional)
+    <select id="da_llm">
+      <option value="">— Default (as configured) —</option>
+    </select>
+  </label>
+  <label class="o-ngay-wrap" for="da_llm_think">Thinking
+    <select id="da_llm_think" title="Chế độ suy nghĩ của model — tắt: nhanh/rẻ · thấp: nghĩ ít · theo nhà: để nhà cung cấp tự quyết">
+      <option value="">— Default (off) —</option>
+      <option value="tat">off</option>
+      <option value="thap">low</option>
+      <option value="nha">provider default</option>
+    </select>
+  </label>
   <button id="nut" type="submit">Diagnose</button>
 </form>
 <p class="ghi-chu">Upload a YouTube Studio report (.csv/.xlsx) — per-video export. The app reads
@@ -125,6 +138,17 @@ const dpt = document.getElementById('dang-phan-tich');
 let _pollTimer = null, _dptTimer = null;
 
 // Gợi ý tên kênh đã dùng (Issue 2 §1) — gõ vài chữ để lọc, không bắt buộc chọn đúng gợi ý.
+// Luat 2: danh sach nha/model lay TU SERVER (khong hardcode trong HTML)
+fetch('/api/llm-lua-chon').then(r => r.ok ? r.json() : {ds: []}).then(d => {
+  const sel = document.getElementById('da_llm');
+  if (!sel || !(d.ds || []).length) return;
+  for (const m of d.ds) {
+    const o = document.createElement('option');
+    o.value = m.id; o.textContent = m.nhan;
+    sel.appendChild(o);
+  }
+}).catch(() => {});
+
 fetch('/chan-doan/kenh-goi-y').then(r => r.ok ? r.json() : []).then(ds => {
   const dl = document.getElementById('dl-kenh');
   for (const ten of (ds || [])) {
@@ -222,6 +246,9 @@ form.addEventListener('submit', async e => {
     fd.append('ten_kenh', oKenh.value || '');    // bắt buộc — nối báo cáo cùng kênh qua thời gian
     fd.append('ky_bat_dau', oKyDau.value || '');   // tùy chọn — chỉ dùng khi file KHÔNG có Chart data
     fd.append('ky_ket_thuc', oKyCuoi.value || '');
+    // Luat 2+3 (Owner 08/09): nguoi dung chon nha/model + muc thinking
+    fd.append('chon_llm', (document.getElementById('da_llm') || {}).value || '');
+    fd.append('thinking', (document.getElementById('da_llm_think') || {}).value || '');
     const res = await fetch('/chan-doan', { method: 'POST', body: fd });
     const data = await res.json();
     if (!res.ok) throw new Error(data.detail || 'Unknown error');

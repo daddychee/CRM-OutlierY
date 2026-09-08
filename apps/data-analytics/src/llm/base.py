@@ -43,7 +43,11 @@ class LLMProvider(ABC):
                 tr = getattr(u, "output_tokens", None)
         try:
             from nen.common import so_goi
-            so_goi.ghi(self.APP_SO_GOI, "llm", viec=getattr(self, "vai", ""),
+            # MA VIEC hop dong (Luat 1, Owner 08/09): so chi phi quy ve dung
+            # viec da khai trong apps.json (dien_giai/phan_bien) — truoc day ghi
+            # vai NOI BO (writer/critic) nen doi soat phai dich mot nac.
+            ma_viec = getattr(self, "ma_viec", "") or getattr(self, "vai", "")
+            so_goi.ghi(self.APP_SO_GOI, "llm", viec=ma_viec,
                        model=getattr(self, "model", ""), ms=ms, ok=ok,
                        ma_loi=ma_loi[:120], token_vao=tv, token_ra=tr)
         except Exception:  # noqa: BLE001

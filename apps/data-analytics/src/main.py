@@ -457,6 +457,18 @@ def _chan_doan_nen(tac_vu_id: str, user: dict, ten_goc: str, noi_dung: bytes, df
         _TAC_VU[tac_vu_id].update(trang_thai="loi", loi=str(loi))
 
 
+@app.get("/api/llm-lua-chon")
+async def api_llm_lua_chon(user: dict = Depends(yeu_cau_data_analytics)):
+    """LUAT 2 (Owner chot 08/09): danh sach nha/model cho dropdown — lay tu
+    KHOA DA CAP trong Ket (chi hien model cua nha thuc su co khoa), khong
+    hardcode trong HTML. Tuyet doi KHONG tra key ra ngoai."""
+    ds = []
+    nha = dien_giai.nha_dang_dung()
+    for m in dien_giai.MODEL_THEO_NHA.get(nha, []):
+        ds.append({"id": f"{nha}:{m}", "nhan": m})
+    return {"nha": nha, "ds": ds}
+
+
 @app.get("/chan-doan/kenh-goi-y")
 async def chan_doan_kenh_goi_y(user: dict = Depends(yeu_cau_data_analytics)):
     """Gợi ý tên kênh: DANH BẠ thực thể chung đứng TRƯỚC (tên chuẩn — mảnh ④),
@@ -479,7 +491,11 @@ async def chan_doan_route(background_tasks: BackgroundTasks,
                           ten_bao_cao: str = Form(""), loai_kenh: str = Form(""),
                           ten_kenh: str = Form(""), ky_bat_dau: str = Form(""),
                           ky_ket_thuc: str = Form(""), trang_thai_kenh: str = Form(""),
+                          chon_llm: str = Form(""), thinking: str = Form(""),
                           user: dict = Depends(yeu_cau_data_analytics)):
+    # Luat 2+3 (Owner chot 08/09): lua chon nha/model + muc thinking cua NGUOI
+    # DUNG cho lan chay nay; rong = giu cau hinh Ket nhu cu.
+    dien_giai.dat_lua_chon(chon_llm, thinking)
     ten_goc, noi_dung, df, df_chart = await _doc_report_upload(file)
     try:
         dong_total, _ = tach_total_va_video(df)

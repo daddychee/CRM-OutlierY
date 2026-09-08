@@ -248,6 +248,19 @@
             <option value="tutorial">Tutorial</option><option value="giai_tri">General entertainment</option>
           </select>
         </div>
+        {# LUAT 2+3 (Owner chot 08/09): nguoi dung chon NHA/MODEL + muc THINKING.
+           Danh sach model nap tu /api/llm-lua-chon (khong hardcode). #}
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <select id="da_llm" style="flex:1;background:var(--th-182233);color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:7px 9px;font:inherit">
+            <option value="">AI model — as configured</option>
+          </select>
+          <select id="da_llm_think" title="Chế độ suy nghĩ của model — tắt: nhanh/rẻ · thấp: nghĩ ít · theo nhà: nhà cung cấp tự quyết" style="flex:1;background:var(--th-182233);color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:7px 9px;font:inherit">
+            <option value="">Thinking — default (off)</option>
+            <option value="tat">Thinking: off</option>
+            <option value="thap">Thinking: low</option>
+            <option value="nha">Thinking: provider default</option>
+          </select>
+        </div>
         {# Vòng đời hiện ngay dưới ô chọn: người chạy biết đang chẩn kênh ở giai
            đoạn nào TRƯỚC khi bấm. Mức 1 mới chỉ HIỆN — chưa đổi luật đọc số
            (Mức 2, sổ docs/trang-thai-kenh-vao-chan-doan.md). #}
@@ -889,6 +902,9 @@ function nrKenhChay(){
   fd.append('ngay_chay', document.getElementById('nrk-ngay').value);
   fd.append('ky_bat_dau', document.getElementById('nrk-tu').value);
   fd.append('ky_ket_thuc', document.getElementById('nrk-den').value);
+  // Luat 2+3 (Owner 08/09): lua chon nha/model + muc thinking cua nguoi dung
+  fd.append('chon_llm', (document.getElementById('da_llm') || {}).value || '');
+  fd.append('thinking', (document.getElementById('da_llm_think') || {}).value || '');
   var kenhMa = sel.options[sel.selectedIndex].getAttribute('data-ma');
   fetch('/chan-doan', {method: 'POST', body: fd})
     .then(function(r){ return r.json().then(function(d){ return {ok: r.ok, d: d}; }); })
@@ -1018,5 +1034,19 @@ function nrGui(nut, st, ws){
     })
     .catch(function(e){ nut.disabled = false; st.textContent = e.message; });
 }
+</script>
+<script>
+// Luat 2 (Owner 08/09): danh sach nha/model LAY TU SERVER — chi hien model cua
+// nha thuc su co khoa trong Ket, khong hardcode trong HTML.
+fetch('/api/llm-lua-chon').then(function(r){ return r.ok ? r.json() : {ds: []}; })
+  .then(function(d){
+    var sel = document.getElementById('da_llm');
+    if (!sel || !(d.ds || []).length) return;
+    (d.ds || []).forEach(function(m){
+      var o = document.createElement('option');
+      o.value = m.id; o.textContent = m.nhan;
+      sel.appendChild(o);
+    });
+  }).catch(function(){});
 </script>
 {% endblock %}
