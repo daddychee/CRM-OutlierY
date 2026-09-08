@@ -347,7 +347,7 @@ def test_nap_cau_hinh_llm_xin_theo_app_va_map_env(monkeypatch):
         def __exit__(self, *a):
             return False
 
-        def get(self, url, params=None):
+        def get(self, url, params=None, headers=None):
             goi.append((url, params))
             return _Resp(url.rsplit("/", 1)[-1])
 

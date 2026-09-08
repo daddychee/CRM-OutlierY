@@ -61,7 +61,7 @@ def test_health_hoi_ket_DUNG_TEN_VIEC_nhu_duong_nap_that(monkeypatch):
     class _C:
         def __enter__(self): return self
         def __exit__(self, *a): return False
-        def get(self, url, params=None):
+        def get(self, url, params=None, headers=None):
             goi["url"], goi["params"] = url, params
             class _R:
                 @staticmethod
