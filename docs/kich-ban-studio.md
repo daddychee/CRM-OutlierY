@@ -1273,3 +1273,14 @@ trọn tuyến Két→gateway→app→mwapi: PASS ("TUYEN THONG"). Gateway resta
 đúng rule (0 job, compile-check code nóng phiên song song, token nội bộ đang tắt
 nên không lệch cụm). ket.py + template chưa commit (file nóng phiên canary) —
 commit đích danh khi phiên kia đóng.
+
+### 15.16 A/B LOGIC CŨ vs MỚI + CLAUDE (08/09, cùng Chapter 1 nepal-2, n=1/bản)
+Cùng outline + material + profile A003. CŨ = worktree commit 30/08 (trước Mảnh
+A/D), nguyên trạng thinking. Kết quả: CŨ ~21 PHÚT/chương, BỊA 3 số ngoài kho
+(59 / 150-200 / 8848.86 — lôi từ trí nhớ model); MỚI + glm-5.2 ~1-2 phút, 0 số
+lạ (100% số từ material), you 16,7→11,2/1k; MỚI + claude-sonnet-5 (qua mwapi,
+key Owner đưa 07/09, GLM_BASE_URL override) ~1 phút, 0 số lạ, 0% câu cụt NHƯNG
+29,5 từ/câu — lệch hẳn đích corpus 14,0 (chưa bám neo nhịp, n=1). Kết luận:
+ống vật liệu + luật fact là cải thiện lớn nhất (hết bịa số); tốc độ ×10-15.
+CHỜ: nối provider mwapi vào dropdown tầng viết (hiện phải override env tay);
+A/B Claude thêm lượt trước khi kết luận giọng.
