@@ -1274,7 +1274,7 @@ trọn tuyến Két→gateway→app→mwapi: PASS ("TUYEN THONG"). Gateway resta
 nên không lệch cụm). ket.py + template chưa commit (file nóng phiên canary) —
 commit đích danh khi phiên kia đóng.
 
-### 15.16 A/B LOGIC CŨ vs MỚI + CLAUDE (08/09, cùng Chapter 1 nepal-2, n=1/bản)
+### 15.22 A/B LOGIC CŨ vs MỚI + CLAUDE (08/09, cùng Chapter 1 nepal-2, n=1/bản)
 Cùng outline + material + profile A003. CŨ = worktree commit 30/08 (trước Mảnh
 A/D), nguyên trạng thinking. Kết quả: CŨ ~21 PHÚT/chương, BỊA 3 số ngoài kho
 (59 / 150-200 / 8848.86 — lôi từ trí nhớ model); MỚI + glm-5.2 ~1-2 phút, 0 số
@@ -1285,7 +1285,7 @@ key Owner đưa 07/09, GLM_BASE_URL override) ~1 phút, 0 số lạ, 0% câu c�
 CHỜ: nối provider mwapi vào dropdown tầng viết (hiện phải override env tay);
 A/B Claude thêm lượt trước khi kết luận giọng.
 
-### 15.17 A/B TRÊN CHÍNH TẬP VƯỚNG MẮC — pakistan Chapter 1 (08/09)
+### 15.23 A/B TRÊN CHÍNH TẬP VƯỚNG MẮC — pakistan Chapter 1 (08/09)
 Owner phản biện đúng: 15.16 test trên nepal (bài đang làm dở) chứ không phải tập
 team vướng. Chạy lại trên run pakistan, hồ sơ A011 Discover Ventures, 4 bản:
 
@@ -1306,7 +1306,7 @@ budget tốt nhất (2.426 vs 3.259 của GLM).
 VIỆC MỚI: thêm luật/van "you" theo baseline corpus vào tầng viết (bệnh nền, cả
 2 nhà đều dính) — đây là món nợ thật, không phải lỗi model.
 
-### 15.18 A/B ĐÚNG TẬP TEAM VƯỚNG — sức khỏe no-cancer, giọng LeoKim (08/09)
+### 15.24 A/B ĐÚNG TẬP TEAM VƯỚNG — sức khỏe no-cancer, giọng LeoKim (08/09)
 Owner bắt lỗi lần 2: 15.17 vẫn sai tập (pakistan) — team đang làm **no-cancer /
 cancer-cells-hate-these-vegetables**, giọng **LeoKim**, và ĐÃ viết bằng Claude
 Opus 4.8 (mwapi nối dropdown từ 07/09 — tôi từng báo nhầm là chưa nối).
