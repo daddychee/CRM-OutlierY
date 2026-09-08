@@ -1305,3 +1305,28 @@ Cải thiện xác nhận: em-dash 2,6→0, "you" 37→32,8 (cùng model glm-5.3
 budget tốt nhất (2.426 vs 3.259 của GLM).
 VIỆC MỚI: thêm luật/van "you" theo baseline corpus vào tầng viết (bệnh nền, cả
 2 nhà đều dính) — đây là món nợ thật, không phải lỗi model.
+
+### 15.18 A/B ĐÚNG TẬP TEAM VƯỚNG — sức khỏe no-cancer, giọng LeoKim (08/09)
+Owner bắt lỗi lần 2: 15.17 vẫn sai tập (pakistan) — team đang làm **no-cancer /
+cancer-cells-hate-these-vegetables**, giọng **LeoKim**, và ĐÃ viết bằng Claude
+Opus 4.8 (mwapi nối dropdown từ 07/09 — tôi từng báo nhầm là chưa nối).
+Chapter 1 "Cancer as an Immunity Story", đích = corpus LeoKim thật (12.167 từ):
+you 39,5/1k · 18,5 từ/câu · cụt 6% · em-dash 0.
+
+| | CŨ 30/08 + glm-5.3 | MỚI + glm-5.3 | MỚI + claude-opus-4-8 (bản THẬT team) |
+|---|---|---|---|
+| thời gian | ~20 phút | ~2 phút | ~1-2 phút |
+| số bịa | 0 | 0 | 0 |
+| you /1k (đích 39,5) | 55,1 (lệch 15,6) | 48,8 (lệch 9,3) | **32,4 (lệch 7,1)** |
+| từ/câu (đích 18,5) | 16,4 | 23,8 (lệch 5,3) | **19,8 (lệch 1,3)** |
+| câu cụt (đích 6%) | 19% | 0% | 18% |
+| em-dash/1k | **1,0** | **0** | **0** |
+| độ dài (budget 5.000) | 5.782 | 4.060 | 3.102 |
+
+BÀI HỌC PHƯƠNG PHÁP (ghi để không tái phạm): trước khi test/kết luận, phải TRA
+DỮ LIỆU xem team đang vướng tập nào (history + runs mới nhất), KHÔNG suy từ ảnh
+chụp màn hình. Đã sai 2 lần liên tiếp (nepal → pakistan) trước khi đúng.
+PHÁT HIỆN: "you" cao KHÔNG phải bệnh chung — baseline theo TỪNG hồ sơ giọng
+(LeoKim 39,5 vs Discover Ventures 12,4); van "you" nếu làm phải so baseline
+của chính hồ sơ. Model hợp giọng cũng theo hồ sơ: Claude bám LeoKim tốt nhất,
+GLM bám Discover Ventures tốt hơn.
