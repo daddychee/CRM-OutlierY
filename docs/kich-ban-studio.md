@@ -1554,3 +1554,36 @@ mình chưa đo.
 **Suite**: gốc 404 pass · data-analytics 166 · niche-research 25. Ba đỏ còn lại
 của gốc là `test_so_do` thuộc mạch bảo mật GĐ4 của phiên khác — đã xác minh đỏ
 sẵn trên HEAD sạch (stash rồi chạy), không phải hồi quy của mạch này.
+
+### 15.33 NGOẠI LỆ CÓ CHỦ ĐÍCH: việc `phan_tich` gộp 6 tác vụ LLM (08/09)
+Owner soi ngay sau khi gộp xong: *"thiếu logic phân tích kênh thì phải"*. **Owner
+đúng** — rà lại thì việc `phan_tich` đang gánh **6 chỗ gọi LLM**, khai **1 dòng**:
+- 5 agent pipeline qua `run_agent.py`: `namer` · `auditor` · `plan` · `dna` ·
+  `summary` (tên việc trong hợp đồng đã tự liệt kê sẵn, chỉ là gộp vào một dòng);
+- `scripts/20_bao_cao_writer.py` — tầng NGHĨA của báo cáo gộp, chạy như tiến
+  trình con từ `niche_run._snapshot()`, cũng lấy khóa qua `khoa_v3.env_llm()`
+  tức cùng việc `phan_tich`.
+
+Đối chiếu 3 luật API (Owner chốt 08/09): **khai 1 / gọi 6** → Luật 1 hụt (sổ chi
+phí không tách được agent nào đốt token) · Luật 2 hụt (chọn model một lần, cả 6
+ăn theo — không cho `namer` chạy model rẻ còn `summary` chạy model mạnh được) ·
+Luật 3 hụt (một nút thinking cho cả 6). Đây đúng bệnh đã chữa cho Content
+Ultimate cùng ngày (hợp đồng nở 4→9 việc, mục 15.30); Data Analytics vừa nhận
+khối Niche nên còn nguyên khuôn cũ.
+
+**OWNER CHỐT: GIỮ NGUYÊN, ghi rõ đây là ngoại lệ CÓ CHỦ ĐÍCH** — 5 agent luôn
+chạy trong cùng một run pipeline nên tách ra chỉ làm Owner phải cấp khóa 6 lần
+cho cùng một lần bấm Run. **Không đổi hợp đồng.** Cũng chốt: lượt này chỉ làm
+data-analytics, chưa rà 5 app còn lại.
+
+Điều kiện để mở lại quyết định này (ghi để lần sau khỏi bàn lại): khi Owner muốn
+chạy model KHÁC NHAU cho các agent (ví dụ `summary`/`dna` đọc dài cần model
+mạnh, `namer`/`auditor` phân loại ngắn dùng model rẻ), hoặc khi cần đối soát chi
+phí xuống từng agent.
+
+Chi phí lúc tách (đã soi mã, không đoán): sửa `apps.json` + di trú cấp phát +
+**sửa `khoa_v3.env_llm()`** — hàm này hiện HARDCODE `"phan_tich"` bên trong
+(`khoa_v3.py:81`, chữ ký chỉ nhận `cap_phat`), khác `khoa_theo_viec(viec, ...)`
+đã nhận việc làm tham số. Thêm tham số `viec="phan_tich"` (mặc định giữ hành vi
+cũ) rồi truyền từ `run_agent.py` + `20_bao_cao_writer.py`. Vẫn nhỏ, nhưng KHÔNG
+phải "0 dòng mã" như tôi định ghi lúc đầu.
