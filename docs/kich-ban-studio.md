@@ -1477,3 +1477,27 @@ khuôn đúng sẵn có) → code → 159/159 xanh (150 cũ + 9 mới).
 • Kiểm sống sau restart: 2 ô có trên /niche/kenh, script nạp từ server, API trả
   glm → [glm-5, glm-5.2, glm-5.3], console sạch.
 CÒN CHỜ OWNER: 2 việc của app vẫn dùng GLM — nếu bỏ GLM toàn hệ thì đổi sang mwapi.
+
+### 15.31 KIỂM "NICHE RESEARCH VẪN LÀ APP RIÊNG Ở TAB API" (08/09 — kiểm, chưa code)
+Owner báo bug lớn. Kết quả kiểm: **hiện tượng đúng, nhưng KHÔNG phải app ma** —
+niche-research vẫn là DỊCH VỤ THẬT đang chạy (:9113, health 200), có kho dữ liệu
+riêng, và Data Analytics gọi sang nó qua `niche_run.py` (service + 2 script CLI).
+Cái đã gộp là GIAO DIỆN (`gop_vao: data-analytics` trong hợp đồng), không phải
+tiến trình.
+CHUỖI KHÓA THẬT: service niche-research tự lấy khóa bằng `apps/niche-research/
+khoa_v3.py` → gọi `/api/cau-hinh/api-khoa/**niche-research**`; Data Analytics
+cũng đọc đúng slug đó để kiểm-khóa-trước-khi-chạy (niche_run.kiem_khoa). Nghĩa là
+3 việc quet_kenh/phan_tich/lay_transcript PHẢI nằm dưới slug niche-research thì
+pipeline mới chạy — gộp hàng vào data-analytics mà không sửa 2 chỗ trên sẽ làm
+CHẾT pipeline ngách.
+GỐC HIỂN THỊ: `nen/gateway/main.py:1504-1508 _viec_api_cua()` lấy MỌI app có
+`viec_api`, KHÔNG xét `gop_vao` — trong khi bảng phân quyền (main.py:1277-1317)
+đã xử lý `gop_vao` đúng (nối hàng vào khối app chủ, cột "từ <tên app>").
+=> Đây là lệch NHẤT QUÁN UI giữa 2 tab, không phải lỗi cấp phát khóa.
+PHƯƠNG ÁN (chờ Owner chốt, chưa code):
+  A. Chỉ sửa HIỂN THỊ: tab Per-app gom hàng niche-research vào khối Data
+     Analytics kèm nhãn "từ Niche Research" (đúng khuôn bảng phân quyền), slug
+     cấp khóa GIỮ NGUYÊN → không đụng chuỗi chạy. Rẻ, an toàn.
+  B. Gộp thật slug: chuyển 3 việc sang data-analytics + sửa khoa_v3 của niche +
+     kiem_khoa + di trú cấp phát trong két. Đắt, rủi ro chết pipeline, chỉ nên
+     làm nếu Owner muốn khai tử service :9113.
