@@ -1426,3 +1426,31 @@ Anthropic ép `{"type":"adaptive"}` HARDCODE không tắt được · oe/llm.py 
 "disabled" + reasoning_effort "low". Hai file có mặc định KHÁC NHAU cho cùng một
 khái niệm. /settings (SETTING_KEYS) không có ô nào.
 CHỜ OWNER chốt hướng sửa trước khi code.
+
+### 15.29 RÀ 3 LUẬT API TRÊN DATA-ANALYTICS (08/09 — kiểm, chưa code)
+Owner yêu cầu áp cùng quy trình cho app thứ hai. Đo bằng gọi API thật + đọc mã.
+
+**Luật 1 — ĐẠT ~90% (tốt hơn CU trước khi sửa).** App khai 2 việc (`dien_giai`
+Writer · `phan_bien` Critic) và ĐÃ đọc khóa THEO TỪNG VIỆC ngay từ đầu: hỏi
+gateway `/api/cau-hinh/llm/<việc>?app=data-analytics` (src/dien_giai.py:76-96,
+ANH_XA_VAI dòng 73) — KHÔNG có bệnh gộp phẳng như `env_ket()` bên CU. Đây là
+khuôn đúng, đáng nhân rộng. Kiểm sống: cả 2 việc trả cấu hình riêng
+(provider=openai_compatible · model=glm-5 · key ...tiyf · timeout 60 · retry 0)
+và GỌI THẬT z.ai OK, API trả đúng model='glm-5'. Điểm trừ nhỏ: sổ chi phí ghi
+`vai` (writer/critic — tên nội bộ) thay vì MÃ VIỆC hợp đồng (dien_giai/
+phan_bien), nên đối soát tiền theo việc vẫn phải dịch một nấc.
+Các lời gọi khác (niche_run.py, radary_bridge.py) chỉ đi LOOPBACK sang app nội
+bộ — không phải API ngoài, không cần khai.
+
+**Luật 2 — 0%.** Không có dropdown chọn nhà ở bất kỳ template nào
+(grep src/templates/*.html: 0 select liên quan LLM). Nhà/model do Owner đặt ở
+Két, người dùng cuối không chọn được.
+
+**Luật 3 — 0%.** Không nút thinking; lớp `src/llm/openai_compatible.py:53-60`
+gọi `chat.completions.create` KHÔNG kèm `thinking`/`reasoning_effort` nào →
+với glm-5 nghĩa là Z.ai TỰ BẬT thinking (đúng bệnh đo 02/09: 88% output token
+là suy nghĩ ngầm). App này chưa có bản vá tắt-thinking như CU.
+
+**CẢNH BÁO CẤU HÌNH (cần Owner quyết):** cả 2 việc vẫn gán nhà **GLM/glm-5**
+trong khi Owner đã loại GLM khỏi Content Ultimate. Khóa GLM (...tiyf) còn sống.
+Nếu chủ trương bỏ GLM toàn hệ thì app này phải đổi sang mwapi/Claude.
