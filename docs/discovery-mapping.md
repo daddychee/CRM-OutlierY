@@ -579,9 +579,14 @@ bản sao (khai lan `N-INVESTIGATION` → đỏ đúng). App restart 18:47 qua t
 - 4 ngách chưa khai — INVESTIGATION, OLD, SENIOR HEALTH, SCI-FI (`N-WHAT-IF`): cùng bệnh,
   chờ Việc 3.
 - Việc 3: cảnh báo "ngách chưa khai" trên tab Trending + khai chủ thể khi tạo ngách/pool —
-  mockup chờ duyệt.
+  mockup v1 chờ duyệt: https://claude.ai/code/artifact/7f403781-376d-47ad-8ab8-ad87d1cb0464
+  (đề xuất khai theo NGÁCH trong modal General › Niches, bắt buộc với ngách mới, lưu ở danh bạ
+  ngách khối nền — CSV làm dự phòng).
 - Entity Map (Owner 11/09: "xuất entity map để team căn cứ bao quát ngách") — đề xuất +
-  mockup chờ duyệt.
+  mockup v1 chờ duyệt, dựng từ dữ liệu thật pool OLD NEWBIE — US:
+  https://claude.ai/code/artifact/4049e8b8-05fc-420f-8442-a2dbe4af4dca
+  (337 thực thể sau gộp 21 dạng sở hữu; 82% chưa rõ loại; 87 thực thể ≥5 video phủ ~2/3 lượt
+  nhắc; 77 thực thể do 1 kênh làm ≥80%; tab riêng + Excel 5 sheet, mỗi pool một file).
 - Phát hiện khi đo pool OLD NEWBIE — US: `MAU_TOI_THIEU = 5` lớn hơn trung vị pool 3 video →
   ô "Thiếu cung"/"Đã thử không ăn" của bản đồ Trending KHÔNG THỂ có thực thể nào; 78 thực
   thể 2–4 video chạy ≥ p75 bị xếp hết vào "chưa đủ dấu vết". Chờ Owner quyết (việc riêng).
