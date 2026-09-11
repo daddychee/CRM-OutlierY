@@ -27,6 +27,7 @@ _ROOT = _APP_DIR.parents[1]
 _SNAPSHOT_PY = _ROOT / "apps" / "niche-research" / "scripts" / "snapshot.py"
 _BUILD_BC_PY = _ROOT / "apps" / "niche-research" / "scripts" / "19_build_bao_cao.py"
 _WRITER_PY = _ROOT / "apps" / "niche-research" / "scripts" / "20_bao_cao_writer.py"
+_WRITER_TIMEOUT = 300   # giây — trần cả writer (nhiều lượt LLM); quá thì ghi nhật ký, build tiếp
 
 # chống snapshot đúp khi nhiều tab cùng poll thấy "vừa xong"
 _snapshot_lock = threading.Lock()
@@ -189,6 +190,26 @@ def tinh_trang(project: str, so_dong: int = 12) -> dict:
             "luc": _dt.fromtimestamp(log.stat().st_mtime).strftime("%d/%m %H:%M")}
 
 
+def _ghi_nhat_ky_writer(duong: Path, w: subprocess.CompletedProcess) -> None:
+    """Sự cố 11/09: writer chết 401 mà output bị bỏ → khối Nhật ký im lặng. Ghi kết
+    quả writer vào CHÍNH stdout.log của lần chạy (tinh_trang đọc file này): hỏng →
+    mã thoát + đuôi output (dòng 'LOI…' tinh_trang bắt được); ổn → dòng xác nhận
+    kèm các dòng CANH BAO (lượt writer nào thiếu cũng hiện)."""
+    ra = [x for x in ((w.stdout or b"") + (w.stderr or b"")).decode(
+        "utf-8", "replace").splitlines() if x.strip()]
+    if w.returncode == 0:
+        dong = [">>> [đóng gói] bao_cao_writer (tầng NGHĨA) — xong"]
+        dong += [f"    {x}" for x in ra if "CANH BAO" in x]
+    else:
+        dong = [f">>> [đóng gói] bao_cao_writer (tầng NGHĨA) THẤT BẠI — mã {w.returncode}"]
+        dong += [f"    {x}" for x in ra[-6:]]
+    try:
+        with open(duong / "niche-data" / "stdout.log", "a", encoding="utf-8") as f:
+            f.write("\n".join(dong) + "\n")
+    except OSError:
+        pass
+
+
 def _snapshot(project: str) -> bool:
     """Đóng băng lần chạy hiện tại bằng script CLI của niche-research (best-effort).
     TRƯỚC snapshot: build BÁO CÁO GỘP HTML (19_build_bao_cao.py — tầng 1, 19/08)
@@ -198,9 +219,16 @@ def _snapshot(project: str) -> bool:
     try:
         # tầng 2 TRƯỚC (writer LLM sinh bao_cao_nghia.json — 1 lời gọi/run, key KÉT;
         # hỏng chỉ mất tầng NGHĨA, builder giữ slot chờ) rồi tầng 1 render HTML.
-        subprocess.run([sys.executable, str(_WRITER_PY), str(duong)],
-                       capture_output=True, timeout=300,
-                       env={**os.environ, "PYTHONUTF8": "1"})
+        try:
+            w = subprocess.run([sys.executable, str(_WRITER_PY), str(duong)],
+                               capture_output=True, timeout=_WRITER_TIMEOUT,
+                               env={**os.environ, "PYTHONUTF8": "1"})
+        except subprocess.TimeoutExpired as tx:
+            # quá giờ vẫn phải ghi nhật ký + để builder chạy tiếp (nghiệm thu 11/09)
+            w = subprocess.CompletedProcess(
+                tx.cmd, -1, tx.output or b"",
+                f"LOI: writer quá thời gian {_WRITER_TIMEOUT}s — bị dừng".encode("utf-8"))
+        _ghi_nhat_ky_writer(duong, w)
         subprocess.run([sys.executable, str(_BUILD_BC_PY), str(duong)],
                        capture_output=True, timeout=120,
                        env={**os.environ, "PYTHONUTF8": "1"})
