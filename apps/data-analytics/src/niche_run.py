@@ -27,7 +27,10 @@ _ROOT = _APP_DIR.parents[1]
 _SNAPSHOT_PY = _ROOT / "apps" / "niche-research" / "scripts" / "snapshot.py"
 _BUILD_BC_PY = _ROOT / "apps" / "niche-research" / "scripts" / "19_build_bao_cao.py"
 _WRITER_PY = _ROOT / "apps" / "niche-research" / "scripts" / "20_bao_cao_writer.py"
-_WRITER_TIMEOUT = 300   # giây — trần cả writer (nhiều lượt LLM); quá thì ghi nhật ký, build tiếp
+# giây — trần CẢ writer (4 lượt LLM); quá thì ghi nhật ký, build tiếp. ĐO 11/09 với
+# claude-opus-5 qua mwapi: 119+181+36+40 = 376s (300 cũ cắt writer mọi lần) — mwapi
+# mất ~127s mới ra chữ đầu mỗi lượt; 900 ≈ 4 lượt × (180s chờ + ~45s viết).
+_WRITER_TIMEOUT = 900
 
 # chống snapshot đúp khi nhiều tab cùng poll thấy "vừa xong"
 _snapshot_lock = threading.Lock()
