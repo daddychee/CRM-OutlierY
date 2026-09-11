@@ -1587,3 +1587,110 @@ Chi phí lúc tách (đã soi mã, không đoán): sửa `apps.json` + di trú c
 đã nhận việc làm tham số. Thêm tham số `viec="phan_tich"` (mặc định giữ hành vi
 cũ) rồi truyền từ `run_agent.py` + `20_bao_cao_writer.py`. Vẫn nhỏ, nhưng KHÔNG
 phải "0 dòng mã" như tôi định ghi lúc đầu.
+
+### 15.34 KHỐI A — 5 cải tiến giọng (11/09, test-first 20 test, commit `a504e87` repo content-ultimate)
+Owner chốt sau E2E tibet (giọng A014) và phần kiểm chặt "extract giọng có thật sự hiệu
+quả không": **giữ nguyên logic giọng**, cải tiến 5 chỗ, làm test đỏ → code → xanh → kiểm sống.
+- **A1** `chon_neo.doc_corpus` đọc thêm `dataset.jsonl` (gỡ lời mời "Continue this
+  passage…" của bộ huấn luyện). Kiểm sống: chưa hồ sơ nào cần — corpus đã đăng ký đều có
+  .txt/.md và **neo dày đã được thay lúc viết từ 22/08** (`cli.py:340`, `neo_day` qua
+  `--author-dir`). Giữ làm lớp phòng xa. *Chú thích trong `doc_corpus` còn ghi "module
+  chưa từng chạy trên hồ sơ nào" — sai theo chính lần kiểm này; sửa khi chạm lần sau.*
+- **A2** `deai.cham_giong` kèm **mốc người thật**: văn của chính tác giả chấm bằng target
+  của họ — trần thật của thước không phải 100% (Amazing 47,5 · Derek 48,0 · Tribes 38,0 ·
+  LeoKim 32,4). Không có corpus thì không bịa mốc; vẫn không điểm tổng (luật A3).
+- **A3** `chon_neo.bien_phan_biet`: target của A chấm văn A so với văn người khác; biên
+  ≤ 5 điểm → cảnh báo "không phân biệt được" (LeoKim +1,8 · Tribes +4,5 — **treo C2**:
+  nạp thêm corpus hay đánh dấu không dùng làm neo).
+- **A4** `outline_scope_report` đếm chi tiết có tên mỗi chương, cảnh báo **cả hai đầu**:
+  < 3 là đói vật liệu, > 8 là nhồi thành liệt kê (chuẩn Norway ~4/khối, 10,6/1.000 từ).
+- **A5** cổng phạm vi trên `/api/write`: 409 `outline_vuot_pham_vi` MỘT lần, tick
+  `xac_nhan_pham_vi` thì đi tiếp (cùng khuôn cửa chặn transcript thô 21/08). Kiểm sống
+  tibet-2 thật: Chapter 1/2 báo ĐÓI (2 chi tiết).
+
+**E2E lần 2** (HOOK + Chương 1 tibet-2, A014, 3 lượt/nhánh, đúng đường sản xuất): bật khối
+VOICE TARGETS trên **sonnet-5** đưa bám giọng 16,7% → 50,0% (26% → 77% mức người thật),
+không lượt nào chồng lấn. Model là sonnet-5 vì lúc đó Két cấp opus mà app rơi về mặc định
+(lỗi dẫn model, mục 15.35). Chất liệu vẫn là chỗ nghẽn thật: 3,4–4,1 chi tiết/1.000 từ so
+với Norway 10,6 — chữa ở outline (A4 đã chỉ đúng chỗ), không ở tầng viết. Em-dash 0,
+chép corpus 0. Bài học lần 1: so nhầm nhánh (quên `cli.py:340` đã hoán neo dày), ép
+`CU_NHIP_PROMPT=1` cho cả hai nhánh, n=2 cho kết luận "cải thiện mọi trục" rồi n=3/4 lật
+lại — A/B phải đi đúng đường thật của app.
+
+### 15.35 DẪN API TỪ KÉT — sự cố mwapi 08/09 → 11/09 (commit `ad6990e`)
+Owner đổi sang mwapi ngày 08/09. Đo thật 11/09:
+- **5/6 việc LLM chạy sonnet-5** trong khi Két cấp opus-5 / opus-4-8: `env_viec` ghi
+  `LLM_MODEL`, `provider_config` đọc `<NHÀ>_MODEL` — chỉ glm có ánh xạ, nhà khác rơi về
+  mặc định **im lặng**.
+- **Tầng outline (oe) chết từ 08/09 18:06**: sổ usage `kind=oe` 1 · 8 · 10 lượt ngày
+  04–07/09 → 0. Bảng `NHA` của oe thiếu mwapi; vá xong vẫn chết vì urllib gửi UA
+  `Python-urllib` → Cloudflare của mwapi chặn **403 "error code: 1010"** (cùng khóa cùng
+  body: UA mặc định 403, UA riêng 200).
+
+Năm chỗ sửa: `_ENV_LLM_MODEL` ghi model đúng biến của nhà (6/6 việc khớp Két) · oe `NHA`
+thêm mwapi + deepseek, `_llm_oe` ghi đúng `model_env` · bí danh claude→anthropic,
+chatgpt→openai (+ deepseek) · allowlist `api.mwapi.dev` · User-Agent riêng.
+**Gốc chung: BA bảng tên nhà không ai canh** (Két / voiceprofile / oe). Test canh gác
+`test_tu_dien_nha.py` duyệt MỌI nhà trong `ket.NHA_LLM` — Két thêm nhà mà app quên nối
+là đỏ ngay. Lưu ý chi phí: viết kịch bản giờ chạy đúng model Két cấp (trước đó rơi về
+sonnet-5).
+
+### 15.36 CÔNG TẮC NHỊP ở tab Writing + A/B lần 3 trên opus-4-8 (11/09, commit `07f2611`)
+Đo thật trong history.jsonl: team viết glm-5.3 tới 07/09 → khối VOICE TARGETS **tự bật**;
+08/09 đổi sang `mwapi:claude-opus-4-8` → **tự tắt**, không một dòng log nào báo. Dropdown
+chỉ còn 3 model mwapi, không model nào trong `MODEL_BAM_NEO` → khối đang tắt với mọi người.
+
+**A/B lần 3** (cùng khuôn lần 2, ép opus-4-8, thinking tắt, 3 lượt/nhánh). Báo cáo:
+https://claude.ai/code/artifact/40495c34-65e3-49ed-a9de-5ff7b55312ca
+
+| | Tắt (team đang chạy) | Bật |
+|---|---|---|
+| Bám giọng (mốc người thật 65%) | 20,0% (20 · 20 · 20) | 26,7% (40 · 20 · 20) — **chồng lấn** |
+| Từ/câu (tác giả 14,3) | 19,1 | **15,3** — tách bạch |
+| Câu dài > 35 từ (tác giả 2,3%) | 6,6% | 0% — lố sang phía kia |
+| Chương 1 | 3.244 ký tự | 2.554 (**−21%**) |
+
+Cùng khối, cùng giọng: sonnet-5 16,7 → 50,0 tách bạch; opus-4-8 chồng lấn. **OWNER CHỐT:
+giữ opus-4-8 NGOÀI `MODEL_BAM_NEO`.** A/B thêm một giọng câu dài chỉ làm khi cần quy tắc
+cho team (giả thuyết chưa đo: khối nhịp có ích nhất với giọng câu ngắn — A007/A012 10,7,
+A014 14,3 từ/câu — vì opus-4-8 tự viết ~19).
+
+**Công tắc** — Owner chốt đặt ở tab Writing, không ở Két (Két giữ khóa + model theo việc,
+dùng chung mọi app; bật hay tắt tùy model của TỪNG lượt viết): ô *nhịp: tự động / bật /
+tắt* cạnh model + thinking; ô tự động hiện luôn kết quả với model đang chọn; CLI `--nhip`,
+log LUÔN nói trạng thái kèm nguồn (bật tay / tắt tay / tự động: model bám neo | chưa A/B);
+sổ history ghi `nhip` + `nhip_gui`. Mặc định = hành vi cũ. 15 test mới; test route cũ đọc
+CẢ THÂN route thay cửa sổ ký tự cố định (vỡ lần thứ 3).
+
+### 15.37 BÁO CÁO HỒ SƠ ghi sai + tạo lại 13 báo cáo trong kho (11/09)
+- **Mục "đi vào prompt" ghi sai 13/13** (commit `5e8f1ed`): cả 13 báo cáo ghi "không có
+  số đo nào đi vào prompt (hồ sơ chưa đo được chỉ số nhịp nào…)", trong khi 13/13 hồ sơ
+  đều sinh được khối nhịp. Gốc: báo cáo dựng lúc EXTRACT gọi `build_nhip_block` ở chế độ
+  tự động, chưa biết model lúc viết → luôn rỗng → đổ lỗi cho hồ sơ. Test cũ bọc trong
+  `if kh:` nên không kiểm gì. Nay in khối CỦA HỒ SƠ (`ep_bat`, lúc viết không truyền) +
+  luật gửi/không gửi.
+- **Lỗi gốc cảnh báo "neo mỏng"** (code + 5 test xanh, suite 910 — **CHƯA commit, chờ
+  Owner**): 3 đường sinh báo cáo (extract `cli.py:118`, mô tả `cli.py:511`, lệnh
+  `bao-cao`) — chỉ lệnh `bao-cao` truyền neo dày → báo cáo sinh lúc extract luôn cảnh báo
+  "Neo giọng chỉ ~250 từ — quá mỏng", SAI từ 22/08 (A015 extract 08/09 là ví dụ). Sửa MỘT
+  chỗ: `bao_cao_extract` tự dựng neo dày khi có corpus; corpus thiếu dấu câu thì giữ cảnh
+  báo (lúc đó cảnh báo là đúng).
+- **Tạo lại 13 báo cáo** bằng lệnh `bao-cao` của app, 0 token. Sao lưu trước:
+  `data/content-ultimate/backup/bao-cao-extract-truoc-20260911/` (13/13, sha256 khớp từng
+  file). Kiểm sau: 13/13 có khối nhịp, 13/13 trùng bản Owner đã xem trước.
+- **4 hồ sơ không có mô tả giọng — THEO LUẬT, không phải lỗi**: đúng 4 hồ sơ corpus dưới
+  12.000 từ (`MIN_TU_MO_TA`). Bước mô tả từng chạy cho cả 4 lúc 14:05–14:40 ngày 23/08
+  (trước luật Owner chốt 24/08); 15:31–15:32 dựng lại 12/12 hồ sơ bằng C1–C5, 4 hồ sơ mỏng
+  không được gắn lại. Báo cáo mới thay bằng "Cần làm: bổ sung ~N từ". 4 đoạn mô tả cũ còn
+  trong bản sao lưu trên. Không ảnh hưởng lúc viết (bộ viết không dùng mô tả).
+- **Cảnh báo "không có dòng trống"** ở A001/A002/A004/A013 trong báo cáo cũ là **báo động
+  giả** đã sửa từ trước (đo đoạn trên văn gốc). Đếm file thật: dữ liệu đang lưu khớp thực
+  tế 13/13 — 6 hồ sơ (3 corpus: Ventures, Storytelling/Old story, Tribes) thật sự không có
+  dòng trống.
+- ⚠ **Thư mục sao lưu `backup/profiles-truoc-c1c5-20260823/` RỖNG.** Mục 14.8 ghi
+  "Backup … trước" nhưng không có file nào: lần dựng lại cả kho 23/08 thực tế **không có
+  đường lùi**. Bài học: sao lưu phải kiểm có file thật (đếm + sha256), không tin tên thư mục.
+
+**Việc treo:** commit lỗi gốc cảnh báo neo · 4 hồ sơ mỏng nạp thêm tác phẩm (A013 ~8.300
+từ · A010 ~5.100 · A007/A012 ~3.800) · C2 LeoKim/Tribes (A3) · dọn hồ sơ trùng
+A003=A008=A011, A007=A012 (14.7).
