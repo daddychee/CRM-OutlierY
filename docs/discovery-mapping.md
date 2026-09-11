@@ -542,3 +542,54 @@ không ai đào lại đường này.
 
 **Bảng trạng thái ổ khoá `status 200` mà body là HTML**: bài học nhỏ nhưng hay dính —
 kiểm nguồn ngoài phải soi `Content-Type` + parse thật, đừng tin mã 200.
+
+## 11/09 — Trending ngách OLD NEWBIE ra toàn quốc gia: ngách chưa khai chủ thể
+
+**Triệu chứng.** Nhân sự đo Trending ngách OLD NEWBIE — US: nhãn hiện `argentina`, `japan`,
+`chicago`, `portugal`, `earth`, `minnesota` thay vì thực thể của ngách (lịch sử/hoài niệm:
+nhân vật, thương hiệu, sự kiện).
+
+**Không phải bước quét từ pool.** Từ điển pool 368 thực thể, chỉ 14% địa danh (`hitler`,
+`ww2`, `1960s`, `kennedy`, `nokia`…). Tab Mapping gọi `doi_tuong()` không truyền loại nên
+không dính.
+
+**Gốc.** `N-OLD-NEWBIE` chưa có dòng trong `rules/loai_thuc_the_ngach.csv`. Chưa khai thì từ
+điển nhận mọi loại (`loai_nhan_cua_ngach` → None — luật 27/08 "không khai = nhận tất"),
+nhưng bước XÁC MINH LOẠI (`loc_thuc_the`) rơi về luật mặc định viết cho ngách địa danh
+(`LA_NOI_CHON` + gazetteer). Lượt 11/09 18:14: 60 cụm khớp → giữ 26 toàn địa danh → loại
+34, trong đó `kennedy` (21 video trong pool), `vanderbilt` (15), `walmart`, `intel`,
+`sony`, `spacex`. Trái luật Owner 27/08: loại thực thể theo ngách, quốc gia không tràn
+sang mọi ngách. 34 cụm vẫn hiện trong khối thu gọn "ĐÃ LOẠI Ở BƯỚC XÁC MINH LOẠI" —
+không im lặng, nhưng dễ bỏ qua.
+
+**Owner chốt:** PA1 — khai `*` (không lọc loại, như COOKING), áp RIÊNG OLD NEWBIE (3 pool:
+US, Spain, pool gốc). Không chọn PA2 (thêm loại công ty/nhân vật theo mô tả Wikipedia): chỉ
+cứu 7/34, mất `kennedy`/`vanderbilt` vì Wikipedia trả "trang định hướng" cho họ/tên đơn.
+
+**Đo sau khi sửa** (phát lại lượt 18:14, chỉ đọc): qua xác minh 26 → 60; nhãn "nối chắc"
+6 → 10. Đã nói trước với Owner: phần lớn thực thể ngách vừa lộ ra là NỐI NHẦM NGHĨA
+("senator john kennedy" ≠ gia tộc Kennedy; "vanderbilt football" ≠ gia tộc Vanderbilt) —
+Trending Now là tin tức–thể thao thời gian thực, với ngách lịch sử chủ yếu trùng chữ.
+
+**Commit radary `60a7d43`** (1 dòng CSV + 2 test). Test đi qua CSV THẬT — lỗi lọt được vì
+test cũ chỉ gọi thẳng `loc_thuc_the(bo_qua_loc=True)`. Lưới phạm vi đã thử đột biến trên
+bản sao (khai lan `N-INVESTIGATION` → đỏ đúng). App restart 18:47 qua tác vụ `OUTLIERY-V3`.
+
+**Còn treo:**
+- 4 ngách chưa khai — INVESTIGATION, OLD, SENIOR HEALTH, SCI-FI (`N-WHAT-IF`): cùng bệnh,
+  chờ Việc 3.
+- Việc 3: cảnh báo "ngách chưa khai" trên tab Trending + khai chủ thể khi tạo ngách/pool —
+  mockup chờ duyệt.
+- Entity Map (Owner 11/09: "xuất entity map để team căn cứ bao quát ngách") — đề xuất +
+  mockup chờ duyệt.
+- Phát hiện khi đo pool OLD NEWBIE — US: `MAU_TOI_THIEU = 5` lớn hơn trung vị pool 3 video →
+  ô "Thiếu cung"/"Đã thử không ăn" của bản đồ Trending KHÔNG THỂ có thực thể nào; 78 thực
+  thể 2–4 video chạy ≥ p75 bị xếp hết vào "chưa đủ dấu vết". Chờ Owner quyết (việc riêng).
+- 21 dạng sở hữu `'s` trùng gốc trong từ điển (`hitler`/`hitler's`…) — `gop_tu_dien` chưa gộp.
+- 3 test `test_discovery_mapping.py` đỏ sẵn từ HEAD `63887b7`; 2 test POS trước giờ bị SKIP
+  dưới venv V2 (thiếu nltk) nên suite trông xanh giả.
+- Ngách `N-001` "Sci-fi" mới tạo trùng tên `N-WHAT-IF` "SCI-FI".
+
+**Bài học:** (1) tái hiện logic V3 phải chạy bằng `D:\AI AGENT OUTLIERY\.venv\Scripts\python.exe`
+— python của shell là venv V2, cùng DB cùng code mà từ điển ra 39 thay vì 368; (2) đọc kết
+quả đã lưu phải in danh sách khoá trước — từng đọc nhầm `bo` thay `da_loai` ra "0 cụm bị loại".
