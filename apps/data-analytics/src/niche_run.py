@@ -233,8 +233,20 @@ def tinh_trang(project: str, so_dong: int = 12) -> dict:
     loi = [x for x in dong[-80:]
            if ("Traceback" in x or "ERROR" in x or "LOI" in x or "Error:" in x)]
     from datetime import datetime as _dt
+    # BƯỚC đọc từ run.log: orchestrator ghi THẲNG vào đó, còn stdout.log đi qua
+    # đường ống của service nên bị ĐỆM và trễ — đo thật 12/09 giữa lần chạy
+    # Cooking_DEU: stdout.log dừng ở [13/20] trong khi run.log đã [14/20]. Một
+    # bước LLM dài cả chục phút nên lấy nhầm nguồn là hiện bước cũ suốt từng ấy
+    # phút. Thiếu run.log (dự án đời cũ) thì lùi về stdout.log như trước.
+    dong_buoc = dong
+    rl = d / "niche-data" / "run.log"
+    if rl.is_file():
+        try:
+            dong_buoc = rl.read_text(encoding="utf-8", errors="replace").splitlines()
+        except OSError:
+            pass
     return {"co_log": True, "xong": xong, "duoi": duoi, "loi": loi[-3:],
-            "buoc": _buoc_hien_tai(dong),
+            "buoc": _buoc_hien_tai(dong_buoc),
             "luc": _dt.fromtimestamp(log.stat().st_mtime).strftime("%d/%m %H:%M")}
 
 

@@ -59,6 +59,34 @@ def test_log_cu_khong_co_dong_buoc_thi_khong_vo(tmp_path, monkeypatch):
     assert tt["buoc"] is None
 
 
+def test_uu_tien_run_log_vi_stdout_log_bi_de_tre(tmp_path, monkeypatch):
+    """stdout.log TRỄ hơn run.log — đo thật 12/09 giữa lần chạy Cooking_DEU:
+    stdout.log dừng ở `[13/20] S13` trong khi run.log đã sang `[14/20] S19`.
+    orchestrator ghi thẳng vào run.log, còn stdout đi qua đường ống của service
+    nên bị đệm. Một bước LLM kéo dài cả chục phút, nên lấy nhầm nguồn là màn hình
+    hiện bước cũ suốt từng ấy phút — người dùng lại tưởng máy đứng.
+
+    Bước lấy từ run.log; phần đuôi nhật ký + dòng lỗi vẫn đọc stdout.log vì nhật
+    ký writer (vá 11/09) ghi vào đó."""
+    monkeypatch.setenv("NICHE_PROJECTS_DIR", str(tmp_path))
+    nd = tmp_path / "Proj_X" / "niche-data"
+    nd.mkdir(parents=True)
+    (nd / "stdout.log").write_text(">>> [13/20] S13  Execution Plan (LLM)\n",
+                                   encoding="utf-8")
+    (nd / "run.log").write_text(">>> [13/20] S13  Execution Plan (LLM)\n"
+                                ">>> [14/20] S19  FINAL SUMMARY\n", encoding="utf-8")
+    tt = niche_run.tinh_trang("Proj_X")
+    assert tt["buoc"]["so"] == 14, "lấy bước từ stdout.log bị đệm → hiện bước cũ"
+    assert "S19" in tt["buoc"]["ten"]
+
+
+def test_khong_co_run_log_thi_lui_ve_stdout_log(tmp_path, monkeypatch):
+    """Dự án đời cũ / service ghi kiểu khác — không có run.log vẫn phải nói được bước."""
+    p = _log(tmp_path, monkeypatch, ">>> [5/20] S7  demand & trend\n")
+    tt = niche_run.tinh_trang(p)
+    assert tt["buoc"]["so"] == 5
+
+
 def test_trang_thai_tra_buoc_cho_ui(tmp_path, monkeypatch):
     """Poll của dashboard phải mang theo bước, nếu không JS vẫn chỉ có số giây."""
     p = _log(tmp_path, monkeypatch, ">>> [7/20] 12:41:00  S9b  namer (LLM)\n")
