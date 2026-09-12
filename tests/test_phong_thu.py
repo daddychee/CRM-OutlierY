@@ -43,6 +43,21 @@ def test_them_host_qua_env(monkeypatch):
         phong_thu.kiem_host("https://api.chua-khai.com/v1")
 
 
+def test_moi_nha_llm_ket_khai_deu_duoc_mo_luong(monkeypatch):
+    """LƯỚI (sự cố 12/09): KÉT khai nhà 'mwapi' từ 07/09 nhưng api.mwapi.dev KHÔNG có
+    trong allowlist → van chặn ngay tại cửa; diễn giải chẩn đoán kênh của Data
+    Analytics chết lặng lẽ kể từ đó. Khai bằng env không cứu được vì CHỈ gateway đọc
+    .env, app nhận env từ start-all — dễ sót. Nhà nào KÉT đã khai thì phải mở luồng
+    SẴN trong allowlist mặc định."""
+    monkeypatch.delenv("LLM_HOST_CHO_PHEP", raising=False)
+    from nen.ket_cau_hinh.ket import NHA_LLM_INFO
+    for nha, tin in NHA_LLM_INFO.items():
+        base = tin.get("base_url") or ""
+        if not base:
+            continue          # rỗng = SDK mặc định của nhà (đã nằm trong allowlist)
+        phong_thu.kiem_host(base)   # nhà chưa mở luồng → LoiPhongThu, test đỏ đúng chỗ
+
+
 # ---- van 2: kiem_secret ----
 
 def test_secret_lot_prompt_bi_chan(monkeypatch):

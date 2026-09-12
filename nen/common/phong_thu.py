@@ -34,6 +34,12 @@ class LoiPhongThu(RuntimeError):
 HOST_MAC_DINH = frozenset({
     "api.anthropic.com", "api.openai.com", "api.z.ai",
     "open.bigmodel.cn", "api.deepseek.com", "api.x.ai",
+    # Nhà KÉT khai chính thức (ket.NHA_LLM_INFO) phải mở luồng SẴN. Khai bằng
+    # LLM_HOST_CHO_PHEP không cứu được: CHỈ gateway đọc .env, app nhận env từ
+    # start-all nên dễ sót. Sự cố 12/09: mwapi vào KÉT 07/09 mà van chặn ngay tại
+    # cửa → diễn giải chẩn đoán kênh chết lặng lẽ; Gemini cũng đang bị chặn y vậy.
+    "generativelanguage.googleapis.com",   # Gemini (Google)
+    "api.mwapi.dev",                       # Claude qua reseller mwapi
 })
 _LOOPBACK = ("localhost", "127.0.0.1", "::1")
 
