@@ -29,6 +29,18 @@ def lay_llm_retry() -> int:
     return int(os.getenv("LLM_RETRY", "0"))
 
 
+def lay_user_agent() -> str:
+    """LLM_USER_AGENT (.env — mặc định 'outliery/1.0'): SDK tự gắn UA của riêng
+    nó ('OpenAI/Python 3.1.0', 'Anthropic/Python') và CỬA của nhà cung cấp có
+    thể chặn theo đúng UA đó. Sự cố 12/09: mwapi (Cloudflare đứng trước) trả
+    403 {"message": "All available accounts exhausted"} — thông điệp ĐÁNH LỪA,
+    khóa vẫn tốt và tài khoản vẫn còn; đường anthropic thì 502. Đo đối chứng
+    cùng khóa + cùng model + cùng thời điểm: đổi UA là 200 OK ngay.
+    Cùng họ vết cũ 'urllib bị Cloudflare chặn 1010' (08/09) — niche-research
+    không dính vì gọi bằng requests."""
+    return os.getenv("LLM_USER_AGENT", "outliery/1.0")
+
+
 class OpenAICompatibleProvider(LLMProvider):
     def __init__(self, model: str = "", api_key: str = "",
                  base_url: str | None = None, mock: bool = True):
@@ -41,7 +53,8 @@ class OpenAICompatibleProvider(LLMProvider):
             from openai import OpenAI  # import tại chỗ — chế độ mock không đụng tới thư viện
 
             self.client = OpenAI(api_key=api_key, base_url=base_url or None,
-                                 timeout=lay_llm_timeout(), max_retries=lay_llm_retry())
+                                 timeout=lay_llm_timeout(), max_retries=lay_llm_retry(),
+                                 default_headers={"User-Agent": lay_user_agent()})
 
     def generate(self, system_prompt: str, user_prompt: str) -> str:
         if self.mock:

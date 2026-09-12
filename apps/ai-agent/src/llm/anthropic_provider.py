@@ -21,13 +21,16 @@ class AnthropicProvider(LLMProvider):
             kiem_host_diem_ra(os.getenv("ANTHROPIC_BASE_URL", ""))
             import anthropic  # import tại chỗ — chế độ mock không đụng tới thư viện
 
-            from src.llm.openai_compatible import lay_llm_retry, lay_llm_timeout
+            from src.llm.openai_compatible import (lay_llm_retry, lay_llm_timeout,
+                                                   lay_user_agent)
 
             # api_key rỗng → thư viện tự đọc ANTHROPIC_API_KEY từ môi trường
             # max_retries: SDK mặc định tự thử lại 2 lần lặng lẽ — cùng bẫy với timeout (06/08)
+            # default_headers: UA 'Anthropic/Python' bị cửa mwapi trả 502 (12/09) — xem lay_user_agent
             self.client = anthropic.Anthropic(api_key=api_key or None,
                                               timeout=lay_llm_timeout(),
-                                              max_retries=lay_llm_retry())
+                                              max_retries=lay_llm_retry(),
+                                              default_headers={"User-Agent": lay_user_agent()})
 
     def generate(self, system_prompt: str, user_prompt: str) -> str:
         if self.mock:
