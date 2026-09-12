@@ -864,7 +864,13 @@ function theoDoiNiche(project){
         // Nói rõ đang làm gì — 12/09 màn hình đứng im ở 'Researching… 2023s' suốt
         // 6,5 phút khiến Owner tưởng treo. Chỉ reload khi đã đóng gói xong.
         var giay = Math.round((Date.now() - t0) / 1000);
-        if (el) el.textContent = (st.dang_dong_goi ? 'Đang viết diễn giải… ' : 'Researching… ') + giay + 's';
+        // Nói rõ ĐANG Ở BƯỚC NÀO (Owner 12/09 hỏi giữa lần chạy "có đang chạy
+        // không?" — số giây trần không trả lời được). Nhật ký đã ghi sẵn [n/20].
+        var nhan = 'Researching… ';
+        if (st.dang_dong_goi) nhan = 'Đang viết diễn giải… ';
+        else if (st.buoc) nhan = 'Bước ' + st.buoc.so + '/' + st.buoc.tong + ' · ' +
+                                 String(st.buoc.ten).slice(0, 40) + ' — ';
+        if (el) el.textContent = nhan + giay + 's';
         if (!st.running && !st.dang_dong_goi){ clearInterval(iv); location.reload(); }
       })
       .catch(function(){ /* mạng chớp — poll tiếp */ });

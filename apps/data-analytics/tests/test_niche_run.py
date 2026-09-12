@@ -69,7 +69,7 @@ def test_xong_thi_snapshot_dung_mot_lan(client, monkeypatch):
     # Không ghim cờ ở r1: _snapshot giả chạy tức thì nên thread nền có thể xong
     # trước lời return (race vô hại). Việc "bật cờ trong lúc đóng gói" do
     # test_niche_run_dong_goi_nen ghim bằng _snapshot chậm thật.
-    assert set(r1) == {"running", "has_report", "dang_dong_goi"}
+    assert set(r1) == {"running", "has_report", "dang_dong_goi", "buoc"}
     assert r1["running"] is False and r1["has_report"] is True
     assert r2["dang_dong_goi"] is False and goi == ["Proj_US"]    # đóng gói đúng 1 lần
 

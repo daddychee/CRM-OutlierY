@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 from nen.common import token_noi_bo
 import subprocess
 import sys
@@ -128,7 +129,8 @@ def trang_thai(project: str, user: dict) -> dict:
         if moi and can_dong_goi(project):
             dong_goi_nen(project)
     return {"running": bool(st.get("running")), "has_report": bool(st.get("has_report")),
-            "dang_dong_goi": dang_dong_goi(project)}
+            "dang_dong_goi": dang_dong_goi(project),
+            "buoc": tinh_trang(project).get("buoc")}   # để UI nói được đang ở bước nào
 
 
 def _thu_muc(project: str) -> Path:
@@ -196,6 +198,25 @@ def dang_dong_goi(project: str) -> bool:
         return project in _dang_dong_goi
 
 
+# Dòng bước orchestrator in ra: ">>> [3/20] 12:39:43  S4  comments -> viewer
+# questions". Giờ là TUỲ CHỌN — nhật ký đời cũ không có, vẫn phải bóc được bước.
+_MAU_BUOC = re.compile(r"^>>> \[(\d+)/(\d+)\]\s*(?:(\d\d:\d\d:\d\d)\s+)?(.*)$")
+
+
+def _buoc_hien_tai(dong: list[str]) -> dict | None:
+    """Bước đang chạy = dòng '>>> [n/total] …' CUỐI CÙNG của nhật ký.
+
+    Owner 12/09 hỏi giữa lần chạy "tiến trình có đang chạy không?" mà màn hình chỉ
+    có số giây — phải vào tận máy soi tiến trình mới biết đang ở bước 3/20 quét
+    bình luận. Nhật ký vốn đã ghi sẵn bước, chỉ là chưa ai bóc ra cho trang."""
+    for d in reversed(dong):
+        m = _MAU_BUOC.match(d.strip())
+        if m:
+            return {"so": int(m.group(1)), "tong": int(m.group(2)),
+                    "luc": m.group(3), "ten": m.group(4).strip()}
+    return None
+
+
 def tinh_trang(project: str, so_dong: int = 12) -> dict:
     """Trạng thái run ĐỌC TỪ ĐĨA (không cần service): đuôi stdout.log + mốc thời
     gian — để trang nói được 'vỡ ở đâu' thay vì im lặng (user 19/08)."""
@@ -213,6 +234,7 @@ def tinh_trang(project: str, so_dong: int = 12) -> dict:
            if ("Traceback" in x or "ERROR" in x or "LOI" in x or "Error:" in x)]
     from datetime import datetime as _dt
     return {"co_log": True, "xong": xong, "duoi": duoi, "loi": loi[-3:],
+            "buoc": _buoc_hien_tai(dong),
             "luc": _dt.fromtimestamp(log.stat().st_mtime).strftime("%d/%m %H:%M")}
 
 
