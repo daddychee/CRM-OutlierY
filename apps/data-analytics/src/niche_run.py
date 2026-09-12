@@ -148,7 +148,15 @@ def can_dong_goi(project: str) -> bool:
     thu_muc_snap = d / "snapshots" / so[-1]["id"]
     if not thu_muc_snap.is_dir():
         return True
-    return moi_nhat > thu_muc_snap.stat().st_mtime + 1
+    # So với NỘI DUNG snapshot, KHÔNG phải mtime THƯ MỤC (sự cố 11/09): snapshot cùng
+    # ngày ghi đè file trong thư mục CÓ SẴN, mà ghi đè file thì mtime thư mục đứng yên
+    # (đo thật OldNewbie_US: thư mục 19:11:14 trong khi file bên trong 21:10:07) → trang
+    # tưởng chưa đóng gói, MỖI lần mở dashboard lại chạy writer (4 lời gọi LLM) rồi ghi
+    # đè báo cáo tốt bằng bản kém hơn. snapshot.py dùng shutil.copy2 nên file trong
+    # snapshot giữ nguyên mtime nguồn → chép xong hai mốc bằng nhau.
+    trong = [f.stat().st_mtime for f in thu_muc_snap.glob("*") if f.is_file()]
+    moc_snap = max(trong) if trong else thu_muc_snap.stat().st_mtime
+    return moi_nhat > moc_snap + 1
 
 
 def dong_goi_nen(project: str) -> None:
