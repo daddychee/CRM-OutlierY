@@ -119,7 +119,13 @@ def trang_thai(project: str, user: dict) -> dict:
             moi = project not in _da_snapshot
             if moi:
                 _da_snapshot.add(project)
-        if moi:
+        # ĐĨA mới là nguồn sự thật, không phải registry bộ nhớ: _da_snapshot mất
+        # sạch sau mỗi lần restart app, nên lượt poll ĐẦU sau restart từng châm
+        # ngòi writer chạy lại (4 lượt LLM tiền thật) rồi ghi đè báo cáo tốt bằng
+        # bản mới — đo thật 12/09: restart 10:57:58, poll 10:58:24 chạy writer
+        # trong khi báo cáo đã đóng gói xong từ 10:35:53. Cùng vết 11/09; dashboard
+        # hỏi can_dong_goi từ 19/08, riêng đường poll này thì chưa.
+        if moi and can_dong_goi(project):
             dong_goi_nen(project)
     return {"running": bool(st.get("running")), "has_report": bool(st.get("has_report")),
             "dang_dong_goi": dang_dong_goi(project)}

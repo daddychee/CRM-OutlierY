@@ -48,9 +48,11 @@ def client(tmp_path, monkeypatch):
     return TestClient(app)
 
 
-def _vua_xong(monkeypatch):
+def _vua_xong(monkeypatch, can: bool = True):
+    """Service báo run vừa xong; `can` = ĐĨA nói còn phải đóng gói hay không."""
     monkeypatch.setattr(niche_run.requests, "get",
                         lambda url, **kw: _Resp({"running": False, "has_report": True}))
+    monkeypatch.setattr(niche_run, "can_dong_goi", lambda p: can)
 
 
 def _cho_nen_xong(project: str = "Proj_US", giay: float = 3.0) -> None:
@@ -78,6 +80,25 @@ def test_poll_tra_loi_ngay_trong_luc_dong_goi(client, monkeypatch):
     finally:
         dung.set()
         _cho_nen_xong()
+
+
+def test_khong_dong_goi_lai_khi_dia_noi_da_xong(client, monkeypatch):
+    """Registry _da_snapshot nằm trong BỘ NHỚ — restart app là mất sạch, nên lượt
+    poll ĐẦU TIÊN sau restart tưởng chưa đóng gói bao giờ và chạy lại writer (4 lượt
+    LLM tiền thật) rồi GHI ĐÈ báo cáo tốt bằng bản mới. Đo thật 12/09: restart lúc
+    10:57:58, lượt poll 10:58:24 châm ngòi writer trong khi can_dong_goi() = False
+    và báo cáo đã đóng gói xong từ 10:35:53. Cùng vết 11/09 (vòng đóng gói lặp đốt
+    token) — dashboard đã hỏi can_dong_goi từ 19/08, riêng đường poll này thì chưa.
+
+    Nguồn sự thật phải là ĐĨA (can_dong_goi), không phải registry bộ nhớ."""
+    _vua_xong(monkeypatch, can=False)      # đĩa: đã đóng gói xong rồi
+    goi = []
+    monkeypatch.setattr(niche_run, "_snapshot", lambda p: goi.append(p) or True)
+    r = client.get("/niche/chay/Proj_US/trang-thai", headers=CLAIMS_L3).json()
+    _cho_nen_xong()
+    assert goi == [], ("đĩa đã nói đóng gói xong mà vẫn chạy lại writer — 4 lượt LLM "
+                       "tiền thật + ghi đè báo cáo tốt bằng bản kém hơn (vết 11/09)")
+    assert r["dang_dong_goi"] is False
 
 
 def test_dong_goi_xong_thi_het_co_va_chi_chay_mot_lan(client, monkeypatch):

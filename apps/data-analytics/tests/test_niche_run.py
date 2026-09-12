@@ -60,6 +60,7 @@ def test_xong_thi_snapshot_dung_mot_lan(client, monkeypatch):
     monkeypatch.setattr(niche_run.requests, "get",
                         lambda url, **kw: _Resp({"running": False, "has_report": True}))
     monkeypatch.setattr(niche_run, "_snapshot", lambda p: goi.append(p) or True)
+    monkeypatch.setattr(niche_run, "can_dong_goi", lambda p: True)   # đĩa: còn phải đóng gói
     r1 = client.get("/niche/chay/Proj_US/trang-thai", headers=CLAIMS_L3).json()
     _cho_nen_xong()
     r2 = client.get("/niche/chay/Proj_US/trang-thai", headers=CLAIMS_L3).json()
@@ -80,6 +81,7 @@ def test_chay_lai_mo_cua_snapshot_moi(client, monkeypatch):
                         lambda url, **kw: _Resp({"status": "resumed"}))
     goi = []
     monkeypatch.setattr(niche_run, "_snapshot", lambda p: goi.append(p) or True)
+    monkeypatch.setattr(niche_run, "can_dong_goi", lambda p: True)   # đĩa: còn phải đóng gói
     client.get("/niche/chay/Proj_US/trang-thai", headers=CLAIMS_L3)      # snapshot lần 1
     _cho_nen_xong()
     client.post("/niche/chay/Proj_US", headers=CLAIMS_L3)                # chạy mới → reset
