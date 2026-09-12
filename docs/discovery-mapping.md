@@ -651,6 +651,33 @@ chạy** bằng Chrome headless + fetch giả: tab active, 0 lỗi JS, không tr
 ra "jackie — vợ của — nhiều tiêu đề nhắc cả hai" và "dallas — bị ám sát tại — **chưa có căn
 cứ trong pool**".
 
+### 12/09 (tiếp) — Owner bấm thử: SSL CERTIFICATE_VERIFY_FAILED. Không phải lỗi chứng chỉ máy
+
+Owner cấp khóa rồi bấm "Dựng sơ đồ" trên OLD NEWBIE → `không gọi được LLM API: <urlopen
+error [SSL: CERTIFICATE_VERIFY_FAILED] ...>`. Đo TLS từ đúng venv của app: `api.z.ai`,
+`api.anthropic.com`, googleapis, wikipedia đều bắt tay bình thường — **chỉ
+`open.bigmodel.cn` trượt**. Mà `llm.py` ghi CỨNG bigmodel cho nhà `glm`, trong khi KÉT khai
+nhà glm = `https://api.z.ai/api/paas/v4` và gateway đã có sẵn route chung
+`/api/cau-hinh/llm/{viec}?app=<slug>` trả đủ provider + base_url + model + key (data-analytics
+đang dùng). **Bệnh gốc: app tự dựng nguồn sự thật thứ hai về endpoint** — RadarY xin khóa qua
+`api-khoa` (route này không trả base_url) rồi phải tự đoán nhà.
+
+**Vá** (radary `9efa1e3`): `khoa_v3.lay_llm` chuyển sang route chung, trả cả `base_url`;
+`llm.complete` gọi theo `base_url` của KÉT, nhãn nhà cũ (`claude`/`glm` trong bảng
+`llm_config` di sản) còn suy được gốc qua `NHA_GOC` để đường đang chạy không gãy; test ghim
+`open.bigmodel.cn` không còn trong mã nguồn. Ba ca test cũ ghim hợp đồng `api-khoa` đã nghỉ,
+ghi rõ lý do tại chỗ.
+
+**Lỗi thứ hai lộ ra cùng lượt:** LLM hỏng → trang chỉ còn mỗi dòng "908 tên 1 video", trong
+khi chính dòng cảnh báo hứa "phần máy tự làm vẫn còn nguyên bên dưới" — vì UI chỉ vẽ tên qua
+các thẻ NHÓM, mà nhóm thì rỗng. Thêm khối "Tất cả tên trong pool · chưa gom nhóm"; kiểm bằng
+Chrome headless ở đúng kịch bản đó.
+
+**Bài học:** (1) endpoint của nhà cung cấp là CẤU HÌNH của két, không phải hằng số của app —
+app tự ghi cứng thì một ngày két đổi nhà là gãy, mà lỗi lại hiện ra dưới dạng lỗi chứng chỉ
+rất dễ đi sai hướng; (2) câu chữ trấn an trên UI ("phần máy vẫn còn nguyên") phải có test
+đứng sau, không thì nó thành lời hứa suông đúng lúc người dùng cần nhất.
+
 **Còn treo:** két đã cấp khóa LLM cho việc `dien_giai` của radary chưa (Owner xem ở
 General › API Keys — phiên này cố ý không mở két); chưa chạy lượt dựng THẬT nào nên chưa đo
 được độ ổn định giữa các lần dựng lại (định nghĩa thước đo trước: tỉ lệ trùng danh sách từ
