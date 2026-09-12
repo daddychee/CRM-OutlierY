@@ -598,3 +598,60 @@ bản sao (khai lan `N-INVESTIGATION` → đỏ đúng). App restart 18:47 qua t
 **Bài học:** (1) tái hiện logic V3 phải chạy bằng `D:\AI AGENT OUTLIERY\.venv\Scripts\python.exe`
 — python của shell là venv V2, cùng DB cùng code mà từ điển ra 39 thay vì 368; (2) đọc kết
 quả đã lưu phải in danh sách khoá trước — từng đọc nhầm `bo` thay `da_loai` ra "0 cụm bị loại".
+
+---
+
+## 12/09 — SƠ ĐỒ THỰC THỂ: Owner bác 2 mockup, đổi hướng, code xong 3 việc
+
+Owner xem mockup "Khai chủ thể ngách v1" + "Entity Map v1" rồi **bác cả hai**, nêu 3 điểm:
+(1) không chia thực thể thành loại rạch ròi — mạng liên kết thực thể **xâm lấn** nhau;
+(2) thực thể **không phải lựa chọn của user**, phải để LLM tổng kết hộ, trình bày như sơ đồ
+ER; (3) Entity Map chỉ để **kiểm** thực thể — số liệu và video là **trùng Mapping/Trending**.
+Kèm một đề xuất của Grok để tham khảo.
+
+**Kiểm lại bằng số (không đoán):**
+- Điểm 1+2 đúng: 28/45 chuỗi lớn nhất ws36 có ứng viên Wikidata trải ≥3 nhóm loại (`jfk` =
+  người / sân bay / studio); ~10/45 là từ thường (`anymore` 43 video, `couldn`, `isn`) mà tra
+  KG vẫn "xác nhận" nhầm (`heard` → đảo Heard, `mom` → MoMA); kết quả đầu của Wikidata cho
+  `kennedy`/`rockefeller`/`churchill` đều là "họ", chỉ 2/45 là một người ⇒ tách nghĩa bằng
+  chuỗi là bất khả, phải đọc title trong ngữ cảnh.
+- Điểm 3 đúng theo code: Trending (`app.js:2782`) đã hiện 5 ô + số video + bấm xem video +
+  bội số + nhịp 12 tháng; Mapping đã hiện video/kênh sau mỗi từ khóa. Mockup B dùng lại đúng
+  5 ô `xep_o` ⇒ trùng thật.
+- **Đề xuất Grok:** 6/39 mã Wikidata SAI (Q6576 là Irkutsk không phải Yakutsk; Q107736042 là
+  bia Stolperstein không phải Euro 2024; Q12075 là làng ở Tây Ban Nha; Q11404464 không tồn
+  tại), 2/4 "case vàng" sai mã. Tiền đề cũng sai: pool LIFE IN — US có 11 video Yakutsk, 21
+  Cape Verde, 12 Lesotho; `rules/thuc_the.csv` đã có Cape Verde/Lesotho đúng mã (1.709/1.779
+  dòng có Q-id). Luật "cấm human Q5" của Grok áp vào OLD NEWBIE là mất Hitler/JFK/Eisenhower
+  — đúng lỗi vừa vá 11/09. Lấy lại: "LLM không được đẻ tên", canonical + alias, mơ hồ thì
+  không để LLM chọn mã.
+
+**Tự kiểm đề xuất của chính mình (đo 13 pool ≥800 video, chỉ đọc):** tìm ra 3 lỗi phải sửa —
+(a) "bỏ hẳn khai loại + Trending khớp theo sơ đồ" SAI: CSV loại thực thể đang gánh 6 ngách và
+tác động từ bước rút danh sách; sơ đồ chụp sẵn sẽ cũ (SENIOR HEALTH 37% tên mới trong 30
+ngày); (b) "LLM nối quan hệ, máy kiểm bằng title chứa cả hai" TỰ MÂU THUẪN — title chỉ chứng
+minh cùng xuất hiện, còn đường cùng-xuất-hiện thì máy tự tính; mạng có căn cứ lại thưa
+(ws36: 117/358 tên đứng lẻ, chỉ 64 tên có đường ≥2 title; ws20 dày hơn: 41/370 đứng lẻ);
+(c) `tu_dien_pool` bỏ tên 1 video — ws36 bỏ 908 giữ 368 — là một NGƯỠNG ngầm, phải để Owner
+quyết. Luật viết-hoa không cứu được từ thường vì 94% title ws36 viết hoa từng chữ (3.290/3.508).
+
+**Owner chốt:** A — cho LLM nối theo kiến thức chung, **có nhãn cảnh báo**; B — giữ mức 2
+video nhưng **nói rõ số tên 1 video** bị bỏ; C — Trending **giữ nguyên**, không phụ thuộc sơ đồ.
+
+**Đã code (flow kiểm → test đỏ → code → test lại, 3 commit radary):**
+| Việc | Commit | Nội dung |
+|---|---|---|
+| 1 · lớp máy | `552636a` | `radary/so_do.py`: `chi_muc` · `gop_bi_danh` (thập niên + WWI/WWII, nhãn phải là mặt chữ có thật trong pool) · `duong_noi` (không cắt ngưỡng, chỉ gắn cờ `manh` khi ≥2 title) · `vat_lieu`. Vá tách từ: dấu nháy CONG làm "Isn’t" vỡ thành `isn` + `t` → thêm `mapping.chuan_hoa_nhay`, từ điển ws36 358 → 354 tên |
+| 2 · lớp LLM | `3f24f00` | `khoa_v3.lay_llm` (khóa + MODEL từ KÉT, nhà ngoài claude/glm thì báo thẳng) · trần chi tiêu `/api/phong-thu/tran-llm` fail-open · lời nhắc + parser khoan dung · **3 van**: bỏ tên LLM bịa, tên bị bỏ quên vào "Chưa xếp nhóm", đường nối LLM dán nhãn. LLM hỏng → vẫn giữ lớp máy kèm lý do |
+| 3 · giao diện | `550dae4` | Tab **Sơ đồ** (khai đủ 3 chỗ trong `app.js`) + `GET/POST /api/workspaces/{ws}/so-do` · ô "kiểm một cái tên" · khối "Không phải thực thể" · dòng "Còn N tên chỉ có 1 video" · sổ kiểm sau LLM |
+
+Suite radary **311 pass** (3 ca đỏ trong `test_discovery_mapping.py` là đỏ sẵn — chứng minh
+bằng cách bung HEAD ra thư mục tạm chạy riêng). Máy không có `node` nên kiểm `app.js` **lúc
+chạy** bằng Chrome headless + fetch giả: tab active, 0 lỗi JS, không tràn ngang; bấm `kennedy`
+ra "jackie — vợ của — nhiều tiêu đề nhắc cả hai" và "dallas — bị ám sát tại — **chưa có căn
+cứ trong pool**".
+
+**Còn treo:** két đã cấp khóa LLM cho việc `dien_giai` của radary chưa (Owner xem ở
+General › API Keys — phiên này cố ý không mở két); chưa chạy lượt dựng THẬT nào nên chưa đo
+được độ ổn định giữa các lần dựng lại (định nghĩa thước đo trước: tỉ lệ trùng danh sách từ
+thường + tỉ lệ cặp tên xếp chung nhóm); ngưỡng `MAU_TOI_THIEU` vẫn chờ quyết (việc riêng).
