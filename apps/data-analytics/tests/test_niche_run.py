@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """Test cầu chạy pipeline ngách — HTTP + snapshot đều giả lập, không đụng service thật."""
 import json
+import time
 
 import pytest
 from fastapi.testclient import TestClient
@@ -30,6 +31,7 @@ def client(tmp_path, monkeypatch):
     monkeypatch.setenv("NICHE_PROJECTS_MAP", str(map_path))
     # trạng thái sạch giữa các test (registry chống-snapshot-đúp là module-level)
     niche_run._da_snapshot.clear()
+    niche_run._dang_dong_goi.clear()
     return TestClient(app)
 
 
@@ -46,15 +48,29 @@ def test_project_ngoai_so_404(client):
     assert client.get("/niche/chay/LaProject/trang-thai", headers=CLAIMS_L3).status_code == 404
 
 
+def _cho_nen_xong(project: str = "Proj_US", giay: float = 3.0) -> None:
+    """Đóng gói chạy NỀN từ 12/09 — test chờ thread xong rồi mới đối chiếu."""
+    het = time.perf_counter() + giay
+    while niche_run.dang_dong_goi(project) and time.perf_counter() < het:
+        time.sleep(0.02)
+
+
 def test_xong_thi_snapshot_dung_mot_lan(client, monkeypatch):
     goi = []
     monkeypatch.setattr(niche_run.requests, "get",
                         lambda url, **kw: _Resp({"running": False, "has_report": True}))
     monkeypatch.setattr(niche_run, "_snapshot", lambda p: goi.append(p) or True)
     r1 = client.get("/niche/chay/Proj_US/trang-thai", headers=CLAIMS_L3).json()
+    _cho_nen_xong()
     r2 = client.get("/niche/chay/Proj_US/trang-thai", headers=CLAIMS_L3).json()
-    assert r1 == {"running": False, "has_report": True, "done_moi": True}
-    assert r2["done_moi"] is False and goi == ["Proj_US"]    # snapshot đúng 1 lần
+    # Hợp đồng đổi 12/09: đóng gói chạy NỀN nên poll không còn biết lúc nào xong —
+    # 'done_moi' nhường chỗ cho 'dang_dong_goi' (thứ UI cần để hiện tiến độ).
+    # Không ghim cờ ở r1: _snapshot giả chạy tức thì nên thread nền có thể xong
+    # trước lời return (race vô hại). Việc "bật cờ trong lúc đóng gói" do
+    # test_niche_run_dong_goi_nen ghim bằng _snapshot chậm thật.
+    assert set(r1) == {"running", "has_report", "dang_dong_goi"}
+    assert r1["running"] is False and r1["has_report"] is True
+    assert r2["dang_dong_goi"] is False and goi == ["Proj_US"]    # đóng gói đúng 1 lần
 
 
 def test_chay_lai_mo_cua_snapshot_moi(client, monkeypatch):
@@ -65,8 +81,10 @@ def test_chay_lai_mo_cua_snapshot_moi(client, monkeypatch):
     goi = []
     monkeypatch.setattr(niche_run, "_snapshot", lambda p: goi.append(p) or True)
     client.get("/niche/chay/Proj_US/trang-thai", headers=CLAIMS_L3)      # snapshot lần 1
+    _cho_nen_xong()
     client.post("/niche/chay/Proj_US", headers=CLAIMS_L3)                # chạy mới → reset
     client.get("/niche/chay/Proj_US/trang-thai", headers=CLAIMS_L3)      # snapshot lần 2
+    _cho_nen_xong()
     assert goi == ["Proj_US", "Proj_US"]
 
 

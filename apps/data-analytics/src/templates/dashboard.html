@@ -860,8 +860,12 @@ function theoDoiNiche(project){
     fetch('/niche/chay/' + project + '/trang-thai')
       .then(function(r){ return r.json(); })
       .then(function(st){
-        if (el) el.textContent = 'Researching… ' + Math.round((Date.now() - t0) / 1000) + 's';
-        if (!st.running){ clearInterval(iv); location.reload(); }
+        // Sau pipeline còn khâu đóng gói (writer 4 lượt LLM) chạy nền tới ~7 phút.
+        // Nói rõ đang làm gì — 12/09 màn hình đứng im ở 'Researching… 2023s' suốt
+        // 6,5 phút khiến Owner tưởng treo. Chỉ reload khi đã đóng gói xong.
+        var giay = Math.round((Date.now() - t0) / 1000);
+        if (el) el.textContent = (st.dang_dong_goi ? 'Đang viết diễn giải… ' : 'Researching… ') + giay + 's';
+        if (!st.running && !st.dang_dong_goi){ clearInterval(iv); location.reload(); }
       })
       .catch(function(){ /* mạng chớp — poll tiếp */ });
   }, 3000);

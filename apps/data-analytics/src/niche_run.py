@@ -101,19 +101,28 @@ def chay_moi(project: str, competitors_text: str, user: dict, *,
 
 
 def trang_thai(project: str, user: dict) -> dict:
-    """Trạng thái từ service; khi vừa chạy xong + có report → snapshot MỘT lần.
-    Trả {running, has_report, done_moi (vừa đóng băng snapshot xong)}."""
+    """Trạng thái từ service; vừa chạy xong + có report → đóng gói NỀN đúng một lần.
+
+    Đóng gói (writer 4 lượt LLM + builder + snapshot) mất tới 6,5 phút — đo thật
+    OldNewbie_US 12/09 (10:29:26 → 10:35:53). Trước đây nó chạy ĐỒNG BỘ ngay trong
+    lời gọi này, lại nằm TRONG _snapshot_lock, nên mọi lượt poll 3 giây một lần của
+    dashboard đều kẹt ở khóa suốt từng ấy phút: màn hình đứng im ở "Researching…
+    2023s" (đúng giây pipeline kết thúc), người dùng không phân biệt được máy đang
+    viết diễn giải hay đã chết. Giờ đẩy sang thread nền và NÓI RA là đang đóng gói
+    để UI hiện tiến độ. Trả {running, has_report, dang_dong_goi}."""
     r = requests.get(f"{_api()}/api/status/{project}", headers=_headers(user), timeout=10)
     r.raise_for_status()
     st = r.json()
-    done_moi = False
     if not st.get("running") and st.get("has_report"):
+        # giữ khóa ĐÚNG lúc ghi sổ "đã nhận việc", không giữ suốt lúc đóng gói
         with _snapshot_lock:
-            if project not in _da_snapshot:
+            moi = project not in _da_snapshot
+            if moi:
                 _da_snapshot.add(project)
-                done_moi = _snapshot(project)
+        if moi:
+            dong_goi_nen(project)
     return {"running": bool(st.get("running")), "has_report": bool(st.get("has_report")),
-            "done_moi": done_moi}
+            "dang_dong_goi": dang_dong_goi(project)}
 
 
 def _thu_muc(project: str) -> Path:
